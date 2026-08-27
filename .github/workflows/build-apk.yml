@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -41,8 +44,27 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: SHOS-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      # Publishes the same APK to a GitHub Release so it has a stable,
+      # login-free download link (unlike workflow artifacts, which require
+      # a GitHub account) -- for sharing test builds with friends.
+      - name: Rename APK for the release
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk SHOS-debug.apk
+
+      - name: Publish APK to "latest" release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: SHOS (latest build)
+          body: |
+            Automated debug build from the latest push to `main` (commit ${{ github.sha }}).
+            This is a debug APK for testing/feedback -- not a production release.
+
+            Install: download SHOS-debug.apk below, then on your Android phone allow
+            "install from unknown sources" for your browser/file manager when prompted.
+          files: SHOS-debug.apk
