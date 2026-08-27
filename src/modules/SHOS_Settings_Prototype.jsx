@@ -1325,7 +1325,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
 
       {showMyProfile && (
         <div style={{ position: "fixed", inset: 0, zIndex: 210 }}>
-          <MyProfileModule onClose={() => setShowMyProfile(false)} />
+          <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} />
         </div>
       )}
       {showSelectiveExport && (

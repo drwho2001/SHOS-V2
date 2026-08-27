@@ -34,7 +34,7 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
 
-function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar }) {
+function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, registerModuleBackHandler }) {
   const [darkMode] = useDarkModePreference();
 
   // ADDED — real ask: title reads "[Name]'s dashboard" instead of a
@@ -392,13 +392,13 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
 
       {showMyProfile && (
         <div style={{ position: "fixed", inset: 0, zIndex: 200 }}>
-          <MyProfileModule onClose={() => setShowMyProfile(false)} />
+          <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} />
         </div>
       )}
-      {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={onNavigateToRecord} onQuickAddWithPrefill={onQuickAddWithPrefill} />}
+      {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={onNavigateToRecord} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}
       {showTimeline && (
         <div style={{ position: "fixed", inset: 0, zIndex: 200 }}>
-          <TimelineModule onClose={() => setShowTimeline(false)} />
+          <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
         </div>
       )}
     </div>

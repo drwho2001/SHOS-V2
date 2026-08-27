@@ -19,7 +19,7 @@
 // entry would look like for you", so sharing Contacts' color makes
 // that relationship visible rather than picking an arbitrary new hue.
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { UserIcon as User, DownloadSimpleIcon as Download, CopyIcon as Copy, CheckIcon as Check, XIcon as X, CaretLeftIcon as ChevronLeft, ShareNetworkIcon as Share } from "@phosphor-icons/react";
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository";
 import { TestingRepository } from "../repositories/testingRepository";
@@ -872,7 +872,7 @@ function ProfileSummary({ profile, T, onEdit }) {
   );
 }
 
-export default function MyProfileModule({ onClose }) {
+export default function MyProfileModule({ onClose, registerModuleBackHandler }) {
   const [profile, setProfile] = useState(() => MyProfileRepository.getProfile());
   const [editing, setEditing] = useState(false);
   // CHANGED 26 Aug 2026 — real ask: Share/Export placement, deferred
@@ -887,6 +887,20 @@ export default function MyProfileModule({ onClose }) {
   const [showShare, setShowShare] = useState(false);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
+
+  // ADDED — real ask: back should close the Share panel or exit editing
+  // before closing My Profile itself, matching the pattern every other
+  // module uses.
+  useEffect(() => {
+    if (!registerModuleBackHandler) return;
+    registerModuleBackHandler(() => {
+      if (showShare) { setShowShare(false); return true; }
+      if (editing) { setEditing(false); return true; }
+      onClose?.();
+      return true;
+    });
+    return () => registerModuleBackHandler(null);
+  }, [showShare, editing, registerModuleBackHandler, onClose]);
 
   const refresh = () => setProfile(MyProfileRepository.getProfile());
 

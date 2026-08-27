@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { CaretLeftIcon as ChevronLeft, TrashIcon as Trash2, FileTextIcon as FileText } from "@phosphor-icons/react";
 import { TestingRepository } from "../repositories/testingRepository";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
@@ -52,11 +52,20 @@ function isImage(dataUrl) {
   return typeof dataUrl === "string" && dataUrl.startsWith("data:image/");
 }
 
-export default function AttachmentsScreen({ onClose, onNavigateToSource }) {
+export default function AttachmentsScreen({ onClose, onNavigateToSource, registerModuleBackHandler }) {
   const [darkMode] = useDarkModePreference();
   const T = { ...(darkMode ? NEUTRAL_DARK : NEUTRAL), healthcareBlue: ACCENTS.healthcare };
   const [refreshKey, setRefreshKey] = useState(0);
   const [filterType, setFilterType] = useState("");
+
+  // ADDED — real ask: back should close Attachments (a flat, single-
+  // screen overlay — no internal navigation depth to step back
+  // through), matching the pattern every other module uses.
+  useEffect(() => {
+    if (!registerModuleBackHandler) return;
+    registerModuleBackHandler(() => { onClose?.(); return true; });
+    return () => registerModuleBackHandler(null);
+  }, [registerModuleBackHandler, onClose]);
   const all = useMemo(() => loadAllAttachments(), [refreshKey]);
   const filtered = filterType ? all.filter((a) => a.type === filterType) : all;
 

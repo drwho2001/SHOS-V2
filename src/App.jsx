@@ -522,7 +522,7 @@ export default function App() {
 
       <div style={{ flex: 1, paddingBottom: 76 }}>
         {active === "home" ? (
-          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} />
+          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler} />
         ) : ActiveModule ? (
           <ActiveModule key={`${active}-${navResetCount}`} openAddOnMount={quickAdd} onConsumedQuickAdd={() => { setQuickAdd(false); setQuickAddTarget(null); }} quickAddTarget={quickAddTarget}
             openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}

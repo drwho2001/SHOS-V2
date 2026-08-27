@@ -2206,7 +2206,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
             lives once, in App.jsx, shared across every module. */}
         {showMyProfile && (
           <div style={{ position: "fixed", inset: 0, zIndex: 210 }}>
-            <MyProfileModule onClose={() => setShowMyProfile(false)} />
+            <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>
         )}
         {showImportProfile && (

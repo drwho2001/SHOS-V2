@@ -151,17 +151,18 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       ) : (
         <VaccinationsModule openAddOnMount={openAddOnMount && quickAddTarget === "vaccinations"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       )}
-      {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={onNavigateToRecord} onQuickAddWithPrefill={onQuickAddWithPrefill} />}
+      {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={onNavigateToRecord} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}
       {showAttachments && (
         <AttachmentsScreen onClose={() => setShowAttachments(false)}
           onNavigateToSource={(sourceType, sourceId) => {
             setSubTab(sourceType === "clinicVisit" ? "clinicVisits" : "testing");
             setShowAttachments(false);
-          }} />
+          }}
+          registerModuleBackHandler={registerModuleBackHandler} />
       )}
       {showTimeline && (
         <div style={{ position: "fixed", inset: 0, zIndex: 210 }}>
-          <TimelineModule onClose={() => setShowTimeline(false)} />
+          <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
         </div>
       )}
     </div>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, WarningIcon as AlertTriangle } from "@phosphor-icons/react";
 import { EpisodeRepository, RESOLUTION_OPTIONS } from "../repositories/episodeRepository";
 // ADDED 19 Aug 2026 — TRIGGER_REASON_OPTIONS now lives here, real
@@ -387,12 +387,28 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
   );
 }
 
-export default function TimelineModule({ onClose } = {}) {
+export default function TimelineModule({ onClose, registerModuleBackHandler } = {}) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
   const [screen, setScreen] = useState({ name: "list" });
   const backToList = () => setScreen({ name: "list" });
   const startEpisode = (data) => { EpisodeRepository.create(data); backToList(); };
+
+  // ADDED — real ask: back should step within Timeline (add/detail back
+  // to list) before closing the whole overlay, matching the pattern
+  // every other module already uses. With nothing left to step back
+  // within, this closes Timeline itself rather than falling through to
+  // the shell — Timeline is an overlay on top of whatever tab opened
+  // it, not a tab of its own.
+  useEffect(() => {
+    if (!registerModuleBackHandler) return;
+    registerModuleBackHandler(() => {
+      if (screen.name === "add" || screen.name === "detail") { backToList(); return true; }
+      onClose?.();
+      return true;
+    });
+    return () => registerModuleBackHandler(null);
+  }, [screen, registerModuleBackHandler, onClose]);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh" }}>

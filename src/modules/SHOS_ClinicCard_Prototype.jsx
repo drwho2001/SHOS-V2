@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, CaretDownIcon as CaretDown, PillIcon as Pill, HeartbeatIcon as HeartPulse, UsersIcon as Users, WarningIcon as AlertTriangle, PlusIcon as Plus, GearIcon as Settings, XIcon as X, CheckIcon as Check } from "@phosphor-icons/react";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { LogRepository } from "../repositories/logRepository";
@@ -124,7 +124,7 @@ function StubRow({ children, T }) {
   );
 }
 
-export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickAddWithPrefill }) {
+export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickAddWithPrefill, registerModuleBackHandler }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
   const meds = useMemo(() => loadMedicationsWithLogs(), []);
@@ -174,6 +174,23 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // acted-on (Testing, Treatment, Symptoms), not "routinely unused."
   const [collapsed, setCollapsed] = useState({ medications: true, vaccinations: true, encounters: true });
   const toggleCollapsed = (key) => setCollapsed((c) => ({ ...c, [key]: !c[key] }));
+
+  // ADDED — real ask: back should close whichever overlay is actually on
+  // top (the nav confirmation, then editing/settings panels) before
+  // closing Clinic Card itself, matching the pattern every other module
+  // uses. `collapsed` is deliberately excluded — collapsing a section is
+  // a display preference, not a navigation state back should undo.
+  useEffect(() => {
+    if (!registerModuleBackHandler) return;
+    registerModuleBackHandler(() => {
+      if (pendingNav) { setPendingNav(null); return true; }
+      if (editingIdentity) { setEditingIdentity(false); return true; }
+      if (showVisibilitySettings) { setShowVisibilitySettings(false); return true; }
+      onClose?.();
+      return true;
+    });
+    return () => registerModuleBackHandler(null);
+  }, [pendingNav, editingIdentity, showVisibilitySettings, registerModuleBackHandler, onClose]);
   const [identityDraft, setIdentityDraft] = useState(null);
 
   const openIdentityEdit = () => {
