@@ -571,7 +571,10 @@ function StatsScreen({ onClose }) {
   const encounters = useMemo(() => EncounterRepository.getAll(), []);
   const contacts = useMemo(() => ContactRepository.getAll(), []);
   const tests = useMemo(() => TestingRepository.getAll(), []);
-  const medications = useMemo(() => MedicationRepository.getAll(), []);
+  // computeAdherence() reads med.logs directly — not part of the raw
+  // repository record, so it has to be stitched on here too (same as
+  // SHOS_Medication_Dashboard_Prototype.jsx's loadMedications()).
+  const medications = useMemo(() => MedicationRepository.getAll().map((med) => ({ ...med, logs: LogRepository.getForMedication(med.id) })), []);
 
   const activityMonths = useMemo(() => getActivitiesPerMonth(encounters, 6), [encounters]);
   const topKinks = useMemo(() => getTopKinks(encounters, contacts, (id) => KinkRegistry.getById(id)?.name, 5), [encounters, contacts]);
