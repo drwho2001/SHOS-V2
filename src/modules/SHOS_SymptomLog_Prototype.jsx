@@ -13,7 +13,8 @@ import { nowAsDateString } from "../calculations/dateInputHelpers";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // ADDED 19 Aug 2026 — Symptom Log (Symptoms Tracker in Notion — see
 // symptomLogRepository.js's header for the deliberate naming decision
@@ -24,6 +25,12 @@ import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
 const LIGHT = {
   ...NEUTRAL,
   healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
+};
+// Dark mode, on Medication's DARK basis — see Contacts' own comment
+// for the full reasoning.
+const DARK = {
+  ...NEUTRAL_DARK,
+  healthcareBlue: ACCENTS.healthcare, actionRed: "#FF7A7E", actionGreen: "#5FD9A4",
 };
 const radius = RADIUS;
 
@@ -481,6 +488,8 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
 }
 
 export default function SymptomLogModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler } = {}) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : LIGHT;
   const [screen, setScreen] = useState({ name: "list" });
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // SymptomLogLanding — entries/deletedRecent/undoDelete/triggerDelete
@@ -564,8 +573,8 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
   };
 
   let content;
-  if (screen.name === "list") content = <SymptomLogLanding T={LIGHT} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} entries={entries} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />;
-  else if (screen.name === "detail") content = <EntryDetail T={LIGHT} entryId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} />;
+  if (screen.name === "list") content = <SymptomLogLanding T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} entries={entries} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />;
+  else if (screen.name === "detail") content = <EntryDetail T={T} entryId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} />;
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: LIGHT.bg, minHeight: "100vh" }}>
@@ -579,8 +588,8 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
         </div>
       )}
       {content}
-      {screen.name === "add" && <EntrySheet T={LIGHT} entry={null} onSave={createEntry} onClose={backToList} />}
-      {screen.name === "edit" && <EntrySheet T={LIGHT} entry={SymptomLogRepository.getById(screen.id)} onSave={saveEntry} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
+      {screen.name === "add" && <EntrySheet T={T} entry={null} onSave={createEntry} onClose={backToList} />}
+      {screen.name === "edit" && <EntrySheet T={T} entry={SymptomLogRepository.getById(screen.id)} onSave={saveEntry} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
     </div>
   );
 }

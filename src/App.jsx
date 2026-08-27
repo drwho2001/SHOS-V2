@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import ContactsModule from "./modules/SHOS_Contacts_Prototype";
+import { useDarkModePreference } from "./calculations/darkModePreference";
+import { NEUTRAL_DARK as DARK } from "./calculations/designTokens";
 // ADDED — real architecture extraction, see each file's own header.
 import HomeScreen from "./modules/SHOS_Home_Prototype";
 import HealthcareScreen from "./modules/SHOS_Healthcare_Prototype";
@@ -158,14 +160,16 @@ function AppLockScreen({ onUnlock }) {
 // "Set up App Lock" takes you to Settings to actually configure it,
 // rather than trying to build a PIN-setup flow inline here too.
 function AppLockPrompt({ onDismiss, onDismissForever, onOpenSettings }) {
+  const [darkMode] = useDarkModePreference();
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={onDismiss}>
-      <div style={{ background: "#FFFFFF", width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <Eye size={20} color={ACCENTS.home} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#1B1B1F" }}>Want to lock the app with a PIN?</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Want to lock the app with a PIN?</span>
         </div>
-        <div style={{ fontSize: 12, color: "#5B5B62", marginBottom: 16, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16, lineHeight: 1.5 }}>
           Optional, and off by default — this just means nobody can open the app on this device without your PIN. You can turn it on any time from Settings → Privacy instead, if you'd rather decide later.
         </div>
         {/* CHANGED 26 Aug 2026 — real ask: App Lock is a Home/global
@@ -175,10 +179,10 @@ function AppLockPrompt({ onDismiss, onDismissForever, onOpenSettings }) {
           Set up App Lock
         </button>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={onDismiss} style={{ flex: 1, padding: 12, borderRadius: 999, border: "1px solid #DCDCE1", background: "transparent", color: "#5B5B62", fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={onDismiss} style={{ flex: 1, padding: 12, borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>
             Not now
           </button>
-          <button onClick={onDismissForever} style={{ flex: 1, padding: 12, borderRadius: 999, border: "1px solid #DCDCE1", background: "transparent", color: "#9A9AA1", fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={onDismissForever} style={{ flex: 1, padding: 12, borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: darkMode ? DARK.textDisabled : "#9A9AA1", fontWeight: 600, cursor: "pointer" }}>
             Don't ask again
           </button>
         </div>
@@ -235,6 +239,8 @@ function OnboardingScreen({ onFinish }) {
 }
 
 export default function App() {
+  const [darkMode] = useDarkModePreference();
+
   // ADDED 19 Aug 2026 — App Lock: checked once on load, held in state
   // for the session — matches how a lock screen actually behaves (you
   // don't want it demanding the PIN again every single re-render, only
@@ -511,7 +517,7 @@ export default function App() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F0F0F3", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100vh", background: darkMode ? DARK.bg : "#F0F0F3", display: "flex", flexDirection: "column" }}>
       <input ref={fileInputRef} type="file" accept="application/json" onChange={handleFileChosen} style={{ display: "none" }} />
 
       <div style={{ flex: 1, paddingBottom: 76 }}>
@@ -523,15 +529,15 @@ export default function App() {
             prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
             onOpenSettings={() => setShowSettings(true)} registerModuleBackHandler={registerModuleBackHandler} />
         ) : (
-          <div style={{ padding: 40, textAlign: "center", color: "#5B5B62", fontFamily: "sans-serif" }}>
-            <activeTab.icon size={32} color="#9A9AA1" style={{ marginBottom: 12 }} />
+          <div style={{ padding: 40, textAlign: "center", color: darkMode ? DARK.textSecondary : "#5B5B62", fontFamily: "sans-serif" }}>
+            <activeTab.icon size={32} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ marginBottom: 12 }} />
             <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{activeTab.label} isn't built yet</div>
             <div style={{ fontSize: 13 }}>Needs Testing, Vaccination, and Clinic Visits to exist first.</div>
           </div>
         )}
       </div>
 
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#FFFFFF", borderTop: "1px solid #DCDCE1", display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "10px 0 14px", zIndex: 10, fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: darkMode ? DARK.surface : "#FFFFFF", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "10px 0 14px", zIndex: 10, fontFamily: "'Inter', sans-serif" }}>
         {TABS.map((tab) => {
           const isActive = tab.key === active;
           const isBuilt = tab.component !== null || tab.key === "home";
@@ -558,8 +564,8 @@ export default function App() {
             <div key={tab.key} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", opacity: isBuilt ? 1 : 0.45 }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 14px", borderRadius: 14, background: isActive ? tab.accent : "transparent" }}>
-                <Icon size={22} color={isActive ? "#FFFFFF" : "#9A9AA1"} weight={isActive ? "fill" : "regular"} />
-                <span style={{ fontSize: 10, color: isActive ? "#FFFFFF" : "#9A9AA1", fontWeight: isActive ? 600 : 400 }}>{tab.label}</span>
+                <Icon size={22} color={isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : "#9A9AA1")} weight={isActive ? "fill" : "regular"} />
+                <span style={{ fontSize: 10, color: isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : "#9A9AA1"), fontWeight: isActive ? 600 : 400 }}>{tab.label}</span>
               </div>
             </div>
           );

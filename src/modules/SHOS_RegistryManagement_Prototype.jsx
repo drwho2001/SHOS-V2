@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from "react";
 import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore } from "@phosphor-icons/react";
+import { useDarkModePreference } from "../calculations/darkModePreference";
+import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
 import { NEUTRAL } from "../calculations/designTokens";
-
-const T = { ...NEUTRAL };
 
 // ADDED 19 Aug 2026 — Registry Management, per the user's priority order.
 // ONE shared screen for all 6 registries (Kink/Chems/Protection/
@@ -33,6 +33,9 @@ const T = { ...NEUTRAL };
 // least easy to SPOT) covers the immediate "can't fix a bad entry
 // without hunting through a picker" pain point for now.
 export default function RegistryManagementScreen({ registry, label, color, computeUsage, onClose }) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : NEUTRAL;
+
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
   const [showArchived, setShowArchived] = useState(false);

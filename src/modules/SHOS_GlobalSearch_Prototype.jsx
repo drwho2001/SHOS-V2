@@ -8,6 +8,8 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
 import { formatRelativeDate } from "../calculations/encounterCalculations";
+import { useDarkModePreference } from "../calculations/darkModePreference";
+import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // ADDED — real bug found in the user's own testing: kinks were never
 // indexed in Global Search at all — searching "fisting" found nothing,
 // even for a Contact/Encounter that genuinely had it recorded.
@@ -26,8 +28,6 @@ import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 // Medication Dashboard's own accent (ACCENTS.medication, #3D63C9) —
 // same drift App.jsx's nav tab/quick-add button had.
 import { NEUTRAL, ACCENTS, FONT_FAMILY } from "../calculations/designTokens";
-
-const T = { ...NEUTRAL };
 
 // ADDED 19 Aug 2026 — Global Search, one of the user's two joint-top
 // priority items (alongside Settings) from the FULL VERIFIED AUDIT's
@@ -170,6 +170,9 @@ function buildIndex() {
 }
 
 function ResultRow({ result, onSelect }) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : NEUTRAL;
+
   const meta = RESULT_META[result.type];
   const Icon = meta.icon;
   return (
@@ -198,6 +201,9 @@ function ResultRow({ result, onSelect }) {
 // result uses scroll-to + a neutral highlight within the dashboard
 // instead, a real and disclosed limit rather than a silent gap.
 export default function GlobalSearchScreen({ onClose, onNavigate }) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : NEUTRAL;
+
   const [query, setQuery] = useState("");
   // ADDED 26 Aug 2026 — real ask: sort/filter on the search results
   // page — a kink term like a specific act can genuinely match both a

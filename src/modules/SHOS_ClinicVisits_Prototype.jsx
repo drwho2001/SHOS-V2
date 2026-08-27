@@ -24,13 +24,20 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // Same Healthcare blue + font conventions as Testing — applied from
 // creation, not retrofitted, per the user's standing instruction.
 const LIGHT = {
   ...NEUTRAL,
   healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
+};
+// Dark mode, on Medication's DARK basis — see Contacts' own comment
+// for the full reasoning (same pattern, reused everywhere).
+const DARK = {
+  ...NEUTRAL_DARK,
+  healthcareBlue: ACCENTS.healthcare, actionRed: "#FF7A7E", actionGreen: "#5FD9A4",
 };
 const radius = RADIUS;
 
@@ -882,7 +889,8 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
 // ── Top-level module ──
 export default function ClinicVisitsModule({ openAddOnMount = false, onConsumedQuickAdd, onOpenTest, openRecordId, onConsumedRecordOpen, prefillData, onConsumedPrefill, registerModuleBackHandler } = {}) {
   const [screen, setScreen] = useState({ name: "landing" });
-  const T = LIGHT;
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : LIGHT;
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // VisitsLanding — visits/deletedRecent/undoDelete/triggerDelete now
   // live at the real module level, shared with VisitDetail.

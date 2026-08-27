@@ -44,12 +44,23 @@ import { LocationsRepository } from "../repositories/locationsRepository";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const LIGHT = {
   ...NEUTRAL,
   encountersPink: ACCENTS.encounters, actionRed: ACTION.red, actionGreen: ACTION.green,
   navActive: ACCENTS.encounters, fabBg: ACCENTS.encounters, fabIcon: "#FFFFFF",
+};
+// Dark mode, on Medication's DARK basis — see Contacts' own comment
+// for the full reasoning. encountersPink (#8D3B7A) is a dark, fairly
+// desaturated purple — good on white, too low-contrast as text/fills
+// against a near-black dark surface, so brightened here specifically
+// (same reason Medication's own accent needed a dark-mode variant).
+const DARK = {
+  ...NEUTRAL_DARK,
+  encountersPink: "#C77BB5", actionRed: "#FF7A7E", actionGreen: "#5FD9A4",
+  navActive: "#C77BB5", fabBg: "#C77BB5", fabIcon: "#FFFFFF",
 };
 const radius = RADIUS;
 
@@ -1074,6 +1085,8 @@ function EditUndoToast({ toast, onUndo, onRedo, T }) {
 }
 
 export default function EncountersModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, registerModuleBackHandler } = {}) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : LIGHT;
   const [screen, setScreen] = useState({ name: "landing" });
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // ActivityLanding (see that component's own comment for the full
@@ -1165,21 +1178,21 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
   let screenContent = null;
   if (screen.name === "landing") {
     screenContent = (
-      <ActivityLanding T={LIGHT}
+      <ActivityLanding T={T}
         onOpenEncounter={(id) => setScreen({ name: "detail", id })}
         onAdd={() => setScreen({ name: "edit", id: null })}
         encounters={encounters} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />
     );
   } else if (screen.name === "detail") {
     screenContent = (
-      <ActivityDetails T={LIGHT} encounterId={screen.id}
+      <ActivityDetails T={T} encounterId={screen.id}
         onBack={() => setScreen({ name: "landing" })}
         onEdit={(id) => setScreen({ name: "edit", id })}
         onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} refresh={refresh} />
     );
   } else if (screen.name === "edit") {
     screenContent = (
-      <EncounterEditSheet T={LIGHT} encounterId={screen.id}
+      <EncounterEditSheet T={T} encounterId={screen.id}
         onClose={() => setScreen(screen.id ? { name: "detail", id: screen.id } : { name: "landing" })}
         onSaved={(placeholderContactId) => {
           if (placeholderContactId) {
@@ -1196,7 +1209,7 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
-      <EditUndoToast toast={editUndo.toast} onUndo={editUndo.undo} onRedo={editUndo.redo} T={LIGHT} />
+      <EditUndoToast toast={editUndo.toast} onUndo={editUndo.undo} onRedo={editUndo.redo} T={T} />
       {screenContent}
     </div>
   );

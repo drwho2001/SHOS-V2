@@ -1,3 +1,5 @@
+import { useDarkModePreference } from "../calculations/darkModePreference";
+import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // SHOS_Home_Prototype.jsx
 //
 // ADDED — real architecture extraction, same reasoning as the
@@ -33,6 +35,8 @@ import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
 
 function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar }) {
+  const [darkMode] = useDarkModePreference();
+
   // ADDED — real ask: title reads "[Name]'s dashboard" instead of a
   // bare "Home". My Profile only has `nickname`, no separate name
   // field — falls back to a generic label if it's never been filled
@@ -203,9 +207,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // (was teal on clickable rows), label should be its own module's
   // colour (was flat gray for every row regardless of what it's about).
   const SummaryRow = ({ label, value, onClick, moduleColor }) => (
-    <div onClick={onClick} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #DCDCE1", cursor: onClick ? "pointer" : "default" }}>
+    <div onClick={onClick} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: onClick ? "pointer" : "default" }}>
       <span style={{ fontSize: 13, color: moduleColor || "#5B5B62", fontWeight: 600 }}>{label}</span>
-      <span style={{ fontSize: 13, color: "#1B1B1F", fontWeight: 600, textAlign: "right" }}>{value}</span>
+      <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600, textAlign: "right" }}>{value}</span>
     </div>
   );
 
@@ -216,27 +220,27 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // before.
   const QuickAddButton = ({ icon: Icon, label, color, onClick }) => (
     <div onClick={onClick}
-      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 16, border: `1px solid ${color}`, background: "#FFFFFF", cursor: "pointer" }}>
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 16, border: `1px solid ${color}`, background: darkMode ? DARK.surface : "#FFFFFF", cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <Icon size={22} color={color} />
-        <span style={{ fontSize: 15, fontWeight: 700, color: "#1B1B1F" }}>{label}</span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{label}</span>
       </div>
-      <ChevronRight size={18} color="#9A9AA1" />
+      <ChevronRight size={18} color={darkMode ? DARK.textDisabled : "#9A9AA1"} />
     </div>
   );
 
   return (
     <div style={{ padding: "20px 16px", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ fontSize: 22, fontWeight: 700, color: "#1B1B1F", marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ fontSize: 22, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         {profileName ? `${profileName}'s dashboard` : "Your dashboard"}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {/* ADDED 19 Aug 2026 — Global Search, canonical Home placement
               per Doc 1, same treatment as the Settings gear icon right
               next to it. */}
-          <Search size={19} weight="bold" color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onOpenSearch} title="Search" />
+          <Search size={19} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onOpenSearch} title="Search" />
           {/* ADDED 19 Aug 2026 — My Profile access on Home too, per
               the user's ask, alongside the existing Contacts shortcut. */}
-          <User size={19} weight="bold" color="#1B1B1F" style={{ cursor: "pointer" }} onClick={() => setShowMyProfile(true)} title="My Profile" />
+          <User size={19} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={() => setShowMyProfile(true)} title="My Profile" />
           {/* ADDED 19 Aug 2026 — canonical Settings location per Doc 1:
               "gear icon in the Top App Bar, canonically on Home." */}
           {/* CHANGED 26 Aug 2026 — real ask: chrome-level icons
@@ -244,13 +248,13 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               lines, not too weighty — weight="bold" keeps this an
               outline icon (not a filled/solid one), just a heavier
               stroke, color darkened from grey to near-black. */}
-          <SettingsIcon size={20} weight="bold" color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onOpenSettings} title="Settings" />
+          <SettingsIcon size={20} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onOpenSettings} title="Settings" />
         </div>
       </div>
 
       {/* ADDED 19 Aug 2026 — welcome text, the user's own wording as the
           basis: open, non-judgemental, genuinely useful tone. */}
-      <div style={{ fontSize: 13, color: "#5B5B62", lineHeight: 1.5, marginBottom: 20 }}>
+      <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", lineHeight: 1.5, marginBottom: 20 }}>
         Welcome to your personal sexual health operating system. Log hookups, testing, clinic visits, medications, and more — all in one place, with clear summaries when you need them. No judgement here, just a useful record that's actually yours.
       </div>
 
@@ -271,7 +275,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             <div style={{ fontSize: 13, fontWeight: 700, color: doxyStatus.overdue ? "#E5484D" : "#1B1B1F" }}>
               {doxyStatus.overdue ? "DoxyPEP dose overdue" : "DoxyPEP dose due soon"}
             </div>
-            <div style={{ fontSize: 12, color: "#5B5B62", marginTop: 1 }}>
+            <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 1 }}>
               {doxyStatus.overdue
                 ? `${formatDoxyPepCountdown(doxyStatus.msOverdue)} past the 72h window`
                 : `${formatDoxyPepCountdown(doxyStatus.msRemaining)} remaining in the 72h window`}
@@ -280,8 +284,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         </div>
       )}
 
-      <div style={{ fontSize: 12, fontWeight: 700, color: "#5B5B62", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Recent activity</div>
-      <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, padding: "0 14px", marginBottom: 24 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Recent activity</div>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: "0 14px", marginBottom: 24 }}>
         <SummaryRow label="Last encounter" moduleColor={ACCENTS.encounters} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
         <SummaryRow label="Last medication dose" moduleColor={ACCENTS.medication} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
         <SummaryRow label="Last test" moduleColor={ACCENTS.healthcare} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
@@ -299,11 +303,11 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
         <div onClick={() => setShowClinicCard(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: 16, border: `1px solid ${ACCENTS.home}`, background: `${ACCENTS.home}22`, cursor: "pointer" }}>
           <CreditCard size={20} color={ACCENTS.home} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#1B1B1F" }}>Clinic Card</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Clinic Card</span>
         </div>
         <div onClick={() => setShowTimeline(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: 16, border: `1px solid ${ACCENTS.home}`, background: `${ACCENTS.home}22`, cursor: "pointer" }}>
           <Stack size={20} color={ACCENTS.home} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#1B1B1F" }}>Episodes</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Episodes</span>
         </div>
       </div>
       {/* ADDED 26 Aug 2026 — real ask: Calendar as a third button, its
@@ -314,13 +318,13 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
           <div onClick={onOpenCalendar} style={{ width: "50%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: 16, border: `1px solid ${ACCENTS.home}`, background: `${ACCENTS.home}22`, cursor: "pointer" }}>
             <Calendar size={20} color={ACCENTS.home} />
-            <span style={{ fontSize: 15, fontWeight: 700, color: "#1B1B1F" }}>Calendar</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Calendar</span>
           </div>
         </div>
       )}
 
-      <div style={{ fontSize: 12, fontWeight: 700, color: "#5B5B62", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Quick add</div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Personal</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Quick add</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Personal</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         <QuickAddButton icon={Users} label="New contact" color={ACCENTS.contacts} onClick={() => onQuickAdd("contacts")} />
         {/* CHANGED — real ask: a distinct icon for Encounter rather
@@ -350,7 +354,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             other write in this app requires. */}
         <QuickAddButton icon={Pill} label="Log medication" color={ACCENTS.medication} onClick={() => onNavigateToRecord("medication", null)} />
       </div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Healthcare</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Healthcare</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <QuickAddButton icon={TestTube} label="Log test" color={ACCENTS.healthcare} onClick={() => onQuickAdd("healthcare", "testing")} />
         {/* CHANGED — real ask: Clinic Visit gets Stethoscope, Symptom

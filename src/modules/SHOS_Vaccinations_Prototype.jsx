@@ -15,7 +15,8 @@ import { nowAsDateString } from "../calculations/dateInputHelpers";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // ADDED 19 Aug 2026 — Vaccinations, real live Notion schema. Same
 // self-contained-module pattern, Healthcare blue, single Inter
@@ -23,6 +24,12 @@ import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
 const LIGHT = {
   ...NEUTRAL,
   healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red,
+};
+// Dark mode, on Medication's DARK basis — see Contacts' own comment
+// for the full reasoning.
+const DARK = {
+  ...NEUTRAL_DARK,
+  healthcareBlue: ACCENTS.healthcare, actionRed: "#FF7A7E",
 };
 const radius = RADIUS;
 
@@ -447,6 +454,8 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
 }
 
 export default function VaccinationsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, registerModuleBackHandler } = {}) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : LIGHT;
   const [screen, setScreen] = useState({ name: "list" });
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // VaccinationsLanding — vaccinations/deletedRecent/undoDelete/
@@ -523,8 +532,8 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   };
 
   let content;
-  if (screen.name === "list") content = <VaccinationsLanding T={LIGHT} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} vaccinations={vaccinations} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />;
-  else if (screen.name === "detail") content = <VaccinationDetail T={LIGHT} vaccinationId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} />;
+  if (screen.name === "list") content = <VaccinationsLanding T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} vaccinations={vaccinations} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />;
+  else if (screen.name === "detail") content = <VaccinationDetail T={T} vaccinationId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} />;
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: LIGHT.bg, minHeight: "100vh" }}>
@@ -538,8 +547,8 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
         </div>
       )}
       {content}
-      {screen.name === "add" && <VaccinationSheet T={LIGHT} vaccination={null} onSave={createVaccination} onClose={backToList} />}
-      {screen.name === "edit" && <VaccinationSheet T={LIGHT} vaccination={VaccinationRepository.getById(screen.id)} onSave={saveVaccination} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
+      {screen.name === "add" && <VaccinationSheet T={T} vaccination={null} onSave={createVaccination} onClose={backToList} />}
+      {screen.name === "edit" && <VaccinationSheet T={T} vaccination={VaccinationRepository.getById(screen.id)} onSave={saveVaccination} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
     </div>
   );
 }

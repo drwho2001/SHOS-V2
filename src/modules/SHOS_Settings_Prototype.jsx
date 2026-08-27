@@ -1,3 +1,4 @@
+import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // SHOS_Settings_Prototype.jsx
 //
 // ADDED — real architecture extraction, per GPT's own "app shell"
@@ -60,6 +61,8 @@ import RegistryManagementScreen from "./SHOS_RegistryManagement_Prototype";
 import OptionListsScreen from "./SHOS_OptionListEditor_Prototype";
 
 function SelectiveExportSheet({ onClose, onExported }) {
+  const [darkMode] = useDarkModePreference();
+
   // All items checked by default — "everything, but deselectable",
   // exactly as asked, rather than starting from nothing and making
   // The user build the full set back up by hand every time.
@@ -100,28 +103,28 @@ function SelectiveExportSheet({ onClose, onExported }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 220 }} onClick={onClose}>
-      <div style={{ background: "#F0F0F3", width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: darkMode ? DARK.bg : "#F0F0F3", width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: "20px 20px 4px", flexShrink: 0 }}>
-          <span style={{ fontWeight: 600, fontSize: 16, color: "#1B1B1F" }}>Export — choose what to include</span>
-          <div style={{ fontSize: 12, color: "#5B5B62", marginTop: 4 }}>Everything is included by default. Untick anything you'd rather leave out of this particular file.</div>
+          <span style={{ fontWeight: 600, fontSize: 16, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Export — choose what to include</span>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 4 }}>Everything is included by default. Untick anything you'd rather leave out of this particular file.</div>
         </div>
         <div style={{ overflowY: "auto", padding: "8px 20px", flex: 1 }}>
           {EXPORT_GROUPS.map((group) => (
-            <div key={group.key} style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, marginBottom: 10, overflow: "hidden" }}>
+            <div key={group.key} style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, marginBottom: 10, overflow: "hidden" }}>
               <div onClick={() => toggleGroup(group)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", cursor: "pointer", borderBottom: group.items.length > 1 ? "1px solid #DCDCE1" : "none" }}>
                 <Box state={isGroupFullyChecked(group) ? "full" : isGroupPartiallyChecked(group) ? "partial" : "empty"} />
-                <span style={{ fontSize: 14, fontWeight: 600, color: "#1B1B1F" }}>{group.label}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{group.label}</span>
               </div>
               {group.items.length > 1 && group.items.map((item) => (
                 <div key={item.dataKey} onClick={() => toggleItem(item.dataKey)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px 9px 34px", cursor: "pointer" }}>
                   <Box state={checked.has(item.dataKey) ? "full" : "empty"} />
-                  <span style={{ fontSize: 13, color: "#5B5B62" }}>{item.label}</span>
+                  <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{item.label}</span>
                 </div>
               ))}
             </div>
           ))}
         </div>
-        <div style={{ padding: "14px 20px", borderTop: "1px solid #DCDCE1", flexShrink: 0 }}>
+        <div style={{ padding: "14px 20px", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", flexShrink: 0 }}>
           <button onClick={doExport} disabled={checked.size === 0}
             style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: checked.size === 0 ? "#9A9AA1" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: checked.size === 0 ? "default" : "pointer" }}>
             {checked.size === allKeys.length ? "Export everything" : `Export selected (${checked.size} of ${allKeys.length})`}
@@ -144,6 +147,8 @@ function SelectiveExportSheet({ onClose, onExported }) {
 // as needing its own dedicated session) that shouldn't be guessed at
 // just to fill in a Settings row.
 function DeveloperToolsScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+
   const [resetStage, setResetStage] = useState("idle"); // idle -> confirming -> done
   const counts = [
     { label: "Contacts", value: ContactRepository.getAll().length },
@@ -170,10 +175,10 @@ function DeveloperToolsScreen({ onClose }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: "#F0F0F3", borderBottom: "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#1B1B1F" }}>Developer tools</span>
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Developer tools</span>
       </div>
 
       {/* ADDED — real ask: this never explained what it was actually
@@ -181,29 +186,29 @@ function DeveloperToolsScreen({ onClose }) {
           live record count) plus a full reset below — not a
           timeframe-based count, that's a separate, still-outstanding
           Activity filter request. */}
-      <div style={{ fontSize: 11, color: "#5B5B62", padding: "10px 16px 0" }}>
+      <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", padding: "10px 16px 0" }}>
         Live record counts across every part of the app's local storage, mainly useful for confirming a backup/restore or migration went as expected.
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "16px 16px 6px" }}>Storage overview</div>
-      <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 20px", padding: "4px 14px" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "16px 16px 6px" }}>Storage overview</div>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 20px", padding: "4px 14px" }}>
         {counts.map((c) => (
-          <div key={c.label} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: "1px solid #DCDCE1" }}>
-            <span style={{ fontSize: 13, color: "#5B5B62" }}>{c.label}</span>
-            <span style={{ fontSize: 13, color: "#1B1B1F", fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>{c.value}</span>
+          <div key={c.label} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{c.label}</span>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>{c.value}</span>
           </div>
         ))}
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Danger zone</div>
-      <div style={{ background: "#FFFFFF", border: `1px solid ${ACTION.red}`, borderRadius: 16, margin: "0 16px 20px", padding: 16 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Danger zone</div>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: `1px solid ${ACTION.red}`, borderRadius: 16, margin: "0 16px 20px", padding: 16 }}>
         {resetStage === "done" ? (
-          <div style={{ fontSize: 13, color: "#1B1B1F" }}>All app data cleared. Reload the app to see the fresh-start state.</div>
+          <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>All app data cleared. Reload the app to see the fresh-start state.</div>
         ) : resetStage === "confirming" ? (
           <>
             <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>
               <AlertTriangle size={16} color={ACTION.red} style={{ flexShrink: 0, marginTop: 1 }} />
-              <div style={{ fontSize: 13, color: "#1B1B1F" }}>This permanently deletes every contact, encounter, medication, log, test, clinic visit, and registry entry on this device. There's no undo — export a backup first if you're not sure.</div>
+              <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>This permanently deletes every contact, encounter, medication, log, test, clinic visit, and registry entry on this device. There's no undo — export a backup first if you're not sure.</div>
             </div>
             {/* ADDED 26 Aug 2026 — real ask: warn explicitly if there
                 are genuinely unbacked-up changes, not just a generic
@@ -216,7 +221,7 @@ function DeveloperToolsScreen({ onClose }) {
               </div>
             )}
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setResetStage("idle")} style={{ flex: 1, padding: 12, borderRadius: 12, border: "1px solid #DCDCE1", background: "#FFFFFF", color: "#5B5B62", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => setResetStage("idle")} style={{ flex: 1, padding: 12, borderRadius: 12, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surface : "#FFFFFF", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
               <button onClick={handleReset} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: ACTION.red, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Yes, delete everything</button>
             </div>
           </>
@@ -254,20 +259,22 @@ const REGISTRIES = [
 ];
 
 function RegistriesScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+
   const [openRegistry, setOpenRegistry] = useState(null);
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: "#F0F0F3", borderBottom: "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#1B1B1F" }}>Registries</span>
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Registries</span>
       </div>
-      <div style={{ fontSize: 12, color: "#5B5B62", padding: "10px 16px 0" }}>
+      <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", padding: "10px 16px 0" }}>
         Manage the shared vocabularies used across Contacts, Encounters, Testing, and Clinic Visits — rename or archive an entry directly, rather than only through whichever picker happens to reference it.
       </div>
-      <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, margin: "16px 16px 20px", overflow: "hidden" }}>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "16px 16px 20px", overflow: "hidden" }}>
         {REGISTRIES.map((r) => (
           <div key={r.key} onClick={() => setOpenRegistry(r)}
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid #DCDCE1", cursor: "pointer" }}>
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: "pointer" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {/* CHANGED 19 Aug 2026 — plain color dot replaced with a
                   real icon+color badge, matching every entry's own
@@ -275,9 +282,9 @@ function RegistriesScreen({ onClose }) {
               <div style={{ width: 28, height: 28, borderRadius: 999, background: `${r.color}1A`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <r.icon size={14} color={r.color} />
               </div>
-              <span style={{ fontSize: 14, color: "#1B1B1F", fontWeight: 500 }}>{r.label}</span>
+              <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{r.label}</span>
             </div>
-            <ChevronRight size={16} color="#9A9AA1" />
+            <ChevronRight size={16} color={darkMode ? DARK.textDisabled : "#9A9AA1"} />
           </div>
         ))}
       </div>
@@ -293,6 +300,8 @@ function RegistriesScreen({ onClose }) {
 // unknown — see privacySettingsRepository.js for the full reasoning
 // and exact field-tier list.
 function PrivacyScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+
   const [settings, setSettings] = useState(() => PrivacySettingsRepository.getSettings());
   const [pinEntry, setPinEntry] = useState("");
   const [pinError, setPinError] = useState("");
@@ -341,10 +350,10 @@ function PrivacyScreen({ onClose }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: "#F0F0F3", borderBottom: "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#1B1B1F" }}>Privacy & Security</span>
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Privacy & Security</span>
       </div>
 
       <div style={{ padding: "16px" }}>
@@ -352,14 +361,14 @@ function PrivacyScreen({ onClose }) {
             per the user's explicit instruction, and always one tap to turn
             ON regardless of any PIN. */}
         <div onClick={settings.anonymiseModeActive ? undefined : activate}
-          style={{ padding: 18, borderRadius: 16, background: settings.anonymiseModeActive ? "#1B1B1F" : "#FFFFFF", border: `1px solid ${settings.anonymiseModeActive ? "#1B1B1F" : "#DCDCE1"}`, cursor: settings.anonymiseModeActive ? "default" : "pointer", marginBottom: 16 }}>
+          style={{ padding: 18, borderRadius: 16, background: settings.anonymiseModeActive ? "#1B1B1F" : (darkMode ? DARK.surface : "#FFFFFF"), border: `1px solid ${settings.anonymiseModeActive ? "#1B1B1F" : (darkMode ? DARK.border : "#DCDCE1")}`, cursor: settings.anonymiseModeActive ? "default" : "pointer", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {settings.anonymiseModeActive ? <EyeOff size={20} color="#FFFFFF" /> : <Eye size={20} color="#1B1B1F" />}
-            <span style={{ fontSize: 15, fontWeight: 700, color: settings.anonymiseModeActive ? "#FFFFFF" : "#1B1B1F" }}>
+            {settings.anonymiseModeActive ? <EyeOff size={20} color="#FFFFFF" /> : <Eye size={20} color={darkMode ? DARK.textPrimary : "#1B1B1F"} />}
+            <span style={{ fontSize: 15, fontWeight: 700, color: settings.anonymiseModeActive ? "#FFFFFF" : (darkMode ? DARK.textPrimary : "#1B1B1F") }}>
               {settings.anonymiseModeActive ? "Anonymise mode is ON" : "Turn on Anonymise mode"}
             </span>
           </div>
-          <div style={{ fontSize: 12, color: settings.anonymiseModeActive ? "#DCDCE1" : "#5B5B62", marginTop: 6 }}>
+          <div style={{ fontSize: 12, color: settings.anonymiseModeActive ? "#DCDCE1" : (darkMode ? DARK.textSecondary : "#5B5B62"), marginTop: 6 }}>
             {settings.anonymiseModeActive
               ? "Names, photos, addresses, and car details are hidden across Contacts."
               : "Tap right before handing your phone over — hides names, photos, addresses, and car registration in Contacts. Never turns on by itself."}
@@ -367,16 +376,16 @@ function PrivacyScreen({ onClose }) {
         </div>
 
         {settings.anonymiseModeActive && (
-          <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, padding: 16, marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#1B1B1F", marginBottom: 8 }}>
+          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 8 }}>
               {settings.anonymisePin ? "Enter your PIN to turn it back off" : "Turn it back off"}
             </div>
             {settings.anonymisePin && (
               <div style={{ position: "relative", marginBottom: 8 }}>
                 <input value={pinEntry} onChange={(e) => { setPinEntry(e.target.value); setPinError(""); }} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="PIN"
-                  style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                {showPins ? <EyeOff size={17} color="#9A9AA1" style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                  : <Eye size={17} color="#9A9AA1" style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                  style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
+                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                  : <Eye size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
               </div>
             )}
             {pinError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{pinError}</div>}
@@ -392,19 +401,19 @@ function PrivacyScreen({ onClose }) {
             unless Anonymise mode is actually on. Toggling "further"
             hiding when the base tier isn't even active never made
             sense — there'd be nothing for it to add on top of. */}
-        <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, padding: 16, marginBottom: 16, opacity: settings.anonymiseModeActive ? 1 : 0.5 }}>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16, marginBottom: 16, opacity: settings.anonymiseModeActive ? 1 : 0.5 }}>
           <div onClick={settings.anonymiseModeActive ? () => { PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } : undefined}
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: settings.anonymiseModeActive ? "pointer" : "default" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#1B1B1F" }}>Also hide kinks & physical attributes</div>
-              <div style={{ fontSize: 11, color: "#5B5B62", marginTop: 2 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Also hide kinks & physical attributes</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>
                 {settings.anonymiseModeActive
                   ? "Stated kinks, limits, length/girth, and Cummer stats — hidden in addition to the base fields above, only while Anonymise mode is on."
                   : "Turn on Anonymise mode above first — this only ever applies on top of it."}
               </div>
             </div>
             <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.hideFurtherEnabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
-              <div style={{ position: "absolute", top: 2, left: settings.hideFurtherEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+              <div style={{ position: "absolute", top: 2, left: settings.hideFurtherEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: darkMode ? DARK.surface : "#FFFFFF" }} />
             </div>
           </div>
         </div>
@@ -414,14 +423,14 @@ function PrivacyScreen({ onClose }) {
             masking fields once it's open. Biometric (Face ID/
             fingerprint) isn't available here — needs the Capacitor
             native wrapper's own APIs, not buildable in a browser/PWA. */}
-        <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16, marginBottom: 16 }}>
           <div onClick={toggleAppLock} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#1B1B1F" }}>App Lock</div>
-              <div style={{ fontSize: 11, color: "#5B5B62", marginTop: 2 }}>Require your PIN just to open the app at all. Uses the same PIN as the Revert PIN below. Biometric unlock isn't available yet — needs the native app version.</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>App Lock</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>Require your PIN just to open the app at all. Uses the same PIN as the Revert PIN below. Biometric unlock isn't available yet — needs the native app version.</div>
             </div>
             <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockEnabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
-              <div style={{ position: "absolute", top: 2, left: settings.appLockEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+              <div style={{ position: "absolute", top: 2, left: settings.appLockEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: darkMode ? DARK.surface : "#FFFFFF" }} />
             </div>
           </div>
           {/* ADDED 19 Aug 2026 — real fix while building this: without
@@ -438,30 +447,30 @@ function PrivacyScreen({ onClose }) {
         {/* CHANGED — real ask: "App Lock and Revert PIN should be
             neighbours" — moved to sit directly below App Lock now,
             since they share the exact same PIN. */}
-        <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#1B1B1F", marginBottom: 4 }}>Revert PIN</div>
-          <div style={{ fontSize: 11, color: "#5B5B62", marginBottom: 10 }}>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Revert PIN</div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 10 }}>
             {settings.anonymisePin ? "A PIN is set — used for both Anonymise mode's revert and App Lock above." : "No PIN set yet — anyone can turn Anonymise mode back off right now, and App Lock can't be turned on. Set one so both actually protect you."}
           </div>
           {settingPin ? (
             <>
               <div style={{ position: "relative", marginBottom: 8 }}>
                 <input value={newPin} onChange={(e) => setNewPin(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="New PIN (4+ digits)"
-                  style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                {showPins ? <EyeOff size={17} color="#9A9AA1" style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                  : <Eye size={17} color="#9A9AA1" style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                  style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
+                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                  : <Eye size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
               </div>
               {/* ADDED — real ask: force reconfirmation before accepting,
                   to catch typos before they lock the user out later. */}
               <div style={{ position: "relative", marginBottom: 8 }}>
                 <input value={confirmPin} onChange={(e) => setConfirmPin(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="Confirm new PIN"
-                  style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                {showPins ? <EyeOff size={17} color="#9A9AA1" style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                  : <Eye size={17} color="#9A9AA1" style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                  style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
+                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                  : <Eye size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
               </div>
               {pinError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{pinError}</div>}
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => { setSettingPin(false); setNewPin(""); setConfirmPin(""); setPinError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid #DCDCE1", background: "transparent", color: "#5B5B62", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+                <button onClick={() => { setSettingPin(false); setNewPin(""); setConfirmPin(""); setPinError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
                 <button onClick={savePin} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Save PIN</button>
               </div>
             </>
@@ -483,6 +492,8 @@ function PrivacyScreen({ onClose }) {
 // Privacy/Registries/Option lists getting built incrementally rather
 // than all at once up front.
 function PreferencesScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+
   const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
   const [draftValue, setDraftValue] = useState(() => String(prefs.inactiveThresholdDays));
 
@@ -494,26 +505,26 @@ function PreferencesScreen({ onClose }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: "#F0F0F3", borderBottom: "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#1B1B1F" }}>Preferences</span>
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Preferences</span>
       </div>
       <div style={{ padding: 16 }}>
-        <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#1B1B1F", marginBottom: 4 }}>Inactive contact threshold</div>
-          <div style={{ fontSize: 11, color: "#5B5B62", marginBottom: 12 }}>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Inactive contact threshold</div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 12 }}>
             Days since a Contact's last Encounter before it shows the red "inactive" flag. Was fixed at 90 — now yours to set. A specific contact can also be excluded from this entirely (edit that contact → "One-off / never expect to recur").
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input value={draftValue} onChange={(e) => setDraftValue(e.target.value)} type="number" min="1"
-              style={{ width: 90, padding: "10px 12px", borderRadius: 8, border: "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-            <span style={{ fontSize: 13, color: "#5B5B62" }}>days</span>
+              style={{ width: 90, padding: "10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>days</span>
             <button onClick={save} style={{ marginLeft: "auto", padding: "10px 18px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
               Save
             </button>
           </div>
-          <div style={{ fontSize: 11, color: "#9A9AA1", marginTop: 10 }}>Currently: {prefs.inactiveThresholdDays} days.</div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1", marginTop: 10 }}>Currently: {prefs.inactiveThresholdDays} days.</div>
         </div>
       </div>
     </div>
@@ -533,24 +544,28 @@ const MODULE_LABELS = { contacts: "Contacts", encounters: "Encounter", medicatio
 // already found two confirmed-broken icon imports elsewhere, so a
 // zero-risk approach felt safer than a third guess.
 function InfoIcon({ onClick }) {
+  const [darkMode] = useDarkModePreference();
+
   return (
-    <div onClick={onClick} style={{ width: 16, height: 16, borderRadius: 999, border: "1px solid #9A9AA1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#9A9AA1", cursor: "pointer", flexShrink: 0 }}>i</div>
+    <div onClick={onClick} style={{ width: 16, height: 16, borderRadius: 999, border: "1px solid #9A9AA1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", cursor: "pointer", flexShrink: 0 }}>i</div>
   );
 }
 
 function StatRow({ label, value, explanation, sourceUrl }) {
+  const [darkMode] = useDarkModePreference();
+
   const [showInfo, setShowInfo] = useState(false);
   return (
-    <div style={{ padding: "12px 16px", borderBottom: "1px solid #DCDCE1" }}>
+    <div style={{ padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 13, color: "#5B5B62" }}>{label}</span>
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{label}</span>
           <InfoIcon onClick={() => setShowInfo((s) => !s)} />
         </div>
-        <span style={{ fontSize: 15, color: "#1B1B1F", fontWeight: 700 }}>{value}</span>
+        <span style={{ fontSize: 15, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 700 }}>{value}</span>
       </div>
       {showInfo && (
-        <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, background: "#F0F0F3", fontSize: 12, color: "#5B5B62", lineHeight: 1.5 }}>
+        <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, background: darkMode ? DARK.bg : "#F0F0F3", fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", lineHeight: 1.5 }}>
           {explanation}
           {sourceUrl && (
             <div style={{ marginTop: 4 }}>
@@ -568,6 +583,8 @@ function StatRow({ label, value, explanation, sourceUrl }) {
 // clickable info explaining the calculation and citing real clinical
 // guidance where relevant (BASHH), not just internal app logic.
 function StatsScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+
   const encounters = useMemo(() => EncounterRepository.getAll(), []);
   const contacts = useMemo(() => ContactRepository.getAll(), []);
   const tests = useMemo(() => TestingRepository.getAll(), []);
@@ -591,37 +608,37 @@ function StatsScreen({ onClose }) {
   const maxContacts = Math.max(1, ...contactMonths.map((b) => b.count));
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: "#F0F0F3", borderBottom: "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#1B1B1F" }}>Stats</span>
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Stats</span>
       </div>
       <div style={{ padding: 16 }}>
 
         {/* Activity */}
         <div style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.encounters, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Encounter</div>
-        <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
-          <div style={{ padding: "12px 16px", borderBottom: "1px solid #DCDCE1" }}>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+          <div style={{ padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: "#5B5B62" }}>Encounters per month</span>
+              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Encounters per month</span>
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60 }}>
               {activityMonths.map((b) => (
                 <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                   <div style={{ width: "100%", height: `${Math.max(4, (b.count / maxActivity) * 44)}px`, background: ACCENTS.encounters, borderRadius: 3 }} />
-                  <span style={{ fontSize: 9, color: "#9A9AA1" }}>{b.label}</span>
+                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#9A9AA1" }}>{b.label}</span>
                 </div>
               ))}
             </div>
           </div>
           <div style={{ padding: "12px 16px" }}>
-            <div style={{ fontSize: 13, color: "#5B5B62", marginBottom: 8 }}>Top kinks/roles logged</div>
+            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>Top kinks/roles logged</div>
             {topKinks.length === 0 ? (
-              <div style={{ fontSize: 12, color: "#9A9AA1", fontStyle: "italic" }}>Nothing logged yet.</div>
+              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#9A9AA1", fontStyle: "italic" }}>Nothing logged yet.</div>
             ) : topKinks.map((k) => (
               <div key={k.name} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                <span style={{ fontSize: 13, color: "#1B1B1F" }}>{k.name}</span>
-                <span style={{ fontSize: 13, color: "#5B5B62", fontWeight: 600 }}>{k.count}</span>
+                <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{k.name}</span>
+                <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600 }}>{k.count}</span>
               </div>
             ))}
           </div>
@@ -629,7 +646,7 @@ function StatsScreen({ onClose }) {
 
         {/* Healthcare */}
         <div style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.healthcare, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Healthcare</div>
-        <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
           <StatRow label="Tests logged" value={testingStats.testCount}
             explanation="Total non-archived tests with a real (not future-scheduled) date." />
           <StatRow label="Average interval between tests"
@@ -643,7 +660,7 @@ function StatsScreen({ onClose }) {
 
         {/* Medication */}
         <div style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.medication, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Medication</div>
-        <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
           <StatRow label="Overall adherence (7-day)" value={adherence != null ? `${adherence}%` : "Not enough data"}
             explanation="Average of each daily/scheduled medication's own 7-day adherence rate (doses actually logged vs. doses expected). PRN medications aren't included — there's no fixed expected schedule to measure against." />
           <StatRow label="DoxyPEP compliance" value={doxyCompliance != null ? `${doxyCompliance}%` : "No DoxyPEP medication set up"}
@@ -652,16 +669,16 @@ function StatsScreen({ onClose }) {
 
         {/* Contacts */}
         <div style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.contacts, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Contacts</div>
-        <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: "#5B5B62" }}>Contacts added per month</span>
+              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Contacts added per month</span>
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60 }}>
               {contactMonths.map((b) => (
                 <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                   <div style={{ width: "100%", height: `${Math.max(4, (b.count / maxContacts) * 44)}px`, background: ACCENTS.contacts, borderRadius: 3 }} />
-                  <span style={{ fontSize: 9, color: "#9A9AA1" }}>{b.label}</span>
+                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#9A9AA1" }}>{b.label}</span>
                 </div>
               ))}
             </div>
@@ -690,6 +707,8 @@ function rgbToHex(r, g, b) {
 }
 
 function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onReset, label }) {
+  const [darkMode] = useDarkModePreference();
+
   const [expanded, setExpanded] = useState(false);
   const [hexDraft, setHexDraft] = useState(currentValue);
   const rgb = hexToRgb(currentValue) || { r: 0, g: 0, b: 0 };
@@ -704,33 +723,33 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
   };
 
   return (
-    <div style={{ borderBottom: "1px solid #DCDCE1" }}>
+    <div style={{ borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div onClick={() => setExpanded((e) => !e)} style={{ width: 16, height: 16, borderRadius: "50%", background: currentValue, border: "1px solid #DCDCE1", cursor: "pointer" }} />
-          <span style={{ fontSize: 14, color: "#1B1B1F", fontWeight: 500 }}>{label}</span>
-          {isOverridden && <span style={{ fontSize: 10, color: "#9A9AA1", fontStyle: "italic" }}>(customised)</span>}
+          <div onClick={() => setExpanded((e) => !e)} style={{ width: 16, height: 16, borderRadius: "50%", background: currentValue, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: "pointer" }} />
+          <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{label}</span>
+          {isOverridden && <span style={{ fontSize: 10, color: darkMode ? DARK.textDisabled : "#9A9AA1", fontStyle: "italic" }}>(customised)</span>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {isOverridden && (
-            <ResetIcon size={16} color="#9A9AA1" style={{ cursor: "pointer" }} onClick={onReset} title="Reset to default" />
+            <ResetIcon size={16} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ cursor: "pointer" }} onClick={onReset} title="Reset to default" />
           )}
           <input type="color" value={currentValue} onChange={(e) => onSetColor(colorKey, e.target.value)}
-            style={{ width: 36, height: 28, padding: 0, border: "1px solid #DCDCE1", borderRadius: 6, cursor: "pointer" }} />
+            style={{ width: 36, height: 28, padding: 0, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 6, cursor: "pointer" }} />
           <span onClick={() => setExpanded((e) => !e)} style={{ fontSize: 11, color: "#3D63C9", fontWeight: 600, cursor: "pointer" }}>{expanded ? "Hide" : "Hex/RGB"}</span>
         </div>
       </div>
       {expanded && (
         <div style={{ padding: "0 16px 14px" }}>
-          <div style={{ fontSize: 11, color: "#5B5B62", marginBottom: 4 }}>Hex</div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>Hex</div>
           <input value={hexDraft} onChange={(e) => commitHex(e.target.value)} placeholder="#RRGGBB"
-            style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #DCDCE1", fontFamily: "monospace", fontSize: 13, marginBottom: 10, boxSizing: "border-box" }} />
-          <div style={{ fontSize: 11, color: "#5B5B62", marginBottom: 4 }}>RGB</div>
+            style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontFamily: "monospace", fontSize: 13, marginBottom: 10, boxSizing: "border-box" }} />
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>RGB</div>
           <div style={{ display: "flex", gap: 8 }}>
             {["r", "g", "b"].map((channel) => (
               <input key={channel} type="number" min="0" max="255" value={rgb[channel]}
                 onChange={(e) => commitRgbChannel(channel, e.target.value)}
-                style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box" }} />
+                style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box" }} />
             ))}
           </div>
         </div>
@@ -780,33 +799,35 @@ const CALENDAR_MODULE_TARGETS = {
 // not decorative. GitHub link points at the actual repo so a real
 // build issue can be traced back to source.
 function AboutScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: "#F0F0F3", borderBottom: "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#1B1B1F" }}>About</span>
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>About</span>
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ textAlign: "center", padding: "24px 0" }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#1B1B1F", marginBottom: 4 }}>SHOS</div>
-          <div style={{ fontSize: 12, color: "#9A9AA1" }}>Sexual Health Operating System</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>SHOS</div>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#9A9AA1" }}>Sexual Health Operating System</div>
         </div>
-        <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #DCDCE1" }}>
-            <span style={{ fontSize: 13, color: "#5B5B62" }}>Version</span>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Version</span>
             {/* CHANGED — real ask: was hardcoded placeholder, now reads
                 the actual version from package.json rather than a
                 second, easy-to-forget copy of the same number. */}
-            <span style={{ fontSize: 13, color: "#1B1B1F", fontWeight: 600 }}>{APP_VERSION}</span>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600 }}>{APP_VERSION}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px" }}>
-            <span style={{ fontSize: 13, color: "#5B5B62" }}>Repository</span>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Repository</span>
             <a href="https://github.com/drwho2001/Claude-shos-v1" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#3D63C9", fontWeight: 600 }}>
               GitHub →
             </a>
           </div>
         </div>
-        <div style={{ fontSize: 11, color: "#9A9AA1", textAlign: "center", marginTop: 16 }}>
+        <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1", textAlign: "center", marginTop: 16 }}>
           Local-first — nothing here leaves this device unless you choose to export or share it.
         </div>
       </div>
@@ -815,6 +836,8 @@ function AboutScreen({ onClose }) {
 }
 
 function CalendarScreen({ onClose, onNavigateToRecord }) {
+  const [darkMode] = useDarkModePreference();
+
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [selectedDay, setSelectedDay] = useState(null);
   // ADDED 26 Aug 2026 — real ask: filters, standard on every other
@@ -856,18 +879,18 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: "#F0F0F3", borderBottom: "1px solid #DCDCE1", justifyContent: "space-between" }}>
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ChevronLeft size={22} color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onClose} />
-          <span style={{ fontSize: 16, fontWeight: 700, color: "#1B1B1F" }}>Calendar</span>
+          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+          <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Calendar</span>
         </div>
         <span onClick={() => setShowFilters((s) => !s)} style={{ fontSize: 12, fontWeight: 600, color: activeModules.length < ALL_MODULE_KEYS.length ? "#3D63C9" : "#5B5B62", cursor: "pointer" }}>
           Filter{activeModules.length < ALL_MODULE_KEYS.length ? ` (${activeModules.length})` : ""}
         </span>
       </div>
       {showFilters && (
-        <div style={{ padding: "10px 16px 0", display: "flex", flexWrap: "wrap", gap: 6, background: "#F0F0F3", borderBottom: "1px solid #DCDCE1", paddingBottom: 10 }}>
+        <div style={{ padding: "10px 16px 0", display: "flex", flexWrap: "wrap", gap: 6, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", paddingBottom: 10 }}>
           {ALL_MODULE_KEYS.map((key) => {
             const active = activeModules.includes(key);
             return (
@@ -882,13 +905,13 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
       )}
       <div style={{ padding: 16 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <ChevronLeft size={20} color="#1B1B1F" style={{ cursor: "pointer" }} onClick={() => { setCursor(new Date(year, month - 1, 1)); setSelectedDay(null); }} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#1B1B1F" }}>{cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</span>
-          <ChevronRight size={20} color="#1B1B1F" style={{ cursor: "pointer" }} onClick={() => { setCursor(new Date(year, month + 1, 1)); setSelectedDay(null); }} />
+          <ChevronLeft size={20} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={() => { setCursor(new Date(year, month - 1, 1)); setSelectedDay(null); }} />
+          <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</span>
+          <ChevronRight size={20} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={() => { setCursor(new Date(year, month + 1, 1)); setSelectedDay(null); }} />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
           {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-            <div key={i} style={{ textAlign: "center", fontSize: 11, color: "#9A9AA1", fontWeight: 700, padding: "4px 0" }}>{d}</div>
+            <div key={i} style={{ textAlign: "center", fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1", fontWeight: 700, padding: "4px 0" }}>{d}</div>
           ))}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
@@ -915,20 +938,20 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
 
         {selectedDay && (
           <div style={{ marginTop: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
               {new Date(year, month, selectedDay).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
             </div>
             {selectedEvents.length === 0 ? (
-              <div style={{ fontSize: 13, color: "#9A9AA1", fontStyle: "italic" }}>Nothing logged this day.</div>
+              <div style={{ fontSize: 13, color: darkMode ? DARK.textDisabled : "#9A9AA1", fontStyle: "italic" }}>Nothing logged this day.</div>
             ) : (
-              <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
+              <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
                 {selectedEvents.map((ev, i) => (
                   <div key={i} onClick={() => goToEvent(ev)}
                     style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: i < selectedEvents.length - 1 ? "1px solid #DCDCE1" : "none", cursor: "pointer" }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: ACCENTS[ev.moduleKey] || "#9A9AA1", flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, color: "#1B1B1F", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
-                      <div style={{ fontSize: 11, color: "#9A9AA1" }}>{TRASH_MODULE_LABELS[ev.moduleKey] || ev.moduleKey}</div>
+                      <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
+                      <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1" }}>{TRASH_MODULE_LABELS[ev.moduleKey] || ev.moduleKey}</div>
                     </div>
                   </div>
                 ))}
@@ -942,6 +965,8 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
 }
 
 function TrashScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+
   const [items, setItems] = useState(() => TrashRepository.getAll());
   const refresh = () => setItems(TrashRepository.getAll());
   // ADDED 26 Aug 2026 — real ask: 4 real actions (restore all/
@@ -990,11 +1015,11 @@ function TrashScreen({ onClose }) {
   const recordLabel = (entry) => entry.record.title || entry.record.name || entry.record.displayName || "Untitled";
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: "#F0F0F3", borderBottom: "1px solid #DCDCE1", justifyContent: "space-between" }}>
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ChevronLeft size={22} color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onClose} />
-          <span style={{ fontSize: 16, fontWeight: 700, color: "#1B1B1F" }}>Trash</span>
+          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+          <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Trash</span>
         </div>
         {items.length > 0 && (
           <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#3D63C9", cursor: "pointer" }}>
@@ -1013,11 +1038,11 @@ function TrashScreen({ onClose }) {
         </div>
       )}
       <div style={{ padding: 16 }}>
-        <div style={{ fontSize: 12, color: "#9A9AA1", marginBottom: 14 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#9A9AA1", marginBottom: 14 }}>
           Deleted items stay here for 30 days before they're no longer shown. This is separate from the "tap to undo" that appears right after deleting something.
         </div>
         {items.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 20px", color: "#9A9AA1", fontSize: 13 }}>Nothing in the trash.</div>
+          <div style={{ textAlign: "center", padding: "40px 20px", color: darkMode ? DARK.textDisabled : "#9A9AA1", fontSize: 13 }}>Nothing in the trash.</div>
         ) : (
           <>
             {/* ADDED 26 Aug 2026 — real ask: "restore all" and "delete
@@ -1030,7 +1055,7 @@ function TrashScreen({ onClose }) {
                 <span onClick={deleteAll} style={{ fontSize: 13, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Delete all</span>
               </div>
             )}
-            <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
+            <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
               {items.map((entry, i) => (
                 <div key={entry.trashId} onClick={() => selectMode && toggleSelected(entry.trashId)}
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: i < items.length - 1 ? "1px solid #DCDCE1" : "none", cursor: selectMode ? "pointer" : "default" }}>
@@ -1041,8 +1066,8 @@ function TrashScreen({ onClose }) {
                       </div>
                     )}
                     <div style={{ minWidth: 0, flex: 1, paddingRight: 10 }}>
-                      <div style={{ fontSize: 13, color: "#1B1B1F", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recordLabel(entry)}</div>
-                      <div style={{ fontSize: 11, color: "#9A9AA1", marginTop: 2 }}>{TRASH_MODULE_LABELS[entry.moduleKey] || entry.moduleKey} · deleted {new Date(entry.deletedAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</div>
+                      <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recordLabel(entry)}</div>
+                      <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1", marginTop: 2 }}>{TRASH_MODULE_LABELS[entry.moduleKey] || entry.moduleKey} · deleted {new Date(entry.deletedAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</div>
                     </div>
                   </div>
                   {!selectMode && (
@@ -1087,10 +1112,10 @@ function DesignScreen({ onClose }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: "#F0F0F3", borderBottom: "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#1B1B1F" }}>Colour scheme</span>
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Colour scheme</span>
       </div>
       <div style={{ padding: 16 }}>
         {changed && (
@@ -1110,17 +1135,17 @@ function DesignScreen({ onClose }) {
             </button>
           </div>
         )}
-        <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
-            <span style={{ fontSize: 14, color: "#1B1B1F", fontWeight: 500 }}>Dark mode</span>
+            <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>Dark mode</span>
             <div onClick={() => setDarkMode((d) => !d)}
               style={{ width: 44, height: 26, borderRadius: 999, background: darkMode ? "#1B1B1F" : "#DCDCE1", position: "relative", cursor: "pointer", transition: "background 0.15s" }}>
-              <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", position: "absolute", top: 3, left: darkMode ? 21 : 3, transition: "left 0.15s" }} />
+              <div style={{ width: 20, height: 20, borderRadius: "50%", background: darkMode ? DARK.surface : "#FFFFFF", position: "absolute", top: 3, left: darkMode ? 21 : 3, transition: "left 0.15s" }} />
             </div>
           </div>
         </div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Module colours</div>
-        <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Module colours</div>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
           {CUSTOMIZABLE_MODULE_KEYS.map((key) => {
             const isOverridden = key in overrides;
             const currentValue = overrides[key] || ACCENTS[key];
@@ -1131,7 +1156,7 @@ function DesignScreen({ onClose }) {
           })}
         </div>
         {Object.keys(overrides).length > 0 && (
-          <div onClick={resetAll} style={{ marginTop: 14, fontSize: 13, color: "#5B5B62", textDecoration: "underline", cursor: "pointer", textAlign: "center" }}>
+          <div onClick={resetAll} style={{ marginTop: 14, fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", textDecoration: "underline", cursor: "pointer", textAlign: "center" }}>
             Reset all to defaults
           </div>
         )}
@@ -1158,6 +1183,8 @@ function DesignScreen({ onClose }) {
 // all real by the time they were added, so nothing here is currently
 // faked) — just correcting a factual claim that time overtook.
 function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateToRecord, initialScreen, registerModuleBackHandler }) {
+  const [darkMode] = useDarkModePreference();
+
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showSelectiveExport, setShowSelectiveExport] = useState(false);
   const [showDevTools, setShowDevTools] = useState(false);
@@ -1207,30 +1234,30 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // Settings row that shares this component.
   const SettingsRow = ({ icon: Icon, label, onClick, disabled, iconColor = "#5B5B62" }) => (
     <div onClick={disabled ? undefined : onClick}
-      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid #DCDCE1", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 }}>
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <Icon size={17} weight={iconColor !== "#5B5B62" ? "bold" : "regular"} color={iconColor} />
-        <span style={{ fontSize: 14, color: "#1B1B1F", fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{label}</span>
       </div>
-      {!disabled && <ChevronRight size={16} color="#9A9AA1" />}
-      {disabled && <span style={{ fontSize: 11, color: "#9A9AA1", fontStyle: "italic" }}>Not built yet</span>}
+      {!disabled && <ChevronRight size={16} color={darkMode ? DARK.textDisabled : "#9A9AA1"} />}
+      {disabled && <span style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1", fontStyle: "italic" }}>Not built yet</span>}
     </div>
   );
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px", position: "sticky", top: 0, background: "#F0F0F3", borderBottom: "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#1B1B1F" }}>Settings</span>
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px", position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Settings</span>
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "16px 16px 6px" }}>Profile</div>
-      <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 20px", overflow: "hidden" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "16px 16px 6px" }}>Profile</div>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 20px", overflow: "hidden" }}>
         <SettingsRow icon={User} label="My Profile" onClick={() => setShowMyProfile(true)} />
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Data</div>
-      <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 8px", overflow: "hidden" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Data</div>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* CHANGED — real bug found in the user's own testing: passing
             `exportBackup` directly meant the DOM click's SyntheticEvent
             got passed as `includeKeys`, which buildBackup() then tried
@@ -1251,11 +1278,11 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <SettingsRow icon={Download} label="Restore from backup" onClick={onImportClick} iconColor="#1B1B1F" />
       </div>
       {status && (
-        <div style={{ margin: "0 16px 20px", padding: "10px 14px", borderRadius: 12, background: "#FFF4CE", color: "#1B1B1F", fontSize: 12 }}>{status}</div>
+        <div style={{ margin: "0 16px 20px", padding: "10px 14px", borderRadius: 12, background: "#FFF4CE", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 12 }}>{status}</div>
       )}
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Advanced</div>
-      <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 8px", overflow: "hidden" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Advanced</div>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* CHANGED 19 Aug 2026 — Developer tools is now real (storage
             overview + reset), moved out of the "Not built yet" group
             below. */}
@@ -1277,15 +1304,15 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <SettingsRow icon={SettingsIcon} label="Preferences" onClick={() => setShowPreferences(true)} />
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Design</div>
-      <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 20px", overflow: "hidden" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Design</div>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 20px", overflow: "hidden" }}>
         {/* CHANGED 26 Aug 2026 — real ask: was a disabled "Not built
             yet" stub, now a real, working section. */}
         <SettingsRow icon={Palette} label="Colour scheme" onClick={() => setShowDesign(true)} />
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Insights</div>
-      <div style={{ background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 20px", overflow: "hidden" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Insights</div>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 20px", overflow: "hidden" }}>
         {/* ADDED 26 Aug 2026 — real ask: Stats page. */}
         <SettingsRow icon={Database} label="Stats" onClick={() => setShowStats(true)} />
         {/* ADDED 26 Aug 2026 — real ask: calendar view. */}

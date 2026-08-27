@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, XIcon as X, PillIcon as Pill, ArrowCircleRightIcon as ArrowRightCircle, ClipboardTextIcon as ClipboardList, CalendarIcon as CalendarClock, TestTubeIcon as TestTube, SyringeIcon as Syringe, CalendarCheckIcon as CalendarCheck, MapPinIcon as MapPin, PlayCircleIcon as PlayCircle, TagIcon as Tag, HeartIcon as Heart } from "@phosphor-icons/react";
 import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } from "../repositories/customOptionListsRepository";
 
+import { useDarkModePreference } from "../calculations/darkModePreference";
+import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // ADDED 19 Aug 2026 — maps OPTION_LIST_ICONS' string names to the real
 // lucide components. Kept as a lookup table (not a giant switch) so
 // adding a 17th category later is one line here, matching the same
@@ -14,14 +16,15 @@ import { NEUTRAL, ACCENTS, ACTION } from "../calculations/designTokens";
 
 const ICON_COMPONENTS = { Pill, ArrowRightCircle, ClipboardList, CalendarClock, TestTube, Syringe, CalendarCheck, MapPin, PlayCircle, Tag, Heart };
 
-const T = { ...NEUTRAL };
-
 // ADDED 19 Aug 2026 — the "idiot-proof" editor the user asked for, for the
 // simple flat option lists (see customOptionListsRepository.js for the
 // full reasoning on scope and safety). ONE generic screen reused for
 // every category — same "shared component once a shape repeats" rule
 // already applied to SHOS_RegistryManagement_Prototype.jsx.
 function OptionListDetail({ listName, onClose }) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : NEUTRAL;
+
   const [refreshKey, setRefreshKey] = useState(0);
   const [addingValue, setAddingValue] = useState("");
   const [editingIndex, setEditingIndex] = useState(null);
@@ -108,6 +111,9 @@ function OptionListDetail({ listName, onClose }) {
 }
 
 export default function OptionListsScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : NEUTRAL;
+
   const [open, setOpen] = useState(null);
   const listNames = CustomOptionListsRepository.getAllListNames();
 

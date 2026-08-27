@@ -7,7 +7,8 @@
 // motion — every line of actual behavior below is unchanged from what
 // was working in App.jsx; only the file it lives in has changed.
 import React, { useState, useEffect } from "react";
-import { NEUTRAL, ACCENTS, ACTION, FONT_FAMILY, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS } from "../calculations/designTokens";
+import { useDarkModePreference } from "../calculations/darkModePreference";
 import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack } from "@phosphor-icons/react";
 import { TestingRepository } from "../repositories/testingRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
@@ -54,7 +55,9 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // design tokens (designTokens.js) rather than its own hand-typed
   // hex values — the actual start of "standardise UI/appearance",
   // not a promise of it.
-  const T = { healthcareBlue: ACCENTS.healthcare, border: NEUTRAL.border, textSecondary: NEUTRAL.textSecondary, surface: NEUTRAL.surface, bg: NEUTRAL.bg };
+  const [darkMode] = useDarkModePreference();
+  const N = darkMode ? NEUTRAL_DARK : NEUTRAL;
+  const T = { healthcareBlue: ACCENTS.healthcare, border: N.border, textSecondary: N.textSecondary, surface: N.surface, bg: N.bg };
 
   // ADDED — real ask: Healthcare was "bland vs Home/Medication" —
   // checked and found the actual reason wasn't styling, it was that
@@ -130,7 +133,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         </div>
         {/* CHANGED 26 Aug 2026 — real ask: moved below the Timeline/
             Attachments/Clinic Card shortcuts, was above them before. */}
-        <div style={{ display: "flex", background: "#FFFFFF", border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: "14px 8px", margin: "14px 0" }}>
+        <div style={{ display: "flex", background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: "14px 8px", margin: "14px 0" }}>
           <SummaryStat label="Active symptoms" value={summary.activeSymptoms} alert />
           <SummaryStat label="Overdue vaccinations" value={summary.overdueVaccinations} alert />
           <SummaryStat label="Tests this year" value={summary.testsThisYear} />

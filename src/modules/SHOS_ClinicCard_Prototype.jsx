@@ -17,11 +17,16 @@ import { VaccinationRepository } from "../repositories/vaccinationRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, ACCENTS, ACTION } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION } from "../calculations/designTokens";
+import { useDarkModePreference } from "../calculations/darkModePreference";
 
-const T = {
+const LIGHT = {
   ...NEUTRAL,
   healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red,
+};
+const DARK = {
+  ...NEUTRAL_DARK,
+  healthcareBlue: ACCENTS.healthcare, actionRed: "#FF7A7E",
 };
 
 // ADDED 19 Aug 2026 — Clinic Card. Real feature set built out over
@@ -59,7 +64,7 @@ function loadMedicationsWithLogs() {
 // immediately (no confirmation — you're not leaving a specific record
 // behind, just choosing where to go). Record taps go through a real
 // confirmation step first, via the shared pendingNav state below.
-function SectionHeader({ children, onTap }) {
+function SectionHeader({ children, onTap, T }) {
   return (
     <div onClick={onTap} style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, padding: "16px 16px 6px", cursor: onTap ? "pointer" : "default", display: "flex", alignItems: "center", gap: 4 }}>
       {children}
@@ -75,7 +80,7 @@ function SectionHeader({ children, onTap }) {
 // its own click zone that only toggles this section's visibility, so
 // the two real interactions (navigate vs collapse) don't fight over
 // the same tap target.
-function CollapsibleSectionHeader({ children, onTap, count, collapsed, onToggleCollapse }) {
+function CollapsibleSectionHeader({ children, onTap, count, collapsed, onToggleCollapse, T }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 6px" }}>
       <div onClick={onTap} style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, cursor: onTap ? "pointer" : "default", display: "flex", alignItems: "center", gap: 4 }}>
@@ -90,11 +95,11 @@ function CollapsibleSectionHeader({ children, onTap, count, collapsed, onToggleC
   );
 }
 
-function SectionCard({ children }) {
+function SectionCard({ children, T }) {
   return <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, margin: "0 16px", overflow: "hidden" }}>{children}</div>;
 }
 
-function Row({ dot, title, subtitle, alert, color, onTap }) {
+function Row({ dot, title, subtitle, alert, color, onTap, T }) {
   return (
     <div onClick={onTap} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${T.border}`, cursor: onTap ? "pointer" : "default" }}>
       <span style={{ width: 9, height: 9, borderRadius: 999, background: alert ? T.actionRed : (color || T.healthcareBlue), flexShrink: 0 }} />
@@ -106,11 +111,11 @@ function Row({ dot, title, subtitle, alert, color, onTap }) {
   );
 }
 
-function EmptyRow({ children }) {
+function EmptyRow({ children, T }) {
   return <div style={{ padding: "14px", fontSize: 13, color: T.textDisabled }}>{children}</div>;
 }
 
-function StubRow({ children }) {
+function StubRow({ children, T }) {
   return (
     <div style={{ display: "flex", gap: 8, padding: "14px", alignItems: "flex-start" }}>
       <AlertTriangle size={14} color={T.textDisabled} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -120,6 +125,8 @@ function StubRow({ children }) {
 }
 
 export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickAddWithPrefill }) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : LIGHT;
   const meds = useMemo(() => loadMedicationsWithLogs(), []);
   const tests = useMemo(() => sortByDateDesc(TestingRepository.getAll().filter((t) => !t.isArchived)), []);
   const encounters = useMemo(() => sortByDateDesc(EncounterRepository.getAll()), []);
@@ -286,8 +293,8 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           nowhere else these belong. */}
       {visibility.identity && (
         <>
-      <SectionHeader>Identity</SectionHeader>
-      <SectionCard>
+      <SectionHeader T={T}>Identity</SectionHeader>
+      <SectionCard T={T}>
         {editingIdentity ? (
           <div style={{ padding: 14 }}>
             {[
@@ -312,13 +319,13 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           <div onClick={openIdentityEdit} style={{ cursor: "pointer" }}>
             {profile.dateOfBirth || profile.clinicNumber || profile.address || profile.nhsNumber ? (
               <>
-                {profile.dateOfBirth && <Row title="Date of birth" subtitle={profile.dateOfBirth} />}
-                {profile.clinicNumber && <Row title="Clinic number" subtitle={profile.clinicNumber} />}
-                {profile.address && <Row title="Address" subtitle={profile.address} />}
-                {profile.nhsNumber && <Row title="NHS number" subtitle={profile.nhsNumber} />}
+                {profile.dateOfBirth && <Row T={T} title="Date of birth" subtitle={profile.dateOfBirth} />}
+                {profile.clinicNumber && <Row T={T} title="Clinic number" subtitle={profile.clinicNumber} />}
+                {profile.address && <Row T={T} title="Address" subtitle={profile.address} />}
+                {profile.nhsNumber && <Row T={T} title="NHS number" subtitle={profile.nhsNumber} />}
               </>
             ) : (
-              <EmptyRow>Tap to add date of birth, clinic number, address, or NHS number.</EmptyRow>
+              <EmptyRow T={T}>Tap to add date of birth, clinic number, address, or NHS number.</EmptyRow>
             )}
           </div>
         )}
@@ -329,10 +336,10 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.medications && (
         <>
-      <CollapsibleSectionHeader onTap={() => goTo("medication")} count={meds.length} collapsed={collapsed.medications} onToggleCollapse={() => toggleCollapsed("medications")}>Current medications</CollapsibleSectionHeader>
+      <CollapsibleSectionHeader T={T} onTap={() => goTo("medication")} count={meds.length} collapsed={collapsed.medications} onToggleCollapse={() => toggleCollapsed("medications")}>Current medications</CollapsibleSectionHeader>
       {!collapsed.medications && (
-        <SectionCard>
-          {meds.length === 0 ? <EmptyRow>No active medications logged.</EmptyRow> : meds.map((m) => {
+        <SectionCard T={T}>
+          {meds.length === 0 ? <EmptyRow T={T}>No active medications logged.</EmptyRow> : meds.map((m) => {
             const stock = computeStock(m);
             // ADDED — real ask: "customising of fields, IE default
             // dosage amount shown (IE sertraline 100mg)... medications
@@ -343,7 +350,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
             const lastDose = m.logs.filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
             const subtitleParts = [m.medicationType, m.route].filter(Boolean);
             if (lastDose) subtitleParts.push(`last taken ${formatRelativeDate(lastDose.date)}`);
-            return <Row key={m.id} title={doseLabel} subtitle={subtitleParts.join(" · ")} alert={stock.tracked && stock.needsAction} color={ACCENTS.medication} onTap={() => setPendingNav({ tab: "medication", recordId: m.id, label: m.name, moduleLabel: "Medication" })} />;
+            return <Row T={T} key={m.id} title={doseLabel} subtitle={subtitleParts.join(" · ")} alert={stock.tracked && stock.needsAction} color={ACCENTS.medication} onTap={() => setPendingNav({ tab: "medication", recordId: m.id, label: m.name, moduleLabel: "Medication" })} />;
           })}
         </SectionCard>
       )}
@@ -352,10 +359,10 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.allergies && (
         <>
-      <SectionHeader>Allergies</SectionHeader>
-      <SectionCard>
+      <SectionHeader T={T}>Allergies</SectionHeader>
+      <SectionCard T={T}>
         {profile.allergies.length === 0 ? (
-          <EmptyRow>None recorded. Add these under My Profile → Clinical & emergency info.</EmptyRow>
+          <EmptyRow T={T}>None recorded. Add these under My Profile → Clinical & emergency info.</EmptyRow>
         ) : (
           <div style={{ padding: "12px 14px", display: "flex", flexWrap: "wrap", gap: 6 }}>
             {profile.allergies.map((a) => (
@@ -370,14 +377,14 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.vaccinations && (
         <>
-      <CollapsibleSectionHeader onTap={() => goTo("healthcare", "vaccinations")} count={vaccinations.length} collapsed={collapsed.vaccinations} onToggleCollapse={() => toggleCollapsed("vaccinations")}>Vaccinations</CollapsibleSectionHeader>
+      <CollapsibleSectionHeader T={T} onTap={() => goTo("healthcare", "vaccinations")} count={vaccinations.length} collapsed={collapsed.vaccinations} onToggleCollapse={() => toggleCollapsed("vaccinations")}>Vaccinations</CollapsibleSectionHeader>
       {!collapsed.vaccinations && (
-        <SectionCard>
+        <SectionCard T={T}>
           {vaccinations.length === 0 ? (
-            <EmptyRow>None recorded yet.</EmptyRow>
+            <EmptyRow T={T}>None recorded yet.</EmptyRow>
           ) : vaccinations.slice(0, 6).map((v) => {
             const overdue = overdueVaccinations.some((o) => o.id === v.id);
-            return <Row key={v.id} title={v.title || v.vaccine} subtitle={`${v.vaccine || ""}${v.nextDue ? ` · ${overdue ? "overdue since" : "next due"} ${formatRelativeDate(v.nextDue)}` : ""}`} alert={overdue} onTap={() => setPendingNav({ tab: "healthcare", subTab: "vaccinations", recordId: v.id, label: v.title || v.vaccine, moduleLabel: "Vaccinations" })} />;
+            return <Row T={T} key={v.id} title={v.title || v.vaccine} subtitle={`${v.vaccine || ""}${v.nextDue ? ` · ${overdue ? "overdue since" : "next due"} ${formatRelativeDate(v.nextDue)}` : ""}`} alert={overdue} onTap={() => setPendingNav({ tab: "healthcare", subTab: "vaccinations", recordId: v.id, label: v.title || v.vaccine, moduleLabel: "Vaccinations" })} />;
           })}
         </SectionCard>
       )}
@@ -386,10 +393,10 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.testing && (
         <>
-      <SectionHeader onTap={() => goTo("healthcare", "testing")}>Recent STI testing</SectionHeader>
-      <SectionCard>
-        {recentTests.length === 0 ? <EmptyRow>No tests logged yet.</EmptyRow> : recentTests.map((t) => (
-          <Row key={t.id} title={t.title} subtitle={t.subtitle} alert={t.alert} onTap={() => setPendingNav({ tab: "healthcare", subTab: "testing", recordId: t.id, label: t.title, moduleLabel: "Testing" })} />
+      <SectionHeader T={T} onTap={() => goTo("healthcare", "testing")}>Recent STI testing</SectionHeader>
+      <SectionCard T={T}>
+        {recentTests.length === 0 ? <EmptyRow T={T}>No tests logged yet.</EmptyRow> : recentTests.map((t) => (
+          <Row T={T} key={t.id} title={t.title} subtitle={t.subtitle} alert={t.alert} onTap={() => setPendingNav({ tab: "healthcare", subTab: "testing", recordId: t.id, label: t.title, moduleLabel: "Testing" })} />
         ))}
       </SectionCard>
 
@@ -398,10 +405,10 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.treatment && (
         <>
-      <SectionHeader onTap={() => goTo("healthcare", "testing")}>Current treatment</SectionHeader>
-      <SectionCard>
-        {currentTreatment.length === 0 ? <EmptyRow>Nothing currently awaiting follow-up.</EmptyRow> : currentTreatment.map((t) => (
-          <Row key={t.id} title={t.title} subtitle={t.subtitle} alert onTap={() => setPendingNav({ tab: "healthcare", subTab: "testing", recordId: t.id, label: t.title, moduleLabel: "Testing" })} />
+      <SectionHeader T={T} onTap={() => goTo("healthcare", "testing")}>Current treatment</SectionHeader>
+      <SectionCard T={T}>
+        {currentTreatment.length === 0 ? <EmptyRow T={T}>Nothing currently awaiting follow-up.</EmptyRow> : currentTreatment.map((t) => (
+          <Row T={T} key={t.id} title={t.title} subtitle={t.subtitle} alert onTap={() => setPendingNav({ tab: "healthcare", subTab: "testing", recordId: t.id, label: t.title, moduleLabel: "Testing" })} />
         ))}
       </SectionCard>
 
@@ -410,12 +417,12 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.symptoms && (
         <>
-      <SectionHeader onTap={() => goTo("healthcare", "symptomLog")}>Active symptoms</SectionHeader>
-      <SectionCard>
+      <SectionHeader T={T} onTap={() => goTo("healthcare", "symptomLog")}>Active symptoms</SectionHeader>
+      <SectionCard T={T}>
         {activeSymptoms.length === 0 ? (
-          <EmptyRow>Nothing active right now.</EmptyRow>
+          <EmptyRow T={T}>Nothing active right now.</EmptyRow>
         ) : activeSymptoms.map((s) => (
-          <Row key={s.id} title={s.title} subtitle={[nameFrom(SymptomsRegistry, s.symptomId), s.severity, formatRelativeDate(s.dateStarted), s.dateResolved ? `resolved ${formatRelativeDate(s.dateResolved)}` : null].filter(Boolean).join(" · ")} alert={s.severity === "Severe"} onTap={() => setPendingNav({ tab: "healthcare", subTab: "symptomLog", recordId: s.id, label: s.title, moduleLabel: "Symptom Log" })} />
+          <Row T={T} key={s.id} title={s.title} subtitle={[nameFrom(SymptomsRegistry, s.symptomId), s.severity, formatRelativeDate(s.dateStarted), s.dateResolved ? `resolved ${formatRelativeDate(s.dateResolved)}` : null].filter(Boolean).join(" · ")} alert={s.severity === "Severe"} onTap={() => setPendingNav({ tab: "healthcare", subTab: "symptomLog", recordId: s.id, label: s.title, moduleLabel: "Symptom Log" })} />
         ))}
       </SectionCard>
 
@@ -424,11 +431,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.encounters && (
         <>
-      <CollapsibleSectionHeader onTap={() => goTo("activity")} count={recentPartners.length} collapsed={collapsed.encounters} onToggleCollapse={() => toggleCollapsed("encounters")}>Recent encounters</CollapsibleSectionHeader>
+      <CollapsibleSectionHeader T={T} onTap={() => goTo("activity")} count={recentPartners.length} collapsed={collapsed.encounters} onToggleCollapse={() => toggleCollapsed("encounters")}>Recent encounters</CollapsibleSectionHeader>
       {!collapsed.encounters && (
-        <SectionCard>
-          {recentPartners.length === 0 ? <EmptyRow>No encounters logged yet.</EmptyRow> : recentPartners.map((p) => (
-            <Row key={p.id} title={p.title} subtitle={p.subtitle} color={ACCENTS.encounters} onTap={() => setPendingNav({ tab: "activity", recordId: p.id, label: p.title, moduleLabel: "Encounter" })} />
+        <SectionCard T={T}>
+          {recentPartners.length === 0 ? <EmptyRow T={T}>No encounters logged yet.</EmptyRow> : recentPartners.map((p) => (
+            <Row T={T} key={p.id} title={p.title} subtitle={p.subtitle} color={ACCENTS.encounters} onTap={() => setPendingNav({ tab: "activity", recordId: p.id, label: p.title, moduleLabel: "Encounter" })} />
           ))}
         </SectionCard>
       )}
@@ -437,16 +444,16 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
 
       {visibility.emergency && (
         <>
-      <SectionHeader>Emergency information</SectionHeader>
-      <SectionCard>
+      <SectionHeader T={T}>Emergency information</SectionHeader>
+      <SectionCard T={T}>
         {!profile.emergencyContactName && !profile.emergencyContactPhone && !profile.emergencyNotes ? (
-          <EmptyRow>None recorded. Add these under My Profile → Clinical & emergency info.</EmptyRow>
+          <EmptyRow T={T}>None recorded. Add these under My Profile → Clinical & emergency info.</EmptyRow>
         ) : (
           <>
             {(profile.emergencyContactName || profile.emergencyContactPhone) && (
-              <Row title={profile.emergencyContactName || "Emergency contact"} subtitle={profile.emergencyContactPhone} />
+              <Row T={T} title={profile.emergencyContactName || "Emergency contact"} subtitle={profile.emergencyContactPhone} />
             )}
-            {profile.emergencyNotes && <Row title={profile.emergencyNotes} />}
+            {profile.emergencyNotes && <Row T={T} title={profile.emergencyNotes} />}
           </>
         )}
       </SectionCard>
@@ -483,7 +490,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           <div style={{ padding: "8px 16px", fontSize: 12, color: T.textSecondary }}>
             Every section shows the most detail permitted by default — these only ever narrow what's shown, never add anything.
           </div>
-          <SectionCard>
+          <SectionCard T={T}>
             {CLINIC_CARD_SECTIONS.map((s) => (
               <div key={s.key} onClick={() => toggleSection(s.key)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: `1px solid ${T.border}`, cursor: "pointer" }}>
                 <span style={{ fontSize: 14, color: T.textPrimary }}>{s.label}</span>

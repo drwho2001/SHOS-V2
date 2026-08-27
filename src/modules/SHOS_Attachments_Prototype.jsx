@@ -5,12 +5,8 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, ACCENTS } from "../calculations/designTokens";
-
-const T = {
-  ...NEUTRAL,
-  healthcareBlue: ACCENTS.healthcare,
-};
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS } from "../calculations/designTokens";
+import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const TYPE_OPTIONS = ["Test result", "Prescription", "ID", "Photo", "Other"];
 
@@ -57,6 +53,8 @@ function isImage(dataUrl) {
 }
 
 export default function AttachmentsScreen({ onClose, onNavigateToSource }) {
+  const [darkMode] = useDarkModePreference();
+  const T = { ...(darkMode ? NEUTRAL_DARK : NEUTRAL), healthcareBlue: ACCENTS.healthcare };
   const [refreshKey, setRefreshKey] = useState(0);
   const [filterType, setFilterType] = useState("");
   const all = useMemo(() => loadAllAttachments(), [refreshKey]);

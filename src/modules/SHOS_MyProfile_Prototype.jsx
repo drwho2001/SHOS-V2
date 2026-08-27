@@ -45,12 +45,22 @@ import { ChemsRegistry, resolveChemSynonym } from "../registries/chemsRegistry";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const LIGHT = {
   ...NEUTRAL,
   contactsTeal: ACCENTS.contacts, actionRed: ACTION.red, actionGreen: ACTION.green,
   navActive: ACCENTS.contacts, fabBg: NEUTRAL.textPrimary, fabIcon: NEUTRAL.surface,
+};
+// Dark mode, on Medication's DARK basis — see Contacts' own comment
+// for the full reasoning. fabBg/fabIcon stay derived from the neutral
+// pair (not hardcoded) so the FAB keeps its inverted-contrast look in
+// both modes automatically — dark FAB on light bg, light FAB on dark bg.
+const DARK = {
+  ...NEUTRAL_DARK,
+  contactsTeal: ACCENTS.contacts, actionRed: "#FF7A7E", actionGreen: "#5FD9A4",
+  navActive: ACCENTS.contacts, fabBg: NEUTRAL_DARK.textPrimary, fabIcon: NEUTRAL_DARK.surface,
 };
 const radius = RADIUS;
 
@@ -875,7 +885,8 @@ export default function MyProfileModule({ onClose }) {
   // anymore, not just visually de-emphasized while still always
   // present.
   const [showShare, setShowShare] = useState(false);
-  const T = LIGHT;
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : LIGHT;
 
   const refresh = () => setProfile(MyProfileRepository.getProfile());
 

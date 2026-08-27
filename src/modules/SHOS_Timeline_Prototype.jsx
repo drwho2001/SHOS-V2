@@ -14,7 +14,8 @@ import { getEncounterCoverage } from "../calculations/exposureWindows";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // ADDED 19 Aug 2026 — Timeline (the nav-facing name; "Episode" is the
 // underlying data unit — see episodeRepository.js for the full
@@ -24,6 +25,12 @@ import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
 const LIGHT = {
   ...NEUTRAL,
   healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
+};
+// Dark mode, on Medication's DARK basis — see Contacts' own comment
+// for the full reasoning.
+const DARK = {
+  ...NEUTRAL_DARK,
+  healthcareBlue: ACCENTS.healthcare, actionRed: "#FF7A7E", actionGreen: "#5FD9A4",
 };
 const radius = RADIUS;
 
@@ -381,15 +388,17 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
 }
 
 export default function TimelineModule({ onClose } = {}) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : LIGHT;
   const [screen, setScreen] = useState({ name: "list" });
   const backToList = () => setScreen({ name: "list" });
   const startEpisode = (data) => { EpisodeRepository.create(data); backToList(); };
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: LIGHT.bg, minHeight: "100vh" }}>
-      {screen.name === "list" && <TimelineLanding T={LIGHT} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} onClose={onClose} />}
-      {screen.name === "detail" && <EpisodeDetail T={LIGHT} episodeId={screen.id} onBack={backToList} />}
-      {screen.name === "add" && <StartSheet T={LIGHT} onSave={startEpisode} onClose={backToList} />}
+      {screen.name === "list" && <TimelineLanding T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} onClose={onClose} />}
+      {screen.name === "detail" && <EpisodeDetail T={T} episodeId={screen.id} onBack={backToList} />}
+      {screen.name === "add" && <StartSheet T={T} onSave={startEpisode} onClose={backToList} />}
     </div>
   );
 }

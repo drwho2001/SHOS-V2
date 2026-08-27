@@ -43,6 +43,22 @@ export const NEUTRAL = {
   textDisabled: "#9A9AA1",
 };
 
+// Dark-mode counterpart, values matched to Medication's own hand-tuned
+// DARK object (the module dark mode was first built for) so every
+// module now adopting dark mode reads as one consistent system rather
+// than each picking its own near-black. Same roles as NEUTRAL above —
+// a module still supplies its own accent color per ACCENTS, this only
+// covers page bg / card surface / border / text.
+export const NEUTRAL_DARK = {
+  bg: "#121214",
+  surface: "#1C1C1F",
+  surfaceVariant: "#26262A",
+  border: "#3A3A3F",
+  textPrimary: "#F2F2F4",
+  textSecondary: "#B8B8BE",
+  textDisabled: "#6E6E74",
+};
+
 // Domain accent colors — one per module, the color that makes each
 // screen visually identifiable at a glance. Collected from what was
 // already actually in use across the app (not invented fresh) —

@@ -28,7 +28,8 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // ADDED 19 Aug 2026 — Healthcare blue (#4A80F0), per Doc 2's design
 // system exactly: "Healthcare & Clinical (blue — unified) ... Testing,
@@ -39,6 +40,13 @@ import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
 const LIGHT = {
   ...NEUTRAL,
   healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
+  navActive: ACCENTS.healthcare,
+};
+// Dark mode, on Medication's DARK basis — see Contacts' own comment
+// for the full reasoning (same pattern, reused everywhere).
+const DARK = {
+  ...NEUTRAL_DARK,
+  healthcareBlue: ACCENTS.healthcare, actionRed: "#FF7A7E", actionGreen: "#5FD9A4",
   navActive: ACCENTS.healthcare,
 };
 const radius = RADIUS;
@@ -813,7 +821,8 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
 // ── Top-level module ──
 export default function TestingModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, prefillData, onConsumedPrefill, onNavigateToRecord, registerModuleBackHandler } = {}) {
   const [screen, setScreen] = useState({ name: "landing" });
-  const T = LIGHT;
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : LIGHT;
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // TestingLanding (see that component's own comment) — tests/
   // deletedRecent/undoDelete/triggerDelete now live at the real module

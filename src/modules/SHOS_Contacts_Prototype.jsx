@@ -61,11 +61,22 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const LIGHT = {
   ...NEUTRAL,
   contactsTeal: ACCENTS.contacts, actionRed: ACTION.red, actionGreen: ACTION.green,
+  navActive: ACCENTS.contacts, fabBg: ACCENTS.contacts, fabIcon: "#FFFFFF",
+};
+// Dark mode, built on Medication's own DARK object (the reference
+// implementation) — neutral chrome inverts via NEUTRAL_DARK,
+// actionRed/actionGreen reuse Medication's exact brightened values
+// (its own comment: richer, still readable against a dark surface).
+// contactsTeal is already vivid enough to read fine unchanged.
+const DARK = {
+  ...NEUTRAL_DARK,
+  contactsTeal: ACCENTS.contacts, actionRed: "#FF7A7E", actionGreen: "#5FD9A4",
   navActive: ACCENTS.contacts, fabBg: ACCENTS.contacts, fabIcon: "#FFFFFF",
 };
 const radius = RADIUS;
@@ -2052,7 +2063,8 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
   // from here now (see the header icons in ContactsList above).
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showImportProfile, setShowImportProfile] = useState(false);
-  const T = LIGHT;
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : LIGHT;
   // CHANGED 26 Aug 2026 — real gap found and fixed: this used to live
   // only inside ContactsList (bulk delete), so a single-record delete
   // from ContactProfile wrote to Trash but showed no undo toast at
