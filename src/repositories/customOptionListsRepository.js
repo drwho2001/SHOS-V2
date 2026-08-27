@@ -1,0 +1,200 @@
+// customOptionListsRepository.js
+//
+// PLAIN-LANGUAGE PURPOSE
+// -----------------------
+// The user's real ask: the ability to add/rename/reorder simple option
+// values (medication types, reasons for visit, vaccines, etc.) from
+// inside the app itself, without needing a code change — the same
+// capability the six Registries (Kink/Chems/Protection/Symptoms/
+// Organism/Results) already give him for those, extended to the
+// simpler flat-string option lists used elsewhere.
+//
+// WHY THIS IS SAFE ACROSS FUTURE APP UPDATES, stated plainly since
+// The user asked directly: stored data lives in the browser's own storage,
+// completely separate from this source code. Rewriting this file in a
+// future session only changes what NEW installs seed with — it never
+// touches what's already stored on the user's own device. The merge below
+// (`{ ...SEED_LISTS, ...stored }`) means: a list the user has never
+// touched still picks up any future seed update automatically (e.g. if
+// a future session adds a new editable category); a list the user HAS
+// edited always keeps his version, permanently, regardless of what the
+// seed says. STANDING RULE for any future session touching this file:
+// never rename STORAGE_KEY or any key inside SEED_LISTS — either would
+// orphan the user's own stored edits with no warning.
+//
+// WHY THIS IS A SEPARATE, SIMPLER MECHANISM THAN THE REGISTRIES
+// (simpleRegistry.js): Registry entries are real objects with their
+// own ID, referenced BY ID from other records, with a genuine "how
+// many places use this" usage count. These option lists are just
+// plain strings used directly as values — nothing else in the app
+// holds a reference to "medication type entry #3", it just stores the
+// string "Injection" wherever that field lives. Building the heavier
+// ID/usage-tracking machinery for something that doesn't need it would
+// be real over-engineering, not thoroughness.
+//
+// DELIBERATELY NOT INCLUDED — Testing's "Testing for?" and "Setting"
+// lists. Testing for? is read by exact string match inside
+// exposureWindows.js's exposure-window flagging (e.g. `"HIV"`,
+// `"Chlamydia"`) — a typo or rename here would silently break real
+// clinical-timing logic, not just cosmetic display. Setting is checked
+// by exact match for the Home-test "Tracking info" field's visibility.
+// The user's own read was that this category is unlikely to need new
+// values and the downside of getting it wrong is real — agreed, left
+// fixed rather than editable.
+import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
+// ADDED — real find during the design-unification audit: every one of
+// these 7 option lists is real Healthcare-domain data, all still
+// hardcoded to the old pre-Tier-1 blue (#4A80F0). Same class of stale
+// value already fixed in Medication/Settings/Contacts/OptionListEditor
+// — this file is plain constants (no React dependency), safe to pull
+// the real shared token in directly.
+import { ACCENTS } from "../calculations/designTokens.js";
+
+const STORAGE_KEY = "shos_custom_option_lists";
+
+const SEED_LISTS = {
+  medicationType: ["Pill/Tablet", "Capsule", "Injection", "Cream/Gel", "Patch", "Liquid", "Other"],
+  route: ["Oral", "IM - Gluteal", "IM - Deltoid", "SubQ", "Injection"],
+  reasonForVisit: ["Symptoms", "Doxy refill", "Routine screening", "PrEP review", "Vaccination", "Treatment", "Other"],
+  followUpType: ["TOC", "Routine", "Other", "None"],
+  sampleType: ["Blood", "Urine", "Throat swab", "Rectal swab", "Vaginal/front hole swab"],
+  // CHANGED 26 Aug 2026 — real ask: removed "Other" — the Vaccine
+  // field is already real free text with auto-save-as-suggestion
+  // (see VaccineField in the Vaccinations module), so a literal
+  // "Other" chip just set the vaccine name to the word "Other",
+  // which is meaningless. Typing anything not in this list already
+  // does what "Other" was trying to do.
+  vaccine: ["Hepatitis A", "Hepatitis B", "HPV", "Mpox", "Gonorrhoea"],
+  vaccinationReason: ["Routine", "Occupational", "High-risk status", "Booster"],
+  injectionSite: ["Deltoid", "Gluteal", "Other"],
+  episodeTriggerReason: ["Partner notification", "Symptom-driven", "Medication-driven", "Routine testing", "Other"],
+  // ADDED 19 Aug 2026 — real gap: Medicines Registry's own Category
+  // field (Anti-RetroViral (ARV)/Antibiotic/Vaccine/Pain relief/
+  // Supplement/IBS/Antidepressant/Other), fetched live from Notion
+  // this session, never ported to the app until now. Multi-select in
+  // Notion, so stays multi-select here too.
+  medicationCategory: ["Anti-RetroViral (ARV)", "Antibiotic", "Vaccine", "Pain relief", "Supplement", "IBS", "Antidepressant", "Other"],
+  // ADDED 26 Aug 2026 — real ask: Relationship type (Contacts) should
+  // be user-editable, not a fixed list. Same exact option strings as
+  // the old hardcoded RELATIONSHIP_TYPE_OPTIONS in contactRepository.js
+  // — existing contacts' stored values still match, nothing breaks.
+  relationshipType: ["Hookup", "Fuck buddy (casual)", "Friend with Benefit (chill)", "Partner"],
+};
+
+// Friendly labels for the editor screen — separate from the storage
+// key names above so the internal names can stay stable even if the
+// display wording changes later.
+export const OPTION_LIST_LABELS = {
+  medicationType: "Medication type",
+  route: "Route",
+  reasonForVisit: "Reason for visit",
+  followUpType: "Follow-up type",
+  sampleType: "Sample type",
+  vaccine: "Vaccine",
+  vaccinationReason: "Vaccination reason",
+  injectionSite: "Injection site",
+  episodeTriggerReason: "Timeline trigger reason",
+  medicationCategory: "Medication category",
+  relationshipType: "Relationship type",
+};
+
+// ADDED 19 Aug 2026 — real ask: same icon+color treatment as the
+// Registries screen, applied here too — every editable option
+// category, not just half of them. Icon NAMES only (strings), not
+// components — this file has no reason to import a UI library, the
+// consuming screen (SHOS_OptionListEditor_Prototype.jsx) maps these
+// strings to real lucide components. Colors reuse each category's own
+// natural domain color already established elsewhere in this app
+// (medsBlue for Medication-domain lists, healthcareBlue for
+// Healthcare-domain ones, encountersPink for Clinic-Visit-adjacent
+// Reason-for-visit) rather than inventing new arbitrary colors.
+export const OPTION_LIST_ICONS = {
+  medicationType: { icon: "Pill", color: "#3D63C9" },
+  route: { icon: "ArrowRightCircle", color: "#3D63C9" },
+  reasonForVisit: { icon: "ClipboardList", color: ACCENTS.healthcare },
+  followUpType: { icon: "CalendarClock", color: ACCENTS.healthcare },
+  sampleType: { icon: "TestTube", color: ACCENTS.healthcare },
+  vaccine: { icon: "Syringe", color: ACCENTS.healthcare },
+  vaccinationReason: { icon: "CalendarCheck", color: ACCENTS.healthcare },
+  injectionSite: { icon: "MapPin", color: ACCENTS.healthcare },
+  episodeTriggerReason: { icon: "PlayCircle", color: ACCENTS.healthcare },
+  medicationCategory: { icon: "Tag", color: "#3D63C9" },
+  relationshipType: { icon: "Heart", color: ACCENTS.contacts },
+};
+
+let lists = { ...SEED_LISTS, ...storage.load(STORAGE_KEY, {}) };
+function persist() { storage.save(STORAGE_KEY, lists); }
+
+export const CustomOptionListsRepository = {
+  get(name) {
+    return [...(lists[name] || SEED_LISTS[name] || [])];
+  },
+
+  getAllListNames() {
+    return Object.keys(SEED_LISTS);
+  },
+
+  add(name, value) {
+    const trimmed = (value || "").trim();
+    const current = this.get(name);
+    if (!trimmed || current.includes(trimmed)) return current;
+    lists = { ...lists, [name]: [...current, trimmed] };
+    persist();
+    return lists[name];
+  },
+
+  rename(name, oldValue, newValue) {
+    const trimmed = (newValue || "").trim();
+    const current = this.get(name);
+    if (!trimmed) return current;
+    lists = { ...lists, [name]: current.map((v) => (v === oldValue ? trimmed : v)) };
+    persist();
+    return lists[name];
+  },
+
+  remove(name, value) {
+    const current = this.get(name);
+    lists = { ...lists, [name]: current.filter((v) => v !== value) };
+    persist();
+    return lists[name];
+  },
+
+  reorder(name, newOrder) {
+    lists = { ...lists, [name]: newOrder };
+    persist();
+    return lists[name];
+  },
+
+  // For backupService.js — one bundled object, all lists together,
+  // rather than one storage key per list. Matches the same "combine
+  // data updated together" guidance used elsewhere in this project.
+  getAllForBackup() {
+    return { ...lists };
+  },
+
+  replaceAll(newLists) {
+    lists = { ...SEED_LISTS, ...newLists };
+    persist();
+  },
+};
+
+// ADDED — real fix, caught before it could silently fail: a seed-list
+// edit alone isn't actually guaranteed to reach an existing device.
+// `persist()` (above) saves the WHOLE merged `lists` object every time
+// ANY list is touched via add()/replace() — so if even one unrelated
+// list (e.g. Vaccine) was ever edited, that snapshot already froze
+// every OTHER list, including this one, at whatever it was at that
+// moment. Same real, explicit one-time migration pattern already used
+// for PEP (Protection Registry) and the Kink Registry expansion —
+// `add()` itself is idempotent (checks for an existing value first),
+// so this is genuinely safe to run even if the value's already there.
+const SAMPLE_TYPE_MIGRATION_FLAG = "shos_sampletype_vaginal_added_v1";
+try {
+  if (typeof localStorage !== "undefined" && !localStorage.getItem(SAMPLE_TYPE_MIGRATION_FLAG)) {
+    CustomOptionListsRepository.add("sampleType", "Vaginal/front hole swab");
+    localStorage.setItem(SAMPLE_TYPE_MIGRATION_FLAG, "true");
+  }
+} catch {
+  // Same "never let a background convenience break the app" reasoning
+  // as every other real-device migration this session.
+}

@@ -1,0 +1,326 @@
+// backupService.js
+//
+// PLAIN-LANGUAGE PURPOSE
+// -----------------------
+// This is the "download everything as a file" / "load a file back in"
+// feature — Doc 5 §7 called this out from the start ("Backup/restore:
+// versioned JSON snapshot of the full local dataset"). It doesn't store
+// anything itself; it just asks every repository for a full copy of its
+// data, bundles it into one file, and — for restore — hands a parsed
+// file back to each repository to load in.
+//
+// This file is the ONLY place that needs to change if a new module
+// (Encounters, Testing, etc.) gets added later — add one line to gather
+// its data, one line to restore it. Nothing else in the app needs to
+// know backup/restore exists.
+
+import { ContactRepository } from "../repositories/contactRepository.js";
+// ADDED 19 Aug 2026 — needed directly (not through a repository) for
+// the backup-reminder timestamp, which isn't really "a module's data",
+// just app-usage tracking.
+import { localStorageAdapter as storage } from "./storageAdapter.js";
+import { MedicationRepository } from "../repositories/medicationRepository.js";
+import { LogRepository } from "../repositories/logRepository.js";
+import { EncounterRepository } from "../repositories/encounterRepository.js";
+import { KinkRegistry } from "../registries/kinkRegistry.js";
+import { ChemsRegistry } from "../registries/chemsRegistry.js";
+import { ProtectionRegistry } from "../registries/protectionRegistry.js";
+import { SymptomsRegistry } from "../registries/symptomsRegistry.js";
+import { LocationsRepository } from "../repositories/locationsRepository.js";
+// Added 18 Aug 2026, same session as My Profile's build: the user confirmed
+// a full backup should also snapshot "My Profile" state at that point
+// in time — this was the one open question flagged when My Profile
+// shipped. MyProfileRepository is a SINGLETON (one record, not a list)
+// so it doesn't fit the getAll()/replaceAll(array) shape every other
+// module here uses — handled as a single object under data.myProfile,
+// with its own type checks below rather than Array.isArray().
+import { MyProfileRepository } from "../repositories/myProfileRepository.js";
+// ADDED 19 Aug 2026 — Testing (and its two supporting registries)
+// existed for a full session before this fix — a backup taken in that
+// window would have silently excluded all test data with no warning.
+// Caught during a direct audit, not assumed complete.
+import { TestingRepository } from "../repositories/testingRepository.js";
+import { OrganismRegistry } from "../registries/organismRegistry.js";
+import { ResultsRegistry } from "../registries/resultsRegistry.js";
+// ADDED 19 Aug 2026, same session Clinic Visits was built — added
+// immediately, not after the fact this time, having just caught Testing
+// missing from here for a full session.
+import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository.js";
+// ADDED 19 Aug 2026, same session Symptom Log was built — added
+// immediately, not after the fact, having caught Testing missing from
+// here for a full session and Clinic Visits' own near-miss earlier.
+import { SymptomLogRepository } from "../repositories/symptomLogRepository.js";
+import { VaccinationRepository } from "../repositories/vaccinationRepository.js";
+import { EpisodeRepository } from "../repositories/episodeRepository.js";
+import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository.js";
+// ADDED 19 Aug 2026 — real gap found: PrivacySettingsRepository (PIN,
+// Anonymise mode, hide-further preference) was never wired into backup
+// at all. A real data-loss risk on restore/device-migration — the user's
+// PIN and preference would silently vanish, not just be reset to
+// default. Fixed by adding it here, same pattern as every other
+// repository.
+import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository.js";
+
+// Doc 5 §8: "Every export/backup file stamps: schema version, migration
+// version, app version." Schema version bumps only when a backup file's
+// own SHAPE changes in a way old code couldn't read (e.g. a field
+// renamed) — not every time a new field is added.
+const SCHEMA_VERSION = 1;
+const APP_VERSION = "0.1.0-prototype";
+
+// ADDED 19 Aug 2026 — real ask from the ~90-item feedback batch:
+// "selective export — default is export everything, but Healthcare/
+// Contacts/Encounters (and individual items within each) should be
+// optionally deselectable." This is the single canonical grouping the
+// Settings UI renders checkboxes from — same "one place changes for a
+// new module" philosophy as the rest of this file: adding a module
+// here is the only step needed to make it selectively exportable too.
+// Groups mirror the app's own primary-nav/Doc-1 shape (Contacts /
+// Activity / Medication / Healthcare), plus two groups Doc 1 doesn't
+// name as their own nav destinations but that are real, separately
+// meaningful data: the five registries (Kink/Chems/Protection/
+// Symptoms/Locations) as one group, and My Profile as its own —
+// mirrors "individual items within each" for Healthcare and Medication
+// specifically, where more than one real data key exists per group.
+export const EXPORT_GROUPS = [
+  { key: "contacts", label: "Contacts", items: [{ dataKey: "contacts", label: "Contacts" }] },
+  { key: "activity", label: "Encounter", items: [{ dataKey: "encounters", label: "Encounters" }] },
+  { key: "medication", label: "Medication", items: [
+    { dataKey: "medications", label: "Medications" },
+    { dataKey: "logs", label: "Dose / refill / waste log" },
+  ] },
+  { key: "healthcare", label: "Healthcare", items: [
+    { dataKey: "tests", label: "Tests" },
+    { dataKey: "clinicVisits", label: "Clinic Visits" },
+    { dataKey: "symptomLog", label: "Symptom Log" },
+    { dataKey: "vaccinations", label: "Vaccinations" },
+    { dataKey: "episodes", label: "Timeline episodes" },
+    { dataKey: "organisms", label: "Organism Registry" },
+    { dataKey: "results", label: "Results Registry" },
+  ] },
+  { key: "registries", label: "Kink / Chems / Protection / Symptoms / Locations", items: [
+    { dataKey: "kinks", label: "Kink Registry" },
+    { dataKey: "chems", label: "Chems Registry" },
+    { dataKey: "protection", label: "Protection Registry" },
+    { dataKey: "symptoms", label: "Symptoms Registry" },
+    { dataKey: "locations", label: "Locations" },
+  ] },
+  { key: "profile", label: "My Profile", items: [{ dataKey: "myProfile", label: "My Profile" }] },
+  // ADDED 19 Aug 2026 — real fix: customOptionLists had been sitting
+  // under "Healthcare" by mistake — it spans every domain (Medication
+  // type, Route, Reason for visit, etc.), not just Healthcare. Moved
+  // here into its own real group alongside Privacy Settings, which was
+  // simply never wired into backup at all until now (see the import
+  // comment above for the full reasoning).
+  { key: "appSettings", label: "App settings", items: [
+    { dataKey: "customOptionLists", label: "Custom option lists (your own added/renamed options)" },
+    { dataKey: "privacySettings", label: "Privacy settings (Anonymise mode PIN + preference)" },
+  ] },
+];
+
+// Pure data assembly — no browser APIs touched here, so this part is
+// fully testable outside a real browser (and was).
+//
+// CHANGED 19 Aug 2026 — accepts an optional `includeKeys` (a Set or
+// array of the `dataKey` values above). Omitted/null = full export,
+// unchanged default behavior for every existing caller (Settings'
+// plain "Export backup" button, and both restore paths, which never
+// pass this argument at all). When provided, only those data keys are
+// gathered — every repository is still called through its existing
+// getAll()/getProfile(), nothing about how data is READ changes, only
+// which of the results get bundled into the file.
+export function buildBackup(includeKeys = null) {
+  const allData = {
+    contacts: ContactRepository.getAll(),
+    medications: MedicationRepository.getAll(),
+    logs: LogRepository.getAll(),
+    encounters: EncounterRepository.getAll(),
+    kinks: KinkRegistry.getAll(),
+    chems: ChemsRegistry.getAll(),
+    protection: ProtectionRegistry.getAll(),
+    symptoms: SymptomsRegistry.getAll(),
+    locations: LocationsRepository.getAll(),
+    myProfile: MyProfileRepository.getProfile(),
+    tests: TestingRepository.getAll(),
+    organisms: OrganismRegistry.getAll(),
+    results: ResultsRegistry.getAll(),
+    clinicVisits: ClinicVisitsRepository.getAll(),
+    symptomLog: SymptomLogRepository.getAll(),
+    vaccinations: VaccinationRepository.getAll(),
+    episodes: EpisodeRepository.getAll(),
+    customOptionLists: CustomOptionListsRepository.getAllForBackup(),
+    privacySettings: PrivacySettingsRepository.getSettings(),
+  };
+  const keySet = includeKeys ? new Set(includeKeys) : null;
+  const data = keySet
+    ? Object.fromEntries(Object.entries(allData).filter(([k]) => keySet.has(k)))
+    : allData;
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    appVersion: APP_VERSION,
+    exportedAt: new Date().toISOString(),
+    // Stamped so a partial export is honestly distinguishable from a
+    // full backup at a glance (e.g. if someone finds the file later
+    // and wonders why restoring it didn't bring everything back) —
+    // restoreBackup() itself doesn't need this flag, since its
+    // existing Array.isArray()-per-key checks already no-op cleanly
+    // on any key that's simply absent from the file.
+    ...(keySet ? { selective: true } : {}),
+    data,
+  };
+}
+
+// Parses and sanity-checks a backup file's text content. Throws a
+// plain-language error if the file doesn't look right, rather than
+// silently importing garbage or a cryptic JSON parse error.
+export function parseBackupFile(jsonText) {
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch {
+    throw new Error("That file isn't valid — it doesn't look like a SHOS backup.");
+  }
+  if (!parsed || typeof parsed !== "object" || !parsed.data) {
+    throw new Error("That file doesn't look like a SHOS backup file.");
+  }
+  if (typeof parsed.schemaVersion === "number" && parsed.schemaVersion > SCHEMA_VERSION) {
+    throw new Error("This backup was made with a newer version of SHOS than this app understands. Update the app before restoring it.");
+  }
+  return parsed;
+}
+
+// Restores a parsed backup — replaces ALL current data with what's in
+// the file. Deliberately all-or-nothing per module (no partial merge),
+// since merging is a much harder problem (what happens when the same
+// contact was edited in both places?) that isn't needed yet for a
+// single-device, single-user app.
+export function restoreBackup(parsedBackup) {
+  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, customOptionLists, privacySettings } = parsedBackup.data;
+  if (Array.isArray(contacts)) ContactRepository.replaceAll(contacts);
+  if (Array.isArray(medications)) MedicationRepository.replaceAll(medications);
+  if (Array.isArray(logs)) LogRepository.replaceAll(logs);
+  if (Array.isArray(encounters)) EncounterRepository.replaceAll(encounters);
+  if (Array.isArray(kinks)) KinkRegistry.replaceAll(kinks);
+  if (Array.isArray(chems)) ChemsRegistry.replaceAll(chems);
+  if (Array.isArray(protection)) ProtectionRegistry.replaceAll(protection);
+  if (Array.isArray(symptoms)) SymptomsRegistry.replaceAll(symptoms);
+  if (Array.isArray(locations)) LocationsRepository.replaceAll(locations);
+  // ADDED 19 Aug 2026 — old backups (before this fix) simply won't have
+  // these keys, same graceful no-op pattern as myProfile below.
+  if (Array.isArray(tests)) TestingRepository.replaceAll(tests);
+  if (Array.isArray(organisms)) OrganismRegistry.replaceAll(organisms);
+  if (Array.isArray(results)) ResultsRegistry.replaceAll(results);
+  if (Array.isArray(clinicVisits)) ClinicVisitsRepository.replaceAll(clinicVisits);
+  if (Array.isArray(symptomLog)) SymptomLogRepository.replaceAll(symptomLog);
+  if (Array.isArray(vaccinations)) VaccinationRepository.replaceAll(vaccinations);
+  if (Array.isArray(episodes)) EpisodeRepository.replaceAll(episodes);
+  if (customOptionLists && typeof customOptionLists === "object") CustomOptionListsRepository.replaceAll(customOptionLists);
+  if (privacySettings && typeof privacySettings === "object") PrivacySettingsRepository.update(privacySettings);
+  // Not Array.isArray — MyProfile is a singleton object, not a list.
+  // Older backup files (from before 18 Aug 2026) simply won't have a
+  // myProfile key at all, so this quietly no-ops on those rather than
+  // erroring — restoring an old backup still works, it just leaves
+  // whatever profile is already there untouched.
+  if (myProfile && typeof myProfile === "object" && !Array.isArray(myProfile)) {
+    MyProfileRepository.replaceAll(myProfile);
+  }
+}
+
+// ---------------------------------------------------------------------
+// Browser-facing helpers — these DO touch browser-only APIs (Blob,
+// document, FileReader), so they can't be exercised in a plain Node
+// test the way the functions above were. Confirmed logically correct
+// by testing buildBackup/parseBackupFile/restoreBackup directly; the
+// actual "does a file download, does picking a file work" needs a real
+// browser (StackBlitz) to confirm — flagging that plainly rather than
+// claiming more than was actually checked.
+// ---------------------------------------------------------------------
+
+// ADDED 19 Aug 2026 — real ask: a reminder if it's been a while since
+// the last real export. Tracks a single timestamp, updated every time
+// exportBackup() actually runs — no separate "mark as backed up"
+// step, so it can never drift out of sync with reality.
+const LAST_BACKUP_KEY = "shos_last_backup_at";
+export const BACKUP_REMINDER_DAYS = 30;
+
+export function getLastBackupInfo() {
+  const lastAt = storage.load(LAST_BACKUP_KEY, null);
+  if (!lastAt) return { lastAt: null, daysSince: null, dueForReminder: true };
+  const daysSince = Math.floor((Date.now() - new Date(lastAt).getTime()) / 86400000);
+  return { lastAt, daysSince, dueForReminder: daysSince >= BACKUP_REMINDER_DAYS };
+}
+
+// ADDED 26 Aug 2026 — real ask: "warn if not exported backup since
+// last modification" (for the new delete-all-data confirmation).
+// HONEST LIMIT: most repositories only stamp `createdAt` on creation,
+// not `updatedAt` on every edit (confirmed by checking
+// contactRepository.js directly, not assumed) — so this reliably
+// catches new records and logged activity (dose logs, encounters,
+// tests, etc. all have real dates), but a pure edit to an existing
+// record's fields with no new record created (e.g. correcting a
+// contact's phone number) won't be caught. Reuses buildBackup()'s own
+// reads rather than a second, separately-maintained list of every
+// repository — if a new data type is ever added to backups, this
+// check picks it up automatically too.
+export function hasUnbackedChanges() {
+  const info = getLastBackupInfo();
+  if (!info.lastAt) return true; // never backed up at all
+  const lastBackupTime = new Date(info.lastAt).getTime();
+  const { data } = buildBackup(null);
+  for (const [moduleKey, value] of Object.entries(data)) {
+    const records = Array.isArray(value) ? value : [value];
+    for (const record of records) {
+      // CHANGED 26 Aug 2026 — real ask: Contacts' updatedAt is
+      // deliberately excluded here — per the user's own clarification,
+      // editing a Contact's profile isn't the same thing as a logged
+      // encounter, so it shouldn't trigger this warning the way a new
+      // Test or Activity genuinely should. createdAt (a brand new
+      // contact) still counts.
+      const stamp = moduleKey === "contacts"
+        ? (record?.createdAt || record?.date)
+        : (record?.createdAt || record?.date || record?.updatedAt);
+      if (stamp && new Date(stamp).getTime() > lastBackupTime) return true;
+    }
+  }
+  return false;
+}
+
+export function exportBackup(includeKeys = null) {
+  const backup = buildBackup(includeKeys);
+  const json = JSON.stringify(backup, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const dateStamp = new Date().toISOString().slice(0, 10);
+  const suffix = includeKeys ? "-selective" : "";
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `shos-backup-${dateStamp}${suffix}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  // Only a FULL export counts as "properly backed up" for reminder
+  // purposes — a selective export deliberately leaves things out, so
+  // it shouldn't reset the clock on a reminder meant to catch "you
+  // have no real safety net right now".
+  if (!includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+}
+
+// Takes a File object (from an <input type="file"> picker), reads it,
+// and restores it. onDone/onError are simple callbacks so the calling
+// UI can show a success message or an error without this file needing
+// to know anything about React.
+export function importBackupFromFile(file, onDone, onError) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = parseBackupFile(reader.result);
+      restoreBackup(parsed);
+      onDone?.(parsed);
+    } catch (err) {
+      onError?.(err);
+    }
+  };
+  reader.onerror = () => onError?.(new Error("Couldn't read that file."));
+  reader.readAsText(file);
+}

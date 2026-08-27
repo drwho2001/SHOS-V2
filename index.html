@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SHOS</title>
+    <!-- Loaded once, globally, instead of per-module @import — every
+         screen used to load its own copy of this (or none at all, which
+         is why some screens rendered in the browser's default font
+         instead of Public Sans/JetBrains Mono depending on which screen
+         mounted first). See designTokens.js for the rest of the shared
+         design-token migration this belongs to. -->
+    <!-- CHANGED — real Tier 1 decision: Inter, replacing Public Sans.
+         Keeping JetBrains Mono for data/monospace displays — that's a
+         separate concern GPT's review didn't touch. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
