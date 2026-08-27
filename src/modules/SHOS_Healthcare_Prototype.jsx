@@ -73,9 +73,12 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // dataVersion is bumped by SymptomLogModule via onDataChanged
   // whenever it actually writes to the repository (create, edit,
   // undo, or redo), so this recomputes immediately instead.
-  // NOTE: overdueVaccinations/testsThisYear have the same latent
-  // staleness risk from Vaccinations/Testing edits — not wired yet,
-  // flagged here rather than silently left implicit.
+  // UPDATED — TestingModule and VaccinationsModule now call the same
+  // onDataChanged on create/edit, closing the same staleness gap for
+  // "Tests this year" and "Overdue vaccinations". Matches the
+  // established scope exactly: like SymptomLog, delete/undo/redo
+  // aren't wired to this — a genuinely rare edit path, not worth the
+  // extra plumbing this pass.
   const [dataVersion, setDataVersion] = useState(0);
   useEffect(() => {
     const symptoms = SymptomLogRepository.getAll().filter((s) => !s.dateResolved).length;
@@ -140,13 +143,13 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         </div>
       </div>
       {subTab === "testing" ? (
-        <TestingModule openAddOnMount={openAddOnMount && quickAddTarget === "testing"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId || pendingTestId} onConsumedRecordOpen={() => { onConsumedRecordOpen?.(); setPendingTestId(null); }} prefillData={prefillData} onConsumedPrefill={onConsumedPrefill} onNavigateToRecord={onNavigateToRecord} registerModuleBackHandler={registerModuleBackHandler} />
+        <TestingModule openAddOnMount={openAddOnMount && quickAddTarget === "testing"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId || pendingTestId} onConsumedRecordOpen={() => { onConsumedRecordOpen?.(); setPendingTestId(null); }} prefillData={prefillData} onConsumedPrefill={onConsumedPrefill} onNavigateToRecord={onNavigateToRecord} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       ) : subTab === "clinicVisits" ? (
         <ClinicVisitsModule openAddOnMount={openAddOnMount && quickAddTarget === "clinicVisits"} onConsumedQuickAdd={onConsumedQuickAdd} onOpenTest={(testId) => { setSubTab("testing"); setPendingTestId(testId); }} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} prefillData={prefillData} onConsumedPrefill={onConsumedPrefill} registerModuleBackHandler={registerModuleBackHandler} />
       ) : subTab === "symptomLog" ? (
         <SymptomLogModule openAddOnMount={openAddOnMount && quickAddTarget === "symptomLog"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       ) : (
-        <VaccinationsModule openAddOnMount={openAddOnMount && quickAddTarget === "vaccinations"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} />
+        <VaccinationsModule openAddOnMount={openAddOnMount && quickAddTarget === "vaccinations"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       )}
       {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={onNavigateToRecord} onQuickAddWithPrefill={onQuickAddWithPrefill} />}
       {showAttachments && (

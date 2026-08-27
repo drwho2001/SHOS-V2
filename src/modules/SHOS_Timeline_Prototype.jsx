@@ -395,7 +395,7 @@ export default function TimelineModule({ onClose } = {}) {
   const startEpisode = (data) => { EpisodeRepository.create(data); backToList(); };
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: LIGHT.bg, minHeight: "100vh" }}>
+    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh" }}>
       {screen.name === "list" && <TimelineLanding T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} onClose={onClose} />}
       {screen.name === "detail" && <EpisodeDetail T={T} episodeId={screen.id} onBack={backToList} />}
       {screen.name === "add" && <StartSheet T={T} onSave={startEpisode} onClose={backToList} />}

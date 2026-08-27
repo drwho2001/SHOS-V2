@@ -453,7 +453,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
   );
 }
 
-export default function VaccinationsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, registerModuleBackHandler } = {}) {
+export default function VaccinationsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler } = {}) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
   const [screen, setScreen] = useState({ name: "list" });
@@ -523,11 +523,12 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
     return () => registerModuleBackHandler(null);
   }, [screen, registerModuleBackHandler]);
 
-  const createVaccination = (data) => { VaccinationRepository.create(data); backToList(); };
+  const createVaccination = (data) => { VaccinationRepository.create(data); onDataChanged?.(); backToList(); };
   const saveVaccination = (data) => {
     editUndo.captureBeforeEdit(screen.id);
     VaccinationRepository.update(screen.id, data);
     editUndo.notifyEdited(screen.id);
+    onDataChanged?.();
     setScreen({ name: "detail", id: screen.id });
   };
 
@@ -536,7 +537,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   else if (screen.name === "detail") content = <VaccinationDetail T={T} vaccinationId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} />;
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: LIGHT.bg, minHeight: "100vh" }}>
+    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh" }}>
       {/* ADDED 19 Aug 2026 — real undo/redo toast, same pattern as
           every other module. */}
       {editUndo.toast && (

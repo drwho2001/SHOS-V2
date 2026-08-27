@@ -819,7 +819,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
 }
 
 // ── Top-level module ──
-export default function TestingModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, prefillData, onConsumedPrefill, onNavigateToRecord, registerModuleBackHandler } = {}) {
+export default function TestingModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, prefillData, onConsumedPrefill, onNavigateToRecord, onDataChanged, registerModuleBackHandler } = {}) {
   const [screen, setScreen] = useState({ name: "landing" });
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
@@ -920,7 +920,7 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
     screenContent = (
       <TestEditSheet T={T} testId={screen.id} prefillData={!screen.id ? addPrefill : null}
         onClose={() => setScreen(screen.id ? { name: "detail", id: screen.id } : { name: "landing" })}
-        onSaved={(id) => setScreen({ name: "detail", id })}
+        onSaved={(id) => { onDataChanged?.(); setScreen({ name: "detail", id }); }}
         onBeforeEdit={editUndo.captureBeforeEdit}
         onAfterEdit={editUndo.notifyEdited}
         onNavigateToRecord={onNavigateToRecord} />
