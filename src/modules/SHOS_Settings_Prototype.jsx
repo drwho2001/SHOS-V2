@@ -23,6 +23,7 @@ import {
   PillIcon as Pill, GearIcon as SettingsIcon, ShieldIcon as Shield,
   StethoscopeIcon as Stethoscope, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User,
   TagIcon as Palette, ArrowUUpLeftIcon as ResetIcon, CalendarIcon as Calendar,
+  FileCsvIcon as FileCsv,
 } from "@phosphor-icons/react";
 import { ACCENTS, ACTION } from "../calculations/designTokens";
 import { ModuleColorRepository, CUSTOMIZABLE_MODULE_KEYS } from "../repositories/moduleColorRepository";
@@ -34,6 +35,7 @@ import {
 } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { exportBackup, importBackupFromFile, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
+import { exportRecordsAsCSV } from "../storage/csvExportService";
 import { localStorageAdapter } from "../storage/storageAdapter";
 import { computeKinkUsage, computeChemsUsage, computeProtectionUsage, computeSymptomsUsage, computeOrganismUsage, computeResultsUsage } from "../calculations/registryUsage";
 import { ContactRepository } from "../repositories/contactRepository";
@@ -129,6 +131,59 @@ function SelectiveExportSheet({ onClose, onExported }) {
             style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: checked.size === 0 ? "#9A9AA1" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: checked.size === 0 ? "default" : "pointer" }}>
             {checked.size === allKeys.length ? "Export everything" : `Export selected (${checked.size} of ${allKeys.length})`}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ADDED — real ask: "CSV next". Reuses EXPORT_GROUPS' own grouping
+// (same source of truth as Selective export above) but excludes the
+// two groups that aren't lists of records — My Profile (a singleton)
+// and App settings (custom option lists / privacy settings, which are
+// simple key-value config, not spreadsheet-shaped data). Deliberately
+// one tap = one CSV file, not a multi-select like Selective export:
+// each record type has a genuinely different column shape, so there's
+// no single sensible "combined" CSV to build toward.
+const CSV_EXPORT_GROUPS = EXPORT_GROUPS.filter((g) => g.key !== "profile" && g.key !== "appSettings");
+
+function CSVExportSheet({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+  const [status, setStatus] = useState(null);
+
+  const doExport = async (item) => {
+    setStatus({ dataKey: item.dataKey, msg: "Exporting…", ok: null });
+    try {
+      await exportRecordsAsCSV(item.dataKey, item.label);
+      setStatus({ dataKey: item.dataKey, msg: `${item.label} exported.`, ok: true });
+    } catch (err) {
+      setStatus({ dataKey: item.dataKey, msg: err.message, ok: false });
+    }
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 220 }} onClick={onClose}>
+      <div style={{ background: darkMode ? DARK.bg : "#F0F0F3", width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ padding: "20px 20px 4px", flexShrink: 0 }}>
+          <span style={{ fontWeight: 600, fontSize: 16, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Export as CSV</span>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 4 }}>Pick one record type — spreadsheet-readable (Excel, Sheets), for reading elsewhere, not for restoring into SHOS itself (use a backup for that).</div>
+        </div>
+        <div style={{ overflowY: "auto", padding: "8px 20px 20px", flex: 1 }}>
+          {CSV_EXPORT_GROUPS.map((group) => (
+            <div key={group.key} style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, marginBottom: 10, overflow: "hidden" }}>
+              <div style={{ padding: "12px 14px 6px", fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5 }}>{group.label}</div>
+              {group.items.map((item) => (
+                <div key={item.dataKey} onClick={() => doExport(item)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 14px", cursor: "pointer", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+                  <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{item.label}</span>
+                  {status?.dataKey === item.dataKey ? (
+                    <span style={{ fontSize: 11, color: status.ok === false ? ACTION.red : status.ok ? ACTION.green : (darkMode ? DARK.textDisabled : "#9A9AA1") }}>{status.msg}</span>
+                  ) : (
+                    <FileCsv size={16} color={darkMode ? DARK.textDisabled : "#9A9AA1"} />
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -1187,6 +1242,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
 
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showSelectiveExport, setShowSelectiveExport] = useState(false);
+  const [showCSVExport, setShowCSVExport] = useState(false);
   const [showDevTools, setShowDevTools] = useState(false);
   const [showRegistries, setShowRegistries] = useState(false);
   const [showOptionLists, setShowOptionLists] = useState(false);
@@ -1221,11 +1277,12 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showRegistries) { setShowRegistries(false); return true; }
       if (showDevTools) { setShowDevTools(false); return true; }
       if (showSelectiveExport) { setShowSelectiveExport(false); return true; }
+      if (showCSVExport) { setShowCSVExport(false); return true; }
       if (showMyProfile) { setShowMyProfile(false); return true; }
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showOptionLists, showRegistries, showDevTools, showSelectiveExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showOptionLists, showRegistries, showDevTools, showSelectiveExport, showCSVExport, showMyProfile, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.
@@ -1275,6 +1332,11 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             Export (data leaving) reads as Upload, Restore (data coming
             back in) reads as Download. */}
         <SettingsRow icon={Upload} label="Selective export…" onClick={() => setShowSelectiveExport(true)} iconColor="#1B1B1F" />
+        {/* ADDED — real ask: CSV export, for reading data elsewhere
+            (Excel/Sheets), separate from the JSON backup above (which
+            is for restoring into SHOS, not for opening as a
+            spreadsheet). */}
+        <SettingsRow icon={FileCsv} label="Export as CSV…" onClick={() => setShowCSVExport(true)} iconColor="#1B1B1F" />
         <SettingsRow icon={Download} label="Restore from backup" onClick={onImportClick} iconColor="#1B1B1F" />
       </div>
       {status && (
@@ -1330,6 +1392,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showSelectiveExport && (
         <SelectiveExportSheet onClose={() => setShowSelectiveExport(false)} />
+      )}
+      {showCSVExport && (
+        <CSVExportSheet onClose={() => setShowCSVExport(false)} />
       )}
       {showDevTools && (
         <DeveloperToolsScreen onClose={() => setShowDevTools(false)} />
