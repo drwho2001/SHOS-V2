@@ -1,5 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, CalendarIcon as Calendar, ArrowsClockwiseIcon as RefreshCcw, XIcon as X } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, CalendarIcon as Calendar, ArrowsClockwiseIcon as RefreshCcw, XIcon as X, CrosshairIcon as Crosshair } from "@phosphor-icons/react";
+// ADDED — real ask: "use current location" on Clinic Visits, the last
+// of the three modules with a location-ish field (Contacts/Encounters
+// already have it) — same Nominatim reverse-geocode service, no second
+// provider introduced.
+import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString, nowAsDateTimeLocalString } from "../calculations/dateInputHelpers";
 import {
@@ -257,9 +262,36 @@ function getKnownClinicVisitLocations() {
 function ClinicVisitLocationField({ value, onChange, T }) {
   const known = useMemo(() => getKnownClinicVisitLocations(), []);
   const visibleSuggestions = known.filter((l) => l !== value).slice(0, 8);
+  // ADDED — real ask: "use current location", same pattern as
+  // Encounters' own RegistrySinglePicker locate button — this field is
+  // just a plain string (see the comment above getKnownClinicVisitLocations
+  // for why it's not a full Locations Repository relation), so a
+  // located place just calls onChange(name) directly, no registry
+  // findOrCreate() needed.
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState("");
+  const useCurrentLocation = async () => {
+    setLocating(true);
+    setLocateError("");
+    try {
+      const place = await getCurrentLocationPlace();
+      onChange(summarizePlaceName(place));
+    } catch (err) {
+      setLocateError(err.message);
+    } finally {
+      setLocating(false);
+    }
+  };
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Location (optional)</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <div style={{ fontSize: 12, color: T.textSecondary }}>Location (optional)</div>
+        <span onClick={locating ? undefined : useCurrentLocation}
+          style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: locating ? "default" : "pointer", opacity: locating ? 0.6 : 1 }}>
+          <Crosshair size={12} weight="bold" /> {locating ? "Locating…" : "Use current location"}
+        </span>
+      </div>
+      {locateError && <div style={{ fontSize: 11, color: T.actionRed, marginBottom: 4 }}>{locateError}</div>}
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((l) => (
