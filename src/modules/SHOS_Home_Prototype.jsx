@@ -38,6 +38,7 @@ import { formatDoxyPepCountdown } from "../calculations/doxyPepCalculations";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { requestNotificationPermission } from "../storage/notificationService";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
+import { syncTestingReminder } from "../calculations/testingReminderSync";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
@@ -99,6 +100,16 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // app open, so this is where "catch up on current state" belongs.
   useEffect(() => {
     syncMedicationReminders();
+  }, []);
+
+  // ADDED — real ask: proactive "due for retest" notification. Same
+  // "Home mounts fresh on every app open, so this is where catch-up
+  // belongs" reasoning as DoxyPEP/medication reminders above — this
+  // recomputes the due date from real Test records and (re)schedules
+  // the native reminder if one's needed. Also re-synced right after a
+  // test is saved — see SHOS_Testing_Prototype.jsx's own comment.
+  useEffect(() => {
+    syncTestingReminder();
   }, []);
 
   useEffect(() => {

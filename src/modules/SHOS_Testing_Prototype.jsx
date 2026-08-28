@@ -21,6 +21,9 @@ import { ResultsRegistry } from "../registries/resultsRegistry";
 // One real direction of a two-way link with no UI at all.
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { suggestedRoutineRetestDate } from "../calculations/testingCalculations";
+// ADDED — real ask: proactive "due for retest" notification, built on
+// top of suggestedRoutineRetestDate's already-real calculation above.
+import { syncTestingReminder } from "../calculations/testingReminderSync";
 // ADDED 19 Aug 2026 — draft autosave, same pattern as every other
 // edit sheet this round. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
@@ -1010,7 +1013,7 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
     screenContent = (
       <TestEditSheet T={T} testId={screen.id} prefillData={!screen.id ? addPrefill : null}
         onClose={() => setScreen(screen.id ? { name: "detail", id: screen.id } : { name: "landing" })}
-        onSaved={(id) => { onDataChanged?.(); setScreen({ name: "detail", id }); }}
+        onSaved={(id) => { onDataChanged?.(); syncTestingReminder(); setScreen({ name: "detail", id }); }}
         onBeforeEdit={editUndo.captureBeforeEdit}
         onAfterEdit={editUndo.notifyEdited}
         onNavigateToRecord={onNavigateToRecord} />

@@ -42,6 +42,11 @@
 export const NOTIFICATION_IDS = {
   doxyPepAlert: 9001,
   medicationReminder: 9002,
+  // ADDED — real ask: proactive "due for retest" reminder, same fixed-
+  // ID-per-type convention as the other two — one active testing
+  // reminder at a time, rescheduling under this id naturally replaces
+  // whatever was previously pending.
+  testingReminder: 9003,
 };
 
 // ADDED 26 Aug 2026 — real ask: custom medication reminder
