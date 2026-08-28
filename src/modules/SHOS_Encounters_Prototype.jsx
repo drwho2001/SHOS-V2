@@ -583,14 +583,27 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
   // CHANGED — real ask: long-press for select/multiselect fired too
   // easily. 750ms (1.5x the original 500ms), same across every module
   // using this pattern.
-  const startPress = () => { pressTimer.current = setTimeout(() => onLongPress?.(encounter.id), 750); };
-  const cancelPress = () => { clearTimeout(pressTimer.current); };
+  // ADDED — real bug the user flagged: resting a finger on a card
+  // while scrolling (or scrolling slowly) still fired long-press —
+  // see Contacts' own ContactCard for the full reasoning, same fix.
+  const pressStartPos = useRef(null);
+  const startPress = (e) => {
+    if (e?.touches?.[0]) pressStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    pressTimer.current = setTimeout(() => onLongPress?.(encounter.id), 750);
+  };
+  const cancelPress = () => { clearTimeout(pressTimer.current); pressStartPos.current = null; };
+  const handleTouchMove = (e) => {
+    if (!pressStartPos.current || !e.touches?.[0]) return;
+    const dx = e.touches[0].clientX - pressStartPos.current.x;
+    const dy = e.touches[0].clientY - pressStartPos.current.y;
+    if (Math.hypot(dx, dy) > 10) cancelPress();
+  };
   const handleClick = () => {
     if (selectMode) onToggleSelected?.(encounter.id);
     else onClick();
   };
   return (
-    <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchEnd={cancelPress}
+    <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
       style={{ border: `1px solid ${selected ? T.encountersPink : T.border}`, borderRadius: radius.md, background: selected ? `${T.encountersPink}10` : T.surface, padding: 14, marginBottom: 10, cursor: "pointer", display: "flex", gap: 10 }}>
       {selectMode && (
         <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selected ? T.encountersPink : T.border}`, background: selected ? T.encountersPink : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>

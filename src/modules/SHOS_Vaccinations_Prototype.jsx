@@ -340,8 +340,21 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
   // CHANGED — real ask: long-press for select/multiselect fired too
   // easily. 750ms (1.5x the original 500ms), same across every module
   // using this pattern.
-  const startPress = (id) => { pressTimer.current = setTimeout(() => { setSelectMode(true); toggleSelected(id); }, 750); };
-  const cancelPress = () => clearTimeout(pressTimer.current);
+  // ADDED — real bug the user flagged: resting a finger on a card
+  // while scrolling (or scrolling slowly) still fired long-press — see
+  // Contacts' own ContactCard for the full reasoning, same fix.
+  const pressStartPos = useRef(null);
+  const startPress = (id, evt) => {
+    if (evt?.touches?.[0]) pressStartPos.current = { x: evt.touches[0].clientX, y: evt.touches[0].clientY };
+    pressTimer.current = setTimeout(() => { setSelectMode(true); toggleSelected(id); }, 750);
+  };
+  const cancelPress = () => { clearTimeout(pressTimer.current); pressStartPos.current = null; };
+  const handleTouchMove = (evt) => {
+    if (!pressStartPos.current || !evt.touches?.[0]) return;
+    const dx = evt.touches[0].clientX - pressStartPos.current.x;
+    const dy = evt.touches[0].clientY - pressStartPos.current.y;
+    if (Math.hypot(dx, dy) > 10) cancelPress();
+  };
   // CHANGED 26 Aug 2026 — real gap found and fixed: vaccinations/
   // deletedRecent/undoDelete/triggerDelete lifted to
   // VaccinationsModule, shared with VaccinationDetail.
@@ -420,7 +433,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
           const isSelected = selectedIds.includes(v.id);
           return (
             <div key={v.id} onClick={() => selectMode ? toggleSelected(v.id) : onOpen(v.id)}
-              onMouseDown={() => startPress(v.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={() => startPress(v.id)} onTouchEnd={cancelPress}
+              onMouseDown={() => startPress(v.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(v.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
               style={{ background: isSelected ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${isSelected ? T.healthcareBlue : overdue ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
               {selectMode && (
                 <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${isSelected ? T.healthcareBlue : T.border}`, background: isSelected ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>

@@ -766,8 +766,21 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
   // CHANGED — real ask: long-press for select/multiselect fired too
   // easily. 750ms (1.5x the original 500ms), same across every module
   // using this pattern.
-  const startPress = (id) => { pressTimer.current = setTimeout(() => { setSelectMode(true); toggleSelected(id); }, 750); };
-  const cancelPress = () => clearTimeout(pressTimer.current);
+  // ADDED — real bug the user flagged: resting a finger on a card
+  // while scrolling (or scrolling slowly) still fired long-press — see
+  // Contacts' own ContactCard for the full reasoning, same fix.
+  const pressStartPos = useRef(null);
+  const startPress = (id, evt) => {
+    if (evt?.touches?.[0]) pressStartPos.current = { x: evt.touches[0].clientX, y: evt.touches[0].clientY };
+    pressTimer.current = setTimeout(() => { setSelectMode(true); toggleSelected(id); }, 750);
+  };
+  const cancelPress = () => { clearTimeout(pressTimer.current); pressStartPos.current = null; };
+  const handleTouchMove = (evt) => {
+    if (!pressStartPos.current || !evt.touches?.[0]) return;
+    const dx = evt.touches[0].clientX - pressStartPos.current.x;
+    const dy = evt.touches[0].clientY - pressStartPos.current.y;
+    if (Math.hypot(dx, dy) > 10) cancelPress();
+  };
   // CHANGED 26 Aug 2026 — real gap found and fixed: tests/deletedRecent/
   // undoDelete/triggerDelete used to live only here, so a single-record
   // delete from TestDetail wrote to Trash but showed no undo toast —
@@ -863,7 +876,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
           const dotColor = computeTestDotColor(t, tests, T);
           return (
             <div key={t.id} onClick={() => selectMode ? toggleSelected(t.id) : onOpen(t.id)}
-              onMouseDown={() => startPress(t.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={() => startPress(t.id)} onTouchEnd={cancelPress}
+              onMouseDown={() => startPress(t.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(t.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
               style={{ background: selectedIds.includes(t.id) ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${selectedIds.includes(t.id) ? T.healthcareBlue : isPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
               {selectMode && (
                 <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selectedIds.includes(t.id) ? T.healthcareBlue : T.border}`, background: selectedIds.includes(t.id) ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>

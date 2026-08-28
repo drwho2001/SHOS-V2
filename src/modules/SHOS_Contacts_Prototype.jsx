@@ -1086,14 +1086,32 @@ function ContactCard({ contact, onOpen, T, encounters = [], anonymise = false, i
   // CHANGED — real ask: long-press for select/multiselect fired too
   // easily. 750ms (1.5x the original 500ms), same across every module
   // using this pattern.
-  const startPress = () => { pressTimer.current = setTimeout(() => onLongPress?.(contact.id), 750); };
-  const cancelPress = () => { clearTimeout(pressTimer.current); };
+  // ADDED — real bug the user flagged: resting a finger on a card
+  // while scrolling (or just scrolling slowly) still fired long-press,
+  // since nothing was cancelling the pending timer on real finger
+  // movement — only on lifting the finger or leaving the element
+  // entirely. Now tracks where the touch actually started and cancels
+  // the timer the moment it moves more than a few px, same threshold a
+  // native scroll gesture would recognize — a genuinely stationary
+  // hold still works exactly as before.
+  const pressStartPos = useRef(null);
+  const startPress = (e) => {
+    if (e?.touches?.[0]) pressStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    pressTimer.current = setTimeout(() => onLongPress?.(contact.id), 750);
+  };
+  const cancelPress = () => { clearTimeout(pressTimer.current); pressStartPos.current = null; };
+  const handleTouchMove = (e) => {
+    if (!pressStartPos.current || !e.touches?.[0]) return;
+    const dx = e.touches[0].clientX - pressStartPos.current.x;
+    const dy = e.touches[0].clientY - pressStartPos.current.y;
+    if (Math.hypot(dx, dy) > 10) cancelPress();
+  };
   const handleClick = () => {
     if (selectMode) onToggleSelected?.(contact.id);
     else onOpen(contact.id);
   };
   return (
-    <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchEnd={cancelPress}
+    <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
       style={{ position: "relative", background: selected ? `${T.contactsTeal}10` : T.surface, border: `1px solid ${selected ? T.contactsTeal : flaggedDontMeetAgain ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,.06)", cursor: "pointer", display: "flex", gap: 12 }}>
       {/* ADDED 26 Aug 2026 — real ask: favourite contacts, star icon
           per the user's preference over a pin. Own click handler with
