@@ -590,7 +590,11 @@ function LogTab({ meds, T, onOpenCorrection }) {
 // Edit affordance duplicated here per the user's ask — stock/refill-related settings (threshold,
 // container size, default refill qty) feel more at home being editable from Inventory too,
 // not instead of the Registry card's overflow menu, alongside it.
-function InventoryTab({ meds, T, onEditMedication }) {
+// CHANGED — real ask: Correct stock level was only reachable from each
+// card's overflow menu on the Registry tab, not from Inventory itself
+// despite being the dedicated inventory screen -- every other
+// inventory-related command (refill status, edit) already lived here.
+function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", padding: "0 16px 100px" }}>
       {meds.map((m) => {
@@ -607,6 +611,7 @@ function InventoryTab({ meds, T, onEditMedication }) {
                 <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, color: s.tracked && s.needsAction && !requested ? T.actionRed : T.textPrimary }}>
                   {s.tracked ? `${s.currentStock} ${m.unit}s` : "—"}
                 </span>
+                {s.tracked && <RefreshCcw size={15} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => onCorrectStock(m.id)} title="Correct stock level" />}
                 <Settings2 size={15} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => onEditMedication(m.id)} />
               </div>
             </div>
@@ -696,15 +701,30 @@ function SelectRow({ label, value, onChange, options, T }) {
 // elsewhere in this app (Clinic Visits' Reason for visit, etc.), built
 // fresh here since this module never needed a multi-select field
 // before now.
-function MultiSelectRow({ label, value, onChange, options, T }) {
+// CHANGED — real ask: Category was a closed chip set with "Other" as
+// the only escape hatch — no way to actually name what "Other" meant.
+// onAddNew is optional (only Category passes it; a plain MultiSelectRow
+// without it behaves exactly as before) — persists the new value into
+// the same in-app-editable option list every other custom list here
+// already uses, then selects it, matching the add-new pattern already
+// established in Vaccinations' VaccineField.
+function MultiSelectRow({ label, value, onChange, options, T, onAddNew }) {
+  const [newValue, setNewValue] = useState("");
   const toggle = (opt) => {
     const has = value.includes(opt);
     onChange(has ? value.filter((v) => v !== opt) : [...value, opt]);
   };
+  const addNew = () => {
+    const trimmed = newValue.trim();
+    if (!trimmed) return;
+    onAddNew?.(trimmed);
+    if (!value.includes(trimmed)) onChange([...value, trimmed]);
+    setNewValue("");
+  };
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{label}</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: onAddNew ? 8 : 0 }}>
         {options.map((opt) => {
           const active = value.includes(opt);
           return (
@@ -715,6 +735,15 @@ function MultiSelectRow({ label, value, onChange, options, T }) {
           );
         })}
       </div>
+      {onAddNew && (
+        <div style={{ display: "flex", gap: 6 }}>
+          <input value={newValue} onChange={(e) => setNewValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNew(); } }}
+            placeholder="Add your own…"
+            style={{ flex: 1, padding: "7px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
+          <div onClick={addNew} style={{ padding: "7px 12px", borderRadius: radius.sm, background: T.medsBlue, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center" }}>Add</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -819,7 +848,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
   // ADDED 19 Aug 2026 — real in-app editable option lists.
   const medicationTypeOptions = useMemo(() => CustomOptionListsRepository.get("medicationType"), []);
   const routeOptions = useMemo(() => CustomOptionListsRepository.get("route"), []);
-  const categoryOptions = useMemo(() => CustomOptionListsRepository.get("medicationCategory"), []);
+  const [categoryOptions, setCategoryOptions] = useState(() => CustomOptionListsRepository.get("medicationCategory"));
   const [form, setForm] = useState({
     name: med.name, route: med.route || "", medicationType: med.medicationType || "",
     category: med.category || [],
@@ -862,7 +891,8 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
         {/* REORDERED 19 Aug 2026 — same reasoning as Add medication:
             identity facts before dosing mechanics. */}
         <SelectRow T={T} label="Medication type" value={form.medicationType} onChange={set("medicationType")} options={medicationTypeOptions} />
-        <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions} />
+        <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions}
+          onAddNew={(v) => setCategoryOptions(CustomOptionListsRepository.add("medicationCategory", v))} />
         <DoseStrengthField T={T} value={form.doseStrengthValue} unit={form.doseStrengthUnit} onChangeValue={set("doseStrengthValue")} onChangeUnit={set("doseStrengthUnit")} />
         <SelectRow T={T} label="Route" value={form.route} onChange={set("route")} options={routeOptions} />
 
@@ -939,7 +969,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
 function AddMedicationSheet({ onCreate, onClose, T }) {
   const medicationTypeOptions = useMemo(() => CustomOptionListsRepository.get("medicationType"), []);
   const routeOptions = useMemo(() => CustomOptionListsRepository.get("route"), []);
-  const categoryOptions = useMemo(() => CustomOptionListsRepository.get("medicationCategory"), []);
+  const [categoryOptions, setCategoryOptions] = useState(() => CustomOptionListsRepository.get("medicationCategory"));
   const [form, setForm] = useState({
     name: "", route: "", medicationType: "", category: [], doseStrengthValue: "", doseStrengthUnit: "",
     usagePattern: "daily", scheduleIntervalDays: 2, unitsPerDose: 1, dosesPerDay: 1,
@@ -975,7 +1005,8 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
             what it is, how strong, how taken — before the dosing-
             pattern/inventory mechanics below. */}
         <SelectRow T={T} label="Medication type" value={form.medicationType} onChange={set("medicationType")} options={medicationTypeOptions} />
-        <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions} />
+        <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions}
+          onAddNew={(v) => setCategoryOptions(CustomOptionListsRepository.add("medicationCategory", v))} />
         <DoseStrengthField T={T} value={form.doseStrengthValue} unit={form.doseStrengthUnit} onChangeValue={set("doseStrengthValue")} onChangeUnit={set("doseStrengthUnit")} />
         <SelectRow T={T} label="Route" value={form.route} onChange={set("route")} options={routeOptions} />
 
@@ -1670,7 +1701,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
           </>
         )}
         {tab === "Log" && <LogTab meds={meds} T={T} onOpenCorrection={(id, entry) => setCorrection({ med: meds.find((m) => m.id === id), entry })} />}
-        {tab === "Inventory" && <InventoryTab meds={activeMeds} T={T} onEditMedication={(id) => setEditingMed(meds.find((m) => m.id === id))} />}
+        {tab === "Inventory" && <InventoryTab meds={activeMeds} T={T} onEditMedication={(id) => setEditingMed(meds.find((m) => m.id === id))} onCorrectStock={(id) => setSheet({ med: meds.find((m) => m.id === id), mode: "correct" })} />}
 
         {sheet && sheet.mode !== "correct" && <QuantitySheet med={sheet.med} mode={sheet.mode} onConfirm={logQuantity} onClose={() => setSheet(null)} T={T} />}
         {sheet && sheet.mode === "correct" && (
