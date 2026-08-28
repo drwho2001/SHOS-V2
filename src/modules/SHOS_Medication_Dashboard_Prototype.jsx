@@ -801,7 +801,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
         </div>
         <div style={{ padding: "8px 20px 20px" }}>
           <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 12, lineHeight: 1.5 }}>
-            This stays the same medication/course — the old dose ({med.doseStrengthValue || "—"}{med.doseStrengthUnit}) is kept in this record's dose history, not lost or split into a separate entry.
+            This stays the same medication/course — the old dose ({med.doseStrengthValue ? med.doseStrengthValue * (med.unitsPerDose || 1) : "—"}{med.doseStrengthUnit}) is kept in this record's dose history, not lost or split into a separate entry.
           </div>
           <DoseStrengthField value={doseStrengthValue} unit={doseStrengthUnit} onChangeValue={setDoseStrengthValue} onChangeUnit={setDoseStrengthUnit} T={T} />
           <div style={{ padding: "8px 0" }}>
@@ -935,7 +935,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
             <div style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Dose history</div>
             {[...med.doseHistory].reverse().map((h, i) => (
               <div key={i} style={{ padding: "6px 0", borderBottom: i < med.doseHistory.length - 1 ? `1px solid ${T.border}` : "none" }}>
-                <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{h.doseStrengthValue || "—"}{h.doseStrengthUnit}</div>
+                <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{h.doseStrengthValue ? h.doseStrengthValue * (h.unitsPerDose || 1) : "—"}{h.doseStrengthUnit}</div>
                 <div style={{ fontSize: 11, color: T.textDisabled }}>
                   Until {new Date(h.supersededAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
                   {h.note ? ` · ${h.note}` : ""}
