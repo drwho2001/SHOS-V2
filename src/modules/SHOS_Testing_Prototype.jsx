@@ -355,6 +355,17 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
     ClinicVisitsRepository.update(visitId, { linkedTestIds: [...(visit.linkedTestIds || []), testId] });
     setLinkVersion((v) => v + 1);
   };
+  // ADDED — real ask: there was no way to remove a linked clinic visit,
+  // only add one — tapping a linked row navigated to it instead. A
+  // small dedicated unlink control alongside each row, rather than a
+  // long-press gesture (no touch-timing logic needed, and it's
+  // actually more discoverable).
+  const unlinkVisit = (visitId) => {
+    const visit = ClinicVisitsRepository.getById(visitId);
+    if (!visit) return;
+    ClinicVisitsRepository.update(visitId, { linkedTestIds: (visit.linkedTestIds || []).filter((id) => id !== testId) });
+    setLinkVersion((v) => v + 1);
+  };
   // ADDED 19 Aug 2026 — real in-app editable option list.
   const sampleTypeOptions = useMemo(() => CustomOptionListsRepository.get("sampleType"), []);
   // ADDED 19 Aug 2026 — draft autosave.
@@ -434,13 +445,16 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
         </SectionCard>
 
         <SectionCard title="Result" T={T}>
-          <RegistryTagPicker label="Organism (if positive)" value={form.organismIds} onChange={set("organismIds")} registry={OrganismRegistry} T={T} placeholder="e.g. Chlamydia" />
+          {/* REORDERED — real ask: Result should come before Organism
+              ("positive blood, then HIV" — the result is the headline,
+              which organism (if any) is the detail underneath it). */}
           {/* CHANGED 19 Aug 2026 — real feedback batch: only one Result
               should ever apply at a time — picking a new one now
               REPLACES rather than adds to the existing selection, so
               a retroactive Pending → Positive update genuinely
               updates the result instead of leaving both. */}
           <RegistryMultiResultPicker label="Result" value={form.resultIds} onChange={set("resultIds")} registry={ResultsRegistry} T={T} placeholder="e.g. Positive, Negative" />
+          <RegistryTagPicker label="Organism (if positive)" value={form.organismIds} onChange={set("organismIds")} registry={OrganismRegistry} T={T} placeholder="e.g. Chlamydia" />
           {/* CHANGED 19 Aug 2026 — relabeled per real feedback: this
               date specifically means "when treatment happened, if
               positive" — not a generic catch-all follow-up date. */}
@@ -457,9 +471,12 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
               {linkedVisits.length > 0 ? (
                 linkedVisits.map((v) => (
                   <div key={v.id} onClick={() => { onNavigateToRecord?.("healthcare", v.id, "clinicVisits"); onClose(); }}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer", marginBottom: 6 }}>
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer", marginBottom: 6, gap: 8 }}>
                     <span style={{ fontSize: 13, color: T.healthcareBlue, fontWeight: 600 }}>{v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} · {formatDate(v.date)}</span>
-                    <ChevronRight size={14} color={T.healthcareBlue} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                      <X size={14} color={T.healthcareBlue} onClick={(e) => { e.stopPropagation(); unlinkVisit(v.id); }} title="Remove link" />
+                      <ChevronRight size={14} color={T.healthcareBlue} />
+                    </div>
                   </div>
                 ))
               ) : (
@@ -588,7 +605,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
         </SectionCard>
 
         <SectionCard title="Result" T={T}>
-          <ReadRow label="Organism" value={organismNames} T={T} />
+          {/* REORDERED — real ask: Result should come before Organism. */}
           {resultPending ? (
             <div onClick={() => setRevealEarly(true)} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, cursor: "pointer" }}>
               <span style={{ color: T.textSecondary }}>Result</span>
@@ -597,6 +614,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
           ) : (
             <ReadRow label="Result" value={resultNames} T={T} />
           )}
+          <ReadRow label="Organism" value={organismNames} T={T} />
           <ReadRow label="Date of treatment" value={formatDate(test.followUpActionedDate) !== "—" ? formatDate(test.followUpActionedDate) : ""} T={T} />
           {/* CHANGED 26 Aug 2026 — this was computed above but never
               actually rendered (see the comment on linkedVisits).
