@@ -87,6 +87,16 @@ const SEED_LISTS = {
   // it" convention as vaccine above — Non-binary and anything else
   // typed in just works via the add-your-own field.
   gender: ["Male", "Female", "Trans-male", "Trans-female", "Non-binary"],
+  // ADDED — real ask: contraception, gated to Female/Trans-male (see
+  // both edit screens' own comments on the exact gating condition).
+  // Testosterone is included because it's still worth tracking for a
+  // trans man (affects fertility/cycle) even though, corrected per the
+  // user's own ask, it is NOT reliable contraception on its own —
+  // clinical guidance is still to use backup contraception alongside
+  // it if avoiding pregnancy matters. No UI copy anywhere implies
+  // otherwise. "None" needed since this list has no blank/skip option
+  // otherwise (unlike gender, which can just be left empty).
+  contraception: ["Combined pill", "Progesterone-only pill", "IUD", "Implant", "Depot", "Testosterone", "None"],
 };
 
 // Friendly labels for the editor screen — separate from the storage
@@ -105,6 +115,7 @@ export const OPTION_LIST_LABELS = {
   medicationCategory: "Medication category",
   relationshipType: "Relationship type",
   gender: "Gender",
+  contraception: "Contraception",
 };
 
 // ADDED 19 Aug 2026 — real ask: same icon+color treatment as the
@@ -130,6 +141,7 @@ export const OPTION_LIST_ICONS = {
   medicationCategory: { icon: "Tag", color: "#3D63C9" },
   relationshipType: { icon: "Heart", color: ACCENTS.contacts },
   gender: { icon: "User", color: ACCENTS.contacts },
+  contraception: { icon: "Pill", color: ACCENTS.healthcare },
 };
 
 let lists = { ...SEED_LISTS, ...storage.load(STORAGE_KEY, {}) };

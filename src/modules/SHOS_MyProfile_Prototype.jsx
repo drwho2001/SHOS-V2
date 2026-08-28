@@ -539,6 +539,13 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   const [form, setForm] = useState(profile);
   const set = (field) => (value) => setForm((f) => ({ ...f, [field]: value }));
   const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.get("gender"));
+  const [contraceptionOptions, setContraceptionOptions] = useState(() => CustomOptionListsRepository.get("contraception"));
+  // ADDED — real ask: contraception relevant when Gender is Female or
+  // Trans-male. Exact match against these two only — not e.g. Non-
+  // binary, since that's a real per-person question this app shouldn't
+  // presume either way for. Own section (not inside "Physical" below)
+  // since that whole section is hidden for Female.
+  const showsContraception = ["female", "trans-male"].includes((form.gender || "").trim().toLowerCase());
 
   return (
     <div data-myprofile-sheet style={{ position: "fixed", inset: 0, background: T.bg, overflowY: "auto", zIndex: 200 }}>
@@ -617,6 +624,18 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
           <MultiSelectChips label="Cummer — frequency" value={form.cummer} onChange={set("cummer")} options={CUMMER_FREQUENCY_OPTIONS} T={T} />
           <MultiSelectChips label="Cummer — volume" value={form.cummer} onChange={set("cummer")} options={CUMMER_VOLUME_OPTIONS} T={T} />
           <MultiSelectChips label="Cummer — style" value={form.cummer} onChange={set("cummer")} options={CUMMER_STYLE_OPTIONS} T={T} />
+        </SectionCard>
+        )}
+
+        {/* ADDED — real ask: contraception, free text with suggestions
+            (Combined pill/Progesterone-only pill/IUD/Implant/Depot/
+            Testosterone/None). Testosterone is listed for tracking
+            purposes only — corrected per the user's own ask, it is NOT
+            reliable contraception on its own. */}
+        {showsContraception && (
+        <SectionCard title="Contraception" T={T}>
+          <SuggestField label="Contraception" value={form.contraception} onChange={set("contraception")} options={contraceptionOptions}
+            onAddNew={(v) => setContraceptionOptions(CustomOptionListsRepository.add("contraception", v))} T={T} placeholder="e.g. Combined pill, IUD, Implant, None" />
         </SectionCard>
         )}
 
@@ -768,6 +787,11 @@ function ProfileDataView({ profile, T }) {
         <ReadRow label="Foreskin fit" value={profile.foreskinDetail} T={T} />
         <ReadRow label="Chastity status" value={profile.chastityStatus} T={T} />
         <ReadRow label="Cummer" value={profile.cummer} T={T} />
+      </SectionCard>
+      )}
+      {["female", "trans-male"].includes((profile.gender || "").trim().toLowerCase()) && (
+      <SectionCard title="Contraception" T={T}>
+        <ReadRow label="Contraception" value={profile.contraception} T={T} />
       </SectionCard>
       )}
       <SectionCard title="Sexual health status" T={T}>

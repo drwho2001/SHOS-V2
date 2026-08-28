@@ -1179,6 +1179,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   // same pattern as Vaccinations' vaccineOptions.
   const [relationshipTypeOptions, setRelationshipTypeOptions] = useState(() => CustomOptionListsRepository.get("relationshipType"));
   const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.get("gender"));
+  const [contraceptionOptions, setContraceptionOptions] = useState(() => CustomOptionListsRepository.get("contraception"));
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);
     if (draft) return draft.data;
@@ -1442,6 +1443,15 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           <MultiSelectChips T={T} label="Cummer — volume" value={form.cummer} onChange={set("cummer")} options={CUMMER_VOLUME_OPTIONS} />
           <MultiSelectChips T={T} label="Cummer — style" value={form.cummer} onChange={set("cummer")} options={CUMMER_STYLE_OPTIONS} />
           </>
+          )}
+          {/* ADDED — real ask: contraception, shown when Gender is
+              Female or Trans-male (see the same gating condition used
+              above and in My Profile). Testosterone is a suggestion
+              option for tracking purposes only — it is NOT reliable
+              contraception on its own. */}
+          {["female", "trans-male"].includes((form.gender || "").trim().toLowerCase()) && (
+            <SuggestField T={T} label="Contraception" value={form.contraception} onChange={set("contraception")} options={contraceptionOptions}
+              onAddNew={(v) => setContraceptionOptions(CustomOptionListsRepository.add("contraception", v))} placeholder="e.g. Combined pill, IUD, Implant, None" />
           )}
           <MultiSelectChips T={T} label="Known to be on" value={form.knownPrepDoxy} onChange={set("knownPrepDoxy")} options={PREP_DOXY_OPTIONS} />
           <TextField T={T} label="Last tested date (if known)" value={form.lastTestedDate} onChange={set("lastTestedDate")} type="date" helper="Often unknown — leave blank, no pressure." />
@@ -1751,6 +1761,9 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <ReadRow T={T} label="Chastity status" value={contact.chastityStatus} />
           <ReadRow T={T} label="Cummer" value={hideFurther ? MASKED : contact.cummer} />
           </>
+          )}
+          {["female", "trans-male"].includes((contact.gender || "").trim().toLowerCase()) && (
+            <ReadRow T={T} label="Contraception" value={contact.contraception} />
           )}
           <ReadRow T={T} label="Known to be on" value={contact.knownPrepDoxy} />
           <ReadRow T={T} label="Last tested" value={contact.lastTestedDate} />

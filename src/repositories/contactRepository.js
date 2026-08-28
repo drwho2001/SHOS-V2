@@ -189,6 +189,11 @@ export const DEFAULT_CONTACT = {
   // ADDED 18 Aug 2026 — foreskinDetail: only meaningful when foreskin
   // is "Uncircumcised" (see FORESKIN_DETAIL_OPTIONS above).
   length: "", thickness: "", foreskin: "", foreskinDetail: "", chastityStatus: "N/A", cummer: [],
+  // ADDED — real ask: contraception, gated to Female/Trans-male gender
+  // in the UI (see SHOS_Contacts_Prototype.jsx's own comment on the
+  // gating condition). Free text with suggestions, same
+  // CustomOptionListsRepository pattern as gender above.
+  contraception: "",
   knownPrepDoxy: [], lastTestedDate: "",
   notes: "",
   linkedContactIds: [],

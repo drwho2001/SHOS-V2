@@ -99,6 +99,12 @@ export const DEFAULT_PROFILE = {
   foreskinDetail: "",
   chastityStatus: "N/A",
   cummer: [],
+  // ADDED — real ask: contraception, gated to Female/Trans-male gender
+  // in the UI (see SHOS_MyProfile_Prototype.jsx's own comment on the
+  // gating condition — shown as its own section since the Physical
+  // section above it is hidden entirely for Female). Free text with
+  // suggestions, same CustomOptionListsRepository pattern as gender.
+  contraception: "",
 
   // Sexual health status — "the actual point of this page" per the
   // existing static Notion template. Manually curated by the user here,
