@@ -8,7 +8,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // every line of actual behavior below is unchanged from what was
 // working in App.jsx; only the file it lives in has changed.
 import React, { useState, useEffect } from "react";
-import { ACCENTS } from "../calculations/designTokens";
+import { ACCENTS, ACTION } from "../calculations/designTokens";
 // ADDED — real ask: Medication's own accent (#003B6F) is a very dark,
 // near-black navy — legible as a solid FILL with white text/icon on
 // top (the nav bar tab, filled buttons), which is where Medication's
@@ -18,7 +18,7 @@ import { ACCENTS } from "../calculations/designTokens";
 // module and the nav bar keep the original navy unchanged.
 const MEDS_ICON_BLUE = "#2F5CA6";
 import { formatRelativeDate } from "../calculations/encounterCalculations";
-import { getLastBackupInfo } from "../storage/backupService";
+import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService";
 import {
   HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill,
   HeartbeatIcon as HeartPulse, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon,
@@ -67,6 +67,17 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // mount, same pattern as everything else on Home — see
   // backupService.js's getLastBackupInfo() for how "due" is computed.
   const [backupInfo] = useState(() => getLastBackupInfo());
+  // ADDED — real ask: "scheduled auto-export" — self-gated inside
+  // runAutoExportIfDue() on whether the preference is actually turned
+  // on (Settings -> Preferences), safe to call unconditionally here,
+  // same catch-up-on-mount reasoning as every other sync above. `ran`
+  // only flips true on the one app-open where a real file was actually
+  // written — the confirmation banner below is a one-off, not a
+  // persistent nag, since the interval won't be due again for a while.
+  const [autoExportRan, setAutoExportRan] = useState(false);
+  useEffect(() => {
+    runAutoExportIfDue().then((result) => { if (result.ran) setAutoExportRan(true); });
+  }, []);
   // ADDED 26 Aug 2026 — real ask: DoxyPEP 72h alert. Calls
   // syncDoxyPepAlert() (not just a local computation) so this single
   // effect covers both the in-app banner below AND the real native
@@ -429,6 +440,21 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           <span style={{ fontSize: 13, fontWeight: 600, color: "#B45309" }}>
             {backupInfo.lastAt ? `No backup in ${backupInfo.daysSince} days — export one` : "You've never exported a backup — do it now"}
           </span>
+        </div>
+      )}
+
+      {/* ADDED — real ask: "scheduled auto-export" — a real, one-off
+          confirmation that a backup was just written unattended,
+          rather than a file silently appearing in Documents with no
+          acknowledgement at all. Green/positive, distinct from the
+          amber reminder banner above (which means the opposite: you
+          need to act) — the two are mutually exclusive in practice
+          anyway, since a successful auto-export just reset the same
+          clock the reminder banner reads. */}
+      {autoExportRan && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: 16, border: `1px solid ${ACTION.green}40`, background: darkMode ? DARK.surface : "#F0FDF9" }}>
+          <Database size={15} color={ACTION.green} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: ACTION.green }}>Backed up automatically — saved to Documents</span>
         </div>
       )}
 

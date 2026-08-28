@@ -97,3 +97,34 @@ export async function exportTextFile(filename, contents, mimeType = "text/plain"
     downloadInBrowser(filename, contents, mimeType);
   }
 }
+
+// ADDED — real ask: scheduled auto-export (backupService.js's
+// runAutoExportIfDue()) needs to write a real file with NO user
+// interaction — exportTextFile() above always opens the native Share
+// sheet, a real dialog popping up unprompted the moment the app
+// happens to open would be a startling, unexplained interruption, not
+// "automatic". This writes straight to the public Documents folder
+// only (the same second write exportTextFile() already does above,
+// silent by nature) and skips the Share sheet entirely. Returns
+// whether it actually succeeded — deliberately false, not a browser-
+// download fallback, when native plugins aren't present: popping an
+// unexpected browser download on app load would be the same startling-
+// interruption problem this function exists to avoid, and there's no
+// real Documents folder to write into in that environment anyway.
+export async function writeTextFileSilently(filename, contents, mimeType = "text/plain") {
+  const { Filesystem, Directory, Encoding } = await getPlugins();
+  if (!Filesystem) return false;
+  try {
+    await Filesystem.writeFile({
+      path: filename,
+      data: contents,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
+      recursive: true,
+    });
+    return true;
+  } catch (err) {
+    console.warn("[fileExportHelper] Silent auto-export write failed:", err);
+    return false;
+  }
+}

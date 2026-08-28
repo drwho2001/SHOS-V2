@@ -41,6 +41,16 @@ export const DEFAULT_APP_PREFERENCES = {
   // own UI shows a real warning before this can be set to anything
   // but the default — see that screen's own comment for why.
   calendarSyncTargetName: null,
+  // ADDED — real ask: "scheduled auto-export" as a genuine backlog item
+  // alongside the manual export/backup already built — the existing
+  // reminder (BACKUP_REMINDER_DAYS, backupService.js) only ever nags
+  // you to export by hand; this actually does it, unattended. Off by
+  // default, same as every other opt-in feature in this app — see
+  // backupService.js's runAutoExportIfDue() for the real mechanism
+  // (writes straight to the public Documents folder, no share sheet,
+  // no dialog).
+  autoExportEnabled: false,
+  autoExportIntervalDays: 30,
 };
 
 export const AppPreferencesRepository = {

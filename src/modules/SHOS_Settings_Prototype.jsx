@@ -832,6 +832,19 @@ function NotificationsScreen({ onClose }) {
 // Preferences items land here as they come up, same pattern as
 // Privacy/Registries/Option lists getting built incrementally rather
 // than all at once up front.
+// ADDED — real ask: "scheduled auto-export" preset interval choices,
+// same reasoning as everywhere else in this app that offers presets
+// over free-form entry for a days-based setting — a fixed, sane set of
+// options is faster to pick from and harder to get wrong than typing a
+// number, and these four cover the realistic range (weekly for someone
+// logging a lot, quarterly for someone who barely uses the app).
+const AUTO_EXPORT_INTERVAL_OPTIONS = [
+  { days: 7, label: "Weekly" },
+  { days: 14, label: "Fortnightly" },
+  { days: 30, label: "Monthly" },
+  { days: 90, label: "Quarterly" },
+];
+
 function PreferencesScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
 
@@ -843,6 +856,19 @@ function PreferencesScreen({ onClose }) {
     if (!Number.isFinite(parsed) || parsed < 1) return;
     const updated = AppPreferencesRepository.update({ inactiveThresholdDays: parsed });
     setPrefs(updated);
+  };
+
+  // ADDED — real ask: "scheduled auto-export" — genuinely runs
+  // unattended on app open (see backupService.js's runAutoExportIfDue),
+  // not just a reminder to do it by hand. Off by default; toggling on
+  // takes effect from the next app open, same "no live re-check mid-
+  // session" honesty already established for every other preference
+  // toggle in this screen (Dark mode, module colours).
+  const toggleAutoExport = () => {
+    setPrefs(AppPreferencesRepository.update({ autoExportEnabled: !prefs.autoExportEnabled }));
+  };
+  const setAutoExportInterval = (days) => {
+    setPrefs(AppPreferencesRepository.update({ autoExportIntervalDays: days }));
   };
 
   return (
@@ -866,6 +892,38 @@ function PreferencesScreen({ onClose }) {
             </button>
           </div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1", marginTop: 10 }}>Currently: {prefs.inactiveThresholdDays} days.</div>
+        </div>
+
+        {/* ADDED — real ask: "scheduled auto-export" as its own card,
+            distinct from the inactive-threshold one above. */}
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16, marginTop: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Automatic backups</span>
+            <div onClick={toggleAutoExport}
+              style={{ width: 44, height: 26, borderRadius: 999, background: prefs.autoExportEnabled ? "#1B1B1F" : "#DCDCE1", position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
+              <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: prefs.autoExportEnabled ? 21 : 3, transition: "left 0.15s" }} />
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: prefs.autoExportEnabled ? 12 : 0 }}>
+            Writes a full backup straight to your phone's Documents folder on its own, on
+            whatever schedule you pick below — no need to remember to tap Export. Only
+            runs when there's something new since the last backup. Nothing leaves this
+            device; it's the same local file the manual Export button produces.
+          </div>
+          {prefs.autoExportEnabled && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {AUTO_EXPORT_INTERVAL_OPTIONS.map((opt) => (
+                <span key={opt.days} onClick={() => setAutoExportInterval(opt.days)}
+                  style={{
+                    padding: "8px 14px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                    background: prefs.autoExportIntervalDays === opt.days ? ACCENTS.healthcare : (darkMode ? DARK.surfaceVariant : "#F0F0F3"),
+                    color: prefs.autoExportIntervalDays === opt.days ? "#FFFFFF" : (darkMode ? DARK.textSecondary : "#5B5B62"),
+                  }}>
+                  {opt.label}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

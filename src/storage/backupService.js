@@ -15,7 +15,11 @@
 // know backup/restore exists.
 
 import { ContactRepository } from "../repositories/contactRepository.js";
-import { exportTextFile } from "./fileExportHelper.js";
+import { exportTextFile, writeTextFileSilently } from "./fileExportHelper.js";
+// ADDED — real ask: scheduled auto-export reads its own on/off toggle
+// and interval from here (Settings -> Preferences), same repository
+// every other real app preference already lives in.
+import { AppPreferencesRepository } from "../repositories/appPreferencesRepository.js";
 // ADDED 19 Aug 2026 — needed directly (not through a repository) for
 // the backup-reminder timestamp, which isn't really "a module's data",
 // just app-usage tracking.
@@ -353,6 +357,44 @@ export async function exportBackup(includeKeys = null) {
   // it shouldn't reset the clock on a reminder meant to catch "you
   // have no real safety net right now".
   if (!includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+}
+
+// ADDED — real ask: "scheduled auto-export", distinct from the nag-
+// reminder above (which only ever asks a human to remember to tap
+// Export). Deliberately reuses the SAME LAST_BACKUP_KEY clock as every
+// manual export/encrypted-export above, rather than a second separate
+// timestamp: an auto-export genuinely IS a real backup, so it should
+// reset the same clock — a user with this enabled should never also
+// see the manual "you're overdue" nag, since the automatic one is
+// already covering them. Also reuses hasUnbackedChanges() unchanged —
+// no point silently writing an identical file with nothing new in it
+// every time the interval ticks over.
+export function isAutoExportDue() {
+  const prefs = AppPreferencesRepository.getPreferences();
+  if (!prefs.autoExportEnabled) return false;
+  const { lastAt, daysSince } = getLastBackupInfo();
+  if (!lastAt) return true; // never backed up at all — due immediately
+  return daysSince >= prefs.autoExportIntervalDays && hasUnbackedChanges();
+}
+
+// The one function callers actually use — call unconditionally on app
+// open (Home's own mount, same "check on load" pattern as calendar
+// sync / reminder sync elsewhere in this app); self-gates on
+// isAutoExportDue() so every call site doesn't need to separately
+// remember to check it. Always a FULL backup, never selective — an
+// unattended export choosing to silently leave things out on your
+// behalf would be a real, surprising data-loss risk, not a convenience.
+// Writes straight to the public Documents folder with no share sheet
+// (writeTextFileSilently) — see that function's own comment for why a
+// popup dialog on app load would be the wrong UX here.
+export async function runAutoExportIfDue() {
+  if (!isAutoExportDue()) return { ran: false };
+  const backup = buildBackup(null);
+  const json = JSON.stringify(backup, null, 2);
+  const dateStamp = new Date().toISOString().slice(0, 10);
+  const ok = await writeTextFileSilently(`shos-backup-${dateStamp}-auto.json`, json, "application/json");
+  if (ok) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  return { ran: ok };
 }
 
 // ---------------------------------------------------------------------
