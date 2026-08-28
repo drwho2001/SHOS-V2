@@ -1479,7 +1479,20 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // placed between the two — reasonable default, not explicitly
   // specified by the user, flagged here rather than silently assumed.
   const PATTERN_ORDER = { daily: 0, custom: 1, prn: 2 };
+  // CHANGED — real ask: "show non inventory tracked with a visual
+  // separator with tracked meds above". Adds inventoryTracked as the
+  // PRIMARY sort key, ahead of the existing daily/custom/PRN grouping
+  // — tracked meds first, non-tracked below, with the pattern grouping
+  // and manual sortOrder still respected WITHIN each of those two
+  // groups exactly as they already were within pattern groups. Safe to
+  // extend the same three-level comparator this way: reorder() only
+  // ever swaps adjacent sortOrder values, and since render order is
+  // always re-derived from this sort, a med can never render outside
+  // its real tracked/non-tracked group regardless of what sortOrder it
+  // carries.
   const activeMeds = useMemo(() => meds.filter((m) => !m.archived).sort((a, b) => {
+    const trackedDiff = (b.inventoryTracked ? 1 : 0) - (a.inventoryTracked ? 1 : 0);
+    if (trackedDiff !== 0) return trackedDiff;
     const patternDiff = (PATTERN_ORDER[a.usagePattern] ?? 1) - (PATTERN_ORDER[b.usagePattern] ?? 1);
     return patternDiff !== 0 ? patternDiff : a.sortOrder - b.sortOrder;
   }), [meds]);

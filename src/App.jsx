@@ -331,7 +331,11 @@ export default function App() {
   // back to Home — the 19 Aug default this replaces, not removes.
   const [active, setActive] = useState(() => {
     const prefs = AppPreferencesRepository.getPreferences();
-    if (prefs.lastActiveTab && prefs.lastActiveAt) {
+    // CHANGED — critical fix: validate lastActiveTab is still a real
+    // TABS key before trusting it — a stale/corrupt stored value here
+    // was the likely trigger for a real device crash (see the
+    // activeTab/.find() fix below for the full explanation).
+    if (prefs.lastActiveTab && prefs.lastActiveAt && TABS.some((t) => t.key === prefs.lastActiveTab)) {
       const elapsedMs = Date.now() - new Date(prefs.lastActiveAt).getTime();
       if (elapsedMs <= RESUME_GRACE_MINUTES * 60000) return prefs.lastActiveTab;
     }
@@ -565,7 +569,18 @@ export default function App() {
     };
   }, [showSettings, showSearch, active]);
   const fileInputRef = useRef(null);
-  const activeTab = TABS.find((t) => t.key === active);
+  // CHANGED — critical fix: a real device crash (white/dark screen, no
+  // recovery) traced to this exact line — if `active` ever holds a
+  // value that isn't one of TABS' 5 real keys, .find() returns
+  // undefined and `activeTab.component` throws synchronously during
+  // render, which (with no error boundary above this existed until
+  // this same fix) blanked the entire app with no way back in. The
+  // most likely real trigger: "opening back to last page" trusting a
+  // persisted lastActiveTab value without validating it's still one of
+  // TABS' real keys first — now guarded here directly, at the one
+  // place that actually matters, rather than only at the point it's
+  // set.
+  const activeTab = TABS.find((t) => t.key === active) || TABS.find((t) => t.key === "home");
   const ActiveModule = activeTab.component;
 
   // CHANGED 26 Aug 2026 — real bug fix: Clinic Card is reachable from
