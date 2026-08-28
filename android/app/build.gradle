@@ -16,7 +16,34 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // ADDED — real bug found: CI's own debug signing key was never
+    // pinned, so Gradle's default debug SigningConfig fell back to
+    // auto-generating a fresh ~/.android/debug.keystore on every single
+    // GitHub Actions run (a brand-new runner every time, nothing
+    // persisted between builds) — a NEW random signing key each build.
+    // Android refuses to install an APK over an already-installed app
+    // with the same package name but a DIFFERENT signer ("package
+    // conflicts with an existing package"), so every release silently
+    // broke in-place updates, forcing an uninstall (and losing local
+    // data) to install the next build. Fixed by committing one fixed
+    // debug.keystore (checked into this repo — a debug-only key, never
+    // used for a real release, so there's nothing sensitive about it
+    // being public; same standard alias/password Android's own default
+    // debug keystore always uses) and pointing the debug signingConfig
+    // at it explicitly, so every build — CI or local — signs with the
+    // exact same key from now on.
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
