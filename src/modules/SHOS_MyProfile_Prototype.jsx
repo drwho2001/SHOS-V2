@@ -46,7 +46,7 @@ import { CustomOptionListsRepository } from "../repositories/customOptionListsRe
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const LIGHT = {
@@ -60,7 +60,10 @@ const LIGHT = {
 // both modes automatically — dark FAB on light bg, light FAB on dark bg.
 const DARK = {
   ...NEUTRAL_DARK,
-  contactsTeal: ACCENTS.contacts, actionRed: "#FF7A7E", actionGreen: "#5FD9A4",
+  // CHANGED — real architecture fix, same as Contacts' own comment:
+  // resolveDarkAccent() keeps today's exact behaviour by default, only
+  // brightening once a real colour override exists.
+  contactsTeal: resolveDarkAccent("contacts", ACCENTS.contacts), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
   navActive: ACCENTS.contacts, fabBg: NEUTRAL_DARK.textPrimary, fabIcon: NEUTRAL_DARK.surface,
 };
 const radius = RADIUS;

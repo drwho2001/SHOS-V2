@@ -13,7 +13,7 @@ import { nowAsDateString } from "../calculations/dateInputHelpers";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // ADDED 19 Aug 2026 — Symptom Log (Symptoms Tracker in Notion — see
@@ -28,9 +28,12 @@ const LIGHT = {
 };
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
 // for the full reasoning.
+// CHANGED — real architecture fix, same as Contacts' own comment:
+// resolveDarkAccent() keeps today's exact behaviour by default, only
+// brightening once a real colour override exists.
 const DARK = {
   ...NEUTRAL_DARK,
-  healthcareBlue: ACCENTS.healthcare, actionRed: "#FF7A7E", actionGreen: "#5FD9A4",
+  healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
 };
 const radius = RADIUS;
 
@@ -458,7 +461,7 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
                 refresh();
                 exitSelectMode();
               }
-            }} style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FF7A7E" : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+            }} style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>

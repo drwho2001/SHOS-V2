@@ -14,7 +14,7 @@ import { getEncounterCoverage } from "../calculations/exposureWindows";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // ADDED 19 Aug 2026 — Timeline (the nav-facing name; "Episode" is the
@@ -28,9 +28,12 @@ const LIGHT = {
 };
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
 // for the full reasoning.
+// CHANGED — real architecture fix, same as Contacts' own comment:
+// resolveDarkAccent() keeps today's exact behaviour by default, only
+// brightening once a real colour override exists.
 const DARK = {
   ...NEUTRAL_DARK,
-  healthcareBlue: ACCENTS.healthcare, actionRed: "#FF7A7E", actionGreen: "#5FD9A4",
+  healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
 };
 const radius = RADIUS;
 

@@ -45,7 +45,7 @@ import { LocationsRepository } from "../repositories/locationsRepository";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const LIGHT = {
@@ -60,11 +60,20 @@ const LIGHT = {
 // (same reason Medication's own accent needed a dark-mode variant).
 // CHANGED — real ask: the previous brightened value (#C77BB5) read as
 // too lilac/muted; user tried several neon-plum candidates and picked
-// this one as the new default.
+// "#D370C7" as the new default.
+// CHANGED AGAIN — real architecture fix: that was a fixed literal,
+// completely ignoring a customised colour (ACCENTS.encounters/
+// ACTION.red/ACTION.green) the moment dark mode was on.
+// resolveDarkAccent() keeps this exact "#D370C7" default (and
+// actionRed/actionGreen's own existing defaults) unless the user
+// actually customises that colour — only then does dark mode switch
+// to a live-derived brightened variant of their real choice. See
+// designTokens.js's own comment for the full reasoning.
 const DARK = {
   ...NEUTRAL_DARK,
-  encountersPink: "#D370C7", actionRed: "#FF7A7E", actionGreen: "#5FD9A4",
-  navActive: "#D370C7", fabBg: "#D370C7", fabIcon: "#FFFFFF",
+  encountersPink: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"),
+  actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+  navActive: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"), fabBg: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"), fabIcon: "#FFFFFF",
 };
 const radius = RADIUS;
 
@@ -755,7 +764,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                   refresh();
                   exitSelectMode();
                 }
-              }} style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FF7A7E" : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+              }} style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
               <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
             </div>
           </div>

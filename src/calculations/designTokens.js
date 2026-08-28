@@ -107,12 +107,118 @@ export const ACCENTS = { ...DEFAULT_ACCENTS, ...overrides };
 // Universal action/status colors — same meaning everywhere (red always
 // means the same kind of "stop and look at this", green always means
 // the same kind of "this is fine/complete").
-export const ACTION = {
+const DEFAULT_ACTION_COLORS = {
   red: "#D93838",
   green: "#1B9E77",
+};
+// ADDED — real ask: make the semantic pass/fail pair genuinely
+// editable too, not just the 5 module identity colours — arguably the
+// single most relevant pair for colourblind usability specifically,
+// since red/green confusion is the most common form. Reuses the exact
+// same override store as ACCENTS above (moduleColorRepository.js),
+// just two more possible keys ("actionRed"/"actionGreen") in the same
+// storage rather than a second repository — amber/gold stay fixed,
+// purely decorative, not meaning-bearing the way red/green are, so
+// they're not part of this.
+export const ACTION = {
+  ...DEFAULT_ACTION_COLORS,
+  red: overrides.actionRed || DEFAULT_ACTION_COLORS.red,
+  green: overrides.actionGreen || DEFAULT_ACTION_COLORS.green,
   amber: "#F59E0B",
   gold: "#B45309",
 };
+
+// ---------------------------------------------------------------------
+// ADDED — real architecture fix. The user's own question, verbatim in
+// spirit: "are all other items wired into the colour changer... rather
+// than us providing the colour, we can just make sure the background
+// architecture is setup." Audited and found two real gaps:
+//
+// 1. Medication and Encounters' DARK-mode accent were separate
+//    hand-picked hex literals, not derived from ACCENTS at all — a
+//    customised colour would change light mode but silently do
+//    nothing in dark mode for those two specific modules (every other
+//    module already just reused ACCENTS.<key> directly for both, which
+//    works fine for THEM because their default hues already read
+//    clearly on a near-black surface; Medication's navy and
+//    Encounters' original plum didn't, which is why they'd each grown
+//    their own manually-brightened dark variant instead).
+// 2. ACTION.red/green (just wired above) had no dark-mode equivalent
+//    at all — every module hardcoded its own "#FF7A7E"/"#5FD9A4"
+//    directly in its DARK theme object, completely ignoring ACTION.
+//
+// deriveDarkAccent() is the one fix for both: a plain HSL lightness
+// floor, not a full WCAG contrast solver (that's real overkill for a
+// personal app) — if a colour is already light enough to read against
+// a near-black background it's returned completely unchanged (this is
+// exactly why Contacts/Testing/Clinic Visits/Symptom Log/Vaccinations/
+// My Profile never needed touching: their defaults already clear this
+// bar), otherwise its lightness is lifted to a safe minimum and it's
+// desaturated slightly so it reads as brightened-but-intentional
+// rather than neon, while keeping the same hue so a customised colour
+// still reads as recognisably "that colour". HONEST NOTE: because this
+// replaces two hand-tuned literals with an algorithm, Medication's and
+// Encounters' DEFAULT (uncustomised) dark-mode shade shifts slightly
+// from what was there before — still the same colour family, just no
+// longer pixel-identical to the specific value someone picked by eye.
+// That's the accepted, honest cost of making it a real, working
+// override instead of a fixed literal.
+function hexToHsl(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d !== 0) {
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h /= 6;
+  }
+  return { h: h * 360, s: s * 100, l: l * 100 };
+}
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = (n) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const toHex = (x) => Math.round(x * 255).toString(16).padStart(2, "0");
+  return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`.toUpperCase();
+}
+export function deriveDarkAccent(hex) {
+  const { h, s, l } = hexToHsl(hex);
+  if (l >= 55) return hex;
+  // Achromatic input (grey/black/white — s === 0, h meaningless) stays
+  // achromatic: the saturation floor below is only for real colours,
+  // otherwise a black or grey custom accent would come out tinted red
+  // (h defaults to 0 when there's no real hue to measure).
+  const targetS = s === 0 ? 0 : Math.max(30, s - 15);
+  return hslToHex(h, targetS, Math.max(l, 62));
+}
+
+// The actual per-module fix built on top of deriveDarkAccent(): keeps
+// a module's EXISTING hand-picked dark-mode default exactly as-is
+// (e.g. Encounters' own recently-chosen "#D370C7" neon plum, or
+// Medication's "#5B85F5") unless/until the user actually customises
+// that colour — only then does dark mode switch to a live-derived
+// variant of their real choice. This is deliberately NOT "always
+// derive": that would silently redraw already-chosen, already-
+// approved default colours the moment this shipped, which is a real
+// regression, not a fix. `overrideKey` is the ACCENTS/ACTION key this
+// value is customised under (e.g. "medication", "actionRed");
+// `currentValue` is that key's live value (already override-aware,
+// e.g. ACCENTS.medication or ACTION.red); `defaultDarkValue` is the
+// existing hand-picked literal to keep using while uncustomised —
+// omit it for a module that never had one (most modules just reused
+// their light-mode value verbatim in dark mode already, which is
+// exactly what happens here too by default: `currentValue` unchanged,
+// only actually brightened once a real override exists).
+export function resolveDarkAccent(overrideKey, currentValue, defaultDarkValue = currentValue) {
+  return overrideKey in overrides ? deriveDarkAccent(currentValue) : defaultDarkValue;
+}
 
 // Real font-size/weight pairings for common UI roles, standardized
 // against Medication's own established pattern (the module this

@@ -7,6 +7,12 @@
 // of the 5 module colours being permanently hardcoded in
 // designTokens.js.
 //
+// EXTENDED — real ask: the same storage now also holds the two
+// semantic pass/fail colours (actionRed/actionGreen), not just the 5
+// module identity colours — see CUSTOMIZABLE_ACTION_KEYS below. Still
+// one flat key/value store; the "module colour" framing in this file's
+// name is the historical starting point, not a hard boundary.
+//
 // HONEST ARCHITECTURE NOTE: ACCENTS in designTokens.js is a plain
 // object, imported once by every module file when the app first
 // loads — not read through a live hook. That means a colour change
@@ -25,6 +31,13 @@ const STORAGE_KEY = "shos_module_color_overrides";
 // own keys in designTokens.js exactly. Sub-registry accents (Kink/
 // Protection etc.) are a separate concern, not included here.
 export const CUSTOMIZABLE_MODULE_KEYS = ["contacts", "encounters", "medication", "healthcare", "home"];
+
+// ADDED — real ask: the semantic pass/fail (red/green) pair, editable
+// alongside the 5 module colours above — same storage, same
+// getOverrides()/setOverride()/resetOverride() calls, just two more
+// possible keys rather than a second repository. See designTokens.js's
+// own ACTION export for how these two are actually read.
+export const CUSTOMIZABLE_ACTION_KEYS = ["actionRed", "actionGreen"];
 
 export const ModuleColorRepository = {
   // Returns only the overrides actually set — {} if none.

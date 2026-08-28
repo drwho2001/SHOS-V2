@@ -25,8 +25,8 @@ import {
   TagIcon as Palette, ArrowUUpLeftIcon as ResetIcon, CalendarIcon as Calendar,
   FileCsvIcon as FileCsv, LockIcon as Lock, BellIcon as Bell,
 } from "@phosphor-icons/react";
-import { ACCENTS, ACTION } from "../calculations/designTokens";
-import { ModuleColorRepository, CUSTOMIZABLE_MODULE_KEYS } from "../repositories/moduleColorRepository";
+import { ACCENTS, ACTION, resolveDarkAccent } from "../calculations/designTokens";
+import { ModuleColorRepository, CUSTOMIZABLE_MODULE_KEYS, CUSTOMIZABLE_ACTION_KEYS } from "../repositories/moduleColorRepository";
 import { computeAdherence } from "../calculations/medicationCalculations";
 import { isQualifyingEncounter, DOXYPEP_WINDOW_HOURS, findDoxyPepMedication } from "../calculations/doxyPepCalculations";
 import {
@@ -875,6 +875,10 @@ function PreferencesScreen({ onClose }) {
 // ACCENTS at load time) and its honest note on why a change here
 // takes effect on next reload, not instantly.
 const MODULE_LABELS = { contacts: "Contacts", encounters: "Encounter", medication: "Medication", healthcare: "Healthcare", home: "Home" };
+// ADDED — real ask: the semantic pass/fail pair, editable alongside
+// the 5 module colours above — see CUSTOMIZABLE_ACTION_KEYS in
+// moduleColorRepository.js and ACTION in designTokens.js.
+const ACTION_COLOR_LABELS = { actionRed: "Negative / alert (red)", actionGreen: "Positive / success (green)" };
 
 // ADDED 26 Aug 2026 — real ask: clickable info explaining the
 // calculation behind a stat, citing real guidance (BASHH/CDC) where
@@ -1379,7 +1383,7 @@ function TrashScreen({ onClose }) {
           <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
             <span onClick={() => selectedIds.length > 0 && restoreSelected()} style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Restore</span>
-            <span onClick={() => selectedIds.length > 0 && deleteSelected()} style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FF7A7E" : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+            <span onClick={() => selectedIds.length > 0 && deleteSelected()} style={{ fontSize: 13, color: selectedIds.length > 0 ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>
@@ -1507,6 +1511,23 @@ function DesignScreen({ onClose }) {
             return (
               <ColorInputRow key={key} colorKey={key} currentValue={currentValue} isOverridden={isOverridden}
                 label={MODULE_LABELS[key]} onSetColor={setColor} onReset={() => reset(key)} />
+            );
+          })}
+        </div>
+        {/* ADDED — real ask: the semantic pass/fail pair, editable
+            alongside the 5 module colours — the single most relevant
+            pair for colourblind usability specifically, since red/
+            green confusion is the most common form. Wired app-wide,
+            dark mode included — see designTokens.js's ACTION export
+            and resolveDarkAccent(). */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "20px 0 6px" }}>Status colours</div>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
+          {CUSTOMIZABLE_ACTION_KEYS.map((key) => {
+            const isOverridden = key in overrides;
+            const currentValue = overrides[key] || ACTION[key === "actionRed" ? "red" : "green"];
+            return (
+              <ColorInputRow key={key} colorKey={key} currentValue={currentValue} isOverridden={isOverridden}
+                label={ACTION_COLOR_LABELS[key]} onSetColor={setColor} onReset={() => reset(key)} />
             );
           })}
         </div>

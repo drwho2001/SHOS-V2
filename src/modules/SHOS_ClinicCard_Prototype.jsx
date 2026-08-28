@@ -18,16 +18,19 @@ import { VaccinationRepository } from "../repositories/vaccinationRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const LIGHT = {
   ...NEUTRAL,
   healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red,
 };
+// CHANGED — real architecture fix, same as Contacts' own comment:
+// resolveDarkAccent() keeps today's exact behaviour by default, only
+// brightening once a real colour override exists.
 const DARK = {
   ...NEUTRAL_DARK,
-  healthcareBlue: ACCENTS.healthcare, actionRed: "#FF7A7E",
+  healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
 };
 
 // ADDED 19 Aug 2026 — Clinic Card. Real feature set built out over

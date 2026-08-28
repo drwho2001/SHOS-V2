@@ -32,13 +32,14 @@ import { MyProfileRepository } from "../repositories/myProfileRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: LIGHT's neutral
 // palette and semantic action colors now read from the shared
 // designTokens.js source of truth instead of being retyped here.
-// DARK is deliberately left untouched — designTokens.js is light-only
-// so far (dark-mode token unification is the bigger Appearance
-// refactor already flagged as its own piece of work, not something to
-// improvise here), and DARK's goldText/streakGlow/navActive/fabBg/
-// fabIcon values are hand-tuned per-value for dark-surface contrast,
-// not derivable from LIGHT's tokens.
-import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+// CHANGED — medsBlue/actionRed/actionGreen below now ALSO stay wired
+// to those same shared, overridable tokens via resolveDarkAccent() —
+// no longer separate literals with no way for a customised colour to
+// ever reach them. goldText/streakGlow/navActive/fabBg/fabIcon remain
+// genuinely hand-tuned per-value for dark-surface contrast/design
+// intent, not derivable from LIGHT's tokens (fabBg/fabIcon are a
+// deliberate light-on-dark inversion, not an accent at all).
+import { NEUTRAL, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
 
 const LIGHT = {
   // bg deepened from #FAFAFA — at that value it was nearly indistinguishable from surface (#FFFFFF),
@@ -67,7 +68,16 @@ const LIGHT = {
 const DARK = {
   bg: "#121214", surface: "#1C1C1F", surfaceVariant: "#26262A", border: "#3A3A3F",
   textPrimary: "#F2F2F4", textSecondary: "#B8B8BE", textDisabled: "#6E6E74",
-  medsBlue: "#5B85F5", actionRed: "#FF7A7E", actionGreen: "#5FD9A4", // was #A9C2FF, too pastel/washed out for button text — richer and still ~4.9:1 against dark surfaces
+  // CHANGED — real architecture fix: these three used to be separate
+  // hand-picked literals, completely ignoring a customised colour
+  // (ACCENTS.medication/ACTION.red/ACTION.green) the moment dark mode
+  // was on. resolveDarkAccent() keeps these exact existing defaults
+  // ("#5B85F5"/"#FF7A7E"/"#5FD9A4") unless the user actually
+  // customises that colour — only then does dark mode switch to a
+  // live-derived brightened variant of their real choice, rather than
+  // silently ignoring it. See designTokens.js's own comment for the
+  // full reasoning.
+  medsBlue: resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
   goldText: "#FFD666", // dark mode's existing Platforms-gold dark accent already contrasts fine as text here
   navActive: "#A9C2FF", fabBg: "#F2F2F4", fabIcon: "#121214",
   // More saturated than light mode's version, per the user's specific ask
@@ -1576,7 +1586,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
                   refreshMeds();
                   exitSelectMode();
                 }
-              }} style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FF7A7E" : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+              }} style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
               <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
             </div>
           </div>
