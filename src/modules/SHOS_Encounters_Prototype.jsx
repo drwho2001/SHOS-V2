@@ -814,7 +814,14 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           should show back, and centred on screen at top should be the
           encounter title." Real title (not date) now centered; date
           moved into the byline below instead. */}
-      <div style={{ position: "sticky", top: 0, background: T.bg, padding: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 5 }}>
+      {/* FIXED — real ask: "cuts off top of screen by title". This was
+          the only detail screen in the app using position:sticky for
+          its header (Testing's TestDetail, the reference detail
+          screen, uses a plain in-flow header) — sticky positioning has
+          known top-edge clipping/repaint issues on some Android
+          WebView versions. Matches the established, already-working
+          pattern instead of a remote guess at the exact sticky bug. */}
+      <div style={{ background: T.bg, padding: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <ChevronLeft size={22} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onBack} />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 17, color: T.textPrimary, flex: 1, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px" }}>
           {encounter.title || (encounter.date ? new Date(encounter.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Encounter")}

@@ -1558,16 +1558,72 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
         </div>
         {contact.nickname && !anonymise && <div style={{ fontSize: 12, color: T.textDisabled, marginLeft: 24 }}>Full name: {contact.name}</div>}
 
-        {/* REORDERED 19 Aug 2026 — matches the edit sheet's own reorder,
-            same reasoning: how to reach someone reads more naturally
-            near the top than after Physical & health/Notes. */}
-        <SectionCard T={T} title="Contact methods">
-          <ReadRow T={T} label="Contactable via" value={methods} />
-          <ReadRow T={T} label="Phone/WhatsApp" value={contact.phone} />
-          <ReadRow T={T} label="Snapchat" value={contact.snapchat} />
-          <ReadRow T={T} label="Fabguys" value={contact.fabguys} />
-          <ReadRow T={T} label="Fabswingers" value={contact.fabswingers} />
-          <ReadRow T={T} label="Recon" value={contact.recon} />
+        {/* REORDERED — real ask: Timeline (encounter history/stats with
+            this contact) is the most clinically relevant summary, so
+            it now leads right under the header instead of trailing at
+            the very bottom. Contact methods moved down to just before
+            Notes — see that section's own comment. */}
+        <SectionCard T={T} title="Timeline">
+          {(() => {
+            // All four numbers below are CALCULATED here, every render,
+            // from EncounterRepository — never stored on the Contact
+            // record. Same "store facts, derive state" principle as
+            // Medication stock. Mirrors the four Notion rollups
+            // (Encounter Count, Average/Highest Enjoyment, Last
+            // Interaction) that motivated this section in the first
+            // place.
+            const allEncounters = EncounterRepository.getAll();
+            const summary = contactEncounterSummary(allEncounters, contact.id);
+            const history = sortByDateDesc(
+              allEncounters.filter((e) => e.attendeeIds.includes(contact.id) && !e.isArchived)
+            );
+            if (summary.count === 0) {
+              return (
+                <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", textAlign: "center", padding: "16px 4px" }}>
+                  No encounters logged with this contact yet.
+                </div>
+              );
+            }
+            return (
+              <>
+                <div style={{ display: "flex", gap: 16, padding: "8px 0 14px", flexWrap: "wrap" }}>
+                  <div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{summary.count}</div>
+                    <div style={{ fontSize: 11, color: T.textSecondary }}>Encounters</div>
+                  </div>
+                  {summary.averageEnjoyment != null && (
+                    <div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{Math.round(summary.averageEnjoyment)}</div>
+                      <div style={{ fontSize: 11, color: T.textSecondary }}>Avg enjoyment</div>
+                    </div>
+                  )}
+                  {summary.highestEnjoyment != null && (
+                    <div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{summary.highestEnjoyment}</div>
+                      <div style={{ fontSize: 11, color: T.textSecondary }}>Highest</div>
+                    </div>
+                  )}
+                  {summary.lastInteraction && (
+                    <div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{formatRelativeDate(summary.lastInteraction)}</div>
+                      <div style={{ fontSize: 11, color: T.textSecondary }}>Last seen</div>
+                    </div>
+                  )}
+                </div>
+                {history.map((e) => (
+                  // CHANGED — real ask: "linked encounter should be
+                  // actually linked — click and it takes you to it."
+                  // Real cross-module navigation now exists (see
+                  // App.jsx's navigateToRecord) — no longer read-only.
+                  <div key={e.id} onClick={() => onNavigateToRecord?.("activity", e.id)}
+                    style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, cursor: onNavigateToRecord ? "pointer" : "default" }}>
+                    <div style={{ color: T.textPrimary, fontWeight: 600 }}>{e.title || "Untitled encounter"}</div>
+                    <div style={{ color: T.textSecondary, fontSize: 12 }}>{e.date ? new Date(e.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "No date"}</div>
+                  </div>
+                ))}
+              </>
+            );
+          })()}
         </SectionCard>
 
         <SectionCard T={T} title="Relationship">
@@ -1642,6 +1698,15 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <ReadRow T={T} label="Last tested" value={contact.lastTestedDate} />
         </SectionCard>
 
+        <SectionCard T={T} title="Contact methods">
+          <ReadRow T={T} label="Contactable via" value={methods} />
+          <ReadRow T={T} label="Phone/WhatsApp" value={contact.phone} />
+          <ReadRow T={T} label="Snapchat" value={contact.snapchat} />
+          <ReadRow T={T} label="Fabguys" value={contact.fabguys} />
+          <ReadRow T={T} label="Fabswingers" value={contact.fabswingers} />
+          <ReadRow T={T} label="Recon" value={contact.recon} />
+        </SectionCard>
+
         <SectionCard T={T} title="Notes">
           <div style={{ fontSize: 14, color: contact.notes ? T.textPrimary : T.textDisabled, fontStyle: contact.notes ? "normal" : "italic" }}>
             {contact.notes || "No notes yet."}
@@ -1660,69 +1725,6 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               ))}
           </SectionCard>
         )}
-
-        <SectionCard T={T} title="Timeline">
-          {(() => {
-            // All four numbers below are CALCULATED here, every render,
-            // from EncounterRepository — never stored on the Contact
-            // record. Same "store facts, derive state" principle as
-            // Medication stock. Mirrors the four Notion rollups
-            // (Encounter Count, Average/Highest Enjoyment, Last
-            // Interaction) that motivated this section in the first
-            // place.
-            const allEncounters = EncounterRepository.getAll();
-            const summary = contactEncounterSummary(allEncounters, contact.id);
-            const history = sortByDateDesc(
-              allEncounters.filter((e) => e.attendeeIds.includes(contact.id) && !e.isArchived)
-            );
-            if (summary.count === 0) {
-              return (
-                <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", textAlign: "center", padding: "16px 4px" }}>
-                  No encounters logged with this contact yet.
-                </div>
-              );
-            }
-            return (
-              <>
-                <div style={{ display: "flex", gap: 16, padding: "8px 0 14px", flexWrap: "wrap" }}>
-                  <div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{summary.count}</div>
-                    <div style={{ fontSize: 11, color: T.textSecondary }}>Encounters</div>
-                  </div>
-                  {summary.averageEnjoyment != null && (
-                    <div>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{Math.round(summary.averageEnjoyment)}</div>
-                      <div style={{ fontSize: 11, color: T.textSecondary }}>Avg enjoyment</div>
-                    </div>
-                  )}
-                  {summary.highestEnjoyment != null && (
-                    <div>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{summary.highestEnjoyment}</div>
-                      <div style={{ fontSize: 11, color: T.textSecondary }}>Highest</div>
-                    </div>
-                  )}
-                  {summary.lastInteraction && (
-                    <div>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary, fontFamily: "'Inter', sans-serif" }}>{formatRelativeDate(summary.lastInteraction)}</div>
-                      <div style={{ fontSize: 11, color: T.textSecondary }}>Last seen</div>
-                    </div>
-                  )}
-                </div>
-                {history.map((e) => (
-                  // CHANGED — real ask: "linked encounter should be
-                  // actually linked — click and it takes you to it."
-                  // Real cross-module navigation now exists (see
-                  // App.jsx's navigateToRecord) — no longer read-only.
-                  <div key={e.id} onClick={() => onNavigateToRecord?.("activity", e.id)}
-                    style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, cursor: onNavigateToRecord ? "pointer" : "default" }}>
-                    <div style={{ color: T.textPrimary, fontWeight: 600 }}>{e.title || "Untitled encounter"}</div>
-                    <div style={{ color: T.textSecondary, fontSize: 12 }}>{e.date ? new Date(e.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "No date"}</div>
-                  </div>
-                ))}
-              </>
-            );
-          })()}
-        </SectionCard>
         {/* ADDED 26 Aug 2026 — real ask: last-updated indicator. Shown
             here purely for your own reference — deliberately NOT
             counted as "activity" for the backup-check warning (see
@@ -2034,7 +2036,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           (`maxWidth: 600` centering, not the old broken fixed-390px
           one this comment used to warn against) — applying the same
           fix here. */}
-      <div style={{ position: "fixed", bottom: 90, left: 0, right: 0, maxWidth: 600, margin: "0 auto", display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
+      {/* FIXED — real bug: the favourite star on each ContactCard is
+          position:absolute with zIndex:2, nested in a card whose own
+          parent doesn't establish a stacking context — so that z-index
+          competed directly with this FAB's (previously unset, so
+          effectively 0) rather than staying scoped to its own card.
+          A star on a scrolled-past card could paint over the fixed Add
+          button. Explicit zIndex here, well above any in-card value. */}
+      <div style={{ position: "fixed", bottom: 90, left: 0, right: 0, maxWidth: 600, margin: "0 auto", display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none", zIndex: 20 }}>
         <div onClick={onAdd} style={{ width: 56, height: 56, borderRadius: radius.full, background: T.fabBg, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,.25)", cursor: "pointer", pointerEvents: "auto" }}>
           <Plus size={24} color={T.fabIcon} />
         </div>
