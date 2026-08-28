@@ -17,6 +17,7 @@
 // across every module in one pass rather than one polished module and
 // six unbuilt ones.
 import { MODULE_LABELS } from "../repositories/trashRepository";
+import { exportTextFile } from "./fileExportHelper.js";
 
 // Fields never worth showing in an export, regardless of module —
 // internal bookkeeping, not information about the actual record.
@@ -90,14 +91,8 @@ export function buildRecordExportHtml(moduleKey, record) {
 // browser, and that browser's own Print (Ctrl/Cmd+P) handles the
 // "print" half of the ask without needing a PDF library bundled into
 // the app itself.
-export function exportRecordAsFile(moduleKey, record) {
+export async function exportRecordAsFile(moduleKey, record) {
   const html = buildRecordExportHtml(moduleKey, record);
-  const blob = new Blob([html], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
   const title = (record.title || record.name || record.displayName || "record").replace(/[^a-z0-9]/gi, "-").toLowerCase();
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${title}.html`;
-  a.click();
-  URL.revokeObjectURL(url);
+  await exportTextFile(`${title}.html`, html, "text/html");
 }

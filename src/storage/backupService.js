@@ -15,6 +15,7 @@
 // know backup/restore exists.
 
 import { ContactRepository } from "../repositories/contactRepository.js";
+import { exportTextFile } from "./fileExportHelper.js";
 // ADDED 19 Aug 2026 — needed directly (not through a repository) for
 // the backup-reminder timestamp, which isn't really "a module's data",
 // just app-usage tracking.
@@ -285,20 +286,12 @@ export function hasUnbackedChanges() {
   return false;
 }
 
-export function exportBackup(includeKeys = null) {
+export async function exportBackup(includeKeys = null) {
   const backup = buildBackup(includeKeys);
   const json = JSON.stringify(backup, null, 2);
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
   const dateStamp = new Date().toISOString().slice(0, 10);
   const suffix = includeKeys ? "-selective" : "";
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `shos-backup-${dateStamp}${suffix}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  await exportTextFile(`shos-backup-${dateStamp}${suffix}.json`, json, "application/json");
   // Only a FULL export counts as "properly backed up" for reminder
   // purposes — a selective export deliberately leaves things out, so
   // it shouldn't reset the clock on a reminder meant to catch "you
