@@ -293,13 +293,18 @@ export function mergeBackup(parsedBackup) {
 // exportBackup() actually runs — no separate "mark as backed up"
 // step, so it can never drift out of sync with reality.
 const LAST_BACKUP_KEY = "shos_last_backup_at";
-export const BACKUP_REMINDER_DAYS = 30;
+// CHANGED — real ask: 30 days was too naggy; user's own explicit
+// number is 90. Also now folds in hasUnbackedChanges() (defined below)
+// — "unless no new data", per the user's own exact wording — so this
+// only actually nags when BOTH enough time has passed AND there's
+// something new that isn't backed up yet, not on elapsed time alone.
+export const BACKUP_REMINDER_DAYS = 90;
 
 export function getLastBackupInfo() {
   const lastAt = storage.load(LAST_BACKUP_KEY, null);
-  if (!lastAt) return { lastAt: null, daysSince: null, dueForReminder: true };
+  if (!lastAt) return { lastAt: null, daysSince: null, dueForReminder: hasUnbackedChanges() };
   const daysSince = Math.floor((Date.now() - new Date(lastAt).getTime()) / 86400000);
-  return { lastAt, daysSince, dueForReminder: daysSince >= BACKUP_REMINDER_DAYS };
+  return { lastAt, daysSince, dueForReminder: daysSince >= BACKUP_REMINDER_DAYS && hasUnbackedChanges() };
 }
 
 // ADDED 26 Aug 2026 — real ask: "warn if not exported backup since

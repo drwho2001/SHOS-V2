@@ -73,6 +73,16 @@ export const DEFAULT_PRIVACY_SETTINGS = {
   // prompt while still deciding to turn App Lock on later via Settings
   // directly.
   appLockPromptDismissed: false,
+  // ADDED — real ask: "lock again after close/screen timeout by
+  // default, but allow toggle to increase timer — if unlocked/opened
+  // again within X minutes, don't need to re-verify." 0 (the default)
+  // means the existing behaviour is unchanged — always re-lock. Set to
+  // a real number of minutes and re-opening within that window skips
+  // the PIN/biometric screen. lastUnlockedAt is what that window is
+  // measured from — recorded on every successful unlock (PIN or
+  // biometric), read alongside this in App.jsx's own lock check.
+  appLockGraceMinutes: 0,
+  lastUnlockedAt: null,
 };
 
 export const PrivacySettingsRepository = {
@@ -85,6 +95,25 @@ export const PrivacySettingsRepository = {
     const updated = { ...this.getSettings(), ...changes };
     storage.save(STORAGE_KEY, updated);
     return updated;
+  },
+
+  // Called the moment App Lock is actually passed (PIN or biometric) —
+  // the one timestamp both the initial-mount check and the resume-
+  // from-background check in App.jsx measure the grace window from.
+  recordUnlock() {
+    return this.update({ lastUnlockedAt: new Date().toISOString() });
+  },
+
+  // Single source of truth for "should the lock screen show right
+  // now" — used both on app mount and every time the app resumes from
+  // the background, so the two checks can never quietly drift apart.
+  shouldRelock() {
+    const settings = this.getSettings();
+    if (!settings.appLockEnabled) return false;
+    if (!settings.appLockGraceMinutes || settings.appLockGraceMinutes <= 0) return true;
+    if (!settings.lastUnlockedAt) return true;
+    const elapsedMs = Date.now() - new Date(settings.lastUnlockedAt).getTime();
+    return elapsedMs > settings.appLockGraceMinutes * 60000;
   },
 
   // Turning ON never needs a PIN — that's the whole point, it has to

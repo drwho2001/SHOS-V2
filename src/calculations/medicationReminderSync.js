@@ -21,6 +21,7 @@ import { MedicationPreferencesRepository, isSkippedToday } from "../repositories
 import { LogRepository } from "../repositories/logRepository";
 import { isDoseLockedOut, lockoutEndsAt } from "./medicationCalculations";
 import { scheduleNotification, cancelNotification, registerNotificationActionTypes, NOTIFICATION_IDS, MEDICATION_ACTION_TYPE_ID, moduleSmallIconName } from "../storage/notificationService";
+import { ACCENTS } from "./designTokens";
 
 function getDailyMedsState() {
   const meds = MedicationRepository.getAll().filter((m) => !m.isArchived && m.usagePattern === "daily");
@@ -64,6 +65,7 @@ export async function syncMedicationReminders() {
       at: new Date(Date.now() + 3000),
       actionTypeId: MEDICATION_ACTION_TYPE_ID,
       smallIcon: moduleSmallIconName("medication"),
+      iconColor: ACCENTS.medication,
     });
     return { scheduled: true, due };
   }
@@ -77,6 +79,7 @@ export async function syncMedicationReminders() {
       at: earliest.unlockAt,
       actionTypeId: MEDICATION_ACTION_TYPE_ID,
       smallIcon: moduleSmallIconName("medication"),
+      iconColor: ACCENTS.medication,
     });
     return { scheduled: true, upcoming: earliest };
   }
@@ -114,5 +117,6 @@ export function handleSnooze() {
     at: new Date(Date.now() + prefs.snoozeMinutes * 60000),
     actionTypeId: MEDICATION_ACTION_TYPE_ID,
       smallIcon: moduleSmallIconName("medication"),
+      iconColor: ACCENTS.medication,
   });
 }

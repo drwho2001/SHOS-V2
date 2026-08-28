@@ -16,8 +16,16 @@ import { MedicationRepository } from "../repositories/medicationRepository";
 import { LogRepository } from "../repositories/logRepository";
 import { getDoxyPepStatus, findDoxyPepMedication } from "./doxyPepCalculations";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName } from "../storage/notificationService";
+import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
+import { ACCENTS } from "./designTokens";
 
+// ADDED — real ask: unified notifications on/off switchboard. Gates
+// only the NATIVE notification below — the returned `status` object
+// (what Home's own in-app banner reads) is computed and returned
+// unconditionally either way, since turning off the notification was
+// never a request to hide the in-app warning too.
 export async function syncDoxyPepAlert() {
+  const notifsEnabled = NotificationPreferencesRepository.getPreferences().doxyPepAlertEnabled;
   const doxyMed = findDoxyPepMedication(MedicationRepository.getAll());
   // No DoxyPEP medication set up at all — nothing to track, and
   // nothing should be left scheduled from a stale earlier state.
@@ -48,6 +56,11 @@ export async function syncDoxyPepAlert() {
     return status;
   }
 
+  if (!notifsEnabled) {
+    await cancelNotification(NOTIFICATION_IDS.doxyPepAlert);
+    return status;
+  }
+
   // Re-scheduling under the same fixed id naturally replaces any
   // previously-pending alert (e.g. a later qualifying activity within
   // the same still-open window doesn't move the deadline, per
@@ -59,6 +72,7 @@ export async function syncDoxyPepAlert() {
     body: "It's been close to 72 hours since your last qualifying activity — take your DoxyPEP dose if you haven't already.",
     at: status.deadline,
     smallIcon: moduleSmallIconName("home"),
+    iconColor: ACCENTS.home,
   });
   return status;
 }

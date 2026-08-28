@@ -47,6 +47,19 @@ export const NOTIFICATION_IDS = {
   // reminder at a time, rescheduling under this id naturally replaces
   // whatever was previously pending.
   testingReminder: 9003,
+  // ADDED — real ask: unified notifications, "when refill due". Fires
+  // once stock actually crosses the refill threshold, same immediate-
+  // due pattern medicationReminder already uses for a dose due right
+  // now — refill isn't a predictable future timestamp the way a dose
+  // interval or an appointment is, so there's nothing further ahead to
+  // schedule for.
+  refillReminder: 9004,
+  // ADDED — real ask: reminders for an actual booked clinic
+  // appointment, "24 & 2h in advance (or custom)". Two fixed slots
+  // (see notificationPreferencesRepository.js) rather than one id per
+  // arbitrary offset.
+  clinicVisitReminderA: 9005,
+  clinicVisitReminderB: 9006,
 };
 
 // ADDED 26 Aug 2026 — real ask: custom medication reminder
@@ -118,11 +131,11 @@ export async function requestNotificationPermission() {
 // Schedules (or replaces, via the fixed id) a single local
 // notification at an exact future time. No-ops safely if the plugin
 // isn't available.
-export async function scheduleNotification({ id, title, body, at, actionTypeId, smallIcon }) {
+export async function scheduleNotification({ id, title, body, at, actionTypeId, smallIcon, iconColor }) {
   const plugin = await getPlugin();
   if (!plugin) return false;
   await plugin.schedule({
-    notifications: [{ id, title, body, schedule: { at: new Date(at) }, ...(actionTypeId ? { actionTypeId } : {}), ...(smallIcon ? { smallIcon } : {}) }],
+    notifications: [{ id, title, body, schedule: { at: new Date(at) }, ...(actionTypeId ? { actionTypeId } : {}), ...(smallIcon ? { smallIcon } : {}), ...(iconColor ? { iconColor } : {}) }],
   });
   return true;
 }
@@ -130,25 +143,33 @@ export async function scheduleNotification({ id, title, body, at, actionTypeId, 
 // ADDED 26 Aug 2026 — real ask: notification colour should match the
 // relevant module (Home teal, or the specific module's colour —
 // respecting a user's custom override, not the hardcoded default).
-// HONEST LIMIT, verified via Capacitor's real docs, not assumed:
-// iconColor is a single GLOBAL Android setting in
-// capacitor.config.json, set once at build time — there is no
-// per-notification colour parameter in the schedule() API. The only
-// way to get genuinely different colours per notification TYPE is
-// separate pre-made drawable icon assets (real image files in the
-// Android project, one per colour), referenced via each
-// notification's own smallIcon field, which — unlike iconColor — IS
-// settable per-notification. This function is wired to accept and
-// pass through a smallIcon name for exactly that reason, so it's
-// ready the moment those assets exist. Not yet built: the actual
-// colored drawable files themselves (native asset creation, needs
-// Claude Code against the real Android project) and confirmation of
-// which module each notification type maps to.
+// CORRECTED — the original note here claimed iconColor was a single
+// GLOBAL Android setting with no per-notification equivalent. Re-
+// checked directly against @capacitor/local-notifications 8.x's own
+// type definitions while building real per-module notification icons:
+// LocalNotificationSchema DOES carry its own per-notification
+// `iconColor` field (distinct from the global capacitor.config.json
+// default) — that was simply missed before. scheduleNotification()
+// now accepts and passes it through; every sync file (doxyPepSync.js,
+// medicationReminderSync.js, testingReminderSync.js,
+// refillReminderSync.js, clinicVisitReminderSync.js) passes its own
+// module's real ACCENTS colour.
+//
+// smallIcon is now ALSO real, not just wired-and-waiting: real vector
+// drawables exist at android/app/src/main/res/drawable/ic_stat_home.xml,
+// ic_stat_medication.xml, and ic_stat_healthcare.xml — the three
+// module keys actually referenced below. This matters beyond looks:
+// passing a smallIcon resource NAME that doesn't correspond to a real
+// drawable is a genuine Android crash risk (a missing icon resource
+// can throw "Invalid notification: no valid small icon" once that
+// notification actually fires) — previously true of every module key
+// this function had ever been called with, simply never yet hit
+// because none of the scheduled notifications had fired on a real
+// device during testing.
 export function moduleSmallIconName(moduleKey) {
-  // "ic_stat_" + module key is the intended real Android drawable
-  // resource naming convention, matching Capacitor's own
-  // smallIcon example ("ic_stat_icon_config_sample") — the actual
-  // files don't exist in the Android project yet.
+  // "ic_stat_" + module key — matches the real drawable filenames
+  // above exactly (Capacitor's own smallIcon convention: the drawable
+  // resource ID, filename without extension).
   return `ic_stat_${moduleKey}`;
 }
 

@@ -23,8 +23,15 @@
 import { TestingRepository } from "../repositories/testingRepository";
 import { suggestedRoutineRetestDate } from "./testingCalculations";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName } from "../storage/notificationService";
+import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
+import { ACCENTS } from "./designTokens";
 
 export async function syncTestingReminder() {
+  // ADDED — real ask: unified notifications on/off switchboard.
+  if (!NotificationPreferencesRepository.getPreferences().testingReminderEnabled) {
+    await cancelNotification(NOTIFICATION_IDS.testingReminder);
+    return { scheduled: false };
+  }
   // Same "real tests only, not scheduled-but-not-yet-happened ones"
   // filter used elsewhere in this app (e.g. getTestingFrequencyStats).
   const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
@@ -61,6 +68,7 @@ export async function syncTestingReminder() {
     body: "Routine retest suggested around now — 3 months after your last negative test.",
     at: dueDate,
     smallIcon: moduleSmallIconName("healthcare"),
+    iconColor: ACCENTS.healthcare,
   });
   return { scheduled: true, dueDate };
 }

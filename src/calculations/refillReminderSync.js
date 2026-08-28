@@ -1,0 +1,56 @@
+// refillReminderSync.js
+//
+// PLAIN-LANGUAGE PURPOSE
+// -----------------------
+// Real ask: unified notifications, "when refill due". Same three-layer
+// split as doxyPepSync.js/medicationReminderSync.js — computeStock()
+// in medicationCalculations.js stays the pure "is this low" answer,
+// this file is the one place that reads real data and decides what to
+// actually schedule.
+//
+// WHY THIS FIRES IMMEDIATELY RATHER THAN AT A FUTURE TIME: unlike a
+// dose interval or a booked appointment, "stock is low" has no future
+// timestamp to schedule ahead for — it's already true or not, the
+// moment this runs (which is exactly when a dose/refill/waste entry
+// was just logged, or the app was just opened). So this schedules a
+// few seconds out, same "already due" pattern medicationReminderSync's
+// own due-now case already uses, rather than pretending there's a
+// real future due-date to count down to.
+import { MedicationRepository } from "../repositories/medicationRepository";
+import { LogRepository } from "../repositories/logRepository";
+import { computeStock } from "./medicationCalculations";
+import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName } from "../storage/notificationService";
+import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
+import { ACCENTS } from "./designTokens";
+
+export async function syncRefillReminder() {
+  if (!NotificationPreferencesRepository.getPreferences().refillReminderEnabled) {
+    await cancelNotification(NOTIFICATION_IDS.refillReminder);
+    return { scheduled: false };
+  }
+
+  const meds = MedicationRepository.getAll()
+    .filter((m) => !m.isArchived && m.inventoryTracked)
+    .map((m) => ({ ...m, logs: LogRepository.getForMedication(m.id) }));
+
+  // Already flagged "requested" — the user's already acted on it (see
+  // Medication's own markRequested()), a repeat notification for the
+  // same low stock would just be noise until it's actually refilled.
+  const needsRefill = meds.filter((m) => computeStock(m).needsAction && !m.refillRequestedAt);
+
+  if (needsRefill.length === 0) {
+    await cancelNotification(NOTIFICATION_IDS.refillReminder);
+    return { scheduled: false };
+  }
+
+  const names = needsRefill.map((m) => m.name).join(", ");
+  await scheduleNotification({
+    id: NOTIFICATION_IDS.refillReminder,
+    title: "Refill needed",
+    body: `${names} — running low, time to reorder`,
+    at: new Date(Date.now() + 3000),
+    smallIcon: moduleSmallIconName("medication"),
+    iconColor: ACCENTS.medication,
+  });
+  return { scheduled: true, needsRefill };
+}

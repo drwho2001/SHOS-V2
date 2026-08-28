@@ -296,7 +296,13 @@ export default function App() {
   // on genuinely opening/reloading the app). Real ask, always optional
   // per the user's instruction — `locked` starts false immediately if
   // appLockEnabled is off, so nothing changes for anyone not using it.
-  const [locked, setLocked] = useState(() => PrivacySettingsRepository.getSettings().appLockEnabled);
+  // CHANGED — real ask: "lock again after close/screen timeout by
+  // default, but allow toggle to increase timer" — the initial check
+  // now goes through shouldRelock() (which folds in the optional
+  // grace window) instead of the raw appLockEnabled flag, so someone
+  // who set a grace period and reopened within it isn't made to
+  // re-verify on this very first mount either.
+  const [locked, setLocked] = useState(() => PrivacySettingsRepository.shouldRelock());
   // ADDED 26 Aug 2026 — real ask: onboarding, real single-user
   // personal app — checked once on load, same pattern as `locked`
   // above.
@@ -427,6 +433,39 @@ export default function App() {
     })();
     return () => { listenerHandle?.remove(); };
   }, [showSettings, showSearch, active]);
+
+  // ADDED — real ask: actually re-lock when the app comes back from
+  // the background (screen timeout, switching away and back), not
+  // just on a cold start — App Lock previously only ever checked once
+  // on mount, so backgrounding briefly and returning left the app
+  // sitting open with no PIN prompt at all. Uses @capacitor/app's own
+  // appStateChange event (isActive: false→true is the real "resumed"
+  // transition) — same lazy-import/graceful-degrade pattern as the
+  // hardware back button above. Falls back to the plain web
+  // visibilitychange event where the native plugin isn't available
+  // (browser preview), since that's a reasonable proxy for the same
+  // thing there. shouldRelock() itself is what makes the optional
+  // grace-period toggle actually work — reopening within the window
+  // just doesn't trip `locked` back to true.
+  useEffect(() => {
+    const checkRelock = () => {
+      if (PrivacySettingsRepository.shouldRelock()) setLocked(true);
+    };
+    let listenerHandle = null;
+    (async () => {
+      try {
+        const { App: CapacitorApp } = await import("@capacitor/app");
+        listenerHandle = await CapacitorApp.addListener("appStateChange", ({ isActive }) => {
+          if (isActive) checkRelock();
+        });
+      } catch {
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") checkRelock();
+        });
+      }
+    })();
+    return () => { listenerHandle?.remove(); };
+  }, []);
 
   // ADDED 26 Aug 2026 — real ask: custom medication reminder
   // notifications with real action buttons (Take all / Skip until
@@ -597,7 +636,7 @@ export default function App() {
   // ADDED 19 Aug 2026 — App Lock gate: shown INSTEAD of everything
   // else while locked, real ask.
   if (locked) {
-    return <AppLockScreen onUnlock={() => setLocked(false)} />;
+    return <AppLockScreen onUnlock={() => { PrivacySettingsRepository.recordUnlock(); setLocked(false); }} />;
   }
 
   // ADDED 26 Aug 2026 — real ask: onboarding gate, same pattern as App

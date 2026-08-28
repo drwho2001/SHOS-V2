@@ -20,6 +20,10 @@ import { ResultsRegistry } from "../registries/resultsRegistry";
 // ADDED 19 Aug 2026 — draft autosave, same pattern as every other
 // edit sheet this round.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
+// ADDED — real ask: reminders for a booked appointment, re-synced
+// right after this module's own save (see syncTestingReminder's
+// analogous comment in Testing for the same pattern).
+import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -472,6 +476,12 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
           TestingRepository.update(testId, { clinicVisitIds: [...test.clinicVisitIds, created.id] });
         }
       });
+      // ADDED — real ask: reminders for an actual booked appointment.
+      // A brand-new visit could itself be the soonest one now, or
+      // could displace/cancel-out a stale prior schedule — either way
+      // this needs re-syncing on every save, not just once on Home
+      // mount.
+      syncClinicVisitReminders();
       onSaved(created.id);
     } else {
       const before = ClinicVisitsRepository.getById(visitId);
@@ -493,6 +503,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
         const test = TestingRepository.getById(testId);
         if (test) TestingRepository.update(testId, { clinicVisitIds: test.clinicVisitIds.filter((id) => id !== visitId) });
       });
+      syncClinicVisitReminders();
       onSaved(visitId);
     }
   };

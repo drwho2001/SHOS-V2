@@ -13,6 +13,7 @@ import { CustomOptionListsRepository } from "../repositories/customOptionListsRe
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
+import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { localStorageAdapter } from "../storage/storageAdapter";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
@@ -1333,6 +1334,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     // leaving it scheduled until the next app open.
     syncDoxyPepAlert();
     syncMedicationReminders();
+    syncRefillReminder();
     refreshMeds();
   };
 
@@ -1348,6 +1350,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     dueDailyMeds.forEach((m) => LogRepository.create({ medicationId: m.id, type: "dose", delta: -m.unitsPerDose, date: timestamp }));
     syncDoxyPepAlert();
     syncMedicationReminders();
+    syncRefillReminder();
     refreshMeds();
     setBulkFlash(true);
     setTimeout(() => setBulkFlash(false), 2000);
@@ -1361,12 +1364,14 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     // Logging a real refill clears any pending "requested" flag — matches
     // the original behavior, which only cleared it on the refill branch.
     if (isRefill) MedicationRepository.update(sheet.med.id, { refillRequestedAt: null });
+    syncRefillReminder();
     refreshMeds();
     flashComplete(sheet.med.id);
     setSheet(null);
   };
   const correctStock = (delta) => {
     LogRepository.create({ medicationId: sheet.med.id, type: delta > 0 ? "refill" : "waste", delta, date: new Date().toISOString(), notes: "Manual stock correction" });
+    syncRefillReminder();
     refreshMeds();
     flashComplete(sheet.med.id);
     setSheet(null);
@@ -1377,12 +1382,14 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     if (stockDelta !== null && stockDelta !== 0) {
       LogRepository.create({ medicationId: updatingDose.id, type: stockDelta > 0 ? "refill" : "waste", delta: stockDelta, date: new Date().toISOString(), notes: `Stock update alongside dose change${note ? `: ${note}` : ""}` });
     }
+    syncRefillReminder();
     refreshMeds();
     flashComplete(updatingDose.id);
     setUpdatingDose(null);
   };
   const markRequested = (id) => {
     MedicationRepository.update(id, { refillRequestedAt: new Date().toISOString() });
+    syncRefillReminder();
     refreshMeds();
     flashComplete(id, "requested");
   };

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar notification icon for Home-domain reminders (DoxyPEP
+     alert). Android renders status-bar icons as a flat monochrome
+     silhouette regardless of any fill color here (only the alpha
+     shape matters) — the per-notification COLOR comes from
+     LocalNotificationSchema's own iconColor field instead (see
+     notificationService.js), not from this file. Simple house
+     silhouette: roof triangle + base rectangle, deliberately no
+     door/window detail — not legible at real status-bar size anyway. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFF">
+    <!-- Roof: a simple triangle. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,3L21,11L3,11Z" />
+    <!-- Base: a rectangle sitting directly under the roof. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M5,11H19V21H5Z" />
+</vector>

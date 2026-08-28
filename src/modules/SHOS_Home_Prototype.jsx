@@ -39,6 +39,8 @@ import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { requestNotificationPermission } from "../storage/notificationService";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
 import { syncTestingReminder } from "../calculations/testingReminderSync";
+import { syncRefillReminder } from "../calculations/refillReminderSync";
+import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
@@ -110,6 +112,16 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // test is saved — see SHOS_Testing_Prototype.jsx's own comment.
   useEffect(() => {
     syncTestingReminder();
+  }, []);
+
+  // ADDED — real ask: unified notifications, "when refill due" and
+  // "reminder for clinic visit... 24 & 2h in advance". Same catch-up-
+  // on-mount reasoning as every sync above. Also re-synced right after
+  // the relevant save — see Medication's own logDose/logQuantity and
+  // Clinic Visits' own save handler.
+  useEffect(() => {
+    syncRefillReminder();
+    syncClinicVisitReminders();
   }, []);
 
   useEffect(() => {

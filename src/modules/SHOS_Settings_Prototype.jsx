@@ -23,7 +23,7 @@ import {
   PillIcon as Pill, GearIcon as SettingsIcon, ShieldIcon as Shield,
   StethoscopeIcon as Stethoscope, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User,
   TagIcon as Palette, ArrowUUpLeftIcon as ResetIcon, CalendarIcon as Calendar,
-  FileCsvIcon as FileCsv, LockIcon as Lock,
+  FileCsvIcon as FileCsv, LockIcon as Lock, BellIcon as Bell,
 } from "@phosphor-icons/react";
 import { ACCENTS, ACTION } from "../calculations/designTokens";
 import { ModuleColorRepository, CUSTOMIZABLE_MODULE_KEYS } from "../repositories/moduleColorRepository";
@@ -50,6 +50,13 @@ import { TrashRepository, MODULE_LABELS as TRASH_MODULE_LABELS } from "../reposi
 import { getCalendarEvents, groupEventsByDay } from "../calculations/calendarCalculations";
 import { LocationsRepository } from "../repositories/locationsRepository";
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
+import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
+import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
+import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
+import { syncMedicationReminders } from "../calculations/medicationReminderSync";
+import { syncTestingReminder } from "../calculations/testingReminderSync";
+import { syncRefillReminder } from "../calculations/refillReminderSync";
+import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
 import { checkBiometryAvailable } from "../storage/biometricAuthService";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { EpisodeRepository } from "../repositories/episodeRepository";
@@ -654,6 +661,35 @@ function PrivacyScreen({ onClose }) {
               </div>
             </div>
           )}
+          {/* ADDED — real ask: "lock again after close/screen timeout by
+              default, but allow toggle to increase timer — if
+              unlocked/opened again within X minutes, don't need to
+              re-verify." Off (0 minutes) is the default, matching the
+              existing always-relock behaviour exactly — this is purely
+              opt-in convenience layered on top. */}
+          {settings.appLockEnabled && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+              <div onClick={() => { PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); }}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+                <div style={{ flex: 1, paddingRight: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Skip re-verification briefly</div>
+                  <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>Reopening the app within a few minutes of last unlocking it won't ask again.</div>
+                </div>
+                <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockGraceMinutes > 0 ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
+                  <div style={{ position: "absolute", top: 2, left: settings.appLockGraceMinutes > 0 ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+                </div>
+              </div>
+              {settings.appLockGraceMinutes > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+                  <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Grace period:</span>
+                  <input type="number" min={1} max={120} value={settings.appLockGraceMinutes}
+                    onChange={(e) => { const v = Math.max(1, Math.min(120, Number(e.target.value) || 1)); PrivacySettingsRepository.update({ appLockGraceMinutes: v }); refresh(); }}
+                    style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 13, textAlign: "center" }} />
+                  <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>minutes</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* CHANGED — real ask: "App Lock and Revert PIN should be
@@ -692,6 +728,96 @@ function PrivacyScreen({ onClose }) {
             </button>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ADDED — real ask: "unified notifications management in settings" —
+// one place to turn each real reminder type on/off, rather than each
+// one being buried invisibly in its own module. Deliberately just a
+// switchboard: every actual data read + native scheduling decision
+// still lives in each reminder's own sync file (doxyPepSync.js,
+// testingReminderSync.js, refillReminderSync.js,
+// clinicVisitReminderSync.js) — this screen only flips the settings
+// those already check, same "one source of truth, no duplicated
+// logic" principle as everywhere else in this app. Medication dose
+// reminders are the one toggle NOT duplicated here — it already lived
+// in medicationPreferencesRepository.js before this screen existed,
+// so this just reads/writes that repository directly alongside the
+// new ones, rather than migrating it (and risking losing anyone's
+// already-set snooze/skip state) for no real gain.
+function NotificationToggleRow({ label, description, enabled, onToggle, darkMode, children }) {
+  return (
+    <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16, marginBottom: 12 }}>
+      <div onClick={onToggle} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+        <div style={{ flex: 1, paddingRight: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{label}</div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>{description}</div>
+        </div>
+        <div style={{ width: 40, height: 24, borderRadius: 999, background: enabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
+          <div style={{ position: "absolute", top: 2, left: enabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+        </div>
+      </div>
+      {enabled && children}
+    </div>
+  );
+}
+
+function NotificationsScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+  const [, forceRefresh] = useState(0);
+  const refresh = () => forceRefresh((n) => n + 1);
+  const notifPrefs = NotificationPreferencesRepository.getPreferences();
+  const medPrefs = MedicationPreferencesRepository.getPreferences();
+
+  // Re-syncs immediately on toggle rather than waiting for the next
+  // Home mount or relevant save — turning a reminder off should cancel
+  // whatever's already pending right away, not leave a stale native
+  // notification scheduled until the app happens to reopen.
+  const toggleNotif = (key) => {
+    NotificationPreferencesRepository.update({ [key]: !notifPrefs[key] });
+    if (key === "doxyPepAlertEnabled") syncDoxyPepAlert();
+    else if (key === "testingReminderEnabled") syncTestingReminder();
+    else if (key === "refillReminderEnabled") syncRefillReminder();
+    else syncClinicVisitReminders();
+    refresh();
+  };
+  const toggleMed = () => { MedicationPreferencesRepository.updatePreferences({ doseRemindersEnabled: !medPrefs.doseRemindersEnabled }); syncMedicationReminders(); refresh(); };
+
+  const hoursInput = (value, onChange) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+      <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Hours before:</span>
+      <input type="number" min={1} max={168} value={value}
+        onChange={(e) => onChange(Math.max(1, Math.min(168, Number(e.target.value) || 1)))}
+        style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 13, textAlign: "center" }} />
+    </div>
+  );
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Notifications</span>
+      </div>
+
+      <div style={{ padding: 16 }}>
+        <NotificationToggleRow darkMode={darkMode} label="Medication dose reminders" enabled={medPrefs.doseRemindersEnabled} onToggle={toggleMed}
+          description="Alerts when a daily medication is due, or due soon." />
+        <NotificationToggleRow darkMode={darkMode} label="Refill reminders" enabled={notifPrefs.refillReminderEnabled} onToggle={() => toggleNotif("refillReminderEnabled")}
+          description="Alerts when a tracked medication's stock drops to its refill threshold." />
+        <NotificationToggleRow darkMode={darkMode} label="DoxyPEP dose alert" enabled={notifPrefs.doxyPepAlertEnabled} onToggle={() => toggleNotif("doxyPepAlertEnabled")}
+          description="Alert as the 72-hour DoxyPEP window approaches after a qualifying activity." />
+        <NotificationToggleRow darkMode={darkMode} label="Testing due reminder" enabled={notifPrefs.testingReminderEnabled} onToggle={() => toggleNotif("testingReminderEnabled")}
+          description="Reminder around your suggested routine retest date (3 months after a negative test)." />
+        <NotificationToggleRow darkMode={darkMode} label="Clinic appointment reminder A" enabled={notifPrefs.clinicVisitReminderAEnabled} onToggle={() => toggleNotif("clinicVisitReminderAEnabled")}
+          description="First reminder before a booked clinic appointment. Defaults to 24 hours.">
+          {hoursInput(notifPrefs.clinicVisitReminderAHours, (v) => { NotificationPreferencesRepository.update({ clinicVisitReminderAHours: v }); syncClinicVisitReminders(); refresh(); })}
+        </NotificationToggleRow>
+        <NotificationToggleRow darkMode={darkMode} label="Clinic appointment reminder B" enabled={notifPrefs.clinicVisitReminderBEnabled} onToggle={() => toggleNotif("clinicVisitReminderBEnabled")}
+          description="Second, closer reminder before a booked clinic appointment. Defaults to 2 hours.">
+          {hoursInput(notifPrefs.clinicVisitReminderBHours, (v) => { NotificationPreferencesRepository.update({ clinicVisitReminderBHours: v }); syncClinicVisitReminders(); refresh(); })}
+        </NotificationToggleRow>
       </div>
     </div>
   );
@@ -1422,6 +1548,10 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   const [showRegistries, setShowRegistries] = useState(false);
   const [showOptionLists, setShowOptionLists] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  // ADDED — real ask: unified notifications management, one place to
+  // turn each real reminder type on/off rather than each one being
+  // invisible/buried in its own module.
+  const [showNotifications, setShowNotifications] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   // ADDED 26 Aug 2026 — real ask: design/preferences section for
   // colour scheme, ability to customize a module's base colour.
@@ -1448,6 +1578,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showDesign) { setShowDesign(false); return true; }
       if (showPreferences) { setShowPreferences(false); return true; }
       if (showPrivacy) { setShowPrivacy(false); return true; }
+      if (showNotifications) { setShowNotifications(false); return true; }
       if (showOptionLists) { setShowOptionLists(false); return true; }
       if (showRegistries) { setShowRegistries(false); return true; }
       if (showDevTools) { setShowDevTools(false); return true; }
@@ -1458,7 +1589,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showOptionLists, showRegistries, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showOptionLists, showRegistries, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.
@@ -1539,6 +1670,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             "Not built yet" below since that entry was first added —
             moved up to where it actually belongs. */}
         <SettingsRow icon={SettingsIcon} label="Privacy" onClick={() => setShowPrivacy(true)} />
+        {/* ADDED — real ask: unified notifications management, one
+            place to turn each real reminder type on/off. */}
+        <SettingsRow icon={Bell} label="Notifications" onClick={() => setShowNotifications(true)} />
         {/* ADDED 19 Aug 2026 — Preferences, real now: the configurable
             inactive-contact threshold, the user's own first concrete ask
             for this previously fully-stubbed section. */}
@@ -1589,6 +1723,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showPrivacy && (
         <PrivacyScreen onClose={() => setShowPrivacy(false)} />
+      )}
+      {showNotifications && (
+        <NotificationsScreen onClose={() => setShowNotifications(false)} />
       )}
       {showPreferences && (
         <PreferencesScreen onClose={() => setShowPreferences(false)} />
