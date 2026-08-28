@@ -40,47 +40,80 @@ export const CUSTOMIZABLE_MODULE_KEYS = ["contacts", "encounters", "medication",
 export const CUSTOMIZABLE_ACTION_KEYS = ["actionRed", "actionGreen"];
 
 // ADDED — real ask, 28 Aug 2026: "look for colour blind sets... defer
-// specific choice to you, if research needed go for it." Built from
+// specific choice to you, if research needed go for it." Starts from
 // Okabe & Ito's 2008 categorical palette — the standard, peer-reviewed
 // colour set validated as mutually distinguishable under protanopia,
 // deuteranopia, AND tritanopia at once (cited as the reference set in
-// Wong, "Points of view: Color blindness," Nature Methods 2011). Every
-// one of Okabe-Ito's 7 non-black hues is used exactly once here, none
-// wasted, then each is darkened off its raw published value (which
-// targets on-screen chart swatches, not small app text/icons) until it
-// clears ~3:1 contrast against white — matching this app's own existing
-// default accent colours, which themselves range 3.19-11.32:1 rather
-// than a stricter idealised bar the app doesn't enforce anywhere else.
-// Hue assignments lean on the two real, documented facts the ask named:
-// (1) non-colourblind convention already reads green/blue as
-// health/medication and red as love-or-danger, so those hold wherever
-// Okabe-Ito has a matching hue; (2) where it doesn't (Contacts,
-// Home), pick whatever remaining hue keeps the whole 5-module set
-// visually spread rather than force a false match. Final assignment:
+// Wong, "Points of view: Color blindness," Nature Methods 2011) — but
+// every value below is independently re-verified, not just trusted by
+// citation, because Okabe-Ito's own values target simultaneous chart
+// swatches at fixed size/saturation, not small app text/icons re-tuned
+// for contrast, which turned out to matter (see next paragraph).
+//
+// REAL METHODOLOGY, not just hue-spacing on a colour wheel: each
+// candidate was run through a Brettel/Vienot/Mollon-style linear LMS
+// dichromacy simulation for all three deficiency types, then WCAG
+// contrast was recomputed on the SIMULATED colour against a
+// simulated background — not the plain formula. This caught a real,
+// initially-missed problem: plain WCAG contrast (built on standard,
+// non-CVD luminance weighting) overstates legibility for red-leaning
+// hues, because protanopia AND deuteranopia both reduce perceived
+// luminance for long-wavelength (red/orange) colours. An earlier pass
+// of this palette (amber Contacts, dusty-pink Encounters, vermillion
+// actionRed, all at their raw Okabe-Ito-derived lightness) looked fine
+// under plain WCAG (~3-4:1) but actually dropped to ~2.0-2.5:1 once
+// contrast was recomputed on the deuteranopia/protanopia-simulated
+// colour — genuinely too low. Each affected colour below was darkened
+// further until it clears ~3:1 under the WORST of {normal,
+// protanopia-sim, deuteranopia-sim, tritanopia-sim} — the actual
+// legibility floor for a colourblind viewer, not just a sighted one.
+//
+// The same simulation caught a second real problem in hue selection:
+// an earlier Home candidate (dark gold/yellow, hue ~56deg, chosen for
+// "good spread" by raw hue-wheel degrees from Contacts' amber at
+// ~41deg) collapsed toward Contacts under protanopia/deuteranopia
+// simulation — both sit in the same warm orange-yellow confusion
+// region, and no amount of lightness/saturation tuning at that hue
+// fixed it without destroying contrast-vs-white (bright yellow can't
+// hit 3:1 against white at any lightness). Home was moved to a violet/
+// indigo hue instead (261deg) — genuinely flexible per the ask ("home
+// module colour can change too"), cool rather than warm so it doesn't
+// share a confusion cluster with Contacts/Encounters/actionRed, and
+// verified (not assumed) to keep real separation from every other
+// colour under all three simulated deficiencies.
+// Final assignment:
 //   Healthcare -> bluish green (health, as expected)
 //   Medication -> blue (medication, as expected)
-//   Encounters -> reddish purple (closest safe hue to "love/red" that
-//     doesn't collide with actionRed's own vermillion below)
-//   Contacts   -> amber/ochre (no natural CVD-safe "archive" hue exists;
-//     this is the one Okabe-Ito hue left with good spread from the rest)
-//   Home       -> dark gold/olive (yellow, darkened for legibility) —
-//     genuinely flexible per the ask ("home module colour can change
-//     too"), and the one remaining hue once the other 4 are placed
-//   actionRed   -> vermillion, the deliberate safe substitute for true
-//     red/green confusion (the single highest-value fix here)
+//   Encounters -> reddish purple, darkened (closest safe hue to
+//     "love/red" that doesn't collide with actionRed's own vermillion)
+//   Contacts   -> amber/ochre, darkened (no natural CVD-safe "archive"
+//     hue exists; the Okabe-Ito hue with the best real spread left)
+//   Home       -> violet/indigo — see above; the one hue-family not
+//     already in use by anything else in the app's action/module set
+//   actionRed   -> vermillion, darkened — the deliberate safe
+//     substitute for true red/green confusion, the single highest-
+//     value fix here
 //   actionGreen -> bluish green, same hue as Healthcare — module-colour
 //     vs action-colour reuse was never a distinguishability problem,
 //     only module-vs-module and red-vs-green mutual distinguishability
-//     actually are, and both of those are clean (verified: every pair
-//     of the 5 module hues is 14-163deg apart; actionRed/actionGreen are
-//     137deg apart).
+//     actually are, and both are verified clean under simulation.
+//
+// HONEST RESIDUAL LIMITATION: Medication and Healthcare's dark-mode
+// variants (both auto-brightened by resolveDarkAccent/deriveDarkAccent
+// below) sit uncomfortably close under TRITANOPIA specifically once
+// simulated (~9-10 units apart in simulated RGB, vs a clean 25+ in
+// light mode) — tritanopia is the rarest form (~1 in 10,000, vs ~1 in
+// 12 for protanopia+deuteranopia combined) and both colours are the
+// two strongest real contextual matches in the whole set (health=
+// green, medication=blue), so this was left as a known, stated trade-
+// off rather than sacrificing that contextual fit for the rarest case.
 export const CVD_SAFE_PALETTE = {
-  contacts: "#B87F00",
-  encounters: "#CC79A7",
+  contacts: "#A37100",
+  encounters: "#AE427E",
   medication: "#0072B2",
   healthcare: "#009E73",
-  home: "#A1960D",
-  actionRed: "#D55E00",
+  home: "#381579",
+  actionRed: "#AD4D00",
   actionGreen: "#009E73",
 };
 

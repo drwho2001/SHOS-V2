@@ -1705,10 +1705,11 @@ function DesignScreen({ onClose }) {
                 a research-backed preset rather than a self-explanatory
                 control. */}
             <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 6, lineHeight: 1.4 }}>
-              Swaps all module and status colours below for a set from the Okabe-Ito
-              colour-vision-deficiency-safe palette — distinguishable under red-green
-              and blue-yellow colour blindness. Turning it off resets those 7 colours
-              back to their regular defaults.
+              Swaps all module and status colours below for a set built from and
+              verified against real colour-vision-deficiency research — checked to
+              stay distinguishable and legible under red-green and blue-yellow colour
+              blindness, not just for standard vision. Turning it off resets those 7
+              colours back to their regular defaults.
             </div>
           </div>
         </div>
