@@ -76,18 +76,45 @@ export const MEDICATION_ACTIONS = {
   snooze: "SNOOZE_30",
 };
 
+// ADDED — real ask: the DoxyPEP 72h alert gets real action buttons
+// too, same Take/Snooze pattern as Medication's own dose reminders
+// above. HONEST NOTE on the existing "DoxyPEP dosing must stay manual"
+// rule (see doxyPepCalculations.js's own header comment): that rule is
+// about the app never ASSUMING a dose was taken just because the
+// countdown reached zero — it's not about disallowing a genuine,
+// user-initiated one-tap action. A notification button only ever logs
+// anything when the user actually taps it, same as Medication's own
+// "Take all" — that's still manual, just a faster path to the same
+// action "open the app and log it" already was. No "skip" action here
+// unlike Medication's: DoxyPEP is per-exposure, not a daily dose, so
+// "skip until tomorrow" doesn't map to anything real for it.
+export const DOXYPEP_ACTION_TYPE_ID = "DOXYPEP_ALERT_ACTIONS";
+export const DOXYPEP_ACTIONS = {
+  takeDose: "TAKE_DOXY_DOSE",
+  snooze: "SNOOZE_DOXY_30",
+};
+
 export async function registerNotificationActionTypes() {
   const plugin = await getPlugin();
   if (!plugin) return false;
   await plugin.registerActionTypes({
-    types: [{
-      id: MEDICATION_ACTION_TYPE_ID,
-      actions: [
-        { id: MEDICATION_ACTIONS.takeAll, title: "Take all" },
-        { id: MEDICATION_ACTIONS.snooze, title: "Remind in 30 min" },
-        { id: MEDICATION_ACTIONS.skipToday, title: "Skip until tomorrow" },
-      ],
-    }],
+    types: [
+      {
+        id: MEDICATION_ACTION_TYPE_ID,
+        actions: [
+          { id: MEDICATION_ACTIONS.takeAll, title: "Take all" },
+          { id: MEDICATION_ACTIONS.snooze, title: "Remind in 30 min" },
+          { id: MEDICATION_ACTIONS.skipToday, title: "Skip until tomorrow" },
+        ],
+      },
+      {
+        id: DOXYPEP_ACTION_TYPE_ID,
+        actions: [
+          { id: DOXYPEP_ACTIONS.takeDose, title: "Take dose" },
+          { id: DOXYPEP_ACTIONS.snooze, title: "Remind in 30 min" },
+        ],
+      },
+    ],
   });
   return true;
 }

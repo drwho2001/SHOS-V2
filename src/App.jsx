@@ -475,15 +475,23 @@ export default function App() {
   // currently open, so this genuinely is a shell-level concern, not a
   // module one — unlike DoxyPEP's sync logic earlier this session,
   // which WAS a mistake to put here and got moved to Home instead.
+  // CHANGED — real ask: the DoxyPEP 72h alert now ALSO has real action
+  // buttons (Take dose / Remind in 30) — same single listener, one
+  // more pair of actionIds to dispatch, since both action groups fire
+  // through this exact same native event regardless of which
+  // notification they came from.
   useEffect(() => {
     let listenerHandle = null;
     (async () => {
-      const { addNotificationActionListener, MEDICATION_ACTIONS } = await import("./storage/notificationService");
+      const { addNotificationActionListener, MEDICATION_ACTIONS, DOXYPEP_ACTIONS } = await import("./storage/notificationService");
       const { handleTakeAll, handleSkipToday, handleSnooze } = await import("./calculations/medicationReminderSync");
+      const { handleTakeDoxyDose, handleSnoozeDoxy } = await import("./calculations/doxyPepSync");
       listenerHandle = await addNotificationActionListener((action) => {
         if (action.actionId === MEDICATION_ACTIONS.takeAll) handleTakeAll();
         else if (action.actionId === MEDICATION_ACTIONS.skipToday) handleSkipToday();
         else if (action.actionId === MEDICATION_ACTIONS.snooze) handleSnooze();
+        else if (action.actionId === DOXYPEP_ACTIONS.takeDose) handleTakeDoxyDose();
+        else if (action.actionId === DOXYPEP_ACTIONS.snooze) handleSnoozeDoxy();
       });
     })();
     return () => { listenerHandle?.remove(); };

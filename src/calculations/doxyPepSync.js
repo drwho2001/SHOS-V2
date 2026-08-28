@@ -15,7 +15,7 @@ import { EncounterRepository } from "../repositories/encounterRepository";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { LogRepository } from "../repositories/logRepository";
 import { getDoxyPepStatus, findDoxyPepMedication } from "./doxyPepCalculations";
-import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName } from "../storage/notificationService";
+import { scheduleNotification, cancelNotification, registerNotificationActionTypes, NOTIFICATION_IDS, DOXYPEP_ACTION_TYPE_ID, moduleSmallIconName } from "../storage/notificationService";
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
 
@@ -61,6 +61,12 @@ export async function syncDoxyPepAlert() {
     return status;
   }
 
+  // ADDED — real ask: real Take dose/Remind in 30 action buttons,
+  // same pattern as Medication's own dose reminders (see
+  // notificationService.js's own comment on why a tappable action
+  // button doesn't conflict with "DoxyPEP dosing must stay manual").
+  await registerNotificationActionTypes();
+
   // Re-scheduling under the same fixed id naturally replaces any
   // previously-pending alert (e.g. a later qualifying activity within
   // the same still-open window doesn't move the deadline, per
@@ -71,8 +77,33 @@ export async function syncDoxyPepAlert() {
     title: "DoxyPEP dose due",
     body: "It's been close to 72 hours since your last qualifying activity — take your DoxyPEP dose if you haven't already.",
     at: status.deadline,
+    actionTypeId: DOXYPEP_ACTION_TYPE_ID,
     smallIcon: moduleSmallIconName("home"),
     iconColor: ACCENTS.home,
   });
   return status;
+}
+
+// Handlers for the two real actions — called from the app-level
+// notification action listener (App.jsx), same reasoning as
+// medicationReminderSync's own handleTakeAll/handleSnooze: a
+// notification tap can happen regardless of which screen is currently
+// open, so dispatch lives at the shell level, not a module.
+export function handleTakeDoxyDose() {
+  const doxyMed = findDoxyPepMedication(MedicationRepository.getAll());
+  if (!doxyMed) return;
+  LogRepository.create({ medicationId: doxyMed.id, type: "dose", delta: -doxyMed.unitsPerDose, date: new Date().toISOString() });
+  syncDoxyPepAlert();
+}
+
+export function handleSnoozeDoxy() {
+  scheduleNotification({
+    id: NOTIFICATION_IDS.doxyPepAlert,
+    title: "DoxyPEP dose due",
+    body: "Reminder snoozed",
+    at: new Date(Date.now() + 30 * 60000),
+    actionTypeId: DOXYPEP_ACTION_TYPE_ID,
+    smallIcon: moduleSmallIconName("home"),
+    iconColor: ACCENTS.home,
+  });
 }
