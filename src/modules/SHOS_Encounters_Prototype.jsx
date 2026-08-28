@@ -57,10 +57,13 @@ const LIGHT = {
 // desaturated purple — good on white, too low-contrast as text/fills
 // against a near-black dark surface, so brightened here specifically
 // (same reason Medication's own accent needed a dark-mode variant).
+// CHANGED — real ask: the previous brightened value (#C77BB5) read as
+// too lilac/muted; user tried several neon-plum candidates and picked
+// this one as the new default.
 const DARK = {
   ...NEUTRAL_DARK,
-  encountersPink: "#C77BB5", actionRed: "#FF7A7E", actionGreen: "#5FD9A4",
-  navActive: "#C77BB5", fabBg: "#C77BB5", fabIcon: "#FFFFFF",
+  encountersPink: "#D370C7", actionRed: "#FF7A7E", actionGreen: "#5FD9A4",
+  navActive: "#D370C7", fabBg: "#D370C7", fabIcon: "#FFFFFF",
 };
 const radius = RADIUS;
 
