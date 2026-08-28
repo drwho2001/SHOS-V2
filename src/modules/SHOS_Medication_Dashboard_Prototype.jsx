@@ -18,6 +18,12 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
 import { LogRepository } from "../repositories/logRepository";
 import { computeStock, computeAdherence, nextDoseEstimate, isDoseLockedOut, lockoutEndsEstimate, effectiveDoseIntervalHours } from "../calculations/medicationCalculations";
+// ADDED — real ask: Correction Sheet needs to change WHEN a dose was
+// logged, not just how much, for the "forgot to log at the time, adding
+// it after" case. Same shared "Now" helper and plain-string-slicing
+// safety already established by Encounters'/Clinic Visits' own
+// DateTimeField — no Date-object round-trip, no silent BST/UTC shift.
+import { nowAsDateTimeLocalString } from "../calculations/dateInputHelpers";
 // ADDED 19 Aug 2026 — real ask: allergies visible "± medications at
 // the top" too, not just on Clinic Card. Read-only here — Allergies
 // itself is edited on My Profile, this is just a visibility surface.
@@ -466,8 +472,27 @@ function QuantitySheet({ med, mode, onConfirm, onClose, T }) {
 
 const stepperBtn = (T) => ({ width: 44, height: 44, borderRadius: radius.full, border: `1px solid ${T.border}`, background: T.surface, fontSize: 20, cursor: "pointer", color: T.medsBlue, userSelect: "none" });
 
+// Same DateTimeField as Encounters/Clinic Visits — plain string
+// slicing both directions, no Date object round-trip, so a typed time
+// is never silently shifted by BST/UTC/DST.
+function DateTimeField({ label, value, onChange, T }) {
+  const inputVal = value ? value.slice(0, 16) : "";
+  return (
+    <div style={{ padding: "8px 0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
+        <span onClick={() => onChange(`${nowAsDateTimeLocalString()}:00.000Z`)} style={{ fontSize: 11, fontWeight: 700, color: T.medsBlue, cursor: "pointer" }}>Now</span>
+      </div>
+      <input type="datetime-local" value={inputVal}
+        onChange={(e) => onChange(e.target.value ? `${e.target.value}:00.000Z` : "")}
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+    </div>
+  );
+}
+
 function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
   const [amount, setAmount] = useState(Math.abs(entry.delta));
+  const [date, setDate] = useState(entry.date);
   const [confirmVoid, setConfirmVoid] = useState(false);
   const step = (dir) => setAmount((a) => Math.max(1, a + dir));
   const typeLabel = entry.type === "dose" ? "Dose taken" : entry.type === "refill" ? "Refill" : "Waste/lost";
@@ -478,8 +503,8 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Edit entry — {med.name}</span>
           <X size={18} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         </div>
-        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 16 }}>{typeLabel} · {formatLastDose(entry.date)}</div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginBottom: 18 }}>
+        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{typeLabel}</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginBottom: confirmVoid ? 18 : 4 }}>
           {!confirmVoid && amount > 1 ? <HoldButton onStep={step} dir={-1} style={stepperBtn(T)}>−</HoldButton> : <div style={{ width: 44, height: 44 }} />}
           {/* CHANGED 18 Aug 2026 — real bug the user flagged: this stayed
               showing the original amount (e.g. "1") even after clicking
@@ -492,8 +517,12 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
             style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 600, width: 70, textAlign: "center", color: confirmVoid ? T.actionRed : T.textPrimary, textDecoration: confirmVoid ? "line-through" : "none", border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, padding: "4px 2px" }} />
           {!confirmVoid && <HoldButton onStep={step} dir={1} style={stepperBtn(T)}>+</HoldButton>}
         </div>
+        {/* ADDED — real ask: option to change WHEN the dose happened, not
+            just how much — the "forgot to log it at the time, adding it
+            retroactively" case, where the actual dose time isn't "now". */}
+        {!confirmVoid && <DateTimeField label="Date & time" value={date} onChange={setDate} T={T} />}
         {!confirmVoid && (
-          <button onClick={() => onSave(amount)} style={{ ...btnStyle(T.medsBlue, "filled"), width: "100%", padding: 12, marginBottom: 10 }}>Save correction</button>
+          <button onClick={() => onSave(amount, date)} style={{ ...btnStyle(T.medsBlue, "filled"), width: "100%", padding: 12, marginTop: 10, marginBottom: 10 }}>Save correction</button>
         )}
         {!confirmVoid ? (
           <div onClick={() => setConfirmVoid(true)} style={{ textAlign: "center", fontSize: 13, color: T.actionRed, fontWeight: 600, cursor: "pointer", padding: 6 }}>This entry was a mistake — void it</div>
@@ -1357,9 +1386,9 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     refreshMeds();
     flashComplete(id, "requested");
   };
-  const saveCorrection = (newAmount) => {
+  const saveCorrection = (newAmount, newDate) => {
     const sign = correction.entry.delta < 0 ? -1 : 1;
-    LogRepository.update(correction.entry.id, { delta: sign * newAmount });
+    LogRepository.update(correction.entry.id, { delta: sign * newAmount, date: newDate });
     refreshMeds();
     setCorrection(null);
   };
