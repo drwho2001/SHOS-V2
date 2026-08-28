@@ -872,9 +872,16 @@ function ProfileSummary({ profile, T, onEdit }) {
   );
 }
 
-export default function MyProfileModule({ onClose, registerModuleBackHandler }) {
+// ADDED — real ask: sections elsewhere in the app (Clinic Card's
+// Allergies/Emergency info) used to just describe where to go add
+// this data ("under My Profile → Clinical & emergency info") rather
+// than actually taking you there. openEditingOnMount lets a caller
+// open straight into the edit form instead of the summary view —
+// optional, every existing call site keeps its current behavior by
+// simply not passing it.
+export default function MyProfileModule({ onClose, registerModuleBackHandler, openEditingOnMount = false }) {
   const [profile, setProfile] = useState(() => MyProfileRepository.getProfile());
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(openEditingOnMount);
   // CHANGED 26 Aug 2026 — real ask: Share/Export placement, deferred
   // earlier this session pending a real click-through, now decided —
   // top icon, matching the established convention (Contacts' Import,

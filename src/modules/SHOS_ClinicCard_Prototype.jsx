@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, CaretDownIcon as CaretDown, PillIcon as Pill, HeartbeatIcon as HeartPulse, UsersIcon as Users, WarningIcon as AlertTriangle, PlusIcon as Plus, GearIcon as Settings, XIcon as X, CheckIcon as Check } from "@phosphor-icons/react";
+import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { LogRepository } from "../repositories/logRepository";
 import { TestingRepository } from "../repositories/testingRepository";
@@ -167,6 +168,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // Every section defaults to visible; this only ever narrows.
   const [visibility, , toggleSection] = useClinicCardVisibility();
   const [showVisibilitySettings, setShowVisibilitySettings] = useState(false);
+  // ADDED — real ask: Allergies/Emergency info's own empty-state used to
+  // just describe where to go add this data instead of taking you
+  // there — tapping it now opens My Profile directly, straight into
+  // its edit form.
+  const [showMyProfile, setShowMyProfile] = useState(false);
   // ADDED — real ask: collapsed by default for the 3 flagged sections
   // specifically (Medications, Vaccinations, Recent encounters) — the
   // rest stay always-visible, since they're either already compact
@@ -183,6 +189,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   useEffect(() => {
     if (!registerModuleBackHandler) return;
     registerModuleBackHandler(() => {
+      if (showMyProfile) { setShowMyProfile(false); return true; }
       if (pendingNav) { setPendingNav(null); return true; }
       if (editingIdentity) { setEditingIdentity(false); return true; }
       if (showVisibilitySettings) { setShowVisibilitySettings(false); return true; }
@@ -190,7 +197,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       return true;
     });
     return () => registerModuleBackHandler(null);
-  }, [pendingNav, editingIdentity, showVisibilitySettings, registerModuleBackHandler, onClose]);
+  }, [showMyProfile, pendingNav, editingIdentity, showVisibilitySettings, registerModuleBackHandler, onClose]);
   const [identityDraft, setIdentityDraft] = useState(null);
 
   const openIdentityEdit = () => {
@@ -379,7 +386,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       <SectionHeader T={T}>Allergies</SectionHeader>
       <SectionCard T={T}>
         {profile.allergies.length === 0 ? (
-          <EmptyRow T={T}>None recorded. Add these under My Profile → Clinical & emergency info.</EmptyRow>
+          <EmptyRow T={T}>None recorded. <span onClick={() => setShowMyProfile(true)} style={{ color: T.healthcareBlue, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
         ) : (
           <div style={{ padding: "12px 14px", display: "flex", flexWrap: "wrap", gap: 6 }}>
             {profile.allergies.map((a) => (
@@ -464,7 +471,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       <SectionHeader T={T}>Emergency information</SectionHeader>
       <SectionCard T={T}>
         {!profile.emergencyContactName && !profile.emergencyContactPhone && !profile.emergencyNotes ? (
-          <EmptyRow T={T}>None recorded. Add these under My Profile → Clinical & emergency info.</EmptyRow>
+          <EmptyRow T={T}>None recorded. <span onClick={() => setShowMyProfile(true)} style={{ color: T.healthcareBlue, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
         ) : (
           <>
             {(profile.emergencyContactName || profile.emergencyContactPhone) && (
@@ -518,6 +525,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
             ))}
           </SectionCard>
           <div style={{ height: 24 }} />
+        </div>
+      )}
+      {showMyProfile && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 310 }}>
+          <MyProfileModule onClose={() => setShowMyProfile(false)} openEditingOnMount registerModuleBackHandler={registerModuleBackHandler} />
         </div>
       )}
     </div>
