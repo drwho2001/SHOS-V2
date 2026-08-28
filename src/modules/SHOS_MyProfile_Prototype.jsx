@@ -553,9 +553,9 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
           <PhotoPicker value={form.profilePicture} onChange={set("profilePicture")} T={T} />
           <TextField label="Full name" value={form.displayName} onChange={set("displayName")} T={T} placeholder="Your full name" />
           <TextField label="Nickname" value={form.nickname} onChange={set("nickname")} T={T} placeholder="e.g. Alex" />
-          <TextField label="Pronouns" value={form.pronouns} onChange={set("pronouns")} T={T} placeholder="e.g. he/him, she/her, they/them" />
           <SuggestField label="Gender" value={form.gender} onChange={set("gender")} options={genderOptions}
             onAddNew={(v) => setGenderOptions(CustomOptionListsRepository.add("gender", v))} T={T} placeholder="e.g. Male, Female, Non-binary" />
+          <TextField label="Pronouns" value={form.pronouns} onChange={set("pronouns")} T={T} placeholder="e.g. he/him, she/her, they/them" />
           <AgeField age={form.age} onChangeAge={set("age")} T={T} />
           <TextField label="City" value={form.city} onChange={set("city")} T={T} placeholder="Deliberately city, not full address — see privacy note" />
         </SectionCard>
@@ -594,6 +594,15 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
           <RegistryTagPicker label="Known chems" value={form.knownChems} onChange={set("knownChems")} registry={ChemsRegistry} T={T} resolveSynonym={resolveChemSynonym} />
         </SectionCard>
 
+        {/* ADDED — real ask: this whole section is penis-specific
+            (length/girth/foreskin/chastity/cummer) — genuinely
+            unnecessary when Gender is Female. Exact match only, NOT a
+            substring match against "female" — deliberately does NOT
+            hide for Trans-female, since anatomy varies enough there
+            that presuming it away could hide something genuinely
+            relevant. Nothing here is deleted, just not shown; picking
+            a different Gender later brings it straight back. */}
+        {form.gender?.trim().toLowerCase() !== "female" && (
         <SectionCard title="Physical" T={T}>
           <SelectField label="Length (penis)" value={form.length} onChange={set("length")} options={LENGTH_OPTIONS} T={T} />
           <SelectField label="Girth (penis)" value={form.thickness} onChange={set("thickness")} options={GIRTH_OPTIONS} T={T} />
@@ -609,6 +618,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
           <MultiSelectChips label="Cummer — volume" value={form.cummer} onChange={set("cummer")} options={CUMMER_VOLUME_OPTIONS} T={T} />
           <MultiSelectChips label="Cummer — style" value={form.cummer} onChange={set("cummer")} options={CUMMER_STYLE_OPTIONS} T={T} />
         </SectionCard>
+        )}
 
         <SectionCard title="Sexual health status" T={T}>
           <MultiSelectChips label="Known PrEP/DoxyPEP" value={form.knownPrepDoxy} onChange={set("knownPrepDoxy")} options={PREP_DOXY_OPTIONS} T={T} />
@@ -719,8 +729,8 @@ function ProfileDataView({ profile, T }) {
     <div style={{ padding: "0 16px 8px" }}>
       <SectionCard title="Identity" T={T}>
         <ReadRow label="Nickname" value={profile.nickname} T={T} />
-        <ReadRow label="Pronouns" value={profile.pronouns} T={T} />
         <ReadRow label="Gender" value={profile.gender} T={T} />
+        <ReadRow label="Pronouns" value={profile.pronouns} T={T} />
         <ReadRow label="Age" value={profile.age} T={T} />
         <ReadRow label="City" value={profile.city} T={T} />
       </SectionCard>
@@ -750,6 +760,7 @@ function ProfileDataView({ profile, T }) {
       <SectionCard title="Chems" T={T}>
         <ReadRow label="Known chems" value={chemNames.length > 0 ? chemNames : "None known"} T={T} />
       </SectionCard>
+      {profile.gender?.trim().toLowerCase() !== "female" && (
       <SectionCard title="Physical" T={T}>
         <ReadRow label="Length (penis)" value={profile.length} T={T} />
         <ReadRow label="Girth (penis)" value={profile.thickness} T={T} />
@@ -758,6 +769,7 @@ function ProfileDataView({ profile, T }) {
         <ReadRow label="Chastity status" value={profile.chastityStatus} T={T} />
         <ReadRow label="Cummer" value={profile.cummer} T={T} />
       </SectionCard>
+      )}
       <SectionCard title="Sexual health status" T={T}>
         <ReadRow label="Known PrEP/DoxyPEP" value={profile.knownPrepDoxy} T={T} />
         {/* ADDED 18 Aug 2026 — same explicit-"not on it" treatment as the

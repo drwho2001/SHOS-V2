@@ -1285,9 +1285,9 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           <TextField T={T} label="Nickname (shown instead of name, if set)" value={form.nickname} onChange={set("nickname")} placeholder="Optional" />
           {/* ADDED — real ask: trans-inclusive, non-judgemental — free
               text, not a fixed dropdown of "approved" options. */}
-          <TextField T={T} label="Pronouns" value={form.pronouns} onChange={set("pronouns")} placeholder="e.g. he/him, she/her, they/them" />
           <SuggestField T={T} label="Gender" value={form.gender} onChange={set("gender")} options={genderOptions}
             onAddNew={(v) => setGenderOptions(CustomOptionListsRepository.add("gender", v))} placeholder="e.g. Male, Female, Non-binary" />
+          <TextField T={T} label="Pronouns" value={form.pronouns} onChange={set("pronouns")} placeholder="e.g. he/him, she/her, they/them" />
           <AgeField T={T} age={form.age} ageIsApprox={form.ageIsApprox} onChangeAge={set("age")} onChangeApprox={set("ageIsApprox")} />
           {/* ADDED 26 Aug 2026 — real ask: moved to the top of the form
               rather than buried in Location & logistics — the override
@@ -1413,6 +1413,16 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
         </SectionCard>
 
         <SectionCard T={T} title="Physical & health">
+          {/* ADDED — real ask: these specific fields (not the whole
+              section — Known to be on/Last tested below stay relevant
+              regardless) are penis-specific, genuinely unnecessary
+              when Gender is Female. Exact match only, NOT a substring
+              match against "female" — deliberately does NOT hide for
+              Trans-female, since anatomy varies enough there that
+              presuming it away could hide something genuinely
+              relevant. Nothing here is deleted, just not shown. */}
+          {form.gender?.trim().toLowerCase() !== "female" && (
+          <>
           <SelectField T={T} label="Length (penis)" value={form.length} onChange={set("length")} options={LENGTH_OPTIONS} />
           <SelectField T={T} label="Girth (penis)" value={form.thickness} onChange={set("thickness")} options={GIRTH_OPTIONS} />
           <SelectField T={T} label="Foreskin" value={form.foreskin} onChange={set("foreskin")} options={FORESKIN_OPTIONS} />
@@ -1431,6 +1441,8 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           <MultiSelectChips T={T} label="Cummer — frequency" value={form.cummer} onChange={set("cummer")} options={CUMMER_FREQUENCY_OPTIONS} />
           <MultiSelectChips T={T} label="Cummer — volume" value={form.cummer} onChange={set("cummer")} options={CUMMER_VOLUME_OPTIONS} />
           <MultiSelectChips T={T} label="Cummer — style" value={form.cummer} onChange={set("cummer")} options={CUMMER_STYLE_OPTIONS} />
+          </>
+          )}
           <MultiSelectChips T={T} label="Known to be on" value={form.knownPrepDoxy} onChange={set("knownPrepDoxy")} options={PREP_DOXY_OPTIONS} />
           <TextField T={T} label="Last tested date (if known)" value={form.lastTestedDate} onChange={set("lastTestedDate")} type="date" helper="Often unknown — leave blank, no pressure." />
         </SectionCard>
@@ -1726,12 +1738,20 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               stats)"). Foreskin/chastity/PrEP-DoxyPEP/last-tested left
               visible — not named in the ask, and arguably closer to
               health-relevant than identity-revealing. */}
+          {/* ADDED — real ask: hide these penis-specific rows (not
+              Known to be on/Last tested below) when Gender is exactly
+              "Female" — see the edit sheet's own comment on why
+              Trans-female is deliberately excluded from this match. */}
+          {contact.gender?.trim().toLowerCase() !== "female" && (
+          <>
           <ReadRow T={T} label="Length (penis)" value={hideFurther ? MASKED : contact.length} />
           <ReadRow T={T} label="Girth (penis)" value={hideFurther ? MASKED : contact.thickness} />
           <ReadRow T={T} label="Foreskin" value={contact.foreskin} />
           <ReadRow T={T} label="Foreskin fit" value={contact.foreskinDetail} />
           <ReadRow T={T} label="Chastity status" value={contact.chastityStatus} />
           <ReadRow T={T} label="Cummer" value={hideFurther ? MASKED : contact.cummer} />
+          </>
+          )}
           <ReadRow T={T} label="Known to be on" value={contact.knownPrepDoxy} />
           <ReadRow T={T} label="Last tested" value={contact.lastTestedDate} />
         </SectionCard>

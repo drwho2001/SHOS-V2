@@ -86,7 +86,7 @@ const SEED_LISTS = {
   // exact spec, same "no Other chip, real free text already covers
   // it" convention as vaccine above — Non-binary and anything else
   // typed in just works via the add-your-own field.
-  gender: ["Male", "Female", "Trans man", "Trans woman", "Non-binary"],
+  gender: ["Male", "Female", "Trans-male", "Trans-female", "Non-binary"],
 };
 
 // Friendly labels for the editor screen — separate from the storage
