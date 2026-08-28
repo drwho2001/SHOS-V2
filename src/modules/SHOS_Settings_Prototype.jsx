@@ -1857,11 +1857,13 @@ function DesignScreen({ onClose }) {
                 a research-backed preset rather than a self-explanatory
                 control. */}
             <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 6, lineHeight: 1.4 }}>
-              Swaps all module and status colours below for a set built from and
-              verified against real colour-vision-deficiency research — checked to
-              stay distinguishable and legible under red-green and blue-yellow colour
-              blindness, not just for standard vision. Turning it off resets those 7
-              colours back to their regular defaults.
+              Swaps all module and status colours below for one shared set, checked
+              (via real colour-blindness simulation, not just standard vision) to stay
+              distinguishable and legible under protanopia, deuteranopia, AND
+              tritanopia at once — one balanced set covering all three, not tuned to
+              any single type. Turning it off resets those 7 colours back to their
+              regular defaults, and every colour stays yours to fine-tune by hand
+              below either way.
             </div>
           </div>
         </div>
