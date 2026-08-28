@@ -58,7 +58,7 @@ import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
 import { checkBiometryAvailable } from "../storage/biometricAuthService";
-import { checkCalendarAvailable, syncClinicVisitsToCalendar, removeShosCalendar } from "../storage/calendarSyncService";
+import { checkCalendarAvailable, syncClinicVisitsToCalendar, removeAllSyncedEvents, removeSyncedEventsFrom, listAvailableCalendars, SHOS_CALENDAR_NAME } from "../storage/calendarSyncService";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { EpisodeRepository } from "../repositories/episodeRepository";
 import { KinkRegistry } from "../registries/kinkRegistry";
@@ -554,16 +554,18 @@ function PrivacyScreen({ onClose }) {
   // device/permission check first (never just flips the flag and
   // hopes), then syncs every currently-booked Clinic Visit right away
   // rather than waiting for the next save. Turning OFF actually
-  // removes the calendar (and every event in it) — see
-  // calendarSyncService.js's own comment on why that matters for
-  // "never accidentally shared unless deliberately selected".
+  // removes whatever calendar was in use (and every event this app
+  // put there) — see calendarSyncService.js's own comment on why that
+  // matters for "never accidentally shared unless deliberately
+  // selected".
   const toggleCalendarSync = async () => {
     setCalendarSyncError("");
     if (appPrefs.calendarSyncEnabled) {
       setCalendarSyncing(true);
-      await removeShosCalendar();
-      AppPreferencesRepository.update({ calendarSyncEnabled: false });
+      await removeAllSyncedEvents();
+      AppPreferencesRepository.update({ calendarSyncEnabled: false, calendarSyncTargetName: null });
       setAppPrefs(AppPreferencesRepository.getPreferences());
+      setShowCalendarPicker(false);
       setCalendarSyncing(false);
       return;
     }
@@ -577,6 +579,30 @@ function PrivacyScreen({ onClose }) {
     AppPreferencesRepository.update({ calendarSyncEnabled: true });
     setAppPrefs(AppPreferencesRepository.getPreferences());
     await syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+    setCalendarSyncing(false);
+  };
+
+  // ADDED — real follow-up ask: "I still want to have the option to
+  // share with a calendar... allow sync with warning." Loads whatever
+  // real calendars are already on the device (could be empty — no
+  // other accounts added here) the first time the picker opens.
+  const [showCalendarPicker, setShowCalendarPicker] = useState(false);
+  const [availableCalendars, setAvailableCalendars] = useState(null);
+  const openCalendarPicker = async () => {
+    setShowCalendarPicker(true);
+    if (availableCalendars === null) setAvailableCalendars(await listAvailableCalendars());
+  };
+  // Switching target: clean up whichever calendar was in use before
+  // (private or a previously-picked external one), then re-sync into
+  // the new one — never leaves a stale copy behind in the old one.
+  const selectCalendarTarget = async (name) => {
+    setCalendarSyncing(true);
+    const previousName = appPrefs.calendarSyncTargetName || SHOS_CALENDAR_NAME;
+    await removeSyncedEventsFrom(previousName);
+    AppPreferencesRepository.update({ calendarSyncTargetName: name });
+    setAppPrefs(AppPreferencesRepository.getPreferences());
+    await syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+    setShowCalendarPicker(false);
     setCalendarSyncing(false);
   };
 
@@ -772,7 +798,7 @@ function PrivacyScreen({ onClose }) {
             <div style={{ flex: 1, paddingRight: 12 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Sync clinic appointments to phone calendar</div>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>
-                Booked appointments appear in your phone's real calendar app, in their own private "SHOS (private)" calendar — never a synced/shared one, never sent anywhere. Turning this off removes it and everything in it.
+                Booked appointments appear in your phone's real calendar app. Defaults to its own private "SHOS (private)" calendar — never a synced/shared one, never sent anywhere. Turning this off removes everything this app put there.
               </div>
               {calendarSyncError && <div style={{ fontSize: 11, color: ACTION.red, marginTop: 4 }}>{calendarSyncError}</div>}
             </div>
@@ -780,7 +806,61 @@ function PrivacyScreen({ onClose }) {
               <div style={{ position: "absolute", top: 2, left: appPrefs.calendarSyncEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
             </div>
           </div>
+
+          {appPrefs.calendarSyncEnabled && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+              <div onClick={calendarSyncing ? undefined : openCalendarPicker} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer" }}>
+                <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Syncing to:</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: ACCENTS.healthcare }}>{appPrefs.calendarSyncTargetName || SHOS_CALENDAR_NAME} · Change</div>
+              </div>
+              {/* ADDED — real ask: "not sure if this is something you
+                  can force, if not allow sync with warning, maybe a
+                  link for how to keep private for common calendars" —
+                  it can't be forced (this app has no control over an
+                  external calendar's own sharing settings), so a real
+                  warning plus provider-specific guidance shows
+                  whenever a non-private target is actually in use. */}
+              {appPrefs.calendarSyncTargetName && (
+                <div style={{ marginTop: 10, padding: 12, borderRadius: 10, background: darkMode ? "#3A2A1080" : "#FFF7ED", border: `1px solid ${darkMode ? "#5A3E1080" : "#F59E0B40"}` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                    <AlertTriangle size={14} color="#B45309" />
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#B45309" }}>Not private by default</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", lineHeight: 1.5 }}>
+                    This app can't control whether "{appPrefs.calendarSyncTargetName}" is shared with anyone else — that's entirely up to how that calendar's own account is set up. If it's a Google Calendar, check it isn't set to "Make available to public" and isn't shared under its own sharing settings. If it's Outlook, check Calendar settings → Shared calendars. If it's Apple/iCloud, check Calendar → Edit → Shared With. When in doubt, switch back to the private "SHOS (private)" calendar above.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
+        {/* Calendar target picker — real device calendars only, loaded
+            on first open. Always offers the private default first. */}
+        {showCalendarPicker && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 300 }} onClick={() => !calendarSyncing && setShowCalendarPicker(false)}>
+            <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: "70vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Sync appointments to</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 14 }}>Only calendars already on this device — nothing new is ever created except the private option below.</div>
+              <div onClick={() => !calendarSyncing && selectCalendarTarget(null)}
+                style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${!appPrefs.calendarSyncTargetName ? ACCENTS.healthcare : (darkMode ? DARK.border : "#DCDCE1")}`, background: !appPrefs.calendarSyncTargetName ? `${ACCENTS.healthcare}10` : "transparent", cursor: "pointer", marginBottom: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>SHOS (private) — recommended</div>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>On-device only, structurally can't sync or be shared.</div>
+              </div>
+              {availableCalendars === null && <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#9A9AA1", textAlign: "center", padding: 10 }}>Loading calendars…</div>}
+              {availableCalendars?.length === 0 && (
+                <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#9A9AA1", textAlign: "center", padding: 10 }}>No other calendars found on this device.</div>
+              )}
+              {availableCalendars?.map((cal) => (
+                <div key={cal.id} onClick={() => !calendarSyncing && selectCalendarTarget(cal.name)}
+                  style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${appPrefs.calendarSyncTargetName === cal.name ? ACCENTS.healthcare : (darkMode ? DARK.border : "#DCDCE1")}`, background: appPrefs.calendarSyncTargetName === cal.name ? `${ACCENTS.healthcare}10` : "transparent", cursor: "pointer", marginBottom: 8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{cal.displayName || cal.name}</div>
+                  <div style={{ fontSize: 11, color: "#B45309", marginTop: 2 }}>Not private by default — its own sharing settings apply.</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -33,6 +33,14 @@ export const DEFAULT_APP_PREFERENCES = {
   // happens at toggle-on time, and the honest local-only-calendar
   // guarantee behind "never accidentally shared".
   calendarSyncEnabled: false,
+  // ADDED — real follow-up ask: "I still want to have the option to
+  // share with a calendar" — null/empty means the private SHOS
+  // calendar (the safe default); a real value is the exact name of an
+  // existing device calendar to sync into instead, picked from
+  // calendarSyncService.js's own listAvailableCalendars(). Settings'
+  // own UI shows a real warning before this can be set to anything
+  // but the default — see that screen's own comment for why.
+  calendarSyncTargetName: null,
 };
 
 export const AppPreferencesRepository = {
