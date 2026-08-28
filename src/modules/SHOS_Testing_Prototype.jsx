@@ -783,6 +783,14 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
           const resultNames = t.resultIds.map((id) => ResultsRegistry.getById(id)?.name).filter(Boolean);
           const resultPending = t.resultDate && new Date(t.resultDate) > new Date();
           const isPositive = !resultPending && resultNames.some((r) => r.toLowerCase() === "positive");
+          // FIXED — real ask: this dot used to just be red-if-positive,
+          // otherwise a flat, meaningless blue — "looks pointless".
+          // Now: red for a positive result, green for a real negative,
+          // amber for pending/no result yet, falling back to the same
+          // neutral blue only when none of those apply (a result type
+          // other than positive/negative was recorded).
+          const isNegative = !resultPending && resultNames.some((r) => r.toLowerCase() === "negative");
+          const dotColor = isPositive ? T.actionRed : isNegative ? T.actionGreen : resultPending ? ACTION.amber : T.healthcareBlue;
           return (
             <div key={t.id} onClick={() => selectMode ? toggleSelected(t.id) : onOpen(t.id)}
               onMouseDown={() => startPress(t.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={() => startPress(t.id)} onTouchEnd={cancelPress}
@@ -794,7 +802,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 8, height: 8, borderRadius: radius.full, background: isPositive ? T.actionRed : T.healthcareBlue, display: "inline-block" }} />
+                <span style={{ width: 8, height: 8, borderRadius: radius.full, background: dotColor, display: "inline-block" }} />
                 <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{t.title || "Untitled test"}</span>
                 {t.mostRecent && <Check size={13} color={T.healthcareBlue} />}
               </div>

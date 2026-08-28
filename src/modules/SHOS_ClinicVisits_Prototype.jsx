@@ -851,8 +851,12 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
               </div>
             )}
             <div style={{ flex: 1, minWidth: 0 }}>
+            {/* REMOVED — real ask: this dot was flat/always the same
+                color, no real meaning ("looks pointless") — unlike
+                Testing's, there's no active/warning/archived-type
+                state for a clinic visit to actually convey (the
+                Calendar icon already covers "upcoming"). */}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ width: 8, height: 8, borderRadius: radius.full, background: T.healthcareBlue, display: "inline-block" }} />
               <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{v.title || "Untitled visit"}</span>
               {v.isFutureAppointment && <Calendar size={13} color={T.healthcareBlue} />}
             </div>
