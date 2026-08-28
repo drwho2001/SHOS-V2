@@ -1636,6 +1636,19 @@ function DesignScreen({ onClose }) {
     setOverrides({});
     setChanged(true);
   };
+  // ADDED — real ask, 28 Aug 2026: a single toggle applying/removing
+  // all 7 CVD_SAFE_PALETTE colours at once, via the same
+  // setOverride()/resetOverride() mechanism as a manual pick — see
+  // that constant's own comment in moduleColorRepository.js for the
+  // research behind the exact hues. "On" is derived from the actual
+  // stored overrides each render, not a separate flag.
+  const cvdActive = ModuleColorRepository.isCvdPaletteActive();
+  const toggleCvdPalette = () => {
+    if (cvdActive) ModuleColorRepository.removeCvdPalette();
+    else ModuleColorRepository.applyCvdPalette();
+    setOverrides(ModuleColorRepository.getOverrides());
+    setChanged(true);
+  };
 
   return (
     <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -1675,6 +1688,27 @@ function DesignScreen({ onClose }) {
             <div onClick={() => setDarkMode((d) => !d)}
               style={{ width: 44, height: 26, borderRadius: 999, background: darkMode ? "#1B1B1F" : "#DCDCE1", position: "relative", cursor: "pointer", transition: "background 0.15s" }}>
               <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: darkMode ? 21 : 3, transition: "left 0.15s" }} />
+            </div>
+          </div>
+        </div>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+          <div style={{ padding: "14px 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>Colour-blind friendly palette</span>
+              <div onClick={toggleCvdPalette}
+                style={{ width: 44, height: 26, borderRadius: 999, background: cvdActive ? "#1B1B1F" : "#DCDCE1", position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
+                <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: cvdActive ? 21 : 3, transition: "left 0.15s" }} />
+              </div>
+            </div>
+            {/* ADDED — real ask: brief, honest explanation of what this
+                actually does, right where the toggle lives, since it's
+                a research-backed preset rather than a self-explanatory
+                control. */}
+            <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 6, lineHeight: 1.4 }}>
+              Swaps all module and status colours below for a set from the Okabe-Ito
+              colour-vision-deficiency-safe palette — distinguishable under red-green
+              and blue-yellow colour blindness. Turning it off resets those 7 colours
+              back to their regular defaults.
             </div>
           </div>
         </div>
