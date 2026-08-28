@@ -79,6 +79,14 @@ const SEED_LISTS = {
   // the old hardcoded RELATIONSHIP_TYPE_OPTIONS in contactRepository.js
   // — existing contacts' stored values still match, nothing breaks.
   relationshipType: ["Hookup", "Fuck buddy (casual)", "Friend with Benefit (chill)", "Partner"],
+  // ADDED — real ask: trans/hetero inclusivity, first real step. This
+  // app's own field choices (myPosition/CUM_LOCATION already having
+  // Vaginal options, etc.) were built gay/MSM-first — Gender is a real
+  // gap on both My Profile and Contacts. Seeded per the user's own
+  // exact spec, same "no Other chip, real free text already covers
+  // it" convention as vaccine above — Non-binary and anything else
+  // typed in just works via the add-your-own field.
+  gender: ["Male", "Female", "Trans man", "Trans woman", "Non-binary"],
 };
 
 // Friendly labels for the editor screen — separate from the storage
@@ -96,6 +104,7 @@ export const OPTION_LIST_LABELS = {
   episodeTriggerReason: "Timeline trigger reason",
   medicationCategory: "Medication category",
   relationshipType: "Relationship type",
+  gender: "Gender",
 };
 
 // ADDED 19 Aug 2026 — real ask: same icon+color treatment as the
@@ -120,6 +129,7 @@ export const OPTION_LIST_ICONS = {
   episodeTriggerReason: { icon: "PlayCircle", color: ACCENTS.healthcare },
   medicationCategory: { icon: "Tag", color: "#3D63C9" },
   relationshipType: { icon: "Heart", color: ACCENTS.contacts },
+  gender: { icon: "User", color: ACCENTS.contacts },
 };
 
 let lists = { ...SEED_LISTS, ...storage.load(STORAGE_KEY, {}) };

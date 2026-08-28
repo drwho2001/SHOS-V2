@@ -147,7 +147,11 @@ export const RATING_OPTIONS = ["😍 Love", "😊 Happy", "😐 Meh", "😕 Reti
 // Add-contact form uses it too (imported from here, not re-typed) — one
 // shape, not several that can drift apart.
 export const DEFAULT_CONTACT = {
-  name: "", nickname: "", pronouns: "", age: null, ageIsApprox: false,
+  name: "", nickname: "", pronouns: "",
+  // ADDED — real ask: trans/hetero inclusivity, same field as My
+  // Profile's own gender addition — see that repository's comment.
+  gender: "",
+  age: null, ageIsApprox: false,
   // ADDED 19 Aug 2026 — real gap from the Notion-vs-app audit. Stored
   // as a data URL (base64-encoded image), not a file path or upload
   // URL — there's no real backend/cloud storage in this app, so a data

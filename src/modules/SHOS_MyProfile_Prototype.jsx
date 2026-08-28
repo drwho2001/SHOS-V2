@@ -41,6 +41,7 @@ import { KinkRegistry, KINK_ROLE_OPTIONS, resolveKinkSynonym, analyzeKinkEntry, 
 // ADDED — real fix: same normalizeTag Contacts/Encounters use.
 import { normalizeTag } from "../calculations/contactCalculations";
 import { ChemsRegistry, resolveChemSynonym } from "../registries/chemsRegistry";
+import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -138,6 +139,34 @@ function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
       <input type={type} value={value ?? ""}
         onChange={(e) => onChange(type === "number" ? (e.target.value === "" ? null : Number(e.target.value)) : e.target.value)}
+        placeholder={placeholder}
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+    </div>
+  );
+}
+
+// ADDED — real ask: trans/hetero inclusivity. Free text with real
+// suggestion chips from an in-app-editable option list, same pattern
+// already proven in Vaccinations' VaccineField — typing anything not
+// suggested just works and gets remembered for next time.
+function SuggestField({ label, value, onChange, options, onAddNew, T, placeholder }) {
+  const visibleSuggestions = options.filter((o) => o !== value);
+  return (
+    <div style={{ padding: "8px 0" }}>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
+      {visibleSuggestions.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
+          {visibleSuggestions.map((o) => (
+            <div key={o} onClick={() => onChange(o)}
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
+              {o}
+            </div>
+          ))}
+        </div>
+      )}
+      <input value={value ?? ""} onChange={(e) => onChange(e.target.value)}
+        onBlur={() => { if (value && value.trim()) onAddNew(value.trim()); }}
+        onKeyDown={(e) => { if (e.key === "Enter" && value && value.trim()) { e.preventDefault(); onAddNew(value.trim()); e.target.blur(); } }}
         placeholder={placeholder}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
     </div>
@@ -509,6 +538,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
 function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   const [form, setForm] = useState(profile);
   const set = (field) => (value) => setForm((f) => ({ ...f, [field]: value }));
+  const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.get("gender"));
 
   return (
     <div data-myprofile-sheet style={{ position: "fixed", inset: 0, background: T.bg, overflowY: "auto", zIndex: 200 }}>
@@ -524,6 +554,8 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
           <TextField label="Full name" value={form.displayName} onChange={set("displayName")} T={T} placeholder="Your full name" />
           <TextField label="Nickname" value={form.nickname} onChange={set("nickname")} T={T} placeholder="e.g. Alex" />
           <TextField label="Pronouns" value={form.pronouns} onChange={set("pronouns")} T={T} placeholder="e.g. he/him, she/her, they/them" />
+          <SuggestField label="Gender" value={form.gender} onChange={set("gender")} options={genderOptions}
+            onAddNew={(v) => setGenderOptions(CustomOptionListsRepository.add("gender", v))} T={T} placeholder="e.g. Male, Female, Non-binary" />
           <AgeField age={form.age} onChangeAge={set("age")} T={T} />
           <TextField label="City" value={form.city} onChange={set("city")} T={T} placeholder="Deliberately city, not full address — see privacy note" />
         </SectionCard>
@@ -688,6 +720,7 @@ function ProfileDataView({ profile, T }) {
       <SectionCard title="Identity" T={T}>
         <ReadRow label="Nickname" value={profile.nickname} T={T} />
         <ReadRow label="Pronouns" value={profile.pronouns} T={T} />
+        <ReadRow label="Gender" value={profile.gender} T={T} />
         <ReadRow label="Age" value={profile.age} T={T} />
         <ReadRow label="City" value={profile.city} T={T} />
       </SectionCard>

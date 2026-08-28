@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, XIcon as X, PillIcon as Pill, ArrowCircleRightIcon as ArrowRightCircle, ClipboardTextIcon as ClipboardList, CalendarIcon as CalendarClock, TestTubeIcon as TestTube, SyringeIcon as Syringe, CalendarCheckIcon as CalendarCheck, MapPinIcon as MapPin, PlayCircleIcon as PlayCircle, TagIcon as Tag, HeartIcon as Heart } from "@phosphor-icons/react";
+import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, XIcon as X, PillIcon as Pill, ArrowCircleRightIcon as ArrowRightCircle, ClipboardTextIcon as ClipboardList, CalendarIcon as CalendarClock, TestTubeIcon as TestTube, SyringeIcon as Syringe, CalendarCheckIcon as CalendarCheck, MapPinIcon as MapPin, PlayCircleIcon as PlayCircle, TagIcon as Tag, HeartIcon as Heart, UserIcon as User } from "@phosphor-icons/react";
 import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } from "../repositories/customOptionListsRepository";
 
 import { useDarkModePreference } from "../calculations/darkModePreference";
@@ -14,7 +14,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // retyped here. See designTokens.js.
 import { NEUTRAL, ACCENTS, ACTION } from "../calculations/designTokens";
 
-const ICON_COMPONENTS = { Pill, ArrowRightCircle, ClipboardList, CalendarClock, TestTube, Syringe, CalendarCheck, MapPin, PlayCircle, Tag, Heart };
+const ICON_COMPONENTS = { Pill, ArrowRightCircle, ClipboardList, CalendarClock, TestTube, Syringe, CalendarCheck, MapPin, PlayCircle, Tag, Heart, User };
 
 // ADDED 19 Aug 2026 — the "idiot-proof" editor the user asked for, for the
 // simple flat option lists (see customOptionListsRepository.js for the

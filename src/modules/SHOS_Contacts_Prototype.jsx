@@ -231,6 +231,35 @@ function TextField({ label, value, onChange, T, placeholder, type = "text", help
   );
 }
 
+// ADDED — real ask: trans/hetero inclusivity. Free text with real
+// suggestion chips from an in-app-editable option list, same pattern
+// already proven in Vaccinations' VaccineField and My Profile's own
+// gender field — typing anything not suggested just works and gets
+// remembered for next time.
+function SuggestField({ label, value, onChange, options, onAddNew, T, placeholder }) {
+  const visibleSuggestions = options.filter((o) => o !== value);
+  return (
+    <div style={{ padding: "8px 0" }}>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
+      {visibleSuggestions.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
+          {visibleSuggestions.map((o) => (
+            <div key={o} onClick={() => onChange(o)}
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
+              {o}
+            </div>
+          ))}
+        </div>
+      )}
+      <input value={value ?? ""} onChange={(e) => onChange(e.target.value)}
+        onBlur={() => { if (value && value.trim()) onAddNew(value.trim()); }}
+        onKeyDown={(e) => { if (e.key === "Enter" && value && value.trim()) { e.preventDefault(); onAddNew(value.trim()); e.target.blur(); } }}
+        placeholder={placeholder}
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+    </div>
+  );
+}
+
 function SelectField({ label, value, onChange, options, T }) {
   return (
     <div style={{ padding: "8px 0" }}>
@@ -1149,6 +1178,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   // ADDED 26 Aug 2026 — real ask: Relationship type now editable,
   // same pattern as Vaccinations' vaccineOptions.
   const [relationshipTypeOptions, setRelationshipTypeOptions] = useState(() => CustomOptionListsRepository.get("relationshipType"));
+  const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.get("gender"));
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);
     if (draft) return draft.data;
@@ -1256,6 +1286,8 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           {/* ADDED — real ask: trans-inclusive, non-judgemental — free
               text, not a fixed dropdown of "approved" options. */}
           <TextField T={T} label="Pronouns" value={form.pronouns} onChange={set("pronouns")} placeholder="e.g. he/him, she/her, they/them" />
+          <SuggestField T={T} label="Gender" value={form.gender} onChange={set("gender")} options={genderOptions}
+            onAddNew={(v) => setGenderOptions(CustomOptionListsRepository.add("gender", v))} placeholder="e.g. Male, Female, Non-binary" />
           <AgeField T={T} age={form.age} ageIsApprox={form.ageIsApprox} onChangeAge={set("age")} onChangeApprox={set("ageIsApprox")} />
           {/* ADDED 26 Aug 2026 — real ask: moved to the top of the form
               rather than buried in Location & logistics — the override
@@ -1485,8 +1517,14 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               a real, isolated slip, not a deliberate choice. */}
           <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{displayName(contact)}</span>
           {/* ADDED — real ask: pronouns shown right next to the name,
-              the natural place people actually look for them. */}
-          {contact.pronouns && <span style={{ fontSize: 13, color: T.textSecondary, marginLeft: 6 }}>({contact.pronouns})</span>}
+              the natural place people actually look for them. Gender
+              joins it here rather than a whole new section — same
+              "identity, at a glance" spot, not buried below. */}
+          {(contact.pronouns || contact.gender) && (
+            <span style={{ fontSize: 13, color: T.textSecondary, marginLeft: 6 }}>
+              ({[contact.gender, contact.pronouns].filter(Boolean).join(" · ")})
+            </span>
+          )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {/* ADDED — real ask: show-blank-fields toggle. */}

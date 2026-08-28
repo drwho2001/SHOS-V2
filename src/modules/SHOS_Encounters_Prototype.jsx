@@ -892,7 +892,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           <ReadRow label="My role" value={encounter.myRole} T={T} />
           <ReadRow label="My position" value={encounter.myPosition} T={T} />
           <ReadRow label="Where did I cum?" value={encounter.whereICame} T={T} />
-          <ReadRow label="Where did he cum?" value={encounter.whereHeCame} T={T} />
+          <ReadRow label="Where did my partner cum?" value={encounter.whereHeCame} T={T} />
         </SectionCard>
 
         <SectionCard title="Kink & chems" T={T}>
@@ -1046,7 +1046,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           <SelectField label="My role" value={form.myRole} onChange={set("myRole")} options={MY_ROLE_OPTIONS} T={T} />
           <GivingReceivingChips label="My position" value={form.myPosition} onChange={set("myPosition")} options={MY_POSITION_OPTIONS} T={T} />
           <MultiSelectChips label="Where did I cum?" value={form.whereICame} onChange={set("whereICame")} options={CUM_LOCATION_OPTIONS} T={T} />
-          <MultiSelectChips label="Where did he cum?" value={form.whereHeCame} onChange={set("whereHeCame")} options={CUM_LOCATION_OPTIONS} T={T} />
+          <MultiSelectChips label="Where did my partner cum?" value={form.whereHeCame} onChange={set("whereHeCame")} options={CUM_LOCATION_OPTIONS} T={T} />
         </SectionCard>
 
         <SectionCard title="Kink & chems" T={T}>

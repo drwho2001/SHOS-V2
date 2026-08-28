@@ -48,6 +48,12 @@ export const DEFAULT_PROFILE = {
   profilePicture: "",
   nickname: "",
   pronouns: "",
+  // ADDED — real ask: trans/hetero inclusivity. Free text with
+  // suggestions (Male/Female/Trans man/Trans woman/Non-binary,
+  // anything else typed in just works), same CustomOptionListsRepository
+  // pattern already used everywhere else in this app — see
+  // customOptionListsRepository.js's own comment on the "gender" list.
+  gender: "",
 
   // Basics
   age: null,
