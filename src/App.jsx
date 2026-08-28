@@ -7,7 +7,7 @@ import HomeScreen from "./modules/SHOS_Home_Prototype";
 import HealthcareScreen from "./modules/SHOS_Healthcare_Prototype";
 import MedicationDashboard from "./modules/SHOS_Medication_Dashboard_Prototype";
 import EncountersModule from "./modules/SHOS_Encounters_Prototype";
-import { exportBackup, importBackupFromFile, EXPORT_GROUPS } from "./storage/backupService";
+import { exportBackup, inspectBackupFile, decryptBackupEnvelope, restoreFromParsedBackup, EXPORT_GROUPS } from "./storage/backupService";
 import { localStorageAdapter } from "./storage/storageAdapter";
 // ADDED — real architecture extraction, see that file's own header.
 import SettingsScreen from "./modules/SHOS_Settings_Prototype";
@@ -15,13 +15,14 @@ import GlobalSearchScreen from "./modules/SHOS_GlobalSearch_Prototype";
 import RegistryManagementScreen from "./modules/SHOS_RegistryManagement_Prototype";
 import OptionListsScreen from "./modules/SHOS_OptionListEditor_Prototype";
 import { PrivacySettingsRepository } from "./repositories/privacySettingsRepository";
+import { checkBiometryAvailable, authenticateWithBiometrics } from "./storage/biometricAuthService";
 import { AppPreferencesRepository } from "./repositories/appPreferencesRepository";
 // ADDED — real ask: "standardise UI/appearance." Shared design tokens,
 // the actual foundation — see designTokens.js for full reasoning and
 // honest scope (this is a start, not a finished migration).
 import { NEUTRAL, ACCENTS, ACTION, FONT_FAMILY, RADIUS } from "./calculations/designTokens";
 // ADDED — real ask: Home's title should read "[Name]'s dashboard".
-import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HeartbeatIcon as HeartPulse, HospitalIcon as Hospital, DownloadSimpleIcon as Download, UploadSimpleIcon as Upload, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon, CaretLeftIcon as ChevronLeft, UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database, TrashIcon as Trash2, WarningIcon as AlertTriangle, CheckIcon as Check, ClipboardTextIcon as ClipboardList, TreeStructureIcon as ListTree, PaperclipIcon as Paperclip, ClockCounterClockwiseIcon as History, EyeSlashIcon as EyeOff, EyeIcon as Eye, TestTubeIcon as TestTube, FireIcon as Flame, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MicroscopeIcon as Microscope, ListChecksIcon as ClipboardCheck, SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CreditCardIcon as CreditCard } from "@phosphor-icons/react";
+import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HeartbeatIcon as HeartPulse, HospitalIcon as Hospital, DownloadSimpleIcon as Download, UploadSimpleIcon as Upload, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon, CaretLeftIcon as ChevronLeft, UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database, TrashIcon as Trash2, WarningIcon as AlertTriangle, CheckIcon as Check, ClipboardTextIcon as ClipboardList, TreeStructureIcon as ListTree, PaperclipIcon as Paperclip, ClockCounterClockwiseIcon as History, EyeSlashIcon as EyeOff, EyeIcon as Eye, TestTubeIcon as TestTube, FireIcon as Flame, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MicroscopeIcon as Microscope, ListChecksIcon as ClipboardCheck, SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CreditCardIcon as CreditCard, FingerprintIcon as Fingerprint } from "@phosphor-icons/react";
 // CHANGED — real Tier 1 decision: Phosphor, replacing lucide-react.
 // Every icon aliased directly in ONE import statement, back to its
 // original lucide name — deliberately one consistent pattern (not
@@ -118,9 +119,16 @@ const TABS = [
 // active independently once you're past this). Never on by default;
 // reuses the same PIN as Anonymise mode's revert, per
 // privacySettingsRepository.js's own reasoning.
+// CHANGED — real ask: biometric unlock, layered on top of the PIN
+// that already gates this screen — never a replacement. The PIN
+// field below is always usable regardless of biometric state; a
+// cancelled/failed/unavailable biometric attempt just leaves you here
+// with the PIN field, same as before this existed.
 function AppLockScreen({ onUnlock }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricAttempting, setBiometricAttempting] = useState(false);
 
   const attempt = () => {
     if (PrivacySettingsRepository.checkAppLockPin(pin)) {
@@ -131,10 +139,38 @@ function AppLockScreen({ onUnlock }) {
     }
   };
 
+  const tryBiometric = async () => {
+    setBiometricAttempting(true);
+    const ok = await authenticateWithBiometrics("Unlock SHOS");
+    setBiometricAttempting(false);
+    if (ok) onUnlock();
+  };
+
+  // Checked fresh on every mount (device biometry can change while the
+  // app is backgrounded — enrollment added/removed, etc.), not just
+  // trusted from the stored preference. Auto-prompts once, the moment
+  // the lock screen appears, same convenience as most apps with
+  // biometric unlock — cancelling it is completely harmless, the PIN
+  // field is right there.
+  useEffect(() => {
+    if (!PrivacySettingsRepository.getSettings().biometricUnlockEnabled) return;
+    checkBiometryAvailable().then((result) => {
+      setBiometricAvailable(result.available);
+      if (result.available) tryBiometric();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "#1B1B1F", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 999, fontFamily: "'Inter', sans-serif" }}>
       <Eye size={32} color="#FFFFFF" style={{ marginBottom: 16, opacity: 0.6 }} />
       <div style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF", marginBottom: 16 }}>Enter PIN to unlock</div>
+      {biometricAvailable && (
+        <button onClick={tryBiometric} disabled={biometricAttempting}
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 600, fontSize: 13, cursor: biometricAttempting ? "default" : "pointer", marginBottom: 16, opacity: biometricAttempting ? 0.6 : 1 }}>
+          <Fingerprint size={16} /> {biometricAttempting ? "Checking…" : "Unlock with biometrics"}
+        </button>
+      )}
       <input value={pin} onChange={(e) => { setPin(e.target.value); setError(""); }} type="password" inputMode="numeric" autoFocus
         onKeyDown={(e) => { if (e.key === "Enter") attempt(); }}
         style={{ width: 200, padding: "12px 16px", borderRadius: 8, border: "none", fontSize: 16, textAlign: "center", marginBottom: 12, boxSizing: "border-box" }} />
@@ -517,16 +553,45 @@ export default function App() {
     setShowImportModeDialog(false);
     fileInputRef.current?.click();
   };
-  const handleFileChosen = (e) => {
+  const finishImport = (parsed) => {
+    restoreFromParsedBackup(parsed, importMode);
+    setStatus(importMode === "merge" ? "Backup merged in — reload the page to see it everywhere." : "Backup restored — reload the page to see it everywhere.");
+    window.location.reload();
+  };
+  // ADDED — real ask: encrypted backup import. A picked file is
+  // inspected first (read + parsed, nothing restored yet) so an
+  // encrypted backup can be told apart from a plain one before
+  // committing to either path — a plain backup restores immediately,
+  // same as before; an encrypted one needs a password first, via this
+  // small prompt.
+  const [pendingEncryptedEnvelope, setPendingEncryptedEnvelope] = useState(null);
+  const [decryptPassword, setDecryptPassword] = useState("");
+  const [decryptError, setDecryptError] = useState("");
+  const handleFileChosen = async (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    importBackupFromFile(
-      file,
-      () => { setStatus(importMode === "merge" ? "Backup merged in — reload the page to see it everywhere." : "Backup restored — reload the page to see it everywhere."); window.location.reload(); },
-      (err) => setStatus(`Import failed: ${err.message}`),
-      importMode
-    );
     e.target.value = "";
+    if (!file) return;
+    try {
+      const result = await inspectBackupFile(file);
+      if (result.encrypted) {
+        setPendingEncryptedEnvelope(result.envelope);
+      } else {
+        finishImport(result.parsed);
+      }
+    } catch (err) {
+      setStatus(`Import failed: ${err.message}`);
+    }
+  };
+  const attemptDecryptImport = async () => {
+    try {
+      const parsed = await decryptBackupEnvelope(pendingEncryptedEnvelope, decryptPassword);
+      setPendingEncryptedEnvelope(null);
+      setDecryptPassword("");
+      setDecryptError("");
+      finishImport(parsed);
+    } catch (err) {
+      setDecryptError(err.message);
+    }
   };
 
   // ADDED 19 Aug 2026 — App Lock gate: shown INSTEAD of everything
@@ -642,6 +707,32 @@ export default function App() {
               Merge into existing data
             </button>
             <button onClick={() => setShowImportModeDialog(false)} style={{ width: "100%", padding: 12, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : "#DCDCE1"), background: "transparent", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      {/* ADDED — real ask: encrypted backup import. Only appears once
+          inspectBackupFile() (see handleFileChosen above) has already
+          determined the picked file is genuinely encrypted — a plain
+          backup never reaches this, it restores immediately instead. */}
+      {pendingEncryptedEnvelope && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => { setPendingEncryptedEnvelope(null); setDecryptPassword(""); setDecryptError(""); }}>
+          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 8 }}>
+              This backup is encrypted
+            </div>
+            <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16, lineHeight: 1.5 }}>
+              Enter the password it was encrypted with — {importMode === "merge" ? "its records will be merged into what's already here" : "it will replace all current data"}.
+            </div>
+            <input value={decryptPassword} onChange={(e) => { setDecryptPassword(e.target.value); setDecryptError(""); }} type="password" autoFocus placeholder="Password"
+              onKeyDown={(e) => { if (e.key === "Enter") attemptDecryptImport(); }}
+              style={{ width: "100%", padding: "12px 14px", borderRadius: 8, border: `1px solid ${darkMode ? DARK.border : "#DCDCE1"}`, fontSize: 14, marginBottom: 8, boxSizing: "border-box" }} />
+            {decryptError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 12 }}>{decryptError}</div>}
+            <button onClick={attemptDecryptImport} disabled={!decryptPassword} style={{ width: "100%", padding: 14, borderRadius: 999, border: "none", background: decryptPassword ? ACCENTS.home : "#9A9AA1", color: "#FFFFFF", fontWeight: 700, cursor: decryptPassword ? "pointer" : "default", marginBottom: 8 }}>
+              Decrypt and import
+            </button>
+            <button onClick={() => { setPendingEncryptedEnvelope(null); setDecryptPassword(""); setDecryptError(""); }} style={{ width: "100%", padding: 12, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : "#DCDCE1"), background: "transparent", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>
               Cancel
             </button>
           </div>

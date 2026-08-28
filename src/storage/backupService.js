@@ -350,23 +350,142 @@ export async function exportBackup(includeKeys = null) {
   if (!includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
 }
 
-// Takes a File object (from an <input type="file"> picker), reads it,
-// and restores or merges it depending on `mode` ("replace" | "merge",
-// defaults to "replace" — the pre-existing behavior, for any caller
-// that hasn't been updated to ask). onDone/onError are simple callbacks
-// so the calling UI can show a success message or an error without
-// this file needing to know anything about React.
-export function importBackupFromFile(file, onDone, onError, mode = "replace") {
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const parsed = parseBackupFile(reader.result);
-      if (mode === "merge") mergeBackup(parsed); else restoreBackup(parsed);
-      onDone?.(parsed);
-    } catch (err) {
-      onError?.(err);
-    }
+// ---------------------------------------------------------------------
+// Encrypted export — real ask: a password-protected backup, for
+// anyone who wants to store or send a backup somewhere less trusted
+// than their own device (cloud storage, a message to themselves,
+// etc.) without the plain JSON — every contact, encounter, and test
+// result in the file — being readable by anyone who gets hold of it.
+//
+// Uses the Web Crypto API directly (SubtleCrypto), available in every
+// modern browser/WebView with no extra dependency — AES-256-GCM for
+// the actual encryption (authenticated: a wrong password or corrupted
+// file genuinely fails to decrypt, never silently produces garbage),
+// keyed via PBKDF2 (250,000 rounds, SHA-256) from the password plus a
+// fresh random salt every time, so the same password never produces
+// the same key twice. HONEST LIMIT, stated plainly: this protects the
+// FILE at rest — it's exactly as strong as the password chosen for
+// it, same as any password-protected archive (a zip, a PDF). There's
+// no password recovery: forgetting it makes that specific encrypted
+// file permanently unreadable, same trade-off as any real encryption.
+// ---------------------------------------------------------------------
+const ENCRYPTED_BACKUP_TYPE = "shos_encrypted_backup";
+const ENCRYPTED_SCHEMA_VERSION = 1;
+const PBKDF2_ITERATIONS = 250000;
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  bytes.forEach((b) => { binary += String.fromCharCode(b); });
+  return btoa(binary);
+}
+function base64ToBytes(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+async function deriveBackupKey(password, saltBytes) {
+  const keyMaterial = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: saltBytes, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+// Pure data assembly + real crypto, no browser file/DOM APIs touched
+// here — same "pure" vs. "browser-facing" split as buildBackup() vs.
+// exportBackup() above.
+export async function buildEncryptedBackup(password, includeKeys = null) {
+  const backup = buildBackup(includeKeys);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveBackupKey(password, salt);
+  const ciphertextBuf = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(backup)));
+  return {
+    type: ENCRYPTED_BACKUP_TYPE,
+    schemaVersion: ENCRYPTED_SCHEMA_VERSION,
+    exportedAt: new Date().toISOString(),
+    kdf: "PBKDF2-SHA256",
+    iterations: PBKDF2_ITERATIONS,
+    salt: bytesToBase64(salt),
+    iv: bytesToBase64(iv),
+    ciphertext: bytesToBase64(new Uint8Array(ciphertextBuf)),
   };
-  reader.onerror = () => onError?.(new Error("Couldn't read that file."));
-  reader.readAsText(file);
+}
+
+// Decrypts an encrypted backup envelope with the given password and
+// runs it through the same parseBackupFile() sanity checks a plain
+// backup gets (schema version, shape) — one validation path for both,
+// not a separate one that could drift. Throws a plain-language error
+// on a wrong password rather than a cryptic DOMException — AES-GCM's
+// own authentication tag is what actually catches this, not a guess.
+export async function decryptBackupEnvelope(envelope, password) {
+  if (!envelope || envelope.type !== ENCRYPTED_BACKUP_TYPE) {
+    throw new Error("That doesn't look like an encrypted SHOS backup.");
+  }
+  if (typeof envelope.schemaVersion === "number" && envelope.schemaVersion > ENCRYPTED_SCHEMA_VERSION) {
+    throw new Error("This encrypted backup was made with a newer version of SHOS than this app understands.");
+  }
+  const key = await deriveBackupKey(password, base64ToBytes(envelope.salt));
+  let plainBuf;
+  try {
+    plainBuf = await crypto.subtle.decrypt({ name: "AES-GCM", iv: base64ToBytes(envelope.iv) }, key, base64ToBytes(envelope.ciphertext));
+  } catch {
+    throw new Error("Wrong password, or this file is corrupted.");
+  }
+  return parseBackupFile(new TextDecoder().decode(plainBuf));
+}
+
+export async function exportEncryptedBackup(password, includeKeys = null) {
+  const envelope = await buildEncryptedBackup(password, includeKeys);
+  const json = JSON.stringify(envelope);
+  const dateStamp = new Date().toISOString().slice(0, 10);
+  const suffix = includeKeys ? "-selective" : "";
+  await exportTextFile(`shos-backup-encrypted-${dateStamp}${suffix}.json`, json, "application/json");
+  if (!includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+}
+
+// ---------------------------------------------------------------------
+// Import — reads a picked file WITHOUT restoring anything yet, so the
+// UI can tell an encrypted backup (needs a password first) from a
+// plain one (ready to restore/merge immediately) before committing to
+// either path.
+// ---------------------------------------------------------------------
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Couldn't read that file."));
+    reader.readAsText(file);
+  });
+}
+
+// Returns { encrypted: true, envelope } for an encrypted backup (call
+// decryptBackupEnvelope() with a password next), or { encrypted:
+// false, parsed } for a plain one (already validated, ready for
+// restoreFromParsedBackup()).
+export async function inspectBackupFile(file) {
+  const text = await readFileAsText(file);
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    throw new Error("That file isn't valid — it doesn't look like a SHOS backup.");
+  }
+  if (raw && raw.type === ENCRYPTED_BACKUP_TYPE) {
+    return { encrypted: true, envelope: raw };
+  }
+  return { encrypted: false, parsed: parseBackupFile(text) };
+}
+
+// Restores or merges an already-parsed/decrypted backup — the shared
+// final step for both the plain and encrypted import paths, so
+// there's exactly one place that decides what "replace" vs "merge"
+// actually does.
+export function restoreFromParsedBackup(parsed, mode = "replace") {
+  if (mode === "merge") mergeBackup(parsed); else restoreBackup(parsed);
 }

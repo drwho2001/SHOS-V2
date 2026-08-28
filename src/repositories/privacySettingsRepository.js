@@ -50,12 +50,19 @@ export const DEFAULT_PRIVACY_SETTINGS = {
   // `anonymisePin` rather than adding a second PIN field/flow — same
   // person, same device, no real reason to manage two separate codes
   // for two related privacy actions; keeps the cost of building this
-  // low without losing anything real. Biometric unlock (Face ID/
-  // fingerprint) is NOT included here — that needs the Capacitor
-  // native wrapper's own APIs, unavailable in a browser/PWA context.
+  // low without losing anything real.
   // Both this and Anonymise mode stay fully optional, never on by
   // default, per the user's explicit instruction.
   appLockEnabled: false,
+  // ADDED — real ask: biometric unlock (fingerprint/face), via
+  // @aparajita/capacitor-biometric-auth — see biometricAuthService.js.
+  // A convenience layered ON TOP of App Lock's own PIN, never a
+  // replacement: can only be turned on once appLockEnabled is already
+  // true, and the PIN field on the lock screen always still works
+  // even when this is on. Real device/enrollment check happens at
+  // toggle-on time (see PrivacyScreen) and again on every lock-screen
+  // mount, not just assumed from this stored flag.
+  biometricUnlockEnabled: false,
   // ADDED 19 Aug 2026 — real ask: prompt about App Lock during setup
   // if it isn't already on, keep prompting on future launches until
   // "don't show again" is explicitly tapped — NOT the same as just

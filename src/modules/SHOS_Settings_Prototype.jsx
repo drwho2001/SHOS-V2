@@ -23,7 +23,7 @@ import {
   PillIcon as Pill, GearIcon as SettingsIcon, ShieldIcon as Shield,
   StethoscopeIcon as Stethoscope, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User,
   TagIcon as Palette, ArrowUUpLeftIcon as ResetIcon, CalendarIcon as Calendar,
-  FileCsvIcon as FileCsv,
+  FileCsvIcon as FileCsv, LockIcon as Lock,
 } from "@phosphor-icons/react";
 import { ACCENTS, ACTION } from "../calculations/designTokens";
 import { ModuleColorRepository, CUSTOMIZABLE_MODULE_KEYS } from "../repositories/moduleColorRepository";
@@ -34,7 +34,7 @@ import {
   getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth,
 } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
-import { exportBackup, importBackupFromFile, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
+import { exportBackup, exportEncryptedBackup, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
 import { exportRecordsAsCSV } from "../storage/csvExportService";
 import { localStorageAdapter } from "../storage/storageAdapter";
 import { computeKinkUsage, computeChemsUsage, computeProtectionUsage, computeSymptomsUsage, computeOrganismUsage, computeResultsUsage } from "../calculations/registryUsage";
@@ -50,6 +50,7 @@ import { TrashRepository, MODULE_LABELS as TRASH_MODULE_LABELS } from "../reposi
 import { getCalendarEvents, groupEventsByDay } from "../calculations/calendarCalculations";
 import { LocationsRepository } from "../repositories/locationsRepository";
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
+import { checkBiometryAvailable } from "../storage/biometricAuthService";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { EpisodeRepository } from "../repositories/episodeRepository";
 import { KinkRegistry } from "../registries/kinkRegistry";
@@ -184,6 +185,112 @@ function CSVExportSheet({ onClose }) {
               ))}
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ADDED — real ask: password-protected backup export, for anyone who
+// wants to store or send a backup somewhere less trusted than their
+// own device without the plain, fully-readable JSON. Real AES-256-GCM
+// encryption via the Web Crypto API (see backupService.js's own
+// comment on buildEncryptedBackup for the full reasoning) — this
+// sheet is only the password entry + confirm UI on top of it. Same
+// "everything included by default, choose what to leave out" scope as
+// the plain Selective export sheet, reusing EXPORT_GROUPS/checked-set
+// logic rather than a second copy of it.
+function EncryptedExportSheet({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+  const allKeys = EXPORT_GROUPS.flatMap((g) => g.items.map((i) => i.dataKey));
+  const [checked, setChecked] = useState(() => new Set(allKeys));
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [error, setError] = useState("");
+  const [exporting, setExporting] = useState(false);
+
+  const isGroupFullyChecked = (group) => group.items.every((i) => checked.has(i.dataKey));
+  const isGroupPartiallyChecked = (group) => group.items.some((i) => checked.has(i.dataKey)) && !isGroupFullyChecked(group);
+  const toggleItem = (dataKey) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(dataKey)) next.delete(dataKey); else next.add(dataKey);
+      return next;
+    });
+  };
+  const toggleGroup = (group) => {
+    const shouldCheck = !isGroupFullyChecked(group);
+    setChecked((prev) => {
+      const next = new Set(prev);
+      group.items.forEach((i) => (shouldCheck ? next.add(i.dataKey) : next.delete(i.dataKey)));
+      return next;
+    });
+  };
+
+  const doExport = async () => {
+    setError("");
+    if (password.length < 6) { setError("Use at least 6 characters — this is the only thing protecting the file."); return; }
+    if (password !== confirmPassword) { setError("Passwords don't match — check both and try again."); return; }
+    setExporting(true);
+    try {
+      await exportEncryptedBackup(password, checked.size === allKeys.length ? null : Array.from(checked));
+      setPassword(""); setConfirmPassword("");
+      onClose();
+    } catch (err) {
+      setError(err.message || "Encryption failed.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const Box = ({ state }) => (
+    <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${state === "empty" ? "#9A9AA1" : ACCENTS.healthcare}`, background: state === "full" ? ACCENTS.healthcare : state === "partial" ? "#C7D5F7" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      {state === "full" && <Check size={12} color="#FFFFFF" weight="bold" />}
+    </div>
+  );
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 220 }} onClick={onClose}>
+      <div style={{ background: darkMode ? DARK.bg : "#F0F0F3", width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ padding: "20px 20px 4px", flexShrink: 0 }}>
+          <span style={{ fontWeight: 600, fontSize: 16, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Export encrypted backup</span>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 4 }}>Password-protected — safe to store or send somewhere less trusted than this device. There's no password recovery: forgetting it makes this specific file permanently unreadable.</div>
+        </div>
+        <div style={{ overflowY: "auto", padding: "8px 20px", flex: 1 }}>
+          <div style={{ position: "relative", marginBottom: 8 }}>
+            <input value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} type={showPasswords ? "text" : "password"} placeholder="Password (6+ characters)"
+              style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box", background: darkMode ? DARK.surface : "#FFFFFF", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+            {showPasswords ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(false)} />
+              : <Eye size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(true)} />}
+          </div>
+          <div style={{ position: "relative", marginBottom: 10 }}>
+            <input value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }} type={showPasswords ? "text" : "password"} placeholder="Confirm password"
+              onKeyDown={(e) => { if (e.key === "Enter") doExport(); }}
+              style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box", background: darkMode ? DARK.surface : "#FFFFFF", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+          </div>
+          {error && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 10 }}>{error}</div>}
+          <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "4px 0 6px" }}>What to include</div>
+          {EXPORT_GROUPS.map((group) => (
+            <div key={group.key} style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, marginBottom: 10, overflow: "hidden" }}>
+              <div onClick={() => toggleGroup(group)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", cursor: "pointer", borderBottom: group.items.length > 1 ? "1px solid #DCDCE1" : "none" }}>
+                <Box state={isGroupFullyChecked(group) ? "full" : isGroupPartiallyChecked(group) ? "partial" : "empty"} />
+                <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{group.label}</span>
+              </div>
+              {group.items.length > 1 && group.items.map((item) => (
+                <div key={item.dataKey} onClick={() => toggleItem(item.dataKey)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px 9px 34px", cursor: "pointer" }}>
+                  <Box state={checked.has(item.dataKey) ? "full" : "empty"} />
+                  <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: "14px 20px", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", flexShrink: 0 }}>
+          <button onClick={doExport} disabled={checked.size === 0 || exporting}
+            style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: (checked.size === 0 || exporting) ? "#9A9AA1" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: (checked.size === 0 || exporting) ? "default" : "pointer" }}>
+            {exporting ? "Encrypting…" : "Export encrypted backup"}
+          </button>
         </div>
       </div>
     </div>
@@ -400,7 +507,32 @@ function PrivacyScreen({ onClose }) {
       setPinError("Set a PIN below first, then App Lock can use it.");
       return;
     }
-    PrivacySettingsRepository.update({ appLockEnabled: !settings.appLockEnabled });
+    // CHANGED — real ask: turning App Lock back OFF should also turn
+    // off biometric unlock with it — biometric is only ever meaningful
+    // as an add-on to App Lock, leaving it silently "on" underneath
+    // would just be stale, unreachable state.
+    PrivacySettingsRepository.update({ appLockEnabled: !settings.appLockEnabled, ...(settings.appLockEnabled ? { biometricUnlockEnabled: false } : {}) });
+    refresh();
+  };
+
+  // ADDED — real ask: biometric unlock, layered on top of App Lock's
+  // own PIN. Real device/enrollment check happens here at toggle-on
+  // time — never just flips the flag and hopes, since the device
+  // might have no biometric hardware or nothing enrolled.
+  const [biometricError, setBiometricError] = useState("");
+  const toggleBiometric = async () => {
+    setBiometricError("");
+    if (settings.biometricUnlockEnabled) {
+      PrivacySettingsRepository.update({ biometricUnlockEnabled: false });
+      refresh();
+      return;
+    }
+    const result = await checkBiometryAvailable();
+    if (!result.available) {
+      setBiometricError(result.reason || "Biometrics aren't available on this device.");
+      return;
+    }
+    PrivacySettingsRepository.update({ biometricUnlockEnabled: true });
     refresh();
   };
 
@@ -468,24 +600,28 @@ function PrivacyScreen({ onClose }) {
               </div>
             </div>
             <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.hideFurtherEnabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
-              <div style={{ position: "absolute", top: 2, left: settings.hideFurtherEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: darkMode ? DARK.surface : "#FFFFFF" }} />
+              {/* CHANGED — same knob-invisible-in-dark-mode bug class
+                  as the Colour scheme screen's dark mode toggle: a
+                  near-black knob in dark mode could blend into a
+                  near-black "off" track. Solid white in both states,
+                  matching the App Lock/Biometric toggles right below
+                  and every other toggle in the app. */}
+              <div style={{ position: "absolute", top: 2, left: settings.hideFurtherEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
             </div>
           </div>
         </div>
 
         {/* ADDED 19 Aug 2026 — App Lock, real ask, separate from
             Anonymise mode: gates opening the app at all, not just
-            masking fields once it's open. Biometric (Face ID/
-            fingerprint) isn't available here — needs the Capacitor
-            native wrapper's own APIs, not buildable in a browser/PWA. */}
+            masking fields once it's open. */}
         <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16, marginBottom: 16 }}>
           <div onClick={toggleAppLock} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>App Lock</div>
-              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>Require your PIN just to open the app at all. Uses the same PIN as the Revert PIN below. Biometric unlock isn't available yet — needs the native app version.</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>Require your PIN just to open the app at all. Uses the same PIN as the Revert PIN below.</div>
             </div>
             <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockEnabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
-              <div style={{ position: "absolute", top: 2, left: settings.appLockEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: darkMode ? DARK.surface : "#FFFFFF" }} />
+              <div style={{ position: "absolute", top: 2, left: settings.appLockEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
             </div>
           </div>
           {/* ADDED 19 Aug 2026 — real fix while building this: without
@@ -496,6 +632,27 @@ function PrivacyScreen({ onClose }) {
               nothing from his side. */}
           {pinError && !settings.anonymiseModeActive && !settingPin && (
             <div style={{ fontSize: 12, color: ACTION.red, marginTop: 8 }}>{pinError}</div>
+          )}
+          {/* ADDED — real ask: biometric unlock, via
+              @aparajita/capacitor-biometric-auth. Only offered once App
+              Lock (and therefore a PIN) is already on — biometric is a
+              convenience layered on top of the PIN, not a standalone
+              gate, and the PIN field on the lock screen always still
+              works even with this on. Not shown at all in a browser
+              preview's own build check (see toggleBiometric's real
+              checkBiometryAvailable() call) — that's expected, not a
+              bug, the native plugin only exists in the installed app. */}
+          {settings.appLockEnabled && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 14, borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: "pointer" }} onClick={toggleBiometric}>
+              <div style={{ flex: 1, paddingRight: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Unlock with biometrics</div>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>Fingerprint or face unlock as a shortcut for the PIN above — the PIN still works any time this is on, off, or unavailable.</div>
+                {biometricError && <div style={{ fontSize: 11, color: ACTION.red, marginTop: 4 }}>{biometricError}</div>}
+              </div>
+              <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.biometricUnlockEnabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
+                <div style={{ position: "absolute", top: 2, left: settings.biometricUnlockEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+              </div>
+            </div>
           )}
         </div>
 
@@ -1260,6 +1417,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showSelectiveExport, setShowSelectiveExport] = useState(false);
   const [showCSVExport, setShowCSVExport] = useState(false);
+  const [showEncryptedExport, setShowEncryptedExport] = useState(false);
   const [showDevTools, setShowDevTools] = useState(false);
   const [showRegistries, setShowRegistries] = useState(false);
   const [showOptionLists, setShowOptionLists] = useState(false);
@@ -1295,11 +1453,12 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showDevTools) { setShowDevTools(false); return true; }
       if (showSelectiveExport) { setShowSelectiveExport(false); return true; }
       if (showCSVExport) { setShowCSVExport(false); return true; }
+      if (showEncryptedExport) { setShowEncryptedExport(false); return true; }
       if (showMyProfile) { setShowMyProfile(false); return true; }
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showOptionLists, showRegistries, showDevTools, showSelectiveExport, showCSVExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showOptionLists, showRegistries, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.
@@ -1354,6 +1513,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             is for restoring into SHOS, not for opening as a
             spreadsheet). */}
         <SettingsRow icon={FileCsv} label="Export as CSV…" onClick={() => setShowCSVExport(true)} iconColor="#1B1B1F" />
+        {/* ADDED — real ask: password-protected backup, for storing or
+            sending a backup somewhere less trusted than this device. */}
+        <SettingsRow icon={Lock} label="Export encrypted backup…" onClick={() => setShowEncryptedExport(true)} iconColor="#1B1B1F" />
         <SettingsRow icon={Download} label="Restore from backup" onClick={onImportClick} iconColor="#1B1B1F" />
       </div>
       {status && (
@@ -1412,6 +1574,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showCSVExport && (
         <CSVExportSheet onClose={() => setShowCSVExport(false)} />
+      )}
+      {showEncryptedExport && (
+        <EncryptedExportSheet onClose={() => setShowEncryptedExport(false)} />
       )}
       {showDevTools && (
         <DeveloperToolsScreen onClose={() => setShowDevTools(false)} />
