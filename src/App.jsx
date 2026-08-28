@@ -241,6 +241,19 @@ function OnboardingScreen({ onFinish }) {
 export default function App() {
   const [darkMode] = useDarkModePreference();
 
+  // ADDED — real bug found in real device testing: the actual HTML
+  // <body> behind the app never had its own background set (no CSS
+  // file sets one), so it defaulted to plain white. Any gap in a dark
+  // screen's own coverage — a safe-area inset, overscroll bounce, a
+  // rounding gap at an edge — showed that white straight through,
+  // reading as "a white outline/panel behind dark screens". Synced
+  // here so the actual document background always matches the live
+  // theme, not just whatever each screen's own container happens to
+  // cover.
+  useEffect(() => {
+    document.body.style.background = darkMode ? DARK.bg : "#F0F0F3";
+  }, [darkMode]);
+
   // ADDED 19 Aug 2026 — App Lock: checked once on load, held in state
   // for the session — matches how a lock screen actually behaves (you
   // don't want it demanding the PIN again every single re-render, only
@@ -549,7 +562,7 @@ export default function App() {
             return (
               <div key={tab.key} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", marginTop: -18 }}>
-                <div style={{ width: 48, height: 48, borderRadius: 999, background: tab.accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 10px rgba(0,0,0,.25)", border: "3px solid #FFFFFF" }}>
+                <div style={{ width: 48, height: 48, borderRadius: 999, background: tab.accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 10px rgba(0,0,0,.25)", border: `3px solid ${darkMode ? DARK.surface : "#FFFFFF"}` }}>
                   <Icon size={22} color="#FFFFFF" weight="bold" />
                 </div>
               </div>

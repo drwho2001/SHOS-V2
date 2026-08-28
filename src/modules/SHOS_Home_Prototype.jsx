@@ -9,6 +9,14 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // working in App.jsx; only the file it lives in has changed.
 import React, { useState, useEffect } from "react";
 import { ACCENTS } from "../calculations/designTokens";
+// ADDED — real ask: Medication's own accent (#003B6F) is a very dark,
+// near-black navy — legible as a solid FILL with white text/icon on
+// top (the nav bar tab, filled buttons), which is where Medication's
+// own module uses it. Used bare as a small icon glyph on a plain card
+// here, it read as flat/too dark rather than distinctly "medication
+// blue". This brighter variant is Home-local only — Medication's own
+// module and the nav bar keep the original navy unchanged.
+const MEDS_ICON_BLUE = "#2F5CA6";
 import { formatRelativeDate } from "../calculations/encounterCalculations";
 import { getLastBackupInfo } from "../storage/backupService";
 import {
@@ -267,10 +275,10 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       {doxyStatus.active && (
         <div style={{
           display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, marginBottom: 16,
-          background: doxyStatus.overdue ? "#E5484D18" : `${ACCENTS.medication}12`,
-          border: `1px solid ${doxyStatus.overdue ? "#E5484D" : ACCENTS.medication}`,
+          background: doxyStatus.overdue ? "#E5484D18" : `${MEDS_ICON_BLUE}12`,
+          border: `1px solid ${doxyStatus.overdue ? "#E5484D" : MEDS_ICON_BLUE}`,
         }}>
-          <Syringe size={18} color={doxyStatus.overdue ? "#E5484D" : ACCENTS.medication} />
+          <Syringe size={18} color={doxyStatus.overdue ? "#E5484D" : MEDS_ICON_BLUE} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: doxyStatus.overdue ? "#E5484D" : "#1B1B1F" }}>
               {doxyStatus.overdue ? "DoxyPEP dose overdue" : "DoxyPEP dose due soon"}
@@ -287,7 +295,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Recent activity</div>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: "0 14px", marginBottom: 24 }}>
         <SummaryRow label="Last encounter" moduleColor={ACCENTS.encounters} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
-        <SummaryRow label="Last medication dose" moduleColor={ACCENTS.medication} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
+        <SummaryRow label="Last medication dose" moduleColor={MEDS_ICON_BLUE} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
         <SummaryRow label="Last test" moduleColor={ACCENTS.healthcare} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
         <SummaryRow label="Next clinic visit" moduleColor={ACCENTS.healthcare} value={nextVisit ? `${(nextVisit.reasonForVisit || []).join("/") || nextVisit.title || "Visit"} · ${formatExactDate(nextVisit.date)}` : "None scheduled"} onClick={nextVisit ? () => onNavigateToRecord("healthcare", nextVisit.id, "clinicVisits") : undefined} />
       </div>
@@ -352,7 +360,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             (unlike every other quick-add, which only opens a blank
             draft), so it keeps the same explicit, visible tap every
             other write in this app requires. */}
-        <QuickAddButton icon={Pill} label="Log medication" color={ACCENTS.medication} onClick={() => onNavigateToRecord("medication", null)} />
+        <QuickAddButton icon={Pill} label="Log medication" color={MEDS_ICON_BLUE} onClick={() => onNavigateToRecord("medication", null)} />
       </div>
       <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Healthcare</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

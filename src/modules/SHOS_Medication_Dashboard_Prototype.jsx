@@ -330,7 +330,21 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
             // removed since it's now redundant — the Flame icon alone
             // carries the visual distinction once the whole box is
             // already amber-toned.
-            <div style={{ display: "flex", justifyContent: "space-around", background: darkMode ? T.streakGlow : `${T.medsBlue}15`, border: `1px solid ${darkMode ? "#F59E0B66" : `${T.medsBlue}40`}`, borderRadius: radius.sm, padding: "9px 4px", marginTop: 10 }}>
+            // CHANGED — real ask: this box always read as a flat, muddy
+            // amber block regardless of how adherence was actually
+            // going — no real "praise" signal for doing well, and
+            // amber read as a warning color even when nothing was
+            // wrong. Now amber is reserved for when 7-day adherence is
+            // genuinely below 80% (a real "needs attention" cue); at or
+            // above that, it switches to the same green used for
+            // "completed/on track" everywhere else in this module —
+            // actual positive reinforcement, not just decoration.
+            (() => {
+              const sevenDayGood = adherence.sevenDay.expected > 0 && (adherence.sevenDay.hit / adherence.sevenDay.expected) >= 0.8;
+              const glowBg = sevenDayGood ? (darkMode ? "#5FD9A440" : "#1B9E7715") : (darkMode ? T.streakGlow : `${T.medsBlue}15`);
+              const glowBorder = sevenDayGood ? (darkMode ? "#5FD9A466" : "#1B9E7740") : (darkMode ? "#F59E0B66" : `${T.medsBlue}40`);
+              return (
+            <div style={{ display: "flex", justifyContent: "space-around", background: glowBg, border: `1px solid ${glowBorder}`, borderRadius: radius.sm, padding: "9px 4px", marginTop: 10 }}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: T.medsBlue, display: "flex", alignItems: "center", gap: 3, justifyContent: "center" }}><Flame size={13} color={T.actionRed} />{adherence.streak}d</div>
                 <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 1 }}>streak</div>
@@ -338,6 +352,8 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
               <AdherencePill T={T} label="7-day" hit={adherence.sevenDay.hit} expected={adherence.sevenDay.expected} />
               <AdherencePill T={T} label="this refill" hit={adherence.sinceRefill.hit} expected={adherence.sinceRefill.expected} />
             </div>
+              );
+            })()
           )}
         </>
       ) : (
