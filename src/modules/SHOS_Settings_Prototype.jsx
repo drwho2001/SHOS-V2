@@ -1319,7 +1319,7 @@ function AboutScreen({ onClose }) {
   );
 }
 
-function CalendarScreen({ onClose, onNavigateToRecord }) {
+function CalendarScreen({ onClose, onNavigateToRecord, onOpenPrivacy }) {
   const [darkMode] = useDarkModePreference();
 
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
@@ -1388,6 +1388,21 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
         </div>
       )}
       <div style={{ padding: 16 }}>
+        {/* ADDED — real ask: this in-app calendar view and the newer
+            phone-calendar sync feature (Settings -> Privacy) are
+            genuinely different things — this shows every module's
+            events, read-only, inside the app; sync pushes booked
+            clinic appointments out to the real phone calendar app so
+            they show up alongside everything else (with real OS
+            reminders). Easy to miss that sync exists at all if it's
+            only ever findable from Privacy, so a quiet, dismissible-
+            feeling hint lives here too — not shown once it's already on. */}
+        {!AppPreferencesRepository.getPreferences().calendarSyncEnabled && (
+          <div onClick={() => { onOpenPrivacy?.(); onClose(); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 12px", borderRadius: 12, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", marginBottom: 14, cursor: "pointer" }}>
+            <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Want booked appointments in your phone's real calendar too?</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: ACCENTS.healthcare, whiteSpace: "nowrap" }}>Turn on sync →</span>
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <ChevronLeft size={20} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={() => { setCursor(new Date(year, month - 1, 1)); setSelectedDay(null); }} />
           <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</span>
@@ -1891,7 +1906,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <StatsScreen onClose={() => setShowStats(false)} />
       )}
       {showCalendar && (
-        <CalendarScreen onClose={() => setShowCalendar(false)} onNavigateToRecord={onNavigateToRecord} />
+        <CalendarScreen onClose={() => setShowCalendar(false)} onNavigateToRecord={onNavigateToRecord} onOpenPrivacy={() => setShowPrivacy(true)} />
       )}
       {showTrash && (
         <TrashScreen onClose={() => setShowTrash(false)} />
