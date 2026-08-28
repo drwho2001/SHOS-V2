@@ -550,6 +550,41 @@ export default function App() {
     setPendingPrefillData(prefillData);
   };
 
+  // ADDED — real ask: Android App Shortcuts (long-press the app icon
+  // for "Log dose"/"Add encounter"). Each shortcut launches this same
+  // Activity with a custom-scheme URL (see shortcuts.xml/
+  // AndroidManifest.xml's own comments) — getLaunchUrl() catches a
+  // COLD start via a shortcut, appUrlOpen catches one while the app's
+  // already running (Android reuses the existing Activity instead of
+  // starting a new one, since MainActivity is launchMode="singleTask").
+  // Routes through the exact same handleQuickAdd() Home's own quick-
+  // add buttons already use — no separate navigation path to keep in
+  // sync. Silently no-ops in any environment without @capacitor/app
+  // (browser preview) — shortcuts are an Android-only concept anyway.
+  useEffect(() => {
+    const routeShortcutUrl = (urlString) => {
+      if (!urlString) return;
+      let url;
+      try { url = new URL(urlString); } catch { return; }
+      if (url.hostname === "medication") handleQuickAdd("medication");
+      else if (url.hostname === "encounter") handleQuickAdd("activity");
+    };
+    let listenerHandle = null;
+    (async () => {
+      try {
+        const { App: CapacitorApp } = await import("@capacitor/app");
+        const launch = await CapacitorApp.getLaunchUrl();
+        if (launch?.url) routeShortcutUrl(launch.url);
+        listenerHandle = await CapacitorApp.addListener("appUrlOpen", (event) => routeShortcutUrl(event.url));
+      } catch {
+        // Not available in this environment — App Shortcuts only exist
+        // on a real installed Android app anyway.
+      }
+    })();
+    return () => { listenerHandle?.remove(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ADDED 19 Aug 2026 — Global Search's navigation handler. Deliberately
   // reuses the same active/quickAddTarget/navResetCount plumbing the nav
   // bar and quick-add already use, but with quickAdd left false — lands

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App Shortcut icon for "Log a dose" — unlike the notification
+     status-bar icons (ic_stat_*.xml, deliberately alpha-only white
+     silhouettes the OS tints itself), a launcher shortcut icon is
+     shown as-is, so this is a real filled, coloured icon: Medication's
+     own accent as a circular background, the same capsule glyph as
+     ic_stat_medication.xml in white on top. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#003B6F"
+        android:pathData="M24,2A22,22 0,0 1,24 46A22,22 0,0 1,24 2Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M14,20H34A6,6 0,0 1,40 26A6,6 0,0 1,34 32H14A6,6 0,0 1,8 26A6,6 0,0 1,14 20Z" />
+</vector>

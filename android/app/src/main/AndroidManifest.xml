@@ -22,6 +22,29 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- ADDED — real ask: Android App Shortcuts (long-press
+                 the app icon for quick actions). Routes the custom-
+                 scheme intent each shortcut in shortcuts.xml fires
+                 (see that file's own comment) to this same Activity —
+                 App.jsx reads the actual URL via @capacitor/app's
+                 getLaunchUrl()/appUrlOpen and decides what to open.
+                 Reuses custom_url_scheme (strings.xml), already
+                 provisioned by this Capacitor project — no second
+                 scheme introduced. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="@string/custom_url_scheme" />
+            </intent-filter>
+
+            <!-- ADDED — real ask: declares the static shortcuts
+                 themselves (shortcuts.xml) — required for them to
+                 actually appear on long-press. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+
         </activity>
 
         <provider

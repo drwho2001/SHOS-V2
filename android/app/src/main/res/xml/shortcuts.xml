@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static App Shortcuts — long-press the app icon on the launcher for
+     these. Real ask: quick access to the two most common "add
+     something right now" actions without opening the app to the Home
+     screen first. Deliberately just 2, not the max Android allows (4)
+     — these are genuinely the two most reached-for actions across this
+     session's own real asks, not padding out the list for its own
+     sake; more can be added later the same way if a real need shows up.
+
+     Each shortcut's intent reuses the SAME custom URL scheme
+     (custom_url_scheme in strings.xml, "com.shos.app://...") this
+     Capacitor project already provisions — no second scheme
+     introduced. MainActivity's own intent-filter (AndroidManifest.xml)
+     is what actually routes it; App.jsx reads it via
+     @capacitor/app's getLaunchUrl()/appUrlOpen and opens the matching
+     quick-add sheet, the exact same handleQuickAdd() path Home's own
+     shortcut buttons already use. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="log_dose"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_medication"
+        android:shortcutShortLabel="@string/shortcut_log_dose_short"
+        android:shortcutLongLabel="@string/shortcut_log_dose_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.shos.app"
+            android:targetClass="com.shos.app.MainActivity"
+            android:data="com.shos.app://medication" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="add_encounter"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_encounter"
+        android:shortcutShortLabel="@string/shortcut_add_encounter_short"
+        android:shortcutLongLabel="@string/shortcut_add_encounter_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.shos.app"
+            android:targetClass="com.shos.app.MainActivity"
+            android:data="com.shos.app://encounter" />
+    </shortcut>
+</shortcuts>

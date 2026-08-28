@@ -4,4 +4,12 @@
     <string name="title_activity_main">SHOS</string>
     <string name="package_name">com.shos.app</string>
     <string name="custom_url_scheme">com.shos.app</string>
+    <!-- ADDED — real ask: Android App Shortcuts (long-press the app
+         icon for quick actions). Shortcut labels must be string
+         resource references, not inline text — that's an Android
+         build requirement, not a style choice. -->
+    <string name="shortcut_log_dose_short">Log dose</string>
+    <string name="shortcut_log_dose_long">Log a medication dose</string>
+    <string name="shortcut_add_encounter_short">Add encounter</string>
+    <string name="shortcut_add_encounter_long">Add a new encounter</string>
 </resources>
