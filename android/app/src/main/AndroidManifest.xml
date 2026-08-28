@@ -51,4 +51,15 @@
          needing either permission. -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+    <!-- ADDED — real ask: "use current location" on Contacts/Encounters,
+         via @capacitor/geolocation. The plugin itself requires at least
+         ACCESS_COARSE_LOCATION declared here to even ask for the
+         runtime permission (confirmed via its own real error message,
+         same lesson as the Filesystem permissions above) — FINE is
+         also declared since Android 12+'s own system dialog already
+         lets the user choose "approximate" vs "precise" themselves at
+         grant time either way, so declaring both just means the choice
+         is genuinely theirs rather than this app pre-deciding it. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 </manifest>

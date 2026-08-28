@@ -3,7 +3,9 @@ import {
   PlusIcon as Plus, MagnifyingGlassIcon as Search, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, GearSixIcon as Settings2, UsersIcon as Users,
   PhoneIcon as Phone, GhostIcon as Ghost, GlobeIcon as Globe, ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2,
   UploadSimpleIcon as Upload, DownloadSimpleIcon as Download, CheckIcon as Check, UserIcon as User, HouseIcon as Home, MapPinIcon as MapPin, EyeSlashIcon as EyeOff, EyeIcon as Eye, ArrowsClockwiseIcon as RefreshCcw, StarIcon as Star,
+  CrosshairIcon as Crosshair,
 } from "@phosphor-icons/react";
+import { getCurrentLocationPlace } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
 import {
@@ -325,6 +327,25 @@ function AddressAutocomplete({ label, value, onChange, T, placeholder, onCityDet
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const debounceRef = useRef(null);
+  // ADDED — real ask: "use current location... pulls location from
+  // Google maps (or other free service like already using)" — reuses
+  // this same field's own pick() below, so a location found via GPS
+  // fills in and detects the city exactly like picking a search result
+  // does.
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState("");
+  const useCurrentLocation = async () => {
+    setLocating(true);
+    setLocateError("");
+    try {
+      const place = await getCurrentLocationPlace();
+      pick(place);
+    } catch (err) {
+      setLocateError(err.message);
+    } finally {
+      setLocating(false);
+    }
+  };
 
   const handleChange = (text) => {
     onChange(text);
@@ -366,7 +387,14 @@ function AddressAutocomplete({ label, value, onChange, T, placeholder, onCityDet
 
   return (
     <div style={{ padding: "8px 0", position: "relative" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
+        <span onClick={locating ? undefined : useCurrentLocation}
+          style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: T.contactsTeal, cursor: locating ? "default" : "pointer", opacity: locating ? 0.6 : 1 }}>
+          <Crosshair size={12} weight="bold" /> {locating ? "Locating…" : "Use current location"}
+        </span>
+      </div>
+      {locateError && <div style={{ fontSize: 11, color: T.actionRed, marginBottom: 4 }}>{locateError}</div>}
       <input value={value ?? ""} onChange={(e) => handleChange(e.target.value)}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}

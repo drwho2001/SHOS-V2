@@ -13,7 +13,8 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2 } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair } from "@phosphor-icons/react";
+import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { nowAsDateTimeLocalString } from "../calculations/dateInputHelpers";
@@ -431,10 +432,30 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
 }
 
 // Single-select version, for Location — one registry ID, not an array.
-function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder }) {
+function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder, showLocateButton = false }) {
   const allEntries = registry.getAll().filter((e) => !e.isArchived);
   const current = value ? (allEntries.find((e) => e.id === value)?.name || registry.getById(value)?.name || "") : "";
   const [draft, setDraft] = useState(current);
+  // ADDED — real ask: "use current location... tag current place for
+  // example" (the user's own cruising-context example). Reuses the
+  // same findOrCreate() commit() already uses below, so a located place
+  // becomes a real registry entry exactly like typing one in would.
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState("");
+  const useCurrentLocation = async () => {
+    setLocating(true);
+    setLocateError("");
+    try {
+      const place = await getCurrentLocationPlace();
+      const name = summarizePlaceName(place);
+      const entry = registry.findOrCreate(name);
+      if (entry) { onChange(entry.id); setDraft(entry.name); }
+    } catch (err) {
+      setLocateError(err.message);
+    } finally {
+      setLocating(false);
+    }
+  };
 
   // ADDED 18 Aug 2026 — real feedback: relying only on the native
   // <datalist> dropdown "doesn't feel right" — no visible tap target,
@@ -465,7 +486,16 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
 
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
+        {showLocateButton && (
+          <span onClick={locating ? undefined : useCurrentLocation}
+            style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: T.encountersPink, cursor: locating ? "default" : "pointer", opacity: locating ? 0.6 : 1 }}>
+            <Crosshair size={12} weight="bold" /> {locating ? "Locating…" : "Use current location"}
+          </span>
+        )}
+      </div>
+      {locateError && <div style={{ fontSize: 11, color: T.actionRed, marginBottom: 4 }}>{locateError}</div>}
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((e) => (
@@ -1058,7 +1088,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
             merged into the same section as Attendees. */}
         <SectionCard title="Attendees & Location" T={T}>
           <AttendeePicker value={form.attendeeIds} onChange={set("attendeeIds")} T={T} contacts={contacts} onCreatePlaceholder={createPlaceholderContact} />
-          <RegistrySinglePicker label="Location" value={form.locationId} onChange={set("locationId")} T={T} registry={LocationsRepository} placeholder="e.g. His place, Sauna" />
+          <RegistrySinglePicker label="Location" value={form.locationId} onChange={set("locationId")} T={T} registry={LocationsRepository} placeholder="e.g. His place, Sauna" showLocateButton />
         </SectionCard>
 
         <SectionCard title="Practices" T={T}>
