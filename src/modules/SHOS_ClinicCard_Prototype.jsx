@@ -370,7 +370,14 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
             // with dose amount and last log date/time." Was just name
             // + type/route — real dose and last real dose event now
             // shown by default, matching the exact example given.
-            const doseLabel = m.doseStrengthValue && m.doseStrengthUnit ? `${m.name} ${m.doseStrengthValue}${m.doseStrengthUnit}` : m.name;
+            // FIXED — real bug: this showed the PER-UNIT strength
+            // (e.g. DoxyPEP's 100mg per pill) even for a medication
+            // taken as more than one unit per dose, reading as "100mg"
+            // for something whose real dose is 200mg (2 × 100mg
+            // pills). Now shows the actual total dose — cleaner than
+            // a "100mg × 2" expression, per the user's own preference.
+            const totalDoseValue = m.doseStrengthValue ? m.doseStrengthValue * (m.unitsPerDose || 1) : null;
+            const doseLabel = totalDoseValue && m.doseStrengthUnit ? `${m.name} ${totalDoseValue}${m.doseStrengthUnit}` : m.name;
             const lastDose = m.logs.filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
             const subtitleParts = [m.medicationType, m.route].filter(Boolean);
             if (lastDose) subtitleParts.push(`last taken ${formatRelativeDate(lastDose.date)}`);
