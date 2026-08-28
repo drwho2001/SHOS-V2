@@ -89,10 +89,6 @@ function btnStyle(color, variant) {
   return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: radius.full, fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer", border: variant === "outline" ? `1px solid ${color}` : "none", background: variant === "filled" ? color : "transparent", color: variant === "filled" ? "#FFFFFF" : color };
 }
 
-function idFromLabel(label) {
-  return "combo-" + label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
-
 function focusNextField(el) {
   const container = el.closest("[data-contact-sheet]");
   if (!container) return;
@@ -273,18 +269,30 @@ function SelectField({ label, value, onChange, options, T }) {
   );
 }
 
+// CHANGED — real ask: the native `list`/`<datalist>` dropdown this
+// used to rely on could render on top of the on-screen keyboard on
+// Android WebView. Switched to the same visible-suggestion-chips
+// pattern every other picker in this app already uses instead of a
+// native dropdown.
 function ComboField({ label, value, onChange, T, options, placeholder }) {
-  const listId = idFromLabel(label);
+  const visibleSuggestions = options.filter((o) => o !== value).slice(0, 8);
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
-      <input list={listId} value={value ?? ""} onChange={(e) => onChange(e.target.value)}
+      {visibleSuggestions.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
+          {visibleSuggestions.map((opt) => (
+            <div key={opt} onClick={() => onChange(opt)}
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
+              {opt}
+            </div>
+          ))}
+        </div>
+      )}
+      <input value={value ?? ""} onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextField(e.target); } }}
         placeholder={placeholder || "Choose or type a new one"}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
-      <datalist id={listId}>
-        {options.map((opt) => <option key={opt} value={opt} />)}
-      </datalist>
     </div>
   );
 }
@@ -449,7 +457,6 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew }) {
 // to miss, which should catch most real-world near-misses like this one.
 function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) {
   const [draft, setDraft] = useState("");
-  const listId = idFromLabel(label);
   const visibleSuggestions = suggestions.filter((s) => !value.includes(s)).slice(0, 10);
 
   const commitDraft = (el) => {
@@ -480,14 +487,15 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
           ))}
         </div>
       )}
-      <input list={listId} value={draft} onChange={(e) => setDraft(e.target.value)}
+      {/* CHANGED — real ask: the `list`/`<datalist>` native browser
+          dropdown (removed here) could render on top of the on-screen
+          keyboard on Android WebView. The visible suggestion chips
+          below already cover "pick existing" without that risk. */}
+      <input value={draft} onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitDraft(e.target); } }}
         onBlur={() => commitDraft(null)}
         placeholder={placeholder || "Type one or more, comma-separated, then press Enter"}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
-      <datalist id={listId}>
-        {suggestions.map((opt) => <option key={opt} value={opt} />)}
-      </datalist>
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>
           {visibleSuggestions.map((s) => (
@@ -516,7 +524,6 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // Chems/Protection/Symptoms pickers don't have this analysis
   // available and are completely unaffected.
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
-  const listId = idFromLabel(label) + "-registry";
   const allEntries = registry.getAll().filter((e) => !e.isArchived);
   const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name || "?";
 
@@ -703,14 +710,15 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
           ))}
         </div>
       )}
-      <input list={listId} value={draft} onChange={(e) => setDraft(e.target.value)}
+      {/* CHANGED — real ask: the `list`/`<datalist>` native browser
+          dropdown (removed here) could render on top of the on-screen
+          keyboard on Android WebView. The visible suggestion chips
+          above already cover "pick existing" without that risk. */}
+      <input value={draft} onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitDraft(e.target); } }}
         onBlur={() => commitDraft(null)}
         placeholder={placeholder || "Pick existing or type new ones, comma-separated"}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
-      <datalist id={listId}>
-        {allEntries.map((e) => <option key={e.id} value={e.name} />)}
-      </datalist>
       {/* ADDED — real ask: "did you mean...?" prompt. Shown instead of
           silently deciding for the user — accepting a suggestion or
           keeping the typed word exactly as-is are both one tap away,
@@ -994,14 +1002,27 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
             {linkable.map((c) => <option key={c.id} value={c.id}>{displayName(c)}</option>)}
           </select>
           {pickerValue && (
-            <div style={{ display: "flex", gap: 6 }}>
-              <input list="link-label-suggestions" value={pendingLabel} onChange={(e) => setPendingLabel(e.target.value)}
+            <div>
+              {/* CHANGED — real ask: the native `list`/`<datalist>`
+                  dropdown (removed here) could render on top of the
+                  on-screen keyboard on Android WebView. Visible chips
+                  from previously-used labels instead. */}
+              {labelSuggestions.filter((s) => s !== pendingLabel).length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
+                  {labelSuggestions.filter((s) => s !== pendingLabel).slice(0, 8).map((s) => (
+                    <div key={s} onClick={() => setPendingLabel(s)}
+                      style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
+                      {s}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 6 }}>
+              <input value={pendingLabel} onChange={(e) => setPendingLabel(e.target.value)}
                 placeholder="Relationship (optional) — e.g. Dom/Sub, bf/gf"
                 style={{ flex: 1, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 12, boxSizing: "border-box" }} />
-              <datalist id="link-label-suggestions">
-                {labelSuggestions.map((s) => <option key={s} value={s} />)}
-              </datalist>
               <button onClick={confirmLink} style={{ ...btnStyle(T.contactsTeal, "filled"), flex: "0 0 auto", padding: "8px 14px" }}>Link</button>
+              </div>
             </div>
           )}
         </>

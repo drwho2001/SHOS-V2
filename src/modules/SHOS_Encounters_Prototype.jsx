@@ -238,7 +238,6 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // ADDED — real ask: "did you mean...?" for a recognized typo or an
   // umbrella term, same mechanism now built and proven in Contacts.
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
-  const listId = `registry-${label.replace(/\s+/g, "-")}`;
   const allEntries = registry.getAll().filter((e) => !e.isArchived);
   const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name || "?";
 
@@ -373,15 +372,15 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
           ))}
         </div>
       )}
+      {/* CHANGED — real ask: the `list`/`<datalist>` native browser
+          dropdown (removed here) could render on top of the on-screen
+          keyboard on Android WebView. The visible suggestion chips
+          above already cover "pick existing" without that risk. */}
       <input value={draft} onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
-        list={listId}
         placeholder={placeholder || "Pick existing or type new ones, comma-separated"}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
-      <datalist id={listId}>
-        {allEntries.map((e) => <option key={e.id} value={e.name} />)}
-      </datalist>
       {/* ADDED — real ask: "did you mean...?" prompt, same behavior as
           Contacts — accepting a suggestion or keeping exactly what was
           typed are both one tap, neither forced. */}
@@ -440,7 +439,6 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
   // already shipped for RegistryTagPicker earlier this session: visible
   // tappable suggestion chips for existing entries, not just a native
   // browser dropdown as the only way in.
-  const listId = `registry-single-${label.replace(/\s+/g, "-")}`;
   const visibleSuggestions = allEntries.filter((e) => e.id !== value).slice(0, 8);
 
   const commit = () => {
@@ -475,15 +473,17 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
           ))}
         </div>
       )}
+      {/* CHANGED — real ask: Location's native `list`/`<datalist>`
+          dropdown (removed here) was rendering on top of the on-screen
+          keyboard on Android, making both unusable at once. The
+          visible suggestion chips above already cover "pick existing"
+          — same fix applied to every other picker in the app using
+          this pattern, not just this one. */}
       <input value={draft} onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
-        list={listId}
         placeholder={placeholder || "Pick existing or type a new one"}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
-      <datalist id={listId}>
-        {allEntries.map((e) => <option key={e.id} value={e.name} />)}
-      </datalist>
     </div>
   );
 }

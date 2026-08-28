@@ -184,7 +184,6 @@ function ReadRow({ label, value, T }) {
 // tracking needed here (that's a kink-specific concept).
 function RegistryTagPicker({ label, value, onChange, T, registry, placeholder }) {
   const [draft, setDraft] = useState("");
-  const listId = `registry-${label.replace(/\s+/g, "-")}`;
   const allEntries = registry.getAll().filter((e) => !e.isArchived);
   const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name || "?";
   const visibleSuggestions = allEntries.filter((e) => !value.includes(e.id)).slice(0, 10);
@@ -226,12 +225,17 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder })
           ))}
         </div>
       )}
-      <input list={listId} value={draft} onChange={(e) => setDraft(e.target.value)}
+      {/* CHANGED — real ask: the `list`/`<datalist>` native browser
+          dropdown (removed below) could render on top of the on-screen
+          keyboard on Android WebView — genuinely unpredictable, not a
+          real affordance on a phone. The visible suggestion chips
+          above already cover the same "pick existing" job without
+          that risk. */}
+      <input value={draft} onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
         onBlur={commit}
         placeholder={placeholder || "Pick existing or type new ones, comma-separated"}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
-      <datalist id={listId}>{allEntries.map((e) => <option key={e.id} value={e.name} />)}</datalist>
     </div>
   );
 }
@@ -256,7 +260,6 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder })
 // well-isolated change, not a ripple into other logic.
 function RegistryMultiResultPicker({ label, value, onChange, T, registry, placeholder }) {
   const [draft, setDraft] = useState("");
-  const listId = `registry-result-${label.replace(/\s+/g, "-")}`;
   const allEntries = registry.getAll().filter((e) => !e.isArchived);
   const currentNames = value.map((id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name).filter(Boolean);
   const visibleSuggestions = allEntries.filter((e) => !value.includes(e.id)).slice(0, 10);
@@ -293,12 +296,14 @@ function RegistryMultiResultPicker({ label, value, onChange, T, registry, placeh
           ))}
         </div>
       )}
-      <input list={listId} value={draft} onChange={(e) => setDraft(e.target.value)}
+      {/* CHANGED — real ask: same native-datalist-can-cover-the-
+          keyboard fix as RegistryMultiPicker above — visible chips
+          already cover "pick existing". */}
+      <input value={draft} onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addResult(draft); } }}
         onBlur={() => addResult(draft)}
         placeholder={placeholder || "Pick or type a result — add more than one if positive at multiple sites"}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
-      <datalist id={listId}>{allEntries.map((e) => <option key={e.id} value={e.name} />)}</datalist>
     </div>
   );
 }

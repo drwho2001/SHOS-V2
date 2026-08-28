@@ -65,10 +65,6 @@ const DARK = {
 };
 const radius = RADIUS;
 
-function idFromLabel(label) {
-  return "combo-" + label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
-
 // ── Shared form primitives — same visual shape as Contacts', kept
 // local per the self-contained-module pattern rather than importing
 // from a file that isn't a shared UI library. ──
@@ -286,7 +282,6 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // umbrella term, same mechanism now built and proven in Contacts/
   // Encounters.
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
-  const listId = idFromLabel(label) + "-registry";
   const allEntries = registry.getAll().filter((e) => !e.isArchived);
   const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name || "?";
 
@@ -407,14 +402,15 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
           ))}
         </div>
       )}
-      <input list={listId} value={draft} onChange={(e) => setDraft(e.target.value)}
+      {/* CHANGED — real ask: the `list`/`<datalist>` native browser
+          dropdown (removed here) could render on top of the on-screen
+          keyboard on Android WebView. The visible suggestion chips
+          above already cover "pick existing" without that risk. */}
+      <input value={draft} onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitDraft(); } }}
         onBlur={commitDraft}
         placeholder={placeholder || "Pick existing or type new ones, comma-separated"}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
-      <datalist id={listId}>
-        {allEntries.map((e) => <option key={e.id} value={e.name} />)}
-      </datalist>
       {/* ADDED — real ask: "did you mean...?" prompt, same behavior as
           Contacts/Encounters. */}
       {pendingSuggestion && (
