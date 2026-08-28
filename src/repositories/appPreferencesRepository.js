@@ -51,6 +51,18 @@ export const DEFAULT_APP_PREFERENCES = {
   // no dialog).
   autoExportEnabled: false,
   autoExportIntervalDays: 30,
+  // ADDED — real ask: "opening back to last page" instead of always
+  // landing on Home. NOT a user-facing setting shown anywhere in
+  // Settings — automatically maintained navigation state, same
+  // "internal timestamp, not a preference" role as PrivacySettings-
+  // Repository's own lastUnlockedAt. App.jsx keeps this in sync on
+  // every tab change and refreshes lastActiveAt again on backgrounding,
+  // then reads both back on next launch — see App.jsx's own
+  // RESUME_GRACE_MINUTES comment for the actual grace-window mechanism
+  // (deliberately the same shouldRelock()-style pattern App Lock's own
+  // grace period already uses, not a new concept).
+  lastActiveTab: null,
+  lastActiveAt: null,
 };
 
 export const AppPreferencesRepository = {

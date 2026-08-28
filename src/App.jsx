@@ -91,6 +91,14 @@ import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon 
 // screen they represent. Now reads from ACCENTS directly (same as the
 // other three domain tabs, already imported in this file) so this
 // can't silently drift from the module's own color again.
+// ADDED — real ask: "opening back to last page" — the grace window for
+// resuming on the last tab instead of Home, in minutes. A guide value
+// per the user's own framing, not exposed as a configurable setting —
+// mirrors App Lock's own appLockGraceMinutes in spirit, just a fixed
+// constant rather than a second user-facing dial for a low-stakes
+// navigation convenience.
+const RESUME_GRACE_MINUTES = 10;
+
 const TABS = [
   { key: "contacts", label: "Contacts", icon: Users, component: ContactsModule, accent: ACCENTS.contacts },
   { key: "activity", label: "Encounter", icon: Activity, component: EncountersModule, accent: ACCENTS.encounters },
@@ -314,10 +322,21 @@ export default function App() {
     const settings = PrivacySettingsRepository.getSettings();
     return !settings.appLockEnabled && !settings.appLockPromptDismissed;
   });
-  // CHANGED 19 Aug 2026 — default tab on opening is now Home, per
-  // The user's ask. Was defaulting to Contacts (a leftover from before
-  // Home existed as a real screen).
-  const [active, setActive] = useState("home");
+  // ADDED — real ask: "opening back to last page" — reopening within a
+  // short grace window resumes on whatever tab was open when you left,
+  // same shouldRelock()-style grace-window pattern App Lock's own
+  // grace period already uses (see RESUME_GRACE_MINUTES below), rather
+  // than a new mechanism. Past the window (or on a genuinely fresh
+  // install/first launch, where lastActiveTab is still null), falls
+  // back to Home — the 19 Aug default this replaces, not removes.
+  const [active, setActive] = useState(() => {
+    const prefs = AppPreferencesRepository.getPreferences();
+    if (prefs.lastActiveTab && prefs.lastActiveAt) {
+      const elapsedMs = Date.now() - new Date(prefs.lastActiveAt).getTime();
+      if (elapsedMs <= RESUME_GRACE_MINUTES * 60000) return prefs.lastActiveTab;
+    }
+    return "home";
+  });
   const [status, setStatus] = useState(null);
   // ADDED 19 Aug 2026 — Dashboard quick-add: set alongside switching
   // `active`, consumed (reset to false) by whichever module actually
@@ -451,21 +470,42 @@ export default function App() {
     const checkRelock = () => {
       if (PrivacySettingsRepository.shouldRelock()) setLocked(true);
     };
+    // ADDED — real ask: "opening back to last page" — refreshes
+    // lastActiveAt at the actual moment of backgrounding, not just
+    // whenever `active` last happened to change (which could've been
+    // much earlier in a long single-tab session) — same isActive:false
+    // transition this listener already watches, just the other branch
+    // of the same event. lastActiveTab itself is kept current by the
+    // effect just below, on every `active` change.
+    const recordBackgrounded = () => {
+      AppPreferencesRepository.update({ lastActiveAt: new Date().toISOString() });
+    };
     let listenerHandle = null;
     (async () => {
       try {
         const { App: CapacitorApp } = await import("@capacitor/app");
         listenerHandle = await CapacitorApp.addListener("appStateChange", ({ isActive }) => {
-          if (isActive) checkRelock();
+          if (isActive) checkRelock(); else recordBackgrounded();
         });
       } catch {
         document.addEventListener("visibilitychange", () => {
           if (document.visibilityState === "visible") checkRelock();
+          else recordBackgrounded();
         });
       }
     })();
     return () => { listenerHandle?.remove(); };
   }, []);
+
+  // ADDED — real ask: "opening back to last page" — keeps lastActiveTab
+  // in sync with every real tab change, regardless of which of the
+  // many setActive() call sites in this file triggered it (nav taps,
+  // quick-add routing, shortcuts, back-handlers) — one effect on the
+  // single source of truth (`active`) instead of touching every call
+  // site individually.
+  useEffect(() => {
+    AppPreferencesRepository.update({ lastActiveTab: active, lastActiveAt: new Date().toISOString() });
+  }, [active]);
 
   // ADDED 26 Aug 2026 — real ask: custom medication reminder
   // notifications with real action buttons (Take all / Skip until
