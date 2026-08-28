@@ -65,6 +65,32 @@ export async function exportTextFile(filename, contents, mimeType = "text/plain"
       directory: Directory.Cache,
       encoding: Encoding.UTF8,
     });
+    // ADDED — real device bug: on some phones (reported on a Redmi/MIUI
+    // device) the Share sheet's own app list has no "Save to Files" /
+    // download-style target at all, only send-to-app options — so a
+    // real copy never reliably ends up saved anywhere. Belt-and-braces
+    // fix: ALSO write a second copy straight into the public Documents
+    // folder (Directory.Documents — Android's own docs confirm this is
+    // visible/accessible from other apps, e.g. a file manager, and an
+    // app can always create its own files there even on Android 11+
+    // scoped storage, no special permission needed for that case).
+    // There's no distinct "Downloads" directory in this Capacitor
+    // plugin version, so Documents is the closest public equivalent.
+    // Best-effort only: older Android versions (10 without the legacy-
+    // storage manifest flag this app doesn't set) may reject the write
+    // — that's fine, it just silently skips the extra copy and the
+    // Share sheet above remains the one guaranteed path.
+    try {
+      await Filesystem.writeFile({
+        path: filename,
+        data: contents,
+        directory: Directory.Documents,
+        encoding: Encoding.UTF8,
+        recursive: true,
+      });
+    } catch (docErr) {
+      console.warn("[fileExportHelper] Could not save an extra copy to the public Documents folder (Share sheet copy above is unaffected):", docErr);
+    }
     await Share.share({ url: written.uri, dialogTitle: filename });
   } catch (err) {
     console.error("[fileExportHelper] Native export failed, falling back to browser download:", err);

@@ -38,4 +38,17 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- ADDED — needed for @capacitor/filesystem's Directory.Documents
+         write (see fileExportHelper.js's export-a-copy-to-public-storage
+         fix) to actually work on older Android. Capped at maxSdkVersion
+         per Capacitor's own documented convention: WRITE_EXTERNAL_STORAGE
+         has no effect at all beyond API 28 (scoped storage replaces it),
+         and READ_EXTERNAL_STORAGE stops mattering once granular media
+         permissions arrive at API 33 — declaring either uncapped would
+         just be a stale, unused grant on modern Android, not a real
+         capability. Android 11+ (the realistic case for this app) writes
+         its own created files into Documents via MediaStore without
+         needing either permission. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 </manifest>
