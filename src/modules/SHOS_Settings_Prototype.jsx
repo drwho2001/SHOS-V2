@@ -1202,9 +1202,17 @@ function DesignScreen({ onClose }) {
         <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
             <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>Dark mode</span>
+            {/* CHANGED — real bug: the knob used to switch to
+                DARK.surface (#1C1C1F) when on, nearly identical to the
+                track's own #1B1B1F — the one control to turn dark mode
+                OFF was invisible while IN dark mode. Every other toggle
+                in this app keeps its knob solid white regardless of
+                state (only the track colour changes) — matching that
+                established pattern here too, plus the same subtle
+                shadow those use for depth against a light track. */}
             <div onClick={() => setDarkMode((d) => !d)}
               style={{ width: 44, height: 26, borderRadius: 999, background: darkMode ? "#1B1B1F" : "#DCDCE1", position: "relative", cursor: "pointer", transition: "background 0.15s" }}>
-              <div style={{ width: 20, height: 20, borderRadius: "50%", background: darkMode ? DARK.surface : "#FFFFFF", position: "absolute", top: 3, left: darkMode ? 21 : 3, transition: "left 0.15s" }} />
+              <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: darkMode ? 21 : 3, transition: "left 0.15s" }} />
             </div>
           </div>
         </div>
