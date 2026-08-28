@@ -542,17 +542,20 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
               answers "what's the plan" rather than "when was it done". */}
           <TextField label="Written plan" value={form.writtenPlan} onChange={set("writtenPlan")} T={T} placeholder="e.g. f/u in 2 weeks for treatment" />
           {/* ADDED 19 Aug 2026 — real feedback batch: "if negative,
-              follow-up defaults to nil or routine 3-month retest
-              (6-month if HIV is next due)". Purely informational —
-              computed fresh from the real result/date/testingFor,
-              never stored, same spirit as the exposure-window
-              flagging elsewhere in this app. Only shows once a
-              Negative result and a date are both present. */}
+              follow-up defaults to nil or routine 3-month retest".
+              Purely informational — computed fresh from the real
+              result/date, never stored, same spirit as the exposure-
+              window flagging elsewhere in this app. Only shows once a
+              Negative result and a date are both present.
+              CHANGED — real correction: HIV no longer gets a separate
+              6-month interval — standard PrEP monitoring tests HIV
+              every 3 months, same as everything else, so one uniform
+              interval applies regardless of testingFor. */}
           {(() => {
             const suggested = suggestedRoutineRetestDate(form);
             return suggested ? (
               <div style={{ fontSize: 12, color: T.healthcareBlue, background: `${T.healthcareBlue}12`, borderRadius: radius.sm, padding: "8px 10px", marginTop: 6 }}>
-                Routine retest suggested around {formatDate(suggested)} ({(form.testingFor || []).includes("HIV") ? "6 months" : "3 months"} after this test).
+                Routine retest suggested around {formatDate(suggested)} (3 months after this test).
               </div>
             ) : null;
           })()}

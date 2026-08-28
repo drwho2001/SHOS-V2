@@ -3,7 +3,7 @@
 // PLAIN-LANGUAGE PURPOSE
 // -----------------------
 // Real feedback-batch ask: "if negative, follow-up defaults to nil or
-// routine 3-month retest (6-month if HIV is next due)". This is a
+// routine 3-month retest". This is a
 // SUGGESTION shown in the UI, computed fresh every time from the
 // test's own real date/testingFor/result — never stored as its own
 // field, same "store facts, derive state" principle as everywhere
@@ -27,8 +27,13 @@ export function suggestedRoutineRetestDate(test) {
   const isNegative = resultNames.some((n) => n.toLowerCase() === "negative");
   if (isPositive || !isNegative) return null;
 
-  const months = (test.testingFor || []).includes("HIV") ? 6 : 3;
+  // CHANGED — real correction: HIV used to get a longer 6-month
+  // interval here, on the (outdated) assumption it needed more
+  // caution than other STIs. That's backwards from real current
+  // guidance — standard PrEP monitoring requires HIV testing every 3
+  // months, the SAME cadence as everything else, not less often. One
+  // uniform 3-month interval for every test now.
   const d = new Date(test.date);
-  d.setMonth(d.getMonth() + months);
+  d.setMonth(d.getMonth() + 3);
   return d.toISOString().slice(0, 10);
 }

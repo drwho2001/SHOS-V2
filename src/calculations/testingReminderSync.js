@@ -13,12 +13,13 @@
 // current.
 //
 // Deliberately reuses suggestedRoutineRetestDate() rather than a
-// separate calculation — that function already gets this right (HIV's
-// 6-month window vs. 3 months for everything else, and only suggests a
-// retest after a real Negative result, not a Positive one, which needs
-// treatment/follow-up instead, not a routine retest reminder) — one
-// source of truth for "when's my next test due", not two that could
-// quietly drift apart.
+// separate calculation — that function already gets this right (a
+// uniform 3-month interval, matching standard PrEP monitoring's
+// quarterly HIV testing rather than an outdated longer HIV-specific
+// window; only suggests a retest after a real Negative result, not a
+// Positive one, which needs treatment/follow-up instead, not a
+// routine retest reminder) — one source of truth for "when's my next
+// test due", not two that could quietly drift apart.
 import { TestingRepository } from "../repositories/testingRepository";
 import { suggestedRoutineRetestDate } from "./testingCalculations";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName } from "../storage/notificationService";
@@ -51,14 +52,13 @@ export async function syncTestingReminder() {
     return { scheduled: false, overdue: true };
   }
 
-  const isHiv = (mostRecent.testingFor || []).includes("HIV");
   // Re-scheduling under the same fixed id naturally replaces whatever
   // was previously pending — logging a newer test just moves the due
   // date forward, it doesn't stack a second reminder.
   await scheduleNotification({
     id: NOTIFICATION_IDS.testingReminder,
     title: "Testing due",
-    body: `Routine retest suggested around now — ${isHiv ? "6 months" : "3 months"} after your last negative test.`,
+    body: "Routine retest suggested around now — 3 months after your last negative test.",
     at: dueDate,
     smallIcon: moduleSmallIconName("healthcare"),
   });
