@@ -85,4 +85,14 @@
          is genuinely theirs rather than this app pre-deciding it. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- ADDED — real ask: calendar sync ("kept separate/private"), via
+         @capacitor/calendar. Required for the plugin's own runtime
+         permission request to work at all, same lesson as every other
+         plugin above. Every event this app ever creates lives in its
+         own LOCAL-type calendar (confirmed directly against the
+         plugin's native source, see calendarSyncService.js's own
+         comment) — these permissions only ever reach that one private
+         calendar, never any pre-existing account-synced one. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
 </manifest>

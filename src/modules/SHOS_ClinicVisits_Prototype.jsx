@@ -24,6 +24,7 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 // right after this module's own save (see syncTestingReminder's
 // analogous comment in Testing for the same pattern).
 import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
+import { syncClinicVisitsToCalendar } from "../storage/calendarSyncService";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -485,6 +486,9 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
       // this needs re-syncing on every save, not just once on Home
       // mount.
       syncClinicVisitReminders();
+      // ADDED — real ask: calendar sync, self-gated inside on whether
+      // the feature is actually turned on.
+      syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
       onSaved(created.id);
     } else {
       const before = ClinicVisitsRepository.getById(visitId);
@@ -507,6 +511,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
         if (test) TestingRepository.update(testId, { clinicVisitIds: test.clinicVisitIds.filter((id) => id !== visitId) });
       });
       syncClinicVisitReminders();
+      syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
       onSaved(visitId);
     }
   };
@@ -840,7 +845,7 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
                 record, enabled only when exactly one is selected. */}
             <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("clinicVisits", ClinicVisitsRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#6E6E74", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span onClick={() => { if (selectedIds.length > 0) { ClinicVisitsRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            <span onClick={() => { if (selectedIds.length > 0) { ClinicVisitsRepository.bulkArchive(selectedIds); syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll()); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span onClick={() => {
               if (selectedIds.length === 0) return;
@@ -940,10 +945,18 @@ export default function ClinicVisitsModule({ openAddOnMount = false, onConsumedQ
   // implementation.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
   const undoTimerRef = useRef(null);
+  // ADDED — real ask: calendar sync needs re-syncing (self-gated
+  // inside on whether the feature's on) any time which visits count
+  // as "still booked" changes — archived/deleted/restored, not just
+  // saved. syncClinicVisitsToCalendar() re-derives the whole list
+  // every time, so any of these naturally clean up or restore the
+  // matching calendar event.
+  const syncCalendar = () => syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
   const undoDelete = () => {
     if (!deleteToast) return;
     deleteToast.records.forEach((record) => ClinicVisitsRepository.restore(record));
     refresh();
+    syncCalendar();
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -953,12 +966,14 @@ export default function ClinicVisitsModule({ openAddOnMount = false, onConsumedQ
     TrashRepository.add("clinicVisits", deleteToast.records);
     deleteToast.records.forEach((r) => ClinicVisitsRepository.delete(r.id));
     refresh();
+    syncCalendar();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
   const triggerDelete = (records) => {
     TrashRepository.add("clinicVisits", records);
     records.forEach((r) => ClinicVisitsRepository.delete(r.id));
+    syncCalendar();
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);

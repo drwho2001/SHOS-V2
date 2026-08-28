@@ -58,6 +58,7 @@ import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
 import { checkBiometryAvailable } from "../storage/biometricAuthService";
+import { checkCalendarAvailable, syncClinicVisitsToCalendar, removeShosCalendar } from "../storage/calendarSyncService";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { EpisodeRepository } from "../repositories/episodeRepository";
 import { KinkRegistry } from "../registries/kinkRegistry";
@@ -484,6 +485,12 @@ function PrivacyScreen({ onClose }) {
   // the pattern used elsewhere on the web. Shared across every PIN
   // field on this screen.
   const [showPins, setShowPins] = useState(false);
+  // ADDED — real ask: calendar sync, kept genuinely private (see
+  // calendarSyncService.js's own comment for the local-only-calendar
+  // guarantee, verified against the native plugin source directly).
+  const [appPrefs, setAppPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const [calendarSyncError, setCalendarSyncError] = useState("");
+  const [calendarSyncing, setCalendarSyncing] = useState(false);
 
   const refresh = () => setSettings(PrivacySettingsRepository.getSettings());
 
@@ -541,6 +548,36 @@ function PrivacyScreen({ onClose }) {
     }
     PrivacySettingsRepository.update({ biometricUnlockEnabled: true });
     refresh();
+  };
+
+  // ADDED — real ask: calendar sync toggle. Turning ON does the real
+  // device/permission check first (never just flips the flag and
+  // hopes), then syncs every currently-booked Clinic Visit right away
+  // rather than waiting for the next save. Turning OFF actually
+  // removes the calendar (and every event in it) — see
+  // calendarSyncService.js's own comment on why that matters for
+  // "never accidentally shared unless deliberately selected".
+  const toggleCalendarSync = async () => {
+    setCalendarSyncError("");
+    if (appPrefs.calendarSyncEnabled) {
+      setCalendarSyncing(true);
+      await removeShosCalendar();
+      AppPreferencesRepository.update({ calendarSyncEnabled: false });
+      setAppPrefs(AppPreferencesRepository.getPreferences());
+      setCalendarSyncing(false);
+      return;
+    }
+    setCalendarSyncing(true);
+    const result = await checkCalendarAvailable();
+    if (!result.available) {
+      setCalendarSyncError(result.reason || "Calendar access isn't available on this device.");
+      setCalendarSyncing(false);
+      return;
+    }
+    AppPreferencesRepository.update({ calendarSyncEnabled: true });
+    setAppPrefs(AppPreferencesRepository.getPreferences());
+    await syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+    setCalendarSyncing(false);
   };
 
   return (
@@ -727,6 +764,22 @@ function PrivacyScreen({ onClose }) {
               {settings.anonymisePin ? "Change PIN" : "Set a PIN"}
             </button>
           )}
+        </div>
+
+        {/* ADDED — real ask: calendar sync, kept genuinely private. */}
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16, marginTop: 16 }}>
+          <div onClick={calendarSyncing ? undefined : toggleCalendarSync} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer" }}>
+            <div style={{ flex: 1, paddingRight: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Sync clinic appointments to phone calendar</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>
+                Booked appointments appear in your phone's real calendar app, in their own private "SHOS (private)" calendar — never a synced/shared one, never sent anywhere. Turning this off removes it and everything in it.
+              </div>
+              {calendarSyncError && <div style={{ fontSize: 11, color: ACTION.red, marginTop: 4 }}>{calendarSyncError}</div>}
+            </div>
+            <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncEnabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
+              <div style={{ position: "absolute", top: 2, left: appPrefs.calendarSyncEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+            </div>
+          </div>
         </div>
       </div>
     </div>

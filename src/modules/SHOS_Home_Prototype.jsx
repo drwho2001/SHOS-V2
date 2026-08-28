@@ -41,6 +41,7 @@ import { syncMedicationReminders } from "../calculations/medicationReminderSync"
 import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
+import { syncClinicVisitsToCalendar } from "../storage/calendarSyncService";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
@@ -122,6 +123,16 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   useEffect(() => {
     syncRefillReminder();
     syncClinicVisitReminders();
+  }, []);
+
+  // ADDED — real ask: calendar sync, "kept separate/private". Self-
+  // gated inside syncClinicVisitsToCalendar() on whether the feature
+  // is actually turned on (Settings -> Privacy) — safe to call
+  // unconditionally here, same catch-up-on-mount reasoning as every
+  // other sync above. Also re-synced right after Clinic Visits' own
+  // save.
+  useEffect(() => {
+    syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
   }, []);
 
   useEffect(() => {

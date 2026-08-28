@@ -25,6 +25,14 @@ export const DEFAULT_APP_PREFERENCES = {
   // walk through. false until the user actually completes or
   // explicitly skips it — never auto-set true by anything else.
   hasCompletedOnboarding: false,
+  // ADDED — real ask: "calendar sync could be good, if ensured kept
+  // separate/private and never accidentally shared." Off by default,
+  // same as every other opt-in privacy-adjacent feature in this app
+  // (App Lock, biometrics, encrypted export) — see
+  // calendarSyncService.js for the real device/permission check that
+  // happens at toggle-on time, and the honest local-only-calendar
+  // guarantee behind "never accidentally shared".
+  calendarSyncEnabled: false,
 };
 
 export const AppPreferencesRepository = {
