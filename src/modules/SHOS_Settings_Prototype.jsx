@@ -12,7 +12,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // one place and share real context with each other. Pure code motion
 // — every line of actual behavior below is unchanged from what was
 // working in App.jsx; only the file it lives in has changed.
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import packageJson from "../../package.json";
 const APP_VERSION = packageJson.version;
 import {
@@ -1051,10 +1051,143 @@ function rgbToHex(r, g, b) {
   return "#" + [clamp(r), clamp(g), clamp(b)].map((n) => n.toString(16).padStart(2, "0")).join("");
 }
 
+// ADDED — real ask: "on sliders page for colour selection, can we
+// maybe have optional user switch to colour wheel as well... then no
+// previous hex needed to know." The native input[type=color] below is
+// whatever picker the device/WebView happens to ship (varies by
+// Android version — sometimes a wheel, sometimes a plain RGB slider
+// grid), and typing hex/RGB both assume you already know a value to
+// start from. h: 0-360, s/v: 0-100 — standard HSV, not HSL, since a
+// wheel (hue x saturation) with a separate brightness axis is the
+// familiar "colour wheel" shape people expect, not what HSL would draw.
+function hsvToHex(h, s, v) {
+  s /= 100; v /= 100;
+  const c = v * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = v - c;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  const toHex = (n) => Math.round((n + m) * 255).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+}
+function hexToHsv(hex) {
+  const rgb = hexToRgb(hex) || { r: 0, g: 0, b: 0 };
+  const r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  let h = 0;
+  if (d !== 0) {
+    if (max === r) h = 60 * (((g - b) / d) % 6);
+    else if (max === g) h = 60 * ((b - r) / d + 2);
+    else h = 60 * ((r - g) / d + 4);
+  }
+  if (h < 0) h += 360;
+  return { h, s: max === 0 ? 0 : (d / max) * 100, v: max * 100 };
+}
+// Renders the wheel itself into a canvas at a fixed brightness (V) —
+// hue as angle, saturation as distance from centre, the standard "HSV
+// wheel" shape. Recomputed only when V changes (the brightness slider
+// moves), not on every hue/saturation pick — picking a point on an
+// already-drawn wheel is just reading its angle/distance, no redraw
+// needed.
+function drawColorWheel(canvas, v) {
+  const ctx = canvas.getContext("2d");
+  const size = canvas.width;
+  const radius = size / 2;
+  const imageData = ctx.createImageData(size, size);
+  const data = imageData.data;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = x - radius, dy = y - radius;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const idx = (y * size + x) * 4;
+      if (dist > radius) continue; // leave transparent outside the circle
+      let angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      angle = (angle + 360) % 360;
+      const s = Math.min(100, (dist / radius) * 100);
+      const rgb = hexToRgb(hsvToHex(angle, s, v));
+      data[idx] = rgb.r; data[idx + 1] = rgb.g; data[idx + 2] = rgb.b; data[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+// The picker component itself — a canvas wheel (drag/tap to set hue +
+// saturation) plus one brightness slider underneath, so no dimension
+// this app's colours need (full HSV space) is left unreachable. Reads
+// its current hue/saturation/brightness straight from currentValue
+// every render rather than its own separate copy — the same value the
+// parent already owns via ModuleColorRepository, avoiding a second
+// source of truth that could drift from what Hex/RGB or the native
+// picker show for the same colour.
+function ColorWheelPicker({ currentValue, onPick, darkMode }) {
+  const canvasRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  const size = 200;
+  const { h, s, v } = hexToHsv(currentValue);
+
+  useEffect(() => {
+    if (canvasRef.current) drawColorWheel(canvasRef.current, v);
+  }, [v]);
+
+  const pickFromEvent = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const point = e.touches ? e.touches[0] : e;
+    const x = point.clientX - rect.left, y = point.clientY - rect.top;
+    const radius = rect.width / 2;
+    const dx = x - radius, dy = y - radius;
+    const dist = Math.min(radius, Math.sqrt(dx * dx + dy * dy));
+    let angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    angle = (angle + 360) % 360;
+    const sat = Math.min(100, (dist / radius) * 100);
+    onPick(hsvToHex(angle, sat, v));
+  };
+
+  const markerAngleRad = (h * Math.PI) / 180;
+  const markerRadius = (s / 100) * (size / 2);
+  const markerX = size / 2 + markerRadius * Math.cos(markerAngleRad);
+  const markerY = size / 2 + markerRadius * Math.sin(markerAngleRad);
+
+  return (
+    <div>
+      <div
+        style={{ position: "relative", width: size, height: size, margin: "0 auto", touchAction: "none" }}
+        onPointerDown={(e) => { setDragging(true); pickFromEvent(e); }}
+        onPointerMove={(e) => { if (dragging) pickFromEvent(e); }}
+        onPointerUp={() => setDragging(false)}
+        onPointerLeave={() => setDragging(false)}
+      >
+        <canvas ref={canvasRef} width={size} height={size} style={{ width: size, height: size, borderRadius: "50%", display: "block", cursor: "pointer" }} />
+        <div style={{
+          position: "absolute", left: markerX - 8, top: markerY - 8, width: 16, height: 16, borderRadius: "50%",
+          background: currentValue, border: "2px solid #FFFFFF", boxShadow: "0 0 0 1px rgba(0,0,0,.5)", pointerEvents: "none",
+        }} />
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}>
+        <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", flexShrink: 0 }}>Brightness</span>
+        <input type="range" min="0" max="100" value={Math.round(v)}
+          onChange={(e) => onPick(hsvToHex(h, s, Number(e.target.value)))}
+          style={{ flex: 1 }} />
+      </div>
+    </div>
+  );
+}
+
 function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onReset, label }) {
   const [darkMode] = useDarkModePreference();
 
   const [expanded, setExpanded] = useState(false);
+  // ADDED — real ask: optional colour wheel alongside the existing
+  // Hex/RGB fields, so picking a colour never requires already knowing
+  // a value. Wheel is the default tab on expand — the whole point of
+  // the ask was "no previous hex needed to know" — Hex/RGB stays one
+  // tap away for anyone who does have a specific value in mind.
+  const [panelMode, setPanelMode] = useState("wheel");
   const [hexDraft, setHexDraft] = useState(currentValue);
   const rgb = hexToRgb(currentValue) || { r: 0, g: 0, b: 0 };
 
@@ -1090,22 +1223,41 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
               normalizing, falling back to their own default. */}
           <input type="color" value={currentValue.toLowerCase()} onChange={(e) => onSetColor(colorKey, e.target.value)}
             style={{ width: 36, height: 28, padding: 0, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 6, cursor: "pointer" }} />
-          <span onClick={() => setExpanded((e) => !e)} style={{ fontSize: 11, color: "#3D63C9", fontWeight: 600, cursor: "pointer" }}>{expanded ? "Hide" : "Hex/RGB"}</span>
+          <span onClick={() => setExpanded((e) => !e)} style={{ fontSize: 11, color: "#3D63C9", fontWeight: 600, cursor: "pointer" }}>{expanded ? "Hide" : "Customise"}</span>
         </div>
       </div>
       {expanded && (
         <div style={{ padding: "0 16px 14px" }}>
-          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>Hex</div>
-          <input value={hexDraft} onChange={(e) => commitHex(e.target.value)} placeholder="#RRGGBB"
-            style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontFamily: "monospace", fontSize: 13, marginBottom: 10, boxSizing: "border-box" }} />
-          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>RGB</div>
-          <div style={{ display: "flex", gap: 8 }}>
-            {["r", "g", "b"].map((channel) => (
-              <input key={channel} type="number" min="0" max="255" value={rgb[channel]}
-                onChange={(e) => commitRgbChannel(channel, e.target.value)}
-                style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box" }} />
+          <div style={{ display: "flex", gap: 18, marginBottom: 14 }}>
+            {[["wheel", "Colour wheel"], ["hexrgb", "Hex/RGB"]].map(([mode, tabLabel]) => (
+              <span key={mode} onClick={() => setPanelMode(mode)}
+                style={{
+                  fontSize: 12, fontWeight: 700, cursor: "pointer", paddingBottom: 4,
+                  color: panelMode === mode ? "#3D63C9" : (darkMode ? DARK.textDisabled : "#9A9AA1"),
+                  borderBottom: panelMode === mode ? "2px solid #3D63C9" : "2px solid transparent",
+                }}>
+                {tabLabel}
+              </span>
             ))}
           </div>
+          {panelMode === "wheel" ? (
+            <ColorWheelPicker currentValue={currentValue} darkMode={darkMode}
+              onPick={(hex) => { onSetColor(colorKey, hex); setHexDraft(hex); }} />
+          ) : (
+            <>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>Hex</div>
+              <input value={hexDraft} onChange={(e) => commitHex(e.target.value)} placeholder="#RRGGBB"
+                style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontFamily: "monospace", fontSize: 13, marginBottom: 10, boxSizing: "border-box" }} />
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>RGB</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {["r", "g", "b"].map((channel) => (
+                  <input key={channel} type="number" min="0" max="255" value={rgb[channel]}
+                    onChange={(e) => commitRgbChannel(channel, e.target.value)}
+                    style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box" }} />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
