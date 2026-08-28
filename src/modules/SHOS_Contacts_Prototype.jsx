@@ -1062,7 +1062,10 @@ function ContactCard({ contact, onOpen, T, encounters = [], anonymise = false, i
   // preview) — a real held-press, not just a tap, so it doesn't fire
   // on an ordinary quick tap that's meant to open the profile.
   const pressTimer = useRef(null);
-  const startPress = () => { pressTimer.current = setTimeout(() => onLongPress?.(contact.id), 500); };
+  // CHANGED — real ask: long-press for select/multiselect fired too
+  // easily. 750ms (1.5x the original 500ms), same across every module
+  // using this pattern.
+  const startPress = () => { pressTimer.current = setTimeout(() => onLongPress?.(contact.id), 750); };
   const cancelPress = () => { clearTimeout(pressTimer.current); };
   const handleClick = () => {
     if (selectMode) onToggleSelected?.(contact.id);
@@ -1537,12 +1540,16 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               equivalent detail-view record title (Testing/Clinic
               Visits/Vaccinations/Symptom Log/Timeline) uses 20/700 —
               a real, isolated slip, not a deliberate choice. */}
-          <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{displayName(contact)}</span>
+          {/* CHANGED — real ask: this title, right next to the back
+              button, was never checking Anonymise mode at all — the
+              name below it (line ~1618) already masked correctly, this
+              one leaked the real name regardless of the setting. */}
+          <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>
           {/* ADDED — real ask: pronouns shown right next to the name,
               the natural place people actually look for them. Gender
               joins it here rather than a whole new section — same
               "identity, at a glance" spot, not buried below. */}
-          {(contact.pronouns || contact.gender) && (
+          {!anonymise && (contact.pronouns || contact.gender) && (
             <span style={{ fontSize: 13, color: T.textSecondary, marginLeft: 6 }}>
               ({[contact.gender, contact.pronouns].filter(Boolean).join(" · ")})
             </span>

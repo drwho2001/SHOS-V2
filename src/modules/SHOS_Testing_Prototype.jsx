@@ -708,7 +708,10 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
   const toggleSelected = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
   const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); };
   const pressTimer = useRef(null);
-  const startPress = (id) => { pressTimer.current = setTimeout(() => { setSelectMode(true); toggleSelected(id); }, 500); };
+  // CHANGED — real ask: long-press for select/multiselect fired too
+  // easily. 750ms (1.5x the original 500ms), same across every module
+  // using this pattern.
+  const startPress = (id) => { pressTimer.current = setTimeout(() => { setSelectMode(true); toggleSelected(id); }, 750); };
   const cancelPress = () => clearTimeout(pressTimer.current);
   // CHANGED 26 Aug 2026 — real gap found and fixed: tests/deletedRecent/
   // undoDelete/triggerDelete used to live only here, so a single-record
@@ -724,7 +727,17 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
           (the sub-tab pills already show which section is active),
           never a standalone top-level screen. Shrunk to a small
           subordinate label instead of a duplicate full banner. */}
-      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* CHANGED — real bug: this stuck at top:0, the SAME position as
+          Healthcare's own colored banner above it (also top:0, zIndex
+          6) — since both are sticky within Healthcare's one shared
+          scroll container, they overlapped exactly instead of stacking,
+          so this floated ON TOP of Healthcare's banner once scrolled
+          past it, with the rest of the page (including the multiselect
+          toolbar below) still scrolling underneath as if this were at
+          y:0. top:62 sticks it directly beneath Healthcare's banner
+          instead — same measured height Contacts already uses for its
+          own second sticky bar under an identical banner shape. */}
+      <div style={{ position: "sticky", top: 62, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5 }}>Testing</span>
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
             matching Medication's pattern — long-press stays as an

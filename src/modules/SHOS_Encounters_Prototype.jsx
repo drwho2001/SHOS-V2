@@ -577,7 +577,10 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
   // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
   // to every module — same pattern as Contacts' own ContactCard.
   const pressTimer = useRef(null);
-  const startPress = () => { pressTimer.current = setTimeout(() => onLongPress?.(encounter.id), 500); };
+  // CHANGED — real ask: long-press for select/multiselect fired too
+  // easily. 750ms (1.5x the original 500ms), same across every module
+  // using this pattern.
+  const startPress = () => { pressTimer.current = setTimeout(() => onLongPress?.(encounter.id), 750); };
   const cancelPress = () => { clearTimeout(pressTimer.current); };
   const handleClick = () => {
     if (selectMode) onToggleSelected?.(encounter.id);

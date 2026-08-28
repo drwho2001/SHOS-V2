@@ -789,7 +789,16 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
           {isOverridden && (
             <ResetIcon size={16} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ cursor: "pointer" }} onClick={onReset} title="Reset to default" />
           )}
-          <input type="color" value={currentValue} onChange={(e) => onSetColor(colorKey, e.target.value)}
+          {/* CHANGED — real ask: the native colour picker (its own
+              R/G/B or H/S/L sliders, not anything this app renders)
+              wasn't opening preset to the module's actual current
+              colour, defaulting to 0/black instead. The HTML spec for
+              input[type=color]'s value requires a strict lowercase
+              #rrggbb string — ACCENTS/ModuleColorRepository store hex
+              in uppercase (e.g. "#D97706"), which some WebView colour
+              pickers silently reject as invalid rather than
+              normalizing, falling back to their own default. */}
+          <input type="color" value={currentValue.toLowerCase()} onChange={(e) => onSetColor(colorKey, e.target.value)}
             style={{ width: 36, height: 28, padding: 0, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 6, cursor: "pointer" }} />
           <span onClick={() => setExpanded((e) => !e)} style={{ fontSize: 11, color: "#3D63C9", fontWeight: 600, cursor: "pointer" }}>{expanded ? "Hide" : "Hex/RGB"}</span>
         </div>

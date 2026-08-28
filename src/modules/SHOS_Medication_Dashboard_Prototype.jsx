@@ -1600,7 +1600,13 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             it — a natural next use of notificationService.js, flagged
             separately, not done here. */}
 
-        <div style={{ display: "flex", gap: 10, padding: "0 16px 16px" }}>
+        {/* CHANGED — real ask: no gap at all between the banner and
+            this row when none of the conditional banners above it
+            (select toolbar/allergies/undo toast) are showing — every
+            other module with a stat/summary row directly under its
+            banner (Healthcare, Encounters) has some top breathing
+            room, this was the one at a flat 0. */}
+        <div style={{ display: "flex", gap: 10, padding: "12px 16px 16px" }}>
           <StatTile T={T} label="Active medications" value={activeMeds.length} tint={T.medsBlue} />
           <StatTile T={T} label="Needs action" value={needsActionMeds.length} tint={needsActionMeds.length > 0 ? T.actionRed : T.textPrimary}
             subtitle={needsActionMeds.length > 0 ? needsActionMeds.map((m) => m.name.split(" (")[0]).join(", ") : null}
