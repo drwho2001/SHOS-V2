@@ -3,7 +3,28 @@ name: Build Android APK
 on:
   push:
     branches: [ main ]
+  # ADDED — real ask: bisecting a real device crash by installing old
+  # builds directly, rather than guessing from code alone. checkout_sha
+  # lets a manually-dispatched run build a SPECIFIC historical commit
+  # while still using the CURRENT workflow file (workflow_dispatch always
+  # reads the workflow definition from the ref that trigger it, which
+  # stays `main`/HEAD here — only the actual source checked out inside
+  # the job changes) -- so old commits' own frozen workflow.yml (which
+  # only knows how to publish to "latest") never has to be touched.
+  # release_tag lets that same run publish to its OWN release instead of
+  # overwriting "latest" (the one build meant for real day-to-day
+  # testing) -- defaults to "latest" so a plain manual re-run without
+  # inputs behaves exactly as before.
   workflow_dispatch:
+    inputs:
+      checkout_sha:
+        description: "Commit SHA to build (blank = current HEAD)"
+        required: false
+        default: ""
+      release_tag:
+        description: "Release tag to publish to (blank = latest)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -14,6 +35,8 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.checkout_sha || github.sha }}
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -56,13 +79,13 @@ jobs:
       - name: Rename APK for the release
         run: cp android/app/build/outputs/apk/debug/app-debug.apk SHOS-debug.apk
 
-      - name: Publish APK to "latest" release
+      - name: Publish APK to release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest
-          name: SHOS (latest build)
+          tag_name: ${{ github.event.inputs.release_tag || 'latest' }}
+          name: "${{ github.event.inputs.release_tag && format('SHOS (test build: {0})', github.event.inputs.release_tag) || 'SHOS (latest build)' }}"
           body: |
-            Automated debug build from the latest push to `main` (commit ${{ github.sha }}).
+            Automated debug build from commit ${{ github.event.inputs.checkout_sha || github.sha }}.
             This is a debug APK for testing/feedback -- not a production release.
 
             Install: download SHOS-debug.apk below, then on your Android phone allow
