@@ -191,10 +191,10 @@ export function parseBackupFile(jsonText) {
 }
 
 // Restores a parsed backup — replaces ALL current data with what's in
-// the file. Deliberately all-or-nothing per module (no partial merge),
-// since merging is a much harder problem (what happens when the same
-// contact was edited in both places?) that isn't needed yet for a
-// single-device, single-user app.
+// the file. See mergeBackup() below for the additive alternative — the
+// UI now asks which one you want before either runs, since silently
+// wiping everything with no confirmation was a real gap on its own,
+// separate from merge existing at all.
 export function restoreBackup(parsedBackup) {
   const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, customOptionLists, privacySettings } = parsedBackup.data;
   if (Array.isArray(contacts)) ContactRepository.replaceAll(contacts);
@@ -224,6 +224,57 @@ export function restoreBackup(parsedBackup) {
   // whatever profile is already there untouched.
   if (myProfile && typeof myProfile === "object" && !Array.isArray(myProfile)) {
     MyProfileRepository.replaceAll(myProfile);
+  }
+}
+
+// ADDED — real ask: "ask if replace all data or merge — placeholder/
+// demo data still exists and won't be needed" (that's actually a
+// case for Replace All, restoreBackup() above already wipes it
+// cleanly — the real gap was that import ran with zero confirmation
+// or choice at all). Merge adds the backup's records ALONGSIDE
+// whatever's already here, via each repository's own getAll()/
+// replaceAll() — concatenating instead of overwriting keeps every
+// imported record's ORIGINAL id intact, so cross-references (an
+// Encounter's attendeeIds, a Clinic Visit's linked test) still
+// resolve correctly after merging. HONEST LIMIT, stated plainly: this
+// is "combine both sets", not conflict resolution — it can't detect
+// that a contact in the backup is the "same person" as one already
+// here and won't try to (see restoreBackup's own past note on why
+// real merge is a much harder problem). myProfile/privacySettings are
+// singletons, not lists — merging them makes no sense, so they're
+// left untouched here entirely; Replace All is the only way to bring
+// those in from a backup. customOptionLists (plain string lists, not
+// id-based records) are unioned per category instead, since simple
+// duplicate labels would be actively unhelpful.
+export function mergeBackup(parsedBackup) {
+  const { data } = parsedBackup;
+  const append = (repo, incoming) => {
+    if (!Array.isArray(incoming) || incoming.length === 0) return;
+    repo.replaceAll([...repo.getAll(), ...incoming]);
+  };
+  append(ContactRepository, data.contacts);
+  append(MedicationRepository, data.medications);
+  append(LogRepository, data.logs);
+  append(EncounterRepository, data.encounters);
+  append(KinkRegistry, data.kinks);
+  append(ChemsRegistry, data.chems);
+  append(ProtectionRegistry, data.protection);
+  append(SymptomsRegistry, data.symptoms);
+  append(LocationsRepository, data.locations);
+  append(TestingRepository, data.tests);
+  append(OrganismRegistry, data.organisms);
+  append(ResultsRegistry, data.results);
+  append(ClinicVisitsRepository, data.clinicVisits);
+  append(SymptomLogRepository, data.symptomLog);
+  append(VaccinationRepository, data.vaccinations);
+  append(EpisodeRepository, data.episodes);
+  if (data.customOptionLists && typeof data.customOptionLists === "object") {
+    const current = CustomOptionListsRepository.getAllForBackup();
+    const merged = {};
+    for (const key of new Set([...Object.keys(current), ...Object.keys(data.customOptionLists)])) {
+      merged[key] = Array.from(new Set([...(current[key] || []), ...(data.customOptionLists[key] || [])]));
+    }
+    CustomOptionListsRepository.replaceAll(merged);
   }
 }
 
@@ -300,15 +351,17 @@ export async function exportBackup(includeKeys = null) {
 }
 
 // Takes a File object (from an <input type="file"> picker), reads it,
-// and restores it. onDone/onError are simple callbacks so the calling
-// UI can show a success message or an error without this file needing
-// to know anything about React.
-export function importBackupFromFile(file, onDone, onError) {
+// and restores or merges it depending on `mode` ("replace" | "merge",
+// defaults to "replace" — the pre-existing behavior, for any caller
+// that hasn't been updated to ask). onDone/onError are simple callbacks
+// so the calling UI can show a success message or an error without
+// this file needing to know anything about React.
+export function importBackupFromFile(file, onDone, onError, mode = "replace") {
   const reader = new FileReader();
   reader.onload = () => {
     try {
       const parsed = parseBackupFile(reader.result);
-      restoreBackup(parsed);
+      if (mode === "merge") mergeBackup(parsed); else restoreBackup(parsed);
       onDone?.(parsed);
     } catch (err) {
       onError?.(err);

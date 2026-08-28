@@ -500,14 +500,31 @@ export default function App() {
     setPendingOpenRecordId(recordId);
   };
 
-  const handleImportClick = () => fileInputRef.current?.click();
+  // ADDED — real ask: import used to run with zero confirmation or
+  // choice at all — picking a file immediately wiped every current
+  // record with what was in it. Now asks Replace All vs. Merge first;
+  // the actual file picker only opens once one's chosen. Real trade-off
+  // stated plainly in backupService.js's own comment: Merge is a
+  // straightforward "add both sets together" (each imported record
+  // keeps its original id, so cross-references stay intact), not
+  // conflict resolution — it won't notice the same real contact exists
+  // in both places.
+  const [showImportModeDialog, setShowImportModeDialog] = useState(false);
+  const [importMode, setImportMode] = useState("replace");
+  const handleImportClick = () => setShowImportModeDialog(true);
+  const startImport = (mode) => {
+    setImportMode(mode);
+    setShowImportModeDialog(false);
+    fileInputRef.current?.click();
+  };
   const handleFileChosen = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     importBackupFromFile(
       file,
-      () => { setStatus("Backup restored — reload the page to see it everywhere."); window.location.reload(); },
-      (err) => setStatus(`Import failed: ${err.message}`)
+      () => { setStatus(importMode === "merge" ? "Backup merged in — reload the page to see it everywhere." : "Backup restored — reload the page to see it everywhere."); window.location.reload(); },
+      (err) => setStatus(`Import failed: ${err.message}`),
+      importMode
     );
     e.target.value = "";
   };
@@ -608,6 +625,27 @@ export default function App() {
           onDismissForever={() => { PrivacySettingsRepository.update({ appLockPromptDismissed: true }); setShowAppLockPrompt(false); }}
           onOpenSettings={() => { setShowAppLockPrompt(false); setShowSettings(true); }}
         />
+      )}
+      {showImportModeDialog && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => setShowImportModeDialog(false)}>
+          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 8 }}>
+              Import backup
+            </div>
+            <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16, lineHeight: 1.5 }}>
+              Replace All wipes every current record and loads only what's in the file — the way to clear out placeholder or old data with a real backup. Merge adds the file's records alongside what's already here, without removing anything.
+            </div>
+            <button onClick={() => startImport("replace")} style={{ width: "100%", padding: 14, borderRadius: 999, border: "none", background: ACTION.red, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", marginBottom: 8 }}>
+              Replace all data
+            </button>
+            <button onClick={() => startImport("merge")} style={{ width: "100%", padding: 14, borderRadius: 999, border: "none", background: ACCENTS.home, color: "#FFFFFF", fontWeight: 700, cursor: "pointer", marginBottom: 8 }}>
+              Merge into existing data
+            </button>
+            <button onClick={() => setShowImportModeDialog(false)} style={{ width: "100%", padding: 12, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : "#DCDCE1"), background: "transparent", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
