@@ -2260,9 +2260,13 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
     <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh", display: "flex", justifyContent: "center" }}>
       {/* ADDED 19 Aug 2026 — real undo/redo toast, same visual pattern
           as Medication's own, kept consistent. */}
+      {/* CHANGED — real ask: this sat at top:12, directly on top of
+          the screen's own back button — the instinctive "do the edit,
+          then tap back" motion hit the toast instead. top:64 clears
+          every header shape in this app. */}
       {editUndo.toast && (
         <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
-          style={{ position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.contactsTeal, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.contactsTeal, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
           {editUndo.toast.mode === "undo" ? "Contact updated — tap to undo" : "Undone — tap to redo"}
         </div>

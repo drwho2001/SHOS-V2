@@ -1563,9 +1563,13 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             most recent dose log, specifically for the accidental-tap
             case. See logDose() above for how lastLoggedEntry is tracked
             and cleared. */}
+        {/* CHANGED — real ask: this sat at top:12, directly on top of
+            the banner's own back/nav controls — the instinctive "log
+            the dose, then tap away" motion hit the toast instead.
+            top:64 clears the banner. */}
         {lastLoggedEntry && (
           <div onClick={undoLastLog}
-            style={{ position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)", width: 358, background: T.textPrimary, color: T.bg, borderRadius: radius.full, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 358, background: T.textPrimary, color: T.bg, borderRadius: radius.full, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <Check size={14} /> Dose logged — tap to undo
           </div>
         )}
@@ -1576,7 +1580,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             Redo never targets something stale. */}
         {!lastLoggedEntry && redoAvailable && (
           <div onClick={redoLastUndo}
-            style={{ position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)", width: 358, background: T.medsBlue, color: "#FFFFFF", borderRadius: radius.full, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 358, background: T.medsBlue, color: "#FFFFFF", borderRadius: radius.full, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <RefreshCcw size={14} /> Undone — tap to redo
           </div>
         )}
@@ -1587,7 +1591,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             for the same screen space. */}
         {!lastLoggedEntry && !redoAvailable && editUndo.toast && (
           <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
-            style={{ position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)", width: 358, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.medsBlue, color: "#FFFFFF", borderRadius: radius.full, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 358, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.medsBlue, color: "#FFFFFF", borderRadius: radius.full, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
             {editUndo.toast.mode === "undo" ? "Medication updated — tap to undo" : "Undone — tap to redo"}
           </div>

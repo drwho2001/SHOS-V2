@@ -56,6 +56,44 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
+// ADDED — real ask: the status dot ("looks pointless") needed real
+// recency awareness, not just result colour — an old test's dot
+// shouldn't read with the same weight as a fresh one. "Recent" is
+// either of the two most recent tests on file BY DATE (so someone who
+// only tests every few months still gets a current-looking dot for
+// their latest result) OR anything within the last 4 weeks (so a
+// cluster of recent tests all read as current, not just the single
+// newest one). `allTests` should be the FULL unfiltered set (not a
+// search-filtered list) so rank is computed correctly.
+const RECENT_TEST_WINDOW_MS = 28 * 24 * 60 * 60 * 1000;
+function isRecentTest(test, allTests) {
+  if (!test.date) return false;
+  const withinWindow = Date.now() - new Date(test.date).getTime() <= RECENT_TEST_WINDOW_MS;
+  if (withinWindow) return true;
+  const rank = [...allTests].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).findIndex((t) => t.id === test.id);
+  return rank !== -1 && rank < 2;
+}
+
+// Single source of truth for the dot colour, used by both the list
+// row and the detail screen's title dot (previously only the list row
+// had real logic — the detail dot was still a flat red-if-positive/
+// else-blue leftover). Pending stays amber regardless of recency (a
+// missing result is its own urgent state). An OLD test (not recent)
+// reads as ACTION.gold — the "archive" tone this app's own design
+// tokens already set aside for exactly this, previously unused —
+// rather than a full-strength red/green that implies current status.
+function computeTestDotColor(test, allTests, T, revealEarly = false) {
+  const resultNames = test.resultIds.map((id) => ResultsRegistry.getById(id)?.name).filter(Boolean);
+  const resultPending = test.resultDate && new Date(test.resultDate) > new Date() && !revealEarly;
+  if (resultPending) return ACTION.amber;
+  if (!isRecentTest(test, allTests)) return ACTION.gold;
+  const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
+  if (isPositive) return T.actionRed;
+  const isNegative = resultNames.some((r) => r.toLowerCase() === "negative");
+  if (isNegative) return T.actionGreen;
+  return T.healthcareBlue;
+}
+
 // ── Shared form primitives — same self-contained pattern as every
 // other module this session (each module owns its own copies, no
 // shared UI-library file yet). ──
@@ -546,7 +584,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
 }
 
 // ── Detail view ──
-function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDelete, refresh }) {
+function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDelete, refresh, allTests }) {
   const [test, setTest] = useState(() => TestingRepository.getById(testId));
   // ADDED — real ask: "hide result until result date... similar to
   // Dom/sub half-toggle." Soft-masked by default rather than fully
@@ -591,7 +629,13 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
 
       <div style={{ padding: "0 16px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <span style={{ width: 10, height: 10, borderRadius: radius.full, background: (isPositive && !resultPending) ? T.actionRed : T.healthcareBlue, display: "inline-block" }} />
+          {/* CHANGED — real ask: this was still the old flat
+              red-if-positive/else-blue leftover, "pointless" the same
+              way the list row's dot used to be before that got fixed
+              — the fix here just hadn't reached this screen too.
+              Shares the same recency-aware logic as the list row now
+              (see computeTestDotColor's own comment). */}
+          <span style={{ width: 10, height: 10, borderRadius: radius.full, background: computeTestDotColor(test, allTests || [test], T, revealEarly), display: "inline-block" }} />
           <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{test.title || "Untitled test"}</span>
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>{formatDate(test.date)}</div>
@@ -796,14 +840,16 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
           const resultNames = t.resultIds.map((id) => ResultsRegistry.getById(id)?.name).filter(Boolean);
           const resultPending = t.resultDate && new Date(t.resultDate) > new Date();
           const isPositive = !resultPending && resultNames.some((r) => r.toLowerCase() === "positive");
-          // FIXED — real ask: this dot used to just be red-if-positive,
-          // otherwise a flat, meaningless blue — "looks pointless".
-          // Now: red for a positive result, green for a real negative,
-          // amber for pending/no result yet, falling back to the same
-          // neutral blue only when none of those apply (a result type
-          // other than positive/negative was recorded).
           const isNegative = !resultPending && resultNames.some((r) => r.toLowerCase() === "negative");
-          const dotColor = isPositive ? T.actionRed : isNegative ? T.actionGreen : resultPending ? ACTION.amber : T.healthcareBlue;
+          // CHANGED — real ask: red/green/amber alone still read as
+          // "pointless" once a test was old — an old negative kept
+          // glowing green as if still current. computeTestDotColor
+          // adds real recency: only a recent result gets the full red/
+          // green treatment, an old one reads as the archive tone
+          // instead. `tests` (not the search-filtered `sorted`) is
+          // passed so rank-based recency isn't skewed by an active
+          // search query.
+          const dotColor = computeTestDotColor(t, tests, T);
           return (
             <div key={t.id} onClick={() => selectMode ? toggleSelected(t.id) : onOpen(t.id)}
               onMouseDown={() => startPress(t.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={() => startPress(t.id)} onTouchEnd={cancelPress}
@@ -954,7 +1000,7 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
   if (screen.name === "landing") {
     screenContent = <TestingLanding T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "edit", id: null })} tests={tests} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />;
   } else if (screen.name === "detail") {
-    screenContent = <TestDetail T={T} testId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} refresh={refresh} />;
+    screenContent = <TestDetail T={T} testId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} refresh={refresh} allTests={tests} />;
   } else if (screen.name === "edit") {
     screenContent = (
       <TestEditSheet T={T} testId={screen.id} prefillData={!screen.id ? addPrefill : null}
@@ -970,9 +1016,13 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
     <div style={{ background: T.bg, minHeight: "100vh" }}>
       {/* ADDED 19 Aug 2026 — real undo/redo toast, same pattern as
           every other module. */}
+      {/* CHANGED — real ask: this sat at top:12, directly on top of
+          the screen's own back button — the instinctive "do the edit,
+          then tap back" motion hit the toast instead. top:64 clears
+          every header shape in this app. */}
       {editUndo.toast && (
         <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
-          style={{ position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.healthcareBlue, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.healthcareBlue, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
           {editUndo.toast.mode === "undo" ? "Test updated — tap to undo" : "Undone — tap to redo"}
         </div>

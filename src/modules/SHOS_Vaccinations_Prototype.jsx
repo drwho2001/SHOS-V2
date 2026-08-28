@@ -548,9 +548,15 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
     <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh" }}>
       {/* ADDED 19 Aug 2026 — real undo/redo toast, same pattern as
           every other module. */}
+      {/* CHANGED — real ask: this sat at top:12, directly on top of
+          the screen's own back button (a plain 16px-padding header is
+          only ~54px tall) — the instinctive "do the edit, then tap
+          back" motion hit the toast instead. top:64 clears every
+          header shape in this app (plain back+title or a colored
+          banner). */}
       {editUndo.toast && (
         <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
-          style={{ position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : LIGHT.healthcareBlue, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : LIGHT.healthcareBlue, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
           {editUndo.toast.mode === "undo" ? "Vaccination updated — tap to undo" : "Undone — tap to redo"}
         </div>
