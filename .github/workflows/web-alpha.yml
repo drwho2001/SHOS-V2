@@ -16,7 +16,7 @@ jobs:
       - name: Checkout known-good SHOS version
         uses: actions/checkout@v4
         with:
-          ref: 51ce4f4
+          ref: 51ce4f4bff2c194fb99ae4dad6dffac584768fe0
 
       - name: Set up Node
         uses: actions/setup-node@v4
