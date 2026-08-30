@@ -28,7 +28,7 @@ jobs:
         run: npm ci
 
       - name: Build web app
-        run: npm run build
+        run: npm run build -- --base=/SHOS-V2/
 
       - name: Upload web build
         uses: actions/upload-pages-artifact@v3
