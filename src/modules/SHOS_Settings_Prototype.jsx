@@ -1212,55 +1212,15 @@ const AUTO_EXPORT_INTERVAL_OPTIONS = [
   { days: 90, label: "Quarterly" },
 ];
 
-// CHANGED 1 Sep 2026 — real ask: "check settings not unnecessarily over
-// engineered - combine into similar things if better, IE 90 day
-// default with another setting group." Automatic backups (a backup-
-// scheduling setting) used to live here bundled with Inactive contact
-// threshold (a Contacts-display setting) under a generic "Preferences"
-// label — the two share nothing except both happening to be
-// days-based. Moved Automatic backups to its own row in the Data
-// section instead, right next to Export/Restore where it actually
-// belongs domain-wise (see AutomaticBackupsScreen below) — this screen
-// now holds just the one real setting it was originally built for.
-function PreferencesScreen({ onClose }) {
-  const [darkMode] = useDarkModePreference();
-
-  const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
-  const [draftValue, setDraftValue] = useState(() => String(prefs.inactiveThresholdDays));
-
-  const save = () => {
-    const parsed = parseInt(draftValue, 10);
-    if (!Number.isFinite(parsed) || parsed < 1) return;
-    const updated = AppPreferencesRepository.update({ inactiveThresholdDays: parsed });
-    setPrefs(updated);
-  };
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Preferences</span>
-      </div>
-      <div style={{ padding: 16 }}>
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Inactive contact threshold</div>
-          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 12 }}>
-            Days since a Contact's last Encounter before it shows the red "inactive" flag. Was fixed at 90 — now yours to set. A specific contact can also be excluded from this entirely (edit that contact → "One-off / never expect to recur").
-          </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input value={draftValue} onChange={(e) => setDraftValue(e.target.value)} type="number" min="1"
-              style={{ width: 90, padding: "10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>days</span>
-            <button onClick={save} style={{ marginLeft: "auto", padding: "10px 18px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
-              Save
-            </button>
-          </div>
-          <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1", marginTop: 10 }}>Currently: {prefs.inactiveThresholdDays} days.</div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// REMOVED 1 Sep 2026 — real ask: "move inactive contact threshold to
+// somewhere else / merge." This screen used to hold Automatic backups
+// too (moved out to the Data section — see that past comment, still
+// preserved below on AutomaticBackupsScreen), leaving Inactive contact
+// threshold as the sole remaining field in an otherwise-empty screen.
+// That one field is now InactiveThresholdCard, folded directly into
+// DesignScreen above (a Contacts-display setting fits "how each module
+// looks/behaves" better than its own near-empty screen) — see that
+// screen's own comment for the reasoning.
 
 // MOVED 1 Sep 2026 out of PreferencesScreen — see that function's own
 // comment. Same content/behavior as before, now with its own header
@@ -2372,7 +2332,45 @@ function DesignScreen({ onClose }) {
             Reset all to defaults
           </div>
         )}
+        {/* MOVED 1 Sep 2026 — real ask: "move inactive contact threshold
+            to somewhere else / merge" — this was the sole remaining
+            field in its own "Preferences" screen after Automatic
+            backups moved out (see that screen's own past comment). A
+            Contacts-display setting fits this screen's own "how each
+            module looks/behaves" scope better than a near-empty screen
+            of its own — folded in here, PreferencesScreen removed. */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "20px 0 6px" }}>Contacts</div>
+        <InactiveThresholdCard T={darkMode ? DARK : NEUTRAL} />
       </div>
+    </div>
+  );
+}
+
+function InactiveThresholdCard({ T }) {
+  const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const [draftValue, setDraftValue] = useState(() => String(prefs.inactiveThresholdDays));
+
+  const save = () => {
+    const parsed = parseInt(draftValue, 10);
+    if (!Number.isFinite(parsed) || parsed < 1) return;
+    setPrefs(AppPreferencesRepository.update({ inactiveThresholdDays: parsed }));
+  };
+
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, padding: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>Inactive contact threshold</div>
+      <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 12 }}>
+        Days since a Contact's last Encounter before it shows the red "inactive" flag. A specific contact can also be excluded from this entirely (edit that contact → "One-off / never expect to recur").
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input value={draftValue} onChange={(e) => setDraftValue(e.target.value)} type="number" min="1"
+          style={{ width: 90, padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box", background: T.surfaceVariant, color: T.textPrimary }} />
+        <span style={{ fontSize: 13, color: T.textSecondary }}>days</span>
+        <button onClick={save} style={{ marginLeft: "auto", padding: "10px 18px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
+          Save
+        </button>
+      </div>
+      <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 10 }}>Currently: {prefs.inactiveThresholdDays} days.</div>
     </div>
   );
 }
@@ -2416,7 +2414,6 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // turn each real reminder type on/off rather than each one being
   // invisible/buried in its own module.
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showPreferences, setShowPreferences] = useState(false);
   // ADDED 26 Aug 2026 — real ask: design/preferences section for
   // colour scheme, ability to customize a module's base colour.
   const [showDesign, setShowDesign] = useState(false);
@@ -2440,7 +2437,6 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showTrash) { setShowTrash(false); return true; }
       if (showStats) { setShowStats(false); return true; }
       if (showDesign) { setShowDesign(false); return true; }
-      if (showPreferences) { setShowPreferences(false); return true; }
       if (showPrivacy) { setShowPrivacy(false); return true; }
       if (showNotifications) { setShowNotifications(false); return true; }
       if (showResources) { setShowResources(false); return true; }
@@ -2454,7 +2450,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showManageLists, showAutoBackupSettings, showResources, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPrivacy, showNotifications, showManageLists, showAutoBackupSettings, showResources, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.
@@ -2555,10 +2551,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         {/* ADDED — real ask: unified notifications management, one
             place to turn each real reminder type on/off. */}
         <SettingsRow icon={Bell} label="Notifications" onClick={() => setShowNotifications(true)} />
-        {/* ADDED 19 Aug 2026 — Preferences, real now: the configurable
-            inactive-contact threshold, the user's own first concrete ask
-            for this previously fully-stubbed section. */}
-        <SettingsRow icon={SettingsIcon} label="Preferences" onClick={() => setShowPreferences(true)} />
+        {/* REMOVED 1 Sep 2026 — Preferences row removed; its one real
+            setting (inactive-contact threshold) now lives inside
+            Design, see InactiveThresholdCard's own comment. */}
         {/* ADDED 1 Sep 2026 — real ask: a Resources section. */}
         <SettingsRow icon={LifeBuoy} label="Resources" onClick={() => setShowResources(true)} />
       </div>
@@ -2607,9 +2602,6 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showNotifications && (
         <NotificationsScreen onClose={() => setShowNotifications(false)} />
-      )}
-      {showPreferences && (
-        <PreferencesScreen onClose={() => setShowPreferences(false)} />
       )}
       {showAutoBackupSettings && (
         <AutomaticBackupsScreen onClose={() => setShowAutoBackupSettings(false)} />
