@@ -756,25 +756,39 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // separate calculation.
   const [showFilters, setShowFilters] = useState(false);
   const [dateFilter, setDateFilter] = useState(null); // null | "week" | "month" | "sinceLastTest"
+  // ADDED 1 Sep 2026 — real ask: "add encounters search" — every
+  // sibling module (Contacts, Medication, Testing, Symptom Log,
+  // Resources, Glossary) already has a search box; this was the one
+  // module missing it. Matches title or an attendee's name, same
+  // fields the card itself already shows.
+  const [query, setQuery] = useState("");
 
   const visible = useMemo(() => {
     const base = encounters.filter((e) => (showArchived ? true : !e.isArchived));
-    if (!dateFilter) return sortByDateDesc(base);
-    const dated = base.filter((e) => e.date);
-    let filtered = dated;
-    if (dateFilter === "week") {
-      const cutoff = Date.now() - 7 * 86400000;
-      filtered = dated.filter((e) => new Date(e.date).getTime() >= cutoff);
-    } else if (dateFilter === "month") {
-      const cutoff = Date.now() - 30 * 86400000;
-      filtered = dated.filter((e) => new Date(e.date).getTime() >= cutoff);
-    } else if (dateFilter === "sinceLastTest") {
-      const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
-      const lastTest = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-      filtered = lastTest ? dated.filter((e) => new Date(e.date).getTime() >= new Date(lastTest.date).getTime()) : dated;
+    let filtered = base;
+    if (dateFilter) {
+      const dated = base.filter((e) => e.date);
+      if (dateFilter === "week") {
+        const cutoff = Date.now() - 7 * 86400000;
+        filtered = dated.filter((e) => new Date(e.date).getTime() >= cutoff);
+      } else if (dateFilter === "month") {
+        const cutoff = Date.now() - 30 * 86400000;
+        filtered = dated.filter((e) => new Date(e.date).getTime() >= cutoff);
+      } else if (dateFilter === "sinceLastTest") {
+        const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+        const lastTest = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+        filtered = lastTest ? dated.filter((e) => new Date(e.date).getTime() >= new Date(lastTest.date).getTime()) : dated;
+      }
+    }
+    const q = query.trim().toLowerCase();
+    if (q) {
+      filtered = filtered.filter((e) => {
+        const attendeeNames = e.attendeeIds.map((id) => contactName(contacts, id));
+        return [e.title, ...attendeeNames].filter(Boolean).some((v) => v.toLowerCase().includes(q));
+      });
     }
     return sortByDateDesc(filtered);
-  }, [encounters, showArchived, dateFilter]);
+  }, [encounters, showArchived, dateFilter, query, contacts]);
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", paddingBottom: 90 }}>
@@ -822,6 +836,12 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             </div>
           </div>
         )}
+        {/* ADDED 1 Sep 2026 — real ask: search within module, same
+            placement/pattern as every sibling module's own search box. */}
+        <div style={{ padding: "8px 16px 0" }}>
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search encounters"
+            style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+        </div>
         <div style={{ padding: "8px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div onClick={() => setShowArchived((s) => !s)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>
             {showArchived ? "Hide archived" : "Show archived"}
@@ -851,7 +871,9 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
       </div>
       <div style={{ padding: "8px 16px" }}>
         {visible.length === 0 && (
-          <div style={{ textAlign: "center", color: T.textDisabled, fontStyle: "italic", padding: "40px 0" }}>No encounters logged yet.</div>
+          <div style={{ textAlign: "center", color: T.textDisabled, fontStyle: "italic", padding: "40px 0" }}>
+            {query.trim() ? "No encounters match your search." : "No encounters logged yet."}
+          </div>
         )}
         {visible.map((e) => (
           <EncounterCard key={e.id} encounter={e} contacts={contacts} T={T} onClick={() => onOpenEncounter(e.id)}
