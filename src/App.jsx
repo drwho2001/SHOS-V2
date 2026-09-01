@@ -167,12 +167,29 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
   // the lock screen appears, same convenience as most apps with
   // biometric unlock — cancelling it is completely harmless, the PIN
   // field is right there.
+  // FIXED 1 Sep 2026 — real ask: "Biometrics not correctly working.
+  // Sometimes does." This screen mounts synchronously the instant
+  // App.jsx's own appStateChange listener sees isActive:true — i.e.
+  // right as Android's Activity.onResume() begins, not once the window
+  // has actually regained focus. Firing the native BiometricPrompt
+  // that early races the OS's own resume sequence: it only shows
+  // reliably once the window is genuinely focused, so whether it
+  // worked came down to how much incidental delay checkBiometryAvailable's
+  // own promise chain happened to add — "sometimes" by pure timing
+  // luck. A short, deliberate delay before the prompt (a documented
+  // workaround for this exact class of bug in Capacitor biometric
+  // plugins) gives the window time to settle first.
   useEffect(() => {
     if (!PrivacySettingsRepository.getSettings().biometricUnlockEnabled) return;
-    checkBiometryAvailable().then((result) => {
-      setBiometricAvailable(result.available);
-      if (result.available) tryBiometric();
-    });
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      checkBiometryAvailable().then((result) => {
+        if (cancelled) return;
+        setBiometricAvailable(result.available);
+        if (result.available) tryBiometric();
+      });
+    }, 350);
+    return () => { cancelled = true; clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
