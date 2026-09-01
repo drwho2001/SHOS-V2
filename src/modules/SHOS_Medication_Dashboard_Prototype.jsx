@@ -1669,6 +1669,13 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
           <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
             <div style={{ display: "flex", gap: 16 }}>
+              {/* ADDED 1 Sep 2026 — real ask: "option to select all...
+                  rather than manual 1 by 1", scoped to whatever's
+                  currently visible under the active search filter. */}
+              <span onClick={() => { const visible = activeMeds.filter(matchesMedSearch).map((m) => m.id); setSelectedIds(selectedIds.length === visible.length ? [] : visible); }}
+                style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>
+                {selectedIds.length === activeMeds.filter(matchesMedSearch).length ? "Deselect all" : "Select all"}
+              </span>
               {/* ADDED 26 Aug 2026 — real ask: export/print a single
                   record, enabled only when exactly one is selected. */}
               <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("medications", MedicationRepository.getById(selectedIds[0])); }}

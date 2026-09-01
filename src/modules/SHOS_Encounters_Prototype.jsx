@@ -796,6 +796,13 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
             <div style={{ display: "flex", gap: 16 }}>
+              {/* ADDED 1 Sep 2026 — real ask: "option to select all...
+                  rather than manual 1 by 1", scoped to whatever's
+                  currently visible under the active search/filters. */}
+              <span onClick={() => setSelectedIds(selectedIds.length === visible.length ? [] : visible.map((e) => e.id))}
+                style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>
+                {selectedIds.length === visible.length ? "Deselect all" : "Select all"}
+              </span>
               {/* ADDED 26 Aug 2026 — real ask: export/print a single
                   record, enabled only when exactly one is selected. */}
               <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("encounters", EncounterRepository.getById(selectedIds[0])); }}

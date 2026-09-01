@@ -129,8 +129,20 @@ function SelectiveExportSheet({ onClose, onExported }) {
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 220 }} onClick={onClose}>
       <div style={{ background: darkMode ? DARK.bg : "#F0F0F3", width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: "20px 20px 4px", flexShrink: 0 }}>
-          <span style={{ fontWeight: 600, fontSize: 16, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Export — choose what to include</span>
-          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 4 }}>Everything is included by default. Untick anything you'd rather leave out of this particular file.</div>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+            <div>
+              <span style={{ fontWeight: 600, fontSize: 16, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Export — choose what to include</span>
+              <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 4 }}>Everything is included by default. Untick anything you'd rather leave out of this particular file.</div>
+            </div>
+            {/* ADDED 1 Sep 2026 — real ask: "option to select all... rather
+                than manual 1 by 1" — before this, reselecting everything
+                after deselecting some meant tapping every group's own
+                checkbox one at a time. One tap for the whole list now. */}
+            <span onClick={() => setChecked(checked.size === allKeys.length ? new Set() : new Set(allKeys))}
+              style={{ fontSize: 12, fontWeight: 600, color: ACCENTS.healthcare, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, marginTop: 2 }}>
+              {checked.size === allKeys.length ? "Deselect all" : "Select all"}
+            </span>
+          </div>
         </div>
         <div style={{ overflowY: "auto", padding: "8px 20px", flex: 1 }}>
           {EXPORT_GROUPS.map((group) => (
@@ -291,7 +303,13 @@ function EncryptedExportSheet({ onClose }) {
               style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box", background: darkMode ? DARK.surface : "#FFFFFF", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
           </div>
           {error && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 10 }}>{error}</div>}
-          <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "4px 0 6px" }}>What to include</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0 6px" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5 }}>What to include</span>
+            <span onClick={() => setChecked(checked.size === allKeys.length ? new Set() : new Set(allKeys))}
+              style={{ fontSize: 12, fontWeight: 600, color: ACCENTS.healthcare, cursor: "pointer" }}>
+              {checked.size === allKeys.length ? "Deselect all" : "Select all"}
+            </span>
+          </div>
           {EXPORT_GROUPS.map((group) => (
             <div key={group.key} style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, marginBottom: 10, overflow: "hidden" }}>
               <div onClick={() => toggleGroup(group)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", cursor: "pointer", borderBottom: group.items.length > 1 ? "1px solid #DCDCE1" : "none" }}>

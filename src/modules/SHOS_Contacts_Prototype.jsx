@@ -2159,6 +2159,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         <div style={{ position: "sticky", top: 62, zIndex: 6, background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
+            {/* ADDED 1 Sep 2026 — real ask: "option to select all... rather
+                than manual 1 by 1", scoped to whatever's currently
+                visible (respects an active search/filter, same as
+                everything else this screen shows). */}
+            <span onClick={() => setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map((c) => c.id))}
+              style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>
+              {selectedIds.length === filtered.length ? "Deselect all" : "Select all"}
+            </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
                 record, enabled only when exactly one is selected —
                 exporting several at once as one file doesn't map to
