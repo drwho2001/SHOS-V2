@@ -22,7 +22,7 @@ import { AppPreferencesRepository } from "./repositories/appPreferencesRepositor
 // honest scope (this is a start, not a finished migration).
 import { NEUTRAL, ACCENTS, ACTION, FONT_FAMILY, RADIUS } from "./calculations/designTokens";
 // ADDED — real ask: Home's title should read "[Name]'s dashboard".
-import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HeartbeatIcon as HeartPulse, HospitalIcon as Hospital, DownloadSimpleIcon as Download, UploadSimpleIcon as Upload, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon, CaretLeftIcon as ChevronLeft, UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database, TrashIcon as Trash2, WarningIcon as AlertTriangle, CheckIcon as Check, ClipboardTextIcon as ClipboardList, TreeStructureIcon as ListTree, PaperclipIcon as Paperclip, ClockCounterClockwiseIcon as History, EyeSlashIcon as EyeOff, EyeIcon as Eye, TestTubeIcon as TestTube, FireIcon as Flame, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MicroscopeIcon as Microscope, ListChecksIcon as ClipboardCheck, SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CreditCardIcon as CreditCard, FingerprintIcon as Fingerprint } from "@phosphor-icons/react";
+import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HeartbeatIcon as HeartPulse, HospitalIcon as Hospital, DownloadSimpleIcon as Download, UploadSimpleIcon as Upload, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon, CaretLeftIcon as ChevronLeft, UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database, TrashIcon as Trash2, WarningIcon as AlertTriangle, CheckIcon as Check, ClipboardTextIcon as ClipboardList, TreeStructureIcon as ListTree, PaperclipIcon as Paperclip, ClockCounterClockwiseIcon as History, EyeSlashIcon as EyeOff, EyeIcon as Eye, TestTubeIcon as TestTube, FireIcon as Flame, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MicroscopeIcon as Microscope, ListChecksIcon as ClipboardCheck, SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CreditCardIcon as CreditCard, FingerprintIcon as Fingerprint, LockIcon as Lock } from "@phosphor-icons/react";
 // CHANGED — real Tier 1 decision: Phosphor, replacing lucide-react.
 // Every icon aliased directly in ONE import statement, back to its
 // original lucide name — deliberately one consistent pattern (not
@@ -221,28 +221,72 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
 // there is zero risk of a real record ever leaking through a decoy
 // session by accident. Mimics the real app's basic chrome (same tab
 // bar, icons, labels, colours) closely enough to read as genuine at a
-// glance, but every tab just shows a plausible "nothing logged yet"
-// empty state — the same copy a genuinely fresh install would show.
-// DELIBERATELY NO WAY BACK to the real app from inside here — that's
-// the point of a duress PIN. Getting to real data after this requires
-// closing and reopening the app and entering the REAL PIN, same as any
-// other cold start.
-function DecoyHome() {
+// glance.
+// CHANGED 1 Sep 2026 — real ask: a hard-empty decoy is itself
+// suspicious, since a genuinely fresh real install already ships with
+// its own default demo data (see the seed data across
+// contactRepository.js etc.) — an abuser who's seen the real app
+// before, or simply expects a personal app to have SOME history in
+// it, would read "PIN needed but nothing's here" as a tell that this
+// isn't the real thing. Every tab below now shows plausible-looking
+// static fake entries instead — hand-written strings baked directly
+// into this component, NOT read from the real seed data or any
+// repository (same zero-import invariant as before), so there is
+// still no path for a real record to leak through here by accident.
+// ADDED — manual relock (see HomeScreen's own onLockNow comment for
+// the full reasoning): works the same way from inside a decoy session
+// as it does in the real app — just returns to the PIN screen, never
+// a path to real data.
+const DECOY_CONTACTS = [
+  { name: "Jamie", sub: "London · Last interaction 3 days ago" },
+  { name: "Chris", sub: "Manchester · Last interaction 2 weeks ago" },
+  { name: "Sam", sub: "London · Last interaction 1 month ago" },
+];
+const DECOY_ENCOUNTERS = [
+  { title: "Drinks, then his place", sub: "6 days ago" },
+  { title: "Coffee date", sub: "3 weeks ago" },
+];
+const DECOY_MEDS = [
+  { name: "Vitamin D3", sub: "Daily · Last dose today" },
+  { name: "Antihistamine (PRN)", sub: "As needed" },
+];
+const DECOY_HEALTH = [
+  { title: "Routine screen", sub: "6 weeks ago · All clear" },
+  { title: "Clinic visit — routine", sub: "6 weeks ago" },
+];
+
+function DecoyHome({ onLockNow }) {
   const [tab, setTab] = useState("home");
-  const emptyCopy = {
-    home: "No activity logged yet.",
-    contacts: "No contacts yet.",
-    activity: "No encounters logged yet.",
-    medication: "No medications tracked yet.",
-    healthcare: "No records yet.",
+
+  const Row = ({ title, sub }) => (
+    <div style={{ padding: "12px 14px", background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 12, marginBottom: 8 }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: "#1B1B1F" }}>{title}</div>
+      <div style={{ fontSize: 12, color: "#9A9AA1", marginTop: 2 }}>{sub}</div>
+    </div>
+  );
+
+  const tabContent = {
+    home: (
+      <>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Recent activity</div>
+        <Row title="Coffee date" sub="3 weeks ago" />
+        <Row title="Vitamin D3 logged" sub="Today" />
+      </>
+    ),
+    contacts: DECOY_CONTACTS.map((c) => <Row key={c.name} title={c.name} sub={c.sub} />),
+    activity: DECOY_ENCOUNTERS.map((e) => <Row key={e.title} title={e.title} sub={e.sub} />),
+    medication: DECOY_MEDS.map((m) => <Row key={m.name} title={m.name} sub={m.sub} />),
+    healthcare: DECOY_HEALTH.map((h) => <Row key={h.title} title={h.title} sub={h.sub} />),
   };
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", display: "flex", flexDirection: "column", fontFamily: "'Inter', sans-serif", zIndex: 999 }}>
-      <div style={{ padding: "20px 20px 12px", flexShrink: 0 }}>
+      <div style={{ padding: "20px 20px 12px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontSize: 20, fontWeight: 700, color: "#1B1B1F" }}>SHOS</div>
+        {onLockNow && <Lock size={19} weight="bold" color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onLockNow} title="Lock now" />}
       </div>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: 20 }}>
-        <div style={{ fontSize: 14, color: "#9A9AA1", fontWeight: 500 }}>{emptyCopy[tab]}</div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
+        {tabContent[tab]}
       </div>
       <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", padding: "10px 0", borderTop: "1px solid #DCDCE1", background: "#FFFFFF", flexShrink: 0 }}>
         {TABS.map((t) => (
@@ -807,7 +851,7 @@ export default function App() {
   // gate below (once decoyActive, there's no lock screen to show or
   // bypass — this is the entire rest of the session).
   if (decoyActive) {
-    return <DecoyHome />;
+    return <DecoyHome onLockNow={() => { setDecoyActive(false); setLocked(true); }} />;
   }
 
   // ADDED 19 Aug 2026 — App Lock gate: shown INSTEAD of everything
@@ -836,7 +880,7 @@ export default function App() {
 
       <div style={{ flex: 1, paddingBottom: 76 }}>
         {active === "home" ? (
-          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler} />
+          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} />
         ) : ActiveModule ? (
           <ActiveModule key={`${active}-${navResetCount}`} openAddOnMount={quickAdd} onConsumedQuickAdd={() => { setQuickAdd(false); setQuickAddTarget(null); }} quickAddTarget={quickAddTarget}
             openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}

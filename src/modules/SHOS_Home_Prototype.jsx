@@ -26,8 +26,9 @@ import {
   UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database,
   TestTubeIcon as TestTube, FireIcon as Flame, StethoscopeIcon as Stethoscope,
   SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CalendarCheckIcon as CalendarCheck, StackIcon as Stack,
-  IdentificationBadgeIcon as CreditCard, DownloadSimpleIcon as Download,
+  IdentificationBadgeIcon as CreditCard, DownloadSimpleIcon as Download, LockIcon as Lock,
 } from "@phosphor-icons/react";
+import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
 import { ContactRepository } from "../repositories/contactRepository";
 import { EncounterRepository } from "../repositories/encounterRepository";
 import { MedicationRepository } from "../repositories/medicationRepository";
@@ -47,7 +48,7 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
 
-function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, registerModuleBackHandler }) {
+function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, registerModuleBackHandler, onLockNow }) {
   const [darkMode] = useDarkModePreference();
 
   // ADDED — real ask: title reads "[Name]'s dashboard" instead of a
@@ -300,6 +301,19 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       <div style={{ fontSize: 22, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         {profileName ? `${profileName}'s dashboard` : "Your dashboard"}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          {/* ADDED 1 Sep 2026 — real ask: "no way to leave duress mode,
+              which points to no manual relock button... also for real
+              workspace not fake pin." Only shown when App Lock is
+              actually on — locking with no PIN set would trap someone
+              with no way back in. Tapping it just returns to the PIN
+              screen (App.jsx's setLocked(true)) — not a backdoor into
+              anything, the same neutral gate either PIN already goes
+              through. DecoyHome gets its own copy of this, wired to
+              the same handler, so it works from inside a duress
+              session too. */}
+          {onLockNow && PrivacySettingsRepository.getSettings().appLockEnabled && (
+            <Lock size={19} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onLockNow} title="Lock now" />
+          )}
           {/* ADDED 19 Aug 2026 — Global Search, canonical Home placement
               per Doc 1, same treatment as the Settings gear icon right
               next to it. */}
