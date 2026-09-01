@@ -304,8 +304,23 @@ const LAST_BACKUP_KEY = "shos_last_backup_at";
 // something new that isn't backed up yet, not on elapsed time alone.
 export const BACKUP_REMINDER_DAYS = 90;
 
+// CRITICAL FIX: real device crash ("Maximum call stack size exceeded",
+// white/dark screen with no recovery, every app open) traced to this
+// exact pair of functions — getLastBackupInfo() called hasUnbackedChanges()
+// whenever no backup had ever been made, and hasUnbackedChanges() called
+// getLastBackupInfo() right back, an infinite mutual recursion that fires
+// on EVERY app open (Home reads this on mount) for anyone who's never
+// completed a real, non-selective export — true of every fresh install
+// and most real-device testing. Both functions now read the raw
+// timestamp through this one shared helper instead of calling each
+// other, breaking the cycle completely while keeping the exact same
+// behaviour otherwise.
+function getLastBackupTimestamp() {
+  return storage.load(LAST_BACKUP_KEY, null);
+}
+
 export function getLastBackupInfo() {
-  const lastAt = storage.load(LAST_BACKUP_KEY, null);
+  const lastAt = getLastBackupTimestamp();
   if (!lastAt) return { lastAt: null, daysSince: null, dueForReminder: hasUnbackedChanges() };
   const daysSince = Math.floor((Date.now() - new Date(lastAt).getTime()) / 86400000);
   return { lastAt, daysSince, dueForReminder: daysSince >= BACKUP_REMINDER_DAYS && hasUnbackedChanges() };
@@ -324,9 +339,9 @@ export function getLastBackupInfo() {
 // repository — if a new data type is ever added to backups, this
 // check picks it up automatically too.
 export function hasUnbackedChanges() {
-  const info = getLastBackupInfo();
-  if (!info.lastAt) return true; // never backed up at all
-  const lastBackupTime = new Date(info.lastAt).getTime();
+  const lastAt = getLastBackupTimestamp();
+  if (!lastAt) return true; // never backed up at all
+  const lastBackupTime = new Date(lastAt).getTime();
   const { data } = buildBackup(null);
   for (const [moduleKey, value] of Object.entries(data)) {
     const records = Array.isArray(value) ? value : [value];
