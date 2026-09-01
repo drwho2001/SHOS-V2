@@ -427,6 +427,13 @@ export default function App() {
   // restart, by design; see DecoyHome's own comment on why there's
   // deliberately no way back to the real app from inside it.
   const [decoyActive, setDecoyActive] = useState(false);
+  // ADDED 1 Sep 2026 — real ask: "long press home on in app nav bar"
+  // for manual relock, the second of the two spots offered alongside
+  // the dashboard icon already built. Same gate as that icon — only
+  // live when App Lock is actually on, so it can never trap someone
+  // with no PIN to unlock with. Read once, same lazy-useState pattern
+  // used for the identical check on Home's own header icon.
+  const [appLockEnabled] = useState(() => PrivacySettingsRepository.getSettings().appLockEnabled);
   // ADDED 26 Aug 2026 — real ask: onboarding, real single-user
   // personal app — checked once on load, same pattern as `locked`
   // above.
@@ -685,6 +692,17 @@ export default function App() {
     };
   }, [showSettings, showSearch, active]);
   const fileInputRef = useRef(null);
+  // ADDED 1 Sep 2026 — real ask: long-press Home to relock, see the
+  // appLockEnabled state comment above for the full reasoning. Same
+  // 750ms threshold every other long-press in this app already uses
+  // (Contacts' card long-press, etc.) — one shared timer ref is fine
+  // since there's only ever one Home tab.
+  const homePressTimer = useRef(null);
+  const startHomeLongPress = () => {
+    if (!appLockEnabled) return;
+    homePressTimer.current = setTimeout(() => setLocked(true), 750);
+  };
+  const cancelHomeLongPress = () => clearTimeout(homePressTimer.current);
   // CHANGED — critical fix: a real device crash (white/dark screen, no
   // recovery) traced to this exact line — if `active` ever holds a
   // value that isn't one of TABS' 5 real keys, .find() returns
@@ -906,6 +924,8 @@ export default function App() {
           if (tab.key === "home") {
             return (
               <div key={tab.key} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
+                onMouseDown={startHomeLongPress} onMouseUp={cancelHomeLongPress} onMouseLeave={cancelHomeLongPress}
+                onTouchStart={startHomeLongPress} onTouchEnd={cancelHomeLongPress}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", marginTop: -18 }}>
                 <div style={{ width: 48, height: 48, borderRadius: 999, background: tab.accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 10px rgba(0,0,0,.25)", border: `3px solid ${darkMode ? DARK.surface : "#FFFFFF"}` }}>
                   <Icon size={22} color="#FFFFFF" weight="bold" />
