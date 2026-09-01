@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, WarningIcon as AlertTriangle } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, WarningIcon as AlertTriangle, TrashIcon as Trash2 } from "@phosphor-icons/react";
 import { EpisodeRepository, RESOLUTION_OPTIONS } from "../repositories/episodeRepository";
 // ADDED 19 Aug 2026 — TRIGGER_REASON_OPTIONS now lives here, real
 // in-app editable option list.
@@ -184,7 +184,7 @@ function StartSheet({ onSave, onClose, T }) {
   );
 }
 
-function EpisodeDetail({ episodeId, onBack, T }) {
+function EpisodeDetail({ episodeId, onBack, onDeleted, T }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const episode = useMemo(() => EpisodeRepository.getById(episodeId), [episodeId, refreshKey]);
   if (!episode) return null;
@@ -224,10 +224,26 @@ function EpisodeDetail({ episodeId, onBack, T }) {
     update({ resolvedDate: new Date().toISOString().slice(0, 10), resolution });
   };
 
+  // ADDED — real ask: "'Remove episodes' ability" — Episodes was
+  // genuinely left out of the multi-select/Trash rollout every other
+  // module got. A real, simpler removal rather than replicating that
+  // whole subsystem here: EpisodeRepository already has a working
+  // archive()/unarchive() pair (used correctly everywhere episodes are
+  // listed, via !isArchived filters) — this just gives it a real UI
+  // entry point, with a plain confirm since there's no undo toast for
+  // this module yet.
+  const deleteEpisode = () => {
+    if (window.confirm(`Remove "${episode.title}"? This only removes the episode itself — nothing it links to (Encounters, Tests, Clinic Visits) is touched.`)) {
+      EpisodeRepository.archive(episodeId);
+      onDeleted();
+    }
+  };
+
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", padding: "16px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} />
+        <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer" }} onClick={deleteEpisode} />
       </div>
       <div style={{ padding: "0 16px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
@@ -416,7 +432,7 @@ export default function TimelineModule({ onClose, registerModuleBackHandler } = 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh" }}>
       {screen.name === "list" && <TimelineLanding T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} onClose={onClose} />}
-      {screen.name === "detail" && <EpisodeDetail T={T} episodeId={screen.id} onBack={backToList} />}
+      {screen.name === "detail" && <EpisodeDetail T={T} episodeId={screen.id} onBack={backToList} onDeleted={backToList} />}
       {screen.name === "add" && <StartSheet T={T} onSave={startEpisode} onClose={backToList} />}
     </div>
   );

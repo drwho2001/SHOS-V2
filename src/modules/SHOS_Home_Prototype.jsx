@@ -465,7 +465,14 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       )}
       {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={onNavigateToRecord} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}
       {showTimeline && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 200 }}>
+        // FIXED — real bug: this wrapper had no overflowY, and
+        // TimelineModule's own screens don't establish their own
+        // scroll container either — a populated Episode (several
+        // SectionCards, possibly the "Mark resolved" buttons near the
+        // bottom) taller than the viewport was simply unreachable, no
+        // way to scroll to it at all. Matches every other module's
+        // overlay wrapper elsewhere in this file.
+        <div style={{ position: "fixed", inset: 0, zIndex: 200, overflowY: "auto" }}>
           <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
         </div>
       )}
