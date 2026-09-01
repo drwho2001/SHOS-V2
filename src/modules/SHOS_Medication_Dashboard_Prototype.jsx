@@ -1641,8 +1641,16 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             still happens on My Profile, this is a visibility surface
             only, and stays silent entirely when nothing's recorded
             rather than showing an empty/permanent row. */}
+        {/* FIXED — real follow-up: the previous fix only addressed the
+            gap BELOW this banner (double-counted against the stat row).
+            This banner's own top margin was still a flat 0, sitting
+            completely flush against the sticky module header above it
+            — no breathing room at all, which is very likely what
+            still read as "off" after that first fix. 12px top now,
+            matching the same 12px this banner already uses on every
+            other side. */}
         {allergies.length > 0 && (
-          <div style={{ margin: "0 16px 12px", padding: "10px 14px", borderRadius: radius.md, background: `${T.actionRed}14`, border: `1px solid ${T.actionRed}40`, display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ margin: "12px 16px 12px", padding: "10px 14px", borderRadius: radius.md, background: `${T.actionRed}14`, border: `1px solid ${T.actionRed}40`, display: "flex", alignItems: "center", gap: 8 }}>
             <AlertTriangle size={15} color={T.actionRed} style={{ flexShrink: 0 }} />
             <span style={{ fontSize: 12, color: T.actionRed, fontWeight: 600 }}>Allergies: {allergies.join(", ")}</span>
           </div>
