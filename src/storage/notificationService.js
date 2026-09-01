@@ -1,4 +1,4 @@
-// notificationService.js
+﻿// notificationService.js
 //
 // PLAIN-LANGUAGE PURPOSE
 // -----------------------
@@ -138,10 +138,15 @@ async function getPlugin() {
   if (pluginLoadAttempted) return LocalNotifications;
   pluginLoadAttempted = true;
   try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor.isNativePlatform()) {
+      console.warn("[notificationService] Web environment detected - native local notifications disabled.");
+      return null;
+    }
     const mod = await import("@capacitor/local-notifications");
     LocalNotifications = mod.LocalNotifications;
   } catch {
-    console.warn("[notificationService] @capacitor/local-notifications not available — notifications will not fire natively in this environment.");
+    console.warn("[notificationService] @capacitor/local-notifications not available - notifications will not fire natively in this environment.");
   }
   return LocalNotifications;
 }
