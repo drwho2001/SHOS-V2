@@ -1384,10 +1384,22 @@ function AboutScreen({ onClose }) {
                 second, easy-to-forget copy of the same number. */}
             <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600 }}>{APP_VERSION}</span>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px" }}>
+          {/* CHANGED — real fix: pointed at the old private repo this
+              project moved off of — the public repo everyone's actual
+              builds/releases now come from is SHOS-V2. */}
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Repository</span>
-            <a href="https://github.com/drwho2001/Claude-shos-v1" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#3D63C9", fontWeight: 600 }}>
+            <a href="https://github.com/drwho2001/SHOS-V2" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#3D63C9", fontWeight: 600 }}>
               GitHub →
+            </a>
+          </div>
+          {/* ADDED — real ask: link the no-install web version alongside
+              the native app's own version/repo info, for anyone on iOS
+              or a computer who can't install the APK. */}
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px" }}>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Web app (iPhone / computer)</span>
+            <a href="https://drwho2001.github.io/SHOS-V2/" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#3D63C9", fontWeight: 600 }}>
+              Open →
             </a>
           </div>
         </div>
@@ -2039,17 +2051,29 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // Added an optional iconColor override (default unchanged, gray) so
   // this only affects the specific rows asked for, not every Registry/
   // Settings row that shares this component.
-  const SettingsRow = ({ icon: Icon, label, onClick, disabled, iconColor = "#5B5B62" }) => (
+  // FIXED — real ask: "icons in settings for dark mode aren't all
+  // white". Two real bugs here: the default colour (#5B5B62, a
+  // medium-dark grey) never adapted for dark mode, and the "thick
+  // black line" rows below hardcoded true black (#1B1B1F) — both read
+  // as near-invisible against a dark background. Bold-vs-regular used
+  // to be inferred by string-comparing the colour against the light-
+  // mode default, which would have silently broken once that default
+  // became theme-aware — replaced with its own explicit `emphasized`
+  // flag, decoupled from colour entirely.
+  const SettingsRow = ({ icon: Icon, label, onClick, disabled, iconColor, emphasized = false }) => {
+    const resolvedIconColor = iconColor || (darkMode ? DARK.textDisabled : "#5B5B62");
+    return (
     <div onClick={disabled ? undefined : onClick}
       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Icon size={17} weight={iconColor !== "#5B5B62" ? "bold" : "regular"} color={iconColor} />
+        <Icon size={17} weight={emphasized ? "bold" : "regular"} color={resolvedIconColor} />
         <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{label}</span>
       </div>
       {!disabled && <ChevronRight size={16} color={darkMode ? DARK.textDisabled : "#9A9AA1"} />}
       {disabled && <span style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1", fontStyle: "italic" }}>Not built yet</span>}
     </div>
-  );
+    );
+  };
 
   return (
     <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -2072,7 +2096,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             export never hit this because its own button already
             wrapped the call in an arrow function that discards the
             event. Wrapping this one the same way. */}
-        <SettingsRow icon={Upload} label="Export backup" onClick={() => onExport()} iconColor="#1B1B1F" />
+        <SettingsRow icon={Upload} label="Export backup" onClick={() => onExport()} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
         {/* ADDED 19 Aug 2026 — real ask: default export stays one tap
             (the row above, unchanged), this is the opt-in "choose what
             to include" path. */}
@@ -2081,16 +2105,16 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             Contacts' Import earlier this session, mirrored here —
             Export (data leaving) reads as Upload, Restore (data coming
             back in) reads as Download. */}
-        <SettingsRow icon={Upload} label="Selective export…" onClick={() => setShowSelectiveExport(true)} iconColor="#1B1B1F" />
+        <SettingsRow icon={Upload} label="Selective export…" onClick={() => setShowSelectiveExport(true)} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
         {/* ADDED — real ask: CSV export, for reading data elsewhere
             (Excel/Sheets), separate from the JSON backup above (which
             is for restoring into SHOS, not for opening as a
             spreadsheet). */}
-        <SettingsRow icon={FileCsv} label="Export as CSV…" onClick={() => setShowCSVExport(true)} iconColor="#1B1B1F" />
+        <SettingsRow icon={FileCsv} label="Export as CSV…" onClick={() => setShowCSVExport(true)} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
         {/* ADDED — real ask: password-protected backup, for storing or
             sending a backup somewhere less trusted than this device. */}
-        <SettingsRow icon={Lock} label="Export encrypted backup…" onClick={() => setShowEncryptedExport(true)} iconColor="#1B1B1F" />
-        <SettingsRow icon={Download} label="Restore from backup" onClick={onImportClick} iconColor="#1B1B1F" />
+        <SettingsRow icon={Lock} label="Export encrypted backup…" onClick={() => setShowEncryptedExport(true)} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
+        <SettingsRow icon={Download} label="Restore from backup" onClick={onImportClick} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
       </div>
       {status && (
         <div style={{ margin: "0 16px 20px", padding: "10px 14px", borderRadius: 12, background: "#FFF4CE", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 12 }}>{status}</div>

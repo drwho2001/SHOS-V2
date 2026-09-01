@@ -1669,7 +1669,13 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             other module with a stat/summary row directly under its
             banner (Healthcare, Encounters) has some top breathing
             room, this was the one at a flat 0. */}
-        <div style={{ display: "flex", gap: 10, padding: "12px 16px 16px" }}>
+        {/* FIXED — real ask: "spacing after allergies added" — the flat
+            12px top padding above double-counted for anyone with
+            allergies recorded, since the Allergies banner right above
+            (when it's showing) already carries its own 12px bottom
+            margin — the undo/redo toasts are `position: fixed` overlays
+            that never affect layout, only Allergies actually does. */}
+        <div style={{ display: "flex", gap: 10, padding: `${allergies.length > 0 ? 0 : 12}px 16px 16px` }}>
           <StatTile T={T} label="Active medications" value={activeMeds.length} tint={T.medsBlue} />
           <StatTile T={T} label="Needs action" value={needsActionMeds.length} tint={needsActionMeds.length > 0 ? T.actionRed : T.textPrimary}
             subtitle={needsActionMeds.length > 0 ? needsActionMeds.map((m) => m.name.split(" (")[0]).join(", ") : null}
