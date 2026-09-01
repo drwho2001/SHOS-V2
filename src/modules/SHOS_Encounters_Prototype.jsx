@@ -933,15 +933,24 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           WebView versions. Matches the established, already-working
           pattern instead of a remote guess at the exact sticky bug. */}
       <div style={{ background: T.bg, padding: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <ChevronLeft size={22} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onBack} />
+        {/* FIXED 1 Sep 2026 — real ask: "three dots to edit not obvious"
+            in dark mode, "look through app for any other similar
+            instances". Neither icon here had a `color` at all, so both
+            fell back to the browser's default black — invisible
+            against T.bg's near-black in dark mode. Matches the
+            established pattern used everywhere else in the app
+            (Testing's TestDetail, the reference "good" screen the user
+            named): T.textPrimary for plain nav, the module's own
+            accent for the thing that opens edit/actions. */}
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onBack} />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 17, color: T.textPrimary, flex: 1, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px" }}>
           {encounter.title || (encounter.date ? new Date(encounter.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Encounter")}
         </span>
         <div style={{ position: "relative", flexShrink: 0 }}>
-          <MoreVertical size={20} style={{ cursor: "pointer" }} onClick={() => setMenuOpen((o) => !o)} />
+          <MoreVertical size={20} color={T.encountersPink} style={{ cursor: "pointer" }} onClick={() => setMenuOpen((o) => !o)} />
           {menuOpen && (
             <div style={{ position: "absolute", right: 0, top: 26, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, boxShadow: "0 4px 16px rgba(0,0,0,.15)", zIndex: 10, minWidth: 140 }}>
-              <div onClick={() => { setMenuOpen(false); onEdit(encounter.id); }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer" }}>Edit</div>
+              <div onClick={() => { setMenuOpen(false); onEdit(encounter.id); }} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.textPrimary }}>Edit</div>
               <div onClick={archive} style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", color: T.actionRed, display: "flex", alignItems: "center", gap: 6 }}>
                 <Archive size={14} /> {encounter.isArchived ? "Unarchive" : "Archive"}
               </div>
