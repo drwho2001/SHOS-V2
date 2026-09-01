@@ -472,7 +472,38 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
   // already shipped for RegistryTagPicker earlier this session: visible
   // tappable suggestion chips for existing entries, not just a native
   // browser dropdown as the only way in.
-  const visibleSuggestions = allEntries.filter((e) => e.id !== value).slice(0, 8);
+  // CHANGED — real ask: "don't show list like attendees, just suggest
+  // after typing begins. Suggestions show most-recent to oldest." Two
+  // real fixes: this used to show every registry entry unconditionally
+  // (and never actually matched against what was typed at all) — now
+  // gated on draft being non-empty AND actually filtered against it.
+  // "Most recent" means most recently USED in a real Encounter, not
+  // just when the registry entry itself was created — a location
+  // logged yesterday should surface before one only ever used once,
+  // months ago, even if that one's the older registry entry. Reads
+  // EncounterRepository directly (this component only has one real
+  // caller, Location, so the coupling is honest rather than forcing a
+  // generic prop-callback for a single consumer).
+  const locationLastUsed = useMemo(() => {
+    const map = new Map();
+    for (const enc of EncounterRepository.getAll()) {
+      if (!enc.locationId || !enc.date) continue;
+      const existing = map.get(enc.locationId);
+      if (!existing || enc.date > existing) map.set(enc.locationId, enc.date);
+    }
+    return map;
+  }, []);
+  const draftLower = draft.trim().toLowerCase();
+  const visibleSuggestions = draftLower
+    ? allEntries
+        .filter((e) => e.id !== value && e.name.toLowerCase().includes(draftLower))
+        .sort((a, b) => {
+          const aDate = locationLastUsed.get(a.id) || a.createdAt || "";
+          const bDate = locationLastUsed.get(b.id) || b.createdAt || "";
+          return bDate.localeCompare(aDate);
+        })
+        .slice(0, 8)
+    : [];
 
   const commit = () => {
     const trimmed = draft.trim();
