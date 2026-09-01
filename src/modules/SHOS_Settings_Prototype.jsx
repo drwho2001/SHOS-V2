@@ -128,8 +128,13 @@ function SelectiveExportSheet({ onClose, onExported }) {
     onClose();
   };
 
+  // FIXED 1 Sep 2026 — real bug found during a light/dark sweep: the
+  // unchecked ("empty") state's background was hardcoded #FFFFFF
+  // regardless of theme — a stark white square in an otherwise dark
+  // sheet. Same fix mirrored below in EncryptedExportSheet's own
+  // copy of this component.
   const Box = ({ state }) => (
-    <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${state === "empty" ? "#656568" : ACCENTS.healthcare}`, background: state === "full" ? ACCENTS.healthcare : state === "partial" ? "#C7D5F7" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${state === "empty" ? (darkMode ? DARK.border : "#656568") : ACCENTS.healthcare}`, background: state === "full" ? ACCENTS.healthcare : state === "partial" ? "#C7D5F7" : (darkMode ? DARK.surfaceVariant : "#FFFFFF"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
       {state === "full" && <Check size={12} color="#FFFFFF" weight="bold" />}
     </div>
   );
@@ -314,7 +319,7 @@ function EncryptedExportSheet({ onClose }) {
   };
 
   const Box = ({ state }) => (
-    <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${state === "empty" ? "#656568" : ACCENTS.healthcare}`, background: state === "full" ? ACCENTS.healthcare : state === "partial" ? "#C7D5F7" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${state === "empty" ? (darkMode ? DARK.border : "#656568") : ACCENTS.healthcare}`, background: state === "full" ? ACCENTS.healthcare : state === "partial" ? "#C7D5F7" : (darkMode ? DARK.surfaceVariant : "#FFFFFF"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
       {state === "full" && <Check size={12} color="#FFFFFF" weight="bold" />}
     </div>
   );
@@ -2146,7 +2151,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
               ? <CloudCheck size={20} weight="fill" color={ACCENTS.healthcare} />
               : <CloudArrowUp size={20} color={darkMode ? DARK.textSecondary : "#5B5B62"} />}
           </div>
-          <span onClick={() => setShowFilters((s) => !s)} style={{ fontSize: 12, fontWeight: 600, color: activeModules.length < ALL_MODULE_KEYS.length ? "#3D63C9" : "#5B5B62", cursor: "pointer" }}>
+          <span onClick={() => setShowFilters((s) => !s)} style={{ fontSize: 12, fontWeight: 600, color: activeModules.length < ALL_MODULE_KEYS.length ? "#3D63C9" : (darkMode ? DARK.textDisabled : "#5B5B62"), cursor: "pointer" }}>
             Filter{activeModules.length < ALL_MODULE_KEYS.length ? ` (${activeModules.length})` : ""}
           </span>
         </div>
@@ -2156,9 +2161,15 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
           {ALL_MODULE_KEYS.map((key) => {
             const active = activeModules.includes(key);
             return (
+              // FIXED 1 Sep 2026 — real bug found during the same
+              // light/dark sweep as the day-number fix above: the
+              // inactive-chip border/dot/text were hardcoded to
+              // light-mode colors (#DCDCE1/#656568) regardless of
+              // theme — nearly invisible against DARK.bg, unlike the
+              // active chip (module accent, already theme-agnostic).
               <div key={key} onClick={() => toggleModule(key)}
-                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? ACCENTS[key] : "#DCDCE1"}`, color: active ? ACCENTS[key] : "#656568", background: active ? `${ACCENTS[key]}15` : "transparent" }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: active ? ACCENTS[key] : "#656568" }} />
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? ACCENTS[key] : (darkMode ? DARK.border : "#DCDCE1")}`, color: active ? ACCENTS[key] : (darkMode ? DARK.textDisabled : "#656568"), background: active ? `${ACCENTS[key]}15` : "transparent" }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: active ? ACCENTS[key] : (darkMode ? DARK.textDisabled : "#656568") }} />
                 {TRASH_MODULE_LABELS[key]}
               </div>
             );
@@ -2192,8 +2203,14 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
             const moduleColorsPresent = [...new Set(dayEvents.map((e) => e.moduleKey))].map((k) => ACCENTS[k] || "#656568");
             return (
               <div key={i} onClick={() => setSelectedDay(isSelected ? null : day)}
-                style={{ aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 8, cursor: "pointer", background: isSelected ? "#1B1B1F" : isToday ? "#E7E7EB" : "transparent", gap: 2 }}>
-                <span style={{ fontSize: 12, color: isSelected ? "#FFFFFF" : "#1B1B1F", fontWeight: isToday ? 700 : 400 }}>{day}</span>
+                style={{ aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 8, cursor: "pointer", background: isSelected ? "#1B1B1F" : isToday ? (darkMode ? DARK.surfaceVariant : "#E7E7EB") : "transparent", gap: 2 }}>
+                {/* FIXED 1 Sep 2026 — real bug found during a light/dark
+                    sweep: every day number was hardcoded to #1B1B1F
+                    (near-black) regardless of theme — nearly invisible
+                    against DARK.bg, with only today's cell readable by
+                    accident (its own light highlight background gave
+                    the dark text something to contrast against). */}
+                <span style={{ fontSize: 12, color: isSelected ? "#FFFFFF" : (darkMode ? DARK.textPrimary : "#1B1B1F"), fontWeight: isToday ? 700 : 400 }}>{day}</span>
                 {moduleColorsPresent.length > 0 && (
                   <div style={{ display: "flex", gap: 2 }}>
                     {moduleColorsPresent.slice(0, 3).map((c, j) => <div key={j} style={{ width: 4, height: 4, borderRadius: "50%", background: c }} />)}
@@ -2215,7 +2232,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
               <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
                 {selectedEvents.map((ev, i) => (
                   <div key={i} onClick={() => goToEvent(ev)}
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: i < selectedEvents.length - 1 ? "1px solid #DCDCE1" : "none", cursor: "pointer" }}>
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: i < selectedEvents.length - 1 ? `1px solid ${darkMode ? DARK.border : "#DCDCE1"}` : "none", cursor: "pointer" }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: ACCENTS[ev.moduleKey] || "#656568", flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
