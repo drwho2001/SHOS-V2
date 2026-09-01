@@ -34,12 +34,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.checkout_sha || github.sha }}
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           # @capacitor/cli 8.x requires Node >=22 (confirmed via the actual
           # CI failure: "[fatal] The Capacitor CLI requires NodeJS >=22.0.0").
@@ -68,7 +68,7 @@ jobs:
           ./gradlew assembleDebug
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: SHOS-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
