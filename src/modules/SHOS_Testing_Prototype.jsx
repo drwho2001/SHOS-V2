@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCcw } from "@phosphor-icons/react";
 import { useEditUndo } from "../calculations/editUndoHelpers";
+import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
 import {
   TestingRepository, DEFAULT_TEST,
@@ -188,16 +189,34 @@ function ReadRow({ label, value, T }) {
 // Registry-backed picker (Organism/Result) — same pattern already
 // proven this session in Contacts/Encounters/My Profile, no role
 // tracking needed here (that's a kink-specific concept).
+// CHANGED 1 Sep 2026 — real omission found in a broader audit: unlike
+// Symptom Log's SymptomSelect (fixed earlier this session, same
+// underlying gap), this picker's suggestion list never narrowed
+// against typed text at all, and findOrCreate() ran on raw typed text
+// with no "did you mean an existing one?" check first — a typo'd
+// Organism could silently create a near-duplicate registry entry.
+// Fixed the same way: fuzzyIncludes narrowing while typing, and
+// findClosestMatch before creating a genuinely new single entry.
 function RegistryTagPicker({ label, value, onChange, T, registry, placeholder }) {
   const [draft, setDraft] = useState("");
+  const [pendingSuggestion, setPendingSuggestion] = useState(null);
   const allEntries = registry.getAll().filter((e) => !e.isArchived);
   const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name || "?";
-  const visibleSuggestions = allEntries.filter((e) => !value.includes(e.id)).slice(0, 10);
+  const draftTrimmedForFilter = draft.trim();
+  const visibleSuggestions = (
+    draftTrimmedForFilter
+      ? allEntries.filter((e) => fuzzyIncludes(e.name, draftTrimmedForFilter))
+      : allEntries
+  ).filter((e) => !value.includes(e.id)).slice(0, 10);
 
   const commit = () => {
     const raw = draft.trim();
     if (!raw) return;
     const parts = raw.split(",").map((t) => t.trim()).filter(Boolean);
+    if (parts.length === 1 && !value.some((id) => nameFor(id).toLowerCase() === parts[0].toLowerCase())) {
+      const closest = findClosestMatch(allEntries.filter((e) => !value.includes(e.id)).map((e) => e.name), parts[0]);
+      if (closest) { setPendingSuggestion({ typedAs: parts[0], suggestion: closest }); setDraft(""); return; }
+    }
     const newIds = [];
     parts.forEach((part) => {
       const entry = registry.findOrCreate(part);
@@ -207,6 +226,16 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder })
     setDraft("");
   };
   const tapSuggestion = (entry) => { if (!value.includes(entry.id)) onChange([...value, entry.id]); };
+  const acceptPendingSuggestion = () => {
+    const entry = registry.findOrCreate(pendingSuggestion.suggestion);
+    if (entry) tapSuggestion(entry);
+    setPendingSuggestion(null);
+  };
+  const dismissPendingSuggestion = () => {
+    const entry = registry.findOrCreate(pendingSuggestion.typedAs);
+    if (entry) tapSuggestion(entry);
+    setPendingSuggestion(null);
+  };
 
   return (
     <div style={{ padding: "8px 0" }}>
@@ -219,6 +248,13 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder })
               {nameFor(id)} <X size={11} />
             </div>
           ))}
+        </div>
+      )}
+      {pendingSuggestion && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.healthcareBlue}15`, border: `1px solid ${T.healthcareBlue}`, marginBottom: 6, fontSize: 12 }}>
+          <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}"? You typed "{pendingSuggestion.typedAs}".</span>
+          <div onClick={acceptPendingSuggestion} style={{ fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Yes, use it</div>
+          <div onClick={dismissPendingSuggestion} style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
         </div>
       )}
       {visibleSuggestions.length > 0 && (
@@ -268,7 +304,14 @@ function RegistryMultiResultPicker({ label, value, onChange, T, registry, placeh
   const [draft, setDraft] = useState("");
   const allEntries = registry.getAll().filter((e) => !e.isArchived);
   const currentNames = value.map((id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name).filter(Boolean);
-  const visibleSuggestions = allEntries.filter((e) => !value.includes(e.id)).slice(0, 10);
+  // CHANGED 1 Sep 2026 — same real omission as the Organism picker
+  // above: never narrowed against typed text. Fixed the same way.
+  const draftTrimmedForFilter = draft.trim();
+  const visibleSuggestions = (
+    draftTrimmedForFilter
+      ? allEntries.filter((e) => fuzzyIncludes(e.name, draftTrimmedForFilter))
+      : allEntries
+  ).filter((e) => !value.includes(e.id)).slice(0, 10);
 
   const addResult = (raw) => {
     const trimmed = raw.trim();
@@ -374,6 +417,38 @@ function AttachmentManager({ testId, attachments, onChanged, T }) {
   );
 }
 
+// ADDED 1 Sep 2026 — real ask: same suggestion-picker shape as
+// RelationPicker (SymptomLog/ClinicVisits), replacing the bare native
+// <select> below — at most the 3 most recent shown by default, search
+// beyond that (matches name or clinician).
+function ClinicVisitLinkPicker({ items, onPick, T }) {
+  const [query, setQuery] = useState("");
+  const queryLower = query.trim().toLowerCase();
+  const visible = queryLower
+    ? items.filter((v) => v.name.toLowerCase().includes(queryLower) || v.searchText.includes(queryLower)).slice(0, 8)
+    : items.slice(0, 3);
+  return (
+    <div>
+      {items.length > 3 && (
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or clinician…"
+          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
+      )}
+      {visible.length > 0 ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          {visible.map((v) => (
+            <div key={v.id} onClick={() => onPick(v.id)}
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
+              + {v.name}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic" }}>No match — try a different search.</div>
+      )}
+    </div>
+  );
+}
+
 // ── Add/Edit sheet ──
 function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord, T }) {
   const isNew = !testId;
@@ -392,11 +467,24 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   // second, unsynced way to represent the same relationship.
   const [linkVersion, setLinkVersion] = useState(0);
   const linkedVisits = useMemo(() => (testId ? ClinicVisitsRepository.getByLinkedTest(testId) : []), [testId, linkVersion]);
+  // CHANGED 1 Sep 2026 — real ask: "old options listed first and not
+  // searchable" — this list had no .sort() at all (storage order =
+  // oldest first) and rendered into a bare native <select>, the exact
+  // bug already fixed for RelationPicker elsewhere but missed here
+  // since this picker is Testing's own hand-rolled one, not a
+  // RelationPicker instance. Sorted newest-first now; searchText adds
+  // clinician name(s) as a second match field, same "search by name or
+  // [this module's nearest equivalent field]" spec used elsewhere.
   const unlinkedVisits = useMemo(() => {
     if (!testId) return [];
     return ClinicVisitsRepository.getAll()
       .filter((v) => !v.isArchived && !(v.linkedTestIds || []).includes(testId))
-      .map((v) => ({ id: v.id, name: `${v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(v.date)}` }));
+      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+      .map((v) => ({
+        id: v.id,
+        name: `${v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(v.date)}`,
+        searchText: (v.clinician || []).join(" ").toLowerCase(),
+      }));
   }, [testId, linkVersion]);
   const linkVisit = (visitId) => {
     const visit = ClinicVisitsRepository.getById(visitId);
@@ -531,13 +619,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
               ) : (
                 <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>Not linked to a clinic visit yet.</div>
               )}
-              {unlinkedVisits.length > 0 && (
-                <select value="" onChange={(e) => e.target.value && linkVisit(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textSecondary, fontFamily: "'Inter', sans-serif", fontSize: 13 }}>
-                  <option value="">+ Link an existing clinic visit…</option>
-                  {unlinkedVisits.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-                </select>
-              )}
+              {unlinkedVisits.length > 0 && <ClinicVisitLinkPicker items={unlinkedVisits} onPick={linkVisit} T={T} />}
             </div>
           )}
           {/* ADDED 19 Aug 2026 — real feedback batch: a free-text

@@ -6,6 +6,7 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { EncounterRepository } from "../repositories/encounterRepository";
 import { TestingRepository } from "../repositories/testingRepository";
+import { ContactRepository } from "../repositories/contactRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
@@ -212,13 +213,18 @@ function SymptomSelect({ value, onChange, T }) {
 // top-8-most-recent chips as before (nothing lost for the common
 // case), typing filters the FULL list by name match so anything not
 // in that initial 8 is still reachable.
+// CHANGED 1 Sep 2026 — real ask: "at most last 3 most recent should be
+// suggested, else search (by name or attendees)." Default suggestion
+// count tightened from 8 to 3; search now also matches an item's
+// optional `searchText` (Related encounters passes attendee names
+// through it — the encounters/tests memos below build it).
 function RelationPicker({ label, value, onChange, T, items, placeholder }) {
   const [query, setQuery] = useState("");
   const queryLower = query.trim().toLowerCase();
   const available = items.filter((i) => !value.includes(i.id));
   const visibleSuggestions = queryLower
-    ? available.filter((i) => i.name.toLowerCase().includes(queryLower)).slice(0, 8)
-    : available.slice(0, 8);
+    ? available.filter((i) => i.name.toLowerCase().includes(queryLower) || (i.searchText || "").includes(queryLower)).slice(0, 8)
+    : available.slice(0, 3);
   const nameFor = (id) => items.find((i) => i.id === id)?.name || "?";
   return (
     <div style={{ padding: "8px 0" }}>
@@ -290,7 +296,16 @@ function EntrySheet({ entry, onSave, onClose, T }) {
   // never sorted for display before. Newest first now, same "most
   // recent is most relevant" reasoning as every other suggestion list
   // in this app.
-  const encounters = useMemo(() => [...EncounterRepository.getAll()].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => ({ id: e.id, name: `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}` })), []);
+  // CHANGED 1 Sep 2026 — real ask: "search (by name or attendees)" for
+  // Related encounters specifically — an encounter's own name is often
+  // just a date/type, not memorable; who was there usually is. Each
+  // encounter's attendee names now ride along as searchText, so typing
+  // a contact's name finds it even though it isn't in the visible label.
+  const contacts = useMemo(() => ContactRepository.getAll(), []);
+  const encounters = useMemo(() => [...EncounterRepository.getAll()].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => {
+    const attendeeNames = (e.attendeeIds || []).map((id) => contacts.find((c) => c.id === id)?.nickname || contacts.find((c) => c.id === id)?.name).filter(Boolean);
+    return { id: e.id, name: `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}`, searchText: attendeeNames.join(" ").toLowerCase() };
+  }), [contacts]);
   const tests = useMemo(() => [...TestingRepository.getAll()].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` })), []);
 
   const doSave = () => {

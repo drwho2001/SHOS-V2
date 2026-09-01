@@ -176,13 +176,18 @@ function ReadRow({ label, value, T }) {
 // capped at 8 with no way to reach anything beyond that. Real search
 // box now: empty shows the same top-8 chips as before (nothing lost
 // for the common case), typing filters the FULL list by name match.
+// CHANGED 1 Sep 2026 — real ask: "at most last 3 most recent should be
+// suggested, else search." Default suggestion count tightened from 8
+// to 3 — search (unchanged, matches by name) is how anything past
+// that gets found, same spec applied to every suggestion picker like
+// this one this session.
 function RelationPicker({ label, value, onChange, T, items, placeholder }) {
   const [query, setQuery] = useState("");
   const queryLower = query.trim().toLowerCase();
   const available = items.filter((i) => !value.includes(i.id));
   const visibleSuggestions = queryLower
     ? available.filter((i) => i.name.toLowerCase().includes(queryLower)).slice(0, 8)
-    : available.slice(0, 8);
+    : available.slice(0, 3);
   const nameFor = (id) => items.find((i) => i.id === id)?.name || "?";
   return (
     <div style={{ padding: "8px 0" }}>

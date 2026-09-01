@@ -104,8 +104,19 @@ function MultiSelectChips({ label, value, onChange, options, T }) {
   );
 }
 
+// CHANGED 1 Sep 2026 — real omission found in a broader audit: unlike
+// the same-named component in Clinic Visits/Symptom Log (fixed earlier
+// this session), this copy had no search at all — just a hard cap-8
+// chip list with nothing beyond it reachable. Same fix: real search
+// box (matches name or clinician), default suggestion count tightened
+// to the 3 most recent.
 function RelationPicker({ label, value, onChange, T, items, placeholder }) {
-  const visibleSuggestions = items.filter((i) => !value.includes(i.id)).slice(0, 8);
+  const [query, setQuery] = useState("");
+  const queryLower = query.trim().toLowerCase();
+  const available = items.filter((i) => !value.includes(i.id));
+  const visibleSuggestions = queryLower
+    ? available.filter((i) => i.name.toLowerCase().includes(queryLower) || (i.searchText || "").includes(queryLower)).slice(0, 8)
+    : available.slice(0, 3);
   const nameFor = (id) => items.find((i) => i.id === id)?.name || "?";
   return (
     <div style={{ padding: "8px 0" }}>
@@ -120,10 +131,14 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
           ))}
         </div>
       )}
+      {available.length > 0 && (
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or clinician…"
+          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
+      )}
       {visibleSuggestions.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
           {visibleSuggestions.map((i) => (
-            <div key={i.id} onClick={() => onChange([...value, i.id])}
+            <div key={i.id} onClick={() => { onChange([...value, i.id]); setQuery(""); }}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
               + {i.name}
             </div>
@@ -212,7 +227,20 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const canSave = form.title.trim().length > 0;
   const symptoms = useMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), []);
-  const visits = useMemo(() => ClinicVisitsRepository.getAll().filter((v) => !v.isArchived).map((v) => ({ id: v.id, name: `${v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(v.date)}` })), []);
+  // CHANGED 1 Sep 2026 — real omission found in a broader audit: this
+  // had no .sort() at all (storage order = oldest first), the same
+  // "old options listed first" bug already fixed elsewhere. Sorted
+  // newest-first; searchText adds clinician name(s) as a second match
+  // field, same "search by name or [relevant field]" pattern used
+  // elsewhere (Encounters searches by attendee, this searches by
+  // clinician — Vaccinations' nearest equivalent).
+  const visits = useMemo(() => [...ClinicVisitsRepository.getAll()].filter((v) => !v.isArchived)
+    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+    .map((v) => ({
+      id: v.id,
+      name: `${v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(v.date)}`,
+      searchText: (v.clinician || []).join(" ").toLowerCase(),
+    })), []);
 
   const doSave = () => {
     clearDraft(draftKey);

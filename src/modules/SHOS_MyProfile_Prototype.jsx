@@ -40,7 +40,7 @@ import {
 import { KinkRegistry, KINK_ROLE_OPTIONS, resolveKinkSynonym, analyzeKinkEntry, getKinkRoleOptions } from "../registries/kinkRegistry";
 // ADDED — real fix: same normalizeTag Contacts/Encounters use.
 import { normalizeTag } from "../calculations/contactCalculations";
-import { findClosestMatch } from "../calculations/fuzzyMatch";
+import { findClosestMatch, fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { ChemsRegistry, resolveChemSynonym } from "../registries/chemsRegistry";
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
@@ -343,7 +343,22 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
 
   // CHANGED 18 Aug 2026 — excludes excludeIds too now, so a kink already
   // marked "into" doesn't get suggested as a limit and vice versa.
-  const visibleSuggestions = allEntries.filter((e) => !hasSelection(e.id) && !excludeIds.includes(e.id)).slice(0, 10);
+  // CHANGED 1 Sep 2026 — real omission found in a broader audit: unlike
+  // Encounters' and Contacts' own copies of this exact component
+  // (fixed earlier this session), this one never actually narrowed
+  // against typed text at all — same static-list bug, just missed here
+  // since this file's copy wasn't checked at the time. NOT capped down
+  // to the "3 most recent" spec used for relation pickers elsewhere —
+  // a registry like Kinks/Limits has no real notion of "recent", it's
+  // a browsable vocabulary, and getAll() isn't sorted by use; cutting
+  // that browse list to 3 would lose real value the "most recent"
+  // framing doesn't actually apply here to protect.
+  const draftTrimmedForFilter = draft.trim();
+  const visibleSuggestions = (
+    draftTrimmedForFilter
+      ? allEntries.filter((e) => fuzzyIncludes(e.name, draftTrimmedForFilter))
+      : allEntries
+  ).filter((e) => !hasSelection(e.id) && !excludeIds.includes(e.id)).slice(0, 10);
 
   const addEntries = (ids) => {
     if (ids.length === 0) return;

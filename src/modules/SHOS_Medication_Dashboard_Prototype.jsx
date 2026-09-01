@@ -967,9 +967,18 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
           <NumberField T={T} label="Every how many days?" value={form.scheduleIntervalDays} onChange={set("scheduleIntervalDays")} min={2} />
         )}
 
-        <ToggleRow T={T} label="Inventory tracked" value={form.inventoryTracked} onChange={set("inventoryTracked")} />
+        {/* REORDERED 1 Sep 2026 — real ask: "medication settings order
+            feels haphazard." The Inventory-tracked toggle used to sit
+            BEFORE Doses per day/Units per dose, interrupting the
+            dosing-mechanics group (how you take it) with an inventory
+            concern, then circling back to more inventory fields later.
+            Real hierarchy now: identity (above) → dosing mechanics
+            (schedule pattern/interval, doses per day, units per dose)
+            → inventory (tracked toggle + its own dependent fields,
+            grouped together) → supplier → notes. */}
         {form.usagePattern === "daily" && <NumberField T={T} label="Doses per day" value={form.dosesPerDay} onChange={set("dosesPerDay")} min={1} />}
         <NumberField T={T} label={`Units per dose (${med.unit}s)`} value={form.unitsPerDose} onChange={set("unitsPerDose")} min={1} />
+        <ToggleRow T={T} label="Inventory tracked" value={form.inventoryTracked} onChange={set("inventoryTracked")} />
         {form.inventoryTracked && (
           <>
             <NumberField T={T} label={`Units per container (${med.unit}s)`} value={form.unitsPerContainer} onChange={set("unitsPerContainer")} min={0} />
@@ -1113,9 +1122,15 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
           <NumberField T={T} label="Every how many days?" value={form.scheduleIntervalDays} onChange={set("scheduleIntervalDays")} min={2} />
         )}
 
-        <ToggleRow T={T} label="Inventory tracked" value={form.inventoryTracked} onChange={set("inventoryTracked")} />
+        {/* REORDERED 1 Sep 2026 — real ask: "medication settings order
+            feels haphazard." Same fix as the Edit sheet's own comment
+            on this exact block: dosing mechanics (doses per day, units
+            per dose) grouped together and settled before Inventory
+            tracked's own toggle + dependent fields, instead of the
+            toggle interrupting the dosing group partway through. */}
         {form.usagePattern === "daily" && <NumberField T={T} label="Doses per day" value={form.dosesPerDay} onChange={set("dosesPerDay")} min={1} />}
         <NumberField T={T} label="Units per dose" value={form.unitsPerDose} onChange={set("unitsPerDose")} min={1} />
+        <ToggleRow T={T} label="Inventory tracked" value={form.inventoryTracked} onChange={set("inventoryTracked")} />
         {form.inventoryTracked && (
           <>
             <NumberField T={T} label="Units per container" value={form.unitsPerContainer} onChange={set("unitsPerContainer")} min={0} />
