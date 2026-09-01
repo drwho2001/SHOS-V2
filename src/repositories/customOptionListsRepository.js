@@ -55,7 +55,7 @@ const STORAGE_KEY = "shos_custom_option_lists";
 const SEED_LISTS = {
   medicationType: ["Pill/Tablet", "Capsule", "Injection", "Cream/Gel", "Patch", "Liquid", "Other"],
   route: ["Oral", "IM - Gluteal", "IM - Deltoid", "SubQ", "Injection"],
-  reasonForVisit: ["Symptoms", "Doxy refill", "Routine screening", "PrEP review", "Vaccination", "Treatment", "Other"],
+  reasonForVisit: ["Symptoms", "Doxy refill", "Routine screening", "PrEP review", "Vaccination", "Treatment", "Pregnancy care", "Other"],
   followUpType: ["TOC", "Routine", "Other", "None"],
   sampleType: ["Blood", "Urine", "Throat swab", "Rectal swab", "Vaginal/front hole swab"],
   // CHANGED 26 Aug 2026 — real ask: removed "Other" — the Vaccine
@@ -64,7 +64,12 @@ const SEED_LISTS = {
   // "Other" chip just set the vaccine name to the word "Other",
   // which is meaningless. Typing anything not in this list already
   // does what "Other" was trying to do.
-  vaccine: ["Hepatitis A", "Hepatitis B", "HPV", "Mpox", "Gonorrhoea"],
+  // ADDED — real ask: "vaccinate MenB" — the literal, on-label use of
+  // the same 4CMenB vaccine already seeded above for its off-label
+  // Gonorrhoea cross-protection use (see vaccinationRepository.js's
+  // own seed comment on that). Kept as a distinct option since they're
+  // two different real reasons someone gets the same vaccine.
+  vaccine: ["Hepatitis A", "Hepatitis B", "HPV", "Mpox", "Gonorrhoea", "Meningitis B"],
   vaccinationReason: ["Routine", "Occupational", "High-risk status", "Booster"],
   injectionSite: ["Deltoid", "Gluteal", "Other"],
   episodeTriggerReason: ["Partner notification", "Symptom-driven", "Medication-driven", "Routine testing", "Other"],

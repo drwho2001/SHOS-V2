@@ -334,6 +334,24 @@ let seedContacts = [
     createdAt: daysAgo(9),
     isArchived: false,
   },
+  // ADDED — real example thread: a monogamous relationship leading
+  // into the pregnancy/contraception story (see encounterRepository.js,
+  // pregnancyRepository.js, clinicVisitsRepository.js, and My Profile's
+  // own relationshipContactIds).
+  {
+    ...DEFAULT_CONTACT,
+    id: "contact_008",
+    name: "Morgan",
+    pronouns: "She/her",
+    gender: "Female",
+    relationshipType: ["Partner"],
+    city: "London",
+    contactableVia: ["Phone/WhatsApp"],
+    phone: "07700 900321",
+    howDidWeMeet: ["Dating app"],
+    createdAt: daysAgo(112),
+    isArchived: false,
+  },
 ];
 
 // Real startup: load whatever's actually been saved before. On a

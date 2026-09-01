@@ -152,6 +152,42 @@ let seedTests = [
     clinicVisitIds: ["visit_001"],
     isArchived: false,
   },
+  // ADDED — real ask: "testing needed encounters with different
+  // types" — real variety across the 4-month window, not just the
+  // Gonorrhoea episode's own two tests. A routine quarterly PrEP
+  // monitoring screen (full blood panel, standard cadence for anyone
+  // on PrEP) and a pre-relationship screen before going condomless
+  // with Morgan (see encounterRepository.js/contactRepository.js).
+  {
+    ...DEFAULT_TEST,
+    id: "test_003",
+    title: "Routine PrEP monitoring screen",
+    date: daysAgo(100),
+    resultDate: daysAgo(97),
+    setting: "🏥😎 Clinic - Routine",
+    sampleType: ["Blood", "Urine"],
+    testingFor: ["HIV", "Chlamydia", "Gonorrhoea", "Syphilis"],
+    organismIds: [],
+    resultIds: ["result_002"],
+    mostRecent: false,
+    notes: "Quarterly PrEP bloods and STI screen — all clear.",
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_TEST,
+    id: "test_004",
+    title: "Pre-relationship screen",
+    date: daysAgo(113),
+    resultDate: daysAgo(110),
+    setting: "🏥😎 Clinic - Routine",
+    sampleType: ["Blood", "Urine"],
+    testingFor: ["HIV", "Chlamydia", "Gonorrhoea", "Syphilis"],
+    organismIds: [],
+    resultIds: ["result_002"],
+    mostRecent: false,
+    notes: "Screen before going condom-free with Morgan — all clear.",
+    isArchived: false,
+  },
 ];
 
 let tests = storage.load(STORAGE_KEY, seedTests);

@@ -50,10 +50,16 @@ function addDays(dateStr, n) {
   d.setDate(d.getDate() + n);
   return d.toISOString().slice(0, 10);
 }
-const seedDepotStart = daysAgo(70);
+// CHANGED — real narrative fix: these dates now line up with the
+// simulated pregnancy thread (pregnancyRepository.js's pregnancy_002)
+// — stopped the pill BEFORE conceiving, not after, and didn't start
+// Depot until AFTER the miscarriage resolved (Depot is never started
+// during a known pregnancy). See encounterRepository.js's Morgan
+// encounters for the same timeline.
+const seedDepotStart = daysAgo(45);
 let seedEntries = [
-  { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_001", method: "Combined pill", startDate: daysAgo(400), endDate: daysAgo(71), notes: "Switched to Depot." },
-  { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_002", method: "Depot", startDate: seedDepotStart, intervalDays: 84, nextDueDate: addDays(seedDepotStart, 84), notes: "" },
+  { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_001", method: "Combined pill", startDate: daysAgo(400), endDate: daysAgo(95), notes: "Stopped when the relationship with Morgan became exclusive." },
+  { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_002", method: "Depot", startDate: seedDepotStart, intervalDays: 84, nextDueDate: addDays(seedDepotStart, 84), notes: "Started after the miscarriage — wanted something more reliable than the pill." },
 ];
 
 let entries = storage.load(STORAGE_KEY, seedEntries);

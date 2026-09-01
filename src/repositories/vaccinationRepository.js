@@ -67,6 +67,23 @@ let seedVaccinations = [
     notes: "Offered given recent Gonorrhoea diagnosis and ongoing risk.",
     isArchived: false,
   },
+  // ADDED — real ask: "vaccinate MenB" — the same 4CMenB vaccine's own
+  // literal, on-label purpose, distinct from vaccination_001's
+  // off-label Gonorrhoea cross-protection use above. Earlier in the
+  // 4-month window (routine), not connected to the STI episode.
+  {
+    ...DEFAULT_VACCINATION,
+    id: "vaccination_002",
+    title: "Meningitis B vaccine (4CMenB)",
+    vaccine: "Meningitis B",
+    reason: ["Routine"],
+    doseNumber: 1,
+    date: daysAgo(100),
+    provider: "56 Dean Street",
+    injectionSite: "Deltoid",
+    notes: "Routine MenB vaccination, offered opportunistically at a clinic visit.",
+    isArchived: false,
+  },
 ];
 
 let vaccinations = storage.load(STORAGE_KEY, seedVaccinations);

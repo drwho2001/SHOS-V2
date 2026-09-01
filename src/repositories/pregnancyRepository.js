@@ -79,8 +79,32 @@ function daysAgo(n) {
   d.setDate(d.getDate() - n);
   return d.toISOString().slice(0, 10);
 }
+function addDays(n, isoDate) {
+  const d = new Date(isoDate);
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+const seedPositiveTestDate = daysAgo(75);
 let seedPregnancies = [
   { ...DEFAULT_PREGNANCY, id: "pregnancy_001", testDate: daysAgo(40), testResult: "Negative", notes: "Precautionary test." },
+  // ADDED — real ask: a full simulated pregnancy/miscarriage thread
+  // (see contact_008/encounterRepository.js's Morgan encounters,
+  // clinicVisitsRepository.js's scan + aftercare visits,
+  // contraceptionRepository.js's post-miscarriage method switch).
+  // `sensitive` set explicitly here since seed data is a raw object,
+  // not passed through create()/update() — matches exactly what
+  // shapeForSave() would have defaulted it to on a real save.
+  {
+    ...DEFAULT_PREGNANCY,
+    id: "pregnancy_002",
+    testDate: seedPositiveTestDate,
+    testResult: "Positive",
+    estimatedDueDate: addDays(245, seedPositiveTestDate),
+    status: "Miscarriage",
+    outcomeDate: daysAgo(53),
+    sensitive: true,
+    notes: "Found out at 5 weeks. Miscarried naturally at home, confirmed at follow-up.",
+  },
 ];
 
 let pregnancies = storage.load(STORAGE_KEY, seedPregnancies);

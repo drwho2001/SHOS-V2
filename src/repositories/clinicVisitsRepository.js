@@ -162,6 +162,30 @@ let seedVisits = [
     primaryReasonSymptomLogId: "symlog_001",
     isArchived: false,
   },
+  // ADDED — real example thread: early pregnancy scan + miscarriage
+  // aftercare (see pregnancyRepository.js's own pregnancy_002).
+  {
+    ...DEFAULT_CLINIC_VISIT,
+    id: "visit_002",
+    title: "Early pregnancy scan",
+    date: daysAgo(70),
+    location: "Local hospital — antenatal unit",
+    clinician: ["Midwife"],
+    reasonForVisit: ["Pregnancy care"],
+    clinicalNotes: "Dating scan booked after positive home test. Confirmed intrauterine pregnancy, ~6 weeks.",
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_CLINIC_VISIT,
+    id: "visit_003",
+    title: "Miscarriage aftercare",
+    date: daysAgo(50),
+    location: "Local hospital — antenatal unit",
+    clinician: ["Midwife"],
+    reasonForVisit: ["Pregnancy care"],
+    clinicalNotes: "Follow-up after miscarriage — confirmed complete, no intervention needed. Discussed contraception going forward.",
+    isArchived: false,
+  },
 ];
 
 let visits = storage.load(STORAGE_KEY, seedVisits);
