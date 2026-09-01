@@ -292,7 +292,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         <Icon size={22} color={color} />
         <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{label}</span>
       </div>
-      <ChevronRight size={18} color={darkMode ? DARK.textDisabled : "#9A9AA1"} />
+      <ChevronRight size={18} color={darkMode ? DARK.textDisabled : "#656568"} />
     </div>
   );
 
@@ -404,7 +404,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       )}
 
       <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Quick add</div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Personal</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Personal</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         <QuickAddButton icon={Users} label="New contact" color={ACCENTS.contacts} onClick={() => onQuickAdd("contacts")} />
         {/* CHANGED — real ask: a distinct icon for Encounter rather
@@ -434,7 +434,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             other write in this app requires. */}
         <QuickAddButton icon={Pill} label="Log medication" color={MEDS_ICON_BLUE} onClick={() => onNavigateToRecord("medication", null)} />
       </div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Healthcare</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Healthcare</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <QuickAddButton icon={TestTube} label="Log test" color={ACCENTS.healthcare} onClick={() => onQuickAdd("healthcare", "testing")} />
         {/* CHANGED — real ask: Clinic Visit gets Stethoscope, Symptom

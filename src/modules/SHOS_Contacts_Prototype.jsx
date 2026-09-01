@@ -2172,9 +2172,9 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 exporting several at once as one file doesn't map to
                 "a single record to hand to a provider". */}
             <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("contacts", ContactRepository.getById(selectedIds[0])); }}
-              style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#6E6E74", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
+              style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
             <span onClick={() => { if (selectedIds.length > 0) { ContactRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span onClick={() => {
               if (selectedIds.length === 0) return;
               if (window.confirm(`Delete ${selectedIds.length} contact${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
@@ -2189,7 +2189,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 refresh();
                 exitSelectMode();
               }
-            }} style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+            }} style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>

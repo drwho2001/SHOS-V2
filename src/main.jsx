@@ -54,7 +54,7 @@ class ErrorBoundary extends React.Component {
           <div style={{ fontSize: 13, color: "#5B5B62", marginBottom: 20, maxWidth: 320 }}>
             SHOS hit an error and couldn't display normally. Your data is safe — nothing here touches it. Tap below to reset navigation state and reload.
           </div>
-          <div style={{ fontSize: 11, color: "#9A9AA1", marginBottom: 24, maxWidth: 320, fontFamily: "monospace", wordBreak: "break-word" }}>
+          <div style={{ fontSize: 11, color: "#656568", marginBottom: 24, maxWidth: 320, fontFamily: "monospace", wordBreak: "break-word" }}>
             {String(this.state.error?.message || this.state.error)}
           </div>
           <button onClick={this.handleResetAndReload}

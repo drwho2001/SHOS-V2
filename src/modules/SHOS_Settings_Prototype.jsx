@@ -120,7 +120,7 @@ function SelectiveExportSheet({ onClose, onExported }) {
   };
 
   const Box = ({ state }) => (
-    <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${state === "empty" ? "#9A9AA1" : ACCENTS.healthcare}`, background: state === "full" ? ACCENTS.healthcare : state === "partial" ? "#C7D5F7" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${state === "empty" ? "#656568" : ACCENTS.healthcare}`, background: state === "full" ? ACCENTS.healthcare : state === "partial" ? "#C7D5F7" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
       {state === "full" && <Check size={12} color="#FFFFFF" weight="bold" />}
     </div>
   );
@@ -162,7 +162,7 @@ function SelectiveExportSheet({ onClose, onExported }) {
         </div>
         <div style={{ padding: "14px 20px", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", flexShrink: 0 }}>
           <button onClick={doExport} disabled={checked.size === 0}
-            style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: checked.size === 0 ? "#9A9AA1" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: checked.size === 0 ? "default" : "pointer" }}>
+            style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: checked.size === 0 ? "#656568" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: checked.size === 0 ? "default" : "pointer" }}>
             {checked.size === allKeys.length ? "Export everything" : `Export selected (${checked.size} of ${allKeys.length})`}
           </button>
         </div>
@@ -205,14 +205,14 @@ function CSVExportSheet({ onClose }) {
         <div style={{ overflowY: "auto", padding: "8px 20px 20px", flex: 1 }}>
           {CSV_EXPORT_GROUPS.map((group) => (
             <div key={group.key} style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, marginBottom: 10, overflow: "hidden" }}>
-              <div style={{ padding: "12px 14px 6px", fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5 }}>{group.label}</div>
+              <div style={{ padding: "12px 14px 6px", fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5 }}>{group.label}</div>
               {group.items.map((item) => (
                 <div key={item.dataKey} onClick={() => doExport(item)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 14px", cursor: "pointer", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
                   <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{item.label}</span>
                   {status?.dataKey === item.dataKey ? (
-                    <span style={{ fontSize: 11, color: status.ok === false ? ACTION.red : status.ok ? ACTION.green : (darkMode ? DARK.textDisabled : "#9A9AA1") }}>{status.msg}</span>
+                    <span style={{ fontSize: 11, color: status.ok === false ? ACTION.red : status.ok ? ACTION.green : (darkMode ? DARK.textDisabled : "#656568") }}>{status.msg}</span>
                   ) : (
-                    <FileCsv size={16} color={darkMode ? DARK.textDisabled : "#9A9AA1"} />
+                    <FileCsv size={16} color={darkMode ? DARK.textDisabled : "#656568"} />
                   )}
                 </div>
               ))}
@@ -278,7 +278,7 @@ function EncryptedExportSheet({ onClose }) {
   };
 
   const Box = ({ state }) => (
-    <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${state === "empty" ? "#9A9AA1" : ACCENTS.healthcare}`, background: state === "full" ? ACCENTS.healthcare : state === "partial" ? "#C7D5F7" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${state === "empty" ? "#656568" : ACCENTS.healthcare}`, background: state === "full" ? ACCENTS.healthcare : state === "partial" ? "#C7D5F7" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
       {state === "full" && <Check size={12} color="#FFFFFF" weight="bold" />}
     </div>
   );
@@ -294,8 +294,8 @@ function EncryptedExportSheet({ onClose }) {
           <div style={{ position: "relative", marginBottom: 8 }}>
             <input value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} type={showPasswords ? "text" : "password"} placeholder="Password (6+ characters)"
               style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box", background: darkMode ? DARK.surface : "#FFFFFF", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
-            {showPasswords ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(false)} />
-              : <Eye size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(true)} />}
+            {showPasswords ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(false)} />
+              : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(true)} />}
           </div>
           <div style={{ position: "relative", marginBottom: 10 }}>
             <input value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }} type={showPasswords ? "text" : "password"} placeholder="Confirm password"
@@ -304,7 +304,7 @@ function EncryptedExportSheet({ onClose }) {
           </div>
           {error && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 10 }}>{error}</div>}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0 6px" }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5 }}>What to include</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5 }}>What to include</span>
             <span onClick={() => setChecked(checked.size === allKeys.length ? new Set() : new Set(allKeys))}
               style={{ fontSize: 12, fontWeight: 600, color: ACCENTS.healthcare, cursor: "pointer" }}>
               {checked.size === allKeys.length ? "Deselect all" : "Select all"}
@@ -327,7 +327,7 @@ function EncryptedExportSheet({ onClose }) {
         </div>
         <div style={{ padding: "14px 20px", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", flexShrink: 0 }}>
           <button onClick={doExport} disabled={checked.size === 0 || exporting}
-            style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: (checked.size === 0 || exporting) ? "#9A9AA1" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: (checked.size === 0 || exporting) ? "default" : "pointer" }}>
+            style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: (checked.size === 0 || exporting) ? "#656568" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: (checked.size === 0 || exporting) ? "default" : "pointer" }}>
             {exporting ? "Encrypting…" : "Export encrypted backup"}
           </button>
         </div>
@@ -391,7 +391,7 @@ function DeveloperToolsScreen({ onClose }) {
         Live record counts across every part of the app's local storage, mainly useful for confirming a backup/restore or migration went as expected.
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "16px 16px 6px" }}>Storage overview</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "16px 16px 6px" }}>Storage overview</div>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 20px", padding: "4px 14px" }}>
         {counts.map((c) => (
           <div key={c.label} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
@@ -401,7 +401,7 @@ function DeveloperToolsScreen({ onClose }) {
         ))}
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Danger zone</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Danger zone</div>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: `1px solid ${ACTION.red}`, borderRadius: 16, margin: "0 16px 20px", padding: 16 }}>
         {resetStage === "done" ? (
           <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>All app data cleared. Reload the app to see the fresh-start state.</div>
@@ -507,7 +507,7 @@ function ManageListsScreen({ onClose }) {
                   </div>
                   <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{r.label}</span>
                 </div>
-                <ChevronRight size={16} color={darkMode ? DARK.textDisabled : "#9A9AA1"} />
+                <ChevronRight size={16} color={darkMode ? DARK.textDisabled : "#656568"} />
               </div>
             ))}
           </div>
@@ -532,7 +532,7 @@ function ManageListsScreen({ onClose }) {
                     )}
                     <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{OPTION_LIST_LABELS[name] || name}</span>
                   </div>
-                  <span style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#9A9AA1" }}>{CustomOptionListsRepository.get(name).length} options ›</span>
+                  <span style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568" }}>{CustomOptionListsRepository.get(name).length} options ›</span>
                 </div>
               );
             })}
@@ -611,7 +611,7 @@ function ResourceCategory({ categoryKey, darkMode }) {
 
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>{RESOURCE_CATEGORY_LABELS[categoryKey]}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>{RESOURCE_CATEGORY_LABELS[categoryKey]}</div>
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
         {entries.length === 0 ? (
           <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>Nothing added yet.</div>
@@ -647,7 +647,7 @@ function ClinicalJustificationsCategory({ darkMode }) {
   ];
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Clinical justifications used</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Clinical justifications used</div>
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
         <div style={{ fontSize: 11, color: T.textSecondary, padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
           What this app's own calculations (exposure windows, DoxyPEP timing, testing-interval stats) are actually based on — informational, not personalised medical advice.
@@ -818,8 +818,8 @@ function PrivacyScreen({ onClose }) {
               <div style={{ position: "relative", marginBottom: 8 }}>
                 <input value={pinEntry} onChange={(e) => { setPinEntry(e.target.value); setPinError(""); }} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="PIN"
                   style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                  : <Eye size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                  : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
               </div>
             )}
             {pinError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{pinError}</div>}
@@ -945,16 +945,16 @@ function PrivacyScreen({ onClose }) {
               <div style={{ position: "relative", marginBottom: 8 }}>
                 <input value={newPin} onChange={(e) => setNewPin(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="New PIN (4+ digits)"
                   style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                  : <Eye size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                  : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
               </div>
               {/* ADDED — real ask: force reconfirmation before accepting,
                   to catch typos before they lock the user out later. */}
               <div style={{ position: "relative", marginBottom: 8 }}>
                 <input value={confirmPin} onChange={(e) => setConfirmPin(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="Confirm new PIN"
                   style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                  : <Eye size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                  : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
               </div>
               {pinError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{pinError}</div>}
               <div style={{ display: "flex", gap: 8 }}>
@@ -986,14 +986,14 @@ function PrivacyScreen({ onClose }) {
                 <div style={{ position: "relative", marginBottom: 8 }}>
                   <input value={newDuressPin} onChange={(e) => setNewDuressPin(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="New duress PIN (4+ digits)"
                     style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                    : <Eye size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                    : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
                 </div>
                 <div style={{ position: "relative", marginBottom: 8 }}>
                   <input value={confirmDuressPin} onChange={(e) => setConfirmDuressPin(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="Confirm duress PIN"
                     style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                    : <Eye size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                    : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
                 </div>
                 {duressPinError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{duressPinError}</div>}
                 <div style={{ display: "flex", gap: 8 }}>
@@ -1297,7 +1297,7 @@ function InfoIcon({ onClick }) {
   const [darkMode] = useDarkModePreference();
 
   return (
-    <div onClick={onClick} style={{ width: 16, height: 16, borderRadius: 999, border: "1px solid #9A9AA1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", cursor: "pointer", flexShrink: 0 }}>i</div>
+    <div onClick={onClick} style={{ width: 16, height: 16, borderRadius: 999, border: "1px solid #656568", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", cursor: "pointer", flexShrink: 0 }}>i</div>
   );
 }
 
@@ -1376,7 +1376,7 @@ function StatsScreen({ onClose }) {
               {activityMonths.map((b) => (
                 <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                   <div style={{ width: "100%", height: `${Math.max(4, (b.count / maxActivity) * 44)}px`, background: ACCENTS.encounters, borderRadius: 3 }} />
-                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#9A9AA1" }}>{b.label}</span>
+                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#656568" }}>{b.label}</span>
                 </div>
               ))}
             </div>
@@ -1384,7 +1384,7 @@ function StatsScreen({ onClose }) {
           <div style={{ padding: "12px 16px" }}>
             <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>Top kinks/roles logged</div>
             {topKinks.length === 0 ? (
-              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#9A9AA1", fontStyle: "italic" }}>Nothing logged yet.</div>
+              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568", fontStyle: "italic" }}>Nothing logged yet.</div>
             ) : topKinks.map((k) => (
               <div key={k.name} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
                 <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{k.name}</span>
@@ -1428,7 +1428,7 @@ function StatsScreen({ onClose }) {
               {contactMonths.map((b) => (
                 <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                   <div style={{ width: "100%", height: `${Math.max(4, (b.count / maxContacts) * 44)}px`, background: ACCENTS.contacts, borderRadius: 3 }} />
-                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#9A9AA1" }}>{b.label}</span>
+                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#656568" }}>{b.label}</span>
                 </div>
               ))}
             </div>
@@ -1611,11 +1611,11 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div onClick={() => setExpanded((e) => !e)} style={{ width: 16, height: 16, borderRadius: "50%", background: currentValue, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: "pointer" }} />
           <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{label}</span>
-          {isOverridden && <span style={{ fontSize: 10, color: darkMode ? DARK.textDisabled : "#9A9AA1", fontStyle: "italic" }}>(customised)</span>}
+          {isOverridden && <span style={{ fontSize: 10, color: darkMode ? DARK.textDisabled : "#656568", fontStyle: "italic" }}>(customised)</span>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {isOverridden && (
-            <ResetIcon size={16} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ cursor: "pointer" }} onClick={onReset} title="Reset to default" />
+            <ResetIcon size={16} color={darkMode ? DARK.textDisabled : "#656568"} style={{ cursor: "pointer" }} onClick={onReset} title="Reset to default" />
           )}
           {/* REMOVED 1 Sep 2026 — real ask: "colour buttons sit on a
               white background... looks visually out of place." That
@@ -1641,7 +1641,7 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
               <span key={mode} onClick={() => setPanelMode(mode)}
                 style={{
                   fontSize: 12, fontWeight: 700, cursor: "pointer", paddingBottom: 4,
-                  color: panelMode === mode ? "#3D63C9" : (darkMode ? DARK.textDisabled : "#9A9AA1"),
+                  color: panelMode === mode ? "#3D63C9" : (darkMode ? DARK.textDisabled : "#656568"),
                   borderBottom: panelMode === mode ? "2px solid #3D63C9" : "2px solid transparent",
                 }}>
                 {tabLabel}
@@ -1724,7 +1724,7 @@ function AboutScreen({ onClose }) {
       <div style={{ padding: 16 }}>
         <div style={{ textAlign: "center", padding: "24px 0" }}>
           <div style={{ fontSize: 20, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>SHOS</div>
-          <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#9A9AA1" }}>Sexual Health Operating System</div>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568" }}>Sexual Health Operating System</div>
         </div>
         <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
@@ -1765,7 +1765,7 @@ function AboutScreen({ onClose }) {
             </a>
           </div>
         </div>
-        <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1", textAlign: "center", marginTop: 16 }}>
+        <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", textAlign: "center", marginTop: 16 }}>
           Local-first — nothing here leaves this device unless you choose to export or share it.
         </div>
       </div>
@@ -1901,9 +1901,9 @@ function CalendarSyncSheet({ onClose }) {
               <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>SHOS (private) — recommended</div>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>On-device only, structurally can't sync or be shared.</div>
             </div>
-            {availableCalendars === null && <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#9A9AA1", textAlign: "center", padding: 10 }}>Loading calendars…</div>}
+            {availableCalendars === null && <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568", textAlign: "center", padding: 10 }}>Loading calendars…</div>}
             {availableCalendars?.length === 0 && (
-              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#9A9AA1", textAlign: "center", padding: 10 }}>No other calendars found on this device.</div>
+              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568", textAlign: "center", padding: 10 }}>No other calendars found on this device.</div>
             )}
             {availableCalendars?.map((cal) => (
               <div key={cal.id} onClick={() => !calendarSyncing && selectCalendarTarget(cal.name)}
@@ -1998,8 +1998,8 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
             const active = activeModules.includes(key);
             return (
               <div key={key} onClick={() => toggleModule(key)}
-                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? ACCENTS[key] : "#DCDCE1"}`, color: active ? ACCENTS[key] : "#9A9AA1", background: active ? `${ACCENTS[key]}15` : "transparent" }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: active ? ACCENTS[key] : "#9A9AA1" }} />
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? ACCENTS[key] : "#DCDCE1"}`, color: active ? ACCENTS[key] : "#656568", background: active ? `${ACCENTS[key]}15` : "transparent" }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: active ? ACCENTS[key] : "#656568" }} />
                 {TRASH_MODULE_LABELS[key]}
               </div>
             );
@@ -2020,7 +2020,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
           {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-            <div key={i} style={{ textAlign: "center", fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1", fontWeight: 700, padding: "4px 0" }}>{d}</div>
+            <div key={i} style={{ textAlign: "center", fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", fontWeight: 700, padding: "4px 0" }}>{d}</div>
           ))}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
@@ -2030,7 +2030,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
             const dayEvents = grouped[key] || [];
             const isToday = key === todayKey;
             const isSelected = selectedDay === day;
-            const moduleColorsPresent = [...new Set(dayEvents.map((e) => e.moduleKey))].map((k) => ACCENTS[k] || "#9A9AA1");
+            const moduleColorsPresent = [...new Set(dayEvents.map((e) => e.moduleKey))].map((k) => ACCENTS[k] || "#656568");
             return (
               <div key={i} onClick={() => setSelectedDay(isSelected ? null : day)}
                 style={{ aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 8, cursor: "pointer", background: isSelected ? "#1B1B1F" : isToday ? "#E7E7EB" : "transparent", gap: 2 }}>
@@ -2047,20 +2047,20 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
 
         {selectedDay && (
           <div style={{ marginTop: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
               {new Date(year, month, selectedDay).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
             </div>
             {selectedEvents.length === 0 ? (
-              <div style={{ fontSize: 13, color: darkMode ? DARK.textDisabled : "#9A9AA1", fontStyle: "italic" }}>Nothing logged this day.</div>
+              <div style={{ fontSize: 13, color: darkMode ? DARK.textDisabled : "#656568", fontStyle: "italic" }}>Nothing logged this day.</div>
             ) : (
               <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
                 {selectedEvents.map((ev, i) => (
                   <div key={i} onClick={() => goToEvent(ev)}
                     style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: i < selectedEvents.length - 1 ? "1px solid #DCDCE1" : "none", cursor: "pointer" }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: ACCENTS[ev.moduleKey] || "#9A9AA1", flexShrink: 0 }} />
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: ACCENTS[ev.moduleKey] || "#656568", flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
-                      <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1" }}>{TRASH_MODULE_LABELS[ev.moduleKey] || ev.moduleKey}</div>
+                      <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568" }}>{TRASH_MODULE_LABELS[ev.moduleKey] || ev.moduleKey}</div>
                     </div>
                   </div>
                 ))}
@@ -2141,18 +2141,18 @@ function TrashScreen({ onClose }) {
         <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
-            <span onClick={() => selectedIds.length > 0 && restoreSelected()} style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Restore</span>
-            <span onClick={() => selectedIds.length > 0 && deleteSelected()} style={{ fontSize: 13, color: selectedIds.length > 0 ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+            <span onClick={() => selectedIds.length > 0 && restoreSelected()} style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Restore</span>
+            <span onClick={() => selectedIds.length > 0 && deleteSelected()} style={{ fontSize: 13, color: selectedIds.length > 0 ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>
       )}
       <div style={{ padding: 16 }}>
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#9A9AA1", marginBottom: 14 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568", marginBottom: 14 }}>
           Deleted items stay here for 30 days before they're no longer shown. This is separate from the "tap to undo" that appears right after deleting something.
         </div>
         {items.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 20px", color: darkMode ? DARK.textDisabled : "#9A9AA1", fontSize: 13 }}>Nothing in the trash.</div>
+          <div style={{ textAlign: "center", padding: "40px 20px", color: darkMode ? DARK.textDisabled : "#656568", fontSize: 13 }}>Nothing in the trash.</div>
         ) : (
           <>
             {/* ADDED 26 Aug 2026 — real ask: "restore all" and "delete
@@ -2177,7 +2177,7 @@ function TrashScreen({ onClose }) {
                     )}
                     <div style={{ minWidth: 0, flex: 1, paddingRight: 10 }}>
                       <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recordLabel(entry)}</div>
-                      <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1", marginTop: 2 }}>{TRASH_MODULE_LABELS[entry.moduleKey] || entry.moduleKey} · deleted {new Date(entry.deletedAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</div>
+                      <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", marginTop: 2 }}>{TRASH_MODULE_LABELS[entry.moduleKey] || entry.moduleKey} · deleted {new Date(entry.deletedAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</div>
                     </div>
                   </div>
                   {!selectMode && (
@@ -2299,7 +2299,7 @@ function DesignScreen({ onClose }) {
             </div>
           </div>
         </div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Module colours</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Module colours</div>
         <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
           {CUSTOMIZABLE_MODULE_KEYS.map((key) => {
             const isOverridden = key in overrides;
@@ -2316,7 +2316,7 @@ function DesignScreen({ onClose }) {
             green confusion is the most common form. Wired app-wide,
             dark mode included — see designTokens.js's ACTION export
             and resolveDarkAccent(). */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "20px 0 6px" }}>Status colours</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "20px 0 6px" }}>Status colours</div>
         <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, overflow: "hidden" }}>
           {CUSTOMIZABLE_ACTION_KEYS.map((key) => {
             const isOverridden = key in overrides;
@@ -2339,7 +2339,7 @@ function DesignScreen({ onClose }) {
             Contacts-display setting fits this screen's own "how each
             module looks/behaves" scope better than a near-empty screen
             of its own — folded in here, PreferencesScreen removed. */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "20px 0 6px" }}>Contacts</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "20px 0 6px" }}>Contacts</div>
         <InactiveThresholdCard T={darkMode ? DARK : NEUTRAL} />
       </div>
     </div>
@@ -2475,8 +2475,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <Icon size={17} weight={emphasized ? "bold" : "regular"} color={resolvedIconColor} />
         <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{label}</span>
       </div>
-      {!disabled && <ChevronRight size={16} color={darkMode ? DARK.textDisabled : "#9A9AA1"} />}
-      {disabled && <span style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1", fontStyle: "italic" }}>Not built yet</span>}
+      {!disabled && <ChevronRight size={16} color={darkMode ? DARK.textDisabled : "#656568"} />}
+      {disabled && <span style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", fontStyle: "italic" }}>Not built yet</span>}
     </div>
     );
   };
@@ -2488,12 +2488,12 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Settings</span>
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "16px 16px 6px" }}>Profile</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "16px 16px 6px" }}>Profile</div>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 20px", overflow: "hidden" }}>
         <SettingsRow icon={User} label="My Profile" onClick={() => setShowMyProfile(true)} />
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Data</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Data</div>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* CHANGED — real bug found in the user's own testing: passing
             `exportBackup` directly meant the DOM click's SyntheticEvent
@@ -2531,7 +2531,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <div style={{ margin: "0 16px 20px", padding: "10px 14px", borderRadius: 12, background: "#FFF4CE", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 12 }}>{status}</div>
       )}
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Advanced</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Advanced</div>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* CHANGED 19 Aug 2026 — Developer tools is now real (storage
             overview + reset), moved out of the "Not built yet" group
@@ -2558,14 +2558,14 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <SettingsRow icon={LifeBuoy} label="Resources" onClick={() => setShowResources(true)} />
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Design</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Design</div>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 20px", overflow: "hidden" }}>
         {/* CHANGED 26 Aug 2026 — real ask: was a disabled "Not built
             yet" stub, now a real, working section. */}
         <SettingsRow icon={Palette} label="Colour scheme" onClick={() => setShowDesign(true)} />
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Insights</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Insights</div>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "0 16px 20px", overflow: "hidden" }}>
         {/* ADDED 26 Aug 2026 — real ask: Stats page. */}
         <SettingsRow icon={Database} label="Stats" onClick={() => setShowStats(true)} />

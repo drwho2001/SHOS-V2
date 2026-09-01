@@ -73,7 +73,7 @@ export function buildRecordExportHtml(moduleKey, record) {
 <style>
   body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
   h1 { font-size: 20px; margin-bottom: 4px; }
-  .subtitle { color: #9A9AA1; font-size: 12px; margin-bottom: 24px; }
+  .subtitle { color: #656568; font-size: 12px; margin-bottom: 24px; }
   table { width: 100%; border-collapse: collapse; }
   tr { border-bottom: 1px solid #EEE; }
   @media print { body { margin: 0; } }

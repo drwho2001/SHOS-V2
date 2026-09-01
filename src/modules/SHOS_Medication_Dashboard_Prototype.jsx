@@ -68,7 +68,7 @@ const LIGHT = {
 };
 const DARK = {
   bg: "#121214", surface: "#1C1C1F", surfaceVariant: "#26262A", border: "#3A3A3F",
-  textPrimary: "#F2F2F4", textSecondary: "#B8B8BE", textDisabled: "#6E6E74",
+  textPrimary: "#F2F2F4", textSecondary: "#B8B8BE", textDisabled: "#89898C",
   // CHANGED — real architecture fix: these three used to be separate
   // hand-picked literals, completely ignoring a customised colour
   // (ACCENTS.medication/ACTION.red/ACTION.green) the moment dark mode
@@ -1679,9 +1679,9 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
               {/* ADDED 26 Aug 2026 — real ask: export/print a single
                   record, enabled only when exactly one is selected. */}
               <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("medications", MedicationRepository.getById(selectedIds[0])); }}
-                style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#6E6E74", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
+                style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
               <span onClick={() => { if (selectedIds.length > 0) { MedicationRepository.bulkArchive(selectedIds); refreshMeds(); exitSelectMode(); } }}
-                style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
+                style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
               <span onClick={() => {
                 if (selectedIds.length === 0) return;
                 if (window.confirm(`Delete ${selectedIds.length} medication${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
@@ -1690,7 +1690,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
                   refreshMeds();
                   exitSelectMode();
                 }
-              }} style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#6E6E74", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+              }} style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
               <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
             </div>
           </div>

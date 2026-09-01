@@ -40,7 +40,7 @@ export const NEUTRAL = {
   border: "#DCDCE1",
   textPrimary: "#1B1B1F",
   textSecondary: "#5B5B62",
-  textDisabled: "#9A9AA1",
+  textDisabled: "#656568",
 };
 
 // Dark-mode counterpart, values matched to Medication's own hand-tuned
@@ -56,7 +56,7 @@ export const NEUTRAL_DARK = {
   border: "#3A3A3F",
   textPrimary: "#F2F2F4",
   textSecondary: "#B8B8BE",
-  textDisabled: "#6E6E74",
+  textDisabled: "#89898C",
 };
 
 // Domain accent colors — one per module, the color that makes each

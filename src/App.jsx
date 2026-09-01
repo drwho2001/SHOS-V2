@@ -261,14 +261,14 @@ function DecoyHome({ onLockNow }) {
   const Row = ({ title, sub }) => (
     <div style={{ padding: "12px 14px", background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 12, marginBottom: 8 }}>
       <div style={{ fontSize: 14, fontWeight: 600, color: "#1B1B1F" }}>{title}</div>
-      <div style={{ fontSize: 12, color: "#9A9AA1", marginTop: 2 }}>{sub}</div>
+      <div style={{ fontSize: 12, color: "#656568", marginTop: 2 }}>{sub}</div>
     </div>
   );
 
   const tabContent = {
     home: (
       <>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Recent activity</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#656568", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Recent activity</div>
         <Row title="Coffee date" sub="3 weeks ago" />
         <Row title="Vitamin D3 logged" sub="Today" />
       </>
@@ -291,7 +291,7 @@ function DecoyHome({ onLockNow }) {
       <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", padding: "10px 0", borderTop: "1px solid #DCDCE1", background: "#FFFFFF", flexShrink: 0 }}>
         {TABS.map((t) => (
           <div key={t.key} onClick={() => setTab(t.key)}
-            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", color: tab === t.key ? t.accent : "#9A9AA1" }}>
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", color: tab === t.key ? t.accent : "#656568" }}>
             <t.icon size={22} weight={tab === t.key ? "fill" : "regular"} />
             <span style={{ fontSize: 10, fontWeight: 600 }}>{t.label}</span>
           </div>
@@ -337,7 +337,7 @@ function AppLockPrompt({ onDismiss, onDismissForever, onOpenSettings }) {
           <button onClick={onDismiss} style={{ flex: 1, padding: 12, borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>
             Not now
           </button>
-          <button onClick={onDismissForever} style={{ flex: 1, padding: 12, borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: darkMode ? DARK.textDisabled : "#9A9AA1", fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={onDismissForever} style={{ flex: 1, padding: 12, borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: darkMode ? DARK.textDisabled : "#656568", fontWeight: 600, cursor: "pointer" }}>
             Don't ask again
           </button>
         </div>
@@ -888,7 +888,7 @@ export default function App() {
             onOpenSettings={() => setShowSettings(true)} registerModuleBackHandler={registerModuleBackHandler} />
         ) : (
           <div style={{ padding: 40, textAlign: "center", color: darkMode ? DARK.textSecondary : "#5B5B62", fontFamily: "sans-serif" }}>
-            <activeTab.icon size={32} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ marginBottom: 12 }} />
+            <activeTab.icon size={32} color={darkMode ? DARK.textDisabled : "#656568"} style={{ marginBottom: 12 }} />
             <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{activeTab.label} isn't built yet</div>
             <div style={{ fontSize: 13 }}>Needs Testing, Vaccination, and Clinic Visits to exist first.</div>
           </div>
@@ -922,8 +922,8 @@ export default function App() {
             <div key={tab.key} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", opacity: isBuilt ? 1 : 0.45 }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 14px", borderRadius: 14, background: isActive ? tab.accent : "transparent" }}>
-                <Icon size={22} color={isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : "#9A9AA1")} weight={isActive ? "fill" : "regular"} />
-                <span style={{ fontSize: 10, color: isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : "#9A9AA1"), fontWeight: isActive ? 600 : 400 }}>{tab.label}</span>
+                <Icon size={22} color={isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : "#656568")} weight={isActive ? "fill" : "regular"} />
+                <span style={{ fontSize: 10, color: isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : "#656568"), fontWeight: isActive ? 600 : 400 }}>{tab.label}</span>
               </div>
             </div>
           );
@@ -992,7 +992,7 @@ export default function App() {
               onKeyDown={(e) => { if (e.key === "Enter") attemptDecryptImport(); }}
               style={{ width: "100%", padding: "12px 14px", borderRadius: 8, border: `1px solid ${darkMode ? DARK.border : "#DCDCE1"}`, fontSize: 14, marginBottom: 8, boxSizing: "border-box" }} />
             {decryptError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 12 }}>{decryptError}</div>}
-            <button onClick={attemptDecryptImport} disabled={!decryptPassword} style={{ width: "100%", padding: 14, borderRadius: 999, border: "none", background: decryptPassword ? ACCENTS.home : "#9A9AA1", color: "#FFFFFF", fontWeight: 700, cursor: decryptPassword ? "pointer" : "default", marginBottom: 8 }}>
+            <button onClick={attemptDecryptImport} disabled={!decryptPassword} style={{ width: "100%", padding: 14, borderRadius: 999, border: "none", background: decryptPassword ? ACCENTS.home : "#656568", color: "#FFFFFF", fontWeight: 700, cursor: decryptPassword ? "pointer" : "default", marginBottom: 8 }}>
               Decrypt and import
             </button>
             <button onClick={() => { setPendingEncryptedEnvelope(null); setDecryptPassword(""); setDecryptError(""); }} style={{ width: "100%", padding: 12, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : "#DCDCE1"), background: "transparent", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>
