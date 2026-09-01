@@ -25,7 +25,7 @@ import {
   TagIcon as Palette, ArrowUUpLeftIcon as ResetIcon, CalendarIcon as Calendar,
   FileCsvIcon as FileCsv, LockIcon as Lock, BellIcon as Bell,
   CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck,
-  LifebuoyIcon as LifeBuoy,
+  LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen,
 } from "@phosphor-icons/react";
 // FIXED 1 Sep 2026 — real ask: "Managed lists crashes app on
 // attempting to open" / "Same for resources [crashes], in light [mode]
@@ -1745,6 +1745,69 @@ const CALENDAR_MODULE_TARGETS = {
   medications: { tab: "medication", subTab: null },
 };
 
+// ADDED 1 Sep 2026 — real ask, item 2 of the follow-up feature list: a
+// lightweight glossary for the clinical shorthand used throughout this
+// app (DoxyPEP, TOC, C&S, PEP...) without assuming everyone already
+// knows it. Every entry here is a term this app's own UI, calculations,
+// or option lists genuinely use elsewhere (TESTING_FOR_OPTIONS,
+// doxyPepCalculations.js's own BASHH citations, the seed Timeline
+// episode's TOC/C&S usage) — not a generic glossary padded out with
+// terms the app doesn't actually surface. Same search pattern as
+// Resources (name/definition match, plain function, no fuzzy search
+// needed for a list this short).
+const GLOSSARY_TERMS = [
+  { term: "PrEP", body: "Pre-exposure prophylaxis — medication taken regularly (daily, or event-based around sex) before an exposure, to reduce the chance of getting HIV." },
+  { term: "PEP", body: "Post-exposure prophylaxis — a course of HIV medication started within 72 hours after a potential HIV exposure, to reduce the chance of infection taking hold." },
+  { term: "DoxyPEP", body: "Doxycycline post-exposure prophylaxis — a single dose of the antibiotic doxycycline, taken within 72 hours after condomless oral, vaginal, or anal sex, shown to reduce the chance of some bacterial STIs (see Resources → Sexual health for the full guidance)." },
+  { term: "Doxy", body: "Shorthand for doxycycline, the antibiotic used in DoxyPEP." },
+  { term: "TOC (Test of cure)", body: "A follow-up test done after treatment for an infection, to confirm it's actually cleared rather than assuming the treatment worked." },
+  { term: "C&S (Culture & sensitivity)", body: "A lab test that grows a sample to identify exactly which bacteria are present and which antibiotics will treat it — used when a standard test isn't specific enough, e.g. for an antibiotic-resistant infection." },
+  { term: "Window period", body: "The time after a possible exposure during which a test may not yet reliably detect an infection, even if present — testing too early can give a false negative." },
+  { term: "Most recent", body: "This app's own label for the newest test covering a given infection, so an older, superseded result doesn't get confused with your current status." },
+  { term: "BASHH", body: "British Association for Sexual Health and HIV — the UK's professional body for sexual health clinical guidance. Several of this app's own defaults (like the 90-day retesting interval) are based on its published guidance." },
+  { term: "MGen (Mycoplasma genitalium)", body: "A bacterial STI, less well known than chlamydia or gonorrhoea, that can cause similar symptoms and sometimes needs specific antibiotic-resistance testing." },
+  { term: "HSV (Herpes simplex virus)", body: "The virus that causes genital and oral herpes. HSV-1 and HSV-2 are the two types — either can occur at either site." },
+  { term: "HPV (Human papillomavirus)", body: "A very common virus. Some strains are linked to genital warts, others to certain cancers — a vaccine exists and is recommended for some groups." },
+  { term: "Chemsex", body: "Using drugs (commonly crystal meth, GHB/GBL, or mephedrone) before or during sex, typically to enhance or prolong the experience — see Resources → Drugs & chemsex for safety-specific guidance." },
+  { term: "Cruising / PSE (Public sex environment)", body: "Meeting sexual partners in public or semi-public spaces (e.g. parks, saunas) — see Resources → Public sex & cruising for safety-specific guidance." },
+];
+
+function GlossaryScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : NEUTRAL;
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const filtered = q ? GLOSSARY_TERMS.filter((t) => t.term.toLowerCase().includes(q) || t.body.toLowerCase().includes(q)) : GLOSSARY_TERMS;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Glossary</span>
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16, lineHeight: 1.4 }}>
+          Plain-language explanations of the clinical shorthand used elsewhere in this app — informational, not personalised medical advice.
+        </div>
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search terms"
+          style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", marginBottom: 16 }} />
+        {filtered.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>No terms match your search.</div>
+        ) : (
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+            {filtered.map((t) => (
+              <div key={t.term} style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary, marginBottom: 3 }}>{t.term}</div>
+                <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.4 }}>{t.body}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ADDED 26 Aug 2026 — real ask: About/version screen, a genuine
 // missing basic flagged in the final audit. version/buildDate come
 // from package.json and the actual build timestamp — real values,
@@ -2447,6 +2510,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   const [showAutoBackupSettings, setShowAutoBackupSettings] = useState(false);
   // ADDED 1 Sep 2026 — real ask: a Resources section.
   const [showResources, setShowResources] = useState(false);
+  // ADDED 1 Sep 2026 — real ask, item 2 of the follow-up feature list: a glossary.
+  const [showGlossary, setShowGlossary] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   // ADDED — real ask: unified notifications management, one place to
   // turn each real reminder type on/off rather than each one being
@@ -2478,6 +2543,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showPrivacy) { setShowPrivacy(false); return true; }
       if (showNotifications) { setShowNotifications(false); return true; }
       if (showResources) { setShowResources(false); return true; }
+      if (showGlossary) { setShowGlossary(false); return true; }
       if (showAutoBackupSettings) { setShowAutoBackupSettings(false); return true; }
       if (showManageLists) { setShowManageLists(false); return true; }
       if (showDevTools) { setShowDevTools(false); return true; }
@@ -2488,7 +2554,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPrivacy, showNotifications, showManageLists, showAutoBackupSettings, showResources, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPrivacy, showNotifications, showManageLists, showAutoBackupSettings, showResources, showGlossary, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.
@@ -2594,6 +2660,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             Design, see InactiveThresholdCard's own comment. */}
         {/* ADDED 1 Sep 2026 — real ask: a Resources section. */}
         <SettingsRow icon={LifeBuoy} label="Resources" onClick={() => setShowResources(true)} />
+        {/* ADDED 1 Sep 2026 — real ask, item 2 of the follow-up feature list: a glossary. */}
+        <SettingsRow icon={BookOpen} label="Glossary" onClick={() => setShowGlossary(true)} />
       </div>
 
       <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Design</div>
@@ -2646,6 +2714,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showResources && (
         <ResourcesScreen onClose={() => setShowResources(false)} />
+      )}
+      {showGlossary && (
+        <GlossaryScreen onClose={() => setShowGlossary(false)} />
       )}
       {showDesign && (
         <DesignScreen onClose={() => setShowDesign(false)} />
