@@ -73,7 +73,15 @@ const SEED_LISTS = {
   // Supplement/IBS/Antidepressant/Other), fetched live from Notion
   // this session, never ported to the app until now. Multi-select in
   // Notion, so stays multi-select here too.
-  medicationCategory: ["Anti-RetroViral (ARV)", "Antibiotic", "Vaccine", "Pain relief", "Supplement", "IBS", "Antidepressant", "Other"],
+  // ADDED — real ask: HRT lives here as a Medication category, not as
+  // its own module — reuses dose/schedule/refill/doseHistory tracking
+  // for free (doseHistory in particular already exists specifically
+  // for titration, which is exactly what HRT dosing looks like) rather
+  // than duplicating that machinery. Deliberately NOT gender-specific:
+  // menopause HRT (cis women), TRT (cis men — older men, weight
+  // lifters), and gender-affirming HRT (trans men and women) all use
+  // this same category.
+  medicationCategory: ["Anti-RetroViral (ARV)", "Antibiotic", "Vaccine", "Pain relief", "Supplement", "IBS", "Antidepressant", "HRT", "Other"],
   // ADDED 26 Aug 2026 — real ask: Relationship type (Contacts) should
   // be user-editable, not a fixed list. Same exact option strings as
   // the old hardcoded RELATIONSHIP_TYPE_OPTIONS in contactRepository.js
@@ -107,6 +115,13 @@ const SEED_LISTS = {
   // unlike every other entry here it can't be renamed or removed via
   // this same editable-list mechanism.
   measurementType: ["Viral load", "CD4 count", "Estradiol", "Testosterone", "LH", "FSH", "Weight", "Blood pressure", "Other"],
+  // ADDED — real ask: Menstrual Cycle's own Flow field.
+  menstrualFlow: ["Spotting", "Light", "Medium", "Heavy"],
+  // ADDED — real ask: My Profile's own overall relationship status —
+  // a different axis from Contacts' relationshipType above (which
+  // describes your connection to one specific person; this describes
+  // your own overall situation, independent of and not replacing it).
+  relationshipStatus: ["Single", "Married", "Poly", "Aro/Ace", "Dating", "It's complicated"],
 };
 
 // ADDED — real ask: unlike every other entry in every list above,
@@ -139,6 +154,8 @@ export const OPTION_LIST_LABELS = {
   gender: "Gender",
   contraception: "Contraception",
   measurementType: "Measurement type",
+  menstrualFlow: "Menstrual flow",
+  relationshipStatus: "Relationship status",
 };
 
 // ADDED 19 Aug 2026 — real ask: same icon+color treatment as the
@@ -166,6 +183,8 @@ export const OPTION_LIST_ICONS = {
   gender: { icon: "User", color: ACCENTS.contacts },
   contraception: { icon: "Pill", color: ACCENTS.healthcare },
   measurementType: { icon: "Ruler", color: ACCENTS.healthcare },
+  menstrualFlow: { icon: "Drop", color: ACCENTS.healthcare },
+  relationshipStatus: { icon: "Heart", color: ACCENTS.contacts },
 };
 
 let lists = { ...SEED_LISTS, ...storage.load(STORAGE_KEY, {}) };

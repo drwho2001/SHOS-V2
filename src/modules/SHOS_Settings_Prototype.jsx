@@ -2546,6 +2546,8 @@ function DesignScreen({ onClose }) {
             of its own — folded in here, PreferencesScreen removed. */}
         <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "20px 0 6px" }}>Contacts</div>
         <InactiveThresholdCard T={darkMode ? DARK : NEUTRAL} />
+        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "20px 0 6px" }}>Healthcare</div>
+        <MenstrualTrackingToggleCard T={darkMode ? DARK : NEUTRAL} />
       </div>
     </div>
   );
@@ -2576,6 +2578,29 @@ function InactiveThresholdCard({ T }) {
         </button>
       </div>
       <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 10 }}>Currently: {prefs.inactiveThresholdDays} days.</div>
+    </div>
+  );
+}
+
+// ADDED — real ask: Menstrual/Contraception/Pregnancy tracking, gated
+// behind this toggle rather than gender (menopause HRT/TRT tracking
+// already established gender-based assumptions don't hold for who
+// needs this). Off by default, same "opt-in feature area" toggle
+// pattern as calendar sync above.
+function MenstrualTrackingToggleCard({ T }) {
+  const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const toggle = () => setPrefs(AppPreferencesRepository.update({ menstrualTrackingEnabled: !prefs.menstrualTrackingEnabled }));
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, padding: 16 }}>
+      <div onClick={toggle} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+        <div style={{ flex: 1, paddingRight: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Menstrual & contraception tracking</div>
+          <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Adds a Cycle/Contraception/Pregnancy tab under Healthcare. Off by default — turning it on doesn't depend on any other setting.</div>
+        </div>
+        <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.menstrualTrackingEnabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
+          <div style={{ position: "absolute", top: 2, left: prefs.menstrualTrackingEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+        </div>
+      </div>
     </div>
   );
 }

@@ -54,6 +54,22 @@ export const DEFAULT_PROFILE = {
   // pattern already used everywhere else in this app — see
   // customOptionListsRepository.js's own comment on the "gender" list.
   gender: "",
+  // ADDED — real ask: My Profile's own overall relationship status —
+  // a different axis from Contacts' own relationshipType field, which
+  // describes your connection to one specific person, not your overall
+  // situation (you can be "Poly" while having a "Partner"-type
+  // connection to several different Contacts). Free text with
+  // suggestions, same CustomOptionListsRepository pattern as gender.
+  relationshipStatus: "",
+  // Real ask: link the Contact(s) this status is with — plural since
+  // Poly needs more than one. Deliberately NOT the same field as
+  // Contacts' own relationshipType, and linking here never touches
+  // it — see relationshipContactIds' own removal reasoning in
+  // contactRepository.js's delete()/bulkDelete() (unlink, don't
+  // cascade). Single source of truth lives HERE, not duplicated on
+  // the Contact record — a Contact's own screen can add/remove itself
+  // from this same array, but there's only one real array.
+  relationshipContactIds: [],
 
   // Basics
   age: null,
@@ -108,6 +124,15 @@ export const DEFAULT_PROFILE = {
   // + Implant)." Was a single string; see normalizeContraception()
   // below for how an existing single-value profile keeps reading back
   // correctly.
+  // SUPERSEDED — real design decision: contraceptionRepository.js is
+  // now the single owner of real contraception data (method, dates,
+  // interval/next-due, history). This field stays here ONLY for
+  // backward compatibility with profiles/shares written before that
+  // repository existed — the edit screen no longer writes to it.
+  // My Profile's own display now reads a live derived summary from
+  // ContraceptionRepository.getActive() instead, same "one owner,
+  // everywhere else just displays" fix already applied to Measurements
+  // vs Testing/Clinic Visits.
   contraception: [],
 
   // Sexual health status — "the actual point of this page" per the
@@ -206,6 +231,21 @@ export const MyProfileRepository = {
     profile = { ...DEFAULT_PROFILE, ...profile, ...changes, updatedAt: new Date().toISOString() };
     persist();
     return structuredClone(profile);
+  },
+
+  // Toggled from either side — My Profile's own edit screen, or a
+  // Contact's own detail screen — but there's only one real array
+  // (relationshipContactIds above), never a second copy on the
+  // Contact record. Add/remove are idempotent.
+  linkRelationshipContact(contactId) {
+    const current = (profile.relationshipContactIds || DEFAULT_PROFILE.relationshipContactIds);
+    if (current.includes(contactId)) return this.getProfile();
+    return this.update({ relationshipContactIds: [...current, contactId] });
+  },
+
+  unlinkRelationshipContact(contactId) {
+    const current = (profile.relationshipContactIds || DEFAULT_PROFILE.relationshipContactIds);
+    return this.update({ relationshipContactIds: current.filter((id) => id !== contactId) });
   },
 
   // Wholesale replace — used only by backup restore (if/when the

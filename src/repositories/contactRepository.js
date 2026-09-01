@@ -27,6 +27,12 @@
 // this doesn't need to be async yet.
 
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
+// ADDED — My Profile's own relationshipContactIds: a hard delete here
+// must clear any link to this contact — a dangling reference to a
+// permanently-deleted contact is never valid. Archiving deliberately
+// does NOT unlink (see myProfileRepository.js's own comment) — that's
+// a judgment call left to the user, not automatic.
+import { MyProfileRepository } from "./myProfileRepository.js";
 
 const STORAGE_KEY = "shos_contacts";
 
@@ -517,6 +523,7 @@ export const ContactRepository = {
   delete(id) {
     contacts = contacts.filter((c) => c.id !== id);
     persist();
+    MyProfileRepository.unlinkRelationshipContact(id);
   },
 
   unarchive(id) {
@@ -533,6 +540,7 @@ export const ContactRepository = {
   bulkDelete(ids) {
     contacts = contacts.filter((c) => !ids.includes(c.id));
     persist();
+    ids.forEach((id) => MyProfileRepository.unlinkRelationshipContact(id));
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.

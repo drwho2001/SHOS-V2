@@ -30,6 +30,11 @@ import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomple
 // for the full reasoning. Read-only from Contacts' side, same
 // one-directional pattern as every other cross-module read in this app.
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
+// ADDED — real ask: link/unlink this contact as who My Profile's own
+// relationshipStatus is with, settable from either screen (see
+// myProfileRepository.js's own comment — single array lives there,
+// this just toggles membership in it, never a second copy here).
+import { MyProfileRepository } from "../repositories/myProfileRepository";
 // ADDED 19 Aug 2026 — real ask: configurable inactive-contact threshold.
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 // New 18 Aug 2026: Encounters module now exists, so the Timeline
@@ -1727,7 +1732,15 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
   // ADDED — real ask: toggle to reveal blank fields, so it's obvious
   // what's actually missing rather than silently absent.
   const [showBlankFields, setShowBlankFields] = useState(false);
+  const [, forceRelink] = useState(0);
   if (!contact) return null;
+  const myProfile = MyProfileRepository.getProfile();
+  const isLinkedToMe = myProfile.relationshipContactIds.includes(contact.id);
+  const toggleLinkedToMe = () => {
+    if (isLinkedToMe) MyProfileRepository.unlinkRelationshipContact(contact.id);
+    else MyProfileRepository.linkRelationshipContact(contact.id);
+    forceRelink((v) => v + 1);
+  };
 
   const archive = () => { ContactRepository.archive(contact.id); refresh(); onBack(); };
   const flaggedDontMeetAgain = contact.meetAgain === "No";
@@ -1902,6 +1915,17 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <ReadRow T={T} label="Relationship type" value={contact.relationshipType} />
           <ReadRow T={T} label="How did we meet?" value={contact.howDidWeMeet} />
           <ReadRow T={T} label="Meet again?" value={contact.meetAgain} />
+          {/* Deliberately distinct label from "Relationship type" above
+              — different axis (My Profile's own overall status), not a
+              second copy of it. See myProfileRepository.js. */}
+          {myProfile.relationshipStatus && (
+            <div onClick={toggleLinkedToMe} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0 2px", cursor: "pointer" }}>
+              <span style={{ fontSize: 12, color: T.textSecondary }}>Linked in My Profile as: {myProfile.relationshipStatus}</span>
+              <div style={{ width: 36, height: 21, borderRadius: 999, background: isLinkedToMe ? T.contactsTeal : "#DCDCE1", position: "relative", flexShrink: 0 }}>
+                <div style={{ position: "absolute", top: 2, left: isLinkedToMe ? 17 : 2, width: 17, height: 17, borderRadius: 999, background: "#FFFFFF" }} />
+              </div>
+            </div>
+          )}
         </SectionCard>
 
         <SectionCard T={T} title="Location & logistics">

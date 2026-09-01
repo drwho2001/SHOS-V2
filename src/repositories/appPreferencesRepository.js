@@ -63,6 +63,14 @@ export const DEFAULT_APP_PREFERENCES = {
   // grace period already uses, not a new concept).
   lastActiveTab: null,
   lastActiveAt: null,
+  // ADDED — real ask: Menstrual/Contraception/Pregnancy tracking,
+  // gated behind this toggle rather than gender — gender only
+  // suggests turning it on (see SHOS_MyProfile_Prototype.jsx), never
+  // forces it, since menopause HRT/TRT tracking already established
+  // that gender-based assumptions don't hold for who needs what here.
+  // Off by default, same as every other opt-in feature area in this
+  // app (App Lock, calendar sync, encrypted export).
+  menstrualTrackingEnabled: false,
 };
 
 export const AppPreferencesRepository = {

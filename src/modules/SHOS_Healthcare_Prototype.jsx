@@ -18,6 +18,8 @@ import ClinicVisitsModule from "./SHOS_ClinicVisits_Prototype";
 import SymptomLogModule from "./SHOS_SymptomLog_Prototype";
 import VaccinationsModule from "./SHOS_Vaccinations_Prototype";
 import MeasurementsModule from "./SHOS_Measurements_Prototype";
+import MenstrualHealthModule from "./SHOS_MenstrualHealth_Prototype";
+import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import AttachmentsScreen from "./SHOS_Attachments_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
@@ -60,6 +62,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   const [darkMode] = useDarkModePreference();
   const N = darkMode ? NEUTRAL_DARK : NEUTRAL;
   const T = { healthcareBlue: ACCENTS.healthcare, border: N.border, textSecondary: N.textSecondary, surface: N.surface, bg: N.bg };
+  const [menstrualTrackingEnabled] = useState(() => AppPreferencesRepository.getPreferences().menstrualTrackingEnabled);
 
   // ADDED — real ask: Healthcare was "bland vs Home/Medication" —
   // checked and found the actual reason wasn't styling, it was that
@@ -111,7 +114,17 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       </div>
       <div style={{ padding: "14px 16px 0", background: T.bg }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-          {[{ key: "testing", label: "Testing" }, { key: "clinicVisits", label: "Clinic Visits" }, { key: "symptomLog", label: "Symptom Log" }, { key: "vaccinations", label: "Vaccinations" }, { key: "measurements", label: "Measurements" }].map((t) => (
+          {[
+            { key: "testing", label: "Testing" },
+            { key: "clinicVisits", label: "Clinic Visits" },
+            { key: "symptomLog", label: "Symptom Log" },
+            { key: "vaccinations", label: "Vaccinations" },
+            { key: "measurements", label: "Measurements" },
+            // ADDED — real ask: gated behind Settings' own toggle, not
+            // shown at all otherwise — same "opt-in, off by default"
+            // treatment as every other feature area in this app.
+            ...(menstrualTrackingEnabled ? [{ key: "menstrualHealth", label: "Menstrual & Contraception" }] : []),
+          ].map((t) => (
             <div key={t.key} onClick={() => setSubTab(t.key)}
               style={{ padding: "6px 14px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", background: subTab === t.key ? T.healthcareBlue : T.surface, color: subTab === t.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === t.key ? T.healthcareBlue : T.border}` }}>
               {t.label}
@@ -152,8 +165,10 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         <SymptomLogModule openAddOnMount={openAddOnMount && quickAddTarget === "symptomLog"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       ) : subTab === "vaccinations" ? (
         <VaccinationsModule openAddOnMount={openAddOnMount && quickAddTarget === "vaccinations"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
-      ) : (
+      ) : subTab === "measurements" ? (
         <MeasurementsModule openAddOnMount={openAddOnMount && quickAddTarget === "measurements"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
+      ) : (
+        <MenstrualHealthModule />
       )}
       {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={onNavigateToRecord} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}
       {showAttachments && (

@@ -76,6 +76,9 @@ import { ResourcesRepository } from "../repositories/resourcesRepository.js";
 import { MeasurementRepository } from "../repositories/measurementRepository.js";
 import { MeasurementPreferencesRepository } from "../repositories/measurementPreferencesRepository.js";
 import { CustomGroupsRepository } from "../repositories/customGroupsRepository.js";
+import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository.js";
+import { ContraceptionRepository } from "../repositories/contraceptionRepository.js";
+import { PregnancyRepository } from "../repositories/pregnancyRepository.js";
 
 // Doc 5 §8: "Every export/backup file stamps: schema version, migration
 // version, app version." Schema version bumps only when a backup file's
@@ -114,6 +117,9 @@ export const EXPORT_GROUPS = [
     { dataKey: "organisms", label: "Organism Registry" },
     { dataKey: "results", label: "Results Registry" },
     { dataKey: "measurements", label: "Measurements" },
+    { dataKey: "menstrualCycles", label: "Menstrual cycle log" },
+    { dataKey: "contraception", label: "Contraception history" },
+    { dataKey: "pregnancies", label: "Pregnancy tracking" },
   ] },
   { key: "registries", label: "Kink / Chems / Protection / Symptoms / Locations", items: [
     { dataKey: "kinks", label: "Kink Registry" },
@@ -168,6 +174,9 @@ const DATE_FIELD_BY_KEY = {
   vaccinations: "date",
   episodes: "createdAt",
   measurements: "date",
+  menstrualCycles: "startDate",
+  contraception: "startDate",
+  pregnancies: "testDate",
 };
 
 function withinDateRange(records, field, dateRange) {
@@ -218,6 +227,9 @@ export function buildBackup(includeKeys = null, dateRange = null) {
     vaccinations: VaccinationRepository.getAll(),
     episodes: EpisodeRepository.getAll(),
     measurements: MeasurementRepository.getAll(),
+    menstrualCycles: MenstrualCycleRepository.getAll(),
+    contraception: ContraceptionRepository.getAll(),
+    pregnancies: PregnancyRepository.getAll(),
     measurementPreferences: MeasurementPreferencesRepository.getPreferences(),
     customGroups: CustomGroupsRepository.getAllForBackup(),
     customOptionLists: CustomOptionListsRepository.getAllForBackup(),
@@ -277,7 +289,7 @@ export function parseBackupFile(jsonText) {
 // wiping everything with no confirmation was a real gap on its own,
 // separate from merge existing at all.
 export function restoreBackup(parsedBackup) {
-  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, privacySettings, resources, partnerNotifications } = parsedBackup.data;
+  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies } = parsedBackup.data;
   if (Array.isArray(contacts)) ContactRepository.replaceAll(contacts);
   if (Array.isArray(medications)) MedicationRepository.replaceAll(medications);
   if (Array.isArray(logs)) LogRepository.replaceAll(logs);
@@ -297,6 +309,9 @@ export function restoreBackup(parsedBackup) {
   if (Array.isArray(vaccinations)) VaccinationRepository.replaceAll(vaccinations);
   if (Array.isArray(episodes)) EpisodeRepository.replaceAll(episodes);
   if (Array.isArray(measurements)) MeasurementRepository.replaceAll(measurements);
+  if (Array.isArray(menstrualCycles)) MenstrualCycleRepository.replaceAll(menstrualCycles);
+  if (Array.isArray(contraception)) ContraceptionRepository.replaceAll(contraception);
+  if (Array.isArray(pregnancies)) PregnancyRepository.replaceAll(pregnancies);
   if (measurementPreferences && typeof measurementPreferences === "object") MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
   if (customGroups && typeof customGroups === "object") CustomGroupsRepository.replaceAll(customGroups);
   if (customOptionLists && typeof customOptionLists === "object") CustomOptionListsRepository.replaceAll(customOptionLists);
@@ -354,6 +369,9 @@ export function mergeBackup(parsedBackup) {
   append(SymptomLogRepository, data.symptomLog);
   append(VaccinationRepository, data.vaccinations);
   append(MeasurementRepository, data.measurements);
+  append(MenstrualCycleRepository, data.menstrualCycles);
+  append(ContraceptionRepository, data.contraception);
+  append(PregnancyRepository, data.pregnancies);
   append(EpisodeRepository, data.episodes);
   if (data.customOptionLists && typeof data.customOptionLists === "object") {
     const current = CustomOptionListsRepository.getAllForBackup();

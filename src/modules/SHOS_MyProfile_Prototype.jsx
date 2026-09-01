@@ -6,10 +6,15 @@
 // here, and only two: (1) editing YOUR OWN shareable profile data
 // (backed by myProfileRepository.js), and (2) sharing it out / pulling
 // someone else's shared profile in as a new Contact (backed by
-// profileShareService.js). This module never touches ContactRepository
-// directly except via importProfileAsContact() — importing a shared
-// profile is what CREATES a Contact, this module doesn't manage
-// Contacts itself.
+// profileShareService.js).
+//
+// UPDATED — real ask: link the Contact(s) your relationshipStatus is
+// with. This module now ALSO reads ContactRepository (read-only, to
+// pick from existing contacts) — the boundary above no longer holds
+// literally, but the spirit does: this still never CREATES or edits a
+// Contact's own fields, it only toggles membership in My Profile's own
+// relationshipContactIds array (see myProfileRepository.js's own
+// comment — single source of truth lives there, not duplicated here).
 //
 // Same self-contained pattern as Encounters: own theme constants, own
 // form primitives, no shared UI-library file yet (that's a possible
@@ -19,7 +24,7 @@
 // entry would look like for you", so sharing Contacts' color makes
 // that relationship visible rather than picking an arbitrary new hue.
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { UserIcon as User, DownloadSimpleIcon as Download, CopyIcon as Copy, CheckIcon as Check, XIcon as X, CaretLeftIcon as ChevronLeft, ShareNetworkIcon as Share } from "@phosphor-icons/react";
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository";
 import { TestingRepository } from "../repositories/testingRepository";
@@ -43,6 +48,8 @@ import { normalizeTag } from "../calculations/contactCalculations";
 import { findClosestMatch, fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { ChemsRegistry, resolveChemSynonym } from "../registries/chemsRegistry";
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
+import { ContactRepository } from "../repositories/contactRepository";
+import { ContraceptionRepository } from "../repositories/contraceptionRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -169,6 +176,51 @@ function SuggestField({ label, value, onChange, options, onAddNew, T, placeholde
         onKeyDown={(e) => { if (e.key === "Enter" && value && value.trim()) { e.preventDefault(); onAddNew(value.trim()); e.target.blur(); } }}
         placeholder={placeholder}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+    </div>
+  );
+}
+
+// ADDED — real ask: link the Contact(s) your relationshipStatus is
+// with. Same RelationPicker pattern already used elsewhere in this app
+// (Vaccinations' clinicVisitIds, etc.) — deliberately NOT the same
+// field as a Contact's own relationshipType (see file-level comment):
+// this only ever toggles membership in relationshipContactIds, never
+// touches a Contact's own record.
+function RelationPicker({ label, value, onChange, T, items, placeholder }) {
+  const [query, setQuery] = useState("");
+  const queryLower = query.trim().toLowerCase();
+  const available = items.filter((i) => !value.includes(i.id));
+  const visibleSuggestions = queryLower ? available.filter((i) => i.name.toLowerCase().includes(queryLower)).slice(0, 8) : available.slice(0, 3);
+  const nameFor = (id) => items.find((i) => i.id === id)?.name || "?";
+  return (
+    <div style={{ padding: "8px 0" }}>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
+      {value.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+          {value.map((id) => (
+            <div key={id} onClick={() => onChange(value.filter((v) => v !== id))}
+              style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer" }}>
+              {nameFor(id)} ✕
+            </div>
+          ))}
+        </div>
+      )}
+      {available.length > 0 && (
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts…"
+          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
+      )}
+      {visibleSuggestions.length > 0 ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          {visibleSuggestions.map((i) => (
+            <div key={i.id} onClick={() => { onChange([...value, i.id]); setQuery(""); }}
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
+              + {i.name}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic" }}>{placeholder}</div>
+      )}
     </div>
   );
 }
@@ -599,6 +651,8 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   const [form, setForm] = useState(profile);
   const set = (field) => (value) => setForm((f) => ({ ...f, [field]: value }));
   const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.get("gender"));
+  const [relationshipStatusOptions, setRelationshipStatusOptions] = useState(() => CustomOptionListsRepository.get("relationshipStatus"));
+  const allContacts = useMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived).map((c) => ({ id: c.id, name: c.name })), []);
   const [contraceptionOptions, setContraceptionOptions] = useState(() => CustomOptionListsRepository.get("contraception"));
   // ADDED — real ask: contraception relevant when Gender is Female or
   // Trans-male. Exact match against these two only — not e.g. Non-
@@ -623,6 +677,15 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
           <SuggestField label="Gender" value={form.gender} onChange={set("gender")} options={genderOptions}
             onAddNew={(v) => setGenderOptions(CustomOptionListsRepository.add("gender", v))} T={T} placeholder="e.g. Male, Female, Non-binary" />
           <TextField label="Pronouns" value={form.pronouns} onChange={set("pronouns")} T={T} placeholder="e.g. he/him, she/her, they/them" />
+          {/* ADDED — real ask: relationship status, a different axis
+              from Contacts' own relationshipType — describes your
+              overall situation, not your connection to one person. */}
+          <SuggestField label="Relationship status" value={form.relationshipStatus} onChange={set("relationshipStatus")} options={relationshipStatusOptions}
+            onAddNew={(v) => setRelationshipStatusOptions(CustomOptionListsRepository.add("relationshipStatus", v))} T={T} placeholder="e.g. Single, Married, Poly" />
+          {form.relationshipStatus && (
+            <RelationPicker label="Linked to" value={form.relationshipContactIds} onChange={set("relationshipContactIds")}
+              T={T} items={allContacts} placeholder="No contacts yet — add one under Contacts first" />
+          )}
           <AgeField age={form.age} onChangeAge={set("age")} T={T} />
           <TextField label="City" value={form.city} onChange={set("city")} T={T} placeholder="Deliberately city, not full address — see privacy note" />
         </SectionCard>
@@ -687,20 +750,17 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
         </SectionCard>
         )}
 
-        {/* ADDED — real ask: contraception, free text with suggestions
-            (Combined pill/Progesterone-only pill/IUD/Implant/Depot/
-            Testosterone/None). Testosterone is listed for tracking
-            purposes only — corrected per the user's own ask, it is NOT
-            reliable contraception on its own.
-            CHANGED 1 Sep 2026 — real ask: "allow for multiple, ie
-            Testosterone + Implant." Was SuggestField (single value) —
-            switched to MultiSelectChips, same toggle-multiple-on/off
-            mechanism already used for Cummer above, now with its own
-            onAddNew for a value not in the option list yet. */}
+        {/* SUPERSEDED — real design decision: contraception is no
+            longer edited here. contraceptionRepository.js is the
+            single owner of real contraception data (method, dates,
+            interval/next-due, history) — this field would otherwise
+            silently drift out of sync with it, the same problem "one
+            room, three doors" was built to avoid for Measurements. */}
         {showsContraception && (
         <SectionCard title="Contraception" T={T}>
-          <MultiSelectChips label="Contraception" value={form.contraception} onChange={set("contraception")} options={contraceptionOptions}
-            onAddNew={(v) => setContraceptionOptions(CustomOptionListsRepository.add("contraception", v))} T={T} />
+          <div style={{ fontSize: 12, color: T.textSecondary, padding: "4px 0" }}>
+            Now tracked under Healthcare → Menstrual & Contraception (enable it in Settings if you don't see that tab).
+          </div>
         </SectionCard>
         )}
 
@@ -779,6 +839,13 @@ function ReadRow({ label, value, T }) {
 }
 
 function ProfileDataView({ profile, T }) {
+  // Real read-only summaries, single owner elsewhere — see each
+  // repository's own comment for why this screen no longer edits
+  // either of these directly.
+  const linkedContactNames = profile.relationshipContactIds
+    .map((id) => ContactRepository.getById(id)?.name)
+    .filter(Boolean);
+  const activeContraception = ContraceptionRepository.getActive().map((e) => e.method);
   const kinkNames = profile.statedKinks.map((sel) => {
     const name = KinkRegistry.getById(sel.kinkId)?.name;
     return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
@@ -815,6 +882,8 @@ function ProfileDataView({ profile, T }) {
         <ReadRow label="Nickname" value={profile.nickname} T={T} />
         <ReadRow label="Gender" value={profile.gender} T={T} />
         <ReadRow label="Pronouns" value={profile.pronouns} T={T} />
+        <ReadRow label="Relationship status" value={profile.relationshipStatus} T={T} />
+        <ReadRow label="Linked to" value={linkedContactNames} T={T} />
         <ReadRow label="Age" value={profile.age} T={T} />
         <ReadRow label="City" value={profile.city} T={T} />
       </SectionCard>
@@ -856,7 +925,7 @@ function ProfileDataView({ profile, T }) {
       )}
       {["female", "trans-male"].includes((profile.gender || "").trim().toLowerCase()) && (
       <SectionCard title="Contraception" T={T}>
-        <ReadRow label="Contraception" value={profile.contraception} T={T} />
+        <ReadRow label="Currently active" value={activeContraception.length ? activeContraception : "None logged"} T={T} />
       </SectionCard>
       )}
       <SectionCard title="Sexual health status" T={T}>
