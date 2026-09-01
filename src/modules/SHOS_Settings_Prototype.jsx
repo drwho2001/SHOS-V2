@@ -547,6 +547,20 @@ function ManageListsScreen({ onClose }) {
   );
 }
 
+// ADDED 1 Sep 2026 — real ask: a genuine "no results" state for the
+// Resources search, distinct from each individual category quietly
+// not rendering. Mirrors ResourceCategory's own per-entry filter
+// logic just to answer "did ANY category match" — kept a plain
+// function, not a hook, since it only ever runs against the query
+// string already in scope, nothing stateful.
+function hasAnyResourceMatch(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return ResourcesRepository.getAllCategoryKeys().some((key) =>
+    ResourcesRepository.getEntries(key).some((e) => [e.name, e.link, e.notes].filter(Boolean).some((v) => v.toLowerCase().includes(q)))
+  );
+}
+
 // ADDED 1 Sep 2026 — real ask: "want resources section in settings
 // maybe - domestic violence, contraceptive advice, hrt and trans
 // support, charities, clinical justifications used, finding a local
@@ -595,12 +609,22 @@ function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
   );
 }
 
-function ResourceCategory({ categoryKey, darkMode }) {
+// CHANGED 1 Sep 2026 — real ask: a search box, now that a real URL
+// population pass took this from 5 near-empty categories to 11 with
+// ~30 entries — too long a scroll to find one number by eye anymore.
+// Filtering happens here per-category (matches name, link, or notes)
+// rather than in ResourcesScreen, so each category keeps owning its
+// own entries/refresh state exactly as before; a category with zero
+// matches during an active search just doesn't render at all, rather
+// than showing an empty card.
+function ResourceCategory({ categoryKey, darkMode, query }) {
   const T = darkMode ? DARK : NEUTRAL;
   const [refreshKey, setRefreshKey] = useState(0);
   const [addingName, setAddingName] = useState("");
   const entries = useMemo(() => ResourcesRepository.getEntries(categoryKey), [categoryKey, refreshKey]);
   const refresh = () => setRefreshKey((k) => k + 1);
+  const q = query.trim().toLowerCase();
+  const filtered = q ? entries.filter((e) => [e.name, e.link, e.notes].filter(Boolean).some((v) => v.toLowerCase().includes(q))) : entries;
 
   const addEntry = () => {
     if (!addingName.trim()) return;
@@ -609,21 +633,25 @@ function ResourceCategory({ categoryKey, darkMode }) {
     refresh();
   };
 
+  if (q && filtered.length === 0) return null;
+
   return (
     <div style={{ marginBottom: 20 }}>
       <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>{RESOURCE_CATEGORY_LABELS[categoryKey]}</div>
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
-        {entries.length === 0 ? (
+        {filtered.length === 0 ? (
           <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>Nothing added yet.</div>
-        ) : entries.map((entry) => (
+        ) : filtered.map((entry) => (
           <ResourceEntryRow key={entry.id} entry={entry} categoryKey={categoryKey} onChanged={refresh} darkMode={darkMode} />
         ))}
-        <div style={{ display: "flex", gap: 8, padding: 12 }}>
-          <input value={addingName} onChange={(e) => setAddingName(e.target.value)} placeholder="+ Add your own"
-            onKeyDown={(e) => { if (e.key === "Enter") addEntry(); }}
-            style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
-          <button onClick={addEntry} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Add</button>
-        </div>
+        {!q && (
+          <div style={{ display: "flex", gap: 8, padding: 12 }}>
+            <input value={addingName} onChange={(e) => setAddingName(e.target.value)} placeholder="+ Add your own"
+              onKeyDown={(e) => { if (e.key === "Enter") addEntry(); }}
+              style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+            <button onClick={addEntry} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Add</button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -666,6 +694,8 @@ function ClinicalJustificationsCategory({ darkMode }) {
 
 function ResourcesScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : NEUTRAL;
+  const [query, setQuery] = useState("");
   return (
     <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
@@ -676,10 +706,18 @@ function ResourcesScreen({ onClose }) {
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16, lineHeight: 1.4 }}>
           Real organisations, most with a real link already filled in. Anything still blank is worth adding yourself with a current, verified one rather than trusting a guess for something this important — and any link here is worth double-checking still works before relying on it.
         </div>
+        {/* ADDED 1 Sep 2026 — real ask: search, now that this list runs
+            to 11 categories and ~30 entries after the real URL
+            population pass. Matches name, link, or notes. */}
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search resources"
+          style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", marginBottom: 16 }} />
         {ResourcesRepository.getAllCategoryKeys().map((key) => (
-          <ResourceCategory key={key} categoryKey={key} darkMode={darkMode} />
+          <ResourceCategory key={key} categoryKey={key} darkMode={darkMode} query={query} />
         ))}
-        <ClinicalJustificationsCategory darkMode={darkMode} />
+        {!query.trim() && <ClinicalJustificationsCategory darkMode={darkMode} />}
+        {query.trim() && !hasAnyResourceMatch(query) && (
+          <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>No resources match your search.</div>
+        )}
       </div>
     </div>
   );
