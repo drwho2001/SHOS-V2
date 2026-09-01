@@ -19,13 +19,14 @@ import { ACCENTS, ACTION } from "../calculations/designTokens";
 const MEDS_ICON_BLUE = "#2F5CA6";
 import { formatRelativeDate } from "../calculations/encounterCalculations";
 import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService";
+import { checkForUpdate, RELEASE_APK_URL } from "../storage/updateCheckService";
 import {
   HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill,
   HeartbeatIcon as HeartPulse, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon,
   UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database,
   TestTubeIcon as TestTube, FireIcon as Flame, StethoscopeIcon as Stethoscope,
   SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CalendarCheckIcon as CalendarCheck, StackIcon as Stack,
-  IdentificationBadgeIcon as CreditCard,
+  IdentificationBadgeIcon as CreditCard, DownloadSimpleIcon as Download,
 } from "@phosphor-icons/react";
 import { ContactRepository } from "../repositories/contactRepository";
 import { EncounterRepository } from "../repositories/encounterRepository";
@@ -77,6 +78,18 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   const [autoExportRan, setAutoExportRan] = useState(false);
   useEffect(() => {
     runAutoExportIfDue().then((result) => { if (result.ran) setAutoExportRan(true); });
+  }, []);
+  // ADDED — real ask: "add a check for available updates / notify /
+  // auto download?" Self-gated inside checkForUpdate() on being a real
+  // native build with a real build identifier to compare (see that
+  // file's own comment for the honest limit on "auto download" — a
+  // genuinely silent install isn't something Android allows a
+  // sideloaded app to do to itself; this gets you to the real download
+  // in one tap instead, same catch-up-on-mount reasoning as every
+  // other sync on this screen).
+  const [updateInfo, setUpdateInfo] = useState({ updateAvailable: false });
+  useEffect(() => {
+    checkForUpdate().then(setUpdateInfo);
   }, []);
   // ADDED 26 Aug 2026 — real ask: DoxyPEP 72h alert. Calls
   // syncDoxyPepAlert() (not just a local computation) so this single
@@ -456,6 +469,22 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           <Database size={15} color={ACTION.green} />
           <span style={{ fontSize: 13, fontWeight: 600, color: ACTION.green }}>Backed up automatically — saved to Documents</span>
         </div>
+      )}
+
+      {/* ADDED — real ask: "add a check for available updates / notify
+          / auto download?" See updateCheckService.js's own comment for
+          why this links straight to the real download rather than
+          claiming a silent auto-install Android doesn't actually allow
+          a sideloaded app to do to itself. Opens in the system browser
+          (real <a> tag, target=_blank) so the OS's own download-then-
+          tap-to-install flow takes over exactly like tapping the link
+          manually would. */}
+      {updateInfo.updateAvailable && (
+        <a href={RELEASE_APK_URL} target="_blank" rel="noreferrer"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: 16, border: `1px solid ${ACCENTS.home}40`, background: darkMode ? DARK.surface : `${ACCENTS.home}10`, textDecoration: "none" }}>
+          <Download size={15} color={ACCENTS.home} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: ACCENTS.home }}>Update available ({updateInfo.latestSha}) — tap to download</span>
+        </a>
       )}
 
       {showMyProfile && (
