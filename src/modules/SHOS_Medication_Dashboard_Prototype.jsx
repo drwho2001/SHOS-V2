@@ -334,6 +334,15 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
           {snoozedUntil && new Date(snoozedUntil) > new Date() && (
             <div style={{ fontSize: 11, color: T.medsBlue, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}><Clock size={11} /> Snoozed until {new Date(snoozedUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</div>
           )}
+          {/* ADDED — real bug fix: notes now genuinely shown on the
+              card, not just editable — see the `notes` field comment in
+              MedicationEditSheet for the full story. Unconditional on
+              stock/refill state, unlike "Usually filled at" above,
+              since a note is relevant regardless of whether a refill's
+              currently needed. */}
+          {med.notes && (
+            <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 4, fontStyle: "italic" }}>{med.notes}</div>
+          )}
 
           {adherence && (
             // CHANGED 19 Aug 2026 — real ask: "the streak colour
@@ -900,6 +909,12 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
     // people actually think about a refill ("one box"), not a raw unit count.
     defaultRefillContainers: med.unitsPerContainer ? Math.round((med.defaultRefillQuantity || 0) / med.unitsPerContainer) : 1,
     inventoryTracked: med.inventoryTracked, usualSupplier: med.usualSupplier || "",
+    // ADDED — real bug found: some real medications (e.g. PrEP) already
+    // carried a `notes` value visible in a raw backup export, but this
+    // form never read or wrote that field at all, and the card never
+    // displayed it either — a real note existed with no UI surface
+    // anywhere. Genuinely wired up now, not just carried through.
+    notes: med.notes || "",
   });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const save = () => {
@@ -967,6 +982,15 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
           <input value={form.usualSupplier} onChange={(e) => set("usualSupplier")(e.target.value)} placeholder="e.g. Boots Pharmacy"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
         </div>
+        {/* ADDED — real bug fix: a real Notes field, genuinely wired to
+            edit/save/card display — see the `notes` field comment above
+            for why this was missing despite already existing in some
+            real records' raw data. */}
+        <div style={{ padding: "10px 0" }}>
+          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Notes</div>
+          <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} placeholder="Anything else worth noting about this medication" rows={3}
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+        </div>
         {/* ADDED 26 Aug 2026 — real ask: dose history display, showing
             the real embedded history built by updateDose() — the same
             "same med/course" continuity, visible, not just stored. */}
@@ -1014,6 +1038,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
     name: "", route: "", medicationType: "", category: [], doseStrengthValue: "", doseStrengthUnit: "",
     usagePattern: "daily", scheduleIntervalDays: 2, unitsPerDose: 1, dosesPerDay: 1,
     inventoryTracked: true, unitsPerContainer: 30, refillThreshold: 7, defaultRefillContainers: 1, usualSupplier: "",
+    notes: "",
   });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const canCreate = form.name.trim().length > 0;
@@ -1076,6 +1101,11 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
           <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Usual supplier</div>
           <input value={form.usualSupplier} onChange={(e) => set("usualSupplier")(e.target.value)} placeholder="e.g. Boots Pharmacy"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+        </div>
+        <div style={{ padding: "10px 0" }}>
+          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Notes</div>
+          <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} placeholder="Anything else worth noting about this medication" rows={3}
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </div>
         </div>
 
