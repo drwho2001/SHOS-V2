@@ -1,6 +1,8 @@
 name: SHOS Web Alpha
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -13,10 +15,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout known-good SHOS version
+      - name: Check out the repo
         uses: actions/checkout@v4
-        with:
-          ref: 51ce4f4bff2c194fb99ae4dad6dffac584768fe0
 
       - name: Set up Node
         uses: actions/setup-node@v4
