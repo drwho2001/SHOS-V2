@@ -1373,6 +1373,18 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   const [showArchived, setShowArchived] = useState(false);
   const T = darkMode ? DARK : LIGHT;
   const cardRefs = useRef({});
+  // ADDED 1 Sep 2026 — real fix: "Meds search toast does nothing." The
+  // header Search icon (next to the working Settings gear) had no
+  // onClick at all — purely decorative, even though it visually reads
+  // as tappable right next to a real button. The actual search input
+  // already exists inline on the Registry tab; this just makes the
+  // icon jump there and focus it, including from Log/Inventory where
+  // there was previously no way to reach search at all.
+  const medSearchInputRef = useRef(null);
+  const openMedSearch = () => {
+    setTab("Registry");
+    setTimeout(() => medSearchInputRef.current?.focus(), 50);
+  };
 
   const flashComplete = (id, type = "logged") => { setJustCompleted({ id, type }); setTimeout(() => setJustCompleted(null), 2000); };
   // ADDED 19 Aug 2026 — real ask: an immediate "undo" right after
@@ -1645,7 +1657,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
               {selectMode ? "Done" : "Select"}
             </span>
-            <Search size={20} color="#FFFFFF" />
+            <Search size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={openMedSearch} />
             {/* CHANGED 26 Aug 2026 — real content now exists (dose
                 reminders), so this is wired up for real — was
                 deliberately a visual-only stub until this existed. */}
@@ -1772,7 +1784,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
           <>
             {/* ADDED 26 Aug 2026 — real ask: search within module. */}
             <div style={{ padding: "0 16px 8px" }}>
-              <input value={medQuery} onChange={(e) => setMedQuery(e.target.value)} placeholder="Search medications"
+              <input ref={medSearchInputRef} value={medQuery} onChange={(e) => setMedQuery(e.target.value)} placeholder="Search medications"
                 style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
             </div>
             {allDailyMeds.length > 0 && (

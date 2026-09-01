@@ -27,7 +27,15 @@ import {
   CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck,
   LifebuoyIcon as LifeBuoy,
 } from "@phosphor-icons/react";
-import { ACCENTS, ACTION, resolveDarkAccent } from "../calculations/designTokens";
+// FIXED 1 Sep 2026 — real ask: "Managed lists crashes app on
+// attempting to open" / "Same for resources [crashes], in light [mode]
+// but not dark". Root cause: NEUTRAL was used throughout this file
+// (ManageListsScreen, ResourceEntryRow, ResourceCategory, and the
+// clinical-justifications screen below) as the light-mode token
+// object, but only NEUTRAL_DARK was ever imported — a real
+// ReferenceError, only thrown once the `darkMode ? DARK : NEUTRAL`
+// ternary actually evaluated the NEUTRAL branch, i.e. in light mode.
+import { ACCENTS, ACTION, NEUTRAL, resolveDarkAccent } from "../calculations/designTokens";
 import { ModuleColorRepository, CUSTOMIZABLE_MODULE_KEYS, CUSTOMIZABLE_ACTION_KEYS } from "../repositories/moduleColorRepository";
 import { computeAdherence } from "../calculations/medicationCalculations";
 import { isQualifyingEncounter, DOXYPEP_WINDOW_HOURS, findDoxyPepMedication } from "../calculations/doxyPepCalculations";
