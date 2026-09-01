@@ -157,6 +157,11 @@ function daysAgo(n, hour = 9, minute = 0) {
   return d.toISOString();
 }
 
+// ADDED — a couple more real example entries beyond the original one,
+// so the group-by-type view and the trend/unit-conversion machinery
+// both have something to actually show on a fresh install: a weight
+// entered in lb (demonstrates real conversion, not just storage) and a
+// blood pressure reading (demonstrates the special-cased shape).
 let seedMeasurements = [
   {
     ...DEFAULT_MEASUREMENT,
@@ -168,6 +173,29 @@ let seedMeasurements = [
     enteredValue: 620,
     enteredUnit: "cells/µL",
     note: "Routine bloods.",
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_MEASUREMENT,
+    id: "measurement_002",
+    type: "Weight",
+    date: daysAgo(14),
+    value: 68.04,
+    unit: "kg",
+    enteredValue: 150,
+    enteredUnit: "lb",
+    note: "",
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_MEASUREMENT,
+    id: "measurement_003",
+    type: BLOOD_PRESSURE_TYPE,
+    date: daysAgo(14),
+    systolic: 118,
+    diastolic: 76,
+    unit: BLOOD_PRESSURE_UNIT,
+    note: "Routine COCP check.",
     isArchived: false,
   },
 ];

@@ -36,7 +36,27 @@ export const DEFAULT_CONTRACEPTION_ENTRY = {
   isArchived: false,
 };
 
-let entries = storage.load(STORAGE_KEY, []);
+// ADDED — real example data: one past method (switched away from) and
+// one currently active with a real interval/next-due, so the
+// "Currently active" vs "History" split and the overdue-highlight
+// logic both have something real to show on a fresh install.
+function daysAgo(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+function addDays(dateStr, n) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+const seedDepotStart = daysAgo(70);
+let seedEntries = [
+  { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_001", method: "Combined pill", startDate: daysAgo(400), endDate: daysAgo(71), notes: "Switched to Depot." },
+  { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_002", method: "Depot", startDate: seedDepotStart, intervalDays: 84, nextDueDate: addDays(seedDepotStart, 84), notes: "" },
+];
+
+let entries = storage.load(STORAGE_KEY, seedEntries);
 let nextNumber = computeNextNumber(entries);
 
 function computeNextNumber(existing) {

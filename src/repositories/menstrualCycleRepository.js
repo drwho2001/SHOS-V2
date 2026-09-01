@@ -33,7 +33,30 @@ export const DEFAULT_CYCLE = {
   isArchived: false,
 };
 
-let cycles = storage.load(STORAGE_KEY, []);
+// ADDED — real example data, same "one real seed thread, not blank
+// screens" convention as every other repository in this app. Three
+// entries so getAverageCycleLengthDays() has something real to
+// compute from on a fresh install, not just an empty state.
+function daysAgo(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+function addDays(dateStr, n) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+const seedStart1 = daysAgo(58);
+const seedStart2 = addDays(seedStart1, 28);
+const seedStart3 = addDays(seedStart2, 29);
+let seedCycles = [
+  { ...DEFAULT_CYCLE, id: "cycle_001", startDate: seedStart1, endDate: addDays(seedStart1, 5), flow: "Medium", symptomIds: [], notes: "" },
+  { ...DEFAULT_CYCLE, id: "cycle_002", startDate: seedStart2, endDate: addDays(seedStart2, 4), flow: "Heavy", symptomIds: [], notes: "" },
+  { ...DEFAULT_CYCLE, id: "cycle_003", startDate: seedStart3, endDate: null, flow: "Light", symptomIds: [], notes: "Ongoing." },
+];
+
+let cycles = storage.load(STORAGE_KEY, seedCycles);
 let nextNumber = computeNextNumber(cycles);
 
 function computeNextNumber(existing) {

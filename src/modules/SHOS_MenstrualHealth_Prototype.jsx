@@ -377,21 +377,32 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
   // from startDate, matching medicationRepository.js's own
   // scheduleIntervalDays-driven next-due math — still freely editable
   // afterward, this is just a sensible starting point.
+  const computeDue = (startDate, days) => {
+    const due = new Date(startDate);
+    due.setDate(due.getDate() + days);
+    return due.toISOString().slice(0, 10);
+  };
   const setInterval = (days) => {
     const numeric = days === "" ? null : Number(days);
     setForm((f) => {
       if (!numeric || !f.startDate) return { ...f, intervalDays: numeric };
-      const due = new Date(f.startDate);
-      due.setDate(due.getDate() + numeric);
-      return { ...f, intervalDays: numeric, nextDueDate: due.toISOString().slice(0, 10) };
+      return { ...f, intervalDays: numeric, nextDueDate: computeDue(f.startDate, numeric) };
     });
+  };
+  // FIXED — real bug found in testing: changing Start date after
+  // Interval was already set left Next due silently pointing at the
+  // OLD start date — the auto-compute only ever fired from the
+  // Interval field's own onChange. Same recompute now runs from
+  // whichever field changes second.
+  const setStartDate = (newStartDate) => {
+    setForm((f) => (f.intervalDays ? { ...f, startDate: newStartDate, nextDueDate: computeDue(newStartDate, f.intervalDays) } : { ...f, startDate: newStartDate }));
   };
 
   return (
     <BottomSheet title={isNew ? "Add contraception" : "Edit contraception"} onClose={onClose} T={T} footer={<SaveButton label={isNew ? "Add" : "Save changes"} onClick={() => onSave(form)} canSave={canSave} T={T} />}>
       <FreeTextSuggestField label="Method" value={form.method} onChange={set("method")} options={methodOptions}
         onAddNew={(v) => setMethodOptions(CustomOptionListsRepository.add("contraception", v))} T={T} placeholder="e.g. Depot, IUD, Combined pill" />
-      <TextField label="Start date" value={form.startDate} onChange={set("startDate")} T={T} type="date" />
+      <TextField label="Start date" value={form.startDate} onChange={setStartDate} T={T} type="date" />
       <TextField label="End date (leave blank if currently active)" value={form.endDate} onChange={set("endDate")} T={T} type="date" />
       <TextField label="Renewal interval in days (optional — e.g. 84 for a 12-week depot shot)" value={form.intervalDays ?? ""} onChange={setInterval} T={T} type="number" placeholder="e.g. 84, or 1825 for a 5-year IUD" />
       <TextField label="Next due" value={form.nextDueDate} onChange={set("nextDueDate")} T={T} type="date" />

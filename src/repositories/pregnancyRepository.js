@@ -67,7 +67,23 @@ export const DEFAULT_PREGNANCY = {
   isArchived: false,
 };
 
-let pregnancies = storage.load(STORAGE_KEY, []);
+// ADDED — real example data. Deliberately just one, deliberately
+// Negative: a fabricated Miscarriage/Abortion example as permanent
+// seed data on every fresh install would manufacture sensitive content
+// nobody asked for, on top of a feature this module already keeps
+// off by default — the masking behaviour itself is proven correct by
+// this repository's own logic (see shapeForSave), not by shipping a
+// synthetic distressing entry to demonstrate it.
+function daysAgo(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+let seedPregnancies = [
+  { ...DEFAULT_PREGNANCY, id: "pregnancy_001", testDate: daysAgo(40), testResult: "Negative", notes: "Precautionary test." },
+];
+
+let pregnancies = storage.load(STORAGE_KEY, seedPregnancies);
 let nextNumber = computeNextNumber(pregnancies);
 
 function computeNextNumber(existing) {
