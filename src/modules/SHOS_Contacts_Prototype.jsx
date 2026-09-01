@@ -8,7 +8,7 @@ import {
 import { getCurrentLocationPlace } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
-import { fuzzyIncludes } from "../calculations/fuzzyMatch";
+import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
 import {
   ContactRepository, DEFAULT_CONTACT,
   HOSTS_OPTIONS, TRAVELS_OPTIONS, TRAVEL_MODE_OPTIONS,
@@ -493,7 +493,20 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew }) {
 // to miss, which should catch most real-world near-misses like this one.
 function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) {
   const [draft, setDraft] = useState("");
-  const visibleSuggestions = suggestions.filter((s) => !value.includes(s)).slice(0, 10);
+  // CHANGED — real ask: "any other fuzzy matching/auto suggestions... to
+  // avoid dupes." Same bug the Kink/Symptom pickers had this session:
+  // the chip list never actually narrowed against what's typed, it just
+  // showed the same static first-10 the whole time. Now empty-draft
+  // shows the usual top-10; typing filters to real (fuzzy) matches.
+  const visibleSuggestions = (draft.trim()
+    ? suggestions.filter((s) => fuzzyIncludes(s, draft))
+    : suggestions
+  ).filter((s) => !value.includes(s)).slice(0, 10);
+  // ADDED — "did you mean X?" before committing a genuinely new tag,
+  // same mechanism as RegistryTagPicker below, scoped to the simple
+  // single-new-tag case (a comma-separated bulk add skips this check —
+  // there's no clean single-item confirmation for several at once).
+  const [pendingSuggestion, setPendingSuggestion] = useState(null);
 
   const commitDraft = (el) => {
     const raw = draft.trim();
@@ -502,6 +515,14 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
       return;
     }
     const newTags = raw.split(",").map((t) => normalizeTag(t)).filter((t) => t && !value.includes(t));
+    if (newTags.length === 1) {
+      const match = findClosestMatch([...suggestions, ...value], newTags[0]);
+      if (match) {
+        setPendingSuggestion({ typedAs: newTags[0], suggestion: match });
+        setDraft("");
+        return;
+      }
+    }
     if (newTags.length > 0) onChange([...value, ...newTags]);
     setDraft("");
   };
@@ -521,6 +542,15 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
               {tag} <X size={11} />
             </div>
           ))}
+        </div>
+      )}
+      {pendingSuggestion && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.contactsTeal}15`, border: `1px solid ${T.contactsTeal}`, marginBottom: 6, fontSize: 12 }}>
+          <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}"? You typed "{pendingSuggestion.typedAs}".</span>
+          <div onClick={() => { tapSuggestion(pendingSuggestion.suggestion); setPendingSuggestion(null); }}
+            style={{ fontWeight: 700, color: T.contactsTeal, cursor: "pointer" }}>Yes, use it</div>
+          <div onClick={() => { if (!value.includes(pendingSuggestion.typedAs)) onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
+            style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
         </div>
       )}
       {/* CHANGED — real ask: the `list`/`<datalist>` native browser

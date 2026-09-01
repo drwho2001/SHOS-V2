@@ -16,6 +16,7 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 // ADDED 19 Aug 2026 — REASON_FOR_VISIT_OPTIONS/FOLLOW_UP_TYPE_OPTIONS
 // now live here, real in-app editable option lists.
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
+import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
 import { TestingRepository } from "../repositories/testingRepository";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
@@ -226,10 +227,24 @@ function getKnownClinicians() {
 function ClinicianField({ value, onChange, T }) {
   const known = useMemo(() => getKnownClinicians(), []);
   const [draft, setDraft] = useState("");
-  const visibleSuggestions = known.filter((c) => !value.includes(c)).slice(0, 8);
+  // CHANGED — same static-suggestions-never-narrow bug fixed elsewhere
+  // this session: typing used to do nothing to the chip list at all.
+  const visibleSuggestions = (draft.trim() ? known.filter((c) => fuzzyIncludes(c, draft)) : known)
+    .filter((c) => !value.includes(c)).slice(0, 8);
+  // ADDED — "did you mean X?" before adding a genuinely new clinician
+  // name, so a typo doesn't quietly split one real clinician into two
+  // near-identical suggestion entries going forward.
+  const [pendingSuggestion, setPendingSuggestion] = useState(null);
   const addClinician = (name) => {
     const trimmed = name.trim();
-    if (trimmed && !value.includes(trimmed)) onChange([...value, trimmed]);
+    if (!trimmed || value.includes(trimmed)) { setDraft(""); return; }
+    const match = findClosestMatch([...known, ...value], trimmed);
+    if (match) {
+      setPendingSuggestion({ typedAs: trimmed, suggestion: match });
+      setDraft("");
+      return;
+    }
+    onChange([...value, trimmed]);
     setDraft("");
   };
   const removeClinician = (name) => onChange(value.filter((c) => c !== name));
@@ -244,6 +259,15 @@ function ClinicianField({ value, onChange, T }) {
               {c} <X size={11} />
             </div>
           ))}
+        </div>
+      )}
+      {pendingSuggestion && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.healthcareBlue}15`, border: `1px solid ${T.healthcareBlue}`, marginBottom: 6, fontSize: 12 }}>
+          <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}"? You typed "{pendingSuggestion.typedAs}".</span>
+          <div onClick={() => { if (!value.includes(pendingSuggestion.suggestion)) onChange([...value, pendingSuggestion.suggestion]); setPendingSuggestion(null); }}
+            style={{ fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Yes, use it</div>
+          <div onClick={() => { onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
+            style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
         </div>
       )}
       {visibleSuggestions.length > 0 && (
@@ -276,7 +300,12 @@ function getKnownClinicVisitLocations() {
 }
 function ClinicVisitLocationField({ value, onChange, T }) {
   const known = useMemo(() => getKnownClinicVisitLocations(), []);
-  const visibleSuggestions = known.filter((l) => l !== value).slice(0, 8);
+  // CHANGED — same real ask as Encounters' Location field this session:
+  // narrow to real matches once typing begins, instead of showing the
+  // same static list of every known location regardless of input.
+  const typed = (value || "").trim();
+  const visibleSuggestions = (typed ? known.filter((l) => fuzzyIncludes(l, typed)) : known)
+    .filter((l) => l !== value).slice(0, 8);
   // ADDED — real ask: "use current location", same pattern as
   // Encounters' own RegistrySinglePicker locate button — this field is
   // just a plain string (see the comment above getKnownClinicVisitLocations

@@ -40,6 +40,7 @@ import {
 import { KinkRegistry, KINK_ROLE_OPTIONS, resolveKinkSynonym, analyzeKinkEntry, getKinkRoleOptions } from "../registries/kinkRegistry";
 // ADDED — real fix: same normalizeTag Contacts/Encounters use.
 import { normalizeTag } from "../calculations/contactCalculations";
+import { findClosestMatch } from "../calculations/fuzzyMatch";
 import { ChemsRegistry, resolveChemSynonym } from "../registries/chemsRegistry";
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
@@ -247,10 +248,26 @@ function AgeField({ age, onChangeAge, T }) {
 // contactableVia here (extra platforms beyond the named fields below).
 function TagInput({ label, value, onChange, T, placeholder }) {
   const [draft, setDraft] = useState("");
+  // ADDED — real ask: "any other fuzzy matching/auto suggestions... to
+  // avoid dupes." This field has no other-record suggestion source (My
+  // Profile is a single person's own list, unlike Contacts' shared
+  // vocabulary), so the real risk here is a near-miss typo drifting
+  // into the SAME list twice (e.g. "Penicillin" then later
+  // "Pencillin") — the existing exact-string check below never caught
+  // that. "Did you mean X, already in this list?" catches it instead.
+  const [pendingSuggestion, setPendingSuggestion] = useState(null);
   const commit = () => {
     const raw = draft.trim();
     if (!raw) return;
     const parts = raw.split(",").map((t) => t.trim()).filter((t) => t && !value.includes(t));
+    if (parts.length === 1) {
+      const match = findClosestMatch(value, parts[0]);
+      if (match) {
+        setPendingSuggestion({ typedAs: parts[0], suggestion: match });
+        setDraft("");
+        return;
+      }
+    }
     if (parts.length > 0) onChange([...value, ...parts]);
     setDraft("");
   };
@@ -265,6 +282,14 @@ function TagInput({ label, value, onChange, T, placeholder }) {
               {tag} <X size={11} />
             </div>
           ))}
+        </div>
+      )}
+      {pendingSuggestion && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.contactsTeal}15`, border: `1px solid ${T.contactsTeal}`, marginBottom: 6, fontSize: 12 }}>
+          <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}" — already on this list? You typed "{pendingSuggestion.typedAs}".</span>
+          <div onClick={() => setPendingSuggestion(null)} style={{ fontWeight: 700, color: T.contactsTeal, cursor: "pointer" }}>OK, skip it</div>
+          <div onClick={() => { onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
+            style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
         </div>
       )}
       <input value={draft} onChange={(e) => setDraft(e.target.value)}

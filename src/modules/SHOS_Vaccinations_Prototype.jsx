@@ -6,6 +6,7 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 // ADDED 19 Aug 2026 — VACCINE_OPTIONS/REASON_OPTIONS/INJECTION_SITE_OPTIONS
 // now live here, real in-app editable option lists.
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
+import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
@@ -155,7 +156,14 @@ function ReadRow({ label, value, T, alert }) {
 // in Clinic Visits — genuinely typing a new value here also saves it
 // to the real shared option list, so it's a real suggestion next time.
 function VaccineField({ value, onChange, options, onAddNew, T }) {
-  const visibleSuggestions = options.filter((v) => v !== value).slice(0, 8);
+  // CHANGED — same real ask as the other suggestion-chip fields this
+  // session: narrow to real matches once typing begins, instead of
+  // always showing the same static option list regardless of input —
+  // also lowers the odds of "Hep B" and "Hepatitis B" both quietly
+  // ending up as separate saved options.
+  const typed = (value || "").trim();
+  const visibleSuggestions = (typed ? options.filter((v) => fuzzyIncludes(v, typed)) : options)
+    .filter((v) => v !== value).slice(0, 8);
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Vaccine</div>
