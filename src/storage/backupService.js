@@ -74,6 +74,8 @@ import { ResourcesRepository } from "../repositories/resourcesRepository.js";
 // ADDED — Measurements (Healthcare) — see measurementRepository.js's own
 // file-level comment for the full "one room, three doors" design.
 import { MeasurementRepository } from "../repositories/measurementRepository.js";
+import { MeasurementPreferencesRepository } from "../repositories/measurementPreferencesRepository.js";
+import { CustomGroupsRepository } from "../repositories/customGroupsRepository.js";
 
 // Doc 5 §8: "Every export/backup file stamps: schema version, migration
 // version, app version." Schema version bumps only when a backup file's
@@ -131,6 +133,8 @@ export const EXPORT_GROUPS = [
     { dataKey: "customOptionLists", label: "Custom option lists (your own added/renamed options)" },
     { dataKey: "privacySettings", label: "Privacy settings (Anonymise mode PIN + preference)" },
     { dataKey: "resources", label: "Resources (Settings → Resources links/notes)" },
+    { dataKey: "measurementPreferences", label: "Measurement unit preferences" },
+    { dataKey: "customGroups", label: "Custom groups (Measurements/Medication)" },
   ] },
   // ADDED 1 Sep 2026 — real ask: partner notification checklists. Own
   // group, not folded into Healthcare — this is a generated action
@@ -214,6 +218,8 @@ export function buildBackup(includeKeys = null, dateRange = null) {
     vaccinations: VaccinationRepository.getAll(),
     episodes: EpisodeRepository.getAll(),
     measurements: MeasurementRepository.getAll(),
+    measurementPreferences: MeasurementPreferencesRepository.getPreferences(),
+    customGroups: CustomGroupsRepository.getAllForBackup(),
     customOptionLists: CustomOptionListsRepository.getAllForBackup(),
     privacySettings: PrivacySettingsRepository.getSettings(),
     resources: ResourcesRepository.getAllForBackup(),
@@ -271,7 +277,7 @@ export function parseBackupFile(jsonText) {
 // wiping everything with no confirmation was a real gap on its own,
 // separate from merge existing at all.
 export function restoreBackup(parsedBackup) {
-  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, customOptionLists, privacySettings, resources, partnerNotifications } = parsedBackup.data;
+  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, privacySettings, resources, partnerNotifications } = parsedBackup.data;
   if (Array.isArray(contacts)) ContactRepository.replaceAll(contacts);
   if (Array.isArray(medications)) MedicationRepository.replaceAll(medications);
   if (Array.isArray(logs)) LogRepository.replaceAll(logs);
@@ -291,6 +297,8 @@ export function restoreBackup(parsedBackup) {
   if (Array.isArray(vaccinations)) VaccinationRepository.replaceAll(vaccinations);
   if (Array.isArray(episodes)) EpisodeRepository.replaceAll(episodes);
   if (Array.isArray(measurements)) MeasurementRepository.replaceAll(measurements);
+  if (measurementPreferences && typeof measurementPreferences === "object") MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
+  if (customGroups && typeof customGroups === "object") CustomGroupsRepository.replaceAll(customGroups);
   if (customOptionLists && typeof customOptionLists === "object") CustomOptionListsRepository.replaceAll(customOptionLists);
   if (privacySettings && typeof privacySettings === "object") PrivacySettingsRepository.update(privacySettings);
   if (resources && typeof resources === "object") ResourcesRepository.replaceAll(resources);

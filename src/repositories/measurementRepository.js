@@ -53,6 +53,7 @@
 // clinical interpretation" ethos (no reference ranges, no
 // normal/abnormal flagging anywhere in this file).
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
+import { MeasurementPreferencesRepository } from "./measurementPreferencesRepository.js";
 
 const STORAGE_KEY = "shos_measurements";
 
@@ -70,10 +71,41 @@ const UNIT_CONFIG = {
   Weight: { canonical: "kg", alternates: { lb: (v) => v * 0.453592 } },
 };
 
+// "Suggest appropriate units — volume for volume, weight for weight"
+// for a custom type the app has no real conversion for: a curated
+// starting list per general kind, offered but NOT converted (there's
+// no safe way to guess a conversion factor for an analyte this app
+// has never heard of) — a nudge toward one consistent unit, not the
+// unit-mismatch fix real UNIT_CONFIG conversion provides above.
+export const KIND_UNITS = {
+  mass: ["kg", "lb", "g", "mg"],
+  volume: ["mL", "L"],
+  concentration: ["mg/dL", "mmol/L", "ng/dL", "nmol/L", "pg/mL", "pmol/L", "IU/L", "cells/µL", "copies/mL"],
+  count: ["count"],
+};
+export const KIND_LABELS = { mass: "Weight-like", volume: "Volume-like", concentration: "Concentration-like", count: "Count-like" };
+
 export function getAvailableUnits(type) {
   const config = UNIT_CONFIG[type];
-  if (!config) return [];
-  return [config.canonical, ...Object.keys(config.alternates)];
+  if (config) return [config.canonical, ...Object.keys(config.alternates)];
+  // No real conversion for this type — but if the user tagged it with
+  // a kind (see measurementPreferencesRepository.js), still offer that
+  // kind's usual units as suggestions, so "HRT dose in mL" gets a
+  // sensible picker even though it's not one of the 3 built-ins.
+  const kind = MeasurementPreferencesRepository.getTypeKind(type);
+  return kind ? (KIND_UNITS[kind] || []) : [];
+}
+
+// Real ask: a settable default per convertible type ("always default
+// Weight to lb"), rather than the picker always defaulting to
+// canonical. Only meaningful for a type with real UNIT_CONFIG
+// conversion — a kind-only suggestion list has no single "canonical"
+// unit to override, so this falls through to that list's first entry.
+export function getDefaultUnit(type) {
+  const preferred = MeasurementPreferencesRepository.getPreferences().preferredUnitByType[type];
+  const available = getAvailableUnits(type);
+  if (preferred && available.includes(preferred)) return preferred;
+  return available[0] || "";
 }
 
 function convertToCanonical(type, value, unit) {
@@ -103,6 +135,16 @@ export const DEFAULT_MEASUREMENT = {
   systolic: null,
   diastolic: null,
   note: "",
+  // ADDED — real ask: "add location (home/clinic [name])". Deliberately
+  // a plain fixed Home/Clinic choice, not a new user-editable option
+  // list — same reasoning as customOptionListsRepository.js's own
+  // "Testing for?"/"Setting" fields staying fixed: this is a genuine
+  // binary, not a real category prone to needing new values.
+  // clinicName is free text with suggestions (same pattern as Clinic
+  // Visits' own `location` field), only meaningful when locationType
+  // is "Clinic".
+  locationType: "",
+  clinicName: "",
   linkedClinicVisitId: null,
   linkedTestId: null,
   isArchived: false,
@@ -187,6 +229,14 @@ export const MeasurementRepository = {
 
   getByType(type) {
     return this.getAll().filter((m) => !m.isArchived && m.type === type).sort((a, b) => new Date(b.date) - new Date(a.date));
+  },
+
+  // Real suggestion source for the clinic name field — derived from
+  // what's already been typed rather than a separate persisted option
+  // list, same "just look at existing data" reasoning already used for
+  // Clinic Visits' own free-text `location` field.
+  getKnownClinicNames() {
+    return [...new Set(this.getAll().map((m) => m.clinicName).filter(Boolean))];
   },
 
   // Real convenience for the "memory" — a new entry's type/unit is
