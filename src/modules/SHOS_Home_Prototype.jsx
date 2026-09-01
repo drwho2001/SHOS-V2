@@ -25,7 +25,7 @@ import {
   HeartbeatIcon as HeartPulse, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon,
   UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database,
   TestTubeIcon as TestTube, FireIcon as Flame, StethoscopeIcon as Stethoscope,
-  SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CalendarCheckIcon as CalendarCheck, StackIcon as Stack,
+  SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CalendarCheckIcon as CalendarCheck, StackIcon as Stack, DropIcon as Drop,
   IdentificationBadgeIcon as CreditCard, DownloadSimpleIcon as Download, LockIcon as Lock,
 } from "@phosphor-icons/react";
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
@@ -36,6 +36,14 @@ import { LogRepository } from "../repositories/logRepository";
 import { TestingRepository } from "../repositories/testingRepository";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { MyProfileRepository } from "../repositories/myProfileRepository";
+// ADDED — real ask: Home shortcuts for Menstrual/Contraception, only
+// when the feature is actually enabled (see appPreferencesRepository.js's
+// own menstrualTrackingEnabled) — same "don't show it if it's off"
+// treatment as everything else gated by a Settings toggle.
+import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
+import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository";
+import { ContraceptionRepository } from "../repositories/contraceptionRepository";
+import { PregnancyRepository } from "../repositories/pregnancyRepository";
 import { formatDoxyPepCountdown } from "../calculations/doxyPepCalculations";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { requestNotificationPermission } from "../storage/notificationService";
@@ -73,6 +81,12 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   const [showTimeline, setShowTimeline] = useState(false);
   // ADDED 19 Aug 2026 — next scheduled clinic visit, real data.
   const [nextVisit, setNextVisit] = useState(null);
+  // ADDED — real ask: Menstrual/Contraception shortcuts + real results
+  // on the dashboard, gated behind the same toggle the Healthcare
+  // sub-tab itself is gated behind.
+  const [menstrualTrackingEnabled] = useState(() => AppPreferencesRepository.getPreferences().menstrualTrackingEnabled);
+  const [lastPeriod, setLastPeriod] = useState(null);
+  const [contraceptionDue, setContraceptionDue] = useState(null);
   // ADDED 19 Aug 2026 — real ask: a backup reminder. Read once on
   // mount, same pattern as everything else on Home — see
   // backupService.js's getLastBackupInfo() for how "due" is computed.
@@ -225,6 +239,22 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     const visits = ClinicVisitsRepository.getAll().filter((v) => !v.isArchived && v.date && v.date.slice(0, 10) >= today);
     const sortedUpcoming = [...visits].sort((a, b) => new Date(a.date) - new Date(b.date));
     setNextVisit(sortedUpcoming[0] || null);
+
+    // ADDED — real ask: Menstrual/Contraception real results on the
+    // dashboard. Skipped entirely when the feature is off — no reason
+    // to read either repository for a screen that won't show them.
+    if (menstrualTrackingEnabled) {
+      const cycles = MenstrualCycleRepository.getAll().filter((c) => !c.isArchived);
+      const sortedCycles = [...cycles].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
+      setLastPeriod(sortedCycles[0] || null);
+
+      // "Contraception due" mirrors "Next clinic visit" exactly — the
+      // soonest upcoming date across currently-active methods, not
+      // just the most recently started one.
+      const active = ContraceptionRepository.getActive().filter((e) => e.nextDueDate);
+      const sortedDue = [...active].sort((a, b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
+      setContraceptionDue(sortedDue[0] || null);
+    }
   }, []);
 
   // ADDED 19 Aug 2026 — real fix, the user's ask: explicit time, not just
@@ -249,6 +279,14 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     if (!iso) return "—";
     const d = new Date(iso);
     return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()} · ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+  }
+  // A date-only variant of the above — contraception's own nextDueDate
+  // (and similar plain "YYYY-MM-DD" facts) has no real time component,
+  // so reusing formatExactDate would show a misleading "12:00 AM".
+  function formatDueDate(dateOnly) {
+    if (!dateOnly) return "—";
+    const d = new Date(dateOnly);
+    return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
   }
 
   function formatDoseTime(iso) {
@@ -378,6 +416,16 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         <SummaryRow label="Last medication dose" moduleColor={MEDS_ICON_BLUE} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
         <SummaryRow label="Last test" moduleColor={ACCENTS.healthcare} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
         <SummaryRow label="Next clinic visit" moduleColor={ACCENTS.healthcare} value={nextVisit ? `${(nextVisit.reasonForVisit || []).join("/") || nextVisit.title || "Visit"} · ${formatExactDate(nextVisit.date)}` : "None scheduled"} onClick={nextVisit ? () => onNavigateToRecord("healthcare", nextVisit.id, "clinicVisits") : undefined} />
+        {/* ADDED — real ask: Menstrual/Contraception real results on
+            the dashboard, same "click opens the actual record" pattern
+            as every row above — not a separate stats section, this
+            list already IS the dashboard's "quick key stats." */}
+        {menstrualTrackingEnabled && (
+          <>
+            <SummaryRow label="Last period" moduleColor={ACCENTS.healthcare} value={lastPeriod ? `${formatRelativeDate(lastPeriod.startDate)}${lastPeriod.endDate ? "" : " (ongoing)"}` : "None logged"} onClick={lastPeriod ? () => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth") : undefined} />
+            <SummaryRow label="Contraception due" moduleColor={ACCENTS.healthcare} value={contraceptionDue ? `${contraceptionDue.method} · ${formatDueDate(contraceptionDue.nextDueDate)}` : "None due"} onClick={contraceptionDue ? () => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth") : undefined} />
+          </>
+        )}
       </div>
 
       {/* CHANGED — real ask: Clinic Card + Timeline moved above Quick
@@ -457,6 +505,12 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         <QuickAddButton icon={Stethoscope} label="New clinic visit" color={ACCENTS.healthcare} onClick={() => onQuickAdd("healthcare", "clinicVisits")} />
         <QuickAddButton icon={Thermometer} label="Log symptom" color={ACCENTS.healthcare} onClick={() => onQuickAdd("healthcare", "symptomLog")} />
         <QuickAddButton icon={Syringe} label="Log vaccination" color={ACCENTS.healthcare} onClick={() => onQuickAdd("healthcare", "vaccinations")} />
+        {/* ADDED — real ask: shortcuts to Menstrual/Contraception,
+            only when the feature is enabled — same gating as the
+            SummaryRows above and the Healthcare sub-tab itself. */}
+        {menstrualTrackingEnabled && (
+          <QuickAddButton icon={Drop} label="Log period / contraception" color={ACCENTS.healthcare} onClick={() => onQuickAdd("healthcare", "menstrualHealth")} />
+        )}
       </div>
 
       {/* ADDED 19 Aug 2026 — real ask: a backup reminder. No cloud

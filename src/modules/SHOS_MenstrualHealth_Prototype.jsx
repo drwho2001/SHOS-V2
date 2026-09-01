@@ -291,8 +291,13 @@ function CycleSheet({ cycle, onSave, onClose, T }) {
   );
 }
 
-function CycleTab({ T, isPregnant }) {
-  const [screen, setScreen] = useState({ name: "list" });
+function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen }) {
+  const [screen, setScreen] = useState(() => openRecordId ? { name: "detail", id: openRecordId } : openAddOnMount ? { name: "add" } : { name: "list" });
+  useEffect(() => {
+    if (openRecordId) { setScreen({ name: "detail", id: openRecordId }); onConsumedRecordOpen?.(); }
+    else if (openAddOnMount) { setScreen({ name: "add" }); onConsumedQuickAdd?.(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openRecordId, openAddOnMount]);
   const [cycles, setCycles] = useState(() => MenstrualCycleRepository.getAll().filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)));
   const refresh = () => setCycles(MenstrualCycleRepository.getAll().filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)));
   const deleteUndo = useDeleteUndo(MenstrualCycleRepository, "menstrualCycles");
@@ -365,6 +370,29 @@ function CycleTab({ T, isPregnant }) {
 // ═══════════════════════════════════════════════════════════════════
 // CONTRACEPTION
 // ═══════════════════════════════════════════════════════════════════
+// ADDED — real ask: toggle the interval entry between Days/Weeks/
+// Months (Months uses real calendar-month math, not a flat ×30, so a
+// 3-month interval lands on the actual same day 3 months later — a
+// years-long IUD can still be entered as e.g. "60" months). The
+// repository itself only ever stores intervalDays (see
+// contraceptionRepository.js) — this is purely an input convenience,
+// converted at entry time, so there's no second unit field anywhere
+// to drift out of sync with it.
+const INTERVAL_UNITS = { Days: 1, Weeks: 7 };
+function daysForUnit(value, unit, fromDate) {
+  if (unit === "Months") {
+    const due = new Date(fromDate);
+    const startDay = due.getDate();
+    due.setMonth(due.getMonth() + value);
+    // Real month-length edge case: setMonth can roll over (e.g. 31
+    // Jan + 1 month → 3 Mar, not 28/29 Feb) — pull back to the last
+    // day of the intended month instead, same fix medicationRepository.js's
+    // own interval math would need if it ever grew month support.
+    if (due.getDate() !== startDay) due.setDate(0);
+    return Math.round((due - new Date(fromDate)) / 86400000);
+  }
+  return value * (INTERVAL_UNITS[unit] || 1);
+}
 function ContraceptionSheet({ entry, onSave, onClose, T }) {
   const isNew = !entry;
   const [methodOptions, setMethodOptions] = useState(() => CustomOptionListsRepository.get("contraception"));
@@ -372,21 +400,44 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const visits = useMemo(() => ClinicVisitsRepository.getAll().filter((v) => !v.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), []);
   const canSave = !!form.method && !!form.startDate;
+  const [intervalUnit, setIntervalUnit] = useState("Days");
+  // Real display value in whichever unit is currently selected — kept
+  // as a derived read, not separate state, so it can never drift from
+  // the one real stored number (intervalDays).
+  const intervalDisplayValue = form.intervalDays == null ? "" : (
+    intervalUnit === "Days" ? form.intervalDays : Math.round(form.intervalDays / (INTERVAL_UNITS[intervalUnit] || 30))
+  );
 
-  // Real convenience: setting intervalDays auto-computes nextDueDate
-  // from startDate, matching medicationRepository.js's own
-  // scheduleIntervalDays-driven next-due math — still freely editable
-  // afterward, this is just a sensible starting point.
   const computeDue = (startDate, days) => {
     const due = new Date(startDate);
     due.setDate(due.getDate() + days);
     return due.toISOString().slice(0, 10);
   };
-  const setInterval = (days) => {
-    const numeric = days === "" ? null : Number(days);
+  const setIntervalValue = (raw) => {
+    const numeric = raw === "" ? null : Number(raw);
     setForm((f) => {
-      if (!numeric || !f.startDate) return { ...f, intervalDays: numeric };
-      return { ...f, intervalDays: numeric, nextDueDate: computeDue(f.startDate, numeric) };
+      if (numeric == null || !f.startDate) return { ...f, intervalDays: null };
+      const days = daysForUnit(numeric, intervalUnit, f.startDate);
+      return { ...f, intervalDays: days, nextDueDate: computeDue(f.startDate, days) };
+    });
+  };
+  const changeIntervalUnit = (newUnit) => {
+    setIntervalUnit(newUnit);
+    // Re-derive nextDueDate from the SAME real intervalDays under the
+    // new unit — switching units is purely a display change, the
+    // underlying interval and next-due date don't move.
+  };
+  // Real ask: "or infer if next date entered first" — editing Next due
+  // directly re-derives intervalDays from it (startDate → nextDueDate),
+  // rather than requiring Interval to be filled in first. Whichever of
+  // the two the user actually typed into becomes the source of truth;
+  // the other one updates to match — never two independently-editable
+  // numbers that can silently disagree.
+  const setNextDueDate = (newDate) => {
+    setForm((f) => {
+      if (!newDate || !f.startDate) return { ...f, nextDueDate: newDate };
+      const days = Math.round((new Date(newDate) - new Date(f.startDate)) / 86400000);
+      return { ...f, nextDueDate: newDate, intervalDays: days > 0 ? days : f.intervalDays };
     });
   };
   // FIXED — real bug found in testing: changing Start date after
@@ -404,8 +455,28 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
         onAddNew={(v) => setMethodOptions(CustomOptionListsRepository.add("contraception", v))} T={T} placeholder="e.g. Depot, IUD, Combined pill" />
       <TextField label="Start date" value={form.startDate} onChange={setStartDate} T={T} type="date" />
       <TextField label="End date (leave blank if currently active)" value={form.endDate} onChange={set("endDate")} T={T} type="date" />
-      <TextField label="Renewal interval in days (optional — e.g. 84 for a 12-week depot shot)" value={form.intervalDays ?? ""} onChange={setInterval} T={T} type="number" placeholder="e.g. 84, or 1825 for a 5-year IUD" />
-      <TextField label="Next due" value={form.nextDueDate} onChange={set("nextDueDate")} T={T} type="date" />
+      <div style={{ padding: "8px 0" }}>
+        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Renewal interval (optional — e.g. every 12 weeks for a depot shot, every 60 months for a 5-year IUD)</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input type="number" value={intervalDisplayValue} onChange={(e) => setIntervalValue(e.target.value)} placeholder="e.g. 12"
+            style={{ flex: 1, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+          <select value={intervalUnit} onChange={(e) => changeIntervalUnit(e.target.value)}
+            style={{ padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14 }}>
+            <option>Days</option><option>Weeks</option><option>Months</option>
+          </select>
+        </div>
+      </div>
+      <div style={{ padding: "8px 0" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+          <div style={{ fontSize: 12, color: T.textSecondary }}>Next due</div>
+          {/* Real ask: "or infer if next date entered first" — Interval
+              above isn't required before this; setting Next due
+              directly back-calculates the interval instead. */}
+          <span style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic" }}>{form.intervalDays ? "from interval above" : "sets the interval above"}</span>
+        </div>
+        <input type="date" value={form.nextDueDate ?? ""} onChange={(e) => setNextDueDate(e.target.value)}
+          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+      </div>
       {visits.length > 0 && (
         <SelectField label="Linked clinic visit (optional)" value={form.linkedClinicVisitId || ""} onChange={set("linkedClinicVisitId")}
           options={visits.map((v) => v.id)} T={T} />
@@ -419,8 +490,12 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
   );
 }
 
-function ContraceptionTab({ T, isPregnant }) {
-  const [screen, setScreen] = useState({ name: "list" });
+function ContraceptionTab({ T, isPregnant, openRecordId, onConsumedRecordOpen }) {
+  const [screen, setScreen] = useState(() => openRecordId ? { name: "detail", id: openRecordId } : { name: "list" });
+  useEffect(() => {
+    if (openRecordId) { setScreen({ name: "detail", id: openRecordId }); onConsumedRecordOpen?.(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openRecordId]);
   const [, force] = useState(0);
   const refresh = () => force((v) => v + 1);
   const all = ContraceptionRepository.getAll().filter((e) => !e.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
@@ -555,8 +630,15 @@ function PregnancySheet({ pregnancy, onSave, onClose, T }) {
   );
 }
 
-function PregnancyTab({ T }) {
-  const [screen, setScreen] = useState({ name: "list" });
+function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
+  const [screen, setScreen] = useState(() => openRecordId ? { name: "detail", id: openRecordId } : { name: "list" });
+  useEffect(() => {
+    if (openRecordId) { setScreen({ name: "detail", id: openRecordId }); onConsumedRecordOpen?.(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openRecordId]);
+  // Deliberately NOT auto-revealed even via a direct deep-link tap —
+  // masking a sensitive entry should never depend on how you got
+  // there, only on a deliberate "tap to reveal" each time.
   const [revealedIds, setRevealedIds] = useState([]);
   const all = PregnancyRepository.getAll().filter((p) => !p.isArchived).sort((a, b) => new Date(b.testDate || 0) - new Date(a.testDate || 0));
   const deleteUndo = useDeleteUndo(PregnancyRepository, "pregnancies");
@@ -654,20 +736,42 @@ function PregnancyTab({ T }) {
 // ═══════════════════════════════════════════════════════════════════
 // MODULE ROOT
 // ═══════════════════════════════════════════════════════════════════
-export default function MenstrualHealthModule() {
+// Real ask: "click to open actual results linked/as in dashboard" —
+// a Home shortcut needs to land on the right inner tab AND the right
+// record, but Healthcare's own deep-link plumbing only carries one
+// flat sub-tab key, no concept of a second-level tab. Rather than
+// thread a whole new "sub-sub-tab" parameter through App.jsx →
+// Healthcare → here (real plumbing nobody else needs), the record id's
+// own prefix already says which repository — and so which inner tab —
+// it belongs to (cycle_/contra_/pregnancy_, same prefixes
+// generateId() in each repository already uses).
+function tabForRecordId(id) {
+  if (!id) return null;
+  if (id.startsWith("cycle_")) return "cycle";
+  if (id.startsWith("contra_")) return "contraception";
+  if (id.startsWith("pregnancy_")) return "pregnancy";
+  return null;
+}
+
+export default function MenstrualHealthModule({ openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen } = {}) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
   const gender = MyProfileRepository.getProfile().gender;
   const [showPregnancyAnyway, setShowPregnancyAnyway] = useState(false);
   const showsPregnancyByDefault = couldBePregnant(gender);
-  const [subTab, setSubTab] = useState("cycle");
+  const deepLinkTab = tabForRecordId(openRecordId);
+  const [subTab, setSubTab] = useState(deepLinkTab || "cycle");
   const [, force] = useState(0);
   const activePregnancy = PregnancyRepository.getActive();
+  // A deep-linked Pregnancy record must be reachable even for a
+  // gender that hides the tab by default — same "never a hard block"
+  // rule as the "Show pregnancy tracking anyway" link itself.
+  const pregnancyReachable = showsPregnancyByDefault || showPregnancyAnyway || deepLinkTab === "pregnancy";
 
   const tabs = [
     { key: "cycle", label: "Cycle" },
     { key: "contraception", label: "Contraception" },
-    ...((showsPregnancyByDefault || showPregnancyAnyway) ? [{ key: "pregnancy", label: "Pregnancy" }] : []),
+    ...(pregnancyReachable ? [{ key: "pregnancy", label: "Pregnancy" }] : []),
   ];
 
   return (
@@ -690,14 +794,14 @@ export default function MenstrualHealthModule() {
           <span style={{ fontSize: 12, color: "#FFFFFF", fontWeight: 600 }}>Currently pregnant since {formatDate(activePregnancy.testDate)}{activePregnancy.estimatedDueDate ? ` · est. due ${formatDate(activePregnancy.estimatedDueDate)}` : ""} — tap for details</span>
         </div>
       )}
-      {!showsPregnancyByDefault && !showPregnancyAnyway && subTab !== "pregnancy" && (
+      {!pregnancyReachable && subTab !== "pregnancy" && (
         <div style={{ margin: "10px 16px 0", textAlign: "right" }}>
           <span onClick={() => setShowPregnancyAnyway(true)} style={{ fontSize: 11, color: T.textDisabled, cursor: "pointer", textDecoration: "underline" }}>Show pregnancy tracking anyway</span>
         </div>
       )}
-      {subTab === "cycle" && <CycleTab T={T} isPregnant={!!activePregnancy} />}
-      {subTab === "contraception" && <ContraceptionTab T={T} isPregnant={!!activePregnancy} />}
-      {subTab === "pregnancy" && <PregnancyTab T={T} />}
+      {subTab === "cycle" && <CycleTab T={T} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "cycle" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} />}
+      {subTab === "contraception" && <ContraceptionTab T={T} isPregnant={!!activePregnancy} openRecordId={deepLinkTab === "contraception" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} />}
+      {subTab === "pregnancy" && <PregnancyTab T={T} openRecordId={deepLinkTab === "pregnancy" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} />}
     </div>
   );
 }

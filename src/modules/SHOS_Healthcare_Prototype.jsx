@@ -29,7 +29,8 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
     quickAddTarget === "clinicVisits" ? "clinicVisits" :
     quickAddTarget === "symptomLog" ? "symptomLog" :
     quickAddTarget === "vaccinations" ? "vaccinations" :
-    quickAddTarget === "measurements" ? "measurements" : "testing"
+    quickAddTarget === "measurements" ? "measurements" :
+    quickAddTarget === "menstrualHealth" ? "menstrualHealth" : "testing"
   );
   // ADDED 26 Aug 2026 — real gap found and fixed: tapping a linked
   // test from a Clinic Visit's own detail view used to only switch to
@@ -168,7 +169,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       ) : subTab === "measurements" ? (
         <MeasurementsModule openAddOnMount={openAddOnMount && quickAddTarget === "measurements"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       ) : (
-        <MenstrualHealthModule />
+        <MenstrualHealthModule openAddOnMount={openAddOnMount && quickAddTarget === "menstrualHealth"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} />
       )}
       {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={onNavigateToRecord} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}
       {showAttachments && (
