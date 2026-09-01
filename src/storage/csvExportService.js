@@ -59,11 +59,16 @@ export function recordsToCSV(records) {
 // already uses in backupService.js) and hands it back to the Share
 // sheet as a real .csv file. Throws a plain-language error on an empty
 // data set instead of exporting a useless header-only file.
-export async function exportRecordsAsCSV(dataKey, label) {
-  const { data } = buildBackup([dataKey]);
+// CHANGED 1 Sep 2026 — real ask, item 3 of the follow-up feature list
+// completed: accepts the same optional `dateRange` ({ from, to })
+// Selective/Encrypted export already got — same contract, buildBackup()
+// itself already knows which dataKeys are genuinely dated events and
+// leaves the rest (registries, singletons) untouched either way.
+export async function exportRecordsAsCSV(dataKey, label, dateRange = null) {
+  const { data } = buildBackup([dataKey], dateRange);
   const records = data[dataKey];
   if (!Array.isArray(records) || records.length === 0) {
-    throw new Error(`No ${label} yet — nothing to export.`);
+    throw new Error(dateRange ? `No ${label} in that date range — nothing to export.` : `No ${label} yet — nothing to export.`);
   }
   const csv = recordsToCSV(records);
   const dateStamp = new Date().toISOString().slice(0, 10);

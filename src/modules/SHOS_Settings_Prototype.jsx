@@ -220,11 +220,17 @@ const CSV_EXPORT_GROUPS = EXPORT_GROUPS.filter((g) => g.key !== "profile" && g.k
 function CSVExportSheet({ onClose }) {
   const [darkMode] = useDarkModePreference();
   const [status, setStatus] = useState(null);
+  // ADDED 1 Sep 2026 — real ask, item 3 of the follow-up feature list
+  // completed: same optional date-range filter Selective/Encrypted
+  // export already have, applied to whichever record type gets tapped.
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const doExport = async (item) => {
     setStatus({ dataKey: item.dataKey, msg: "Exporting…", ok: null });
     try {
-      await exportRecordsAsCSV(item.dataKey, item.label);
+      const dateRange = (dateFrom || dateTo) ? { from: dateFrom || null, to: dateTo || null } : null;
+      await exportRecordsAsCSV(item.dataKey, item.label, dateRange);
       setStatus({ dataKey: item.dataKey, msg: `${item.label} exported.`, ok: true });
     } catch (err) {
       setStatus({ dataKey: item.dataKey, msg: err.message, ok: false });
@@ -239,6 +245,27 @@ function CSVExportSheet({ onClose }) {
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 4 }}>Pick one record type — spreadsheet-readable (Excel, Sheets), for reading elsewhere, not for restoring into SHOS itself (use a backup for that).</div>
         </div>
         <div style={{ overflowY: "auto", padding: "8px 20px 20px", flex: 1 }}>
+          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, marginBottom: 10, padding: "12px 14px" }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Date range (optional)</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", marginBottom: 10 }}>
+              Only narrows dated records — applies whichever record type you tap below.
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>From</div>
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>To</div>
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+              </div>
+            </div>
+            {(dateFrom || dateTo) && (
+              <div onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 8, cursor: "pointer" }}>Clear date range</div>
+            )}
+          </div>
           {CSV_EXPORT_GROUPS.map((group) => (
             <div key={group.key} style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, marginBottom: 10, overflow: "hidden" }}>
               <div style={{ padding: "12px 14px 6px", fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5 }}>{group.label}</div>
