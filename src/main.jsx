@@ -2,6 +2,30 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 
+// CHANGED 1 Sep 2026 — real fix, found during a smoothness/efficiency
+// review: index.html loaded Inter/JetBrains Mono from a render-blocking
+// Google Fonts <link rel="stylesheet">, so on any slow, flaky, or
+// blocked connection (a real risk on mobile — a subway, a captive
+// wifi portal, a network that blocks Google's CDN) the ENTIRE app sat
+// unpainted waiting on that one external request, reproduced directly:
+// a simulated bad connection stalled first paint by 12+ seconds even
+// though the app's own JS bundle finishes loading and executing in
+// under 25ms. Doubly wrong for THIS app specifically, whose whole
+// design is local-only/no-network-dependency — a health-tracking app
+// phoning a third party for its own fonts before it can render
+// anything, and never working fully offline, both cut against that.
+// Self-hosted via @fontsource (same real font files, MIT-licensed
+// npm packages, bundled through the normal build — same weights the
+// Google Fonts URL requested, nothing added or dropped) — now just
+// another JS-bundled asset with zero runtime network dependency.
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
+import "@fontsource/jetbrains-mono/500.css";
+import "@fontsource/jetbrains-mono/600.css";
+import "@fontsource/jetbrains-mono/700.css";
+
 // ADDED — critical fix: a real device report of the app white/dark-
 // screening on both an update and a fresh install, with no way back in
 // (force-close, reopen, same crash). Root cause: this app had NO error

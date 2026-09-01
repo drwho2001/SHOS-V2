@@ -56,6 +56,14 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // field — falls back to a generic label if it's never been filled
   // in, rather than showing "'s dashboard" with a blank in front.
   const [profileName] = useState(() => MyProfileRepository.getProfile().nickname);
+  // CHANGED 1 Sep 2026 — real fix, found during a smoothness/efficiency
+  // review: unlike every other repository read on this screen (all
+  // read once via a lazy useState initializer or a mount-only
+  // useEffect), this was calling PrivacySettingsRepository.getSettings()
+  // directly in the render body — a real localStorage read + JSON.parse
+  // on every single re-render of Home, not just once. Same lazy-
+  // useState pattern as profileName just above.
+  const [appLockEnabled] = useState(() => PrivacySettingsRepository.getSettings().appLockEnabled);
   const [lastContact, setLastContact] = useState(null);
   const [lastEncounter, setLastEncounter] = useState(null);
   const [lastDose, setLastDose] = useState(null);
@@ -311,7 +319,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               through. DecoyHome gets its own copy of this, wired to
               the same handler, so it works from inside a duress
               session too. */}
-          {onLockNow && PrivacySettingsRepository.getSettings().appLockEnabled && (
+          {onLockNow && appLockEnabled && (
             <Lock size={19} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onLockNow} title="Lock now" />
           )}
           {/* ADDED 19 Aug 2026 — Global Search, canonical Home placement
