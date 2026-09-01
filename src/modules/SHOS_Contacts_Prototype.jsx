@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   PlusIcon as Plus, MagnifyingGlassIcon as Search, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, GearSixIcon as Settings2, UsersIcon as Users,
-  PhoneIcon as Phone, GhostIcon as Ghost, GlobeIcon as Globe, ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2,
+  ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2,
   UploadSimpleIcon as Upload, DownloadSimpleIcon as Download, CheckIcon as Check, UserIcon as User, HouseIcon as Home, MapPinIcon as MapPin, EyeSlashIcon as EyeOff, EyeIcon as Eye, ArrowsClockwiseIcon as RefreshCcw, StarIcon as Star,
   CrosshairIcon as Crosshair,
 } from "@phosphor-icons/react";
@@ -119,20 +119,94 @@ function displayName(contact) {
   return contact.nickname || contact.name;
 }
 
-const METHOD_ICON_MAP = {
-  "Phone/WhatsApp": Phone,
-  "Snapchat": Ghost,
-  "Fabguys": Globe,
-  "Fabswingers": Globe,
-};
-function MethodIcons({ methods, T, size = 14 }) {
+// CHANGED 1 Sep 2026 — real ask: "fabguys and fabswingers do have
+// different logos" — the actual bug: this used to be a single flat
+// icon-color-per-method map (Fabguys/Fabswingers both fell back to the
+// same generic Globe icon, Recon wasn't in the map at all, Snapchat/
+// WhatsApp used generic stand-ins). Went through several real design
+// review rounds (colour, real vs. original marks, size/legibility at
+// actual inline scale) before landing here — see each case's own
+// comment for what it's carrying and why.
+//
+// Real logos where the platform has a published brand kit that
+// explicitly permits this exact "show a link to this service" use —
+// these two path strings are Phosphor's own real, properly-licensed
+// icon geometry (MIT, same license as every other icon this app
+// already uses; extracted here as static paths rather than the
+// component form so Snapchat's fill/stroke can flip per light/dark
+// mode, which the component itself doesn't expose). Not scraped or
+// traced from anywhere else.
+const WHATSAPP_PATH = "M186.68,146.63l-32-16a6,6,0,0,0-6,.38L133,141.46A42.49,42.49,0,0,1,114.54,123L125,107.33a6,6,0,0,0,.38-6l-16-32A6,6,0,0,0,104,66a38,38,0,0,0-38,38,86.1,86.1,0,0,0,86,86,38,38,0,0,0,38-38A6,6,0,0,0,186.68,146.63ZM152,178a74.09,74.09,0,0,1-74-74,26,26,0,0,1,22.42-25.75l12.66,25.32-10.39,15.58a6,6,0,0,0-.54,5.63,54.43,54.43,0,0,0,29.07,29.07,6,6,0,0,0,5.63-.54l15.58-10.39,25.32,12.66A26,26,0,0,1,152,178ZM128,26A102,102,0,0,0,38.35,176.69L26.73,211.56a14,14,0,0,0,17.71,17.71l34.87-11.62A102,102,0,1,0,128,26Zm0,192a90,90,0,0,1-45.06-12.08,6.09,6.09,0,0,0-3-.81,6.2,6.2,0,0,0-1.9.31L40.65,217.88a2,2,0,0,1-2.53-2.53L50.58,178a6,6,0,0,0-.5-4.91A90,90,0,1,1,128,218Z";
+const SNAPCHAT_PATH = "M247.83,182.28a8,8,0,0,0-5.13-5.9c-.39-.14-28.95-10.88-43-49.23l19.3-7.72A8,8,0,1,0,213,104.57l-17.82,7.13A149,149,0,0,1,192,80,64,64,0,0,0,64,80a151.24,151.24,0,0,1-3.18,31.75L43,104.57A8,8,0,1,0,37,119.43l19.37,7.75a94,94,0,0,1-17.74,30.2c-12.52,14.14-25.27,19-25.36,19a8,8,0,0,0-2.77,13.36c7.1,6.67,17.67,7.71,27.88,8.72,6.31.62,12.83,1.27,16.39,3.23,3.37,1.86,6.85,6.62,10.21,11.22,5.4,7.41,11.53,15.8,21.24,18.28,9.07,2.33,18.35-.83,26.54-3.62,5.55-1.89,10.8-3.68,15.21-3.68s9.66,1.79,15.21,3.68c6.2,2.11,13,4.43,19.9,4.43a26.35,26.35,0,0,0,6.64-.81h0c9.7-2.48,15.83-10.87,21.23-18.28,3.36-4.6,6.84-9.36,10.21-11.22,3.56-2,10.08-2.61,16.39-3.23,10.21-1,20.78-2.05,27.88-8.72A8,8,0,0,0,247.83,182.28Z";
+
+// ADDED 1 Sep 2026 — one real colour badge per method, replacing the
+// old flat monochrome-icon-per-method row. Fabguys/Fabswingers/Recon
+// have no public brand kit (niche platforms, and this is a public
+// repo) so those three are original marks: a thin diamond/hexagon
+// outline for Fabguys/Fabswingers (deliberately unrelated to their
+// real branding — chosen purely for a distinct silhouette), and a
+// plain red/white/black concentric bullseye for Recon (a bullseye
+// SHAPE isn't ownable, only a specific stylised version of one would
+// be, and this is hand-built as three circles, not traced from
+// anywhere). Sized as fractions of `size` so the same component works
+// at any inline scale, not just the 22px this was tuned against.
+function MethodBadge({ method, T, size }) {
+  const isDark = T === DARK;
+  const box = { width: size, height: size, borderRadius: Math.round(size * 0.27), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 };
+  switch (method) {
+    case "Phone/WhatsApp":
+      return (
+        <div style={{ ...box, background: "#25D366" }} title="WhatsApp">
+          <svg viewBox="0 0 256 256" width={size * 0.77} height={size * 0.77}><path fill="#FFFFFF" d={WHATSAPP_PATH} /></svg>
+        </div>
+      );
+    case "Snapchat":
+      // Inverts for dark mode (yellow ghost on black) rather than
+      // going monochrome, so the colour identity stays recognisable in
+      // both themes — the user's own explicit call after the first
+      // (black ghost on neutral) version read as washed out.
+      return (
+        <div style={{ ...box, background: isDark ? "#1B1B1F" : "#FFFC00" }} title="Snapchat">
+          <svg viewBox="0 0 256 256" width={size * 0.64} height={size * 0.64}>
+            <path fill={isDark ? "#FFFC00" : "#FFFFFF"} stroke={isDark ? "none" : "#1B1B1F"} strokeWidth={isDark ? 0 : 6} d={SNAPCHAT_PATH} />
+          </svg>
+        </div>
+      );
+    case "Fabguys":
+      return (
+        <div style={{ ...box, background: "#2563EB" }} title="Fabguys">
+          <svg viewBox="0 0 22 22" width={size * 0.77} height={size * 0.77}><path d="M11 0.7L21.3 11L11 21.3L0.7 11z" fill="none" stroke="#FFFFFF" strokeWidth="1.6" /></svg>
+        </div>
+      );
+    case "Fabswingers":
+      return (
+        <div style={{ ...box, background: "#EA580C" }} title="Fabswingers">
+          <svg viewBox="0 0 22 22" width={size * 0.77} height={size * 0.77}><path d="M11 0.4L20 5.5V16.5L11 21.6L2 16.5V5.5z" fill="none" stroke="#FFFFFF" strokeWidth="1.6" /></svg>
+        </div>
+      );
+    case "Recon":
+      return (
+        <div style={{ ...box, background: "#FFFFFF", border: `1px solid ${T.border}` }} title="Recon">
+          <svg viewBox="0 0 48 48" width={size * 0.73} height={size * 0.73}>
+            <circle cx="24" cy="24" r="20" fill="#E5484D" />
+            <circle cx="24" cy="24" r="14" fill="#FFFFFF" />
+            <circle cx="24" cy="24" r="8" fill="#1B1B1F" />
+          </svg>
+        </div>
+      );
+    default:
+      return (
+        <div style={{ ...box, background: T.surfaceVariant }} title={method}>
+          <MessageCircle size={size * 0.6} color={T.textSecondary} />
+        </div>
+      );
+  }
+}
+function MethodIcons({ methods, T, size = 22 }) {
   if (!methods || methods.length === 0) return null;
   return (
-    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-      {methods.map((m) => {
-        const Icon = METHOD_ICON_MAP[m] || MessageCircle;
-        return <Icon key={m} size={size} color={T.textSecondary} />;
-      })}
+    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+      {methods.map((m) => <MethodBadge key={m} method={m} T={T} size={size} />)}
     </div>
   );
 }
@@ -1130,12 +1204,16 @@ function ContactCard({ contact, onOpen, T, encounters = [], anonymise = false, i
   // CHANGED 18 Aug 2026 — real feedback: the card was showing an icon
   // per detected contact method, and Fabguys/Fabswingers both mapped to
   // the same unlabeled Globe icon, so a contact with both filled showed
-  // two identical icons with no way to tell what they meant. The user's
-  // call: the card is a quick-glance summary, not the full profile —
-  // just show Phone/Snapchat there, everything else (Fabguys,
-  // Fabswingers, other platforms) is still fully visible on the actual
-  // Contact Profile screen, one tap away.
-  const methods = getContactableVia(contact).filter((m) => m === "Phone/WhatsApp" || m === "Snapchat");
+  // two identical icons with no way to tell what they meant. Worked
+  // around at the time by only ever showing Phone/Snapchat on the card
+  // — everything else stayed reachable one tap away on the full
+  // profile, but wasn't visible at a glance here.
+  // REVERTED 1 Sep 2026 — real ask: "fabguys and fabswingers do have
+  // different logos." Now that METHOD_ICON_MAP actually gives every
+  // method its own distinct icon (see that map's own comment), the
+  // original reason for this filter is gone — showing the full list
+  // again, same as the detail-view header already does.
+  const methods = getContactableVia(contact);
   // ADDED 18 Aug 2026 — real "active" status, replacing the leading dot
   // that used to just be a fixed decorative teal bullet. DEFINITION,
   // a judgment call flagged explicitly since the user's ask didn't specify
@@ -1747,7 +1825,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <span style={{ width: 14, height: 14, borderRadius: radius.full, background: T.contactsTeal, display: "inline-block" }} />
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 20, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>
           {contact.age != null && <span style={{ fontSize: 15, color: T.textSecondary }}>{contact.ageIsApprox ? "≈" : ""}{contact.age}</span>}
-          <MethodIcons methods={methods} T={T} size={16} />
+          <MethodIcons methods={methods} T={T} />
         </div>
         {contact.nickname && !anonymise && <div style={{ fontSize: 12, color: T.textDisabled, marginLeft: 24 }}>Full name: {contact.name}</div>}
 

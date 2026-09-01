@@ -103,6 +103,12 @@ export function getContactableVia(contact) {
   if (contact.snapchat) autoDetected.push("Snapchat");
   if (contact.fabguys) autoDetected.push("Fabguys");
   if (contact.fabswingers) autoDetected.push("Fabswingers");
+  // FIXED 1 Sep 2026 — real gap found while fixing the icon map: Recon
+  // was added as its own real field later than the other three (see
+  // its own comment in the edit form) but this function was never
+  // updated to match — a Recon username never actually showed up as a
+  // detected contact method anywhere, silently.
+  if (contact.recon) autoDetected.push("Recon");
 
   const combined = [...autoDetected];
   (contact.contactableVia || []).forEach((extra) => {
