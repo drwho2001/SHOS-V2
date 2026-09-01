@@ -169,8 +169,19 @@ function ReadRow({ label, value, T }) {
 
 // Real relations, all resolved through actual repositories/registries
 // — Testing, Medication, Symptoms Registry, Results Registry all exist.
+// CHANGED — real ask (found the identical pattern/bug already fixed in
+// Symptom Log's own copy of this component): "no search/text box
+// option to find and link any not shown" — the chip list was hard-
+// capped at 8 with no way to reach anything beyond that. Real search
+// box now: empty shows the same top-8 chips as before (nothing lost
+// for the common case), typing filters the FULL list by name match.
 function RelationPicker({ label, value, onChange, T, items, placeholder }) {
-  const visibleSuggestions = items.filter((i) => !value.includes(i.id)).slice(0, 8);
+  const [query, setQuery] = useState("");
+  const queryLower = query.trim().toLowerCase();
+  const available = items.filter((i) => !value.includes(i.id));
+  const visibleSuggestions = queryLower
+    ? available.filter((i) => i.name.toLowerCase().includes(queryLower)).slice(0, 8)
+    : available.slice(0, 8);
   const nameFor = (id) => items.find((i) => i.id === id)?.name || "?";
   return (
     <div style={{ padding: "8px 0" }}>
@@ -185,10 +196,14 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
           ))}
         </div>
       )}
+      {available.length > 0 && (
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search to find one not shown below…"
+          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
+      )}
       {visibleSuggestions.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
           {visibleSuggestions.map((i) => (
-            <div key={i.id} onClick={() => onChange([...value, i.id])}
+            <div key={i.id} onClick={() => { onChange([...value, i.id]); setQuery(""); }}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
               + {i.name}
             </div>
@@ -483,7 +498,10 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const canSave = form.title.trim().length > 0;
 
-  const allTests = useMemo(() => TestingRepository.getAll().filter((t) => !t.isArchived).map((t) => ({ id: t.id, name: t.title || "Untitled test" })), [refreshKey]);
+  // CHANGED — real ask: "suggestions shown oldest to newest, wrong way
+  // round... same with latest tests" — getAll() returns storage order
+  // (oldest first), never sorted for display before.
+  const allTests = useMemo(() => [...TestingRepository.getAll()].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: t.title || "Untitled test" })), [refreshKey]);
   const allMeds = useMemo(() => MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => ({ id: m.id, name: m.name })), []);
   const allSymptoms = useMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), []);
   // ADDED 19 Aug 2026 — real feedback batch: "pulling from recent"

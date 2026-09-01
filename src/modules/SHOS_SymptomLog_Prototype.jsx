@@ -160,8 +160,19 @@ function SymptomSelect({ value, onChange, T }) {
 // Real relations, both ends now exist — the user's standing instruction.
 // Multi-select tag pickers over Encounters/Tests, same visual pattern
 // as Clinic Visits' own RelationPicker.
+// CHANGED — real ask: "no search/text box option to find and link any
+// not shown" — the chip list was hard-capped at 8 with no way to reach
+// anything beyond that. Real search box now: empty shows the same
+// top-8-most-recent chips as before (nothing lost for the common
+// case), typing filters the FULL list by name match so anything not
+// in that initial 8 is still reachable.
 function RelationPicker({ label, value, onChange, T, items, placeholder }) {
-  const visibleSuggestions = items.filter((i) => !value.includes(i.id)).slice(0, 8);
+  const [query, setQuery] = useState("");
+  const queryLower = query.trim().toLowerCase();
+  const available = items.filter((i) => !value.includes(i.id));
+  const visibleSuggestions = queryLower
+    ? available.filter((i) => i.name.toLowerCase().includes(queryLower)).slice(0, 8)
+    : available.slice(0, 8);
   const nameFor = (id) => items.find((i) => i.id === id)?.name || "?";
   return (
     <div style={{ padding: "8px 0" }}>
@@ -176,10 +187,14 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
           ))}
         </div>
       )}
+      {available.length > 0 && (
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search to find one not shown below…"
+          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
+      )}
       {visibleSuggestions.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
           {visibleSuggestions.map((i) => (
-            <div key={i.id} onClick={() => onChange([...value, i.id])}
+            <div key={i.id} onClick={() => { onChange([...value, i.id]); setQuery(""); }}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
               + {i.name}
             </div>
@@ -224,8 +239,13 @@ function EntrySheet({ entry, onSave, onClose, T }) {
   }, [form]);
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const canSave = form.title.trim().length > 0;
-  const encounters = useMemo(() => EncounterRepository.getAll().map((e) => ({ id: e.id, name: `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}` })), []);
-  const tests = useMemo(() => TestingRepository.getAll().filter((t) => !t.isArchived).map((t) => ({ id: t.id, name: `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` })), []);
+  // CHANGED — real ask: "suggestions shown oldest to newest, wrong way
+  // round" — getAll() returns records in storage order (oldest first),
+  // never sorted for display before. Newest first now, same "most
+  // recent is most relevant" reasoning as every other suggestion list
+  // in this app.
+  const encounters = useMemo(() => [...EncounterRepository.getAll()].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => ({ id: e.id, name: `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}` })), []);
+  const tests = useMemo(() => [...TestingRepository.getAll()].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` })), []);
 
   const doSave = () => {
     clearDraft(draftKey);
