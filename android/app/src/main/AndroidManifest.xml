@@ -95,4 +95,22 @@
          calendar, never any pre-existing account-synced one. -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+    <!-- ADDED 1 Sep 2026 — real ask: "notifications... not received
+         any ever yet... haven't been asked to grant access." Root
+         cause: @capacitor/local-notifications' own bundled manifest
+         DOES declare POST_NOTIFICATIONS (and SCHEDULE_EXACT_ALARM/
+         RECEIVE_BOOT_COMPLETED/WAKE_LOCK), meant to reach the final
+         build via standard Gradle manifest merging — but every OTHER
+         plugin needing a runtime permission in this exact project
+         (Filesystem/Geolocation/Calendar, see their own comments just
+         above) was found to need its permission explicitly declared
+         here too for the runtime request to actually work, not just
+         left to the merge. POST_NOTIFICATIONS was the one permission
+         that never got the same treatment — Android 13+ (this app
+         targets 36) requires it declared for requestPermissions() to
+         ever show the real system prompt at all; without it, the call
+         can resolve with no dialog ever appearing, which is exactly
+         what was reported. Declared explicitly now, closing the same
+         gap the app's own established pattern already existed to fix. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

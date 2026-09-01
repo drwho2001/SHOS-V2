@@ -54,6 +54,7 @@ import { PrivacySettingsRepository } from "../repositories/privacySettingsReposi
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
+import { checkNotificationPermission, requestNotificationPermission, sendTestNotification } from "../storage/notificationService";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
 import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
@@ -70,7 +71,8 @@ import { OrganismRegistry } from "../registries/organismRegistry";
 import { ResultsRegistry } from "../registries/resultsRegistry";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import RegistryManagementScreen from "./SHOS_RegistryManagement_Prototype";
-import OptionListsScreen from "./SHOS_OptionListEditor_Prototype";
+import { OptionListDetail, ICON_COMPONENTS as OPTION_LIST_ICON_COMPONENTS } from "./SHOS_OptionListEditor_Prototype";
+import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } from "../repositories/customOptionListsRepository";
 
 function SelectiveExportSheet({ onClose, onExported }) {
   const [darkMode] = useDarkModePreference();
@@ -429,39 +431,90 @@ const REGISTRIES = [
   { key: "results", label: "Results Registry", registry: ResultsRegistry, color: ACCENTS.healthcare, icon: ClipboardCheck, computeUsage: computeResultsUsage },
 ];
 
-function RegistriesScreen({ onClose }) {
+// CHANGED 1 Sep 2026 — real ask: "check settings not unnecessarily over
+// engineered - combine into similar things if better." Registries and
+// Option lists were two separate top-level Settings rows that do the
+// exact same conceptual job to anyone using the app — "edit the picker
+// choices used across the app" — differing only in an internal
+// implementation detail (ID-based registry with a usage count vs a
+// flat editable string list) nobody outside this codebase needs to
+// see. Combined into one screen with a tab switcher; each tab's own
+// row-list body is unchanged, RegistryManagementScreen/OptionListDetail
+// still do all the real add/rename/archive work exactly as before —
+// this only touches how the two lists are ENTERED, not how they work.
+function ManageListsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
-
+  const T = darkMode ? DARK : NEUTRAL;
+  const [tab, setTab] = useState("registries");
   const [openRegistry, setOpenRegistry] = useState(null);
+  const [openOptionList, setOpenOptionList] = useState(null);
+  const optionListNames = CustomOptionListsRepository.getAllListNames();
+
   return (
     <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Registries</span>
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Manage lists</span>
       </div>
-      <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", padding: "10px 16px 0" }}>
-        Manage the shared vocabularies used across Contacts, Encounters, Testing, and Clinic Visits — rename or archive an entry directly, rather than only through whichever picker happens to reference it.
-      </div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "16px 16px 20px", overflow: "hidden" }}>
-        {REGISTRIES.map((r) => (
-          <div key={r.key} onClick={() => setOpenRegistry(r)}
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: "pointer" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {/* CHANGED 19 Aug 2026 — plain color dot replaced with a
-                  real icon+color badge, matching every entry's own
-                  logical icon rather than an undifferentiated dot. */}
-              <div style={{ width: 28, height: 28, borderRadius: 999, background: `${r.color}1A`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <r.icon size={14} color={r.color} />
-              </div>
-              <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{r.label}</span>
-            </div>
-            <ChevronRight size={16} color={darkMode ? DARK.textDisabled : "#9A9AA1"} />
+      <div style={{ display: "flex", gap: 8, padding: "12px 16px 0" }}>
+        {[["registries", "Registries"], ["options", "Option lists"]].map(([key, label]) => (
+          <div key={key} onClick={() => setTab(key)}
+            style={{ flex: 1, textAlign: "center", padding: "8px 0", borderRadius: 999, cursor: "pointer", fontSize: 13, fontWeight: 700, background: tab === key ? ACCENTS.healthcare : (darkMode ? DARK.surfaceVariant : "#E8E8EC"), color: tab === key ? "#FFFFFF" : (darkMode ? DARK.textSecondary : "#5B5B62") }}>
+            {label}
           </div>
         ))}
       </div>
+      {tab === "registries" ? (
+        <>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", padding: "10px 16px 0" }}>
+            Shared vocabularies used across Contacts, Encounters, Testing, and Clinic Visits — rename or archive an entry directly, rather than only through whichever picker happens to reference it.
+          </div>
+          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "16px 16px 20px", overflow: "hidden" }}>
+            {REGISTRIES.map((r) => (
+              <div key={r.key} onClick={() => setOpenRegistry(r)}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 999, background: `${r.color}1A`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <r.icon size={14} color={r.color} />
+                  </div>
+                  <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{r.label}</span>
+                </div>
+                <ChevronRight size={16} color={darkMode ? DARK.textDisabled : "#9A9AA1"} />
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", padding: "10px 16px 0" }}>
+            Add, rename, or reorder the simple option lists used across the app — no code, no waiting on a rebuild. Changes here are permanent on this device and survive future app updates.
+          </div>
+          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, margin: "16px 16px 20px", overflow: "hidden" }}>
+            {optionListNames.map((name) => {
+              const iconConfig = OPTION_LIST_ICONS[name];
+              const IconComponent = iconConfig ? OPTION_LIST_ICON_COMPONENTS[iconConfig.icon] : null;
+              return (
+                <div key={name} onClick={() => setOpenOptionList(name)}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: "pointer" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {IconComponent && (
+                      <div style={{ width: 28, height: 28, borderRadius: 999, background: `${iconConfig.color}1A`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <IconComponent size={14} color={iconConfig.color} />
+                      </div>
+                    )}
+                    <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{OPTION_LIST_LABELS[name] || name}</span>
+                  </div>
+                  <span style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#9A9AA1" }}>{CustomOptionListsRepository.get(name).length} options ›</span>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
       {openRegistry && (
         <RegistryManagementScreen registry={openRegistry.registry} label={openRegistry.label} color={openRegistry.color} computeUsage={openRegistry.computeUsage} onClose={() => setOpenRegistry(null)} />
       )}
+      {openOptionList && <OptionListDetail listName={openOptionList} onClose={() => setOpenOptionList(null)} />}
     </div>
   );
 }
@@ -767,6 +820,87 @@ function NotificationToggleRow({ label, description, enabled, onToggle, darkMode
   );
 }
 
+// ADDED 1 Sep 2026 — real ask: "ensure they actually work in APK...
+// haven't been asked to grant access." Every toggle below silently
+// assumed Android had actually granted notification permission — there
+// was no way from inside the app to tell "permission granted, just no
+// reminder due yet" apart from "permission was never granted at all,
+// so nothing will ever fire no matter what's toggled on". This banner
+// makes that real OS-level state visible and actionable: shows the
+// current status, offers the one-time system prompt while it's still
+// available (Android only shows it once per install), and — once
+// permission genuinely IS granted — a real test notification a few
+// seconds out, so "does this actually work on my phone" has a
+// concrete, immediate answer instead of waiting hours for a real
+// reminder to (maybe) show up.
+function NotificationPermissionBanner({ darkMode }) {
+  const [status, setStatus] = useState(null);
+  const [testState, setTestState] = useState(null);
+
+  useEffect(() => {
+    checkNotificationPermission().then((r) => setStatus(r.status));
+  }, []);
+
+  const request = async () => {
+    const r = await requestNotificationPermission();
+    setStatus(r.status);
+  };
+  const runTest = async () => {
+    setTestState("sending");
+    const r = await sendTestNotification();
+    setTestState(r.ok ? "sent" : `failed:${r.reason}`);
+  };
+
+  if (status === null) return null; // still checking, avoid a flash of the wrong state
+  if (status === "unavailable") {
+    // Web build (or a dev/preview environment) — not a real problem to
+    // report, native notifications genuinely don't apply here.
+    return null;
+  }
+
+  const isGranted = status === "granted";
+  const isDenied = status === "denied";
+  return (
+    <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: `1px solid ${isGranted ? ACTION.green : ACTION.red}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: isGranted ? ACTION.green : ACTION.red, flexShrink: 0 }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>
+          {isGranted ? "Notifications are allowed" : isDenied ? "Notifications are blocked" : "Notifications not yet allowed"}
+        </span>
+      </div>
+      {isGranted && (
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: testState ? 8 : 0 }}>
+          Android has granted this permission. The toggles below control which reminders actually get scheduled.
+        </div>
+      )}
+      {isDenied && (
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>
+          Android is blocking notifications for SHOS — none of the toggles below will actually fire until this changes. Android only shows the one-time in-app prompt once per install, so this has to be turned on manually: open your phone's <strong>Settings → Apps → SHOS → Notifications</strong> and allow them.
+        </div>
+      )}
+      {!isGranted && !isDenied && (
+        <>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
+            SHOS hasn't asked yet, or Android hasn't recorded an answer. Tap below for the real system prompt.
+          </div>
+          <button onClick={request} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            Allow notifications
+          </button>
+        </>
+      )}
+      {isGranted && (
+        <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
+          <button onClick={runTest} disabled={testState === "sending"} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: testState === "sending" ? "default" : "pointer", opacity: testState === "sending" ? 0.6 : 1 }}>
+            {testState === "sending" ? "Sending…" : "Send test notification"}
+          </button>
+          {testState === "sent" && <span style={{ fontSize: 11, color: ACTION.green, fontWeight: 600 }}>Sent — should appear in ~5 seconds.</span>}
+          {testState && testState.startsWith("failed") && <span style={{ fontSize: 11, color: ACTION.red, fontWeight: 600 }}>Failed to schedule ({testState.split(":")[1]}).</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function NotificationsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
   const [, forceRefresh] = useState(0);
@@ -805,6 +939,7 @@ function NotificationsScreen({ onClose }) {
       </div>
 
       <div style={{ padding: 16 }}>
+        <NotificationPermissionBanner darkMode={darkMode} />
         <NotificationToggleRow darkMode={darkMode} label="Medication dose reminders" enabled={medPrefs.doseRemindersEnabled} onToggle={toggleMed}
           description="Alerts when a daily medication is due, or due soon." />
         <NotificationToggleRow darkMode={darkMode} label="Refill reminders" enabled={notifPrefs.refillReminderEnabled} onToggle={() => toggleNotif("refillReminderEnabled")}
@@ -845,6 +980,16 @@ const AUTO_EXPORT_INTERVAL_OPTIONS = [
   { days: 90, label: "Quarterly" },
 ];
 
+// CHANGED 1 Sep 2026 — real ask: "check settings not unnecessarily over
+// engineered - combine into similar things if better, IE 90 day
+// default with another setting group." Automatic backups (a backup-
+// scheduling setting) used to live here bundled with Inactive contact
+// threshold (a Contacts-display setting) under a generic "Preferences"
+// label — the two share nothing except both happening to be
+// days-based. Moved Automatic backups to its own row in the Data
+// section instead, right next to Export/Restore where it actually
+// belongs domain-wise (see AutomaticBackupsScreen below) — this screen
+// now holds just the one real setting it was originally built for.
 function PreferencesScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
 
@@ -856,19 +1001,6 @@ function PreferencesScreen({ onClose }) {
     if (!Number.isFinite(parsed) || parsed < 1) return;
     const updated = AppPreferencesRepository.update({ inactiveThresholdDays: parsed });
     setPrefs(updated);
-  };
-
-  // ADDED — real ask: "scheduled auto-export" — genuinely runs
-  // unattended on app open (see backupService.js's runAutoExportIfDue),
-  // not just a reminder to do it by hand. Off by default; toggling on
-  // takes effect from the next app open, same "no live re-check mid-
-  // session" honesty already established for every other preference
-  // toggle in this screen (Dark mode, module colours).
-  const toggleAutoExport = () => {
-    setPrefs(AppPreferencesRepository.update({ autoExportEnabled: !prefs.autoExportEnabled }));
-  };
-  const setAutoExportInterval = (days) => {
-    setPrefs(AppPreferencesRepository.update({ autoExportIntervalDays: days }));
   };
 
   return (
@@ -893,10 +1025,33 @@ function PreferencesScreen({ onClose }) {
           </div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#9A9AA1", marginTop: 10 }}>Currently: {prefs.inactiveThresholdDays} days.</div>
         </div>
+      </div>
+    </div>
+  );
+}
 
-        {/* ADDED — real ask: "scheduled auto-export" as its own card,
-            distinct from the inactive-threshold one above. */}
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16, marginTop: 16 }}>
+// MOVED 1 Sep 2026 out of PreferencesScreen — see that function's own
+// comment. Same content/behavior as before, now with its own header
+// and reachable directly from the Data section next to Export/Restore.
+function AutomaticBackupsScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+  const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+
+  const toggleAutoExport = () => {
+    setPrefs(AppPreferencesRepository.update({ autoExportEnabled: !prefs.autoExportEnabled }));
+  };
+  const setAutoExportInterval = (days) => {
+    setPrefs(AppPreferencesRepository.update({ autoExportIntervalDays: days }));
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Automatic backups</span>
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Automatic backups</span>
             <div onClick={toggleAutoExport}
@@ -2015,8 +2170,13 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   const [showCSVExport, setShowCSVExport] = useState(false);
   const [showEncryptedExport, setShowEncryptedExport] = useState(false);
   const [showDevTools, setShowDevTools] = useState(false);
-  const [showRegistries, setShowRegistries] = useState(false);
-  const [showOptionLists, setShowOptionLists] = useState(false);
+  // CHANGED 1 Sep 2026 — Registries and Option lists merged into one
+  // "Manage lists" entry (see ManageListsScreen's own comment).
+  const [showManageLists, setShowManageLists] = useState(false);
+  // ADDED 1 Sep 2026 — Automatic backups moved out of Preferences into
+  // its own row here in the Data section (see AutomaticBackupsScreen's
+  // own comment on why).
+  const [showAutoBackupSettings, setShowAutoBackupSettings] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   // ADDED — real ask: unified notifications management, one place to
   // turn each real reminder type on/off rather than each one being
@@ -2049,8 +2209,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showPreferences) { setShowPreferences(false); return true; }
       if (showPrivacy) { setShowPrivacy(false); return true; }
       if (showNotifications) { setShowNotifications(false); return true; }
-      if (showOptionLists) { setShowOptionLists(false); return true; }
-      if (showRegistries) { setShowRegistries(false); return true; }
+      if (showAutoBackupSettings) { setShowAutoBackupSettings(false); return true; }
+      if (showManageLists) { setShowManageLists(false); return true; }
       if (showDevTools) { setShowDevTools(false); return true; }
       if (showSelectiveExport) { setShowSelectiveExport(false); return true; }
       if (showCSVExport) { setShowCSVExport(false); return true; }
@@ -2059,7 +2219,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showOptionLists, showRegistries, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showManageLists, showAutoBackupSettings, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.
@@ -2130,6 +2290,11 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             sending a backup somewhere less trusted than this device. */}
         <SettingsRow icon={Lock} label="Export encrypted backup…" onClick={() => setShowEncryptedExport(true)} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
         <SettingsRow icon={Download} label="Restore from backup" onClick={onImportClick} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
+        {/* MOVED 1 Sep 2026 from Preferences — a backup-scheduling
+            setting belongs next to the other backup controls, not
+            bundled with an unrelated Contacts-display setting under a
+            generic "Preferences" label. */}
+        <SettingsRow icon={Upload} label="Automatic backups" onClick={() => setShowAutoBackupSettings(true)} />
       </div>
       {status && (
         <div style={{ margin: "0 16px 20px", padding: "10px 14px", borderRadius: 12, background: "#FFF4CE", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 12 }}>{status}</div>
@@ -2141,12 +2306,12 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             overview + reset), moved out of the "Not built yet" group
             below. */}
         <SettingsRow icon={Database} label="Developer tools" onClick={() => setShowDevTools(true)} />
-        {/* ADDED 19 Aug 2026 — Registries, real per the user's priority
-            order. */}
-        <SettingsRow icon={ListTree} label="Registries" onClick={() => setShowRegistries(true)} />
-        {/* ADDED 19 Aug 2026 — Option lists, the "idiot-proof editor"
-            the user asked for, for the simpler flat-string option lists. */}
-        <SettingsRow icon={ListTree} label="Option lists" onClick={() => setShowOptionLists(true)} />
+        {/* CHANGED 1 Sep 2026 — real ask: Registries and Option lists
+            were two separate rows for what's the same job from a
+            user's point of view ("edit the picker choices used across
+            the app") — combined into one, with a tab switcher inside
+            (see ManageListsScreen's own comment). */}
+        <SettingsRow icon={ListTree} label="Manage lists" onClick={() => setShowManageLists(true)} />
         {/* CHANGED 19 Aug 2026 — real fix: Privacy was already real
             (onClick worked), but had been left sitting visually under
             "Not built yet" below since that entry was first added —
@@ -2197,11 +2362,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       {showDevTools && (
         <DeveloperToolsScreen onClose={() => setShowDevTools(false)} />
       )}
-      {showRegistries && (
-        <RegistriesScreen onClose={() => setShowRegistries(false)} />
-      )}
-      {showOptionLists && (
-        <OptionListsScreen onClose={() => setShowOptionLists(false)} />
+      {showManageLists && (
+        <ManageListsScreen onClose={() => setShowManageLists(false)} />
       )}
       {showPrivacy && (
         <PrivacyScreen onClose={() => setShowPrivacy(false)} />
@@ -2211,6 +2373,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showPreferences && (
         <PreferencesScreen onClose={() => setShowPreferences(false)} />
+      )}
+      {showAutoBackupSettings && (
+        <AutomaticBackupsScreen onClose={() => setShowAutoBackupSettings(false)} />
       )}
       {showDesign && (
         <DesignScreen onClose={() => setShowDesign(false)} />

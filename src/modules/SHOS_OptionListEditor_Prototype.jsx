@@ -14,14 +14,26 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // retyped here. See designTokens.js.
 import { NEUTRAL, ACCENTS, ACTION } from "../calculations/designTokens";
 
-const ICON_COMPONENTS = { Pill, ArrowRightCircle, ClipboardList, CalendarClock, TestTube, Syringe, CalendarCheck, MapPin, PlayCircle, Tag, Heart, User };
+// EXPORTED 1 Sep 2026 — real ask: "check settings not unnecessarily
+// over engineered - combine into similar things if better." Registries
+// and Option lists were two separate top-level Settings entries doing
+// the exact same conceptual job from a user's point of view ("edit the
+// picker choices used across the app") — the only difference is an
+// internal implementation detail (ID-based registry with a usage count
+// vs a flat editable string list) nobody outside this codebase needs
+// to know about. Combined into one "Manage lists" entry with a tab
+// switcher (see SHOS_Settings_Prototype.jsx's ManageListsScreen) —
+// this component and ICON_COMPONENTS below are exported so that
+// switcher can reuse this exact detail screen/icon set unchanged
+// rather than a second copy.
+export const ICON_COMPONENTS = { Pill, ArrowRightCircle, ClipboardList, CalendarClock, TestTube, Syringe, CalendarCheck, MapPin, PlayCircle, Tag, Heart, User };
 
 // ADDED 19 Aug 2026 — the "idiot-proof" editor the user asked for, for the
 // simple flat option lists (see customOptionListsRepository.js for the
 // full reasoning on scope and safety). ONE generic screen reused for
 // every category — same "shared component once a shape repeats" rule
 // already applied to SHOS_RegistryManagement_Prototype.jsx.
-function OptionListDetail({ listName, onClose }) {
+export function OptionListDetail({ listName, onClose }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
 

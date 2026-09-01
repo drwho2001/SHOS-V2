@@ -153,11 +153,77 @@ async function getPlugin() {
 
 // Call once, e.g. on app load — a no-op (resolves false) anywhere the
 // plugin isn't present.
+// CHANGED 1 Sep 2026 — real ask: "ensure they actually work in APK...
+// haven't been asked to grant access." This call already existed and
+// was already wired into Home's mount effect, but nothing ever
+// surfaced whether it actually succeeded — a silently swallowed
+// exception here (no try/catch existed) would look identical to "the
+// user was never shown a system prompt" from the outside, with zero
+// way to tell the difference. Now returns the real status string
+// (Capacitor's own "granted"/"denied"/"prompt"/"prompt-with-rationale")
+// instead of a bare boolean, and never throws — see
+// checkNotificationPermission() below for a NON-prompting read of the
+// same status, used to show it on the Notifications settings screen.
 export async function requestNotificationPermission() {
   const plugin = await getPlugin();
-  if (!plugin) return false;
-  const result = await plugin.requestPermissions();
-  return result.display === "granted";
+  if (!plugin) return { status: "unavailable" };
+  try {
+    const result = await plugin.requestPermissions();
+    return { status: result.display };
+  } catch (err) {
+    console.warn("[notificationService] requestPermissions() failed:", err);
+    return { status: "error" };
+  }
+}
+
+// ADDED 1 Sep 2026 — real ask: a way to actually SEE the current OS
+// permission state without triggering a prompt (Android only shows
+// the system dialog once per app install for a given permission — a
+// second requestPermissions() call after a denial just silently
+// resolves "denied" again with no UI, which looks identical to "never
+// asked" from inside the app). This is what lets the Notifications
+// settings screen tell those two states apart and show the right
+// guidance for each.
+export async function checkNotificationPermission() {
+  const plugin = await getPlugin();
+  if (!plugin) return { status: "unavailable" };
+  try {
+    const result = await plugin.checkPermissions();
+    return { status: result.display };
+  } catch (err) {
+    console.warn("[notificationService] checkPermissions() failed:", err);
+    return { status: "error" };
+  }
+}
+
+// ADDED 1 Sep 2026 — real ask: "want to make sure actually works" — a
+// genuine, concrete way to find out, rather than trusting a reminder
+// scheduled hours or days out. Fires a real local notification a few
+// seconds from now, through the exact same scheduleNotification() path
+// every real reminder in this app uses — if this one shows up, the
+// whole pipeline (permission, plugin, OS scheduling) is confirmed
+// actually working end to end; if it doesn't, that's real, useful
+// information too. Fixed id, own slot outside NOTIFICATION_IDS above
+// since this is diagnostic, not a real reminder type.
+const TEST_NOTIFICATION_ID = 9099;
+export async function sendTestNotification() {
+  const plugin = await getPlugin();
+  if (!plugin) return { ok: false, reason: "unavailable" };
+  const permission = await checkNotificationPermission();
+  if (permission.status !== "granted") return { ok: false, reason: permission.status };
+  try {
+    await scheduleNotification({
+      id: TEST_NOTIFICATION_ID,
+      title: "SHOS test notification",
+      body: "If you can see this, notifications are working on this device.",
+      at: new Date(Date.now() + 5000),
+      smallIcon: moduleSmallIconName("home"),
+    });
+    return { ok: true };
+  } catch (err) {
+    console.warn("[notificationService] Test notification failed to schedule:", err);
+    return { ok: false, reason: "error" };
+  }
 }
 
 // Schedules (or replaces, via the fixed id) a single local
