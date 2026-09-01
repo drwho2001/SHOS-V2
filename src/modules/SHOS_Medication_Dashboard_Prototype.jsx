@@ -4,6 +4,7 @@ import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, Arr
 // writes through these two repositories instead. Nothing about how the UI
 // looks or behaves changes; this just moves WHERE the facts actually live.
 import { MedicationRepository, DOSE_UNIT_OPTIONS } from "../repositories/medicationRepository";
+import { findClosestMatch } from "../calculations/fuzzyMatch";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 // ADDED 19 Aug 2026 — MEDICATION_TYPE_OPTIONS/ROUTE_OPTIONS now live
@@ -1047,6 +1048,22 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
     onCreate({ ...rest, defaultRefillQuantity: defaultRefillContainers * (form.unitsPerContainer || 0) });
   };
 
+  // ADDED 1 Sep 2026 — real ask: a dedupe nudge on the name field, same
+  // spirit as the fuzzy "did you mean" checks elsewhere this session,
+  // but deliberately NOT that same accept/reject mechanism here — the
+  // user's own explicit caution: this must never discourage tracking
+  // the same active ingredient as separate entries for different
+  // strengths or courses (e.g. treatment-dose Doxycycline vs ongoing
+  // DoxyPEP). So this only ever informs, it never blocks or offers to
+  // "use the existing one instead" — Add medication stays exactly as
+  // capable as before, just with a heads-up when it's worth a second
+  // look. Checked only against ACTIVE medications — a re-add of a
+  // long-archived one is a deliberate restart, not a live duplicate.
+  const existingNames = useMemo(() => MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => m.name), []);
+  const trimmedName = form.name.trim();
+  const exactNameMatch = trimmedName && existingNames.some((n) => n.toLowerCase() === trimmedName.toLowerCase());
+  const closeNameMatch = trimmedName && !exactNameMatch ? findClosestMatch(existingNames, trimmedName) : null;
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       {/* CHANGED 19 Aug 2026 — same sticky-bottom-bar restructure as
@@ -1064,6 +1081,16 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
         <div style={{ padding: "6px 0 10px" }}>
           <input value={form.name} onChange={(e) => set("name")(e.target.value)} placeholder="Medication name" autoFocus
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+          {exactNameMatch && (
+            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 5, lineHeight: 1.4 }}>
+              You already track a medication called "{trimmedName}" — this adds a separate entry (e.g. a new course), it won't merge with the existing one.
+            </div>
+          )}
+          {closeNameMatch && (
+            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 5, lineHeight: 1.4 }}>
+              Similar to your existing "{closeNameMatch}" — worth a check for a typo. If it's meant to be different (a different strength or course), this still adds it as its own separate entry.
+            </div>
+          )}
         </div>
 
         {/* REORDERED 19 Aug 2026 — identity facts right after the name:

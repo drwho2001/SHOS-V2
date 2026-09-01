@@ -193,7 +193,11 @@ export const DEFAULT_CONTACT = {
   // in the UI (see SHOS_Contacts_Prototype.jsx's own comment on the
   // gating condition). Free text with suggestions, same
   // CustomOptionListsRepository pattern as gender above.
-  contraception: "",
+  // CHANGED 1 Sep 2026 — real ask: "allow for multiple (ie Testosterone
+  // + Implant)." Was a single string; see normalizeContraception()
+  // below for how existing single-value contacts keep reading back
+  // correctly.
+  contraception: [],
   knownPrepDoxy: [], lastTestedDate: "",
   notes: "",
   linkedContactIds: [],
@@ -352,6 +356,20 @@ function normalizeKinkSelections(arr) {
   }).filter(Boolean);
 }
 
+// ADDED 1 Sep 2026 — real ask: "allow for multiple [contraception
+// methods] (ie Testosterone + Implant)." DEFAULT_CONTACT.contraception
+// switched from a single string to an array, so every contact saved
+// under the old single-value shape needs to keep reading back
+// correctly — same self-healing-on-every-read pattern as
+// normalizeRoleCasing above, not a one-off migration. A stored string
+// becomes its own one-item array; already-array values (new saves)
+// pass through unchanged.
+function normalizeContraception(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string" && value.trim()) return [value];
+  return [];
+}
+
 export const ContactRepository = {
   // CHANGED 18 Aug 2026 — getAll()/getById() now merge each raw stored
   // record over DEFAULT_CONTACT before returning it, not just clone it
@@ -380,6 +398,7 @@ export const ContactRepository = {
           ...merged,
           statedKinks: normalizeKinkSelections(merged.statedKinks), limits: normalizeKinkSelections(merged.limits),
           bdsmRole: (merged.bdsmRole || []).map(normalizeRoleCasing), sexualPosition: (merged.sexualPosition || []).map(normalizeRoleCasing),
+          contraception: normalizeContraception(merged.contraception),
         };
       })
     );
@@ -393,6 +412,7 @@ export const ContactRepository = {
       ...merged,
       statedKinks: normalizeKinkSelections(merged.statedKinks), limits: normalizeKinkSelections(merged.limits),
       bdsmRole: (merged.bdsmRole || []).map(normalizeRoleCasing), sexualPosition: (merged.sexualPosition || []).map(normalizeRoleCasing),
+      contraception: normalizeContraception(merged.contraception),
     });
   },
 

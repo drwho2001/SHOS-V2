@@ -1270,17 +1270,20 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
           {isOverridden && (
             <ResetIcon size={16} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ cursor: "pointer" }} onClick={onReset} title="Reset to default" />
           )}
-          {/* CHANGED — real ask: the native colour picker (its own
-              R/G/B or H/S/L sliders, not anything this app renders)
-              wasn't opening preset to the module's actual current
-              colour, defaulting to 0/black instead. The HTML spec for
-              input[type=color]'s value requires a strict lowercase
-              #rrggbb string — ACCENTS/ModuleColorRepository store hex
-              in uppercase (e.g. "#D97706"), which some WebView colour
-              pickers silently reject as invalid rather than
-              normalizing, falling back to their own default. */}
-          <input type="color" value={currentValue.toLowerCase()} onChange={(e) => onSetColor(colorKey, e.target.value)}
-            style={{ width: 36, height: 28, padding: 0, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 6, cursor: "pointer" }} />
+          {/* REMOVED 1 Sep 2026 — real ask: "colour buttons sit on a
+              white background... looks visually out of place." That
+              was this native input[type=color] swatch button — its box
+              is drawn by the OS/WebView itself, not this app, so it
+              can't be reliably restyled to match either theme (dark
+              mode especially showed it as a stray white box next to an
+              otherwise dark row). Not a loss of function: the circular
+              preview dot to the left already opens the exact same row
+              (onClick={() => setExpanded}), and the real picker for
+              actually choosing a colour is the wheel/Hex/RGB panel
+              below, built specifically because native pickers alone
+              "feel v dated" (see ColorWheelPicker's own comment) — this
+              button was a second, redundant entry point to that same
+              native picker the app already moved away from. */}
           <span onClick={() => setExpanded((e) => !e)} style={{ fontSize: 11, color: "#3D63C9", fontWeight: 600, cursor: "pointer" }}>{expanded ? "Hide" : "Customise"}</span>
         </div>
       </div>

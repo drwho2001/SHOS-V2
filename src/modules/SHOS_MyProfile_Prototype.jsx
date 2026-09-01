@@ -196,10 +196,23 @@ function SelectField({ label, value, onChange, options, T }) {
   );
 }
 
-function MultiSelectChips({ label, value, onChange, options, T }) {
+function MultiSelectChips({ label, value, onChange, options, T, onAddNew }) {
+  const [newValue, setNewValue] = useState("");
   const toggle = (opt) => {
     const has = value.includes(opt);
     onChange(has ? value.filter((v) => v !== opt) : [...value, opt]);
+  };
+  // ADDED 1 Sep 2026 — real ask (Contraception: "allow for multiple, ie
+  // Testosterone + Implant"). Same optional onAddNew prop already
+  // proven in Contacts' own copy of this component — every existing
+  // caller here (Cummer frequency/volume/style) passes no onAddNew and
+  // is completely unaffected.
+  const commitNew = () => {
+    const v = newValue.trim();
+    if (!v) return;
+    onAddNew(v);
+    if (!value.includes(v)) onChange([...value, v]);
+    setNewValue("");
   };
   return (
     <div style={{ padding: "8px 0" }}>
@@ -215,6 +228,14 @@ function MultiSelectChips({ label, value, onChange, options, T }) {
           );
         })}
       </div>
+      {onAddNew && (
+        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+          <input value={newValue} onChange={(e) => setNewValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitNew(); } }}
+            placeholder="+ Add new option"
+            style={{ flex: 1, padding: "6px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -655,11 +676,16 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
             (Combined pill/Progesterone-only pill/IUD/Implant/Depot/
             Testosterone/None). Testosterone is listed for tracking
             purposes only — corrected per the user's own ask, it is NOT
-            reliable contraception on its own. */}
+            reliable contraception on its own.
+            CHANGED 1 Sep 2026 — real ask: "allow for multiple, ie
+            Testosterone + Implant." Was SuggestField (single value) —
+            switched to MultiSelectChips, same toggle-multiple-on/off
+            mechanism already used for Cummer above, now with its own
+            onAddNew for a value not in the option list yet. */}
         {showsContraception && (
         <SectionCard title="Contraception" T={T}>
-          <SuggestField label="Contraception" value={form.contraception} onChange={set("contraception")} options={contraceptionOptions}
-            onAddNew={(v) => setContraceptionOptions(CustomOptionListsRepository.add("contraception", v))} T={T} placeholder="e.g. Combined pill, IUD, Implant, None" />
+          <MultiSelectChips label="Contraception" value={form.contraception} onChange={set("contraception")} options={contraceptionOptions}
+            onAddNew={(v) => setContraceptionOptions(CustomOptionListsRepository.add("contraception", v))} T={T} />
         </SectionCard>
         )}
 

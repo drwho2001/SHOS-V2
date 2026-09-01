@@ -1571,10 +1571,16 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
               Female or Trans-male (see the same gating condition used
               above and in My Profile). Testosterone is a suggestion
               option for tracking purposes only — it is NOT reliable
-              contraception on its own. */}
+              contraception on its own.
+              CHANGED 1 Sep 2026 — real ask: "allow for multiple, ie
+              Testosterone + Implant." Was SuggestField (single value,
+              picking a chip replaced whatever was there) — switched to
+              MultiSelectChips, same toggle-multiple-on/off mechanism
+              already proven for Cummer/PrEP-Doxy below, with its own
+              onAddNew for a value not in the option list yet. */}
           {["female", "trans-male"].includes((form.gender || "").trim().toLowerCase()) && (
-            <SuggestField T={T} label="Contraception" value={form.contraception} onChange={set("contraception")} options={contraceptionOptions}
-              onAddNew={(v) => setContraceptionOptions(CustomOptionListsRepository.add("contraception", v))} placeholder="e.g. Combined pill, IUD, Implant, None" />
+            <MultiSelectChips T={T} label="Contraception" value={form.contraception} onChange={set("contraception")} options={contraceptionOptions}
+              onAddNew={(v) => setContraceptionOptions(CustomOptionListsRepository.add("contraception", v))} />
           )}
           <MultiSelectChips T={T} label="Known to be on" value={form.knownPrepDoxy} onChange={set("knownPrepDoxy")} options={PREP_DOXY_OPTIONS} />
           <TextField T={T} label="Last tested date (if known)" value={form.lastTestedDate} onChange={set("lastTestedDate")} type="date" helper="Often unknown — leave blank, no pressure." />
