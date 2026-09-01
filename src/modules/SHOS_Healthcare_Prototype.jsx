@@ -25,12 +25,22 @@ import AttachmentsScreen from "./SHOS_Attachments_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
 
 function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, openRecordId, onConsumedRecordOpen, onNavigateToRecord, prefillData, onConsumedPrefill, onQuickAddWithPrefill, registerModuleBackHandler }) {
+  // CHANGED — real ask: "Symptom Log" > "Symptoms", swap its list
+  // position with Vaccinations, ensure all six sit in two clean rows
+  // of three. Order below now reads Testing/Clinic Visits/Vaccinations
+  // (row 1), Symptoms/Measurements/Menstrual & Contraception (row 2) —
+  // the grid below (not flex-wrap) is what actually guarantees the
+  // 3-per-row layout regardless of label length.
   const [subTab, setSubTab] = useState(
     quickAddTarget === "clinicVisits" ? "clinicVisits" :
     quickAddTarget === "symptomLog" ? "symptomLog" :
     quickAddTarget === "vaccinations" ? "vaccinations" :
     quickAddTarget === "measurements" ? "measurements" :
-    quickAddTarget === "menstrualHealth" ? "menstrualHealth" : "testing"
+    // "menstrualContraception" is Home's own distinct shortcut for
+    // logging contraception specifically (see SHOS_Home_Prototype.jsx)
+    // — still the same outer Healthcare sub-tab, MenstrualHealthModule
+    // itself reads quickAddTarget below to land on the right INNER tab.
+    (quickAddTarget === "menstrualHealth" || quickAddTarget === "menstrualContraception") ? "menstrualHealth" : "testing"
   );
   // ADDED 26 Aug 2026 — real gap found and fixed: tapping a linked
   // test from a Clinic Visit's own detail view used to only switch to
@@ -114,12 +124,21 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         <span style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF" }}>Healthcare</span>
       </div>
       <div style={{ padding: "14px 16px 0", background: T.bg }}>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+        {/* CHANGED — real ask: "ensure all six sit in two rows of three
+            cleanly. Use relative width to adjust text/button size to
+            fit." flex-wrap let each pill size to its own content,
+            which wrapped unevenly depending on label length. A real
+            3-column grid guarantees the same clean 2-row layout
+            regardless of screen width or label length — cells are
+            equal width (1fr each) and text wraps to a second line
+            in-place rather than overflowing or forcing the grid to
+            reflow. */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
           {[
             { key: "testing", label: "Testing" },
             { key: "clinicVisits", label: "Clinic Visits" },
-            { key: "symptomLog", label: "Symptom Log" },
             { key: "vaccinations", label: "Vaccinations" },
+            { key: "symptomLog", label: "Symptoms" },
             { key: "measurements", label: "Measurements" },
             // ADDED — real ask: gated behind Settings' own toggle, not
             // shown at all otherwise — same "opt-in, off by default"
@@ -127,7 +146,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             ...(menstrualTrackingEnabled ? [{ key: "menstrualHealth", label: "Menstrual & Contraception" }] : []),
           ].map((t) => (
             <div key={t.key} onClick={() => setSubTab(t.key)}
-              style={{ padding: "6px 14px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", background: subTab === t.key ? T.healthcareBlue : T.surface, color: subTab === t.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === t.key ? T.healthcareBlue : T.border}` }}>
+              style={{ padding: "6px 8px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", background: subTab === t.key ? T.healthcareBlue : T.surface, color: subTab === t.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === t.key ? T.healthcareBlue : T.border}`, textAlign: "center", lineHeight: 1.25, boxSizing: "border-box" }}>
               {t.label}
             </div>
           ))}
@@ -169,7 +188,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       ) : subTab === "measurements" ? (
         <MeasurementsModule openAddOnMount={openAddOnMount && quickAddTarget === "measurements"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       ) : (
-        <MenstrualHealthModule openAddOnMount={openAddOnMount && quickAddTarget === "menstrualHealth"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} />
+        <MenstrualHealthModule openAddOnMount={openAddOnMount && (quickAddTarget === "menstrualHealth" || quickAddTarget === "menstrualContraception")} quickAddTarget={quickAddTarget} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} />
       )}
       {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={onNavigateToRecord} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}
       {showAttachments && (

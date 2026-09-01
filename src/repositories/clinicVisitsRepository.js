@@ -259,6 +259,14 @@ export const ClinicVisitsRepository = {
     return this.update(id, { isArchived: true });
   },
 
+  // ADDED — real gap found in an "undo/edit/delete/archive" consistency
+  // audit: every sibling repository with archive() also has the
+  // reverse — this one didn't, so an archived Clinic Visit had no way
+  // back short of manually editing storage.
+  unarchive(id) {
+    return this.update(id, { isArchived: false });
+  },
+
   // ADDED — real ask: "no delete option" — same reasoning as Testing/
   // Vaccinations/Symptom Log's own delete(): archive stays correct for
   // anything real that's just outdated, this is specifically for a

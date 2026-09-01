@@ -170,6 +170,28 @@ export const EpisodeRepository = {
     return this.update(id, { isArchived: false });
   },
 
+  // ADDED — real gap found in an "undo/edit/delete/archive" consistency
+  // audit: every other real (non-vocabulary) record repository in this
+  // app has a genuine permanent delete()/restore() pair alongside
+  // archive()/unarchive() — Episodes only ever had the soft pair (see
+  // SHOS_Timeline_Prototype.jsx's own EpisodeDetail, whose "Remove"
+  // button deliberately archives rather than truly deleting, by a past,
+  // documented, reasoned choice not being revisited here). Adding these
+  // for structural completeness/consistency even though no UI calls
+  // them yet — same shape as every sibling repository, so nothing has
+  // to be reinvented if/when a real permanent-delete entry point is
+  // added to that screen later.
+  delete(id) {
+    episodes = episodes.filter((e) => e.id !== id);
+    persist();
+  },
+
+  restore(record) {
+    if (episodes.some((e) => e.id === record.id)) return;
+    episodes = [...episodes, record];
+    persist();
+  },
+
   replaceAll(newEpisodes) {
     episodes = newEpisodes;
     nextNumber = computeNextNumber(episodes);

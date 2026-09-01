@@ -377,6 +377,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           <SettingsIcon size={20} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onOpenSettings} title="Settings" />
         </div>
       </div>
+      {/* ADDED — real ask: "dashboard needs teal header bar under
+          title" — every other module's own title sits on a filled
+          colour banner; Home deliberately doesn't (a filled banner
+          would fight with the greeting/summary content directly below
+          it), so this is the same accent, as a bar rather than a full
+          fill, giving Home a real colour identity of its own
+          (ACCENTS.home) instead of reading as unstyled next to
+          Healthcare/Medication/Contacts. */}
+      <div style={{ height: 4, borderRadius: 999, background: ACCENTS.home, marginBottom: 16 }} />
 
       {/* ADDED 19 Aug 2026 — welcome text, the user's own wording as the
           basis: open, non-judgemental, genuinely useful tone. */}
@@ -508,8 +517,21 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         {/* ADDED — real ask: shortcuts to Menstrual/Contraception,
             only when the feature is enabled — same gating as the
             SummaryRows above and the Healthcare sub-tab itself. */}
+        {/* CHANGED — real ask: "menstrual icon is blood/single
+            raindrop, in a red. Contraceptive is either condom, baby,
+            upsidedown anchor or round pill." One combined button
+            couldn't carry two distinct icons — split into its own
+            period (red Drop) and contraception (round Pill, matching
+            the user's own suggested option) shortcut, each landing on
+            the right inner tab of the same module — see
+            SHOS_MenstrualHealth_Prototype.jsx's own quickAddTarget
+            handling for how "menstrualContraception" is distinguished
+            from plain "menstrualHealth". */}
         {menstrualTrackingEnabled && (
-          <QuickAddButton icon={Drop} label="Log period / contraception" color={ACCENTS.healthcare} onClick={() => onQuickAdd("healthcare", "menstrualHealth")} />
+          <>
+            <QuickAddButton icon={Drop} label="Log period" color={ACTION.red} onClick={() => onQuickAdd("healthcare", "menstrualHealth")} />
+            <QuickAddButton icon={Pill} label="Log contraception" color={ACCENTS.healthcare} onClick={() => onQuickAdd("healthcare", "menstrualContraception")} />
+          </>
         )}
       </div>
 

@@ -71,6 +71,17 @@ export const DEFAULT_APP_PREFERENCES = {
   // Off by default, same as every other opt-in feature area in this
   // app (App Lock, calendar sync, encrypted export).
   menstrualTrackingEnabled: false,
+  // ADDED — real ask: "option/button to hide pregnancy tab if toggled
+  // on" — the existing "Show pregnancy tracking anyway" link (see
+  // SHOS_MenstrualHealth_Prototype.jsx) already covers the opposite
+  // case (gender-based default hides it, show it anyway for THIS
+  // session only). This is the persisted mirror for someone who wants
+  // it gone for good regardless of gender default — e.g. assigned
+  // female but pregnancy tracking genuinely doesn't apply. Never blocks
+  // a direct deep-link to an already-existing record — same "never a
+  // true hard block on your own real data" rule the gender default
+  // already follows.
+  pregnancyTrackingHidden: false,
 };
 
 export const AppPreferencesRepository = {

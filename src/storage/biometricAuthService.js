@@ -57,14 +57,21 @@ export async function checkBiometryAvailable() {
 // on the same lock screen), so falling through to the PHONE's own
 // lock-screen credential too would just be a second, confusing
 // fallback layered on the first for no real benefit.
+// FIXED — real device bug: "unlock shos unlock shos appears twice".
+// `reason` (Android's own subtitle/description text below the dialog
+// title) and `androidTitle` were both hardcoded to the exact same
+// string, so Android's biometric prompt showed it twice — once as the
+// title, once as the subtitle. Kept the title as the short app-level
+// label callers already pass as `reason` (unchanged default and call
+// sites), moved the actual descriptive text to its own distinct string.
 export async function authenticateWithBiometrics(reason = "Unlock SHOS") {
   const { BiometricAuth, AndroidBiometryStrength } = await getPlugin();
   if (!BiometricAuth) return false;
   try {
     await BiometricAuth.authenticate({
-      reason,
+      reason: "Confirm your fingerprint or face to continue.",
       cancelTitle: "Use PIN instead",
-      androidTitle: "Unlock SHOS",
+      androidTitle: reason,
       allowDeviceCredential: false,
       androidBiometryStrength: AndroidBiometryStrength.weak,
     });

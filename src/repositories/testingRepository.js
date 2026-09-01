@@ -289,6 +289,14 @@ export const TestingRepository = {
     return this.update(id, { isArchived: true });
   },
 
+  // ADDED — real gap found in an "undo/edit/delete/archive" consistency
+  // audit: every sibling repository with archive() also has the
+  // reverse — this one didn't, so an archived test had no way back
+  // short of manually editing storage.
+  unarchive(id) {
+    return this.update(id, { isArchived: false });
+  },
+
   // ADDED — real ask: "no option to delete erroneous tests." Archive
   // stays the default, correct choice for anything real that just
   // isn't current anymore — this is specifically for a genuinely

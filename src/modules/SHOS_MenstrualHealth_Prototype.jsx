@@ -38,6 +38,7 @@ import { CustomOptionListsRepository } from "../repositories/customOptionListsRe
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { MyProfileRepository } from "../repositories/myProfileRepository";
+import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
@@ -361,7 +362,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
         {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={() => { deleteUndo.trigger([c]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <Drop size={16} color={T.healthcareBlue} weight="fill" />
+            <Drop size={16} color={T.actionRed} weight="fill" />
             <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</span>
           </div>
           <SectionCard title="Details" T={T}>
@@ -392,7 +393,10 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
         {cycles.length === 0 && <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>No periods logged yet. Tap + to add one.</div>}
         {cycles.map((c) => (
           <ListRow key={c.id} T={T} onClick={() => setScreen({ name: "detail", id: c.id })}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Drop size={14} color={T.actionRed} weight="fill" />
+              <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</div>
+            </div>
             <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{c.flow || "Flow not set"}</div>
           </ListRow>
         ))}
@@ -534,12 +538,13 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
   );
 }
 
-function ContraceptionTab({ T, isPregnant, openRecordId, onConsumedRecordOpen }) {
-  const [screen, setScreen] = useState(() => openRecordId ? { name: "detail", id: openRecordId } : { name: "list" });
+function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen }) {
+  const [screen, setScreen] = useState(() => openRecordId ? { name: "detail", id: openRecordId } : openAddOnMount ? { name: "add" } : { name: "list" });
   useEffect(() => {
     if (openRecordId) { setScreen({ name: "detail", id: openRecordId }); onConsumedRecordOpen?.(); }
+    else if (openAddOnMount) { setScreen({ name: "add" }); onConsumedQuickAdd?.(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openRecordId]);
+  }, [openRecordId, openAddOnMount]);
   const [, force] = useState(0);
   const refresh = () => force((v) => v + 1);
   const all = ContraceptionRepository.getAll().filter((e) => !e.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
@@ -804,20 +809,32 @@ function tabForRecordId(id) {
   return null;
 }
 
-export default function MenstrualHealthModule({ openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen } = {}) {
+export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen } = {}) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
   const gender = MyProfileRepository.getProfile().gender;
   const [showPregnancyAnyway, setShowPregnancyAnyway] = useState(false);
+  // ADDED — real ask: Home's own "Log contraception" shortcut (distinct
+  // from "Log period") needs to land on THIS module's Contraception
+  // tab specifically, with its own add sheet open — quickAddTarget
+  // carries that distinction through from Home, same value threaded
+  // unchanged through HealthcareScreen.
+  const wantsContraceptionQuickAdd = quickAddTarget === "menstrualContraception";
+  // ADDED — real ask: Settings' own "Hide Pregnancy tab" toggle (see
+  // SHOS_Settings_Prototype.jsx's PreferencesScreen) — a persisted
+  // opt-out, independent of gender. Wins over the gender default AND
+  // the ephemeral "show anyway" link below, but never over a direct
+  // deep-link to a record that already exists.
+  const pregnancyTrackingHidden = AppPreferencesRepository.getPreferences().pregnancyTrackingHidden;
   const showsPregnancyByDefault = couldBePregnant(gender);
   const deepLinkTab = tabForRecordId(openRecordId);
-  const [subTab, setSubTab] = useState(deepLinkTab || "cycle");
+  const [subTab, setSubTab] = useState(deepLinkTab || (wantsContraceptionQuickAdd ? "contraception" : "cycle"));
   const [, force] = useState(0);
   const activePregnancy = PregnancyRepository.getActive();
   // A deep-linked Pregnancy record must be reachable even for a
   // gender that hides the tab by default — same "never a hard block"
   // rule as the "Show pregnancy tracking anyway" link itself.
-  const pregnancyReachable = showsPregnancyByDefault || showPregnancyAnyway || deepLinkTab === "pregnancy";
+  const pregnancyReachable = deepLinkTab === "pregnancy" || (!pregnancyTrackingHidden && (showsPregnancyByDefault || showPregnancyAnyway));
 
   const tabs = [
     { key: "cycle", label: "Cycle" },
@@ -845,13 +862,13 @@ export default function MenstrualHealthModule({ openAddOnMount, onConsumedQuickA
           <span style={{ fontSize: 12, color: "#FFFFFF", fontWeight: 600 }}>Currently pregnant since {formatDate(activePregnancy.testDate)}{activePregnancy.estimatedDueDate ? ` · est. due ${formatDate(activePregnancy.estimatedDueDate)}` : ""} — tap for details</span>
         </div>
       )}
-      {!pregnancyReachable && subTab !== "pregnancy" && (
+      {!pregnancyReachable && !pregnancyTrackingHidden && subTab !== "pregnancy" && (
         <div style={{ margin: "10px 16px 0", textAlign: "right" }}>
           <span onClick={() => setShowPregnancyAnyway(true)} style={{ fontSize: 11, color: T.textDisabled, cursor: "pointer", textDecoration: "underline" }}>Show pregnancy tracking anyway</span>
         </div>
       )}
-      {subTab === "cycle" && <CycleTab T={T} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "cycle" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} />}
-      {subTab === "contraception" && <ContraceptionTab T={T} isPregnant={!!activePregnancy} openRecordId={deepLinkTab === "contraception" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} />}
+      {subTab === "cycle" && <CycleTab T={T} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && !wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "cycle" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} />}
+      {subTab === "contraception" && <ContraceptionTab T={T} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "contraception" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} />}
       {subTab === "pregnancy" && <PregnancyTab T={T} openRecordId={deepLinkTab === "pregnancy" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} />}
     </div>
   );

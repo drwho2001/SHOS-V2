@@ -26,6 +26,7 @@ import {
   FileCsvIcon as FileCsv, LockIcon as Lock, BellIcon as Bell,
   CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck,
   LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen,
+  SlidersHorizontalIcon as SlidersHorizontal,
 } from "@phosphor-icons/react";
 // FIXED 1 Sep 2026 — real ask: "Managed lists crashes app on
 // attempting to open" / "Same for resources [crashes], in light [mode]
@@ -2537,17 +2538,6 @@ function DesignScreen({ onClose }) {
             Reset all to defaults
           </div>
         )}
-        {/* MOVED 1 Sep 2026 — real ask: "move inactive contact threshold
-            to somewhere else / merge" — this was the sole remaining
-            field in its own "Preferences" screen after Automatic
-            backups moved out (see that screen's own past comment). A
-            Contacts-display setting fits this screen's own "how each
-            module looks/behaves" scope better than a near-empty screen
-            of its own — folded in here, PreferencesScreen removed. */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "20px 0 6px" }}>Contacts</div>
-        <InactiveThresholdCard T={darkMode ? DARK : NEUTRAL} />
-        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "20px 0 6px" }}>Healthcare</div>
-        <MenstrualTrackingToggleCard T={darkMode ? DARK : NEUTRAL} />
       </div>
     </div>
   );
@@ -2601,6 +2591,53 @@ function MenstrualTrackingToggleCard({ T }) {
           <div style={{ position: "absolute", top: 2, left: prefs.menstrualTrackingEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
         </div>
       </div>
+      {/* ADDED — real ask: "option/button to hide pregnancy tab if
+          toggled on, in same placeish" — persisted opt-out for the
+          Pregnancy tab specifically, distinct from this whole
+          Cycle/Contraception/Pregnancy toggle above. Only meaningful
+          while the toggle above is on, so disabled (not hidden — same
+          "why can't I tap this" clarity as PIN-gated App Lock controls
+          in Privacy) until it is.
+      */}
+      {prefs.menstrualTrackingEnabled && (
+        <div onClick={() => setPrefs(AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden }))}
+          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", marginTop: 14, paddingTop: 14, borderTop: `1px solid ${T.border}` }}>
+          <div style={{ flex: 1, paddingRight: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Hide Pregnancy tab</div>
+            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Keeps Cycle and Contraception, removes Pregnancy specifically — regardless of profile gender. A record you already have stays reachable by tapping it directly.</div>
+          </div>
+          <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.pregnancyTrackingHidden ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
+            <div style={{ position: "absolute", top: 2, left: prefs.pregnancyTrackingHidden ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ADDED — real ask: "review/audit all settings contents and regroup if
+// needed for clarity" — the Menstrual/contraception toggle (and the
+// Contacts inactive-threshold before it) had drifted into the Design
+// screen ("Colour scheme"), which should only ever hold appearance
+// settings. This is their real, correctly-scoped home — cross-cutting
+// behavioural preferences that don't belong under Data, Advanced, or
+// Appearance. Same singleton-repository backing as before
+// (appPreferencesRepository.js), only the screen that surfaces it changed.
+function PreferencesScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : NEUTRAL;
+  return (
+    <div style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>Preferences</span>
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: T.textDisabled, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Contacts</div>
+        <div style={{ marginBottom: 20 }}><InactiveThresholdCard T={T} /></div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: T.textDisabled, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Healthcare</div>
+        <MenstrualTrackingToggleCard T={T} />
+      </div>
     </div>
   );
 }
@@ -2642,6 +2679,11 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // ADDED 1 Sep 2026 — real ask, item 2 of the follow-up feature list: a glossary.
   const [showGlossary, setShowGlossary] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  // ADDED — real ask: audited settings grouping — a real home for
+  // cross-cutting behavioural preferences (Contacts inactive threshold,
+  // Healthcare tracking toggles), pulled out of Colour scheme where
+  // they'd drifted. See PreferencesScreen's own comment.
+  const [showPreferences, setShowPreferences] = useState(false);
   // ADDED — real ask: unified notifications management, one place to
   // turn each real reminder type on/off rather than each one being
   // invisible/buried in its own module.
@@ -2669,6 +2711,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showTrash) { setShowTrash(false); return true; }
       if (showStats) { setShowStats(false); return true; }
       if (showDesign) { setShowDesign(false); return true; }
+      if (showPreferences) { setShowPreferences(false); return true; }
       if (showPrivacy) { setShowPrivacy(false); return true; }
       if (showNotifications) { setShowNotifications(false); return true; }
       if (showResources) { setShowResources(false); return true; }
@@ -2683,7 +2726,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPrivacy, showNotifications, showManageLists, showAutoBackupSettings, showResources, showGlossary, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showManageLists, showAutoBackupSettings, showResources, showGlossary, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.
@@ -2781,6 +2824,11 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             "Not built yet" below since that entry was first added —
             moved up to where it actually belongs. */}
         <SettingsRow icon={SettingsIcon} label="Privacy" onClick={() => setShowPrivacy(true)} />
+        {/* ADDED — real ask: audited grouping — cross-cutting behavioural
+            preferences (Contacts inactive threshold, Healthcare tracking
+            toggles) get a real, findable home instead of living under
+            Colour scheme. */}
+        <SettingsRow icon={SlidersHorizontal} label="Preferences" onClick={() => setShowPreferences(true)} />
         {/* ADDED — real ask: unified notifications management, one
             place to turn each real reminder type on/off. */}
         <SettingsRow icon={Bell} label="Notifications" onClick={() => setShowNotifications(true)} />
@@ -2834,6 +2882,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showPrivacy && (
         <PrivacyScreen onClose={() => setShowPrivacy(false)} />
+      )}
+      {showPreferences && (
+        <PreferencesScreen onClose={() => setShowPreferences(false)} />
       )}
       {showNotifications && (
         <NotificationsScreen onClose={() => setShowNotifications(false)} />

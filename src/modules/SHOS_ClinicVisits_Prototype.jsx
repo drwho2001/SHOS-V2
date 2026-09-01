@@ -403,22 +403,30 @@ function AdHocMedicationsManager({ value, onChange, T }) {
       {value.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
           {value.map((m) => (
-            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: radius.sm, background: T.surfaceVariant }}>
-              <div>
+            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: radius.sm, background: T.surfaceVariant }}>
+              <div style={{ minWidth: 0, overflowWrap: "break-word" }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{m.name}</div>
                 {m.notes && <div style={{ fontSize: 11, color: T.textSecondary }}>{m.notes}</div>}
               </div>
-              <X size={14} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => remove(m.id)} />
+              <X size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => remove(m.id)} />
             </div>
           ))}
         </div>
       )}
-      <div style={{ display: "flex", gap: 6 }}>
+      {/* FIXED — real device bug: "other medications given runs off
+          screen". Two side-by-side text inputs plus an Add button, in
+          one flex row with no min-width override, exceeded a real
+          phone's screen width — native inputs default to an intrinsic
+          minimum width that flex's own default (`min-width: auto`)
+          never overrides on its own. Name/Notes now stack full-width
+          (matching every other text field in this app), Add sits
+          below rather than fighting them for horizontal space. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ceftriaxone 1g IM"
-          style={{ flex: 1, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13 }} />
+          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, boxSizing: "border-box" }} />
         <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)"
-          style={{ flex: 1, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13 }} />
-        <div onClick={add} style={{ padding: "8px 12px", borderRadius: radius.sm, background: T.healthcareBlue, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Add</div>
+          style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, boxSizing: "border-box" }} />
+        <div onClick={add} style={{ padding: "8px 12px", borderRadius: radius.sm, background: T.healthcareBlue, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>Add</div>
       </div>
     </div>
   );

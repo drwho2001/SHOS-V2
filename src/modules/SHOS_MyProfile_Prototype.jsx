@@ -440,6 +440,28 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
       return { ...v, role: nextRole };
     }));
   };
+  // ADDED — real ask: "allow initial - toggle all options (IE switch
+  // all to top-dom/vers-switch/sub-bottom)" — setting each kink's role
+  // one at a time got tedious with a long list. One tap now sets every
+  // selection at once, along whichever axis it actually falls on
+  // (anatomical Top/bottom/Vers vs dynamic Dom/sub/Switch — see
+  // KINK_ROLE_STYLE in kinkRegistry.js) rather than forcing one shared
+  // role set on kinks that don't share an axis. A "mutual" kink (no
+  // role at all — see getRoleOptionsForKink) is left untouched, same as
+  // tapping it individually already does nothing.
+  const ROLE_POLES = [
+    { label: "Top / Dom", anatomical: "Top", dynamic: "Dom" },
+    { label: "Vers / Switch", anatomical: "Vers", dynamic: "Switch" },
+    { label: "sub / bottom", anatomical: "bottom", dynamic: "sub" },
+  ];
+  const setAllRoles = (pole) => {
+    onChange(value.map((v) => {
+      const optionsForThisKink = resolveRoleOptions(v.kinkId);
+      if (!optionsForThisKink) return v;
+      const role = optionsForThisKink.includes("Dom") ? pole.dynamic : pole.anatomical;
+      return { ...v, role };
+    }));
+  };
 
   // CHANGED — real bug found in the user's own testing: same root cause as
   // Encounters' identical gap — this called findOrCreate on raw,
@@ -485,6 +507,17 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
+      {trackRole && value.length > 1 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6, alignItems: "center" }}>
+          <span style={{ fontSize: 11, color: T.textDisabled }}>Set all:</span>
+          {ROLE_POLES.map((pole) => (
+            <div key={pole.label} onClick={() => setAllRoles(pole)}
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
+              {pole.label}
+            </div>
+          ))}
+        </div>
+      )}
       {value.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {(trackRole ? value : value.map((id) => ({ kinkId: id, role: null }))).map((sel) => {
@@ -650,6 +683,27 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
 function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   const [form, setForm] = useState(profile);
   const set = (field) => (value) => setForm((f) => ({ ...f, [field]: value }));
+  // FIXED — real ask: "think my profile kinks and limits haven't
+  // actually saved/disappear after a while." Root cause: RegistryTagPicker's
+  // draft text box (Into/Limits/Known chems) only actually commits a
+  // typed-but-not-yet-submitted tag on blur or Enter — tapping Save
+  // right after typing, with no Enter pressed, relies on the draft
+  // input blurring and its commit finishing before Save's own onClick
+  // reads `form`. That ordering held up in desktop testing here, but
+  // Android WebView's virtual-keyboard dismissal is a well-documented
+  // source of exactly this class of blur-timing bug — a real device
+  // easily loses that race in a way a desktop browser doesn't. Rather
+  // than trust implicit event ordering, Save now force-blurs whatever's
+  // focused (flushing any pending draft's commit synchronously) and
+  // reads the save payload from a ref that's always current, instead of
+  // the stale `form` value this onClick's own closure captured at its
+  // last render.
+  const formRef = useRef(form);
+  useEffect(() => { formRef.current = form; }, [form]);
+  const handleSave = () => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    setTimeout(() => onSave(formRef.current), 0);
+  };
   const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.get("gender"));
   const [relationshipStatusOptions, setRelationshipStatusOptions] = useState(() => CustomOptionListsRepository.get("relationshipStatus"));
   const allContacts = useMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived).map((c) => ({ id: c.id, name: c.name })), []);
@@ -666,7 +720,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onCancel} />
         <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>Edit My Profile</span>
-        <div onClick={() => onSave(form)} style={{ padding: "6px 14px", borderRadius: radius.full, background: T.contactsTeal, color: "#FFFFFF", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Save</div>
+        <div onClick={handleSave} style={{ padding: "6px 14px", borderRadius: radius.full, background: T.contactsTeal, color: "#FFFFFF", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Save</div>
       </div>
 
       <div style={{ padding: "0 16px 100px" }}>

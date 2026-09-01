@@ -184,12 +184,23 @@ function TypeKindPrompt({ typeName, onPick, onSkip, T }) {
   );
 }
 
-// Value + unit — a locked select when the type has real conversion
-// units (see UNIT_CONFIG in measurementRepository.js), a free-text
-// unit field otherwise. This is the "unit wheel" resolved during
-// design: the picker alone was never the fix for the cross-lab unit
-// mismatch problem, real conversion (in the repository) is — this
-// just offers whichever unit the picker allows, storage does the rest.
+// FIXED — real bug found in testing: "no option to change volume
+// count weight type etc... tried height, and annoying to just add cm.
+// Works when in cd4 as can write in units, but count becomes a
+// drop-down uncustomisable manually." A type with real UNIT_CONFIG
+// conversion or a picked "kind" (see measurementPreferencesRepository.js)
+// used to render a LOCKED native <select> with zero escape hatch —
+// once a type got tagged e.g. "Count-like", its unit was permanently
+// stuck to the single literal option "count" with no way back to free
+// text. Real fix: the suggested units (from UNIT_CONFIG or a kind) are
+// now always just tappable chips — like every other suggest-and-add
+// field in this app (MeasurementTypeField above, Contraception's
+// Method field) — never a lock. Free typing always works underneath,
+// for every type, convertible or not; convertToCanonical() in
+// measurementRepository.js already tolerates an unrecognised unit
+// string gracefully (stores as-is, no conversion attempted) so this
+// doesn't risk breaking the real cross-lab conversion this file exists
+// for — it only removes the case where NO unit fit at all.
 function ValueUnitFields({ type, value, unit, onValueChange, onUnitChange, T }) {
   const unitOptions = getAvailableUnits(type);
   const hints = PLACEHOLDER_HINTS[type] || { value: "e.g. 42", unit: "e.g. units" };
@@ -199,26 +210,21 @@ function ValueUnitFields({ type, value, unit, onValueChange, onUnitChange, T }) 
         <TextField label="Value" value={value ?? ""} onChange={(v) => onValueChange(v === "" ? null : Number(v))} T={T} type="number" placeholder={hints.value} />
       </div>
       <div style={{ flex: 1 }}>
-        {unitOptions.length > 0 ? (
-          <div style={{ padding: "8px 0" }}>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Unit</div>
-            {/* CHANGED — real bug found in testing: `unit ?? unitOptions[0]`
-                only fell back when unit was null/undefined, not "" —
-                an empty string rendered as a blank/unmatched selection
-                that LOOKED like unitOptions[0] but never actually wrote
-                it to state, so a save without touching this dropdown
-                silently stored an empty unit. Callers (setType, the
-                sheet's initial state) now always resolve a real default
-                via getDefaultUnit() before this ever renders, but this
-                stays as the same defensive fallback either way. */}
-            <select value={unit || unitOptions[0]} onChange={(e) => onUnitChange(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
-              {unitOptions.map((u) => <option key={u} value={u}>{u}</option>)}
-            </select>
-          </div>
-        ) : (
-          <TextField label="Unit" value={unit ?? ""} onChange={onUnitChange} T={T} placeholder={hints.unit} />
-        )}
+        <div style={{ padding: "8px 0" }}>
+          <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Unit</div>
+          {unitOptions.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
+              {unitOptions.map((u) => (
+                <div key={u} onClick={() => onUnitChange(u)}
+                  style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, fontWeight: unit === u ? 700 : 400, border: `1px solid ${T.healthcareBlue}`, color: unit === u ? "#FFFFFF" : T.healthcareBlue, background: unit === u ? T.healthcareBlue : "transparent", cursor: "pointer" }}>
+                  {u}
+                </div>
+              ))}
+            </div>
+          )}
+          <input value={unit ?? ""} onChange={(e) => onUnitChange(e.target.value)} placeholder={hints.unit}
+            style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+        </div>
       </div>
     </div>
   );

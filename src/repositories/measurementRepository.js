@@ -77,13 +77,19 @@ const UNIT_CONFIG = {
 // no safe way to guess a conversion factor for an analyte this app
 // has never heard of) — a nudge toward one consistent unit, not the
 // unit-mismatch fix real UNIT_CONFIG conversion provides above.
+// ADDED — real gap found in testing: "tried height, and annoying to
+// just add cm" — none of the 4 original kinds fit a length-based
+// measurement (Height, and anything else measured in cm/in), so
+// picking any of them meant getting stuck with a locked list that
+// never had the right unit in it.
 export const KIND_UNITS = {
   mass: ["kg", "lb", "g", "mg"],
   volume: ["mL", "L"],
   concentration: ["mg/dL", "mmol/L", "ng/dL", "nmol/L", "pg/mL", "pmol/L", "IU/L", "cells/µL", "copies/mL"],
   count: ["count"],
+  length: ["cm", "in", "m"],
 };
-export const KIND_LABELS = { mass: "Weight-like", volume: "Volume-like", concentration: "Concentration-like", count: "Count-like" };
+export const KIND_LABELS = { mass: "Weight-like", volume: "Volume-like", concentration: "Concentration-like", count: "Count-like", length: "Length-like" };
 
 export function getAvailableUnits(type) {
   const config = UNIT_CONFIG[type];

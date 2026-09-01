@@ -65,6 +65,14 @@ function tokenize(text) {
 // this instead finds the single best-matching EXISTING name for a
 // piece of typed text, or returns null if nothing is close enough to
 // be worth suggesting.
+// FIXED — real bug found in testing: findDuplicatePairs below
+// originally reused this same per-word-length threshold, which is
+// tuned for ONE TYPED WORD against a candidate — applied to whole
+// multi-word registry names instead, it flagged things like "Car play"
+// vs "Wax play" or "Fisting" vs "Figging" as likely duplicates purely
+// because they share a common suffix, which is real noise, not a real
+// near-duplicate. findDuplicatePairs now uses its own ratio-based
+// threshold (distance relative to name length) instead of this one.
 export function findClosestMatch(candidateNames, typedText) {
   const normTyped = (typedText || "").trim().toLowerCase();
   if (!normTyped) return null;
@@ -82,6 +90,53 @@ export function findClosestMatch(candidateNames, typedText) {
     }
   }
   return best;
+}
+
+// ADDED — real ask: "add button to check through registries or
+// whatever to check for duplicates using fuzzy matching or similar.
+// Allows for if accidental dupes manually committed so user doesn't
+// have to dig." Different direction from findClosestMatch above (typed
+// text vs the existing list) — this instead checks a whole list
+// against ITSELF, pairwise, surfacing any two existing entries that are
+// near-duplicates of each other. Same threshold/normalization rules as
+// the rest of this file, so "likely duplicate" means exactly what a
+// "did you mean...?" prompt would have caught if one entry had been
+// typed right after the other — this is a scan for dupes that got past
+// that check (e.g. restored from an old backup, or typed far enough
+// apart that neither commit saw the other yet). Flags pairs for a
+// human to review and merge/rename/archive — same "never silently
+// merge" restraint RegistryManagementScreen's own header comment
+// already states for why merge itself isn't built.
+// FIXED — real bug found in testing: reusing maxAllowedDistance()
+// (tuned for a single typed word vs one candidate) here flagged
+// obviously-unrelated multi-word registry entries as "duplicates"
+// purely from a shared word ("Car play"/"Wax play", "Fisting"/
+// "Figging") — too noisy to be useful for "so the user doesn't have to
+// dig". A relative threshold (edit distance as a fraction of the
+// longer name's length) scales correctly regardless of word count:
+// "Rimmingg"/"Rimming" (1 char off an 8-char word, ~12%) still flags;
+// "Car play"/"Wax play" (2 chars off 8, 25%) no longer does. Short
+// names (under 5 characters) are skipped entirely, same reasoning as
+// maxAllowedDistance's own short-word exclusion above — too easy for
+// two genuinely different short words to land within 20% of each
+// other by coincidence.
+const DUPLICATE_RATIO_THRESHOLD = 0.2;
+const DUPLICATE_MIN_LENGTH = 5;
+export function findDuplicatePairs(entries) {
+  const pairs = [];
+  for (let i = 0; i < entries.length; i++) {
+    for (let j = i + 1; j < entries.length; j++) {
+      const nameA = (entries[i].name || "").trim().toLowerCase();
+      const nameB = (entries[j].name || "").trim().toLowerCase();
+      if (!nameA || !nameB) continue;
+      if (nameA === nameB) { pairs.push({ a: entries[i], b: entries[j], distance: 0 }); continue; }
+      const longer = Math.max(nameA.length, nameB.length);
+      if (longer < DUPLICATE_MIN_LENGTH) continue;
+      const distance = levenshteinDistance(nameA, nameB);
+      if (distance / longer <= DUPLICATE_RATIO_THRESHOLD) pairs.push({ a: entries[i], b: entries[j], distance });
+    }
+  }
+  return pairs.sort((x, y) => x.distance - y.distance);
 }
 
 // The real function Global Search actually calls. `searchText` is the
