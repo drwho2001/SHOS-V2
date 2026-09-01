@@ -16,6 +16,7 @@
 // Visits is a real, built module — wired as a genuine relation, stored
 // as an array matching Notion's own relation shape.
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
+import { SymptomsRegistry } from "../registries/symptomsRegistry.js";
 
 const STORAGE_KEY = "shos_vaccinations";
 
@@ -89,14 +90,35 @@ function persist() {
   storage.save(STORAGE_KEY, vaccinations);
 }
 
+// FIXED 1 Sep 2026 — real ask: "Vaccination log symptoms not correct
+// type." The edit form used to feed a plain string-toggle component
+// the symptom's NAME instead of its id, so symptomIds — documented and
+// named as real SymptomsRegistry ids, same as every other module's own
+// symptom relation — actually held name strings for anyone who'd
+// already logged one before that fix. Self-heals on read: anything in
+// symptomIds that isn't a real registry id but does match an existing
+// entry's name is resolved forward to that entry's real id, same
+// graceful on-read-repair pattern already used elsewhere in this app
+// (Symptom Log's own normalizeSymptomIds) rather than a one-time
+// destructive migration.
+function normalizeSymptomIds(entry) {
+  if (!entry.symptomIds || entry.symptomIds.length === 0) return entry;
+  const fixed = entry.symptomIds.map((value) => {
+    if (SymptomsRegistry.getById(value)) return value;
+    const byName = SymptomsRegistry.getAll().find((s) => s.name === value);
+    return byName ? byName.id : value;
+  });
+  return { ...entry, symptomIds: fixed };
+}
+
 export const VaccinationRepository = {
   getAll() {
-    return structuredClone(vaccinations.map((v) => ({ ...DEFAULT_VACCINATION, ...v })));
+    return structuredClone(vaccinations.map((v) => normalizeSymptomIds({ ...DEFAULT_VACCINATION, ...v })));
   },
 
   getById(id) {
     const found = vaccinations.find((v) => v.id === id);
-    return found ? structuredClone({ ...DEFAULT_VACCINATION, ...found }) : null;
+    return found ? structuredClone(normalizeSymptomIds({ ...DEFAULT_VACCINATION, ...found })) : null;
   },
 
   // Real convenience read — same "compute the derived state, don't

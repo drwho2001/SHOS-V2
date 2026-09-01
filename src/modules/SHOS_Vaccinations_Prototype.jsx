@@ -267,8 +267,19 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
           <TextField label="Next due" value={form.nextDue} onChange={set("nextDue")} T={T} type="date" />
           <SelectField label="Injection site" value={form.injectionSite} onChange={set("injectionSite")} options={injectionSiteOptions} T={T} />
           <TextField label="Provider" value={form.provider} onChange={set("provider")} T={T} placeholder="e.g. Sexual Health Clinic" />
-          <MultiSelectChips label="Symptom" value={form.symptomIds} onChange={set("symptomIds")}
-            options={symptoms.map((s) => s.name)} T={T} />
+          {/* FIXED 1 Sep 2026 — real ask: "Vaccination log symptoms not
+              correct type." MultiSelectChips is a plain string-toggle
+              component fed symptom NAMES as its options, but symptomIds
+              is documented (DEFAULT_VACCINATION's own comment) and
+              named as real SymptomsRegistry IDs — every selection was
+              storing a name string into a field meant to hold an ID,
+              exactly like every other symptomIds/symptomTypeIds field
+              in this app (Symptom Log, Clinic Visits) correctly does
+              via RelationPicker, already used two lines below for
+              Clinic visits but never for this field. Switched to the
+              same real ID-backed picker. */}
+          <RelationPicker label="Symptom" value={form.symptomIds} onChange={set("symptomIds")}
+            T={T} items={symptoms} placeholder="No symptoms in registry" />
           <RelationPicker label="Clinic visits" value={form.clinicVisitIds} onChange={set("clinicVisitIds")} T={T} items={visits} placeholder="No clinic visits logged yet" />
           <div style={{ padding: "8px 0 20px" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
@@ -297,6 +308,11 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
     const visit = ClinicVisitsRepository.getById(id);
     return visit ? `${visit.title || (visit.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(visit.date)}` : null;
   }).filter(Boolean);
+  // FIXED 1 Sep 2026 — same real bug as the edit form's own picker:
+  // symptomIds holds real SymptomsRegistry ids now, so displaying it
+  // raw needs resolving to names first, same as visitNames just above
+  // and ClinicVisits' own symptomTypeIds display.
+  const symptomNames = v.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -334,9 +350,9 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
           <ReadRow label="Next due" value={v.nextDue ? formatDate(v.nextDue) : ""} T={T} alert={overdue} />
         </SectionCard>
 
-        {(v.symptomIds.length > 0 || visitNames.length > 0) && (
+        {(symptomNames.length > 0 || visitNames.length > 0) && (
           <SectionCard title="Related records" T={T}>
-            <ReadRow label="Symptom" value={v.symptomIds} T={T} />
+            <ReadRow label="Symptom" value={symptomNames} T={T} />
             <ReadRow label="Clinic visits" value={visitNames} T={T} />
           </SectionCard>
         )}
