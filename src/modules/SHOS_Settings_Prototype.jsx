@@ -1384,6 +1384,18 @@ function AboutScreen({ onClose }) {
                 second, easy-to-forget copy of the same number. */}
             <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600 }}>{APP_VERSION}</span>
           </div>
+          {/* ADDED — real ask: "getting version back to fixes already
+              done" — package.json's version had genuinely never been
+              bumped since the first commit, so this row alone couldn't
+              tell you which of many real builds was installed. Build
+              (the actual short commit SHA, baked in automatically at
+              build time via vite.config.js — see its own comment)
+              never goes stale the way a manually-remembered version
+              bump would. */}
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Build</span>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600, fontFamily: "monospace" }}>{typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev"}</span>
+          </div>
           {/* CHANGED — real fix: pointed at the old private repo this
               project moved off of — the public repo everyone's actual
               builds/releases now come from is SHOS-V2. */}
