@@ -136,6 +136,43 @@ export const EXPORT_GROUPS = [
   ] },
 ];
 
+// ADDED 1 Sep 2026 — real ask, item 3 of the follow-up feature list: a
+// date-range filter on Selective export, distinct from the existing
+// data-TYPE filter above (which key groups get included at all). Only
+// dataKeys that are genuinely dated EVENT records get filtered by
+// range — a Contact/Encounter/Test/etc. has one clear "when did this
+// happen" field. Deliberately excludes: registries/vocabulary lists
+// (kinks, chems, protection, symptoms, locations, organisms, results)
+// — these aren't events, and partially excluding one by date would
+// break resolution for an in-range record that references it;
+// singleton config (myProfile, privacySettings, customOptionLists,
+// resources) — same reasoning, nothing to range-filter; and
+// partnerNotifications, which has no date of its own (it's a
+// generated checklist, not a dated record).
+const DATE_FIELD_BY_KEY = {
+  contacts: "createdAt",
+  medications: "createdAt",
+  logs: "date",
+  encounters: "date",
+  tests: "date",
+  clinicVisits: "date",
+  symptomLog: "dateStarted",
+  vaccinations: "date",
+  episodes: "createdAt",
+};
+
+function withinDateRange(records, field, dateRange) {
+  if (!dateRange || (!dateRange.from && !dateRange.to)) return records;
+  return records.filter((r) => {
+    const value = r[field];
+    if (!value) return false;
+    const day = String(value).slice(0, 10);
+    if (dateRange.from && day < dateRange.from) return false;
+    if (dateRange.to && day > dateRange.to) return false;
+    return true;
+  });
+}
+
 // Pure data assembly — no browser APIs touched here, so this part is
 // fully testable outside a real browser (and was).
 //
@@ -147,7 +184,12 @@ export const EXPORT_GROUPS = [
 // gathered — every repository is still called through its existing
 // getAll()/getProfile(), nothing about how data is READ changes, only
 // which of the results get bundled into the file.
-export function buildBackup(includeKeys = null) {
+//
+// CHANGED 1 Sep 2026 — accepts an optional `dateRange` ({ from, to },
+// either half optional, both YYYY-MM-DD strings) on top of that —
+// same "omitted/null = unchanged behavior" contract, so every existing
+// caller that never passes it gets exactly what it got before.
+export function buildBackup(includeKeys = null, dateRange = null) {
   const allData = {
     contacts: ContactRepository.getAll(),
     medications: MedicationRepository.getAll(),
@@ -172,9 +214,16 @@ export function buildBackup(includeKeys = null) {
     partnerNotifications: PartnerNotificationRepository.getAll(),
   };
   const keySet = includeKeys ? new Set(includeKeys) : null;
-  const data = keySet
+  let data = keySet
     ? Object.fromEntries(Object.entries(allData).filter(([k]) => keySet.has(k)))
     : allData;
+  const hasDateRange = dateRange && (dateRange.from || dateRange.to);
+  if (hasDateRange) {
+    data = Object.fromEntries(Object.entries(data).map(([k, v]) => {
+      const field = DATE_FIELD_BY_KEY[k];
+      return field && Array.isArray(v) ? [k, withinDateRange(v, field, dateRange)] : [k, v];
+    }));
+  }
   return {
     schemaVersion: SCHEMA_VERSION,
     appVersion: APP_VERSION,
@@ -186,6 +235,7 @@ export function buildBackup(includeKeys = null) {
     // existing Array.isArray()-per-key checks already no-op cleanly
     // on any key that's simply absent from the file.
     ...(keySet ? { selective: true } : {}),
+    ...(hasDateRange ? { dateFiltered: dateRange } : {}),
     data,
   };
 }
@@ -392,8 +442,8 @@ export function hasUnbackedChanges() {
   return false;
 }
 
-export async function exportBackup(includeKeys = null) {
-  const backup = buildBackup(includeKeys);
+export async function exportBackup(includeKeys = null, dateRange = null) {
+  const backup = buildBackup(includeKeys, dateRange);
   const json = JSON.stringify(backup, null, 2);
   const dateStamp = new Date().toISOString().slice(0, 10);
   const suffix = includeKeys ? "-selective" : "";
@@ -492,8 +542,8 @@ async function deriveBackupKey(password, saltBytes) {
 // Pure data assembly + real crypto, no browser file/DOM APIs touched
 // here — same "pure" vs. "browser-facing" split as buildBackup() vs.
 // exportBackup() above.
-export async function buildEncryptedBackup(password, includeKeys = null) {
-  const backup = buildBackup(includeKeys);
+export async function buildEncryptedBackup(password, includeKeys = null, dateRange = null) {
+  const backup = buildBackup(includeKeys, dateRange);
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveBackupKey(password, salt);
@@ -533,8 +583,8 @@ export async function decryptBackupEnvelope(envelope, password) {
   return parseBackupFile(new TextDecoder().decode(plainBuf));
 }
 
-export async function exportEncryptedBackup(password, includeKeys = null) {
-  const envelope = await buildEncryptedBackup(password, includeKeys);
+export async function exportEncryptedBackup(password, includeKeys = null, dateRange = null) {
+  const envelope = await buildEncryptedBackup(password, includeKeys, dateRange);
   const json = JSON.stringify(envelope);
   const dateStamp = new Date().toISOString().slice(0, 10);
   const suffix = includeKeys ? "-selective" : "";

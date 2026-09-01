@@ -92,6 +92,14 @@ function SelectiveExportSheet({ onClose, onExported }) {
   // The user build the full set back up by hand every time.
   const allKeys = EXPORT_GROUPS.flatMap((g) => g.items.map((i) => i.dataKey));
   const [checked, setChecked] = useState(() => new Set(allKeys));
+  // ADDED 1 Sep 2026 — real ask, item 3 of the follow-up feature list:
+  // a date-range filter, distinct from the data-type checkboxes above.
+  // Both optional and independent — either one alone still narrows the
+  // export. Only applies to dated event records (see backupService.js's
+  // own DATE_FIELD_BY_KEY comment for exactly which dataKeys that is
+  // and why registries/config are deliberately excluded from it).
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const isGroupFullyChecked = (group) => group.items.every((i) => checked.has(i.dataKey));
   const isGroupPartiallyChecked = (group) => group.items.some((i) => checked.has(i.dataKey)) && !isGroupFullyChecked(group);
@@ -114,7 +122,8 @@ function SelectiveExportSheet({ onClose, onExported }) {
   };
 
   const doExport = () => {
-    exportBackup(checked.size === allKeys.length ? null : Array.from(checked));
+    const dateRange = (dateFrom || dateTo) ? { from: dateFrom || null, to: dateTo || null } : null;
+    exportBackup(checked.size === allKeys.length ? null : Array.from(checked), dateRange);
     onExported?.();
     onClose();
   };
@@ -159,11 +168,33 @@ function SelectiveExportSheet({ onClose, onExported }) {
               ))}
             </div>
           ))}
+          {/* ADDED 1 Sep 2026 — real ask: date-range filter. */}
+          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, marginBottom: 10, padding: "12px 14px" }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Date range (optional)</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", marginBottom: 10 }}>
+              Only narrows dated records (Contacts, Encounters, Medications, Testing, Clinic Visits, Symptom Log, Vaccinations, Timeline). Registries and app settings are always included in full.
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>From</div>
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>To</div>
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+              </div>
+            </div>
+            {(dateFrom || dateTo) && (
+              <div onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 8, cursor: "pointer" }}>Clear date range</div>
+            )}
+          </div>
         </div>
         <div style={{ padding: "14px 20px", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", flexShrink: 0 }}>
           <button onClick={doExport} disabled={checked.size === 0}
             style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: checked.size === 0 ? "#656568" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: checked.size === 0 ? "default" : "pointer" }}>
-            {checked.size === allKeys.length ? "Export everything" : `Export selected (${checked.size} of ${allKeys.length})`}
+            {checked.size === allKeys.length && !dateFrom && !dateTo ? "Export everything" : `Export selected (${checked.size} of ${allKeys.length})`}
           </button>
         </div>
       </div>
@@ -242,6 +273,10 @@ function EncryptedExportSheet({ onClose }) {
   const [showPasswords, setShowPasswords] = useState(false);
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
+  // ADDED 1 Sep 2026 — real ask, item 3 of the follow-up feature list —
+  // same date-range filter as the plain Selective export sheet.
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const isGroupFullyChecked = (group) => group.items.every((i) => checked.has(i.dataKey));
   const isGroupPartiallyChecked = (group) => group.items.some((i) => checked.has(i.dataKey)) && !isGroupFullyChecked(group);
@@ -267,7 +302,8 @@ function EncryptedExportSheet({ onClose }) {
     if (password !== confirmPassword) { setError("Passwords don't match — check both and try again."); return; }
     setExporting(true);
     try {
-      await exportEncryptedBackup(password, checked.size === allKeys.length ? null : Array.from(checked));
+      const dateRange = (dateFrom || dateTo) ? { from: dateFrom || null, to: dateTo || null } : null;
+      await exportEncryptedBackup(password, checked.size === allKeys.length ? null : Array.from(checked), dateRange);
       setPassword(""); setConfirmPassword("");
       onClose();
     } catch (err) {
@@ -324,6 +360,28 @@ function EncryptedExportSheet({ onClose }) {
               ))}
             </div>
           ))}
+          {/* ADDED 1 Sep 2026 — real ask: date-range filter. */}
+          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, marginBottom: 10, padding: "12px 14px" }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Date range (optional)</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", marginBottom: 10 }}>
+              Only narrows dated records. Registries and app settings are always included in full.
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>From</div>
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>To</div>
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+              </div>
+            </div>
+            {(dateFrom || dateTo) && (
+              <div onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 8, cursor: "pointer" }}>Clear date range</div>
+            )}
+          </div>
         </div>
         <div style={{ padding: "14px 20px", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", flexShrink: 0 }}>
           <button onClick={doExport} disabled={checked.size === 0 || exporting}
