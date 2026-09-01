@@ -928,6 +928,10 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           <ReadRow label="Title" value={encounter.title} T={T} />
           <ReadRow label="Encounter type" value={encounter.encounterType} T={T} />
           <ReadRow label="Time of day" value={timeOfDay(encounter.date)} T={T} />
+          {/* ADDED — real ask: optional end date/time, for multi-day or
+              particularly long encounters — see the Edit form's own
+              comment for why this data already existed with no UI. */}
+          <ReadRow label="Ends" value={encounter.dateEnd ? new Date(encounter.dateEnd).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : null} T={T} />
           <ReadRow label="Would meet again" value={encounter.wouldMeetAgain} T={T} />
           <ReadRow label="Enjoyment rating" value={encounter.enjoymentRating} T={T} />
         </SectionCard>
@@ -1087,6 +1091,28 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
         <SectionCard title="Overview" T={T}>
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder="e.g. Alex — coffee then back to theirs" />
           <DateTimeField label="Date & time" value={form.date} onChange={set("date")} T={T} />
+          {/* ADDED — real ask: "optional end time for encounter (ie if
+              multiday or particularly long)". `dateEnd` already existed
+              on the data model (DEFAULT_ENCOUNTER) but had no UI
+              anywhere — genuinely wired up now. Left blank by default
+              and no separate toggle needed: it's just an optional
+              field, same pattern as Clinic Visits' own "(optional)"
+              Location field. */}
+          {form.dateEnd ? (
+            <>
+              <DateTimeField label="End date & time" value={form.dateEnd} onChange={set("dateEnd")} T={T} />
+              <div style={{ padding: "0 0 8px" }}>
+                <span onClick={() => set("dateEnd")("")} style={{ fontSize: 11, color: T.textSecondary, cursor: "pointer", textDecoration: "underline" }}>Remove end time</span>
+              </div>
+            </>
+          ) : (
+            <div style={{ padding: "8px 0" }}>
+              <span onClick={() => set("dateEnd")(form.date || `${nowAsDateTimeLocalString()}:00.000Z`)}
+                style={{ fontSize: 12, fontWeight: 700, color: T.encountersPink, cursor: "pointer" }}>
+                + Add end date & time (multi-day or long encounter)
+              </span>
+            </div>
+          )}
           <SelectField label="Encounter type" value={form.encounterType} onChange={set("encounterType")} options={ENCOUNTER_TYPE_OPTIONS} T={T} />
           <SelectField label="Would meet again" value={form.wouldMeetAgain} onChange={set("wouldMeetAgain")} options={WOULD_MEET_AGAIN_OPTIONS} T={T} />
           <TextField label="Enjoyment rating (0–100)" value={form.enjoymentRating} onChange={set("enjoymentRating")} T={T} type="number" />
