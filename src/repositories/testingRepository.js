@@ -64,7 +64,19 @@ export const DEFAULT_TEST = {
   // conditional home-kit tracking info, so it looked broken/unwritable
   // for any non-home test.
   notes: "",
+  // CHANGED 1 Sep 2026 — real ask: "there's usually a pk/sk kit code
+  // and an access key... not just one field" — a real postal/home STI
+  // test kit (e.g. SH:24, Freetesting.me) has these as genuinely
+  // separate identifiers: two parts to the kit's own code, plus a
+  // distinct access key used to log into the results portal — one
+  // free-text field couldn't represent that without just concatenating
+  // them by hand. trackingInfo is kept, not removed or repurposed, for
+  // anything already saved there and as a genuine catch-all for
+  // anything that doesn't fit the three fields below.
   trackingInfo: "",
+  kitCodePk: "",
+  kitCodeSk: "",
+  kitAccessKey: "",
   attachments: [],        // real, wired — see attachment shape below
   // CHANGED 19 Aug 2026 — clinicVisitIds is now REAL, not stubbed.
   // Clinic Visits exists as a module now (see clinicVisitsRepository.js),

@@ -25,6 +25,7 @@ import {
   TagIcon as Palette, ArrowUUpLeftIcon as ResetIcon, CalendarIcon as Calendar,
   FileCsvIcon as FileCsv, LockIcon as Lock, BellIcon as Bell,
   CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck,
+  LifebuoyIcon as LifeBuoy,
 } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, resolveDarkAccent } from "../calculations/designTokens";
 import { ModuleColorRepository, CUSTOMIZABLE_MODULE_KEYS, CUSTOMIZABLE_ACTION_KEYS } from "../repositories/moduleColorRepository";
@@ -73,6 +74,7 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import RegistryManagementScreen from "./SHOS_RegistryManagement_Prototype";
 import { OptionListDetail, ICON_COMPONENTS as OPTION_LIST_ICON_COMPONENTS } from "./SHOS_OptionListEditor_Prototype";
 import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } from "../repositories/customOptionListsRepository";
+import { ResourcesRepository, CATEGORY_LABELS as RESOURCE_CATEGORY_LABELS } from "../repositories/resourcesRepository";
 
 function SelectiveExportSheet({ onClose, onExported }) {
   const [darkMode] = useDarkModePreference();
@@ -519,6 +521,144 @@ function ManageListsScreen({ onClose }) {
   );
 }
 
+// ADDED 1 Sep 2026 — real ask: "want resources section in settings
+// maybe - domestic violence, contraceptive advice, hrt and trans
+// support, charities, clinical justifications used, finding a local
+// clinic or ordering... sexual health test postal." See
+// resourcesRepository.js's own header for why every entry seeds with a
+// real org name but a deliberately blank link/notes field — this
+// screen is where the user fills those in themselves.
+function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
+  const T = darkMode ? DARK : NEUTRAL;
+  const [expanded, setExpanded] = useState(false);
+  const [link, setLink] = useState(entry.link);
+  const [notes, setNotes] = useState(entry.notes);
+
+  const save = () => {
+    ResourcesRepository.updateEntry(categoryKey, entry.id, { link, notes });
+    onChanged();
+  };
+  const remove = () => {
+    ResourcesRepository.removeEntry(categoryKey, entry.id);
+    onChanged();
+  };
+
+  return (
+    <div style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
+      <div onClick={() => setExpanded((e) => !e)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{entry.name}</div>
+          {!expanded && entry.link && <div style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 2 }}>{entry.link}</div>}
+          {!expanded && !entry.link && <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginTop: 2 }}>No link saved yet — tap to add one</div>}
+        </div>
+        <ChevronRight size={14} color={T.textDisabled} style={{ transform: expanded ? "rotate(90deg)" : "none" }} />
+      </div>
+      {expanded && (
+        <div style={{ marginTop: 10 }}>
+          <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="Link or phone number"
+            style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", marginBottom: 8 }} />
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" rows={2}
+            style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical", marginBottom: 8 }} />
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={remove} style={{ padding: "8px 14px", borderRadius: 999, border: `1px solid ${ACTION.red}`, background: "transparent", color: ACTION.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Remove</button>
+            <button onClick={save} style={{ flex: 1, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ResourceCategory({ categoryKey, darkMode }) {
+  const T = darkMode ? DARK : NEUTRAL;
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [addingName, setAddingName] = useState("");
+  const entries = useMemo(() => ResourcesRepository.getEntries(categoryKey), [categoryKey, refreshKey]);
+  const refresh = () => setRefreshKey((k) => k + 1);
+
+  const addEntry = () => {
+    if (!addingName.trim()) return;
+    ResourcesRepository.addEntry(categoryKey, { name: addingName });
+    setAddingName("");
+    refresh();
+  };
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>{RESOURCE_CATEGORY_LABELS[categoryKey]}</div>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+        {entries.length === 0 ? (
+          <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>Nothing added yet.</div>
+        ) : entries.map((entry) => (
+          <ResourceEntryRow key={entry.id} entry={entry} categoryKey={categoryKey} onChanged={refresh} darkMode={darkMode} />
+        ))}
+        <div style={{ display: "flex", gap: 8, padding: 12 }}>
+          <input value={addingName} onChange={(e) => setAddingName(e.target.value)} placeholder="+ Add your own"
+            onKeyDown={(e) => { if (e.key === "Enter") addEntry(); }}
+            style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+          <button onClick={addEntry} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Add</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ADDED 1 Sep 2026 — the "clinical justifications used" part of the
+// ask. NOT from ResourcesRepository — this is a fixed, read-only
+// summary of the real guidance this app's own calculations are
+// already built on (exposure windows, DoxyPEP timing, the 90-day
+// testing-interval stat), pulled from those files' own citations
+// rather than restated from memory. Only ONE clickable link — the
+// exact BASHH source URL already stored and used elsewhere in this app
+// (Stats screen) — no other link here is invented; guidance without an
+// existing verified URL in this codebase is named, not linked.
+function ClinicalJustificationsCategory({ darkMode }) {
+  const T = darkMode ? DARK : NEUTRAL;
+  const items = [
+    { title: "STI retesting interval (90 days)", body: "BASHH's 2023 \"Summary Guidance on Testing for STIs\" recommends 3-monthly asymptomatic screening for higher-risk groups; matches CDC's own 3–6 month guidance for PrEP users.", link: BASHH_TESTING_SOURCE_URL },
+    { title: "DoxyPEP dosing window", body: "BASHH's 2025 UK national guideline and CDC's 2024 clinical guidance — doxycycline taken within 72 hours after condomless oral, vaginal, or anal sex.", link: null },
+    { title: "STI exposure windows", body: "Gathered from current UK sexual-health guidance (BASHH/BHIVA position statements) and NHS-affiliated sexual health services — used to flag when a test is too early to be reliable, not as a diagnosis.", link: null },
+  ];
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Clinical justifications used</div>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+        <div style={{ fontSize: 11, color: T.textSecondary, padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
+          What this app's own calculations (exposure windows, DoxyPEP timing, testing-interval stats) are actually based on — informational, not personalised medical advice.
+        </div>
+        {items.map((item) => (
+          <div key={item.title} style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 3 }}>{item.title}</div>
+            <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.4 }}>{item.body}</div>
+            {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 4, display: "inline-block" }}>{item.link}</a>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ResourcesScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+  return (
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Resources</span>
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16, lineHeight: 1.4 }}>
+          Real organisations are named below, but every link/phone number starts blank — worth confirming and filling in your own current, verified one rather than trusting a pre-filled number for something this important.
+        </div>
+        {ResourcesRepository.getAllCategoryKeys().map((key) => (
+          <ResourceCategory key={key} categoryKey={key} darkMode={darkMode} />
+        ))}
+        <ClinicalJustificationsCategory darkMode={darkMode} />
+      </div>
+    </div>
+  );
+}
+
 // ADDED 19 Aug 2026 — Privacy screen: Anonymise mode. Real, scoped ask
 // from the user, not the earlier vague "what counts as identifiable"
 // unknown — see privacySettingsRepository.js for the full reasoning
@@ -557,6 +697,25 @@ function PrivacyScreen({ onClose }) {
     setNewPin(""); setConfirmPin(""); setSettingPin(false); setPinError("");
     refresh();
   };
+
+  // ADDED 1 Sep 2026 — real ask: "dummy pin good idea." Same
+  // confirm-before-accept pattern as the real PIN above, plus the one
+  // extra real validation this PIN specifically needs — see
+  // setDuressPin's own comment on why it must differ from the real PIN.
+  const [settingDuressPin, setSettingDuressPin] = useState(false);
+  const [newDuressPin, setNewDuressPin] = useState("");
+  const [confirmDuressPin, setConfirmDuressPin] = useState("");
+  const [duressPinError, setDuressPinError] = useState("");
+  const saveDuressPin = () => {
+    const trimmed = newDuressPin.trim();
+    if (trimmed.length < 4) { setDuressPinError("PIN should be at least 4 digits."); return; }
+    if (trimmed !== confirmDuressPin.trim()) { setDuressPinError("PINs don't match — check both and try again."); return; }
+    const result = PrivacySettingsRepository.setDuressPin(trimmed);
+    if (!result.ok) { setDuressPinError(result.error); return; }
+    setNewDuressPin(""); setConfirmDuressPin(""); setSettingDuressPin(false); setDuressPinError("");
+    refresh();
+  };
+  const clearDuressPin = () => { PrivacySettingsRepository.clearDuressPin(); refresh(); };
 
   // ADDED 19 Aug 2026 — App Lock toggle, real ask. Guarded: can't turn
   // on without a PIN already set, since App Lock with no PIN would
@@ -783,6 +942,53 @@ function PrivacyScreen({ onClose }) {
             </button>
           )}
         </div>
+
+        {/* ADDED 1 Sep 2026 — real ask: duress/decoy PIN. Only offered
+            once App Lock is actually on — a duress PIN only means
+            anything if there's a real lock screen for it to be entered
+            on in the first place. */}
+        {settings.appLockEnabled && (
+          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16, marginTop: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Duress PIN (optional)</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 10 }}>
+              {settings.duressPin
+                ? "Set. Entering this PIN on the App Lock screen — instead of your real one — opens a convincing but empty, fake version of the app. Your real data stays completely untouched, just not shown. There's no way back to real data from inside a decoy session — close and reopen the app, then enter your REAL PIN."
+                : "A second PIN, different from your real one, for a \"someone is making me unlock my phone\" situation. Entering it opens a fake, empty-looking app instead of your real data — nothing is deleted or changed, it just isn't shown."}
+            </div>
+            {settingDuressPin ? (
+              <>
+                <div style={{ position: "relative", marginBottom: 8 }}>
+                  <input value={newDuressPin} onChange={(e) => setNewDuressPin(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="New duress PIN (4+ digits)"
+                    style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
+                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                    : <Eye size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                </div>
+                <div style={{ position: "relative", marginBottom: 8 }}>
+                  <input value={confirmDuressPin} onChange={(e) => setConfirmDuressPin(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="Confirm duress PIN"
+                    style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
+                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                    : <Eye size={17} color={darkMode ? DARK.textDisabled : "#9A9AA1"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                </div>
+                {duressPinError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{duressPinError}</div>}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => { setSettingDuressPin(false); setNewDuressPin(""); setConfirmDuressPin(""); setDuressPinError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+                  <button onClick={saveDuressPin} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Save PIN</button>
+                </div>
+              </>
+            ) : (
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setSettingDuressPin(true)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${ACCENTS.healthcare}`, background: "transparent", color: ACCENTS.healthcare, fontWeight: 700, cursor: "pointer" }}>
+                  {settings.duressPin ? "Change duress PIN" : "Set a duress PIN"}
+                </button>
+                {settings.duressPin && (
+                  <button onClick={clearDuressPin} style={{ padding: "10px 16px", borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: ACTION.red, fontWeight: 600, cursor: "pointer" }}>
+                    Remove
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </div>
@@ -2177,6 +2383,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // its own row here in the Data section (see AutomaticBackupsScreen's
   // own comment on why).
   const [showAutoBackupSettings, setShowAutoBackupSettings] = useState(false);
+  // ADDED 1 Sep 2026 — real ask: a Resources section.
+  const [showResources, setShowResources] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   // ADDED — real ask: unified notifications management, one place to
   // turn each real reminder type on/off rather than each one being
@@ -2209,6 +2417,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showPreferences) { setShowPreferences(false); return true; }
       if (showPrivacy) { setShowPrivacy(false); return true; }
       if (showNotifications) { setShowNotifications(false); return true; }
+      if (showResources) { setShowResources(false); return true; }
       if (showAutoBackupSettings) { setShowAutoBackupSettings(false); return true; }
       if (showManageLists) { setShowManageLists(false); return true; }
       if (showDevTools) { setShowDevTools(false); return true; }
@@ -2219,7 +2428,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showManageLists, showAutoBackupSettings, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showManageLists, showAutoBackupSettings, showResources, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.
@@ -2324,6 +2533,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             inactive-contact threshold, the user's own first concrete ask
             for this previously fully-stubbed section. */}
         <SettingsRow icon={SettingsIcon} label="Preferences" onClick={() => setShowPreferences(true)} />
+        {/* ADDED 1 Sep 2026 — real ask: a Resources section. */}
+        <SettingsRow icon={LifeBuoy} label="Resources" onClick={() => setShowResources(true)} />
       </div>
 
       <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#9A9AA1", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Design</div>
@@ -2376,6 +2587,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showAutoBackupSettings && (
         <AutomaticBackupsScreen onClose={() => setShowAutoBackupSettings(false)} />
+      )}
+      {showResources && (
+        <ResourcesScreen onClose={() => setShowResources(false)} />
       )}
       {showDesign && (
         <DesignScreen onClose={() => setShowDesign(false)} />

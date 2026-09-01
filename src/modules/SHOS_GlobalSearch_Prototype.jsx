@@ -120,7 +120,7 @@ function buildIndex() {
   });
 
   TestingRepository.getAll().filter((t) => !t.isArchived).forEach((t) => {
-    const searchText = [t.title, ...(t.testingFor || []), t.trackingInfo].join(" ");
+    const searchText = [t.title, ...(t.testingFor || []), t.trackingInfo, t.kitCodePk, t.kitCodeSk, t.kitAccessKey].join(" ");
     results.push({
       type: "test", id: t.id,
       title: t.title || (t.testingFor || []).join("/") || "Test",

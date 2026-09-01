@@ -132,15 +132,22 @@ const TABS = [
 // field below is always usable regardless of biometric state; a
 // cancelled/failed/unavailable biometric attempt just leaves you here
 // with the PIN field, same as before this existed.
-function AppLockScreen({ onUnlock }) {
+function AppLockScreen({ onUnlock, onUnlockDecoy }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricAttempting, setBiometricAttempting] = useState(false);
 
+  // CHANGED 1 Sep 2026 — real ask: a duress/decoy PIN. Routes to
+  // whichever of the two real PINs was entered — see
+  // classifyAppLockPin's own comment for why they have to be different
+  // codes for this to work at all.
   const attempt = () => {
-    if (PrivacySettingsRepository.checkAppLockPin(pin)) {
+    const result = PrivacySettingsRepository.classifyAppLockPin(pin);
+    if (result === "real") {
       onUnlock();
+    } else if (result === "duress") {
+      onUnlockDecoy();
     } else {
       setError("Incorrect PIN.");
       setPin("");
@@ -186,6 +193,49 @@ function AppLockScreen({ onUnlock }) {
       <button onClick={attempt} style={{ padding: "10px 24px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
         Unlock
       </button>
+    </div>
+  );
+}
+
+// ADDED 1 Sep 2026 — real ask: "dummy pin good idea." Entering the
+// duress PIN on App Lock lands here instead of the real app —
+// deliberately a self-contained fake, not a real screen fed real data:
+// no repository is imported or called anywhere in this component, so
+// there is zero risk of a real record ever leaking through a decoy
+// session by accident. Mimics the real app's basic chrome (same tab
+// bar, icons, labels, colours) closely enough to read as genuine at a
+// glance, but every tab just shows a plausible "nothing logged yet"
+// empty state — the same copy a genuinely fresh install would show.
+// DELIBERATELY NO WAY BACK to the real app from inside here — that's
+// the point of a duress PIN. Getting to real data after this requires
+// closing and reopening the app and entering the REAL PIN, same as any
+// other cold start.
+function DecoyHome() {
+  const [tab, setTab] = useState("home");
+  const emptyCopy = {
+    home: "No activity logged yet.",
+    contacts: "No contacts yet.",
+    activity: "No encounters logged yet.",
+    medication: "No medications tracked yet.",
+    healthcare: "No records yet.",
+  };
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", display: "flex", flexDirection: "column", fontFamily: "'Inter', sans-serif", zIndex: 999 }}>
+      <div style={{ padding: "20px 20px 12px", flexShrink: 0 }}>
+        <div style={{ fontSize: 20, fontWeight: 700, color: "#1B1B1F" }}>SHOS</div>
+      </div>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: 20 }}>
+        <div style={{ fontSize: 14, color: "#9A9AA1", fontWeight: 500 }}>{emptyCopy[tab]}</div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", padding: "10px 0", borderTop: "1px solid #DCDCE1", background: "#FFFFFF", flexShrink: 0 }}>
+        {TABS.map((t) => (
+          <div key={t.key} onClick={() => setTab(t.key)}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", color: tab === t.key ? t.accent : "#9A9AA1" }}>
+            <t.icon size={22} weight={tab === t.key ? "fill" : "regular"} />
+            <span style={{ fontSize: 10, fontWeight: 600 }}>{t.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -311,6 +361,11 @@ export default function App() {
   // who set a grace period and reopened within it isn't made to
   // re-verify on this very first mount either.
   const [locked, setLocked] = useState(() => PrivacySettingsRepository.shouldRelock());
+  // ADDED 1 Sep 2026 — real ask: duress PIN. Session-only (not
+  // persisted anywhere) — a decoy session never survives a real app
+  // restart, by design; see DecoyHome's own comment on why there's
+  // deliberately no way back to the real app from inside it.
+  const [decoyActive, setDecoyActive] = useState(false);
   // ADDED 26 Aug 2026 — real ask: onboarding, real single-user
   // personal app — checked once on load, same pattern as `locked`
   // above.
@@ -731,10 +786,20 @@ export default function App() {
     }
   };
 
+  // ADDED 1 Sep 2026 — decoy session gate: checked before the App Lock
+  // gate below (once decoyActive, there's no lock screen to show or
+  // bypass — this is the entire rest of the session).
+  if (decoyActive) {
+    return <DecoyHome />;
+  }
+
   // ADDED 19 Aug 2026 — App Lock gate: shown INSTEAD of everything
   // else while locked, real ask.
   if (locked) {
-    return <AppLockScreen onUnlock={() => { PrivacySettingsRepository.recordUnlock(); setLocked(false); }} />;
+    return <AppLockScreen
+      onUnlock={() => { PrivacySettingsRepository.recordUnlock(); setLocked(false); }}
+      onUnlockDecoy={() => setDecoyActive(true)}
+    />;
   }
 
   // ADDED 26 Aug 2026 — real ask: onboarding gate, same pattern as App

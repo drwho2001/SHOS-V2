@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCcw } from "@phosphor-icons/react";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
+import PartnerNotificationSheet from "./SHOS_PartnerNotification_Prototype";
+import { PartnerNotificationRepository } from "../repositories/partnerNotificationRepository";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
 import {
   TestingRepository, DEFAULT_TEST,
@@ -652,7 +654,17 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
               Setting is actually Home — was previously always visible
               with no context for what it was for. */}
           {form.setting === "🏠 Home" && (
-            <TextField label="Tracking info (home test kit)" value={form.trackingInfo} onChange={set("trackingInfo")} T={T} placeholder="e.g. barcode, reference number" />
+            <>
+              {/* ADDED 1 Sep 2026 — real ask: a postal/home kit's own
+                  code is usually two separate parts (PK/SK) plus a
+                  distinct access key for the results portal — three
+                  real identifiers, not one. trackingInfo below stays
+                  as a genuine catch-all for anything else. */}
+              <TextField label="Kit code (PK)" value={form.kitCodePk} onChange={set("kitCodePk")} T={T} placeholder="e.g. PK12345678" />
+              <TextField label="Kit code (SK)" value={form.kitCodeSk} onChange={set("kitCodeSk")} T={T} placeholder="e.g. SK98765432" />
+              <TextField label="Access key" value={form.kitAccessKey} onChange={set("kitAccessKey")} T={T} placeholder="For logging into the results portal" />
+              <TextField label="Other tracking info" value={form.trackingInfo} onChange={set("trackingInfo")} T={T} placeholder="e.g. barcode, courier reference number" />
+            </>
           )}
           {/* ADDED 26 Aug 2026 — real bug: this card had no actual
               general notes field, unlike every other module. Same
@@ -691,11 +703,20 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   // ADDED — real ask: real delete, with a confirmation step so a stray
   // tap can't silently destroy a record.
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // ADDED 1 Sep 2026 — real ask: partner notification checklist. See
+  // partnerNotificationRepository.js's own header for the full scope.
+  const [showPartnerNotify, setShowPartnerNotify] = useState(false);
+  // Bumped on close so the "Generate" vs "View list" state below
+  // re-reads from the repository — PartnerNotificationRepository isn't
+  // itself reactive state, so nothing else here would trigger a
+  // re-render after the sheet creates/edits/deletes a list.
+  const [, setPartnerNotifyVersion] = useState(0);
   if (!test) return null;
 
   const organismNames = test.organismIds.map((id) => OrganismRegistry.getById(id)?.name).filter(Boolean);
   const resultNames = test.resultIds.map((id) => ResultsRegistry.getById(id)?.name).filter(Boolean);
   const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
+  const partnerNotifyList = isPositive ? PartnerNotificationRepository.getByTestId(testId) : null;
   const resultPending = test.resultDate && new Date(test.resultDate) > new Date() && !revealEarly;
   // ADDED 19 Aug 2026 — real data, previously built but never
   // displayed. See the import comment above for the full reasoning.
@@ -773,6 +794,18 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
             </div>
           )}
           <ReadRow label="Written plan" value={test.writtenPlan} T={T} />
+          {/* ADDED 1 Sep 2026 — real ask: partner notification. Only
+              offered when a Result is actually recorded as Positive —
+              this isn't relevant otherwise. */}
+          {isPositive && (
+            <div onClick={() => setShowPartnerNotify(true)}
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer", marginTop: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: T.healthcareBlue }}>
+                {partnerNotifyList ? `Contact list · ${partnerNotifyList.items.filter((i) => i.notified).length}/${partnerNotifyList.items.length} notified` : "Generate contact list"}
+              </span>
+              <ChevronRight size={14} color={T.healthcareBlue} />
+            </div>
+          )}
           {(() => {
             const suggested = suggestedRoutineRetestDate(test);
             return suggested ? (
@@ -784,7 +817,14 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
         </SectionCard>
 
         <SectionCard title="Notes" T={T}>
-          {test.setting === "🏠 Home" && <ReadRow label="Tracking info (home test kit)" value={test.trackingInfo} T={T} />}
+          {test.setting === "🏠 Home" && (
+            <>
+              <ReadRow label="Kit code (PK)" value={test.kitCodePk} T={T} />
+              <ReadRow label="Kit code (SK)" value={test.kitCodeSk} T={T} />
+              <ReadRow label="Access key" value={test.kitAccessKey} T={T} />
+              <ReadRow label="Other tracking info" value={test.trackingInfo} T={T} />
+            </>
+          )}
           {/* ADDED 26 Aug 2026 — matches the new general notes field
               added to the edit form. */}
           <ReadRow label="General notes" value={test.notes} T={T} />
@@ -826,6 +866,9 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
           </div>
         )}
       </div>
+      {showPartnerNotify && (
+        <PartnerNotificationSheet testId={testId} onClose={() => { setShowPartnerNotify(false); setPartnerNotifyVersion((v) => v + 1); }} />
+      )}
     </div>
   );
 }

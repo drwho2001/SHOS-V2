@@ -83,6 +83,16 @@ export const DEFAULT_PRIVACY_SETTINGS = {
   // biometric), read alongside this in App.jsx's own lock check.
   appLockGraceMinutes: 0,
   lastUnlockedAt: null,
+  // ADDED 1 Sep 2026 — real ask: a duress/decoy PIN. Entering THIS pin
+  // on the App Lock screen instead of the real one opens a convincing
+  // but entirely fake empty app (see DecoyHome in App.jsx) rather than
+  // any real data — for the "someone is making me unlock my phone"
+  // scenario, distinct from Anonymise mode above (which still shows
+  // real data, just masked, and needs the app already open). Kept as
+  // its own separate PIN, NOT reusing anonymisePin the way App Lock
+  // does — the whole mechanism only works if the real PIN and the
+  // decoy PIN are two different codes.
+  duressPin: "",
 };
 
 export const PrivacySettingsRepository = {
@@ -142,5 +152,39 @@ export const PrivacySettingsRepository = {
   checkAppLockPin(enteredPin) {
     const settings = this.getSettings();
     return enteredPin === settings.anonymisePin;
+  },
+
+  // ADDED 1 Sep 2026 — real ask: the duress PIN. Distinguishes "real
+  // PIN" from "duress PIN" from "wrong" so the lock screen can route
+  // each case differently (real → the actual app; duress → DecoyHome;
+  // wrong → the existing error). An empty enteredPin never matches
+  // either, even if one of the stored PINs is itself somehow blank.
+  classifyAppLockPin(enteredPin) {
+    if (!enteredPin) return "wrong";
+    const settings = this.getSettings();
+    if (enteredPin === settings.anonymisePin) return "real";
+    if (settings.duressPin && enteredPin === settings.duressPin) return "duress";
+    return "wrong";
+  },
+
+  // Real validation, not just "non-empty": a duress PIN identical to
+  // the real one would make the whole feature a no-op (every unlock
+  // would classify as "real"), and an empty string would mean
+  // classifyAppLockPin's `settings.duressPin &&` guard never matches
+  // it at all — effectively silently not-set even if this were allowed
+  // to save. Returns { ok, error } rather than throwing, matching
+  // deactivate()'s own pattern above, so the Settings UI can show
+  // exactly why a save was rejected.
+  setDuressPin(newPin) {
+    const settings = this.getSettings();
+    if (!settings.anonymisePin) return { ok: false, error: "Set your real PIN first." };
+    if (!newPin || !newPin.trim()) return { ok: false, error: "Enter a PIN." };
+    if (newPin === settings.anonymisePin) return { ok: false, error: "Must be different from your real PIN." };
+    this.update({ duressPin: newPin });
+    return { ok: true };
+  },
+
+  clearDuressPin() {
+    this.update({ duressPin: "" });
   },
 };

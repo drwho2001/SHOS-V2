@@ -65,6 +65,12 @@ import { CustomOptionListsRepository } from "../repositories/customOptionListsRe
 // default. Fixed by adding it here, same pattern as every other
 // repository.
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository.js";
+// ADDED 1 Sep 2026, same session both were built — wired into backup
+// immediately this time, per this file's own repeated past lesson
+// (Testing/Privacy Settings both got missed for a full session before
+// being caught here).
+import { PartnerNotificationRepository } from "../repositories/partnerNotificationRepository.js";
+import { ResourcesRepository } from "../repositories/resourcesRepository.js";
 
 // Doc 5 §8: "Every export/backup file stamps: schema version, migration
 // version, app version." Schema version bumps only when a backup file's
@@ -120,6 +126,13 @@ export const EXPORT_GROUPS = [
   { key: "appSettings", label: "App settings", items: [
     { dataKey: "customOptionLists", label: "Custom option lists (your own added/renamed options)" },
     { dataKey: "privacySettings", label: "Privacy settings (Anonymise mode PIN + preference)" },
+    { dataKey: "resources", label: "Resources (Settings → Resources links/notes)" },
+  ] },
+  // ADDED 1 Sep 2026 — real ask: partner notification checklists. Own
+  // group, not folded into Healthcare — this is a generated action
+  // list derived from a Test, not clinical record data itself.
+  { key: "partnerNotifications", label: "Partner notification checklists", items: [
+    { dataKey: "partnerNotifications", label: "Partner notification checklists" },
   ] },
 ];
 
@@ -155,6 +168,8 @@ export function buildBackup(includeKeys = null) {
     episodes: EpisodeRepository.getAll(),
     customOptionLists: CustomOptionListsRepository.getAllForBackup(),
     privacySettings: PrivacySettingsRepository.getSettings(),
+    resources: ResourcesRepository.getAllForBackup(),
+    partnerNotifications: PartnerNotificationRepository.getAll(),
   };
   const keySet = includeKeys ? new Set(includeKeys) : null;
   const data = keySet
@@ -200,7 +215,7 @@ export function parseBackupFile(jsonText) {
 // wiping everything with no confirmation was a real gap on its own,
 // separate from merge existing at all.
 export function restoreBackup(parsedBackup) {
-  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, customOptionLists, privacySettings } = parsedBackup.data;
+  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, customOptionLists, privacySettings, resources, partnerNotifications } = parsedBackup.data;
   if (Array.isArray(contacts)) ContactRepository.replaceAll(contacts);
   if (Array.isArray(medications)) MedicationRepository.replaceAll(medications);
   if (Array.isArray(logs)) LogRepository.replaceAll(logs);
@@ -221,6 +236,8 @@ export function restoreBackup(parsedBackup) {
   if (Array.isArray(episodes)) EpisodeRepository.replaceAll(episodes);
   if (customOptionLists && typeof customOptionLists === "object") CustomOptionListsRepository.replaceAll(customOptionLists);
   if (privacySettings && typeof privacySettings === "object") PrivacySettingsRepository.update(privacySettings);
+  if (resources && typeof resources === "object") ResourcesRepository.replaceAll(resources);
+  if (Array.isArray(partnerNotifications)) PartnerNotificationRepository.replaceAll(partnerNotifications);
   // Not Array.isArray — MyProfile is a singleton object, not a list.
   // Older backup files (from before 18 Aug 2026) simply won't have a
   // myProfile key at all, so this quietly no-ops on those rather than
@@ -279,6 +296,20 @@ export function mergeBackup(parsedBackup) {
       merged[key] = Array.from(new Set([...(current[key] || []), ...(data.customOptionLists[key] || [])]));
     }
     CustomOptionListsRepository.replaceAll(merged);
+  }
+  append(PartnerNotificationRepository, data.partnerNotifications);
+  // Resources entries are {id, name, link, notes} objects, not plain
+  // strings — concatenated per category rather than de-duplicated like
+  // customOptionLists above; a re-added "Refuge" showing twice is mild
+  // clutter, not a real data-integrity problem, same as any other
+  // simple list this merge doesn't try to reconcile by content.
+  if (data.resources && typeof data.resources === "object") {
+    const current = ResourcesRepository.getAllForBackup();
+    const merged = {};
+    for (const key of new Set([...Object.keys(current), ...Object.keys(data.resources)])) {
+      merged[key] = [...(current[key] || []), ...(data.resources[key] || [])];
+    }
+    ResourcesRepository.replaceAll(merged);
   }
 }
 
