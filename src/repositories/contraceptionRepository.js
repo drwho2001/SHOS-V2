@@ -27,6 +27,14 @@ const STORAGE_KEY = "shos_contraception";
 
 export const DEFAULT_CONTRACEPTION_ENTRY = {
   method: "",
+  // ADDED — real ask: "icon should match formulation type/unit type -
+  // cream, pill/capsule, Injection, patch etc" — Depot (an injection)
+  // was showing the same generic pill icon as every other method.
+  // Reuses customOptionListsRepository.js's own `medicationType` list
+  // (Medication's already-established formulation taxonomy) rather
+  // than inventing a second, parallel one — same reasoning as
+  // intervalDays reusing medicationRepository.js's own interval shape.
+  formulation: "",
   startDate: null,
   endDate: null,          // set = this method has stopped/switched
   intervalDays: null,     // e.g. 84 for a 12-week depot shot; null for a daily method with no "next due" concept
@@ -58,8 +66,8 @@ function addDays(dateStr, n) {
 // encounters for the same timeline.
 const seedDepotStart = daysAgo(45);
 let seedEntries = [
-  { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_001", method: "Combined pill", startDate: daysAgo(400), endDate: daysAgo(95), notes: "Stopped when the relationship with Morgan became exclusive." },
-  { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_002", method: "Depot", startDate: seedDepotStart, intervalDays: 84, nextDueDate: addDays(seedDepotStart, 84), notes: "Started after the miscarriage — wanted something more reliable than the pill." },
+  { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_001", method: "Combined pill", formulation: "Pill/Tablet", startDate: daysAgo(400), endDate: daysAgo(95), notes: "Stopped when the relationship with Morgan became exclusive." },
+  { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_002", method: "Depot", formulation: "Injection", startDate: seedDepotStart, intervalDays: 84, nextDueDate: addDays(seedDepotStart, 84), notes: "Started after the miscarriage — wanted something more reliable than the pill." },
 ];
 
 let entries = storage.load(STORAGE_KEY, seedEntries);

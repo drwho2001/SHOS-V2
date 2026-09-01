@@ -53,7 +53,12 @@ import { ACCENTS } from "../calculations/designTokens.js";
 const STORAGE_KEY = "shos_custom_option_lists";
 
 const SEED_LISTS = {
-  medicationType: ["Pill/Tablet", "Capsule", "Injection", "Cream/Gel", "Patch", "Liquid", "Other"],
+  // ADDED — real ask: Contraception's own formulation field (see
+  // contraceptionRepository.js) reuses this exact list rather than a
+  // parallel one, so a device-based method (IUD/Implant) needed a real
+  // category here too — none of the existing values fit a physical
+  // device the way Pill/Tablet or Injection fit a substance route.
+  medicationType: ["Pill/Tablet", "Capsule", "Injection", "Cream/Gel", "Patch", "Liquid", "Device", "Other"],
   route: ["Oral", "IM - Gluteal", "IM - Deltoid", "SubQ", "Injection"],
   reasonForVisit: ["Symptoms", "Doxy refill", "Routine screening", "PrEP review", "Vaccination", "Treatment", "Pregnancy care", "Other"],
   followUpType: ["TOC", "Routine", "Other", "None"],

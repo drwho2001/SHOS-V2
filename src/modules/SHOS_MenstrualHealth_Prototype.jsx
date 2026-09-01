@@ -29,7 +29,7 @@
 // masked per-entry via `sensitive` (a completely separate, user-set
 // thing — see PregnancyDetail below).
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X, EyeIcon as Eye, EyeSlashIcon as EyeSlash, DropIcon as Drop, PillIcon as Pill, BabyIcon as Baby } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X, EyeIcon as Eye, EyeSlashIcon as EyeSlash, DropIcon as Drop, PillIcon as Pill, BabyIcon as Baby, SyringeIcon as Syringe, BandaidsIcon as Bandaids, AnchorSimpleIcon as AnchorSimple } from "@phosphor-icons/react";
 import { MenstrualCycleRepository, DEFAULT_CYCLE } from "../repositories/menstrualCycleRepository";
 import { ContraceptionRepository, DEFAULT_CONTRACEPTION_ENTRY } from "../repositories/contraceptionRepository";
 import { PregnancyRepository, DEFAULT_PREGNANCY, TEST_RESULT_OPTIONS, OUTCOME_OPTIONS } from "../repositories/pregnancyRepository";
@@ -58,6 +58,43 @@ function couldMenstruate(gender) {
 }
 function couldBePregnant(gender) {
   return couldMenstruate(gender);
+}
+// ADDED — real ask: "depot is an injection, icon should match
+// formulation type/unit type - cream, pill/capsule, Injection, patch
+// etc" — the icon used to be a hardcoded Pill regardless of the
+// method. Keyed off DEFAULT_CONTRACEPTION_ENTRY's own `formulation`
+// field, which reuses customOptionListsRepository.js's existing
+// medicationType list rather than a second parallel one. No real
+// Phosphor icon for an IUD/implant's own T-shape — per the user's own
+// suggestion, AnchorSimple rotated 180° reads as a stylised
+// approximation (hooks curving down like a device's arms) closer than
+// an upright anchor would.
+const FORMULATION_ICONS = {
+  "Pill/Tablet": { Icon: Pill, rotate: 0 },
+  "Capsule": { Icon: Pill, rotate: 0 },
+  "Injection": { Icon: Syringe, rotate: 0 },
+  "Cream/Gel": { Icon: Drop, rotate: 0 },
+  "Liquid": { Icon: Drop, rotate: 0 },
+  "Patch": { Icon: Bandaids, rotate: 0 },
+  "Device": { Icon: AnchorSimple, rotate: 180 },
+};
+function ContraceptionIcon({ formulation, size = 16, color }) {
+  const { Icon, rotate } = FORMULATION_ICONS[formulation] || { Icon: Pill, rotate: 0 };
+  return <Icon size={size} color={color} weight="fill" style={rotate ? { transform: `rotate(${rotate}deg)` } : undefined} />;
+}
+// Real convenience, never a lock-in: guesses a sensible formulation
+// from a typed/selected method name so most entries need zero extra
+// taps, but the field right below it stays a completely free
+// SelectField — pick something else and it's respected immediately.
+function guessFormulation(methodName) {
+  const m = (methodName || "").toLowerCase();
+  if (m.includes("pill")) return "Pill/Tablet";
+  if (m.includes("patch")) return "Patch";
+  if (m.includes("cream") || m.includes("gel")) return "Cream/Gel";
+  if (m.includes("inject") || m.includes("depot") || m.includes("shot")) return "Injection";
+  if (m.includes("iud") || m.includes("implant")) return "Device";
+  if (m.includes("liquid")) return "Liquid";
+  return "";
 }
 
 function SectionCard({ title, T, children }) {
@@ -396,8 +433,14 @@ function daysForUnit(value, unit, fromDate) {
 function ContraceptionSheet({ entry, onSave, onClose, T }) {
   const isNew = !entry;
   const [methodOptions, setMethodOptions] = useState(() => CustomOptionListsRepository.get("contraception"));
+  const [formulationOptions, setFormulationOptions] = useState(() => CustomOptionListsRepository.get("medicationType"));
   const [form, setForm] = useState(() => entry ? { ...entry } : { ...DEFAULT_CONTRACEPTION_ENTRY, startDate: new Date().toISOString().slice(0, 10) });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
+  // Real convenience: only auto-fills formulation while it's still
+  // unset, so it never overwrites a value the user (or a saved record)
+  // already has — same "suggest, never overwrite" rule already used
+  // elsewhere in this app (e.g. Measurements' preferred-unit default).
+  const setMethod = (v) => setForm((f) => ({ ...f, method: v, formulation: f.formulation || guessFormulation(v) }));
   const visits = useMemo(() => ClinicVisitsRepository.getAll().filter((v) => !v.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), []);
   const canSave = !!form.method && !!form.startDate;
   const [intervalUnit, setIntervalUnit] = useState("Days");
@@ -451,8 +494,9 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
 
   return (
     <BottomSheet title={isNew ? "Add contraception" : "Edit contraception"} onClose={onClose} T={T} footer={<SaveButton label={isNew ? "Add" : "Save changes"} onClick={() => onSave(form)} canSave={canSave} T={T} />}>
-      <FreeTextSuggestField label="Method" value={form.method} onChange={set("method")} options={methodOptions}
+      <FreeTextSuggestField label="Method" value={form.method} onChange={setMethod} options={methodOptions}
         onAddNew={(v) => setMethodOptions(CustomOptionListsRepository.add("contraception", v))} T={T} placeholder="e.g. Depot, IUD, Combined pill" />
+      <SelectField label="Formulation" value={form.formulation} onChange={set("formulation")} options={formulationOptions} T={T} hint="sets the icon shown for this entry" />
       <TextField label="Start date" value={form.startDate} onChange={setStartDate} T={T} type="date" />
       <TextField label="End date (leave blank if currently active)" value={form.endDate} onChange={set("endDate")} T={T} type="date" />
       <div style={{ padding: "8px 0" }}>
@@ -526,10 +570,11 @@ function ContraceptionTab({ T, isPregnant, openRecordId, onConsumedRecordOpen })
         {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={() => { deleteUndo.trigger([e]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <Pill size={16} color={T.healthcareBlue} weight="fill" />
+            <ContraceptionIcon formulation={e.formulation} size={16} color={T.healthcareBlue} />
             <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{e.method}</span>
           </div>
           <SectionCard title="Details" T={T}>
+            <ReadRow label="Formulation" value={e.formulation} T={T} />
             <ReadRow label="Started" value={formatDate(e.startDate)} T={T} />
             <ReadRow label="Ended" value={e.endDate ? formatDate(e.endDate) : "Currently active"} T={T} />
             <ReadRow label="Next due" value={e.nextDueDate ? formatDate(e.nextDueDate) : ""} T={T} alert={overdue} />
@@ -563,7 +608,10 @@ function ContraceptionTab({ T, isPregnant, openRecordId, onConsumedRecordOpen })
                 const overdue = e.nextDueDate && e.nextDueDate < today;
                 return (
                   <ListRow key={e.id} T={T} onClick={() => setScreen({ name: "detail", id: e.id })}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{e.method}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <ContraceptionIcon formulation={e.formulation} size={15} color={T.healthcareBlue} />
+                      <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{e.method}</div>
+                    </div>
                     <div style={{ fontSize: 12, color: overdue ? T.actionRed : T.textSecondary, marginTop: 2, fontWeight: overdue ? 700 : 400 }}>
                       {e.nextDueDate ? `${overdue ? "Overdue since" : "Next due"} ${formatDate(e.nextDueDate)}` : `Started ${formatDate(e.startDate)}`}
                     </div>
@@ -579,7 +627,10 @@ function ContraceptionTab({ T, isPregnant, openRecordId, onConsumedRecordOpen })
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {past.map((e) => (
                 <ListRow key={e.id} T={T} onClick={() => setScreen({ name: "detail", id: e.id })}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{e.method}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <ContraceptionIcon formulation={e.formulation} size={15} color={T.textSecondary} />
+                    <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{e.method}</div>
+                  </div>
                   <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{formatDate(e.startDate)} – {formatDate(e.endDate)}</div>
                 </ListRow>
               ))}
