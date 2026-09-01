@@ -34,6 +34,7 @@ export const MODULE_LABELS = {
   symptomLog: "Symptom entry",
   vaccinations: "Vaccination",
   medications: "Medication",
+  measurements: "Measurement",
 };
 
 function loadRaw() {

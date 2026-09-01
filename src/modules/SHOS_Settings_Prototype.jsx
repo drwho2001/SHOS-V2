@@ -56,6 +56,7 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
+import { MeasurementRepository } from "../repositories/measurementRepository";
 import { TrashRepository, MODULE_LABELS as TRASH_MODULE_LABELS } from "../repositories/trashRepository";
 import { getCalendarEvents, groupEventsByDay } from "../calculations/calendarCalculations";
 import { LocationsRepository } from "../repositories/locationsRepository";
@@ -1814,6 +1815,7 @@ const TRASH_REPOSITORIES = {
   symptomLog: SymptomLogRepository,
   vaccinations: VaccinationRepository,
   medications: MedicationRepository,
+  measurements: MeasurementRepository,
 };
 
 // ADDED 26 Aug 2026 — real ask: calendar view, Google-Calendar-style,

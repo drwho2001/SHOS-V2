@@ -17,6 +17,7 @@ import TestingModule from "./SHOS_Testing_Prototype";
 import ClinicVisitsModule from "./SHOS_ClinicVisits_Prototype";
 import SymptomLogModule from "./SHOS_SymptomLog_Prototype";
 import VaccinationsModule from "./SHOS_Vaccinations_Prototype";
+import MeasurementsModule from "./SHOS_Measurements_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import AttachmentsScreen from "./SHOS_Attachments_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
@@ -25,7 +26,8 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   const [subTab, setSubTab] = useState(
     quickAddTarget === "clinicVisits" ? "clinicVisits" :
     quickAddTarget === "symptomLog" ? "symptomLog" :
-    quickAddTarget === "vaccinations" ? "vaccinations" : "testing"
+    quickAddTarget === "vaccinations" ? "vaccinations" :
+    quickAddTarget === "measurements" ? "measurements" : "testing"
   );
   // ADDED 26 Aug 2026 — real gap found and fixed: tapping a linked
   // test from a Clinic Visit's own detail view used to only switch to
@@ -109,7 +111,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       </div>
       <div style={{ padding: "14px 16px 0", background: T.bg }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-          {[{ key: "testing", label: "Testing" }, { key: "clinicVisits", label: "Clinic Visits" }, { key: "symptomLog", label: "Symptom Log" }, { key: "vaccinations", label: "Vaccinations" }].map((t) => (
+          {[{ key: "testing", label: "Testing" }, { key: "clinicVisits", label: "Clinic Visits" }, { key: "symptomLog", label: "Symptom Log" }, { key: "vaccinations", label: "Vaccinations" }, { key: "measurements", label: "Measurements" }].map((t) => (
             <div key={t.key} onClick={() => setSubTab(t.key)}
               style={{ padding: "6px 14px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", background: subTab === t.key ? T.healthcareBlue : T.surface, color: subTab === t.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === t.key ? T.healthcareBlue : T.border}` }}>
               {t.label}
@@ -148,8 +150,10 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         <ClinicVisitsModule openAddOnMount={openAddOnMount && quickAddTarget === "clinicVisits"} onConsumedQuickAdd={onConsumedQuickAdd} onOpenTest={(testId) => { setSubTab("testing"); setPendingTestId(testId); }} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} prefillData={prefillData} onConsumedPrefill={onConsumedPrefill} registerModuleBackHandler={registerModuleBackHandler} />
       ) : subTab === "symptomLog" ? (
         <SymptomLogModule openAddOnMount={openAddOnMount && quickAddTarget === "symptomLog"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
-      ) : (
+      ) : subTab === "vaccinations" ? (
         <VaccinationsModule openAddOnMount={openAddOnMount && quickAddTarget === "vaccinations"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
+      ) : (
+        <MeasurementsModule openAddOnMount={openAddOnMount && quickAddTarget === "measurements"} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       )}
       {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={onNavigateToRecord} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}
       {showAttachments && (

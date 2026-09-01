@@ -97,6 +97,28 @@ const SEED_LISTS = {
   // otherwise. "None" needed since this list has no blank/skip option
   // otherwise (unlike gender, which can just be left empty).
   contraception: ["Combined pill", "Progesterone-only pill", "IUD", "Implant", "Depot", "Testosterone", "None"],
+  // ADDED — real ask: Measurements (Healthcare) — a standardised place
+  // for any numeric health value (hormone levels, viral load, weight,
+  // blood pressure), regardless of whether it's sexual-health-specific
+  // or general, and regardless of whether it was taken at home or in
+  // clinic. "Blood pressure" is protected (see PROTECTED_VALUES below)
+  // — it drives real special-case logic in measurementRepository.js
+  // (systolic/diastolic shape, fixed mmHg, its own trend view), so
+  // unlike every other entry here it can't be renamed or removed via
+  // this same editable-list mechanism.
+  measurementType: ["Viral load", "CD4 count", "Estradiol", "Testosterone", "LH", "FSH", "Weight", "Blood pressure", "Other"],
+};
+
+// ADDED — real ask: unlike every other entry in every list above,
+// which stay freely user-editable, a small number of specific values
+// have real code depending on their exact string matching (same class
+// of risk already called out for Testing's own "Testing for?"/
+// "Setting" lists in the comment above, which is why those two aren't
+// editable at all). Rather than locking a whole list, this protects
+// just the specific value(s) that matter — the rest of that list
+// stays fully editable as normal.
+const PROTECTED_VALUES = {
+  measurementType: ["Blood pressure"],
 };
 
 // Friendly labels for the editor screen — separate from the storage
@@ -116,6 +138,7 @@ export const OPTION_LIST_LABELS = {
   relationshipType: "Relationship type",
   gender: "Gender",
   contraception: "Contraception",
+  measurementType: "Measurement type",
 };
 
 // ADDED 19 Aug 2026 — real ask: same icon+color treatment as the
@@ -142,6 +165,7 @@ export const OPTION_LIST_ICONS = {
   relationshipType: { icon: "Heart", color: ACCENTS.contacts },
   gender: { icon: "User", color: ACCENTS.contacts },
   contraception: { icon: "Pill", color: ACCENTS.healthcare },
+  measurementType: { icon: "Ruler", color: ACCENTS.healthcare },
 };
 
 let lists = { ...SEED_LISTS, ...storage.load(STORAGE_KEY, {}) };
@@ -166,6 +190,7 @@ export const CustomOptionListsRepository = {
   },
 
   rename(name, oldValue, newValue) {
+    if ((PROTECTED_VALUES[name] || []).includes(oldValue)) return this.get(name);
     const trimmed = (newValue || "").trim();
     const current = this.get(name);
     if (!trimmed) return current;
@@ -175,10 +200,15 @@ export const CustomOptionListsRepository = {
   },
 
   remove(name, value) {
+    if ((PROTECTED_VALUES[name] || []).includes(value)) return this.get(name);
     const current = this.get(name);
     lists = { ...lists, [name]: current.filter((v) => v !== value) };
     persist();
     return lists[name];
+  },
+
+  isProtected(name, value) {
+    return (PROTECTED_VALUES[name] || []).includes(value);
   },
 
   reorder(name, newOrder) {

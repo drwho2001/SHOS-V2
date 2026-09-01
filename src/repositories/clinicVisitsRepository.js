@@ -38,6 +38,10 @@
 // keep it, nothing is lost, it's just no longer read or written by
 // the UI.
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
+// ADDED — Measurements: deleting a visit must clear any Measurement's
+// link to it, never delete the Measurement itself (see
+// measurementRepository.js's own "one room, three doors" comment).
+import { MeasurementRepository } from "./measurementRepository.js";
 
 const STORAGE_KEY = "shos_clinic_visits";
 
@@ -237,6 +241,7 @@ export const ClinicVisitsRepository = {
   delete(id) {
     visits = visits.filter((v) => v.id !== id);
     persist();
+    MeasurementRepository.unlinkClinicVisit(id);
   },
 
   // ADDED 26 Aug 2026 — real ask: long-press multi-select rolled out
@@ -248,6 +253,7 @@ export const ClinicVisitsRepository = {
   bulkDelete(ids) {
     visits = visits.filter((v) => !ids.includes(v.id));
     persist();
+    ids.forEach((id) => MeasurementRepository.unlinkClinicVisit(id));
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.

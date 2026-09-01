@@ -23,6 +23,11 @@ import { ResultsRegistry } from "../registries/resultsRegistry";
 // shows its linked tests, Testing's never showed its linked visits.
 // One real direction of a two-way link with no UI at all.
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
+// ADDED — Measurements inline entry point, same "one room, three
+// doors" reasoning as Clinic Visits' own — CD4/viral load from a test
+// gets a real linked Measurement, never a duplicate field here.
+import { MeasurementRepository } from "../repositories/measurementRepository";
+import { InlineMeasurementSheet } from "./SHOS_Measurements_Prototype";
 import { suggestedRoutineRetestDate } from "../calculations/testingCalculations";
 // ADDED — real ask: proactive "due for retest" notification, built on
 // top of suggestedRoutineRetestDate's already-real calculation above.
@@ -711,6 +716,10 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   // itself reactive state, so nothing else here would trigger a
   // re-render after the sheet creates/edits/deletes a list.
   const [, setPartnerNotifyVersion] = useState(0);
+  // ADDED — Measurements inline entry point (see import comment above).
+  const [showAddMeasurement, setShowAddMeasurement] = useState(false);
+  const [measurements, setMeasurements] = useState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedTestId === testId));
+  const refreshMeasurements = () => setMeasurements(MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedTestId === testId));
   if (!test) return null;
 
   const organismNames = test.organismIds.map((id) => OrganismRegistry.getById(id)?.name).filter(Boolean);
@@ -816,6 +825,18 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
           })()}
         </SectionCard>
 
+        {/* ADDED — Measurements inline entry point: e.g. CD4 count or
+            viral load drawn alongside this test — a real, linked
+            Measurement, not a duplicate field on Testing itself. */}
+        <SectionCard title="Measurements" T={T}>
+          {measurements.map((m) => (
+            <ReadRow key={m.id} label={m.type} value={m.type === "Blood pressure" ? `${m.systolic}/${m.diastolic} mmHg` : `${m.value} ${m.unit}`} T={T} />
+          ))}
+          <div onClick={() => setShowAddMeasurement(true)} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", padding: "7px 0" }}>
+            + Add measurement
+          </div>
+        </SectionCard>
+
         <SectionCard title="Notes" T={T}>
           {test.setting === "🏠 Home" && (
             <>
@@ -868,6 +889,9 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
       </div>
       {showPartnerNotify && (
         <PartnerNotificationSheet testId={testId} onClose={() => { setShowPartnerNotify(false); setPartnerNotifyVersion((v) => v + 1); }} />
+      )}
+      {showAddMeasurement && (
+        <InlineMeasurementSheet T={T} presetLink={{ linkedTestId: testId }} onSaved={refreshMeasurements} onClose={() => setShowAddMeasurement(false)} />
       )}
     </div>
   );

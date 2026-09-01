@@ -23,6 +23,12 @@ import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
 import { ResultsRegistry } from "../registries/resultsRegistry";
+// ADDED — Measurements inline entry point: "add measurement to clinic
+// forms" per the design's "one room, three doors" — a Clinic Visit can
+// create a real linked Measurement without duplicating any of its own
+// fields for it. See measurementRepository.js's own comment.
+import { MeasurementRepository } from "../repositories/measurementRepository";
+import { InlineMeasurementSheet } from "./SHOS_Measurements_Prototype";
 // ADDED 19 Aug 2026 — draft autosave, same pattern as every other
 // edit sheet this round.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
@@ -744,6 +750,10 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven for Testing/Vaccinations/Symptom Log.
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // ADDED — Measurements inline entry point (see import comment above).
+  const [showAddMeasurement, setShowAddMeasurement] = useState(false);
+  const [measurements, setMeasurements] = useState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedClinicVisitId === visitId));
+  const refreshMeasurements = () => setMeasurements(MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedClinicVisitId === visitId));
   if (!visit) return null;
 
   const testEntries = visit.linkedTestIds.map((id) => TestingRepository.getById(id)).filter(Boolean);
@@ -833,6 +843,19 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
           )}
         </SectionCard>
 
+        {/* ADDED — Measurements inline entry point: "one room, three
+            doors" — this never duplicates a value field of its own,
+            it only ever creates/shows real, linked Measurement records
+            (see measurementRepository.js). */}
+        <SectionCard title="Measurements" T={T}>
+          {measurements.map((m) => (
+            <ReadRow key={m.id} label={m.type} value={m.type === "Blood pressure" ? `${m.systolic}/${m.diastolic} mmHg` : `${m.value} ${m.unit}`} T={T} />
+          ))}
+          <div onClick={() => setShowAddMeasurement(true)} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", padding: "7px 0" }}>
+            + Add measurement
+          </div>
+        </SectionCard>
+
         <SectionCard title="Notes" T={T}>
           <ReadRow label="Clinical notes" value={visit.clinicalNotes} T={T} />
         </SectionCard>
@@ -855,6 +878,9 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
           </div>
         )}
       </div>
+      {showAddMeasurement && (
+        <InlineMeasurementSheet T={T} presetLink={{ linkedClinicVisitId: visitId }} onSaved={refreshMeasurements} onClose={() => setShowAddMeasurement(false)} />
+      )}
     </div>
   );
 }

@@ -17,6 +17,10 @@
 // that file, and TestDetail's own display below). relatedSymptomIds
 // stays stubbed — Symptoms Tracker still doesn't exist as a module.
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
+// ADDED — Measurements: deleting a test must clear any Measurement's
+// link to it, never delete the Measurement itself (see
+// measurementRepository.js's own "one room, three doors" comment).
+import { MeasurementRepository } from "./measurementRepository.js";
 
 const STORAGE_KEY = "shos_tests";
 
@@ -260,6 +264,7 @@ export const TestingRepository = {
   delete(id) {
     tests = tests.filter((t) => t.id !== id);
     persist();
+    MeasurementRepository.unlinkTest(id);
   },
 
   // ADDED 26 Aug 2026 — real ask: long-press multi-select rolled out
@@ -271,6 +276,7 @@ export const TestingRepository = {
   bulkDelete(ids) {
     tests = tests.filter((t) => !ids.includes(t.id));
     persist();
+    ids.forEach((id) => MeasurementRepository.unlinkTest(id));
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.

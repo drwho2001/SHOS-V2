@@ -71,6 +71,9 @@ import { PrivacySettingsRepository } from "../repositories/privacySettingsReposi
 // being caught here).
 import { PartnerNotificationRepository } from "../repositories/partnerNotificationRepository.js";
 import { ResourcesRepository } from "../repositories/resourcesRepository.js";
+// ADDED — Measurements (Healthcare) — see measurementRepository.js's own
+// file-level comment for the full "one room, three doors" design.
+import { MeasurementRepository } from "../repositories/measurementRepository.js";
 
 // Doc 5 §8: "Every export/backup file stamps: schema version, migration
 // version, app version." Schema version bumps only when a backup file's
@@ -108,6 +111,7 @@ export const EXPORT_GROUPS = [
     { dataKey: "episodes", label: "Timeline episodes" },
     { dataKey: "organisms", label: "Organism Registry" },
     { dataKey: "results", label: "Results Registry" },
+    { dataKey: "measurements", label: "Measurements" },
   ] },
   { key: "registries", label: "Kink / Chems / Protection / Symptoms / Locations", items: [
     { dataKey: "kinks", label: "Kink Registry" },
@@ -159,6 +163,7 @@ const DATE_FIELD_BY_KEY = {
   symptomLog: "dateStarted",
   vaccinations: "date",
   episodes: "createdAt",
+  measurements: "date",
 };
 
 function withinDateRange(records, field, dateRange) {
@@ -208,6 +213,7 @@ export function buildBackup(includeKeys = null, dateRange = null) {
     symptomLog: SymptomLogRepository.getAll(),
     vaccinations: VaccinationRepository.getAll(),
     episodes: EpisodeRepository.getAll(),
+    measurements: MeasurementRepository.getAll(),
     customOptionLists: CustomOptionListsRepository.getAllForBackup(),
     privacySettings: PrivacySettingsRepository.getSettings(),
     resources: ResourcesRepository.getAllForBackup(),
@@ -265,7 +271,7 @@ export function parseBackupFile(jsonText) {
 // wiping everything with no confirmation was a real gap on its own,
 // separate from merge existing at all.
 export function restoreBackup(parsedBackup) {
-  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, customOptionLists, privacySettings, resources, partnerNotifications } = parsedBackup.data;
+  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, customOptionLists, privacySettings, resources, partnerNotifications } = parsedBackup.data;
   if (Array.isArray(contacts)) ContactRepository.replaceAll(contacts);
   if (Array.isArray(medications)) MedicationRepository.replaceAll(medications);
   if (Array.isArray(logs)) LogRepository.replaceAll(logs);
@@ -284,6 +290,7 @@ export function restoreBackup(parsedBackup) {
   if (Array.isArray(symptomLog)) SymptomLogRepository.replaceAll(symptomLog);
   if (Array.isArray(vaccinations)) VaccinationRepository.replaceAll(vaccinations);
   if (Array.isArray(episodes)) EpisodeRepository.replaceAll(episodes);
+  if (Array.isArray(measurements)) MeasurementRepository.replaceAll(measurements);
   if (customOptionLists && typeof customOptionLists === "object") CustomOptionListsRepository.replaceAll(customOptionLists);
   if (privacySettings && typeof privacySettings === "object") PrivacySettingsRepository.update(privacySettings);
   if (resources && typeof resources === "object") ResourcesRepository.replaceAll(resources);
@@ -338,6 +345,7 @@ export function mergeBackup(parsedBackup) {
   append(ClinicVisitsRepository, data.clinicVisits);
   append(SymptomLogRepository, data.symptomLog);
   append(VaccinationRepository, data.vaccinations);
+  append(MeasurementRepository, data.measurements);
   append(EpisodeRepository, data.episodes);
   if (data.customOptionLists && typeof data.customOptionLists === "object") {
     const current = CustomOptionListsRepository.getAllForBackup();
