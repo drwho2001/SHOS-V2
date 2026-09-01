@@ -27,6 +27,7 @@
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository.js";
 import { ContactRepository } from "../repositories/contactRepository.js";
 import { TestingRepository } from "../repositories/testingRepository.js";
+import { exportTextFile } from "./fileExportHelper.js";
 
 const SCHEMA_VERSION = 1;
 const SHARE_TYPE = "shos_profile_share";
@@ -235,19 +236,20 @@ export function importProfileAsContact(parsedShare) {
 // download, does picking a file work" needs a real browser to confirm.
 // ---------------------------------------------------------------------
 
-export function exportProfileShare(options = {}) {
+// CHANGED 1 Sep 2026 — real ask: "My profile share button doesn't
+// work." Same bug class fileExportHelper.js's own header already
+// documents and fixed for backupService.js's exports: a plain
+// <a download> blob click does nothing visible on Android's WebView
+// (no built-in handler for a blob: download), so tapping Save as file
+// silently produced no file and no error — this just never got wired
+// to that fix when it was added. Now goes through the same real
+// Filesystem-write + native Share sheet path, falling back to the
+// original browser download wherever those plugins aren't present.
+export async function exportProfileShare(options = {}) {
   const share = buildProfileShare(options);
   const json = JSON.stringify(share, null, 2);
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
   const dateStamp = new Date().toISOString().slice(0, 10);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `shos-shared-profile-${dateStamp}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  await exportTextFile(`shos-shared-profile-${dateStamp}.json`, json, "application/json");
 }
 
 // Takes a File object (from an <input type="file"> picker), reads it,

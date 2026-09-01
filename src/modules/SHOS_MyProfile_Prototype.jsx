@@ -919,9 +919,13 @@ function ShareProfilePanel({ T }) {
   // optionally shared, off by default, not automatic.
   const [includeLastTestedDate, setIncludeLastTestedDate] = useState(false);
 
-  const doExportFile = () => {
-    exportProfileShare({ includeLastTestedDate });
-    setStatus({ ok: true, msg: "Profile file downloaded." });
+  const doExportFile = async () => {
+    try {
+      await exportProfileShare({ includeLastTestedDate });
+      setStatus({ ok: true, msg: "Profile file saved — check the share sheet or your Files/Documents folder." });
+    } catch {
+      setStatus({ ok: false, msg: "Couldn't save the file — try Copy as text instead." });
+    }
     setConfirming(null);
   };
 

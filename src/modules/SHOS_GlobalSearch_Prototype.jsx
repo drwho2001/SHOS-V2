@@ -27,7 +27,16 @@ import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 // result-badge color here was #3B82F6, a different, lighter blue than
 // Medication Dashboard's own accent (ACCENTS.medication, #3D63C9) —
 // same drift App.jsx's nav tab/quick-add button had.
-import { NEUTRAL, ACCENTS, FONT_FAMILY } from "../calculations/designTokens";
+import { NEUTRAL, ACCENTS, FONT_FAMILY, RADIUS } from "../calculations/designTokens";
+// FIXED 1 Sep 2026 — real ask: "global search nav breaks as soon as
+// first letter typed." Root cause: the sort-toggle row (added 26 Aug
+// 2026) referenced `radius.full` but this module never defined or
+// imported a `radius` constant at all — a real ReferenceError, not a
+// data issue, that only threw once there were actual results to
+// render the sort toggle for (query non-empty AND results.length > 0),
+// which is exactly "as soon as the first letter typed" for anything
+// that matches. Same `radius = RADIUS` alias every other module uses.
+const radius = RADIUS;
 
 // ADDED 19 Aug 2026 — Global Search, one of the user's two joint-top
 // priority items (alongside Settings) from the FULL VERIFIED AUDIT's
