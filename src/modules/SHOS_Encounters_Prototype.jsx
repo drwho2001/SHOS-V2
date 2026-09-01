@@ -18,6 +18,7 @@ import { getCurrentLocationPlace, summarizePlaceName } from "../storage/location
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { nowAsDateTimeLocalString } from "../calculations/dateInputHelpers";
+import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import {
   EncounterRepository, DEFAULT_ENCOUNTER,
   ENCOUNTER_TYPE_OPTIONS, MY_POSITION_OPTIONS, CUM_LOCATION_OPTIONS, MY_ROLE_OPTIONS,
@@ -267,7 +268,21 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // them, relying only on the native <datalist> dropdown, which is easy
   // to type straight past without noticing — same gap already flagged
   // and fixed elsewhere.
-  const visibleSuggestions = allEntries.filter((e) => !hasSelection(e.id) && !excludeIds.includes(e.id)).slice(0, 10);
+  // CHANGED — real ask: "auto recognise as typing begins and narrow
+  // down drop down searches... do this with any field appropriate,
+  // like kinks". `draft` was never actually used to filter this list —
+  // typing did nothing, it just showed the same static first-10 the
+  // whole time. Reuses fuzzyIncludes() (fuzzyMatch.js, already built
+  // for Global Search's typo tolerance) rather than a second matching
+  // implementation — the existing analyzeEntry/synonym "did you mean"
+  // flow on commit is untouched, this only fixes the live suggestion
+  // list shown while still typing.
+  const draftTrimmedForFilter = draft.trim();
+  const visibleSuggestions = (
+    draftTrimmedForFilter
+      ? allEntries.filter((e) => fuzzyIncludes(e.name, draftTrimmedForFilter))
+      : allEntries
+  ).filter((e) => !hasSelection(e.id) && !excludeIds.includes(e.id)).slice(0, 10);
 
   const addEntries = (ids) => {
     if (ids.length === 0) return;

@@ -8,6 +8,7 @@ import {
 import { getCurrentLocationPlace } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
+import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import {
   ContactRepository, DEFAULT_CONTACT,
   HOSTS_OPTIONS, TRAVELS_OPTIONS, TRAVEL_MODE_OPTIONS,
@@ -579,7 +580,22 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // limit. Only affects what's SUGGESTED — typing the exact same name
   // manually into both fields still works, since forcing that apart is
   // a much rarer edge case not worth hard-blocking.
-  const visibleSuggestions = allEntries.filter((e) => !hasSelection(e.id) && !excludeIds.includes(e.id)).slice(0, 10);
+  // CHANGED — real ask: "auto recognise as typing begins and narrow
+  // down drop down searches... do this with any field appropriate,
+  // like kinks". `draft` was never actually used to filter this list —
+  // typing did nothing, it just showed the same static first-10 the
+  // whole time. This one component covers Kinks/Limits/Chems/
+  // Protection/Symptoms in this module, so the fix applies to all of
+  // them at once. Reuses fuzzyIncludes() (fuzzyMatch.js, already built
+  // for Global Search's typo tolerance) — the existing analyzeEntry/
+  // synonym "did you mean" flow on commit is untouched, this only
+  // fixes the live suggestion list shown while still typing.
+  const draftTrimmedForFilter = draft.trim();
+  const visibleSuggestions = (
+    draftTrimmedForFilter
+      ? allEntries.filter((e) => fuzzyIncludes(e.name, draftTrimmedForFilter))
+      : allEntries
+  ).filter((e) => !hasSelection(e.id) && !excludeIds.includes(e.id)).slice(0, 10);
 
   const addEntries = (ids) => {
     if (ids.length === 0) return;

@@ -9,6 +9,7 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
+import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -108,21 +109,59 @@ function SelectField({ label, value, onChange, options, T }) {
 // array (symptomIds), not a single id — same chip-removal and
 // suggestion pattern as before, just multiple selections instead of
 // one replacing the last.
+// CHANGED — real ask: "auto recognise as typing begins and narrow down
+// drop down searches... speed up searching through symptoms less
+// commonly used". Two real bugs: `draft` was never actually used to
+// filter suggestions at all (typing did nothing to the list — it just
+// showed the same static first-8 the whole time), and matching was
+// plain substring, so a common symptom's exact name would crowd out a
+// less-common one a typo away from matching. Reuses fuzzyIncludes()
+// (fuzzyMatch.js, already built for Global Search's own typo
+// tolerance) rather than a second matching implementation, and adds a
+// real "did you mean X?" check (findClosestMatch, same file) before
+// creating a genuinely new entry — catches a likely typo before it
+// becomes a near-duplicate registry entry instead of matching the one
+// that already exists.
 function SymptomSelect({ value, onChange, T }) {
   const [draft, setDraft] = useState("");
+  const [didYouMean, setDidYouMean] = useState(null);
   const allEntries = SymptomsRegistry.getAll().filter((e) => !e.isArchived);
   const selectedNames = value.map((id) => ({ id, name: SymptomsRegistry.getById(id)?.name || "?" }));
-  const visibleSuggestions = allEntries.filter((e) => !value.includes(e.id)).slice(0, 8);
+  const draftTrimmed = draft.trim();
+  const visibleSuggestions = (
+    draftTrimmed
+      ? allEntries.filter((e) => fuzzyIncludes(e.name, draftTrimmed))
+      : allEntries
+  ).filter((e) => !value.includes(e.id)).slice(0, 8);
 
   const remove = (id) => onChange(value.filter((v) => v !== id));
   const add = (id) => { if (!value.includes(id)) onChange([...value, id]); };
 
   const commit = () => {
     const raw = draft.trim();
-    if (!raw) return;
+    if (!raw || didYouMean) return;
+    // A likely-typo match against an EXISTING entry (not already
+    // selected) gets offered as a choice instead of silently creating
+    // a near-duplicate — same reasoning KinkRegistry's own synonym
+    // system already applies, just via edit-distance instead of a
+    // fixed synonym list.
+    const closest = findClosestMatch(allEntries.filter((e) => !value.includes(e.id)).map((e) => e.name), raw);
+    if (closest) { setDidYouMean({ raw, closest }); return; }
     const entry = SymptomsRegistry.findOrCreate(raw);
     if (entry) add(entry.id);
     setDraft("");
+  };
+  const acceptDidYouMean = () => {
+    const entry = SymptomsRegistry.findOrCreate(didYouMean.closest);
+    if (entry) add(entry.id);
+    setDraft("");
+    setDidYouMean(null);
+  };
+  const dismissDidYouMean = () => {
+    const entry = SymptomsRegistry.findOrCreate(didYouMean.raw);
+    if (entry) add(entry.id);
+    setDraft("");
+    setDidYouMean(null);
   };
 
   return (
@@ -153,6 +192,13 @@ function SymptomSelect({ value, onChange, T }) {
         onBlur={commit}
         placeholder="Type to add or search"
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+      {didYouMean && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, padding: "8px 10px", borderRadius: radius.sm, background: T.surfaceVariant, fontSize: 12 }}>
+          <span style={{ color: T.textSecondary, flex: 1 }}>Did you mean "<span style={{ fontWeight: 700, color: T.textPrimary }}>{didYouMean.closest}</span>", already in the registry?</span>
+          <span onClick={acceptDidYouMean} style={{ color: T.healthcareBlue, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>Use it</span>
+          <span onClick={dismissDidYouMean} style={{ color: T.textDisabled, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>No, add "{didYouMean.raw}"</span>
+        </div>
+      )}
     </div>
   );
 }
