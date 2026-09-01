@@ -11,56 +11,108 @@
 // same "combine into similar things if better" call the user made
 // about Settings itself, applied here too.
 //
-// WHY NO REAL LINKS/PHONE NUMBERS ARE SEEDED HERE, stated plainly: a
-// URL or a helpline number for something in this category — especially
-// domestic violence — has to be right, not "probably right". This
-// session already has a standing rule against inventing a URL (the
-// coffee-donation link stayed blank rather than guess), and the stakes
-// here are real, not cosmetic. So this file seeds real, well-known UK
-// organisation NAMES only — Refuge, Terrence Higgins Trust, Mermaids,
-// etc. genuinely exist and are correctly categorised — with every
-// link/phone field left blank for the user to fill in themselves with
-// a verified, current number/URL via the Resources screen's own edit
-// UI. Same shape as every other "seeded but user-editable" list this
-// app already has (CustomOptionListsRepository, Registries).
+// UPDATED 1 Sep 2026 — real ask: the user supplied their own real,
+// verified URLs directly (a large curated list across 8 areas), which
+// is exactly the case the header below always said would unblock
+// this — not a guess, the source this repository was always waiting
+// on. Every link below is one the user gave verbatim; nothing here is
+// invented. Three new entries genuinely didn't fit any of the original
+// 5 categories (public sex/cruising, drugs/chemsex, kink/relationships/
+// sex-ed, mental health as its own topic) so those became new
+// categories rather than forced into a mismatched one — same
+// "combine into similar things IF it's actually the same thing" call
+// the user made about Settings itself; Galop and the NHS rape/sexual-
+// assault page, by contrast, genuinely are the same need as the
+// existing "Domestic violence support" category (abuse/sexual
+// violence support broadly), so those joined it instead of forking a
+// near-duplicate — the label widened slightly to say so honestly.
+//
+// STILL LEFT BLANK: `notes` fields on every entry — the user supplied
+// URLs, not descriptions, and writing our own summary of a domestic-
+// violence helpline's services would be exactly the kind of "probably
+// right" guess the original standing rule here was about. Free for
+// the user to fill in via the Resources screen's own edit UI, same as
+// before.
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 
 const STORAGE_KEY = "shos_resources";
 
 export const CATEGORY_LABELS = {
-  domesticViolence: "Domestic violence support",
+  domesticViolence: "Domestic violence & sexual abuse support",
   contraception: "Contraceptive advice",
   transHrt: "HRT & trans support",
   charities: "Charities",
   gettingTested: "Get tested — find a clinic or order a postal kit",
+  sexualHealth: "Sexual health",
+  lgbtqGender: "LGBTQ+ support & gender",
+  kinkRelationshipsSexEd: "Kink, relationships & sexual education",
+  publicSexCruising: "Public sex & cruising",
+  drugsChemsex: "Drugs & chemsex",
+  mentalHealth: "Mental health",
 };
 
-// Real, well-known UK organisations, named only — see the header above
-// for why no link/phone is pre-filled. `link` and `notes` are exactly
-// what the Resources screen's edit UI writes to; both start blank.
 const SEED_ENTRIES = {
   domesticViolence: [
     { name: "Refuge", link: "", notes: "" },
-    { name: "National Domestic Abuse Helpline", link: "", notes: "" },
+    { name: "National Domestic Abuse Helpline", link: "https://www.nationaldahelpline.org.uk/", notes: "" },
     { name: "Men's Advice Line", link: "", notes: "" },
+    { name: "Galop (LGBT+ anti-abuse charity)", link: "https://www.galop.org.uk/", notes: "" },
+    { name: "NHS — help after rape and sexual assault", link: "https://www.nhs.uk/live-well/sexual-health/help-after-rape-and-sexual-assault/", notes: "" },
   ],
   contraception: [
     { name: "NHS sexual health services", link: "", notes: "" },
     { name: "Brook", link: "", notes: "" },
+    { name: "SH:24 — emergency contraception", link: "https://sh24.org.uk/contraception/emergency-contraception", notes: "" },
   ],
   transHrt: [
-    { name: "Gendered Intelligence", link: "", notes: "" },
-    { name: "Mermaids", link: "", notes: "" },
+    { name: "Gendered Intelligence", link: "https://genderedintelligence.co.uk/", notes: "" },
+    { name: "Mermaids", link: "https://mermaidsuk.org.uk/", notes: "" },
     { name: "GIRES", link: "", notes: "" },
   ],
   charities: [
-    { name: "Terrence Higgins Trust", link: "", notes: "" },
-    { name: "National AIDS Trust", link: "", notes: "" },
+    { name: "Terrence Higgins Trust", link: "https://tht.org.uk/", notes: "" },
+    { name: "National AIDS Trust", link: "https://nat.org.uk/", notes: "" },
   ],
   gettingTested: [
-    { name: "NHS.uk — find a sexual health clinic", link: "", notes: "" },
-    { name: "SH:24", link: "", notes: "" },
+    { name: "NHS.uk — find a sexual health clinic", link: "https://www.nhs.uk/nhs-services/sexual-health-services/find-a-sexual-health-clinic/", notes: "" },
+    { name: "SH:24", link: "https://www.sh.uk/", notes: "" },
     { name: "Freetesting.me", link: "", notes: "" },
+  ],
+  // ADDED 1 Sep 2026 — real ask, general sexual health info that
+  // didn't belong under a specific "getting tested"/"contraception"
+  // heading — PrEP/PEP/DoxyPEP guidance and two NHS condition pages
+  // (Mpox, Hepatitis B) both directly relevant to what this app
+  // already tracks in Vaccinations/Testing.
+  sexualHealth: [
+    { name: "NHS inform (Scotland) — HIV PrEP", link: "https://www.nhsinform.scot/hiv-prep-pre-exposure-prophylaxis/what-is-hiv-prep", notes: "" },
+    { name: "Terrence Higgins Trust — PEP (post-exposure prophylaxis)", link: "https://tht.org.uk/hiv/protection/pep-post-exposure-prophylaxis-hiv", notes: "" },
+    { name: "Vaccinations against STIs", link: "https://www.shl.uk/en-gb/article/vaccinations-against-stis", notes: "" },
+    { name: "DoxyPEP — how and when to take it", link: "https://www.buckshealthcare.nhs.uk/pifs/doxypep-how-and-when-to-take-it/", notes: "" },
+    { name: "NHS — Mpox", link: "https://www.nhs.uk/conditions/mpox/", notes: "" },
+    { name: "NHS — Hepatitis B", link: "https://www.nhs.uk/conditions/hepatitis-b/", notes: "" },
+  ],
+  lgbtqGender: [
+    { name: "Switchboard LGBT+ Helpline", link: "https://switchboard.lgbt/", notes: "" },
+    { name: "Stonewall", link: "https://www.stonewall.org.uk/", notes: "" },
+    { name: "LGBT Foundation", link: "https://lgbt.foundation/", notes: "" },
+  ],
+  kinkRelationshipsSexEd: [
+    { name: "Pillow Talk — sex ed for grown-ups", link: "https://pillowtalk.scot/category/sex-ed-for-grown-ups/sex-ed-for-grown-ups-resources/", notes: "" },
+    { name: "Choice Support — Supported Loving, kink toolkit", link: "https://www.choicesupport.org.uk/about-us/what-we-do/supported-loving/supported-loving-toolkit/kink", notes: "" },
+    { name: "NELFT — CAMHS sex education", link: "https://www.nelft.nhs.uk/camhs-sex-education/", notes: "" },
+  ],
+  publicSexCruising: [
+    { name: "Terrence Higgins Trust — public sex environments", link: "https://tht.org.uk/sexual-health/improving-your-sexual-health/public-sex-environments", notes: "" },
+  ],
+  drugsChemsex: [
+    { name: "We Are With You — chemsex, staying safe", link: "https://www.wearewithyou.org.uk/advice-and-information/advice-for-you/chemsex-how-to-stay-safe-and-get-back-in-control", notes: "" },
+    { name: "Release", link: "https://www.release.org.uk/", notes: "" },
+    { name: "Mind — drug and alcohol addiction contacts", link: "https://www.mind.org.uk/information-support/types-of-mental-health-problems/recreational-drugs-alcohol-and-addiction/drug-and-alcohol-addiction-useful-contacts/", notes: "" },
+    { name: "Talk to Frank — find support near you", link: "https://talktofrank.com/get-help/find-support-near-you", notes: "" },
+  ],
+  mentalHealth: [
+    { name: "Mind", link: "https://www.mind.org.uk/", notes: "" },
+    { name: "Samaritans", link: "https://www.samaritans.org/how-we-can-help/contact-samaritan/", notes: "" },
   ],
 };
 
@@ -72,15 +124,38 @@ function withIds(entries) {
   return entries.map((e) => ({ id: generateEntryId(), ...e }));
 }
 
-// Merge-on-load, same pattern as CustomOptionListsRepository: a
-// category the user has never touched still picks up a future seed
-// update automatically; one they HAVE edited keeps their version.
+// Merge-on-load — CHANGED 1 Sep 2026, real fix: the old version here
+// returned `stored` as-is whenever ANYTHING had ever been saved,
+// despite this same comment already claiming a real category-level
+// merge — so someone who'd touched Resources even once before today's
+// new categories/links were added would never see any of them. Now a
+// genuine merge, three real cases: a stored entry the user has already
+// given its own link is left untouched (their edit wins); a stored
+// entry still blank gets today's newly-supplied real URL by matching
+// on name; a category or entry that's brand new since they last
+// loaded gets appended. Same "a category the user has never touched
+// still picks up a future seed update automatically" intent this
+// comment always described — now actually true at the entry level,
+// not just when the whole category was untouched.
 let categories = (() => {
   const stored = storage.load(STORAGE_KEY, null);
-  if (stored) return stored;
   const seeded = {};
   for (const key of Object.keys(SEED_ENTRIES)) seeded[key] = withIds(SEED_ENTRIES[key]);
-  return seeded;
+  if (!stored) return seeded;
+
+  const merged = { ...stored };
+  for (const key of Object.keys(SEED_ENTRIES)) {
+    if (!merged[key]) { merged[key] = seeded[key]; continue; }
+    const seedByName = new Map(SEED_ENTRIES[key].map((e) => [e.name, e]));
+    merged[key] = merged[key].map((entry) => {
+      const seedMatch = seedByName.get(entry.name);
+      return (seedMatch && !entry.link && seedMatch.link) ? { ...entry, link: seedMatch.link } : entry;
+    });
+    const existingNames = new Set(merged[key].map((e) => e.name));
+    const newOnes = SEED_ENTRIES[key].filter((e) => !existingNames.has(e.name));
+    if (newOnes.length) merged[key] = [...merged[key], ...withIds(newOnes)];
+  }
+  return merged;
 })();
 
 function persist() {

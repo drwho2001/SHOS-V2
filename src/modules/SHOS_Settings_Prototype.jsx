@@ -674,7 +674,7 @@ function ResourcesScreen({ onClose }) {
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16, lineHeight: 1.4 }}>
-          Real organisations are named below, but every link/phone number starts blank — worth confirming and filling in your own current, verified one rather than trusting a pre-filled number for something this important.
+          Real organisations, most with a real link already filled in. Anything still blank is worth adding yourself with a current, verified one rather than trusting a guess for something this important — and any link here is worth double-checking still works before relying on it.
         </div>
         {ResourcesRepository.getAllCategoryKeys().map((key) => (
           <ResourceCategory key={key} categoryKey={key} darkMode={darkMode} />
