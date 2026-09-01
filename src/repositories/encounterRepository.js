@@ -158,6 +158,17 @@ export const DEFAULT_ENCOUNTER = {
 // Seed data
 // ---------------------------------------------------------------------
 
+// ADDED 1 Sep 2026 — real ask: richer example data with relative
+// dates rather than the hardcoded ones below, which drift stale as
+// real time passes. Same daysAgo approach as logRepository.js/
+// contactRepository.js's own seed data.
+function daysAgo(n, hour = 19, minute = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
 let seedEncounters = [
   {
     ...DEFAULT_ENCOUNTER,
@@ -186,6 +197,61 @@ let seedEncounters = [
     enjoymentRating: 70,
     followUpNeeded: false,
     createdAt: "2026-08-02T18:00:00.000Z",
+    isArchived: false,
+  },
+  // ADDED 1 Sep 2026 — real ask: the exposure Encounter behind the
+  // example Timeline episode (see episodeRepository.js) — this is the
+  // one EpisodeRepository's seed startEncounterId points at. DoxyPEP
+  // taken and PrEP adequately covered, but neither is 100% protective
+  // against Gonorrhoea specifically — the real, clinically-accurate
+  // reason the episode below still happens despite both.
+  {
+    ...DEFAULT_ENCOUNTER,
+    id: "encounter_003",
+    title: "F. Mercury — his place",
+    date: daysAgo(14, 22, 30),
+    isDateTime: true,
+    encounterType: "Hookup",
+    attendeeIds: ["contact_005"],
+    myPosition: ["Oral - giving", "Anal - receiving"],
+    myRole: "sub",
+    myDoxyPepStatus: "Indicated - taken",
+    myPrepCoverage: "Adequate - daily (≥4/week)",
+    protectionUsed: [],
+    enjoymentRating: 90,
+    wouldMeetAgain: "Yes",
+    createdAt: daysAgo(14, 23, 0),
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_ENCOUNTER,
+    id: "encounter_004",
+    title: "Sylvie — drinks then hers",
+    date: daysAgo(6, 21, 0),
+    isDateTime: true,
+    encounterType: "Date/Chill",
+    attendeeIds: ["contact_006"],
+    myRole: "Switch",
+    myDoxyPepStatus: "Not indicated",
+    myPrepCoverage: "Adequate - daily (≥4/week)",
+    protectionUsed: ["Condom"],
+    enjoymentRating: 80,
+    wouldMeetAgain: "Yes",
+    createdAt: daysAgo(6, 22, 0),
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_ENCOUNTER,
+    id: "encounter_005",
+    title: "Grace — first date",
+    date: daysAgo(2, 19, 0),
+    isDateTime: true,
+    encounterType: "Date/Chill",
+    attendeeIds: ["contact_007"],
+    enjoymentRating: 75,
+    wouldMeetAgain: "Yes",
+    notes: "Good first date, meeting again next week.",
+    createdAt: daysAgo(2, 21, 0),
     isArchived: false,
   },
 ];

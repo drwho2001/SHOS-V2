@@ -52,7 +52,34 @@ export const DEFAULT_SYMPTOM_ENTRY = {
   isArchived: false,
 };
 
-let entries = storage.load(STORAGE_KEY, []);
+// ADDED 1 Sep 2026 — real ask: richer, relative-dated example data —
+// this is the symptom-onset half of the example Timeline episode (see
+// episodeRepository.js's own seed). Same daysAgo approach used
+// throughout the other repositories' seed data this session.
+function daysAgo(n, hour = 8, minute = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
+let seedEntries = [
+  {
+    ...DEFAULT_SYMPTOM_ENTRY,
+    id: "symlog_001",
+    title: "Discharge + discomfort",
+    symptomIds: ["symptom_cat_001"],
+    dateStarted: daysAgo(11),
+    dateResolved: daysAgo(3),
+    severity: "Moderate",
+    relatedEncounterIds: ["encounter_003"],
+    relatedTestIds: ["test_001"],
+    notes: "Started a few days after seeing F. Mercury — went in for a symptomatic test.",
+    isArchived: false,
+  },
+];
+
+let entries = storage.load(STORAGE_KEY, seedEntries);
 let nextEntryNumber = computeNextEntryNumber(entries);
 
 function computeNextEntryNumber(existing) {

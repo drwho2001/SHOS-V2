@@ -38,7 +38,37 @@ export const DEFAULT_VACCINATION = {
   isArchived: false,
 };
 
-let vaccinations = storage.load(STORAGE_KEY, []);
+// ADDED 1 Sep 2026 — real ask: richer example data — "positive sti
+// symptoms (gonorrhoea, so vaccine later too)". Uses the app's own
+// existing Gonorrhoea vaccine option (customOptionListsRepository.js's
+// `vaccine` list already carries it — a real, current practice at some
+// UK sexual health services offering 4CMenB for high-risk gonorrhoea
+// cross-protection, not invented for this example). Relative date,
+// after the treatment/TOC visit above.
+function daysAgo(n, hour = 11, minute = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
+let seedVaccinations = [
+  {
+    ...DEFAULT_VACCINATION,
+    id: "vaccination_001",
+    title: "Gonorrhoea vaccine (4CMenB)",
+    vaccine: "Gonorrhoea",
+    reason: ["High-risk status"],
+    doseNumber: 1,
+    date: daysAgo(1),
+    provider: "56 Dean Street",
+    injectionSite: "Deltoid",
+    notes: "Offered given recent Gonorrhoea diagnosis and ongoing risk.",
+    isArchived: false,
+  },
+];
+
+let vaccinations = storage.load(STORAGE_KEY, seedVaccinations);
 let nextNumber = computeNextNumber(vaccinations);
 
 function computeNextNumber(existing) {

@@ -98,7 +98,59 @@ function generateAttachmentId() {
   return `attachment_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-let tests = storage.load(STORAGE_KEY, []);
+// ADDED 1 Sep 2026 — real ask: richer example data — the positive
+// test and its TOC (test of cure) half of the example Timeline
+// episode (see episodeRepository.js's own seed for the full arc: this
+// symptomatic test comes back positive for Gonorrhoea despite regular
+// PrEP and DoxyPEP taken after the exposure encounter, since neither
+// is fully protective against Gonorrhoea specifically — clinically
+// accurate, not a gap in the example). Relative dates, same daysAgo
+// approach used throughout this session's other seed data.
+function daysAgo(n, hour = 10, minute = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
+let seedTests = [
+  {
+    ...DEFAULT_TEST,
+    id: "test_001",
+    title: "Symptomatic screen — Gonorrhoea positive",
+    date: daysAgo(9),
+    resultDate: daysAgo(7),
+    setting: "🏥🤢 Clinic - Symptomatic",
+    sampleType: ["Urine", "Rectal swab"],
+    testingFor: ["Gonorrhoea", "Chlamydia", "HIV", "Syphilis"],
+    organismIds: ["organism_002"],
+    resultIds: ["result_001"],
+    mostRecent: false,
+    followUpActionedDate: daysAgo(8),
+    notes: "Discharge + discomfort a few days after an encounter. Positive for Gonorrhoea, negative for everything else screened.",
+    clinicVisitIds: ["visit_001"],
+    relatedSymptomIds: ["symlog_001"],
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_TEST,
+    id: "test_002",
+    title: "Test of cure — Gonorrhoea",
+    date: daysAgo(2),
+    resultDate: daysAgo(1),
+    setting: "🏥😎 Clinic - Routine",
+    sampleType: ["Urine", "Rectal swab"],
+    testingFor: ["Gonorrhoea"],
+    organismIds: [],
+    resultIds: ["result_002"],
+    mostRecent: true,
+    notes: "Test of cure, 2 weeks after treatment — confirms it's cleared.",
+    clinicVisitIds: ["visit_001"],
+    isArchived: false,
+  },
+];
+
+let tests = storage.load(STORAGE_KEY, seedTests);
 let nextTestNumber = computeNextTestNumber(tests);
 
 function computeNextTestNumber(existing) {

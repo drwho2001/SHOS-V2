@@ -127,7 +127,39 @@ function generateAdHocMedId() {
 // ad-hoc medication entry, same pattern already used for attachments.
 export { generateAdHocMedId };
 
-let visits = storage.load(STORAGE_KEY, []);
+// ADDED 1 Sep 2026 — real ask: richer example data — the treatment
+// visit half of the example Timeline episode (see episodeRepository.js's
+// own seed for the full arc). Uses a real, well-known London sexual
+// health clinic name, per the user's own "use like London clinic" ask.
+// Relative date, same daysAgo approach used throughout this session's
+// other seed data.
+function daysAgo(n, hour = 14, minute = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
+let seedVisits = [
+  {
+    ...DEFAULT_CLINIC_VISIT,
+    id: "visit_001",
+    title: "Treatment — Gonorrhoea",
+    date: daysAgo(7),
+    location: "56 Dean Street",
+    clinician: ["Hayley"],
+    reasonForVisit: ["Treatment"],
+    clinicalNotes: "Confirmed Gonorrhoea on symptomatic screen. Single-dose antibiotic given in clinic. TOC (test of cure) advised in 2 weeks. Partner notification checklist started.",
+    linkedTestIds: ["test_001", "test_002"],
+    adHocMedicationsGiven: [{ id: "adhocmed_seed_001", name: "Ceftriaxone 1g IM", notes: "Single dose, given in clinic." }],
+    symptomTypeIds: ["symptom_cat_001"],
+    symptomsDiscussedIds: ["symlog_001"],
+    primaryReasonSymptomLogId: "symlog_001",
+    isArchived: false,
+  },
+];
+
+let visits = storage.load(STORAGE_KEY, seedVisits);
 let nextVisitNumber = computeNextVisitNumber(visits);
 
 function computeNextVisitNumber(existing) {

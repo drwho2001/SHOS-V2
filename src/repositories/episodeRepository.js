@@ -71,7 +71,35 @@ export const DEFAULT_EPISODE = {
   isArchived: false,
 };
 
-let episodes = storage.load(STORAGE_KEY, []);
+// ADDED 1 Sep 2026 — real ask: a real example Timeline episode, tying
+// together the example Encounter/Symptom Log/Testing/Clinic Visit/
+// Vaccination seed data across this session's repositories — exposure
+// encounter (encounter_003, with contact_005 "F. Mercury") → symptoms
+// (symlog_001) → positive test (test_001) → treatment (visit_001) →
+// TOC (test_002), resolved. Gives a new user one real end-to-end
+// example of what the Timeline feature actually tracks, not just
+// isolated records in each module.
+let seedEpisodes = [
+  {
+    ...DEFAULT_EPISODE,
+    id: "episode_001",
+    title: "Gonorrhoea — Sep 2026",
+    triggerReason: "Symptom-driven",
+    startEncounterId: "encounter_003",
+    atRiskEncounterIds: ["encounter_004", "encounter_005"],
+    notifiedEncounterIds: [],
+    testIds: ["test_001", "test_002"],
+    clinicVisitIds: ["visit_001"],
+    symptomLogIds: ["symlog_001"],
+    resolvedDate: (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString(); })(),
+    resolution: "Treated — course complete",
+    notes: "TOC negative — resolved. Partner notification checklist used for encounters since the exposure date.",
+    createdAt: (() => { const d = new Date(); d.setDate(d.getDate() - 9); return d.toISOString(); })(),
+    isArchived: false,
+  },
+];
+
+let episodes = storage.load(STORAGE_KEY, seedEpisodes);
 let nextNumber = computeNextNumber(episodes);
 
 function computeNextNumber(existing) {

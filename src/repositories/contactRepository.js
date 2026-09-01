@@ -232,6 +232,19 @@ export const DEFAULT_CONTACT = {
 // four times (the exact duplication risk flagged earlier this session).
 // ---------------------------------------------------------------------
 
+// ADDED 1 Sep 2026 — real ask: richer, more representative example
+// data ("male and female and trans... allows new users to see how it
+// could work"), generated relative to "now" so it never reads as
+// stale — same daysAgo approach logRepository.js's own seed data
+// already uses, copied here rather than shared across files (this
+// project's own established per-file convention).
+function daysAgo(n, hour = 9, minute = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
 let seedContacts = [
   {
     ...DEFAULT_CONTACT,
@@ -270,6 +283,50 @@ let seedContacts = [
     name: "Riley",
     createdAt: "2026-06-01T09:00:00.000Z",
     isArchived: true,
+  },
+  // ADDED 1 Sep 2026 — real ask: gender-diverse London example
+  // contacts, names gently nodding to deceased LGBT icons rather than
+  // copying them outright (the user's own example: "Frankie Mercury,
+  // or similar") — feeds both new-user example data and the decoy PIN
+  // mode (see App.jsx's DecoyHome). This trio is also the "cast" behind
+  // the example Timeline episode below (episodeRepository.js) — F.
+  // Mercury is the exposure contact for that scenario.
+  {
+    ...DEFAULT_CONTACT,
+    id: "contact_005",
+    name: "F. Mercury",
+    pronouns: "He/him",
+    gender: "Male",
+    city: "London",
+    contactableVia: ["Phone/WhatsApp"],
+    phone: "07700 900456",
+    notes: "Met on a night out in Soho.",
+    createdAt: daysAgo(40),
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_CONTACT,
+    id: "contact_006",
+    name: "Sylvie J.",
+    pronouns: "She/her",
+    gender: "Trans-female",
+    city: "London",
+    snapchat: "sylvie_ldn",
+    contactableVia: ["Snapchat"],
+    createdAt: daysAgo(24),
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_CONTACT,
+    id: "contact_007",
+    name: "Grace J.",
+    pronouns: "She/her",
+    gender: "Female",
+    city: "London",
+    contactableVia: ["Phone/WhatsApp"],
+    phone: "07700 900789",
+    createdAt: daysAgo(9),
+    isArchived: false,
   },
 ];
 
