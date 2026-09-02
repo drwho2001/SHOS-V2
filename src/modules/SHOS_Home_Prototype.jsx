@@ -431,8 +431,18 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             list already IS the dashboard's "quick key stats." */}
         {menstrualTrackingEnabled && (
           <>
-            <SummaryRow label="Last period" moduleColor={ACCENTS.healthcare} value={lastPeriod ? `${formatRelativeDate(lastPeriod.startDate)}${lastPeriod.endDate ? "" : " (ongoing)"}` : "None logged"} onClick={lastPeriod ? () => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth") : undefined} />
-            <SummaryRow label="Contraception due" moduleColor={ACCENTS.healthcare} value={contraceptionDue ? `${contraceptionDue.method} · ${formatDueDate(contraceptionDue.nextDueDate)}` : "None due"} onClick={contraceptionDue ? () => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth") : undefined} />
+            {/* CHANGED — real ask: matches the red already used for
+                the Cycle tab's own drop icon and the "Log period"
+                button below — this row was still the old green,
+                a genuine inconsistency, not a deliberate choice. */}
+            <SummaryRow label="Last period" moduleColor={ACTION.red} value={lastPeriod ? `${formatRelativeDate(lastPeriod.startDate)}${lastPeriod.endDate ? "" : " (ongoing)"}` : "None logged"} onClick={lastPeriod ? () => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth") : undefined} />
+            {/* CHANGED — real ask: contraception reads as a medication
+                (something taken/administered on a schedule), not a
+                Healthcare-generic fact — same MEDS_ICON_BLUE "Log
+                medication"/"Last medication dose" already use above,
+                so it groups visually with dose/refill data instead of
+                blending into the green Healthcare rows around it. */}
+            <SummaryRow label="Contraception due" moduleColor={MEDS_ICON_BLUE} value={contraceptionDue ? `${contraceptionDue.method} · ${formatDueDate(contraceptionDue.nextDueDate)}` : "None due"} onClick={contraceptionDue ? () => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth") : undefined} />
           </>
         )}
       </div>
@@ -530,7 +540,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         {menstrualTrackingEnabled && (
           <>
             <QuickAddButton icon={Drop} label="Log period" color={ACTION.red} onClick={() => onQuickAdd("healthcare", "menstrualHealth")} />
-            <QuickAddButton icon={Pill} label="Log contraception" color={ACCENTS.healthcare} onClick={() => onQuickAdd("healthcare", "menstrualContraception")} />
+            <QuickAddButton icon={Pill} label="Log contraception" color={MEDS_ICON_BLUE} onClick={() => onQuickAdd("healthcare", "menstrualContraception")} />
           </>
         )}
       </div>
