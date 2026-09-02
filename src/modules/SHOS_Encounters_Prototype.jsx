@@ -487,7 +487,10 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
 }
 
 // Single-select version, for Location — one registry ID, not an array.
-function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder, showLocateButton = false }) {
+// `contacts`/`attendeeIds` are optional — only Location's own call
+// site passes them (see below) — so this stays a plain registry
+// picker for any future non-Location caller.
+function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder, showLocateButton = false, contacts = null, attendeeIds = [] }) {
   const allEntries = registry.getAll().filter((e) => !e.isArchived);
   const current = value ? (allEntries.find((e) => e.id === value)?.name || registry.getById(value)?.name || "") : "";
   const [draft, setDraft] = useState(current);
@@ -540,9 +543,26 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
     return map;
   }, []);
   const draftLower = draft.trim().toLowerCase();
+  const contactById = useMemo(() => {
+    const map = new Map();
+    (contacts || []).forEach((c) => map.set(c.id, c));
+    return map;
+  }, [contacts]);
+  // CHANGED — real ask: "location... searchable via other known
+  // addresses (IE X's place)". A location entry can already carry its
+  // own address (see locationsRepository.js) and/or a relatedContactId
+  // — search now matches those too, not just the entry's own name, so
+  // typing the actual street or a linked contact's name finds it.
+  const matchesEntry = (e) => {
+    if (e.name.toLowerCase().includes(draftLower)) return true;
+    if (e.address && e.address.toLowerCase().includes(draftLower)) return true;
+    const linked = e.relatedContactId ? contactById.get(e.relatedContactId) : null;
+    if (linked && (linked.nickname || linked.name || "").toLowerCase().includes(draftLower)) return true;
+    return false;
+  };
   const visibleSuggestions = draftLower
     ? allEntries
-        .filter((e) => e.id !== value && e.name.toLowerCase().includes(draftLower))
+        .filter((e) => e.id !== value && matchesEntry(e))
         .sort((a, b) => {
           const aDate = locationLastUsed.get(a.id) || a.createdAt || "";
           const bDate = locationLastUsed.get(b.id) || b.createdAt || "";
@@ -550,6 +570,32 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
         })
         .slice(0, 8)
     : [];
+
+  // ADDED — real ask: a Contact's own Address/City (already searchable
+  // via Contacts and Encounters attendees) becomes a real, selectable
+  // Location suggestion too, not just entries someone separately typed
+  // into the Locations registry — "X's place" per the user's own
+  // example. Only contacts NOT already linked to a location are
+  // offered here — one already linked shows up through the entry
+  // search above instead, so the same place doesn't appear twice.
+  // Attendees already picked for THIS encounter surface immediately,
+  // no typing required — genuinely likely to be "where", given who's
+  // already marked as "who" — everyone else needs an actual typed
+  // match, same as any other suggestion in this app.
+  const contactSuggestions = useMemo(() => {
+    if (!contacts) return [];
+    const linkedContactIds = new Set(allEntries.filter((e) => e.relatedContactId).map((e) => e.relatedContactId));
+    return contacts
+      .filter((c) => !c.isArchived && (c.address || c.city) && !linkedContactIds.has(c.id))
+      .filter((c) => {
+        if (attendeeIds.includes(c.id)) return true;
+        if (!draftLower) return false;
+        const name = (c.nickname || c.name || "").toLowerCase();
+        return name.includes(draftLower) || (c.address || "").toLowerCase().includes(draftLower) || (c.city || "").toLowerCase().includes(draftLower);
+      })
+      .sort((a, b) => (attendeeIds.includes(b.id) ? 1 : 0) - (attendeeIds.includes(a.id) ? 1 : 0))
+      .slice(0, 5);
+  }, [contacts, attendeeIds, draftLower, allEntries]);
 
   const commit = () => {
     const trimmed = draft.trim();
@@ -570,6 +616,23 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
     setDraft(entry.name);
   };
 
+  // Turning a contact suggestion into a real registry entry goes
+  // through the exact same findOrCreate() typing a name already uses
+  // — just pre-filled with that contact's real address/link instead of
+  // starting blank, so it behaves like any other location from here on
+  // (editable, archivable, reusable next time without contacts at all).
+  const tapContactSuggestion = (contact) => {
+    const contactLabel = contact.nickname || contact.name;
+    const entry = registry.findOrCreate(`${contactLabel}’s place`);
+    if (!entry) return;
+    const changes = {};
+    if (!entry.relatedContactId) changes.relatedContactId = contact.id;
+    if (!entry.address && (contact.address || contact.city)) changes.address = contact.address || contact.city;
+    const finalEntry = Object.keys(changes).length ? registry.update(entry.id, changes) : entry;
+    onChange(finalEntry.id);
+    setDraft(finalEntry.name);
+  };
+
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
@@ -582,12 +645,24 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
         )}
       </div>
       {locateError && <div style={{ fontSize: 11, color: T.actionRed, marginBottom: 4 }}>{locateError}</div>}
-      {visibleSuggestions.length > 0 && (
+      {(visibleSuggestions.length > 0 || contactSuggestions.length > 0) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((e) => (
             <div key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
+              role="button" tabIndex={0} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); tapSuggestion(e); } }}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer" }}>
               {e.name}
+            </div>
+          ))}
+          {/* Contact-derived suggestions — dashed border marks these as
+              "not a saved location yet" (tapping one creates and links
+              it), a visibly different state from the solid-border
+              chips above for entries that already exist. */}
+          {contactSuggestions.map((c) => (
+            <div key={`contact-${c.id}`} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapContactSuggestion(c)}
+              role="button" tabIndex={0} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); tapContactSuggestion(c); } }}
+              style={{ display: "flex", alignItems: "center", gap: 3, padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px dashed ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer" }}>
+              <Users size={11} /> {(c.nickname || c.name)}’s place
             </div>
           ))}
         </div>
@@ -1240,7 +1315,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
             merged into the same section as Attendees. */}
         <SectionCard title="Attendees & Location" T={T}>
           <AttendeePicker value={form.attendeeIds} onChange={set("attendeeIds")} T={T} contacts={contacts} onCreatePlaceholder={createPlaceholderContact} />
-          <RegistrySinglePicker label="Location" value={form.locationId} onChange={set("locationId")} T={T} registry={LocationsRepository} placeholder="e.g. His place, Sauna" showLocateButton />
+          <RegistrySinglePicker label="Location" value={form.locationId} onChange={set("locationId")} T={T} registry={LocationsRepository} placeholder="e.g. His place, Sauna, or a written address" showLocateButton contacts={contacts} attendeeIds={form.attendeeIds} />
         </SectionCard>
 
         <SectionCard title="Practices" T={T}>
