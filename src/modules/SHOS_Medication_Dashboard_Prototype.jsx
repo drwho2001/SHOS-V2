@@ -80,7 +80,17 @@ const DARK = {
   // full reasoning.
   medsBlue: resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
   goldText: "#FFD666", // dark mode's existing Platforms-gold dark accent already contrasts fine as text here
-  navActive: "#A9C2FF", fabBg: "#F2F2F4", fabIcon: "#121214",
+  // CHANGED — real gap found by the user: fabBg/fabIcon were a
+  // deliberate light-on-dark inversion (a near-white circle, dark
+  // icon), the one module out of step with the "same module, same
+  // colour" rule the nav-bar fix above just established everywhere
+  // else — Contacts and Encounters both already reuse their own
+  // resolved accent for the FAB in dark mode, matching their header;
+  // only Medication inverted. navActive stays "#A9C2FF" — confirmed
+  // genuinely unused anywhere in this file's own JSX (dead token,
+  // same as the light-mode value's own comment already noted), not
+  // worth touching for a value nothing reads.
+  navActive: "#A9C2FF", fabBg: resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5"), fabIcon: "#FFFFFF",
   // More saturated than light mode's version, per the user's specific ask
   // ("dark mode streak... slightly more striking") — light mode wasn't
   // flagged as a problem, so it stays subtle; dark gets more pop.
