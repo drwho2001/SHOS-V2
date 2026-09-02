@@ -164,7 +164,7 @@ function SuggestField({ label, value, onChange, options, onAddNew, T, placeholde
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((o) => (
-            <div key={o} onClick={() => onChange(o)}
+            <div key={o} onMouseDown={(ev) => ev.preventDefault()} onClick={() => onChange(o)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
               {o}
             </div>

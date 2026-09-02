@@ -146,7 +146,7 @@ function MeasurementTypeField({ value, onChange, options, onAddNew, onNewTypeCre
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((v) => (
-            <div key={v} onClick={() => { onChange(v); setPendingSuggestion(null); }}
+            <div key={v} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange(v); setPendingSuggestion(null); }}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
               {v}
             </div>

@@ -329,7 +329,7 @@ function SuggestField({ label, value, onChange, options, onAddNew, T, placeholde
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((o) => (
-            <div key={o} onClick={() => onChange(o)}
+            <div key={o} onMouseDown={(ev) => ev.preventDefault()} onClick={() => onChange(o)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
               {o}
             </div>
@@ -626,9 +626,9 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
       {pendingSuggestion && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.contactsTeal}15`, border: `1px solid ${T.contactsTeal}`, marginBottom: 6, fontSize: 12 }}>
           <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}"? You typed "{pendingSuggestion.typedAs}".</span>
-          <div onClick={() => { tapSuggestion(pendingSuggestion.suggestion); setPendingSuggestion(null); }}
+          <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { tapSuggestion(pendingSuggestion.suggestion); setPendingSuggestion(null); }}
             style={{ fontWeight: 700, color: T.contactsTeal, cursor: "pointer" }}>Yes, use it</div>
-          <div onClick={() => { if (!value.includes(pendingSuggestion.typedAs)) onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
+          <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { if (!value.includes(pendingSuggestion.typedAs)) onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
             style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
         </div>
       )}

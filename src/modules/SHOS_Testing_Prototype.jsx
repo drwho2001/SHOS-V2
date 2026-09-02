@@ -345,7 +345,7 @@ function RegistryMultiResultPicker({ label, value, onChange, T, registry, placeh
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((e) => (
-            <div key={e.id} onClick={() => onChange([...value, e.id])}
+            <div key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => onChange([...value, e.id])}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
               {e.name}
             </div>
