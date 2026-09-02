@@ -567,7 +567,8 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
             <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 10, marginBottom: 4 }}>Reason (optional)</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
               {REASON_OPTIONS.map((r) => (
-                <div key={r} onClick={() => toggle(reason, setReason, r)}
+                <div key={r} onClick={() => toggle(reason, setReason, r)} role="button" tabIndex={0} aria-pressed={reason.includes(r)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(reason, setReason, r); } }}
                   style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.medsBlue}`, color: reason.includes(r) ? T.surface : T.medsBlue, background: reason.includes(r) ? T.medsBlue : "transparent" }}>
                   {r}
                 </div>
@@ -576,7 +577,8 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Side effects (optional)</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
               {SIDE_EFFECT_OPTIONS.map((s) => (
-                <div key={s} onClick={() => toggle(sideEffects, setSideEffects, s)}
+                <div key={s} onClick={() => toggle(sideEffects, setSideEffects, s)} role="button" tabIndex={0} aria-pressed={sideEffects.includes(s)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(sideEffects, setSideEffects, s); } }}
                   style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.actionRed}`, color: sideEffects.includes(s) ? T.surface : T.actionRed, background: sideEffects.includes(s) ? T.actionRed : "transparent" }}>
                   {s}
                 </div>
@@ -836,7 +838,8 @@ function MultiSelectRow({ label, value, onChange, options, T, onAddNew }) {
         {options.map((opt) => {
           const active = value.includes(opt);
           return (
-            <div key={opt} onClick={() => toggle(opt)}
+            <div key={opt} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt); } }}
               style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.medsBlue : T.border}`, color: active ? T.medsBlue : T.textSecondary, background: active ? `${T.medsBlue}15` : "transparent" }}>
               {opt}
             </div>
@@ -1275,7 +1278,8 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
               <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 500 }}>Dose reminders</div>
               <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>Notify when a daily medication is due</div>
             </div>
-            <div onClick={toggleReminders}
+            <div onClick={toggleReminders} role="switch" tabIndex={0} aria-checked={prefs.doseRemindersEnabled} aria-label="Dose reminders"
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleReminders(); } }}
               style={{ width: 44, height: 26, borderRadius: 999, background: prefs.doseRemindersEnabled ? T.medsBlue : T.border, position: "relative", cursor: "pointer", flexShrink: 0 }}>
               <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", position: "absolute", top: 3, left: prefs.doseRemindersEnabled ? 21 : 3, transition: "left 0.15s" }} />
             </div>

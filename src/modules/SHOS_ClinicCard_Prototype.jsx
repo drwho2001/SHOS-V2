@@ -595,7 +595,9 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           </div>
           <SectionCard T={T}>
             {CLINIC_CARD_SECTIONS.map((s) => (
-              <div key={s.key} onClick={() => toggleSection(s.key)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: `1px solid ${T.border}`, cursor: "pointer" }}>
+              <div key={s.key} onClick={() => toggleSection(s.key)} role="switch" tabIndex={0} aria-checked={visibility[s.key]} aria-label={s.label}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSection(s.key); } }}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: `1px solid ${T.border}`, cursor: "pointer" }}>
                 <span style={{ fontSize: 14, color: T.textPrimary }}>{s.label}</span>
                 <div style={{ width: 40, height: 24, borderRadius: 999, background: visibility[s.key] ? T.healthcareBlue : T.border, position: "relative", flexShrink: 0 }}>
                   <div style={{ position: "absolute", top: 2, left: visibility[s.key] ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />

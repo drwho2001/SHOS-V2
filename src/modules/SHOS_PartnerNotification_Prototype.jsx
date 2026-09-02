@@ -110,7 +110,9 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
             <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Clinical version</div>
             <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Adds DOB, Age, and Address per contact — for handing to a clinic's own partner notification team, who need enough to actually locate someone themselves.</div>
           </div>
-          <div onClick={() => setClinical((c) => !c)} style={{ width: 40, height: 24, borderRadius: 999, background: clinical ? ACCENTS.healthcare : T.surfaceVariant, position: "relative", cursor: "pointer", flexShrink: 0 }}>
+          <div onClick={() => setClinical((c) => !c)} role="switch" tabIndex={0} aria-checked={clinical} aria-label="Clinical version"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setClinical((c) => !c); } }}
+            style={{ width: 40, height: 24, borderRadius: 999, background: clinical ? ACCENTS.healthcare : T.surfaceVariant, position: "relative", cursor: "pointer", flexShrink: 0 }}>
             <div style={{ position: "absolute", top: 2, left: clinical ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
           </div>
         </div>
@@ -128,7 +130,8 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
         ) : visible.map((c) => {
           const isSelected = selectedIds.has(c.id);
           return (
-            <div key={c.id} onClick={() => toggle(c.id)}
+            <div key={c.id} onClick={() => toggle(c.id)} role="checkbox" tabIndex={0} aria-checked={isSelected}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(c.id); } }}
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: `1px solid ${T.border}`, cursor: "pointer" }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 500, color: T.textPrimary }}>{contactDisplayName(c)}</div>
