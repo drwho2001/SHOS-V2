@@ -129,8 +129,17 @@ async function findSyncedEventId(plugin, calendarName, visitId) {
 // marker above, so a repeated call on an unchanged visit just
 // no-op-updates the same real event rather than duplicating it.
 async function syncOneVisit(plugin, calendar, visit) {
+  // CHANGED — real ask from a security audit finding: a visit's real
+  // title (free text, could be explicit — "e.g. Routine screening" is
+  // only a placeholder) traveling into a calendar event means it can
+  // surface on a lock-screen notification or a synced calendar's own
+  // smart features, independent of whether that calendar is shared
+  // with anyone — a risk the existing calendar-sharing warning doesn't
+  // cover. Opt-in generic title, off by default (unchanged behavior
+  // unless explicitly turned on).
+  const useGenericTitle = AppPreferencesRepository.getPreferences().calendarSyncGenericTitle;
   const eventOptions = {
-    title: visit.title || "Clinic appointment",
+    title: useGenericTitle ? "Clinic appointment" : (visit.title || "Clinic appointment"),
     location: visit.location || "",
     notes: markerFor(visit.id),
     startDate: new Date(visit.date).getTime(),

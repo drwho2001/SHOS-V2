@@ -41,6 +41,17 @@ export const DEFAULT_APP_PREFERENCES = {
   // own UI shows a real warning before this can be set to anything
   // but the default — see that screen's own comment for why.
   calendarSyncTargetName: null,
+  // ADDED — real ask from a security audit finding: a synced event's
+  // title is normally the Clinic Visit's own free-text title (whatever
+  // the user typed — could be explicit), and that title can surface on
+  // a lock-screen notification or a synced calendar's own smart
+  // features regardless of the target calendar's sharing settings
+  // (which the warning above already covers) — a separate risk this
+  // doesn't. Off by default (real titles, matching this feature's
+  // existing behavior) — turning it on makes every synced event use a
+  // generic "Clinic appointment" title instead, see
+  // calendarSyncService.js's syncOneVisit().
+  calendarSyncGenericTitle: false,
   // ADDED — real ask: "scheduled auto-export" as a genuine backlog item
   // alongside the manual export/backup already built — the existing
   // reminder (BACKUP_REMINDER_DAYS, backupService.js) only ever nags

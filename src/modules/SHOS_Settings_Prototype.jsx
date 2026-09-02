@@ -26,7 +26,7 @@ import {
   FileCsvIcon as FileCsv, LockIcon as Lock, BellIcon as Bell,
   CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck,
   LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen,
-  SlidersHorizontalIcon as SlidersHorizontal, MapPinIcon as MapPin,
+  SlidersHorizontalIcon as SlidersHorizontal, MapPinIcon as MapPin, XIcon as X,
 } from "@phosphor-icons/react";
 // FIXED 1 Sep 2026 — real ask: "Managed lists crashes app on
 // attempting to open" / "Same for resources [crashes], in light [mode]
@@ -2228,6 +2228,24 @@ function CalendarSyncSheet({ onClose }) {
     setCalendarSyncing(false);
   };
 
+  // ADDED — real ask from a security audit finding: an opt-in generic
+  // title for synced events, since the real title is free text that
+  // can surface on a lock-screen notification independent of the
+  // target calendar's own sharing settings (the warning below only
+  // covers that second risk). Re-syncs immediately so existing events
+  // pick up the new title right away — modifyEvent() (called via
+  // syncClinicVisitsToCalendar -> syncOneVisit) matches by the hidden
+  // marker in `notes`, not title, so this correctly updates every
+  // already-synced event in place rather than needing a remove+recreate
+  // the way switching calendars does.
+  const toggleGenericTitle = async () => {
+    setCalendarSyncing(true);
+    AppPreferencesRepository.update({ calendarSyncGenericTitle: !appPrefs.calendarSyncGenericTitle });
+    setAppPrefs(AppPreferencesRepository.getPreferences());
+    await syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+    setCalendarSyncing(false);
+  };
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 300 }} onClick={() => !calendarSyncing && onClose()}>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: "80vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
@@ -2254,6 +2272,25 @@ function CalendarSyncSheet({ onClose }) {
             <div onClick={calendarSyncing ? undefined : openCalendarPicker} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer" }}>
               <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Syncing to:</div>
               <div style={{ fontSize: 12, fontWeight: 700, color: ACCENTS.healthcare }}>{appPrefs.calendarSyncTargetName || SHOS_CALENDAR_NAME} · Change</div>
+            </div>
+            {/* ADDED — real ask from a security audit finding: the
+                real title can surface on a lock-screen notification or
+                a synced calendar's own smart features regardless of
+                who the calendar is shared with, which the "Not private
+                by default" warning below doesn't cover — this is a
+                separate, always-relevant risk, so shown regardless of
+                which calendar is targeted (private included: a local
+                calendar's own reminders still notify on-device). */}
+            <div onClick={calendarSyncing ? undefined : toggleGenericTitle} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer", marginTop: 14 }}>
+              <div style={{ flex: 1, paddingRight: 12 }}>
+                <div style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Use a generic event title</div>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>
+                  "Clinic appointment" instead of this visit's own title — safer if reminders show on your lock screen.
+                </div>
+              </div>
+              <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncGenericTitle ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
+                <div style={{ position: "absolute", top: 2, left: appPrefs.calendarSyncGenericTitle ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+              </div>
             </div>
             {/* Real ask: "not sure if this is something you can force,
                 if not allow sync with warning, maybe a link for how to
