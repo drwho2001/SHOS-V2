@@ -36,6 +36,26 @@ async function getPlugins() {
   return { Filesystem, Directory, Encoding, Share };
 }
 
+// ADDED — real ask: an explicit "choose exactly where this goes" save
+// flow. Export already had two paths (the native Share sheet above,
+// and a silent second copy always written to the public Documents
+// folder) but neither lets the user actually PICK a folder — this is
+// that missing piece, via Android's real Storage Access Framework
+// folder picker.
+let FilePicker = null;
+let filePickerLoadAttempted = false;
+async function getFilePickerPlugin() {
+  if (filePickerLoadAttempted) return FilePicker;
+  filePickerLoadAttempted = true;
+  try {
+    const mod = await import("@capawesome/capacitor-file-picker");
+    FilePicker = mod.FilePicker;
+  } catch {
+    console.warn("[fileExportHelper] @capawesome/capacitor-file-picker not available — 'choose a folder' export won't be offered in this environment.");
+  }
+  return FilePicker;
+}
+
 function downloadInBrowser(filename, contents, mimeType) {
   const blob = new Blob([contents], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -96,6 +116,103 @@ export async function exportTextFile(filename, contents, mimeType = "text/plain"
     console.error("[fileExportHelper] Native export failed, falling back to browser download:", err);
     downloadInBrowser(filename, contents, mimeType);
   }
+}
+
+// ADDED — real ask: writes to a folder the user explicitly picks,
+// rather than the Share sheet's indirect "send it somewhere" flow or
+// the silent always-on Documents copy above. Neither of those is
+// removed — this is a genuinely additional option, reachable from its
+// own Settings row.
+//
+// On web: uses the real browser File System Access API
+// (showSaveFilePicker) when available — a real OS save dialog, no
+// native plugin needed. Falls back to a plain download (no folder
+// choice) on a browser without it.
+//
+// On native Android: writes to Cache first (same as exportTextFile
+// above), then opens Android's real Storage Access Framework folder
+// picker via @capawesome/capacitor-file-picker's pickDirectory(), and
+// copies the cached file into whatever folder was chosen.
+//
+// HONEST LIMIT, checked rather than assumed but not fully provable
+// without a real device: pickDirectory() is documented by its own
+// plugin as an IMPORT-flow tool ("select a directory to retrieve all
+// files it contains"), and copyFile()'s own example copies INTO the
+// app's data directory, not out to an arbitrary SAF-picked one. Using
+// the two together to WRITE a new file into a user-picked folder is a
+// combination the plugin's docs don't explicitly walk through or
+// guarantee — it's expected to work (the plugin exposes exactly the
+// pieces this needs, and Android does allow apps to write into a
+// folder tree they were just granted access to), but this is the one
+// part of this feature that genuinely needs confirming on a real
+// device, not just a clean build.
+//
+// Returns { ok: true, path } on success, { ok: false, reason } where
+// reason is "cancelled" (user backed out of the picker — not an
+// error), "unavailable" (plugin missing, e.g. web without
+// showSaveFilePicker), or "error" (something else went wrong, `error`
+// carries the original exception for the caller to log/display).
+export async function exportTextFileToChosenFolder(filename, contents, mimeType = "text/plain") {
+  // FIXED — real bug found in Playwright testing: @capawesome/capacitor-
+  // file-picker (like every Capacitor plugin) ships a web JS fallback
+  // that always *imports* successfully even in a plain browser tab, so
+  // checking "did the plugin import OK" can't tell native Android apart
+  // from the GitHub Pages web build — both looked "available". On web
+  // its pickDirectory()/copyFile() aren't implemented and throw, which
+  // this function's own catch block was mistakenly treating as a
+  // harmless user-cancel — silently doing nothing instead of using the
+  // real browser Save-As dialog below. Same isNativePlatform() check
+  // already used by notificationService.js and updateCheckService.js
+  // for this exact native-vs-web-shim distinction.
+  const { Capacitor } = await import("@capacitor/core");
+  const isNative = Capacitor.isNativePlatform();
+  const { Filesystem, Directory, Encoding } = isNative ? await getPlugins() : {};
+  const FilePickerPlugin = isNative ? await getFilePickerPlugin() : null;
+  if (!isNative || !Filesystem || !FilePickerPlugin) {
+    // Web fallback: a real save dialog if the browser supports it,
+    // otherwise this whole feature just isn't offered (the caller
+    // checks availability before showing the button — see
+    // isChooseFolderExportAvailable below).
+    if (typeof window !== "undefined" && window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({ suggestedName: filename, types: [{ description: mimeType, accept: { [mimeType]: [`.${filename.split(".").pop()}`] } }] });
+        const writable = await handle.createWritable();
+        await writable.write(contents);
+        await writable.close();
+        return { ok: true, path: handle.name };
+      } catch (err) {
+        if (err && err.name === "AbortError") return { ok: false, reason: "cancelled" };
+        return { ok: false, reason: "error", error: err };
+      }
+    }
+    return { ok: false, reason: "unavailable" };
+  }
+  try {
+    const written = await Filesystem.writeFile({ path: filename, data: contents, directory: Directory.Cache, encoding: Encoding.UTF8 });
+    const { path: folderPath } = await FilePickerPlugin.pickDirectory();
+    if (!folderPath) return { ok: false, reason: "cancelled" };
+    const destination = `${folderPath}/${filename}`;
+    await FilePickerPlugin.copyFile({ from: written.uri, to: destination });
+    return { ok: true, path: destination };
+  } catch (err) {
+    // A cancelled system picker throws on some Android versions rather
+    // than resolving with an empty path — treated as a cancel too,
+    // since backing out of the dialog is the single most common
+    // non-success outcome and shouldn't read as a scary error.
+    console.warn("[fileExportHelper] Choose-folder export did not complete:", err);
+    return { ok: false, reason: "cancelled" };
+  }
+}
+
+// Lets the UI decide whether to even show a "Choose a folder…" button
+// — checked once, cheaply, rather than every render.
+export async function isChooseFolderExportAvailable() {
+  const { Capacitor } = await import("@capacitor/core");
+  if (Capacitor.isNativePlatform()) {
+    const FilePickerPlugin = await getFilePickerPlugin();
+    if (FilePickerPlugin) return true;
+  }
+  return typeof window !== "undefined" && !!window.showSaveFilePicker;
 }
 
 // ADDED — real ask: a genuine PDF export (Clinic Card), the first

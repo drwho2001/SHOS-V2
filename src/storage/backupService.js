@@ -15,7 +15,7 @@
 // know backup/restore exists.
 
 import { ContactRepository } from "../repositories/contactRepository.js";
-import { exportTextFile, writeTextFileSilently } from "./fileExportHelper.js";
+import { exportTextFile, writeTextFileSilently, exportTextFileToChosenFolder, isChooseFolderExportAvailable } from "./fileExportHelper.js";
 // ADDED — real ask: scheduled auto-export reads its own on/off toggle
 // and interval from here (Settings -> Preferences), same repository
 // every other real app preference already lives in.
@@ -489,6 +489,24 @@ export async function exportBackup(includeKeys = null, dateRange = null) {
   if (!includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
 }
 
+// ADDED — real ask: an explicit "choose exactly where this goes" export,
+// alongside the Share-sheet version above (unchanged) — see
+// fileExportHelper.js's exportTextFileToChosenFolder for the full
+// reasoning and its own honest limits. Returns the same {ok, reason}
+// shape that function returns, so the calling UI can show a real
+// success/cancelled/error message rather than assuming it worked the
+// way the fire-and-forget Share-sheet version can (the OS dialog
+// itself is that version's feedback; this one has none built in).
+export async function exportBackupToChosenFolder(includeKeys = null, dateRange = null) {
+  const backup = buildBackup(includeKeys, dateRange);
+  const json = JSON.stringify(backup, null, 2);
+  const dateStamp = new Date().toISOString().slice(0, 10);
+  const suffix = includeKeys ? "-selective" : "";
+  const result = await exportTextFileToChosenFolder(`shos-backup-${dateStamp}${suffix}.json`, json, "application/json");
+  if (result.ok && !includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  return result;
+}
+
 // ADDED — real ask: "scheduled auto-export", distinct from the nag-
 // reminder above (which only ever asks a human to remember to tap
 // Export). Deliberately reuses the SAME LAST_BACKUP_KEY clock as every
@@ -624,6 +642,18 @@ export async function exportEncryptedBackup(password, includeKeys = null, dateRa
   const suffix = includeKeys ? "-selective" : "";
   await exportTextFile(`shos-backup-encrypted-${dateStamp}${suffix}.json`, json, "application/json");
   if (!includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+}
+
+// Same "choose exactly where this goes" option as exportBackupToChosenFolder
+// above, for the encrypted path — see that function's own comment.
+export async function exportEncryptedBackupToChosenFolder(password, includeKeys = null, dateRange = null) {
+  const envelope = await buildEncryptedBackup(password, includeKeys, dateRange);
+  const json = JSON.stringify(envelope);
+  const dateStamp = new Date().toISOString().slice(0, 10);
+  const suffix = includeKeys ? "-selective" : "";
+  const result = await exportTextFileToChosenFolder(`shos-backup-encrypted-${dateStamp}${suffix}.json`, json, "application/json");
+  if (result.ok && !includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  return result;
 }
 
 // ---------------------------------------------------------------------

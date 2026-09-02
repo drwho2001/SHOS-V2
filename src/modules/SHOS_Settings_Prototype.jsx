@@ -45,7 +45,8 @@ import {
   getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth, getTestingIntervalTrend,
 } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
-import { exportBackup, exportEncryptedBackup, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
+import { exportBackup, exportEncryptedBackup, exportBackupToChosenFolder, exportEncryptedBackupToChosenFolder, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
+import { isChooseFolderExportAvailable } from "../storage/fileExportHelper";
 import { exportRecordsAsCSV } from "../storage/csvExportService";
 import { localStorageAdapter } from "../storage/storageAdapter";
 import { computeKinkUsage, computeChemsUsage, computeProtectionUsage, computeSymptomsUsage, computeOrganismUsage, computeResultsUsage, computeLocationsUsage } from "../calculations/registryUsage";
@@ -103,6 +104,15 @@ function SelectiveExportSheet({ onClose, onExported }) {
   // and why registries/config are deliberately excluded from it).
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  // ADDED — real ask: an explicit "choose exactly where this goes"
+  // option, alongside the default Share-sheet export above. Checked
+  // once on mount rather than assumed available — see
+  // fileExportHelper.js's isChooseFolderExportAvailable for why this
+  // can be false (older Android, or a browser with no native save-
+  // dialog support).
+  const [chooseFolderAvailable, setChooseFolderAvailable] = useState(false);
+  const [folderExportStatus, setFolderExportStatus] = useState(null);
+  useEffect(() => { isChooseFolderExportAvailable().then(setChooseFolderAvailable); }, []);
 
   const isGroupFullyChecked = (group) => group.items.every((i) => checked.has(i.dataKey));
   const isGroupPartiallyChecked = (group) => group.items.some((i) => checked.has(i.dataKey)) && !isGroupFullyChecked(group);
@@ -129,6 +139,19 @@ function SelectiveExportSheet({ onClose, onExported }) {
     exportBackup(checked.size === allKeys.length ? null : Array.from(checked), dateRange);
     onExported?.();
     onClose();
+  };
+  const doExportToFolder = async () => {
+    setFolderExportStatus({ msg: "Choose a folder…", ok: null });
+    const dateRange = (dateFrom || dateTo) ? { from: dateFrom || null, to: dateTo || null } : null;
+    const result = await exportBackupToChosenFolder(checked.size === allKeys.length ? null : Array.from(checked), dateRange);
+    if (result.ok) {
+      setFolderExportStatus({ msg: `Saved to ${result.path}`, ok: true });
+      onExported?.();
+    } else if (result.reason === "cancelled") {
+      setFolderExportStatus(null);
+    } else {
+      setFolderExportStatus({ msg: "Couldn't save there — try Export instead.", ok: false });
+    }
   };
 
   // FIXED 1 Sep 2026 — real bug found during a light/dark sweep: the
@@ -200,10 +223,20 @@ function SelectiveExportSheet({ onClose, onExported }) {
           </div>
         </div>
         <div style={{ padding: "14px 20px", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", flexShrink: 0 }}>
+          {folderExportStatus && (
+            <div style={{ fontSize: 12, color: folderExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : "#5B5B62"), marginBottom: 8, textAlign: "center" }}>{folderExportStatus.msg}</div>
+          )}
           <button onClick={doExport} disabled={checked.size === 0}
             style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: checked.size === 0 ? "#656568" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: checked.size === 0 ? "default" : "pointer" }}>
             {checked.size === allKeys.length && !dateFrom && !dateTo ? "Export everything" : `Export selected (${checked.size} of ${allKeys.length})`}
           </button>
+          {/* ADDED — real ask: an explicit choose-a-folder alternative
+              to the Share-sheet button above. */}
+          {chooseFolderAvailable && (
+            <div onClick={doExportToFolder} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: ACCENTS.healthcare, cursor: "pointer", padding: "10px 0 0" }}>
+              Choose a folder instead…
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -312,6 +345,11 @@ function EncryptedExportSheet({ onClose }) {
   // same date-range filter as the plain Selective export sheet.
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  // ADDED — real ask: same explicit choose-a-folder option the plain
+  // Selective export sheet has — see that sheet's own comment.
+  const [chooseFolderAvailable, setChooseFolderAvailable] = useState(false);
+  const [folderExportStatus, setFolderExportStatus] = useState(null);
+  useEffect(() => { isChooseFolderExportAvailable().then(setChooseFolderAvailable); }, []);
 
   const isGroupFullyChecked = (group) => group.items.every((i) => checked.has(i.dataKey));
   const isGroupPartiallyChecked = (group) => group.items.some((i) => checked.has(i.dataKey)) && !isGroupFullyChecked(group);
@@ -343,6 +381,29 @@ function EncryptedExportSheet({ onClose }) {
       onClose();
     } catch (err) {
       setError(err.message || "Encryption failed.");
+    } finally {
+      setExporting(false);
+    }
+  };
+  const doExportToFolder = async () => {
+    setError("");
+    if (password.length < 6) { setError("Use at least 6 characters — this is the only thing protecting the file."); return; }
+    if (password !== confirmPassword) { setError("Passwords don't match — check both and try again."); return; }
+    setExporting(true);
+    setFolderExportStatus({ msg: "Choose a folder…", ok: null });
+    try {
+      const dateRange = (dateFrom || dateTo) ? { from: dateFrom || null, to: dateTo || null } : null;
+      const result = await exportEncryptedBackupToChosenFolder(password, checked.size === allKeys.length ? null : Array.from(checked), dateRange);
+      if (result.ok) {
+        setFolderExportStatus({ msg: `Saved to ${result.path}`, ok: true });
+        setPassword(""); setConfirmPassword("");
+      } else if (result.reason === "cancelled") {
+        setFolderExportStatus(null);
+      } else {
+        setFolderExportStatus({ msg: "Couldn't save there — try Export encrypted backup instead.", ok: false });
+      }
+    } catch (err) {
+      setFolderExportStatus({ msg: err.message || "Encryption failed.", ok: false });
     } finally {
       setExporting(false);
     }
@@ -419,10 +480,20 @@ function EncryptedExportSheet({ onClose }) {
           </div>
         </div>
         <div style={{ padding: "14px 20px", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", flexShrink: 0 }}>
+          {folderExportStatus && (
+            <div style={{ fontSize: 12, color: folderExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : "#5B5B62"), marginBottom: 8, textAlign: "center" }}>{folderExportStatus.msg}</div>
+          )}
           <button onClick={doExport} disabled={checked.size === 0 || exporting}
             style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: (checked.size === 0 || exporting) ? "#656568" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: (checked.size === 0 || exporting) ? "default" : "pointer" }}>
             {exporting ? "Encrypting…" : "Export encrypted backup"}
           </button>
+          {/* ADDED — real ask: an explicit choose-a-folder alternative
+              to the Share-sheet button above. */}
+          {chooseFolderAvailable && (
+            <div onClick={exporting ? undefined : doExportToFolder} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: exporting ? (darkMode ? DARK.textDisabled : "#656568") : ACCENTS.healthcare, cursor: exporting ? "default" : "pointer", padding: "10px 0 0" }}>
+              Choose a folder instead…
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -2809,6 +2880,20 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // turn each real reminder type on/off rather than each one being
   // invisible/buried in its own module.
   const [showNotifications, setShowNotifications] = useState(false);
+  // ADDED — real ask: an explicit "choose exactly where this goes"
+  // export, alongside the one-tap Share-sheet "Export backup" row
+  // below — see backupService.js's exportBackupToChosenFolder for the
+  // full reasoning and fileExportHelper.js for its honest limits.
+  const [chooseFolderAvailable, setChooseFolderAvailable] = useState(false);
+  const [plainFolderExportStatus, setPlainFolderExportStatus] = useState(null);
+  useEffect(() => { isChooseFolderExportAvailable().then(setChooseFolderAvailable); }, []);
+  const doPlainExportToFolder = async () => {
+    setPlainFolderExportStatus({ msg: "Choose a folder…", ok: null });
+    const result = await exportBackupToChosenFolder();
+    if (result.ok) setPlainFolderExportStatus({ msg: `Saved to ${result.path}`, ok: true });
+    else if (result.reason === "cancelled") setPlainFolderExportStatus(null);
+    else setPlainFolderExportStatus({ msg: "Couldn't save there — try Export backup instead.", ok: false });
+  };
   // ADDED 26 Aug 2026 — real ask: design/preferences section for
   // colour scheme, ability to customize a module's base colour.
   const [showDesign, setShowDesign] = useState(false);
@@ -2900,6 +2985,14 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             wrapped the call in an arrow function that discards the
             event. Wrapping this one the same way. */}
         <SettingsRow icon={Upload} label="Export backup" onClick={() => onExport()} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
+        {/* ADDED — real ask: an explicit "choose exactly where this
+            goes" alternative to the row above, which opens the Share
+            sheet (send it somewhere) rather than a real folder picker.
+            Only shown once actually available — see
+            fileExportHelper.js's isChooseFolderExportAvailable. */}
+        {chooseFolderAvailable && (
+          <SettingsRow icon={Upload} label="Export backup to a folder…" onClick={doPlainExportToFolder} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} />
+        )}
         {/* ADDED 19 Aug 2026 — real ask: default export stays one tap
             (the row above, unchanged), this is the opt-in "choose what
             to include" path. */}
