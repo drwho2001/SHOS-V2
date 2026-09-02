@@ -1044,6 +1044,25 @@ function PrivacyScreen({ onClose }) {
       </div>
 
       <div style={{ padding: "16px" }}>
+        {/* ADDED — real ask, from a competitive-research finding: SHOS's
+            "no cloud, no account" architecture was never actually
+            stated anywhere in-app as a deliberate choice with real
+            consequences — just implied by the absence of a sign-up
+            screen. Many popular health-tracking apps DO send usage
+            data to third-party analytics/advertising SDKs, sometimes
+            without making that obvious; SHOS structurally can't, since
+            there's no server for data to go to in the first place.
+            Stated plainly rather than naming any specific competitor
+            or citing a specific incident, since that's not something
+            this app's own UI copy can responsibly verify or keep
+            current. */}
+        <div style={{ display: "flex", gap: 10, padding: 14, borderRadius: RADIUS.md, background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", marginBottom: 16 }}>
+          <Lock size={18} color={darkMode ? DARK.textSecondary : "#5B5B62"} style={{ flexShrink: 0, marginTop: 1 }} />
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", lineHeight: 1.5 }}>
+            SHOS has no account, no server, and no cloud sync — everything below only ever exists on this device. That's not just a preference you could turn off: there's genuinely nowhere else for it to go. Many comparable apps route usage data through third-party analytics or advertising services; this one structurally can't.
+          </div>
+        </div>
+
         {/* Big, clearly separated toggle button — never on by default,
             per the user's explicit instruction, and always one tap to turn
             ON regardless of any PIN. */}
