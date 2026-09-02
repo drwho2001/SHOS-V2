@@ -53,7 +53,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 // a real semantic alert/destructive-action meaning, unrelated to
 // module colour, and stays on actionRed unchanged.
 const LIGHT = { ...NEUTRAL, healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, menstrualPurple: ACCENTS.menstrual };
-const DARK = { ...NEUTRAL_DARK, healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), menstrualPurple: resolveDarkAccent("menstrual", ACCENTS.menstrual) };
+const DARK = { ...NEUTRAL_DARK, healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#5EDE9A"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), menstrualPurple: resolveDarkAccent("menstrual", ACCENTS.menstrual) };
 const radius = RADIUS;
 
 function formatDate(iso) {

@@ -74,7 +74,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // Home's meds-blue matches Medication's module exactly in dark mode
   // too, not just light mode.
   const medsBlue = darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : deriveLightAccent(ACCENTS.medication);
-  const healthcareColor = darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare) : ACCENTS.healthcare;
+  const healthcareColor = darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#5EDE9A") : ACCENTS.healthcare;
   const actionRedColor = darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red;
   const actionGreenColor = darkMode ? resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4") : ACTION.green;
   const homeColor = darkMode ? resolveDarkAccent("home", ACCENTS.home) : ACCENTS.home;

@@ -35,7 +35,7 @@ const LIGHT = {
 // brightening once a real colour override exists.
 const DARK = {
   ...NEUTRAL_DARK,
-  healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
+  healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#5EDE9A"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
 };
 
 // ADDED 19 Aug 2026 — Clinic Card. Real feature set built out over

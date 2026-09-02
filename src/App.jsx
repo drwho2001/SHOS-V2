@@ -205,7 +205,13 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
         onKeyDown={(e) => { if (e.key === "Enter") attempt(); }}
         style={{ width: 200, padding: "12px 16px", borderRadius: 8, border: "none", fontSize: 16, textAlign: "center", marginBottom: 12, boxSizing: "border-box" }} />
       {error && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 12 }}>{error}</div>}
-      <button onClick={attempt} style={{ padding: "10px 24px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
+      {/* FIXED — real gap this round's darker healthcare green surfaced:
+          this screen's background is always dark (#1B1B1F) regardless
+          of the app's own light/dark preference, so it needs the
+          bright dark-mode companion unconditionally, not the raw
+          (now much darker) ACCENTS.healthcare — same value every
+          Healthcare-tab screen uses in dark mode, see designTokens.js. */}
+      <button onClick={attempt} style={{ padding: "10px 24px", borderRadius: 999, border: "none", background: "#5EDE9A", color: "#1B1B1F", fontWeight: 700, cursor: "pointer" }}>
         Unlock
       </button>
     </div>

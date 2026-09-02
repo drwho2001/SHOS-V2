@@ -75,21 +75,44 @@ export const NEUTRAL_DARK = {
 // (3.19:1, 4.15:1, 3.46:1 respectively — need 4.5:1). Same hue kept for
 // contacts and home, just darkened until white text clears 4.5:1
 // (computed against the real WCAG relative-luminance formula, not
-// approximated). Healthcare ALSO got a real ask on top of the contrast
-// fix: its green (149° hue) sat close enough to ACTION.green (162°,
-// the universal "this passed/is fine" colour) that the module's own
-// identity colour and a real affirmative status reading could blend
-// together on Healthcare screens specifically — nudged further toward
-// yellow-green (134°) so the two are more clearly two different
-// greens, not just two different fixes to the same problem. Checked:
-// all three new values still clear 3:1 against the dark-mode surface
-// (#1C1C1F) they're also used against unmodified — the bar for a
-// small icon/dot/border rather than full body text.
+// approximated).
+//
+// CHANGED again, same day — the user's own follow-up round, after
+// seeing real swatches with real contrast numbers rather than picking
+// blind:
+// - encounters: "richer purple" — was a dusty plum/magenta (314° hue),
+//   moved to a genuine royal purple (283°). White text 7.3:1.
+// - menstrual: "neon pink, similar to [old] encounters" — moved into
+//   roughly the hue territory encounters used to occupy (330°) but far
+//   more saturated/light for real neon vibrancy. Honest trade-off,
+//   stated plainly rather than hidden: white text on this only reaches
+//   3.56:1 — clears the 3:1 floor for icons/large text/UI components,
+//   not full small-body-text AA. The user picked this over a
+//   contrast-safe alternative anyway, so it's accepted, not an
+//   oversight.
+// - healthcare: the FIRST round's fix (nudging toward yellow-green,
+//   134°, to separate from ACTION.green below) wasn't enough — the
+//   user's own read was that it still leaned too close to confirm-
+//   green, and rejected a teal-leaning "forest" alternative as reading
+//   as the wrong module entirely (too close to Home's teal). Landed on
+//   a genuinely DARK, still-green (not teal) "paramedic green" — same
+//   hue family as before (148° — nowhere near Home's 180° teal), just
+//   much darker (L19% vs the previous L27%) and slightly more
+//   saturated, giving real separation from confirm-green (23° hue gap
+//   now, was 13°) without drifting toward cyan. Going this dark means
+//   the SAME value reused unmodified on the dark-mode surface (as it
+//   was until now) reads too flat there (a real, checked number:
+//   2.13:1, well under the 3:1 floor) — so healthcare now gets its own
+//   hand-picked dark-mode companion, "#5EDE9A", the exact same pattern
+//   Encounters already uses below for the identical reason. See every
+//   `resolveDarkAccent("healthcare", ...)` call site — now passes that
+//   companion as its third argument instead of defaulting to the same
+//   (too-dark-for-dark-mode) value.
 const DEFAULT_ACCENTS = {
   contacts: "#B36205",
-  encounters: "#8D3B7A",
+  encounters: "#7F30A6",
   medication: "#003B6F",
-  healthcare: "#008A20",
+  healthcare: "#09582E",
   home: "#008585",
   // ADDED 2 Sep 2026 — real ask: Menstrual was reusing ACTION.red
   // (the universal alert/error colour) purely for lack of its own
@@ -102,7 +125,10 @@ const DEFAULT_ACCENTS = {
   // wheel — nothing else in the app (module or semantic colour) is
   // anywhere near it — matched in saturation/lightness to the rest of
   // this palette rather than picked in isolation.
-  menstrual: "#5A358D",
+  // CHANGED same day — real ask: "neon pink, similar to current
+  // encounters" (see the accent comment above for the full swap —
+  // encounters moved to purple, freeing up this hue territory).
+  menstrual: "#EB4799",
   // Sub-registry accents (Kink/Protection, used only within Settings →
   // Registries) — a separate concern from the main modules, not part
   // of this color decision, left as they were.
@@ -134,9 +160,17 @@ export const ACCENTS = { ...DEFAULT_ACCENTS, ...overrides };
 // Universal action/status colors — same meaning everywhere (red always
 // means the same kind of "stop and look at this", green always means
 // the same kind of "this is fine/complete").
+// CHANGED same day — real ask: "kelly green good" — the confirm/
+// positive green wasn't vivid enough next to how bright ACTION.red
+// reads. Honest note the user asked to be told plainly: green and red
+// can't share the exact same lightness and stay equally readable with
+// white text — the WCAG luminance formula weighs green far more
+// heavily than red — so this is the brightest, most vivid green that
+// still clears red's own 4.59:1 white-text contrast, not a literal
+// numeric match to red's saturation/lightness.
 const DEFAULT_ACTION_COLORS = {
   red: "#D93838",
-  green: "#1B9E77",
+  green: "#148A1E",
 };
 // ADDED — real ask: make the semantic pass/fail pair genuinely
 // editable too, not just the 5 module identity colours — arguably the

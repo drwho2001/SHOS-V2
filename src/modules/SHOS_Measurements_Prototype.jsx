@@ -35,7 +35,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 const GROUP_DOMAIN = "measurementType";
 
 const LIGHT = { ...NEUTRAL, healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red };
-const DARK = { ...NEUTRAL_DARK, healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") };
+const DARK = { ...NEUTRAL_DARK, healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#5EDE9A"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") };
 const radius = RADIUS;
 
 // Grey placeholder hints — real ask: suggest the variety of values/

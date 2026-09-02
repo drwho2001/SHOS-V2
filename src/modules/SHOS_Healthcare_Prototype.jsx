@@ -7,7 +7,7 @@
 // motion — every line of actual behavior below is unchanged from what
 // was working in App.jsx; only the file it lives in has changed.
 import React, { useState, useEffect } from "react";
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack } from "@phosphor-icons/react";
 import { TestingRepository } from "../repositories/testingRepository";
@@ -72,7 +72,14 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // not a promise of it.
   const [darkMode] = useDarkModePreference();
   const N = darkMode ? NEUTRAL_DARK : NEUTRAL;
-  const T = { healthcareBlue: ACCENTS.healthcare, border: N.border, textSecondary: N.textSecondary, surface: N.surface, bg: N.bg };
+  // FIXED — real bug this same darker-healthcare-green round surfaced:
+  // this was the one file still using ACCENTS.healthcare raw, with no
+  // dark-mode resolution at all — harmless while the default was light
+  // enough to read fine either way, but the new darker "paramedic
+  // green" default fails badly reused unmodified against the dark
+  // surface (2.13:1, checked). Same resolveDarkAccent + hand-picked
+  // companion every other Healthcare-tab file now uses.
+  const T = { healthcareBlue: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#5EDE9A") : ACCENTS.healthcare, border: N.border, textSecondary: N.textSecondary, surface: N.surface, bg: N.bg };
   const [menstrualTrackingEnabled] = useState(() => AppPreferencesRepository.getPreferences().menstrualTrackingEnabled);
 
   // ADDED — real ask: Healthcare was "bland vs Home/Medication" —

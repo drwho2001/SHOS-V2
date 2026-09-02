@@ -69,8 +69,8 @@ const LIGHT = {
 // brightening once a real colour override exists.
 const DARK = {
   ...NEUTRAL_DARK,
-  healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-  navActive: resolveDarkAccent("healthcare", ACCENTS.healthcare),
+  healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#5EDE9A"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+  navActive: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#5EDE9A"),
 };
 const radius = RADIUS;
 
