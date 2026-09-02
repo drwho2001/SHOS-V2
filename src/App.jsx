@@ -18,7 +18,7 @@ import { AppPreferencesRepository } from "./repositories/appPreferencesRepositor
 // ADDED — real ask: "standardise UI/appearance." Shared design tokens,
 // the actual foundation — see designTokens.js for full reasoning and
 // honest scope (this is a start, not a finished migration).
-import { NEUTRAL, ACCENTS, ACTION, FONT_FAMILY, RADIUS } from "./calculations/designTokens";
+import { NEUTRAL, ACCENTS, ACTION, FONT_FAMILY, RADIUS, resolveDarkAccent } from "./calculations/designTokens";
 // ADDED — real ask: Home's title should read "[Name]'s dashboard".
 import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HeartbeatIcon as HeartPulse, HospitalIcon as Hospital, DownloadSimpleIcon as Download, UploadSimpleIcon as Upload, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon, CaretLeftIcon as ChevronLeft, UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database, TrashIcon as Trash2, WarningIcon as AlertTriangle, CheckIcon as Check, ClipboardTextIcon as ClipboardList, TreeStructureIcon as ListTree, PaperclipIcon as Paperclip, ClockCounterClockwiseIcon as History, EyeSlashIcon as EyeOff, EyeIcon as Eye, TestTubeIcon as TestTube, FireIcon as Flame, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MicroscopeIcon as Microscope, ListChecksIcon as ClipboardCheck, SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CreditCardIcon as CreditCard, FingerprintIcon as Fingerprint, LockIcon as Lock } from "@phosphor-icons/react";
 // CHANGED — real Tier 1 decision: Phosphor, replacing lucide-react.
@@ -104,6 +104,27 @@ const TABS = [
   { key: "medication", label: "Medication", icon: Pill, component: MedicationDashboard, accent: ACCENTS.medication },
   { key: "healthcare", label: "Healthcare", icon: Hospital, component: HealthcareScreen, accent: ACCENTS.healthcare },
 ];
+
+// ADDED — real ask: "if in same module surely should be same colour" —
+// the bottom nav's active-tab fill used tab.accent (the raw, light-
+// mode ACCENTS value) directly, with no dark-mode resolution at all,
+// so in dark mode it could show a visibly different shade than that
+// SAME module's own screen (which does resolve for dark mode, with
+// its own hand-picked companion where one exists — Encounters/
+// Medication/Healthcare each chose theirs specifically so white text
+// stays legible on it, same reasoning as designTokens.js's own
+// comment on Healthcare's companion). TABS itself stays a plain
+// module-level array — it's also used by the always-light restore-
+// preview screen above, which must NOT resolve for dark mode — so
+// this resolves per-tab at actual render time instead, using the
+// EXACT SAME override key + companion each module's own screen
+// already uses, not a second set of colours to keep in sync by hand.
+const TAB_DARK_COMPANIONS = { activity: ["encounters", "#D370C7"], medication: ["medication", "#5B85F5"], healthcare: ["healthcare", "#0E8144"] };
+function resolveTabAccent(tab, darkMode) {
+  if (!darkMode) return tab.accent;
+  const [overrideKey, companion] = TAB_DARK_COMPANIONS[tab.key] || [tab.key, undefined];
+  return resolveDarkAccent(overrideKey, tab.accent, companion);
+}
 
 // ADDED 19 Aug 2026 — real Home screen: a genuine summary of recent
 // activity across the three built modules, plus quick-add buttons that
@@ -934,7 +955,7 @@ export default function App() {
                 onMouseDown={startHomeLongPress} onMouseUp={cancelHomeLongPress} onMouseLeave={cancelHomeLongPress}
                 onTouchStart={startHomeLongPress} onTouchEnd={cancelHomeLongPress}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", marginTop: -18 }}>
-                <div style={{ width: 48, height: 48, borderRadius: 999, background: tab.accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 10px rgba(0,0,0,.25)", border: `3px solid ${darkMode ? DARK.surface : "#FFFFFF"}` }}>
+                <div style={{ width: 48, height: 48, borderRadius: 999, background: resolveTabAccent(tab, darkMode), display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 10px rgba(0,0,0,.25)", border: `3px solid ${darkMode ? DARK.surface : "#FFFFFF"}` }}>
                   <Icon size={22} color="#FFFFFF" weight="bold" />
                 </div>
               </div>
@@ -948,7 +969,7 @@ export default function App() {
           return (
             <div key={tab.key} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", opacity: isBuilt ? 1 : 0.45 }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 14px", borderRadius: 14, background: isActive ? tab.accent : "transparent" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 14px", borderRadius: 14, background: isActive ? resolveTabAccent(tab, darkMode) : "transparent" }}>
                 <Icon size={22} color={isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : "#656568")} weight={isActive ? "fill" : "regular"} />
                 <span style={{ fontSize: 10, color: isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : "#656568"), fontWeight: isActive ? 600 : 400 }}>{tab.label}</span>
               </div>
