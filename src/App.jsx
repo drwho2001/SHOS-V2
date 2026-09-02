@@ -316,7 +316,12 @@ function DecoyHome({ onLockNow }) {
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
         {tabContent[tab]}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", padding: "10px 0", borderTop: "1px solid #DCDCE1", background: "#FFFFFF", flexShrink: 0 }}>
+      {/* Same env(safe-area-inset-bottom) fix as the real app's own
+          bottom nav (see App component's own comment on why) — a
+          decoy screen that looks convincingly like the real app has
+          to inherit this too, not just the one someone would actually
+          look at. */}
+      <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", padding: "10px 0 calc(10px + env(safe-area-inset-bottom))", borderTop: "1px solid #DCDCE1", background: "#FFFFFF", flexShrink: 0 }}>
         {TABS.map((t) => (
           <div key={t.key} onClick={() => setTab(t.key)}
             style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", color: tab === t.key ? t.accent : "#656568" }}>
@@ -924,7 +929,7 @@ export default function App() {
     <div style={{ minHeight: "100vh", background: darkMode ? DARK.bg : "#F0F0F3", display: "flex", flexDirection: "column" }}>
       <input ref={fileInputRef} type="file" accept="application/json" onChange={handleFileChosen} style={{ display: "none" }} />
 
-      <div style={{ flex: 1, paddingBottom: 76 }}>
+      <div style={{ flex: 1, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
         {active === "home" ? (
           <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} />
         ) : ActiveModule ? (
@@ -941,7 +946,21 @@ export default function App() {
         )}
       </div>
 
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: darkMode ? DARK.surface : "#FFFFFF", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "10px 0 14px", zIndex: 10, fontFamily: "'Inter', sans-serif" }}>
+      {/* FIXED — real device bug: the phone's own system nav bar
+          (gesture bar / 3-button bar) started hovering over/covering
+          this bar the moment index.html's viewport gained
+          viewport-fit=cover (added for iOS PWA install support) — that
+          meta tag opts the WebView into true edge-to-edge layout, so
+          content now genuinely extends behind the system nav bar on
+          Android too, not just under the status bar on iOS. This bar's
+          own bottom padding was a fixed 14px with no allowance for
+          that inset, so the system bar's real height landed on top of
+          the last ~14-40px of it instead of below it. env(safe-area-
+          inset-bottom) is the standard, live value the OS itself
+          reports for exactly this gap (0 on a device/browser where the
+          system nav bar doesn't overlay content at all, so this is a
+          no-op there — not Android-only special-casing). */}
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: darkMode ? DARK.surface : "#FFFFFF", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "10px 0 calc(14px + env(safe-area-inset-bottom))", zIndex: 10, fontFamily: "'Inter', sans-serif" }}>
         {TABS.map((tab) => {
           const isActive = tab.key === active;
           const isBuilt = tab.component !== null || tab.key === "home";
