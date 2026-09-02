@@ -826,7 +826,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             with the module's own colour, same pattern applied across
             every module this pass. */}
         <div style={{ background: T.encountersPink, borderBottom: "2px solid rgba(0,0,0,0.15)", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 800, fontSize: 22, color: "#FFFFFF" }}>Encounter</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 22, color: "#FFFFFF" }}>Encounter</span>
           {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
               matching Medication's pattern — long-press stays as an
               additional quick entry. */}
