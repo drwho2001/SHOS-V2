@@ -220,6 +220,24 @@ export function resolveDarkAccent(overrideKey, currentValue, defaultDarkValue = 
   return overrideKey in overrides ? deriveDarkAccent(currentValue) : defaultDarkValue;
 }
 
+// ADDED — real ask: "no hardcoded hexes" — SHOS_Home_Prototype.jsx's
+// own MEDS_ICON_BLUE used to be a fixed hex, chosen once by eye
+// because ACCENTS.medication's own very dark navy default reads flat
+// as a small icon/text colour on a plain white card. That's the exact
+// same problem deriveDarkAccent solves for a near-black background,
+// just the opposite direction — this is that function's light-card
+// counterpart: a colour already light enough (l >= targetLightness)
+// passes through unchanged, otherwise its lightness is lifted and it's
+// desaturated slightly, same hue preserved, so a customised colour
+// still reads as recognisably itself rather than being silently
+// ignored by a screen that kept its own hardcoded brightened literal.
+export function deriveLightAccent(hex, targetLightness = 42) {
+  const { h, s, l } = hexToHsl(hex);
+  if (l >= targetLightness) return hex;
+  const targetS = s === 0 ? 0 : Math.max(35, s - 20);
+  return hslToHex(h, targetS, targetLightness);
+}
+
 // Real font-size/weight pairings for common UI roles, standardized
 // against Medication's own established pattern (the module this
 // convention was first built around, referenced repeatedly elsewhere

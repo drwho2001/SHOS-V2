@@ -8,15 +8,20 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // every line of actual behavior below is unchanged from what was
 // working in App.jsx; only the file it lives in has changed.
 import React, { useState, useEffect } from "react";
-import { ACCENTS, ACTION } from "../calculations/designTokens";
-// ADDED — real ask: Medication's own accent (#003B6F) is a very dark,
-// near-black navy — legible as a solid FILL with white text/icon on
-// top (the nav bar tab, filled buttons), which is where Medication's
-// own module uses it. Used bare as a small icon glyph on a plain card
-// here, it read as flat/too dark rather than distinctly "medication
-// blue". This brighter variant is Home-local only — Medication's own
-// module and the nav bar keep the original navy unchanged.
-const MEDS_ICON_BLUE = "#2F5CA6";
+import { ACCENTS, ACTION, deriveLightAccent } from "../calculations/designTokens";
+// CHANGED — real ask: "no hardcoded hexes" — this used to be a fixed
+// literal, chosen once by eye because ACCENTS.medication's own very
+// dark navy default (#003B6F) reads flat as a small icon/text colour
+// on a plain white card (it's legible as a solid FILL with white
+// text/icon on top — the nav bar tab, filled buttons — which is where
+// Medication's own module actually uses it bare). Now genuinely
+// derived from the live token via deriveLightAccent(), so a
+// customised Medication colour (Settings -> Colour scheme) actually
+// carries through here too, on next reload, same as everywhere else
+// ACCENTS is read — instead of silently staying pinned to the old
+// default forever. Still Home-local: Medication's own module and the
+// nav bar keep reading ACCENTS.medication directly, unchanged.
+const MEDS_ICON_BLUE = deriveLightAccent(ACCENTS.medication);
 import { formatRelativeDate } from "../calculations/encounterCalculations";
 import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService";
 import { checkForUpdate, RELEASE_APK_URL } from "../storage/updateCheckService";
