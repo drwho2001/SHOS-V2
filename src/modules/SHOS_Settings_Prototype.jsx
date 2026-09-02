@@ -2650,6 +2650,10 @@ function TrashScreen({ onClose }) {
             <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden" }}>
               {items.map((entry, i) => (
                 <div key={entry.trashId} onClick={() => selectMode && toggleSelected(entry.trashId)}
+                  {...(selectMode ? {
+                    role: "checkbox", "aria-checked": selectedIds.includes(entry.trashId), "aria-label": recordLabel(entry), tabIndex: 0,
+                    onKeyDown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSelected(entry.trashId); } },
+                  } : {})}
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: i < items.length - 1 ? "1px solid #DCDCE1" : "none", cursor: selectMode ? "pointer" : "default" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
                     {selectMode && (

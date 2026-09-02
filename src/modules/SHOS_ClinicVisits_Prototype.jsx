@@ -993,6 +993,8 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
         {sorted.map((v) => (
           <div key={v.id} onClick={() => selectMode ? toggleSelected(v.id) : onOpen(v.id)}
             onMouseDown={() => startPress(v.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(v.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
+            role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selectedIds.includes(v.id) : undefined} aria-label={v.title || "Untitled visit"} tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? toggleSelected(v.id) : onOpen(v.id); } }}
             style={{ background: selectedIds.includes(v.id) ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${selectedIds.includes(v.id) ? T.healthcareBlue : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
             {selectMode && (
               <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selectedIds.includes(v.id) ? T.healthcareBlue : T.border}`, background: selectedIds.includes(v.id) ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>

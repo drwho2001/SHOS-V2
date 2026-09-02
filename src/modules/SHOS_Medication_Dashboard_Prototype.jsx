@@ -1885,7 +1885,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
                 return (
                 <div key={med.id} style={{ position: "relative", display: "flex", gap: 10 }}>
                   {selectMode && (
-                    <div onClick={() => toggleSelected(med.id)}
+                    <div aria-hidden="true"
                       style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selectedIds.includes(med.id) ? T.medsBlue : T.border}`, background: selectedIds.includes(med.id) ? T.medsBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "flex-start", marginTop: 14, cursor: "pointer" }}>
                       {selectedIds.includes(med.id) && <Check size={13} color="#FFFFFF" />}
                     </div>
@@ -1894,9 +1894,15 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
                     {/* Transparent overlay intercepts the tap while in
                         select mode, so the card's own dose-log/menu/
                         move buttons underneath never fire — the card
-                        itself is completely untouched. */}
+                        itself is completely untouched. This overlay is
+                        also the one keyboard/screen-reader target for
+                        the whole row in select mode — the decorative
+                        circle above it is aria-hidden to avoid
+                        announcing the same checkbox twice. */}
                     {selectMode && (
-                      <div onClick={() => toggleSelected(med.id)} style={{ position: "absolute", inset: 0, zIndex: 5, cursor: "pointer" }} />
+                      <div onClick={() => toggleSelected(med.id)} role="checkbox" aria-checked={selectedIds.includes(med.id)} aria-label={med.name} tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSelected(med.id); } }}
+                        style={{ position: "absolute", inset: 0, zIndex: 5, cursor: "pointer" }} />
                     )}
                     <MedicationCard med={med} T={T} darkMode={darkMode} justCompleted={justCompleted?.id === med.id ? justCompleted.type : null} highlighted={highlightedId === med.id} searchHighlighted={searchHighlightedId === med.id}
                       cardRef={(el) => (cardRefs.current[med.id] = el)}

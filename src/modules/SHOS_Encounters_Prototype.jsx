@@ -720,6 +720,8 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
   };
   return (
     <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
+      role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selected : undefined} aria-label={encounter.title || "Untitled encounter"} tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
       style={{ border: `1px solid ${selected ? T.encountersPink : T.border}`, borderRadius: radius.md, background: selected ? `${T.encountersPink}10` : T.surface, padding: 14, marginBottom: 10, cursor: "pointer", display: "flex", gap: 10 }}>
       {selectMode && (
         <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selected ? T.encountersPink : T.border}`, background: selected ? T.encountersPink : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>

@@ -1339,8 +1339,11 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
     if (selectMode) onToggleSelected?.(contact.id);
     else onOpen(contact.id);
   };
+  const cardLabel = anonymise ? MASKED : displayName(contact);
   return (
     <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
+      role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selected : undefined} aria-label={cardLabel} tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
       style={{ position: "relative", background: selected ? `${T.contactsTeal}10` : T.surface, border: `1px solid ${selected ? T.contactsTeal : flaggedDontMeetAgain ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,.06)", cursor: "pointer", display: "flex", gap: 12 }}>
       {/* ADDED 26 Aug 2026 — real ask: favourite contacts, star icon
           per the user's preference over a pin. Own click handler with

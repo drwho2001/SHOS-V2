@@ -513,6 +513,8 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
     return (
       <div key={e.id} onClick={() => selectMode ? toggleSelected(e.id) : onOpen(e.id)}
         onMouseDown={() => startPress(e.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(e.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
+        role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? isSelected : undefined} aria-label={e.title} tabIndex={0}
+        onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); selectMode ? toggleSelected(e.id) : onOpen(e.id); } }}
         style={{ background: isSelected ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${isSelected ? T.healthcareBlue : isActive && e.severity === "Severe" ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", marginBottom: 10, display: "flex", gap: 10 }}>
         {selectMode && (
           <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${isSelected ? T.healthcareBlue : T.border}`, background: isSelected ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>

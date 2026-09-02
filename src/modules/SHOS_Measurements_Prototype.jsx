@@ -595,6 +595,8 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
                   const isSelected = selectedIds.includes(m.id);
                   return (
                     <div key={m.id} onClick={() => selectMode ? toggleSelected(m.id) : onOpen(m.id)}
+                      role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? isSelected : undefined} aria-label={readingLabel(m)} tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? toggleSelected(m.id) : onOpen(m.id); } }}
                       style={{ background: isSelected ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${isSelected ? T.healthcareBlue : T.border}`, borderRadius: radius.md, padding: 12, cursor: "pointer", display: "flex", gap: 10, alignItems: "center" }}>
                       {selectMode && (
                         <div style={{ width: 20, height: 20, borderRadius: radius.full, border: `2px solid ${isSelected ? T.healthcareBlue : T.border}`, background: isSelected ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

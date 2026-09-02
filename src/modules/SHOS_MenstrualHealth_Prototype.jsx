@@ -262,9 +262,11 @@ function SaveButton({ label, onClick, canSave, T }) {
     </button>
   );
 }
-function ListRow({ isSelected, selectMode, onClick, T, children }) {
+function ListRow({ isSelected, selectMode, onClick, T, children, label }) {
   return (
     <div onClick={onClick}
+      role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? isSelected : undefined} aria-label={label} tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
       style={{ background: isSelected ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${isSelected ? T.healthcareBlue : T.border}`, borderRadius: radius.md, padding: 12, cursor: "pointer", display: "flex", gap: 10, alignItems: "center" }}>
       {selectMode && (
         <div style={{ width: 20, height: 20, borderRadius: radius.full, border: `2px solid ${isSelected ? T.healthcareBlue : T.border}`, background: isSelected ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -433,7 +435,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
       <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 8 }}>
         {cycles.length === 0 && <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>No periods logged yet. Tap + to add one.</div>}
         {cycles.map((c) => (
-          <ListRow key={c.id} T={T} onClick={() => setScreen({ name: "detail", id: c.id })}>
+          <ListRow key={c.id} T={T} onClick={() => setScreen({ name: "detail", id: c.id })} label={`${formatDate(c.startDate)}${c.endDate ? ` to ${formatDate(c.endDate)}` : " (ongoing)"}`}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Drop size={14} color={T.menstrualPurple} weight="fill" />
               <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</div>
@@ -653,7 +655,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
               {active.map((e) => {
                 const overdue = e.nextDueDate && e.nextDueDate < today;
                 return (
-                  <ListRow key={e.id} T={T} onClick={() => setScreen({ name: "detail", id: e.id })}>
+                  <ListRow key={e.id} T={T} onClick={() => setScreen({ name: "detail", id: e.id })} label={e.method}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <ContraceptionIcon formulation={e.formulation} size={15} color={T.healthcareBlue} />
                       <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{e.method}</div>
@@ -672,7 +674,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
             <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 6 }}>History</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {past.map((e) => (
-                <ListRow key={e.id} T={T} onClick={() => setScreen({ name: "detail", id: e.id })}>
+                <ListRow key={e.id} T={T} onClick={() => setScreen({ name: "detail", id: e.id })} label={e.method}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <ContraceptionIcon formulation={e.formulation} size={15} color={T.textSecondary} />
                     <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{e.method}</div>
@@ -813,7 +815,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
         {all.map((p) => {
           const masked = isMasked(p);
           return (
-            <ListRow key={p.id} T={T} onClick={() => masked ? setRevealedIds((ids) => [...ids, p.id]) : setScreen({ name: "detail", id: p.id })}>
+            <ListRow key={p.id} T={T} onClick={() => masked ? setRevealedIds((ids) => [...ids, p.id]) : setScreen({ name: "detail", id: p.id })} label={summaryLabel(p)}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 {masked && <EyeSlash size={13} color={T.textSecondary} />}
                 <span style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary, fontStyle: masked ? "italic" : "normal" }}>{summaryLabel(p)}</span>
