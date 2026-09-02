@@ -644,7 +644,7 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>
           {visibleSuggestions.map((s) => (
-            <div key={s} onClick={() => tapSuggestion(s)}
+            <div key={s} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(s)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
               + {s}
             </div>
@@ -895,7 +895,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((e) => (
-            <div key={e.id} onClick={() => tapSuggestion(e)}
+            <div key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
               + {e.name}
             </div>
@@ -924,12 +924,12 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {pendingSuggestion.specific.map((entry) => (
-                  <div key={entry.id} onClick={() => { finalizeEntry(entry.name, pendingSuggestion.role); setPendingSuggestion(null); }}
+                  <div key={entry.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(entry.name, pendingSuggestion.role); setPendingSuggestion(null); }}
                     style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, background: ACCENTS.healthcare, color: "#FFFFFF", cursor: "pointer" }}>
                     Use "{entry.name}"
                   </div>
                 ))}
-                <div onClick={() => { finalizeEntry(pendingSuggestion.typedAs, pendingSuggestion.role); setPendingSuggestion(null); }}
+                <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.typedAs, pendingSuggestion.role); setPendingSuggestion(null); }}
                   style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer" }}>
                   Keep "{pendingSuggestion.typedAs}"
                 </div>
@@ -941,11 +941,11 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
                 Did you mean "{pendingSuggestion.suggestion}"? You typed "{pendingSuggestion.typedAs}".
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                <div onClick={() => { finalizeEntry(pendingSuggestion.suggestion, pendingSuggestion.role); setPendingSuggestion(null); }}
+                <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.suggestion, pendingSuggestion.role); setPendingSuggestion(null); }}
                   style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, background: ACCENTS.healthcare, color: "#FFFFFF", cursor: "pointer" }}>
                   Yes, use "{pendingSuggestion.suggestion}"
                 </div>
-                <div onClick={() => { finalizeEntry(pendingSuggestion.typedAs, pendingSuggestion.role); setPendingSuggestion(null); }}
+                <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.typedAs, pendingSuggestion.role); setPendingSuggestion(null); }}
                   style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer" }}>
                   No, add "{pendingSuggestion.typedAs}" as new
                 </div>
