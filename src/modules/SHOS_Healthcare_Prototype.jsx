@@ -7,7 +7,7 @@
 // motion — every line of actual behavior below is unchanged from what
 // was working in App.jsx; only the file it lives in has changed.
 import React, { useState, useEffect } from "react";
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack } from "@phosphor-icons/react";
 import { TestingRepository } from "../repositories/testingRepository";
@@ -128,7 +128,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           stats card was the actual root of the "bland" complaint
           flagged earlier, not just styling. */}
       <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.healthcareBlue, borderBottom: "2px solid rgba(0,0,0,0.15)", padding: "16px 16px 14px" }}>
-        <span style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF" }}>Healthcare</span>
+        <span style={{ ...TYPE.screenTitle, color: "#FFFFFF" }}>Healthcare</span>
       </div>
       <div style={{ padding: "14px 16px 0", background: T.bg }}>
         {/* CHANGED — real ask: "ensure all six sit in two rows of three

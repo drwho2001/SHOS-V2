@@ -48,7 +48,7 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // ADDED 19 Aug 2026 — Healthcare blue (#4A80F0), per Doc 2's design
@@ -123,7 +123,7 @@ function computeTestDotColor(test, allTests, T, revealEarly = false) {
 function SectionCard({ title, T, children }) {
   return (
     <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5, paddingTop: 12, marginBottom: 2 }}>{title}</div>
+      <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, paddingTop: 12, marginBottom: 2 }}>{title}</div>
       {children}
     </div>
   );
@@ -833,7 +833,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
               Shares the same recency-aware logic as the list row now
               (see computeTestDotColor's own comment). */}
           <span style={{ width: 10, height: 10, borderRadius: radius.full, background: computeTestDotColor(test, allTests || [test], T, revealEarly), display: "inline-block" }} />
-          <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{test.title || "Untitled test"}</span>
+          <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{test.title || "Untitled test"}</span>
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>{formatDate(test.date)}</div>
 
@@ -1043,7 +1043,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
           instead — same measured height Contacts already uses for its
           own second sticky bar under an identical banner shape. */}
       <div style={{ position: "sticky", top: 62, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5 }}>Testing</span>
+        <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Testing</span>
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
             matching Medication's pattern — long-press stays as an
             additional quick entry. */}

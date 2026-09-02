@@ -8,7 +8,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // every line of actual behavior below is unchanged from what was
 // working in App.jsx; only the file it lives in has changed.
 import React, { useState, useEffect } from "react";
-import { ACCENTS, ACTION, RADIUS, deriveLightAccent, resolveDarkAccent } from "../calculations/designTokens";
+import { ACCENTS, ACTION, RADIUS, TYPE, deriveLightAccent, resolveDarkAccent } from "../calculations/designTokens";
 // CHANGED 2 Sep 2026 — real ask: "no hardcoded hexes" (medication blue
 // specifically), then a follow-up real ask: "meds blue on recent
 // activity looks awry — might match period colour." Root cause found:
@@ -424,7 +424,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
 
   return (
     <div style={{ padding: "20px 16px", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ fontSize: 22, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ ...TYPE.screenTitle, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         {profileName ? `${profileName}'s dashboard` : "Your dashboard"}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {/* ADDED 1 Sep 2026 — real ask: "no way to leave duress mode,
@@ -506,7 +506,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           empty/zero rings on a fresh install). */}
       {(testingStats?.testCount > 0 || adherence != null) && (
         <>
-          <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Status at a glance</div>
+          <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 6 }}>Status at a glance</div>
           <div style={{ display: "flex", gap: 8, background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: "16px 8px", marginBottom: 24 }}>
             {testingStats?.testCount > 0 && testingStats.daysSinceLast != null && (
               <StatusRing
@@ -524,7 +524,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         </>
       )}
 
-      <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Recent activity</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 6 }}>Recent activity</div>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: "0 14px", marginBottom: 24 }}>
         <SummaryRow label="Last encounter" moduleColor={ACCENTS.encounters} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
         <SummaryRow label="Last medication dose" moduleColor={medsBlue} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
@@ -583,7 +583,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         </div>
       )}
 
-      <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Quick add</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 6 }}>Quick add</div>
       <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Personal</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         <QuickAddButton icon={Users} label="New contact" color={ACCENTS.contacts} onClick={() => onQuickAdd("contacts")} />

@@ -36,7 +36,7 @@ import {
 // object, but only NEUTRAL_DARK was ever imported — a real
 // ReferenceError, only thrown once the `darkMode ? DARK : NEUTRAL`
 // ternary actually evaluated the NEUTRAL branch, i.e. in light mode.
-import { ACCENTS, ACTION, NEUTRAL, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
+import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { ModuleColorRepository, CUSTOMIZABLE_MODULE_KEYS, CUSTOMIZABLE_ACTION_KEYS } from "../repositories/moduleColorRepository";
 import { computeAdherence } from "../calculations/medicationCalculations";
 import { isQualifyingEncounter, DOXYPEP_WINDOW_HOURS, findDoxyPepMedication } from "../calculations/doxyPepCalculations";
@@ -309,7 +309,7 @@ function CSVExportSheet({ onClose }) {
           </div>
           {CSV_EXPORT_GROUPS.map((group) => (
             <div key={group.key} style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, marginBottom: 10, overflow: "hidden" }}>
-              <div style={{ padding: "12px 14px 6px", fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5 }}>{group.label}</div>
+              <div style={{ padding: "12px 14px 6px", ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : "#656568" }}>{group.label}</div>
               {group.items.map((item) => (
                 <div key={item.dataKey} onClick={() => doExport(item)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 14px", cursor: "pointer", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
                   <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{item.label}</span>
@@ -2129,7 +2129,7 @@ function AboutScreen({ onClose }) {
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ textAlign: "center", padding: "24px 0" }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>SHOS</div>
+          <div style={{ ...TYPE.recordTitle, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>SHOS</div>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568" }}>Sexual Health Operating System</div>
         </div>
         <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden" }}>
@@ -2510,7 +2510,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
 
         {selectedDay && (
           <div style={{ marginTop: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+            <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : "#656568", marginBottom: 8 }}>
               {new Date(year, month, selectedDay).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
             </div>
             {selectedEvents.length === 0 ? (

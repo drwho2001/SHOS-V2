@@ -18,7 +18,7 @@ import { AppPreferencesRepository } from "./repositories/appPreferencesRepositor
 // ADDED — real ask: "standardise UI/appearance." Shared design tokens,
 // the actual foundation — see designTokens.js for full reasoning and
 // honest scope (this is a start, not a finished migration).
-import { NEUTRAL, ACCENTS, ACTION, FONT_FAMILY, RADIUS, resolveDarkAccent } from "./calculations/designTokens";
+import { NEUTRAL, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent } from "./calculations/designTokens";
 // ADDED — real ask: Home's title should read "[Name]'s dashboard".
 import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HeartbeatIcon as HeartPulse, HospitalIcon as Hospital, DownloadSimpleIcon as Download, UploadSimpleIcon as Upload, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon, CaretLeftIcon as ChevronLeft, UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database, TrashIcon as Trash2, WarningIcon as AlertTriangle, CheckIcon as Check, ClipboardTextIcon as ClipboardList, TreeStructureIcon as ListTree, PaperclipIcon as Paperclip, ClockCounterClockwiseIcon as History, EyeSlashIcon as EyeOff, EyeIcon as Eye, TestTubeIcon as TestTube, FireIcon as Flame, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MicroscopeIcon as Microscope, ListChecksIcon as ClipboardCheck, SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CreditCardIcon as CreditCard, FingerprintIcon as Fingerprint, LockIcon as Lock } from "@phosphor-icons/react";
 // CHANGED — real Tier 1 decision: Phosphor, replacing lucide-react.
@@ -310,7 +310,7 @@ function DecoyHome({ onLockNow }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "#F0F0F3", display: "flex", flexDirection: "column", fontFamily: "'Inter', sans-serif", zIndex: 999 }}>
       <div style={{ padding: "20px 20px 12px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 20, fontWeight: 700, color: "#1B1B1F" }}>SHOS</div>
+        <div style={{ ...TYPE.recordTitle, color: "#1B1B1F" }}>SHOS</div>
         {onLockNow && <Lock size={19} weight="bold" color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onLockNow} title="Lock now" />}
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
@@ -403,7 +403,7 @@ function OnboardingScreen({ onFinish }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: ACCENTS.home, display: "flex", flexDirection: "column", zIndex: 999, fontFamily: "'Inter', sans-serif" }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 32px", textAlign: "center" }}>
-        <div style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF", marginBottom: 14 }}>{slide.title}</div>
+        <div style={{ ...TYPE.screenTitle, color: "#FFFFFF", marginBottom: 14 }}>{slide.title}</div>
         <div style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>{slide.body}</div>
       </div>
       <div style={{ display: "flex", justifyContent: "center", gap: 6, paddingBottom: 20 }}>

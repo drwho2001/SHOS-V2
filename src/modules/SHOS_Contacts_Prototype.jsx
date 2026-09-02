@@ -95,7 +95,7 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const LIGHT = {
@@ -250,7 +250,7 @@ function MethodIcons({ methods, T, size = 22 }) {
 function SectionCard({ title, T, children }) {
   return (
     <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: T.contactsTeal, textTransform: "uppercase", letterSpacing: 0.5, paddingTop: 12, marginBottom: 2 }}>{title}</div>
+      <div style={{ ...TYPE.sectionLabel, color: T.contactsTeal, paddingTop: 12, marginBottom: 2 }}>{title}</div>
       {children}
     </div>
   );
@@ -1832,7 +1832,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               button, was never checking Anonymise mode at all — the
               name below it (line ~1618) already masked correctly, this
               one leaked the real name regardless of the setting. */}
-          <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>
+          <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>
           {/* ADDED — real ask: pronouns shown right next to the name,
               the natural place people actually look for them. Gender
               joins it here rather than a whole new section — same
@@ -2230,7 +2230,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           Profile-type icons INTO the banner itself, white against the
           colour, instead of a separate plain row below it. */}
       <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.contactsTeal, borderBottom: "2px solid rgba(0,0,0,0.15)", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF" }}>Contacts</span>
+        <span style={{ ...TYPE.screenTitle, color: "#FFFFFF" }}>Contacts</span>
         {/* ADDED 18 Aug 2026 — My Profile and Import Shared Profile both
             live here now (Doc 1: My Profile isn't a primary-nav tab;
             Import creates a Contact, so it belongs where Contacts are

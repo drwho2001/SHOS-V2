@@ -40,7 +40,7 @@ import { MyProfileRepository } from "../repositories/myProfileRepository";
 // genuinely hand-tuned per-value for dark-surface contrast/design
 // intent, not derivable from LIGHT's tokens (fabBg/fabIcon are a
 // deliberate light-on-dark inversion, not an accent at all).
-import { NEUTRAL, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 
 const LIGHT = {
   // bg deepened from #FAFAFA — at that value it was nearly indistinguishable from surface (#FFFFFF),
@@ -658,7 +658,7 @@ function LogTab({ meds, T, onOpenCorrection }) {
             display: "flex", alignItems: "center", gap: 10,
             marginTop: gi === 0 ? 4 : 24, marginBottom: 8,
           }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.textPrimary, textTransform: "uppercase", letterSpacing: 0.5, whiteSpace: "nowrap" }}>{g.key}</span>
+            <span style={{ ...TYPE.sectionLabel, color: T.textPrimary, whiteSpace: "nowrap" }}>{g.key}</span>
             <span style={{ flex: 1, height: 1, background: T.border }} />
           </div>
           {g.timeGroups.map((tg, ti) => {
@@ -1067,7 +1067,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
             "same med/course" continuity, visible, not just stored. */}
         {med?.doseHistory?.length > 0 && (
           <div style={{ padding: "10px 0", borderTop: `1px solid ${T.border}`, marginTop: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Dose history</div>
+            <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>Dose history</div>
             {[...med.doseHistory].reverse().map((h, i) => (
               <div key={i} style={{ padding: "6px 0", borderBottom: i < med.doseHistory.length - 1 ? `1px solid ${T.border}` : "none" }}>
                 <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{h.doseStrengthValue ? h.doseStrengthValue * (h.unitsPerDose || 1) : "—"}{h.doseStrengthUnit}</div>
@@ -1719,7 +1719,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
         {/* CHANGED 26 Aug 2026 — real ask: icons moved into the
             banner, matching Contacts' treatment. */}
         <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.medsBlue, borderBottom: "2px solid rgba(0,0,0,0.15)", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF" }}>Medication</span>
+          <span style={{ ...TYPE.screenTitle, color: "#FFFFFF" }}>Medication</span>
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
             {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
                 not long-press (see the selectMode state comment above

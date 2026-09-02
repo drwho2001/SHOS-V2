@@ -41,7 +41,7 @@ import { MyProfileRepository } from "../repositories/myProfileRepository";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // CHANGED 2 Sep 2026 — real ask: Menstrual gets its own dedicated
@@ -109,7 +109,7 @@ function guessFormulation(methodName) {
 function SectionCard({ title, T, children }) {
   return (
     <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5, paddingTop: 12, marginBottom: 2 }}>{title}</div>
+      <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, paddingTop: 12, marginBottom: 2 }}>{title}</div>
       {children}
     </div>
   );
@@ -399,7 +399,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Drop size={16} color={T.menstrualPurple} weight="fill" />
-            <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</span>
+            <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</span>
           </div>
           <SectionCard title="Details" T={T}>
             {c.flow && (
@@ -617,7 +617,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <ContraceptionIcon formulation={e.formulation} size={16} color={T.healthcareBlue} />
-            <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{e.method}</span>
+            <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{e.method}</span>
           </div>
           <SectionCard title="Details" T={T}>
             <ReadRow label="Formulation" value={e.formulation} T={T} />
@@ -648,7 +648,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
         {all.length === 0 && <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>No contraception logged yet. Tap + to add one.</div>}
         {active.length > 0 && (
           <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Currently active</div>
+            <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, marginBottom: 6 }}>Currently active</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {active.map((e) => {
                 const overdue = e.nextDueDate && e.nextDueDate < today;
@@ -669,7 +669,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
         )}
         {past.length > 0 && (
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>History</div>
+            <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 6 }}>History</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {past.map((e) => (
                 <ListRow key={e.id} T={T} onClick={() => setScreen({ name: "detail", id: e.id })}>
@@ -772,7 +772,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Baby size={16} color={T.healthcareBlue} weight="fill" />
-            <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{formatDate(p.testDate)}</span>
+            <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{formatDate(p.testDate)}</span>
           </div>
           {masked ? (
             <div onClick={() => setRevealedIds((ids) => [...ids, p.id])} style={{ marginTop: 14, padding: 20, textAlign: "center", borderRadius: radius.md, border: `1px solid ${T.border}`, background: T.surface, cursor: "pointer" }}>
@@ -886,7 +886,7 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <div style={{ position: "sticky", top: 62, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}` }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5 }}>Menstrual & Contraception</span>
+        <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Menstrual & Contraception</span>
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
           {tabs.map((t) => (
             <div key={t.key} onClick={() => setSubTab(t.key)}

@@ -46,7 +46,7 @@ import { LocationsRepository } from "../repositories/locationsRepository";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const LIGHT = {
@@ -94,7 +94,7 @@ function contactName(contacts, id) {
 function SectionCard({ title, T, children }) {
   return (
     <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: T.encountersPink, textTransform: "uppercase", letterSpacing: 0.5, paddingTop: 12, marginBottom: 2 }}>{title}</div>
+      <div style={{ ...TYPE.sectionLabel, color: T.encountersPink, paddingTop: 12, marginBottom: 2 }}>{title}</div>
       {children}
     </div>
   );

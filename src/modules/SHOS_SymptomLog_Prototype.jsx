@@ -15,7 +15,7 @@ import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // ADDED 19 Aug 2026 — Symptom Log (Symptoms Tracker in Notion — see
@@ -53,7 +53,7 @@ function severityColor(severity, T) {
 function SectionCard({ title, T, children }) {
   return (
     <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5, paddingTop: 12, marginBottom: 2 }}>{title}</div>
+      <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, paddingTop: 12, marginBottom: 2 }}>{title}</div>
       {children}
     </div>
   );
@@ -419,7 +419,7 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
       <div style={{ padding: "0 16px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <span style={{ width: 10, height: 10, borderRadius: radius.full, background: isActive ? severityColor(entry.severity, T) : T.actionGreen, display: "inline-block" }} />
-          <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{entry.title}</span>
+          <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{entry.title}</span>
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>
           {isActive ? "Active" : `Resolved ${formatDate(entry.dateResolved)}`}
@@ -547,7 +547,7 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
           beneath it. top:62 matches Contacts' own established offset
           for a second sticky bar under an identical banner shape. */}
       <div style={{ position: "sticky", top: 62, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5 }}>Symptom Log</span>
+        <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Symptom Log</span>
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle. */}
         <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>
           {selectMode ? "Done" : "Select"}

@@ -27,7 +27,7 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // Domain key for CustomGroupsRepository — shared mechanism, this
@@ -57,7 +57,7 @@ function formatDate(iso) {
 function SectionCard({ title, T, children }) {
   return (
     <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5, paddingTop: 12, marginBottom: 2 }}>{title}</div>
+      <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, paddingTop: 12, marginBottom: 2 }}>{title}</div>
       {children}
     </div>
   );
@@ -430,7 +430,7 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
       <div style={{ padding: "0 16px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <span style={{ width: 10, height: 10, borderRadius: radius.full, background: T.healthcareBlue, display: "inline-block" }} />
-          <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{m.type}</span>
+          <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{m.type}</span>
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20 }}>{formatDate(m.date)}</div>
 
@@ -519,7 +519,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <div style={{ position: "sticky", top: 62, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5 }}>Measurements</span>
+        <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Measurements</span>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {/* ADDED — real ask: default unit preferences + manage
               groups, same "gear icon within the module itself" pattern
@@ -617,7 +617,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
               <div key={section.id} style={{ marginBottom: 22, padding: 12, borderRadius: radius.md, border: `1px solid ${T.border}`, background: section.id === "ungrouped" ? "transparent" : `${T.healthcareBlue}08` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
                   <Folder size={13} color={T.healthcareBlue} />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5 }}>{section.name}</span>
+                  <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>{section.name}</span>
                 </div>
                 {section.subGroups.map(renderTypeSection)}
               </div>
@@ -733,7 +733,7 @@ function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close measurement preferences" />
         </div>
         <div style={{ overflowY: "auto", padding: "16px 20px 24px", flex: 1 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Default units</div>
+          <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, marginBottom: 8 }}>Default units</div>
           {CONVERTIBLE_TYPES.map((type) => {
             const units = getAvailableUnits(type);
             const current = prefs.preferredUnitByType[type] || units[0];

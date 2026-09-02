@@ -15,7 +15,7 @@ import { getEncounterCoverage } from "../calculations/exposureWindows";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // ADDED 19 Aug 2026 — Timeline (the nav-facing name; "Episode" is the
@@ -142,7 +142,7 @@ function PartnerMessageHelper({ infectionNames, T }) {
 function SectionCard({ title, T, children }) {
   return (
     <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5, paddingTop: 12, marginBottom: 2 }}>{title}</div>
+      <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, paddingTop: 12, marginBottom: 2 }}>{title}</div>
       {children}
     </div>
   );
@@ -380,7 +380,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
       <div style={{ padding: "0 16px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <span style={{ width: 10, height: 10, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcareBlue : T.actionGreen, display: "inline-block" }} />
-          <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{episode.title}</span>
+          <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{episode.title}</span>
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>
           {isOpen ? (hasPositive ? "Open · positive result found" : "Open") : `Resolved ${formatDate(episode.resolvedDate)} — ${episode.resolution}`}

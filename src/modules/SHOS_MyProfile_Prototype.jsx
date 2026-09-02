@@ -70,7 +70,7 @@ import { ContraceptionRepository } from "../repositories/contraceptionRepository
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const LIGHT = {
@@ -99,7 +99,7 @@ const radius = RADIUS;
 function SectionCard({ title, T, children }) {
   return (
     <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: T.contactsTeal, textTransform: "uppercase", letterSpacing: 0.5, paddingTop: 12, marginBottom: 2 }}>{title}</div>
+      <div style={{ ...TYPE.sectionLabel, color: T.contactsTeal, paddingTop: 12, marginBottom: 2 }}>{title}</div>
       {children}
     </div>
   );
@@ -1150,7 +1150,7 @@ function ProfileSummary({ profile, T, onEdit }) {
   return (
     <div style={{ padding: "16px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 22, fontWeight: 700, color: T.textPrimary }}>{profile.nickname || profile.displayName || "My Profile"}</div>
+        <div style={{ ...TYPE.screenTitle, color: T.textPrimary }}>{profile.nickname || profile.displayName || "My Profile"}</div>
         <div onClick={onEdit} style={{ padding: "8px 16px", borderRadius: radius.full, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           Edit
         </div>
@@ -1233,7 +1233,7 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
               way. */}
           {onClose && <ChevronLeft size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={onClose} />}
           <User size={18} color={T.contactsTeal} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: T.contactsTeal, textTransform: "uppercase", letterSpacing: 0.5, flex: 1 }}>My Profile</span>
+          <span style={{ ...TYPE.sectionLabel, color: T.contactsTeal, flex: 1 }}>My Profile</span>
           <Share size={18} color={T.contactsTeal} style={{ cursor: "pointer" }} onClick={() => setShowShare((s) => !s)} title="Share profile" />
         </div>
 
