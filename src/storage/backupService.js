@@ -207,7 +207,41 @@ function withinDateRange(records, field, dateRange) {
 // either half optional, both YYYY-MM-DD strings) on top of that —
 // same "omitted/null = unchanged behavior" contract, so every existing
 // caller that never passes it gets exactly what it got before.
-export function buildBackup(includeKeys = null, dateRange = null) {
+// SECURITY FIX — real gap found via audit: buildBackup() bundles
+// PrivacySettingsRepository.getSettings() verbatim, which includes the
+// App Lock/Anonymise PIN and duress PIN as plain strings (see that
+// repository's own comment: intentionally unhashed, scoped to "someone
+// briefly holding your unlocked phone", explicitly NOT "someone with
+// storage access"). A PLAIN backup file is exactly the case that
+// threat model excludes once it leaves the device — the Share sheet,
+// the silent Documents-folder copy, scheduled auto-export, and the
+// "export to a chosen folder" feature all exist specifically to put a
+// copy of this data somewhere else, sometimes explicitly "somewhere
+// less trusted than this device" (see buildEncryptedBackup's own
+// comment below). A plain export carrying the real PIN would mean
+// anyone who ever obtains that file — today or years later — has a
+// working credential for the app's own front door, well outliving the
+// "briefly holding the phone" threat model it was scoped for.
+//
+// Fixed by OMITTING (not blanking) the PIN fields and the two flags
+// that depend on them for the PLAIN path only — omitting rather than
+// setting `false`/"" matters: PrivacySettingsRepository.update() does
+// a shallow merge, so a key that's simply ABSENT from the restored
+// data leaves the restoring device's own current App Lock state
+// completely untouched, whereas an explicit `appLockEnabled: false`
+// would silently disable App Lock on a device that already has it
+// configured with its own separate PIN. The ENCRYPTED path keeps the
+// real values (see buildEncryptedBackup below) since that whole
+// envelope is already password-gated — nothing is gained by stripping
+// it there, and a full-device restore via encrypted backup can still
+// bring App Lock back exactly as it was.
+function sanitizePrivacySettingsForPlainExport(settings) {
+  if (!settings || typeof settings !== "object") return settings;
+  const { anonymisePin, duressPin, appLockEnabled, biometricUnlockEnabled, ...rest } = settings;
+  return rest;
+}
+
+export function buildBackup(includeKeys = null, dateRange = null, { redactSecrets = true } = {}) {
   const allData = {
     contacts: ContactRepository.getAll(),
     medications: MedicationRepository.getAll(),
@@ -233,7 +267,9 @@ export function buildBackup(includeKeys = null, dateRange = null) {
     measurementPreferences: MeasurementPreferencesRepository.getPreferences(),
     customGroups: CustomGroupsRepository.getAllForBackup(),
     customOptionLists: CustomOptionListsRepository.getAllForBackup(),
-    privacySettings: PrivacySettingsRepository.getSettings(),
+    privacySettings: redactSecrets
+      ? sanitizePrivacySettingsForPlainExport(PrivacySettingsRepository.getSettings())
+      : PrivacySettingsRepository.getSettings(),
     resources: ResourcesRepository.getAllForBackup(),
     partnerNotifications: PartnerNotificationRepository.getAll(),
   };
@@ -595,7 +631,11 @@ async function deriveBackupKey(password, saltBytes) {
 // here — same "pure" vs. "browser-facing" split as buildBackup() vs.
 // exportBackup() above.
 export async function buildEncryptedBackup(password, includeKeys = null, dateRange = null) {
-  const backup = buildBackup(includeKeys, dateRange);
+  // redactSecrets: false — see sanitizePrivacySettingsForPlainExport's
+  // own comment above buildBackup(). This whole envelope is already
+  // password-gated, so the real App Lock PIN can safely travel through
+  // here and come back intact on restore, unlike the plain path.
+  const backup = buildBackup(includeKeys, dateRange, { redactSecrets: false });
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveBackupKey(password, salt);
