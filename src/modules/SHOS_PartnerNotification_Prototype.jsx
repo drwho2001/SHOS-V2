@@ -104,7 +104,7 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
         Pick who to include. This never sends anything — it just builds a checklist you work through yourself, or hand to a clinic's partner notification team.
       </div>
 
-      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, padding: 14, marginBottom: 14 }}>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, padding: 14, marginBottom: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Clinical version</div>
@@ -122,7 +122,7 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
           style={{ width: "100%", padding: "10px 12px 10px 34px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
       </div>
 
-      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden" }}>
         {visible.length === 0 ? (
           <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>No contacts match.</div>
         ) : visible.map((c) => {
@@ -193,7 +193,7 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
       </div>
       <div style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, marginBottom: 8 }}>{notifiedCount} of {list.items.length} notified</div>
 
-      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 16 }}>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", marginBottom: 16 }}>
         {list.items.map((item, idx) => (
           <div key={item.contactId} style={{ padding: "14px", borderBottom: idx < list.items.length - 1 ? `1px solid ${T.border}` : "none" }}>
             <div onClick={() => toggleNotified(item.contactId)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 8 }}>

@@ -5,7 +5,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, ACTION, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
 // ADDED — real ask: "add button to check through registries... for
 // duplicates using fuzzy matching... so user doesn't have to dig."
 import { findDuplicatePairs } from "../calculations/fuzzyMatch";
@@ -201,7 +201,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
         <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>Tap a name to rename it. Renaming updates everywhere it's used, immediately.</div>
       </div>
 
-      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, margin: "8px 16px 0", overflow: "hidden" }}>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "8px 16px 0", overflow: "hidden" }}>
         {active.length === 0 ? (
           <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>No entries yet.</div>
         ) : active.map(Row)}
@@ -213,7 +213,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
             {showArchived ? "Hide" : "Show"} archived ({archived.length})
           </div>
           {showArchived && (
-            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
               {archived.map(Row)}
             </div>
           )}

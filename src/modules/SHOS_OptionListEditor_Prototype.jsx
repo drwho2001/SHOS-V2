@@ -12,7 +12,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, ACCENTS, ACTION } from "../calculations/designTokens";
+import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
 
 // EXPORTED 1 Sep 2026 — real ask: "check settings not unnecessarily
 // over engineered - combine into similar things if better." Registries
@@ -97,7 +97,7 @@ export function OptionListDetail({ listName, onClose }) {
         <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>Tap a value to rename it. Arrows reorder — order here is the order shown throughout the app.</div>
       </div>
 
-      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, margin: "8px 16px 24px", overflow: "hidden" }}>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "8px 16px 24px", overflow: "hidden" }}>
         {options.length === 0 ? (
           <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>No options — add one above.</div>
         ) : options.map((opt, i) => (
@@ -138,7 +138,7 @@ export default function OptionListsScreen({ onClose }) {
       <div style={{ fontSize: 12, color: T.textSecondary, padding: "10px 16px 0" }}>
         Add, rename, or reorder the simple option lists used across the app — no code, no waiting on a rebuild. Changes here are permanent on this device and survive future app updates.
       </div>
-      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, margin: "16px 16px 20px", overflow: "hidden" }}>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "16px 16px 20px", overflow: "hidden" }}>
         {listNames.map((name) => {
           const iconConfig = OPTION_LIST_ICONS[name];
           const IconComponent = iconConfig ? ICON_COMPONENTS[iconConfig.icon] : null;

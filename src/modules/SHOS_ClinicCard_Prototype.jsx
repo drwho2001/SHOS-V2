@@ -23,7 +23,7 @@ import { PregnancyRepository } from "../repositories/pregnancyRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const LIGHT = {
@@ -105,7 +105,7 @@ function CollapsibleSectionHeader({ children, onTap, count, collapsed, onToggleC
 }
 
 function SectionCard({ children, T }) {
-  return <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, margin: "0 16px", overflow: "hidden" }}>{children}</div>;
+  return <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "0 16px", overflow: "hidden" }}>{children}</div>;
 }
 
 function Row({ dot, title, subtitle, alert, color, onTap, T }) {

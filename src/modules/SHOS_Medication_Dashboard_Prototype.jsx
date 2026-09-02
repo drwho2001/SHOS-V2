@@ -1269,7 +1269,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
         <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>Medication settings</span>
       </div>
       <div style={{ padding: 16 }}>
-        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
             <div>
               <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 500 }}>Dose reminders</div>

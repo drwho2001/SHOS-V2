@@ -933,7 +933,7 @@ export default function App() {
             prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
             onOpenSettings={() => setShowSettings(true)} registerModuleBackHandler={registerModuleBackHandler} />
         ) : (
-          <div style={{ padding: 40, textAlign: "center", color: darkMode ? DARK.textSecondary : "#5B5B62", fontFamily: "sans-serif" }}>
+          <div style={{ padding: 40, textAlign: "center", color: darkMode ? DARK.textSecondary : "#5B5B62", fontFamily: "'Inter', sans-serif" }}>
             <activeTab.icon size={32} color={darkMode ? DARK.textDisabled : "#656568"} style={{ marginBottom: 12 }} />
             <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{activeTab.label} isn't built yet</div>
             <div style={{ fontSize: 13 }}>Needs Testing, Vaccination, and Clinic Visits to exist first.</div>

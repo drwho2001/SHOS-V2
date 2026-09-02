@@ -8,7 +8,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // every line of actual behavior below is unchanged from what was
 // working in App.jsx; only the file it lives in has changed.
 import React, { useState, useEffect } from "react";
-import { ACCENTS, ACTION, deriveLightAccent, resolveDarkAccent } from "../calculations/designTokens";
+import { ACCENTS, ACTION, RADIUS, deriveLightAccent, resolveDarkAccent } from "../calculations/designTokens";
 // CHANGED 2 Sep 2026 — real ask: "no hardcoded hexes" (medication blue
 // specifically), then a follow-up real ask: "meds blue on recent
 // activity looks awry — might match period colour." Root cause found:
@@ -356,7 +356,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // before.
   const QuickAddButton = ({ icon: Icon, label, color, onClick }) => (
     <div onClick={onClick}
-      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: 16, border: `1px solid ${color}`, background: darkMode ? DARK.surface : "#FFFFFF", cursor: "pointer" }}>
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: RADIUS.md, border: `1px solid ${color}`, background: darkMode ? DARK.surface : "#FFFFFF", cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <Icon size={22} color={color} />
         <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{label}</span>
@@ -443,7 +443,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       )}
 
       <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Recent activity</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: "0 14px", marginBottom: 24 }}>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: "0 14px", marginBottom: 24 }}>
         <SummaryRow label="Last encounter" moduleColor={ACCENTS.encounters} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
         <SummaryRow label="Last medication dose" moduleColor={medsBlue} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
         <SummaryRow label="Last test" moduleColor={healthcareColor} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
@@ -479,11 +479,11 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           Home, not inside Healthcare, so they should carry Home's own
           teal accent rather than borrowing Healthcare's green. */}
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        <div onClick={() => setShowClinicCard(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: 16, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+        <div onClick={() => setShowClinicCard(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
           <CreditCard size={20} color={homeColor} />
           <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Clinic Card</span>
         </div>
-        <div onClick={() => setShowTimeline(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: 16, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+        <div onClick={() => setShowTimeline(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
           <Stack size={20} color={homeColor} />
           <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Episodes</span>
         </div>
@@ -494,7 +494,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           (would make three unevenly-sized buttons). */}
       {onOpenCalendar && (
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-          <div onClick={onOpenCalendar} style={{ width: "50%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: 16, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+          <div onClick={onOpenCalendar} style={{ width: "50%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
             <Calendar size={20} color={homeColor} />
             <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Calendar</span>
           </div>
@@ -579,7 +579,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           a navigation shortcut, and shouldn't visually blend in with
           them. */}
       {backupInfo.dueForReminder && (
-        <div onClick={onOpenSettings} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: 16, border: "1px solid #F59E0B40", background: "#FFF7ED", cursor: "pointer" }}>
+        <div onClick={onOpenSettings} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: "1px solid #F59E0B40", background: "#FFF7ED", cursor: "pointer" }}>
           <Database size={15} color="#B45309" />
           <span style={{ fontSize: 13, fontWeight: 600, color: "#B45309" }}>
             {backupInfo.lastAt ? `No backup in ${backupInfo.daysSince} days — export one` : "You've never exported a backup — do it now"}
@@ -596,7 +596,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           anyway, since a successful auto-export just reset the same
           clock the reminder banner reads. */}
       {autoExportRan && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: 16, border: `1px solid ${actionGreenColor}40`, background: darkMode ? DARK.surface : "#F0FDF9" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: `1px solid ${actionGreenColor}40`, background: darkMode ? DARK.surface : "#F0FDF9" }}>
           <Database size={15} color={actionGreenColor} />
           <span style={{ fontSize: 13, fontWeight: 600, color: actionGreenColor }}>Backed up automatically — saved to Documents</span>
         </div>
@@ -612,7 +612,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           manually would. */}
       {updateInfo.updateAvailable && (
         <a href={RELEASE_APK_URL} target="_blank" rel="noreferrer"
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: 16, border: `1px solid ${homeColor}40`, background: darkMode ? DARK.surface : `${homeColor}10`, textDecoration: "none" }}>
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}40`, background: darkMode ? DARK.surface : `${homeColor}10`, textDecoration: "none" }}>
           <Download size={15} color={homeColor} />
           <span style={{ fontSize: 13, fontWeight: 600, color: homeColor }}>Update available ({updateInfo.latestSha}) — tap to download</span>
         </a>
