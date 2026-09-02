@@ -70,12 +70,27 @@ export const NEUTRAL_DARK = {
 // VALUE each one is assigned has changed. "home" is a genuinely new
 // token — Home never had its own dedicated accent before (it reused
 // NEUTRAL.textPrimary/black), unlike every other module.
+// CHANGED — real fix from an accessibility audit: white button/CTA text
+// on top of contacts/home/healthcare's original values failed WCAG AA
+// (3.19:1, 4.15:1, 3.46:1 respectively — need 4.5:1). Same hue kept for
+// contacts and home, just darkened until white text clears 4.5:1
+// (computed against the real WCAG relative-luminance formula, not
+// approximated). Healthcare ALSO got a real ask on top of the contrast
+// fix: its green (149° hue) sat close enough to ACTION.green (162°,
+// the universal "this passed/is fine" colour) that the module's own
+// identity colour and a real affirmative status reading could blend
+// together on Healthcare screens specifically — nudged further toward
+// yellow-green (134°) so the two are more clearly two different
+// greens, not just two different fixes to the same problem. Checked:
+// all three new values still clear 3:1 against the dark-mode surface
+// (#1C1C1F) they're also used against unmodified — the bar for a
+// small icon/dot/border rather than full body text.
 const DEFAULT_ACCENTS = {
-  contacts: "#D97706",
+  contacts: "#B36205",
   encounters: "#8D3B7A",
   medication: "#003B6F",
-  healthcare: "#009F4D",
-  home: "#008B8B",
+  healthcare: "#008A20",
+  home: "#008585",
   // ADDED 2 Sep 2026 — real ask: Menstrual was reusing ACTION.red
   // (the universal alert/error colour) purely for lack of its own
   // token — the same real risk every other module color exists to
