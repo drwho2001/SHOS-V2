@@ -99,3 +99,34 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     </ErrorBoundary>
   </React.StrictMode>
 );
+
+// ADDED — real ask: "ensure can be downloaded as pwa too." Registers
+// public/sw.js so the installed/bookmarked web app can actually launch
+// offline — see that file's own comment for the caching strategy.
+// Native-only guard: skips entirely inside the installed Android app
+// (same Capacitor.isNativePlatform() pattern already used throughout
+// this app, e.g. notificationService.js) — the native app already has
+// its own real offline capability (this whole app is localStorage-
+// only, no network dependency for its core function), so a service
+// worker running inside Capacitor's own WebView would be an
+// unnecessary extra moving part there, not a real benefit.
+if ("serviceWorker" in navigator) {
+  const registerServiceWorker = () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch((err) => {
+      console.warn("[main] Service worker registration failed:", err);
+    });
+  };
+  import("@capacitor/core").then(({ Capacitor }) => {
+    if (Capacitor.isNativePlatform()) return;
+    // FIXED — real bug caught in testing: `window.addEventListener("load", ...)`
+    // registered too late whenever the async dynamic import above
+    // resolved AFTER the page's own load event already fired (common
+    // in a fast local dev reload) — a listener added after an event
+    // already happened simply never fires, so the service worker
+    // silently never registered. Checking readyState first covers
+    // both cases: register right away if load has already happened,
+    // otherwise wait for it exactly as before.
+    if (document.readyState === "complete") registerServiceWorker();
+    else window.addEventListener("load", registerServiceWorker);
+  });
+}

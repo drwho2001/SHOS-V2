@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>SHOS</title>
     <!-- CHANGED 1 Sep 2026 — real fix: was a render-blocking Google
          Fonts <link>, meaning the whole app sat unpainted on any slow/
@@ -11,6 +11,25 @@
          @fontsource and imported as a normal JS asset in main.jsx, so
          there is nothing left here to fetch. See main.jsx's own
          comment for the full reasoning. -->
+    <!-- ADDED — real ask: "ensure can be downloaded as pwa too."
+         %BASE_URL% (Vite's own templating, resolved at build time to
+         the configured base — "/" locally, "/SHOS-V2/" on the real
+         GitHub Pages deploy per web-alpha.yml) so every path below
+         resolves correctly in both places without hardcoding either
+         one. See public/manifest.webmanifest and public/sw.js
+         (registered in main.jsx) for the rest of the PWA setup. -->
+    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="%BASE_URL%favicon.png" />
+    <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
+    <meta name="theme-color" content="#0B7F79" />
+    <!-- iOS has no concept of the standard web manifest's install
+         prompt — "Add to Home Screen" from Safari's own Share sheet is
+         the only path there, and these three tags are what make that
+         result open full-screen (no Safari chrome) and show the right
+         name, rather than a bookmark that just reopens Safari. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SHOS" />
   </head>
   <body>
     <div id="root"></div>
