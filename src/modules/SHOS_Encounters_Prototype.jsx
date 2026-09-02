@@ -364,9 +364,38 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
     if (!hasSelection(entry.id)) addEntries([entry.id]);
   };
 
+  // ADDED 2 Sep 2026 — real ask: "set all for others too" — same
+  // one-tap "set every selection's role at once" feature My Profile's
+  // (and now Contacts') copy of this component already has. See My
+  // Profile's copy for the full reasoning.
+  const ROLE_POLES = [
+    { label: "Top / Dom", anatomical: "Top", dynamic: "Dom" },
+    { label: "Vers / Switch", anatomical: "Vers", dynamic: "Switch" },
+    { label: "sub / bottom", anatomical: "bottom", dynamic: "sub" },
+  ];
+  const setAllRoles = (pole) => {
+    onChange(value.map((v) => {
+      const optionsForThisKink = resolveRoleOptions(v.kinkId);
+      if (!optionsForThisKink) return v;
+      const role = optionsForThisKink.includes("Dom") ? pole.dynamic : pole.anatomical;
+      return { ...v, role };
+    }));
+  };
+
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{label}</div>
+      {trackRole && value.length > 1 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6, alignItems: "center" }}>
+          <span style={{ fontSize: 11, color: T.textDisabled }}>Set all:</span>
+          {ROLE_POLES.map((pole) => (
+            <div key={pole.label} onClick={() => setAllRoles(pole)}
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer" }}>
+              {pole.label}
+            </div>
+          ))}
+        </div>
+      )}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
         {(trackRole ? value : value.map((id) => ({ kinkId: id, role: null }))).map((sel) => {
           // CHANGED — a "mutual" kink shows no role badge at all now.

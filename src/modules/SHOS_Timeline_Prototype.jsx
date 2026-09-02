@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, WarningIcon as AlertTriangle, TrashIcon as Trash2 } from "@phosphor-icons/react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, WarningIcon as AlertTriangle, TrashIcon as Trash2, ArchiveIcon as Archive, ArrowsClockwiseIcon as RefreshCcw } from "@phosphor-icons/react";
 import { EpisodeRepository, RESOLUTION_OPTIONS } from "../repositories/episodeRepository";
 // ADDED 19 Aug 2026 — TRIGGER_REASON_OPTIONS now lives here, real
 // in-app editable option list.
@@ -184,8 +184,9 @@ function StartSheet({ onSave, onClose, T }) {
   );
 }
 
-function EpisodeDetail({ episodeId, onBack, onDeleted, T }) {
+function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const episode = useMemo(() => EpisodeRepository.getById(episodeId), [episodeId, refreshKey]);
   if (!episode) return null;
 
@@ -224,27 +225,49 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, T }) {
     update({ resolvedDate: new Date().toISOString().slice(0, 10), resolution });
   };
 
-  // ADDED — real ask: "'Remove episodes' ability" — Episodes was
-  // genuinely left out of the multi-select/Trash rollout every other
-  // module got. A real, simpler removal rather than replicating that
-  // whole subsystem here: EpisodeRepository already has a working
-  // archive()/unarchive() pair (used correctly everywhere episodes are
-  // listed, via !isArchived filters) — this just gives it a real UI
-  // entry point, with a plain confirm since there's no undo toast for
-  // this module yet.
-  const deleteEpisode = () => {
-    if (window.confirm(`Remove "${episode.title}"? This only removes the episode itself — nothing it links to (Encounters, Tests, Clinic Visits) is touched.`)) {
-      EpisodeRepository.archive(episodeId);
-      onDeleted();
-    }
+  // CHANGED 2 Sep 2026 — real ask: "episode's delete button still soft-
+  // archives rather than truly deleting... do now." This used to
+  // silently call archive() no matter what the "Remove" label/trash
+  // icon implied — the repository's real delete()/restore() pair
+  // (added in an earlier undo/edit/delete/archive audit) had no UI
+  // entry point at all. Now split into two real, separate actions,
+  // same as every other module's own header: Archive/Unarchive (a
+  // direct, reversible toggle — no confirm needed, matches the pattern
+  // everywhere else) and a genuine permanent delete behind its own
+  // confirm sheet (same Cancel/"Delete permanently" shape as
+  // Encounters'), wired to a real undo toast below rather than a bare
+  // window.confirm.
+  const toggleArchive = () => update({ isArchived: !episode.isArchived });
+  const confirmDeletePermanently = () => {
+    onDelete(episode);
+    onDeleted();
   };
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} />
-        <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer" }} onClick={deleteEpisode} />
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <Archive size={19} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={toggleArchive} title={episode.isArchived ? "Unarchive" : "Archive"} />
+          <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} title="Delete permanently" />
+        </div>
       </div>
+      {episode.isArchived && (
+        <div style={{ margin: "0 16px 4px", background: `${T.actionRed}15`, border: `1px solid ${T.actionRed}`, borderRadius: radius.sm, padding: 10, fontSize: 12, color: T.actionRed }}>
+          This episode is archived.
+        </div>
+      )}
+      {confirmDelete && (
+        <div style={{ margin: "0 16px 12px", background: T.surface, border: `1px solid ${T.actionRed}`, borderRadius: radius.md, padding: 14 }}>
+          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 10 }}>
+            Delete "{episode.title}" permanently? This only removes the episode itself — nothing it links to (Encounters, Tests, Clinic Visits) is touched. You'll have a few seconds to undo.
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+            <button onClick={confirmDeletePermanently} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
+          </div>
+        </div>
+      )}
       <div style={{ padding: "0 16px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <span style={{ width: 10, height: 10, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcareBlue : T.actionGreen, display: "inline-block" }} />
@@ -406,12 +429,56 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
   );
 }
 
+// Same undo/redo toast shape as Encounters' own EditUndoToast (this
+// session's reference implementation for delete-undo) — kept
+// consistent rather than inventing a new look for the same idea.
+function DeleteUndoToast({ toast, onUndo, onRedo, T }) {
+  if (!toast) return null;
+  const isUndo = toast.mode === "undo";
+  return (
+    <div onClick={isUndo ? onUndo : onRedo}
+      style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: isUndo ? "#1B1B1F" : T.healthcareBlue, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+      {isUndo ? <Check size={14} /> : <RefreshCcw size={14} />}
+      {isUndo ? "Episode deleted — tap to undo" : "Undone — tap to redo"}
+    </div>
+  );
+}
+
 export default function TimelineModule({ onClose, registerModuleBackHandler } = {}) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
   const [screen, setScreen] = useState({ name: "list" });
+  const [refreshKey, setRefreshKey] = useState(0);
   const backToList = () => setScreen({ name: "list" });
   const startEpisode = (data) => { EpisodeRepository.create(data); backToList(); };
+
+  // ADDED 2 Sep 2026 — real undo/redo for Episode's new genuine
+  // permanent delete, same {mode, record} shape/timing as Encounters'
+  // own deleteToast (8s window, tap to undo, tap again to redo).
+  const [deleteToast, setDeleteToast] = useState(null);
+  const undoTimerRef = useRef(null);
+  const handleDelete = (record) => {
+    EpisodeRepository.delete(record.id);
+    clearTimeout(undoTimerRef.current);
+    setDeleteToast({ mode: "undo", record });
+    undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
+    setRefreshKey((k) => k + 1);
+  };
+  const undoDelete = () => {
+    if (!deleteToast) return;
+    EpisodeRepository.restore(deleteToast.record);
+    clearTimeout(undoTimerRef.current);
+    setDeleteToast({ mode: "redo", record: deleteToast.record });
+    undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
+    setRefreshKey((k) => k + 1);
+  };
+  const redoDelete = () => {
+    if (!deleteToast) return;
+    EpisodeRepository.delete(deleteToast.record.id);
+    clearTimeout(undoTimerRef.current);
+    setDeleteToast(null);
+    setRefreshKey((k) => k + 1);
+  };
 
   // ADDED — real ask: back should step within Timeline (add/detail back
   // to list) before closing the whole overlay, matching the pattern
@@ -431,8 +498,9 @@ export default function TimelineModule({ onClose, registerModuleBackHandler } = 
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh" }}>
-      {screen.name === "list" && <TimelineLanding T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} onClose={onClose} />}
-      {screen.name === "detail" && <EpisodeDetail T={T} episodeId={screen.id} onBack={backToList} onDeleted={backToList} />}
+      <DeleteUndoToast toast={deleteToast} onUndo={undoDelete} onRedo={redoDelete} T={T} />
+      {screen.name === "list" && <TimelineLanding key={refreshKey} T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} onClose={onClose} />}
+      {screen.name === "detail" && <EpisodeDetail T={T} episodeId={screen.id} onBack={backToList} onDeleted={backToList} onDelete={handleDelete} />}
       {screen.name === "add" && <StartSheet T={T} onSave={startEpisode} onClose={backToList} />}
     </div>
   );

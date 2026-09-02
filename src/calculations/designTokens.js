@@ -76,8 +76,20 @@ const DEFAULT_ACCENTS = {
   medication: "#003B6F",
   healthcare: "#009F4D",
   home: "#008B8B",
+  // ADDED 2 Sep 2026 — real ask: Menstrual was reusing ACTION.red
+  // (the universal alert/error colour) purely for lack of its own
+  // token — the same real risk every other module color exists to
+  // avoid: "chance to get confused with incorrect/error/wrong
+  // green/red logic." Coral was considered and rejected — still in
+  // the red/orange-red family, close enough to ACTION.red and to the
+  // Kink/Protection registry accents below that it doesn't actually
+  // solve the mix-up. This violet/indigo sits in a genuine gap on the
+  // wheel — nothing else in the app (module or semantic colour) is
+  // anywhere near it — matched in saturation/lightness to the rest of
+  // this palette rather than picked in isolation.
+  menstrual: "#5A358D",
   // Sub-registry accents (Kink/Protection, used only within Settings →
-  // Registries) — a separate concern from the 5 main modules, not part
+  // Registries) — a separate concern from the main modules, not part
   // of this color decision, left as they were.
   kink: "#E5484D",
   protection: "#E24E9C",

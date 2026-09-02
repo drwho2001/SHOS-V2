@@ -44,8 +44,16 @@ import { nowAsDateString } from "../calculations/dateInputHelpers";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
-const LIGHT = { ...NEUTRAL, healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red };
-const DARK = { ...NEUTRAL_DARK, healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") };
+// CHANGED 2 Sep 2026 — real ask: Menstrual gets its own dedicated
+// colour (menstrualPurple) instead of borrowing ACTION.red purely for
+// module identity — see designTokens.js's own comment on why. Only
+// the Drop icon's genuine "this is a period record" identity use
+// switches to it; every other actionRed use in this file (delete
+// confirms, the overdue-contraception flag, ReadRow's alert prop) is
+// a real semantic alert/destructive-action meaning, unrelated to
+// module colour, and stays on actionRed unchanged.
+const LIGHT = { ...NEUTRAL, healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, menstrualPurple: ACCENTS.menstrual };
+const DARK = { ...NEUTRAL_DARK, healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), menstrualPurple: resolveDarkAccent("menstrual", ACCENTS.menstrual) };
 const radius = RADIUS;
 
 function formatDate(iso) {
@@ -362,7 +370,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
         {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={() => { deleteUndo.trigger([c]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <Drop size={16} color={T.actionRed} weight="fill" />
+            <Drop size={16} color={T.menstrualPurple} weight="fill" />
             <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</span>
           </div>
           <SectionCard title="Details" T={T}>
@@ -394,7 +402,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
         {cycles.map((c) => (
           <ListRow key={c.id} T={T} onClick={() => setScreen({ name: "detail", id: c.id })}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Drop size={14} color={T.actionRed} weight="fill" />
+              <Drop size={14} color={T.menstrualPurple} weight="fill" />
               <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</div>
             </div>
             <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{c.flow || "Flow not set"}</div>

@@ -8,20 +8,26 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // every line of actual behavior below is unchanged from what was
 // working in App.jsx; only the file it lives in has changed.
 import React, { useState, useEffect } from "react";
-import { ACCENTS, ACTION, deriveLightAccent } from "../calculations/designTokens";
-// CHANGED — real ask: "no hardcoded hexes" — this used to be a fixed
-// literal, chosen once by eye because ACCENTS.medication's own very
-// dark navy default (#003B6F) reads flat as a small icon/text colour
-// on a plain white card (it's legible as a solid FILL with white
-// text/icon on top — the nav bar tab, filled buttons — which is where
-// Medication's own module actually uses it bare). Now genuinely
-// derived from the live token via deriveLightAccent(), so a
-// customised Medication colour (Settings -> Colour scheme) actually
-// carries through here too, on next reload, same as everywhere else
-// ACCENTS is read — instead of silently staying pinned to the old
-// default forever. Still Home-local: Medication's own module and the
-// nav bar keep reading ACCENTS.medication directly, unchanged.
-const MEDS_ICON_BLUE = deriveLightAccent(ACCENTS.medication);
+import { ACCENTS, ACTION, deriveLightAccent, resolveDarkAccent } from "../calculations/designTokens";
+// CHANGED 2 Sep 2026 — real ask: "no hardcoded hexes" (medication blue
+// specifically), then a follow-up real ask: "meds blue on recent
+// activity looks awry — might match period colour." Root cause found:
+// unlike EVERY other module file in this app (Contacts, Testing,
+// Medication itself, Vaccinations, etc. — all wire their DARK theme
+// object through resolveDarkAccent()), Home never applied any
+// dark-mode brightening to its module colours at all — it read
+// ACCENTS.medication/healthcare/home/ACTION.red/green completely raw,
+// dark mode or not. On a near-black background, medication's own
+// unbrightened navy (or its light-card derivation below, which is
+// tuned for a WHITE card, not a dark one) reads muddy — exactly the
+// "awry" complaint — and a muddy blue sitting next to a similarly
+// under-brightened red is a real way for two different colours to
+// start reading as "the same kind of dark", even though the hues
+// themselves aren't close. Fixed by giving Home the same
+// darkMode-aware color set every other module already has, computed
+// inside the component (below, after darkMode is known) instead of
+// at module scope — see medsBlue/healthcareColor/actionRedColor/
+// actionGreenColor/homeColor just after the darkMode hook.
 import { formatRelativeDate } from "../calculations/encounterCalculations";
 import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService";
 import { checkForUpdate, RELEASE_APK_URL } from "../storage/updateCheckService";
@@ -63,6 +69,18 @@ import TimelineModule from "./SHOS_Timeline_Prototype";
 
 function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, registerModuleBackHandler, onLockNow }) {
   const [darkMode] = useDarkModePreference();
+  // Same convention as every other module's own DARK theme object —
+  // reuses Medication's own hand-picked dark default ("#5B85F5") so
+  // Home's meds-blue matches Medication's module exactly in dark mode
+  // too, not just light mode.
+  const medsBlue = darkMode ? resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5") : deriveLightAccent(ACCENTS.medication);
+  const healthcareColor = darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare) : ACCENTS.healthcare;
+  const actionRedColor = darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red;
+  const actionGreenColor = darkMode ? resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4") : ACTION.green;
+  const homeColor = darkMode ? resolveDarkAccent("home", ACCENTS.home) : ACCENTS.home;
+  // ADDED 2 Sep 2026 — real ask: Menstrual's own colour, not ACTION.red
+  // borrowed for module identity — see designTokens.js's comment.
+  const menstrualColor = darkMode ? resolveDarkAccent("menstrual", ACCENTS.menstrual) : ACCENTS.menstrual;
 
   // ADDED — real ask: title reads "[Name]'s dashboard" instead of a
   // bare "Home". My Profile only has `nickname`, no separate name
@@ -388,9 +406,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           would fight with the greeting/summary content directly below
           it), so this is the same accent, as a bar rather than a full
           fill, giving Home a real colour identity of its own
-          (ACCENTS.home) instead of reading as unstyled next to
+          (homeColor) instead of reading as unstyled next to
           Healthcare/Medication/Contacts. */}
-      <div style={{ height: 4, borderRadius: 999, background: ACCENTS.home, marginBottom: 16 }} />
+      <div style={{ height: 4, borderRadius: 999, background: homeColor, marginBottom: 16 }} />
 
       {/* ADDED 19 Aug 2026 — welcome text, the user's own wording as the
           basis: open, non-judgemental, genuinely useful tone. */}
@@ -407,10 +425,10 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       {doxyStatus.active && (
         <div style={{
           display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, marginBottom: 16,
-          background: doxyStatus.overdue ? "#E5484D18" : `${MEDS_ICON_BLUE}12`,
-          border: `1px solid ${doxyStatus.overdue ? "#E5484D" : MEDS_ICON_BLUE}`,
+          background: doxyStatus.overdue ? `${actionRedColor}18` : `${medsBlue}12`,
+          border: `1px solid ${doxyStatus.overdue ? actionRedColor : medsBlue}`,
         }}>
-          <Syringe size={18} color={doxyStatus.overdue ? "#E5484D" : MEDS_ICON_BLUE} />
+          <Syringe size={18} color={doxyStatus.overdue ? actionRedColor : medsBlue} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: doxyStatus.overdue ? "#E5484D" : "#1B1B1F" }}>
               {doxyStatus.overdue ? "DoxyPEP dose overdue" : "DoxyPEP dose due soon"}
@@ -427,27 +445,27 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Recent activity</div>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: "0 14px", marginBottom: 24 }}>
         <SummaryRow label="Last encounter" moduleColor={ACCENTS.encounters} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
-        <SummaryRow label="Last medication dose" moduleColor={MEDS_ICON_BLUE} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
-        <SummaryRow label="Last test" moduleColor={ACCENTS.healthcare} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
-        <SummaryRow label="Next clinic visit" moduleColor={ACCENTS.healthcare} value={nextVisit ? `${(nextVisit.reasonForVisit || []).join("/") || nextVisit.title || "Visit"} · ${formatExactDate(nextVisit.date)}` : "None scheduled"} onClick={nextVisit ? () => onNavigateToRecord("healthcare", nextVisit.id, "clinicVisits") : undefined} />
+        <SummaryRow label="Last medication dose" moduleColor={medsBlue} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
+        <SummaryRow label="Last test" moduleColor={healthcareColor} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
+        <SummaryRow label="Next clinic visit" moduleColor={healthcareColor} value={nextVisit ? `${(nextVisit.reasonForVisit || []).join("/") || nextVisit.title || "Visit"} · ${formatExactDate(nextVisit.date)}` : "None scheduled"} onClick={nextVisit ? () => onNavigateToRecord("healthcare", nextVisit.id, "clinicVisits") : undefined} />
         {/* ADDED — real ask: Menstrual/Contraception real results on
             the dashboard, same "click opens the actual record" pattern
             as every row above — not a separate stats section, this
             list already IS the dashboard's "quick key stats." */}
         {menstrualTrackingEnabled && (
           <>
-            {/* CHANGED — real ask: matches the red already used for
-                the Cycle tab's own drop icon and the "Log period"
-                button below — this row was still the old green,
-                a genuine inconsistency, not a deliberate choice. */}
-            <SummaryRow label="Last period" moduleColor={ACTION.red} value={lastPeriod ? `${formatRelativeDate(lastPeriod.startDate)}${lastPeriod.endDate ? "" : " (ongoing)"}` : "None logged"} onClick={lastPeriod ? () => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth") : undefined} />
+            {/* CHANGED 2 Sep 2026 — matches Menstrual's own dedicated
+                colour (menstrualColor), same as the Cycle tab's own
+                drop icon and the "Log period" button below — no
+                longer borrowing ACTION.red, see designTokens.js. */}
+            <SummaryRow label="Last period" moduleColor={menstrualColor} value={lastPeriod ? `${formatRelativeDate(lastPeriod.startDate)}${lastPeriod.endDate ? "" : " (ongoing)"}` : "None logged"} onClick={lastPeriod ? () => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth") : undefined} />
             {/* CHANGED — real ask: contraception reads as a medication
                 (something taken/administered on a schedule), not a
-                Healthcare-generic fact — same MEDS_ICON_BLUE "Log
+                Healthcare-generic fact — same medsBlue "Log
                 medication"/"Last medication dose" already use above,
                 so it groups visually with dose/refill data instead of
                 blending into the green Healthcare rows around it. */}
-            <SummaryRow label="Contraception due" moduleColor={MEDS_ICON_BLUE} value={contraceptionDue ? `${contraceptionDue.method} · ${formatDueDate(contraceptionDue.nextDueDate)}` : "None due"} onClick={contraceptionDue ? () => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth") : undefined} />
+            <SummaryRow label="Contraception due" moduleColor={medsBlue} value={contraceptionDue ? `${contraceptionDue.method} · ${formatDueDate(contraceptionDue.nextDueDate)}` : "None due"} onClick={contraceptionDue ? () => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth") : undefined} />
           </>
         )}
       </div>
@@ -461,12 +479,12 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           Home, not inside Healthcare, so they should carry Home's own
           teal accent rather than borrowing Healthcare's green. */}
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        <div onClick={() => setShowClinicCard(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: 16, border: `1px solid ${ACCENTS.home}`, background: `${ACCENTS.home}22`, cursor: "pointer" }}>
-          <CreditCard size={20} color={ACCENTS.home} />
+        <div onClick={() => setShowClinicCard(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: 16, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+          <CreditCard size={20} color={homeColor} />
           <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Clinic Card</span>
         </div>
-        <div onClick={() => setShowTimeline(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: 16, border: `1px solid ${ACCENTS.home}`, background: `${ACCENTS.home}22`, cursor: "pointer" }}>
-          <Stack size={20} color={ACCENTS.home} />
+        <div onClick={() => setShowTimeline(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: 16, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+          <Stack size={20} color={homeColor} />
           <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Episodes</span>
         </div>
       </div>
@@ -476,8 +494,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           (would make three unevenly-sized buttons). */}
       {onOpenCalendar && (
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-          <div onClick={onOpenCalendar} style={{ width: "50%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: 16, border: `1px solid ${ACCENTS.home}`, background: `${ACCENTS.home}22`, cursor: "pointer" }}>
-            <Calendar size={20} color={ACCENTS.home} />
+          <div onClick={onOpenCalendar} style={{ width: "50%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: 16, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+            <Calendar size={20} color={homeColor} />
             <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Calendar</span>
           </div>
         </div>
@@ -512,23 +530,23 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             (unlike every other quick-add, which only opens a blank
             draft), so it keeps the same explicit, visible tap every
             other write in this app requires. */}
-        <QuickAddButton icon={Pill} label="Log medication" color={MEDS_ICON_BLUE} onClick={() => onNavigateToRecord("medication", null)} />
+        <QuickAddButton icon={Pill} label="Log medication" color={medsBlue} onClick={() => onNavigateToRecord("medication", null)} />
       </div>
       <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Healthcare</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <QuickAddButton icon={TestTube} label="Log test" color={ACCENTS.healthcare} onClick={() => onQuickAdd("healthcare", "testing")} />
+        <QuickAddButton icon={TestTube} label="Log test" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "testing")} />
         {/* CHANGED — real ask: Clinic Visit gets Stethoscope, Symptom
             gets Thermometer ("Bandage" isn't an icon this lucide-react
             version exports — build-verified before picking a
             substitute, not guessed at), and Vaccination gets Syringe —
             was all four sharing the same generic HeartPulse before.
             CHANGED again — these were hardcoded "#4A80F0" instead of
-            reading ACCENTS.healthcare like every sibling button on
+            reading healthcareColor like every sibling button on
             this same screen — a real gap, not deliberate, caught while
             doing the Healthcare recolor. */}
-        <QuickAddButton icon={Stethoscope} label="New clinic visit" color={ACCENTS.healthcare} onClick={() => onQuickAdd("healthcare", "clinicVisits")} />
-        <QuickAddButton icon={Thermometer} label="Log symptom" color={ACCENTS.healthcare} onClick={() => onQuickAdd("healthcare", "symptomLog")} />
-        <QuickAddButton icon={Syringe} label="Log vaccination" color={ACCENTS.healthcare} onClick={() => onQuickAdd("healthcare", "vaccinations")} />
+        <QuickAddButton icon={Stethoscope} label="New clinic visit" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "clinicVisits")} />
+        <QuickAddButton icon={Thermometer} label="Log symptom" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "symptomLog")} />
+        <QuickAddButton icon={Syringe} label="Log vaccination" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "vaccinations")} />
         {/* ADDED — real ask: shortcuts to Menstrual/Contraception,
             only when the feature is enabled — same gating as the
             SummaryRows above and the Healthcare sub-tab itself. */}
@@ -544,8 +562,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             from plain "menstrualHealth". */}
         {menstrualTrackingEnabled && (
           <>
-            <QuickAddButton icon={Drop} label="Log period" color={ACTION.red} onClick={() => onQuickAdd("healthcare", "menstrualHealth")} />
-            <QuickAddButton icon={Pill} label="Log contraception" color={MEDS_ICON_BLUE} onClick={() => onQuickAdd("healthcare", "menstrualContraception")} />
+            <QuickAddButton icon={Drop} label="Log period" color={menstrualColor} onClick={() => onQuickAdd("healthcare", "menstrualHealth")} />
+            <QuickAddButton icon={Pill} label="Log contraception" color={medsBlue} onClick={() => onQuickAdd("healthcare", "menstrualContraception")} />
           </>
         )}
       </div>
@@ -578,9 +596,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           anyway, since a successful auto-export just reset the same
           clock the reminder banner reads. */}
       {autoExportRan && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: 16, border: `1px solid ${ACTION.green}40`, background: darkMode ? DARK.surface : "#F0FDF9" }}>
-          <Database size={15} color={ACTION.green} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: ACTION.green }}>Backed up automatically — saved to Documents</span>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: 16, border: `1px solid ${actionGreenColor}40`, background: darkMode ? DARK.surface : "#F0FDF9" }}>
+          <Database size={15} color={actionGreenColor} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: actionGreenColor }}>Backed up automatically — saved to Documents</span>
         </div>
       )}
 
@@ -594,9 +612,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           manually would. */}
       {updateInfo.updateAvailable && (
         <a href={RELEASE_APK_URL} target="_blank" rel="noreferrer"
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: 16, border: `1px solid ${ACCENTS.home}40`, background: darkMode ? DARK.surface : `${ACCENTS.home}10`, textDecoration: "none" }}>
-          <Download size={15} color={ACCENTS.home} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: ACCENTS.home }}>Update available ({updateInfo.latestSha}) — tap to download</span>
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: 16, border: `1px solid ${homeColor}40`, background: darkMode ? DARK.surface : `${homeColor}10`, textDecoration: "none" }}>
+          <Download size={15} color={homeColor} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: homeColor }}>Update available ({updateInfo.latestSha}) — tap to download</span>
         </a>
       )}
 

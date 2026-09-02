@@ -1412,7 +1412,7 @@ function AutomaticBackupsScreen({ onClose }) {
 // moduleColorRepository.js for the actual mechanism (merged into
 // ACCENTS at load time) and its honest note on why a change here
 // takes effect on next reload, not instantly.
-const MODULE_LABELS = { contacts: "Contacts", encounters: "Encounter", medication: "Medication", healthcare: "Healthcare", home: "Home" };
+const MODULE_LABELS = { contacts: "Contacts", encounters: "Encounter", medication: "Medication", healthcare: "Healthcare", home: "Home", menstrual: "Menstrual" };
 // ADDED — real ask: the semantic pass/fail pair, editable alongside
 // the 5 module colours above — see CUSTOMIZABLE_ACTION_KEYS in
 // moduleColorRepository.js and ACTION in designTokens.js.
