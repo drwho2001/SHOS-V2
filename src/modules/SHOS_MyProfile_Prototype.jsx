@@ -25,7 +25,23 @@
 // that relationship visible rather than picking an arbitrary new hue.
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { UserIcon as User, DownloadSimpleIcon as Download, CopyIcon as Copy, CheckIcon as Check, XIcon as X, CaretLeftIcon as ChevronLeft, ShareNetworkIcon as Share } from "@phosphor-icons/react";
+import { UserIcon as User, DownloadSimpleIcon as Download, CopyIcon as Copy, CheckIcon as Check, XIcon as X, CaretLeftIcon as ChevronLeft, ShareNetworkIcon as Share, MessengerLogoIcon as MessengerLogo, TelegramLogoIcon as TelegramLogo, InstagramLogoIcon as InstagramLogo, WhatsappLogoIcon as WhatsappLogo, XLogoIcon as XLogo, SnapchatLogoIcon as SnapchatLogo } from "@phosphor-icons/react";
+
+// Same real-platform-logo lookup as Contacts' own copy (self-contained
+// per this app's convention — duplicated, not imported). Grindr has no
+// real Phosphor glyph, left as an honest gap rather than a guess.
+const PLATFORM_ICONS = [
+  { test: /^(messenger|fb ?messenger|facebook ?messenger)$/i, Icon: MessengerLogo },
+  { test: /^telegram$/i, Icon: TelegramLogo },
+  { test: /^(instagram|insta|ig)$/i, Icon: InstagramLogo },
+  { test: /^(whatsapp|wa)$/i, Icon: WhatsappLogo },
+  { test: /^(twitter|x)$/i, Icon: XLogo },
+  { test: /^snap(chat)?$/i, Icon: SnapchatLogo },
+];
+function platformIconFor(tag) {
+  const match = PLATFORM_ICONS.find((p) => p.test.test(tag.trim()));
+  return match ? match.Icon : null;
+}
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository";
 import { TestingRepository } from "../repositories/testingRepository";
 import {
@@ -349,19 +365,22 @@ function TagInput({ label, value, onChange, T, placeholder }) {
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
       {value.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
-          {value.map((tag) => (
-            <div key={tag} onClick={() => onChange(value.filter((t) => t !== tag))}
-              style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-              {tag} <X size={11} />
-            </div>
-          ))}
+          {value.map((tag) => {
+            const PlatformIcon = platformIconFor(tag);
+            return (
+              <div key={tag} onClick={() => onChange(value.filter((t) => t !== tag))}
+                style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                {PlatformIcon && <PlatformIcon size={12} />} {tag} <X size={11} />
+              </div>
+            );
+          })}
         </div>
       )}
       {pendingSuggestion && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.contactsTeal}15`, border: `1px solid ${T.contactsTeal}`, marginBottom: 6, fontSize: 12 }}>
           <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}" — already on this list? You typed "{pendingSuggestion.typedAs}".</span>
-          <div onClick={() => setPendingSuggestion(null)} style={{ fontWeight: 700, color: T.contactsTeal, cursor: "pointer" }}>OK, skip it</div>
-          <div onClick={() => { onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
+          <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => setPendingSuggestion(null)} style={{ fontWeight: 700, color: T.contactsTeal, cursor: "pointer" }}>OK, skip it</div>
+          <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
             style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
         </div>
       )}

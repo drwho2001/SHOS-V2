@@ -4,7 +4,33 @@ import {
   ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2,
   UploadSimpleIcon as Upload, DownloadSimpleIcon as Download, CheckIcon as Check, UserIcon as User, HouseIcon as Home, MapPinIcon as MapPin, EyeSlashIcon as EyeOff, EyeIcon as Eye, ArrowsClockwiseIcon as RefreshCcw, StarIcon as Star,
   CrosshairIcon as Crosshair,
+  // ADDED 2 Sep 2026 — real ask: real platform logos for what actually
+  // gets typed into "Other platforms" (contactableVia) — Messenger,
+  // Telegram, Instagram, WhatsApp, Twitter/X, Snapchat all have real
+  // Phosphor glyphs. Grindr genuinely doesn't (not a generic-platform
+  // icon set Phosphor — or any icon library — would carry), so it's
+  // left to the same generic fallback glyph as any other typed tag
+  // rather than a fabricated look-alike.
+  MessengerLogoIcon as MessengerLogo, TelegramLogoIcon as TelegramLogo, InstagramLogoIcon as InstagramLogo, WhatsappLogoIcon as WhatsappLogo, XLogoIcon as XLogo, SnapchatLogoIcon as SnapchatLogo,
+  ClockCounterClockwiseIcon as ClockCounterClockwise,
 } from "@phosphor-icons/react";
+
+// Case-insensitive match against common alternate spellings — "wa"/
+// "whatsapp", "ig"/"insta"/"instagram", "twitter"/"x". Falls through to
+// no icon (the plain chip look already in use) for anything else,
+// Grindr included — an honest gap rather than a guessed icon.
+const PLATFORM_ICONS = [
+  { test: /^(messenger|fb ?messenger|facebook ?messenger)$/i, Icon: MessengerLogo },
+  { test: /^telegram$/i, Icon: TelegramLogo },
+  { test: /^(instagram|insta|ig)$/i, Icon: InstagramLogo },
+  { test: /^(whatsapp|wa)$/i, Icon: WhatsappLogo },
+  { test: /^(twitter|x)$/i, Icon: XLogo },
+  { test: /^snap(chat)?$/i, Icon: SnapchatLogo },
+];
+function platformIconFor(tag) {
+  const match = PLATFORM_ICONS.find((p) => p.test.test(tag.trim()));
+  return match ? match.Icon : null;
+}
 import { getCurrentLocationPlace } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
@@ -615,12 +641,15 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
       {value.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
-          {value.map((tag) => (
-            <div key={tag} onClick={() => onChange(value.filter((t) => t !== tag))}
-              style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-              {tag} <X size={11} />
-            </div>
-          ))}
+          {value.map((tag) => {
+            const PlatformIcon = platformIconFor(tag);
+            return (
+              <div key={tag} onClick={() => onChange(value.filter((t) => t !== tag))}
+                style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                {PlatformIcon && <PlatformIcon size={12} />} {tag} <X size={11} />
+              </div>
+            );
+          })}
         </div>
       )}
       {pendingSuggestion && (
@@ -1577,9 +1606,16 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
               is the wrong question for something deliberately
               one-time. */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
-            <div style={{ flex: 1, paddingRight: 12 }}>
-              <div style={{ fontSize: 13, color: T.textPrimary }}>One-off / never expect to recur</div>
-              <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>Excludes this contact from the inactive flag entirely — for a genuine one-time encounter, not a gap you'd want flagged.</div>
+            <div style={{ flex: 1, paddingRight: 12, display: "flex", alignItems: "flex-start", gap: 8 }}>
+              {/* ADDED 2 Sep 2026 — real ask: an icon for this "legacy"
+                  concept — clock-counter-clockwise reads as "history/
+                  looking back", matching what this toggle actually
+                  means (a contact you're not tracking forward). */}
+              <ClockCounterClockwise size={16} color={T.textSecondary} style={{ flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <div style={{ fontSize: 13, color: T.textPrimary }}>One-off / never expect to recur</div>
+                <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>Excludes this contact from the inactive flag entirely — for a genuine one-time encounter, not a gap you'd want flagged.</div>
+              </div>
             </div>
             <ToggleSwitch T={T} value={form.excludeFromActiveTracking} onChange={set("excludeFromActiveTracking")} />
           </div>
