@@ -18,7 +18,7 @@ import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { localStorageAdapter } from "../storage/storageAdapter";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
-import { LogRepository } from "../repositories/logRepository";
+import { LogRepository, REASON_OPTIONS, SIDE_EFFECT_OPTIONS } from "../repositories/logRepository";
 import { computeStock, computeAdherence, nextDoseEstimate, isDoseLockedOut, lockoutEndsEstimate, effectiveDoseIntervalHours } from "../calculations/medicationCalculations";
 // ADDED — real ask: Correction Sheet needs to change WHEN a dose was
 // logged, not just how much, for the "forgot to log at the time, adding
@@ -515,6 +515,16 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
   const [amount, setAmount] = useState(Math.abs(entry.delta));
   const [date, setDate] = useState(entry.date);
   const [confirmVoid, setConfirmVoid] = useState(false);
+  // ADDED — real gap found in a full-app audit: LogRepository already
+  // modeled `reason` and `sideEffects` per entry (real ask from the
+  // Notion-vs-app audit, confirmed wanted), but nothing anywhere ever
+  // let a user set or see either — the fields existed with no UI.
+  // Editing them here, on the same sheet that already edits an
+  // existing entry, rather than on the one-tap "Take" action, which
+  // needs to stay one-tap.
+  const [reason, setReason] = useState(entry.reason || []);
+  const [sideEffects, setSideEffects] = useState(entry.sideEffects || []);
+  const toggle = (list, setList, v) => setList(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
   const step = (dir) => setAmount((a) => Math.max(1, a + dir));
   const typeLabel = entry.type === "dose" ? "Dose taken" : entry.type === "refill" ? "Refill" : "Waste/lost";
   return (
@@ -542,8 +552,30 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
             just how much — the "forgot to log it at the time, adding it
             retroactively" case, where the actual dose time isn't "now". */}
         {!confirmVoid && <DateTimeField label="Date & time" value={date} onChange={setDate} T={T} />}
+        {!confirmVoid && (entry.type === "dose" || entry.type === "waste") && (
+          <>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 10, marginBottom: 4 }}>Reason (optional)</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+              {REASON_OPTIONS.map((r) => (
+                <div key={r} onClick={() => toggle(reason, setReason, r)}
+                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.medsBlue}`, color: reason.includes(r) ? T.surface : T.medsBlue, background: reason.includes(r) ? T.medsBlue : "transparent" }}>
+                  {r}
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Side effects (optional)</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+              {SIDE_EFFECT_OPTIONS.map((s) => (
+                <div key={s} onClick={() => toggle(sideEffects, setSideEffects, s)}
+                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.actionRed}`, color: sideEffects.includes(s) ? T.surface : T.actionRed, background: sideEffects.includes(s) ? T.actionRed : "transparent" }}>
+                  {s}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
         {!confirmVoid && (
-          <button onClick={() => onSave(amount, date)} style={{ ...btnStyle(T.medsBlue, "filled"), width: "100%", padding: 12, marginTop: 10, marginBottom: 10 }}>Save correction</button>
+          <button onClick={() => onSave(amount, date, reason, sideEffects)} style={{ ...btnStyle(T.medsBlue, "filled"), width: "100%", padding: 12, marginTop: 10, marginBottom: 10 }}>Save correction</button>
         )}
         {!confirmVoid ? (
           <div onClick={() => setConfirmVoid(true)} style={{ textAlign: "center", fontSize: 13, color: T.actionRed, fontWeight: 600, cursor: "pointer", padding: 6 }}>This entry was a mistake — void it</div>
@@ -622,6 +654,13 @@ function LogTab({ meds, T, onOpenCorrection }) {
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: r.voided ? T.textDisabled : T.textPrimary, textDecoration: r.voided ? "line-through" : "none" }}>{r.med.name}</div>
                       {tg.entries.length === 1 && <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{timeLabel(r.date)}{r.voided ? " · voided" : ""}</div>}
+                      {/* ADDED — see CorrectionSheet's comment: reason/sideEffects
+                          now have somewhere to actually show up once set. */}
+                      {!r.voided && ((r.reason && r.reason.length > 0) || (r.sideEffects && r.sideEffects.length > 0)) && (
+                        <div style={{ fontSize: 10, color: T.textSecondary, marginTop: 2 }}>
+                          {[...(r.reason || []), ...(r.sideEffects || [])].join(" · ")}
+                        </div>
+                      )}
                     </div>
                     <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, color: typeColor(r), textDecoration: r.voided ? "line-through" : "none" }}>{r.delta > 0 ? "+" : ""}{r.delta}</span>
                   </div>
@@ -1487,9 +1526,9 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     refreshMeds();
     flashComplete(id, "requested");
   };
-  const saveCorrection = (newAmount, newDate) => {
+  const saveCorrection = (newAmount, newDate, reason, sideEffects) => {
     const sign = correction.entry.delta < 0 ? -1 : 1;
-    LogRepository.update(correction.entry.id, { delta: sign * newAmount, date: newDate });
+    LogRepository.update(correction.entry.id, { delta: sign * newAmount, date: newDate, reason, sideEffects });
     refreshMeds();
     setCorrection(null);
   };

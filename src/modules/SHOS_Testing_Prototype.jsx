@@ -23,6 +23,13 @@ import { ResultsRegistry } from "../registries/resultsRegistry";
 // shows its linked tests, Testing's never showed its linked visits.
 // One real direction of a two-way link with no UI at all.
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
+// ADDED — real gap found in a full-app audit: relatedSymptomIds existed
+// on DEFAULT_TEST with no UI anywhere. Same fix pattern as linkedVisits
+// above — Symptom Log's own relatedTestIds is the real source of truth
+// (its own RelationPicker already lets a user link a test from that
+// side), so this is a read-only reverse lookup, not a second editable
+// field for the same relationship.
+import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 // ADDED — Measurements inline entry point, same "one room, three
 // doors" reasoning as Clinic Visits' own — CD4/viral load from a test
 // gets a real linked Measurement, never a duplicate field here.
@@ -730,6 +737,9 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   // ADDED 19 Aug 2026 — real data, previously built but never
   // displayed. See the import comment above for the full reasoning.
   const linkedVisits = ClinicVisitsRepository.getByLinkedTest(testId);
+  // ADDED — reverse lookup into Symptom Log's own relatedTestIds, see
+  // the SymptomLogRepository import comment above.
+  const relatedSymptoms = SymptomLogRepository.getAll().filter((s) => (s.relatedTestIds || []).includes(testId));
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -876,6 +886,20 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
               <div key={v.id} style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
                 <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"}</div>
                 <div style={{ fontSize: 11, color: T.textSecondary }}>{formatDate(v.date)}</div>
+              </div>
+            ))}
+          </SectionCard>
+        )}
+        {relatedSymptoms.length > 0 && (
+          <SectionCard title="Related symptom entries" T={T}>
+            {relatedSymptoms.map((s) => (
+              <div key={s.id} onClick={() => onNavigateToRecord?.("healthcare", s.id, "symptomLog")}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: `1px solid ${T.border}`, cursor: "pointer" }}>
+                <div>
+                  <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{s.title || "Symptom entry"}</div>
+                  <div style={{ fontSize: 11, color: T.textSecondary }}>{formatDate(s.dateStarted)}</div>
+                </div>
+                <ChevronRight size={14} color={T.textSecondary} />
               </div>
             ))}
           </SectionCard>

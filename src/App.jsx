@@ -12,8 +12,6 @@ import { localStorageAdapter } from "./storage/storageAdapter";
 // ADDED — real architecture extraction, see that file's own header.
 import SettingsScreen from "./modules/SHOS_Settings_Prototype";
 import GlobalSearchScreen from "./modules/SHOS_GlobalSearch_Prototype";
-import RegistryManagementScreen from "./modules/SHOS_RegistryManagement_Prototype";
-import OptionListsScreen from "./modules/SHOS_OptionListEditor_Prototype";
 import { PrivacySettingsRepository } from "./repositories/privacySettingsRepository";
 import { checkBiometryAvailable, authenticateWithBiometrics } from "./storage/biometricAuthService";
 import { AppPreferencesRepository } from "./repositories/appPreferencesRepository";

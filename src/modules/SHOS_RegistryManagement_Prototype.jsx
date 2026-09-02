@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore, CopyIcon as Copy, XIcon as X } from "@phosphor-icons/react";
+import { CaretLeftIcon as ChevronLeft, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp, PlusIcon as Plus, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore, CopyIcon as Copy, XIcon as X } from "@phosphor-icons/react";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
@@ -35,7 +35,49 @@ import { findDuplicatePairs } from "../calculations/fuzzyMatch";
 // blind; rename + a visible usage count (so a near-duplicate is at
 // least easy to SPOT) covers the immediate "can't fix a bad entry
 // without hunting through a picker" pain point for now.
-export default function RegistryManagementScreen({ registry, label, color, computeUsage, onClose }) {
+// ADDED — real gap found in a full-app audit: Locations has real
+// extra shape (type/address/notes/relatedContactId, see
+// locationsRepository.js) that this generic name-only screen can't
+// edit. Rather than force-fitting Locations' extra fields into every
+// caller here, `renderExtra` is an optional per-caller escape hatch —
+// undefined for the other 5 registries, so nothing changes for them —
+// rendered only in edit mode, below the name row.
+function RegistryRow({ entry, usage, isEditing, editingName, setEditingName, startEdit, commitEdit, setEditingId, toggleArchive, refresh, RenderExtra, T, color }) {
+  const [showExtra, setShowExtra] = useState(false);
+  return (
+    <div style={{ borderBottom: `1px solid ${T.border}` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
+        {isEditing ? (
+          <input autoFocus value={editingName} onChange={(e) => setEditingName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditingId(null); }}
+            onBlur={commitEdit}
+            style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: `1px solid ${color}`, fontSize: 14, fontFamily: "'Inter', sans-serif" }} />
+        ) : (
+          <div onClick={() => startEdit(entry)} style={{ flex: 1, cursor: "pointer" }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: entry.isArchived ? T.textDisabled : T.textPrimary }}>{entry.name}</span>
+            <span style={{ fontSize: 11, color: T.textDisabled, marginLeft: 8 }}>{usage === 0 ? "unused" : `used ${usage}×`}</span>
+          </div>
+        )}
+        {RenderExtra && (
+          <div onClick={() => setShowExtra((s) => !s)} style={{ cursor: "pointer", flexShrink: 0 }} title="Details">
+            {showExtra ? <ChevronUp size={15} color={T.textSecondary} /> : <ChevronDown size={15} color={T.textSecondary} />}
+          </div>
+        )}
+        <div onClick={() => toggleArchive(entry)} style={{ cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", gap: 4 }}
+          title={entry.isArchived ? "Restore" : "Archive"}>
+          {entry.isArchived ? <ArchiveRestore size={15} color={color} /> : <Archive size={15} color={T.textSecondary} />}
+        </div>
+      </div>
+      {RenderExtra && showExtra && (
+        <div style={{ padding: "0 14px 14px" }}>
+          <RenderExtra entry={entry} refresh={refresh} T={T} color={color} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function RegistryManagementScreen({ registry, label, color, computeUsage, renderExtra: RenderExtra, onClose }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   const actionRed = darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red;
@@ -80,29 +122,21 @@ export default function RegistryManagementScreen({ registry, label, color, compu
     refresh();
   };
 
-  const Row = (entry) => {
-    const usage = computeUsage(entry.id);
-    const isEditing = editingId === entry.id;
-    return (
-      <div key={entry.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
-        {isEditing ? (
-          <input autoFocus value={editingName} onChange={(e) => setEditingName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditingId(null); }}
-            onBlur={commitEdit}
-            style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: `1px solid ${color}`, fontSize: 14, fontFamily: "'Inter', sans-serif" }} />
-        ) : (
-          <div onClick={() => startEdit(entry)} style={{ flex: 1, cursor: "pointer" }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: entry.isArchived ? T.textDisabled : T.textPrimary }}>{entry.name}</span>
-            <span style={{ fontSize: 11, color: T.textDisabled, marginLeft: 8 }}>{usage === 0 ? "unused" : `used ${usage}×`}</span>
-          </div>
-        )}
-        <div onClick={() => toggleArchive(entry)} style={{ cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", gap: 4 }}
-          title={entry.isArchived ? "Restore" : "Archive"}>
-          {entry.isArchived ? <ArchiveRestore size={15} color={color} /> : <Archive size={15} color={T.textSecondary} />}
-        </div>
-      </div>
-    );
-  };
+  // CHANGED — real fix while adding renderExtra (see its own comment
+  // above): this was a plain function called via active.map(Row), not
+  // a real component, so it couldn't hold its own state. Extracting it
+  // to a proper component so an extra-fields expand toggle can live
+  // per-row without interfering with the existing rename-on-blur flow
+  // — critically, expand/collapse is now its OWN state, not tangled up
+  // with editingId, so opening the extra-fields panel can never
+  // accidentally blur-and-close an in-progress rename (the same class
+  // of bug already fixed elsewhere this session for suggestion chips).
+  const Row = (entry) => (
+    <RegistryRow key={entry.id} entry={entry} usage={computeUsage(entry.id)}
+      isEditing={editingId === entry.id} editingName={editingName} setEditingName={setEditingName}
+      startEdit={startEdit} commitEdit={commitEdit} setEditingId={setEditingId}
+      toggleArchive={toggleArchive} refresh={refresh} RenderExtra={RenderExtra} T={T} color={color} />
+  );
 
   return (
     <div style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>

@@ -26,7 +26,7 @@ import {
   FileCsvIcon as FileCsv, LockIcon as Lock, BellIcon as Bell,
   CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck,
   LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen,
-  SlidersHorizontalIcon as SlidersHorizontal,
+  SlidersHorizontalIcon as SlidersHorizontal, MapPinIcon as MapPin,
 } from "@phosphor-icons/react";
 // FIXED 1 Sep 2026 — real ask: "Managed lists crashes app on
 // attempting to open" / "Same for resources [crashes], in light [mode]
@@ -48,7 +48,8 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { exportBackup, exportEncryptedBackup, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
 import { exportRecordsAsCSV } from "../storage/csvExportService";
 import { localStorageAdapter } from "../storage/storageAdapter";
-import { computeKinkUsage, computeChemsUsage, computeProtectionUsage, computeSymptomsUsage, computeOrganismUsage, computeResultsUsage } from "../calculations/registryUsage";
+import { computeKinkUsage, computeChemsUsage, computeProtectionUsage, computeSymptomsUsage, computeOrganismUsage, computeResultsUsage, computeLocationsUsage } from "../calculations/registryUsage";
+import { LOCATION_TYPE_OPTIONS } from "../repositories/locationsRepository";
 import { ContactRepository } from "../repositories/contactRepository";
 import { EncounterRepository } from "../repositories/encounterRepository";
 import { MedicationRepository } from "../repositories/medicationRepository";
@@ -542,6 +543,46 @@ function DeveloperToolsScreen({ onClose }) {
 // would need real UI work letting the user pick one per entry, not done
 // here, flagged rather than silently attempted). Organism → Microscope
 // is the user's own named example, applied literally.
+// ADDED — real gap found in a full-app audit: Locations
+// (type/address/notes/relatedContactId, see locationsRepository.js's
+// own header for why it isn't one of the 6 above) had no management
+// screen at all — Settings only ever showed a static count. Reuses
+// this exact screen via the renderExtra escape hatch (see
+// SHOS_RegistryManagement_Prototype.jsx) rather than building a whole
+// separate screen for one more registry-shaped repository.
+function LocationExtraFields({ entry, refresh, T, color }) {
+  const [address, setAddress] = useState(entry.address || "");
+  const [notes, setNotes] = useState(entry.notes || "");
+  const contacts = useMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived), []);
+  const setType = (type) => { LocationsRepository.update(entry.id, { type: entry.type === type ? "" : type }); refresh(); };
+  const commitAddress = () => { LocationsRepository.update(entry.id, { address: address.trim() }); refresh(); };
+  const commitNotes = () => { LocationsRepository.update(entry.id, { notes: notes.trim() }); refresh(); };
+  const setRelatedContact = (id) => { LocationsRepository.update(entry.id, { relatedContactId: id }); refresh(); };
+  const inputStyle = { width: "100%", padding: "6px 8px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box", marginBottom: 8 };
+  return (
+    <div style={{ paddingTop: 4 }}>
+      <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Type</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+        {LOCATION_TYPE_OPTIONS.map((t) => (
+          <div key={t} onClick={() => setType(t)}
+            style={{ padding: "4px 9px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${color}`, color: entry.type === t ? "#FFFFFF" : color, background: entry.type === t ? color : "transparent" }}>
+            {t}
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Address</div>
+      <input value={address} onChange={(e) => setAddress(e.target.value)} onBlur={commitAddress} placeholder="Optional" style={inputStyle} />
+      <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Related contact</div>
+      <select value={entry.relatedContactId || ""} onChange={(e) => setRelatedContact(e.target.value)} style={inputStyle}>
+        <option value="">None</option>
+        {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+      </select>
+      <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
+      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={commitNotes} rows={2} placeholder="Optional" style={{ ...inputStyle, marginBottom: 0, resize: "vertical" }} />
+    </div>
+  );
+}
+
 const REGISTRIES = [
   { key: "kink", label: "Kink Registry", registry: KinkRegistry, color: "#E5484D", icon: Flame, computeUsage: computeKinkUsage },
   { key: "protection", label: "Protection Registry", registry: ProtectionRegistry, color: "#E24E9C", icon: Shield, computeUsage: computeProtectionUsage },
@@ -549,6 +590,7 @@ const REGISTRIES = [
   { key: "symptoms", label: "Symptoms Registry", registry: SymptomsRegistry, color: ACCENTS.healthcare, icon: Stethoscope, computeUsage: computeSymptomsUsage },
   { key: "organism", label: "Organism Registry", registry: OrganismRegistry, color: ACCENTS.healthcare, icon: Microscope, computeUsage: computeOrganismUsage },
   { key: "results", label: "Results Registry", registry: ResultsRegistry, color: ACCENTS.healthcare, icon: ClipboardCheck, computeUsage: computeResultsUsage },
+  { key: "locations", label: "Locations", registry: LocationsRepository, color: "#E24E9C", icon: MapPin, computeUsage: computeLocationsUsage, renderExtra: LocationExtraFields },
 ];
 
 // CHANGED 1 Sep 2026 — real ask: "check settings not unnecessarily over
@@ -632,7 +674,7 @@ function ManageListsScreen({ onClose }) {
         </>
       )}
       {openRegistry && (
-        <RegistryManagementScreen registry={openRegistry.registry} label={openRegistry.label} color={openRegistry.color} computeUsage={openRegistry.computeUsage} onClose={() => setOpenRegistry(null)} />
+        <RegistryManagementScreen registry={openRegistry.registry} label={openRegistry.label} color={openRegistry.color} computeUsage={openRegistry.computeUsage} renderExtra={openRegistry.renderExtra} onClose={() => setOpenRegistry(null)} />
       )}
       {openOptionList && <OptionListDetail listName={openOptionList} onClose={() => setOpenOptionList(null)} />}
     </div>

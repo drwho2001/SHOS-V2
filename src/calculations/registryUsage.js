@@ -76,3 +76,15 @@ export function computeResultsUsage(id) {
   ClinicVisitsRepository.getAll().forEach((v) => { if ((v.resultIds || []).includes(id)) count += 1; });
   return count;
 }
+
+// ADDED — real gap found in a full-app audit: Locations had no
+// management screen at all, unlike the 6 registries above (Settings
+// only ever showed a static count row). Only Encounters actually
+// references a location (confirmed via grep — Symptom Log's own
+// header comment mentions Location by name but never stores a real
+// locationId field).
+export function computeLocationsUsage(id) {
+  let count = 0;
+  EncounterRepository.getAll().forEach((e) => { if (e.locationId === id) count += 1; });
+  return count;
+}
