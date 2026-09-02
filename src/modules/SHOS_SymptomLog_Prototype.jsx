@@ -353,7 +353,7 @@ function EntrySheet({ entry, onSave, onClose, T }) {
           {/* ADDED 26 Aug 2026 — real gap found while adding the
               banner: this sheet had no visible close control at all,
               only closing via a backdrop tap. */}
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} />
+          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder="e.g. Rash after chem session" />
@@ -402,7 +402,7 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => onEdit(entryId)}>Edit</span>
-          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} />
+          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" />
         </div>
       </div>
       {confirmDelete && (

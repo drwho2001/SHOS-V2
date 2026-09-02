@@ -255,7 +255,7 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
             had no visible close control at all, only backdrop-tap. */}
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>{isNew ? "Log vaccination" : "Edit vaccination"}</span>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} />
+          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder="e.g. Hep B booster" />
@@ -320,7 +320,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => onEdit(vaccinationId)}>Edit</span>
-          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} />
+          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" />
         </div>
       </div>
       {confirmDelete && (

@@ -99,6 +99,15 @@ export default function RegistryManagementScreen({ registry, label, color, compu
   const active = allEntries.filter((e) => !e.isArchived).sort((a, b) => a.name.localeCompare(b.name));
   const archived = allEntries.filter((e) => e.isArchived).sort((a, b) => a.name.localeCompare(b.name));
   const duplicatePairs = useMemo(() => findDuplicatePairs(allEntries), [allEntries]);
+  // ADDED — real perf/redundancy fix: computeUsage (each of these scans
+  // 1-3 full repositories — see registryUsage.js) was being called once
+  // per row directly inside Row/.map(), unmemoized, right next to
+  // duplicatePairs above which WAS already correctly memoized — an
+  // oversight, not a choice. With N entries that's N full-table scans
+  // recomputed on every render, including every keystroke while typing
+  // a new entry name or renaming one (both drive re-renders here). Now
+  // computed once per allEntries change into a lookup map.
+  const usageMap = useMemo(() => new Map(allEntries.map((e) => [e.id, computeUsage(e.id)])), [allEntries, computeUsage]);
 
   const handleAdd = () => {
     const trimmed = addingName.trim();
@@ -132,7 +141,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
   // accidentally blur-and-close an in-progress rename (the same class
   // of bug already fixed elsewhere this session for suggestion chips).
   const Row = (entry) => (
-    <RegistryRow key={entry.id} entry={entry} usage={computeUsage(entry.id)}
+    <RegistryRow key={entry.id} entry={entry} usage={usageMap.get(entry.id) ?? 0}
       isEditing={editingId === entry.id} editingName={editingName} setEditingName={setEditingName}
       startEdit={startEdit} commitEdit={commitEdit} setEditingId={setEditingId}
       toggleArchive={toggleArchive} refresh={refresh} RenderExtra={RenderExtra} T={T} color={color} />
@@ -155,7 +164,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
           <div style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 16, borderTopRightRadius: 16 }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", background: color, borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF" }}>Possible duplicates</span>
-              <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => setShowDuplicates(false)} />
+              <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => setShowDuplicates(false)} aria-label="Close duplicates panel" />
             </div>
             <div style={{ padding: "6px 20px 0", fontSize: 12, color: T.textSecondary }}>
               Flagged by name similarity — nothing is merged automatically. Rename one to match the other, or archive the one you don't want.

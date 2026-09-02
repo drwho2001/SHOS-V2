@@ -268,7 +268,7 @@ export default function PartnerNotificationSheet({ testId, onClose }) {
           {editing && list ? (
             <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={() => setEditing(false)} />
           ) : (
-            <X size={20} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+            <X size={20} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
           )}
           <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>{editing ? (list ? "Edit contacts" : "Contact list") : "Contact list"}</span>
         </div>

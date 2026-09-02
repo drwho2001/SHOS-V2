@@ -84,6 +84,48 @@ export function contactEncounterSummary(encounters, contactId) {
   };
 }
 
+// ADDED — real gap found in a performance audit: the Contacts LIST
+// was calling contactEncounterSummary(encounters, contact.id) once per
+// card (and again per pair compared while sorting by "Last encounter")
+// — each call independently re-filters the FULL encounters array four
+// times over. With N contacts and M encounters that's O(N×M) work
+// redone on every render. This does the equivalent work in one O(M)
+// pass over encounters, grouping by attendee, and hands back a
+// Map<contactId, summary> — same per-contact shape as
+// contactEncounterSummary above, so existing callers of THAT function
+// (the single-contact Timeline section, genuinely a one-off) are left
+// alone. Build this once via useMemo, then it's an O(1) lookup per
+// card/comparison instead of a rescan.
+export function contactEncounterSummaries(encounters) {
+  const buckets = new Map();
+  for (const e of encounters) {
+    if (e.isArchived) continue;
+    for (const contactId of e.attendeeIds || []) {
+      let bucket = buckets.get(contactId);
+      if (!bucket) { bucket = { count: 0, ratings: [], dates: [] }; buckets.set(contactId, bucket); }
+      bucket.count += 1;
+      if (typeof e.enjoymentRating === "number") bucket.ratings.push(e.enjoymentRating);
+      if (e.date) bucket.dates.push(e.date);
+    }
+  }
+  const summaries = new Map();
+  for (const [contactId, bucket] of buckets) {
+    summaries.set(contactId, {
+      count: bucket.count,
+      averageEnjoyment: bucket.ratings.length === 0 ? null : bucket.ratings.reduce((sum, r) => sum + r, 0) / bucket.ratings.length,
+      highestEnjoyment: bucket.ratings.length === 0 ? null : Math.max(...bucket.ratings),
+      lastInteraction: bucket.dates.length === 0 ? null : bucket.dates.slice().sort((a, b) => new Date(b) - new Date(a))[0],
+    });
+  }
+  return summaries;
+}
+
+// Default shape for a contact with no encounters at all — matches
+// exactly what contactEncounterSummary(encounters, contactId) returns
+// for such a contact, so callers reading from contactEncounterSummaries()
+// can fall back to this without a special case.
+export const EMPTY_ENCOUNTER_SUMMARY = { count: 0, averageEnjoyment: null, highestEnjoyment: null, lastInteraction: null };
+
 // Relative-date formatting for the Contact Card's "Last Encounter"
 // field (B1) and Timeline — "3 weeks ago" style, matching the
 // component spec's described format.

@@ -921,7 +921,7 @@ export default function App() {
           // distinct from the other four flat tabs.
           if (tab.key === "home") {
             return (
-              <div key={tab.key} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
+              <div key={tab.key} role="button" aria-label={tab.label} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
                 onMouseDown={startHomeLongPress} onMouseUp={cancelHomeLongPress} onMouseLeave={cancelHomeLongPress}
                 onTouchStart={startHomeLongPress} onTouchEnd={cancelHomeLongPress}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", marginTop: -18 }}>

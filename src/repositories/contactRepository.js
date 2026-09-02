@@ -539,9 +539,21 @@ export const ContactRepository = {
   // module's delete() this session: archive stays correct for
   // anything real, this is for a genuinely wrong/unwanted entry.
   delete(id) {
+    const record = contacts.find((c) => c.id === id);
     contacts = contacts.filter((c) => c.id !== id);
     persist();
     MyProfileRepository.unlinkRelationshipContact(id);
+    // ADDED — real gap found in a redundancy audit: linkContacts()/
+    // unlinkContacts() keep Contact<->Contact links symmetric by
+    // design (see their own comments below), but this only ever
+    // cleaned up MyProfile's relationship link, never the OTHER
+    // contacts this one was linked to — leaving a dangling id (and its
+    // linkedContactLabels entry) in the survivor's record forever.
+    // Calling unlinkContacts here is safe even though `id` is already
+    // gone from `contacts` — its two update branches are independent,
+    // so it just no-ops the already-deleted side and cleans up the
+    // survivor.
+    (record?.linkedContactIds || []).forEach((otherId) => this.unlinkContacts(id, otherId));
   },
 
   unarchive(id) {
@@ -556,9 +568,12 @@ export const ContactRepository = {
   },
 
   bulkDelete(ids) {
+    const records = contacts.filter((c) => ids.includes(c.id));
     contacts = contacts.filter((c) => !ids.includes(c.id));
     persist();
     ids.forEach((id) => MyProfileRepository.unlinkRelationshipContact(id));
+    // Same dangling-link cleanup as delete() above, per contact.
+    records.forEach((record) => (record.linkedContactIds || []).forEach((otherId) => this.unlinkContacts(record.id, otherId)));
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.

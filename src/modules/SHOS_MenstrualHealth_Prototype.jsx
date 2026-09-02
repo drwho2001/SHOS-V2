@@ -247,7 +247,7 @@ function BottomSheet({ title, onClose, T, children, footer }) {
       <div style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>{title}</span>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} />
+          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>{children}</div>
         {footer && <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>{footer}</div>}
@@ -281,7 +281,7 @@ function DetailHeader({ onBack, onEdit, onDelete, T }) {
       <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} />
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={onEdit}>Edit</span>
-        <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={onDelete} />
+        <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={onDelete} aria-label="Delete permanently" title="Delete permanently" />
       </div>
     </div>
   );

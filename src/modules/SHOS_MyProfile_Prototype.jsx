@@ -658,7 +658,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
           {rules.map((r) => (
             <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, background: T.surfaceVariant, fontSize: 12, color: T.textPrimary }}>
               <span>{describeRule(r)}</span>
-              <X size={14} style={{ cursor: "pointer", flexShrink: 0, marginLeft: 8 }} onClick={() => removeRule(r.id)} />
+              <X size={14} style={{ cursor: "pointer", flexShrink: 0, marginLeft: 8 }} onClick={() => removeRule(r.id)} aria-label="Remove rule" title="Remove rule" />
             </div>
           ))}
         </div>

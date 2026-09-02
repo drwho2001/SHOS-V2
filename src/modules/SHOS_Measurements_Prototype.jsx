@@ -342,7 +342,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
       <div style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>{isNew ? "Add measurement" : "Edit measurement"}</span>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} />
+          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <MeasurementTypeField value={form.type} onChange={setType} options={editableOptions}
@@ -413,7 +413,7 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => onEdit(measurementId)}>Edit</span>
-          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} />
+          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" />
         </div>
       </div>
       {confirmDelete && (
@@ -688,7 +688,8 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
                 <div style={{ fontSize: 11, color: T.textSecondary }}>{g.members.length} item{g.members.length === 1 ? "" : "s"}</div>
               </div>
               <Trash2 size={16} color={T.actionRed} style={{ cursor: "pointer" }}
-                onClick={(e) => { e.stopPropagation(); if (window.confirm(`Delete "${g.name}"? Its items stay, just ungrouped.`)) { CustomGroupsRepository.delete(domain, g.id); refresh(); } }} />
+                onClick={(e) => { e.stopPropagation(); if (window.confirm(`Delete "${g.name}"? Its items stay, just ungrouped.`)) { CustomGroupsRepository.delete(domain, g.id); refresh(); } }}
+                aria-label="Delete group" title="Delete group" />
             </div>
             {expandedId === g.id && (
               <div style={{ padding: "0 12px 12px", borderTop: `1px solid ${T.border}` }}>
@@ -729,7 +730,7 @@ function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
       <div style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>Measurement preferences</span>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} />
+          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close measurement preferences" />
         </div>
         <div style={{ overflowY: "auto", padding: "16px 20px 24px", flex: 1 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Default units</div>

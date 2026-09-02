@@ -587,7 +587,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       {showVisibilitySettings && (
         <div style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 300, overflowY: "auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-            <X size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(false)} />
+            <X size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(false)} aria-label="Close visibility settings" />
             <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>Which sections to show</span>
           </div>
           <div style={{ padding: "8px 16px", fontSize: 12, color: T.textSecondary }}>

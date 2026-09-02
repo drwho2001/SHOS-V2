@@ -1210,7 +1210,9 @@ function PrivacyScreen({ onClose }) {
 function NotificationToggleRow({ label, description, enabled, onToggle, darkMode, children }) {
   return (
     <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: 16, padding: 16, marginBottom: 12 }}>
-      <div onClick={onToggle} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+      <div role="switch" aria-checked={enabled} aria-label={label} tabIndex={0}
+        onClick={onToggle} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
         <div style={{ flex: 1, paddingRight: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{label}</div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>{description}</div>
@@ -2160,7 +2162,7 @@ function CalendarSyncSheet({ onClose }) {
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: "80vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Phone calendar sync</span>
-          <X size={18} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+          <X size={18} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close calendar sync settings" />
         </div>
 
         <div onClick={calendarSyncing ? undefined : toggleCalendarSync} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer" }}>

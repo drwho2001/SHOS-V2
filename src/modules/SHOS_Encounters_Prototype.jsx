@@ -404,7 +404,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
             <div key={sel.kinkId} style={{ display: "flex", alignItems: "center", borderRadius: radius.full, border: `1px solid ${T.border}`, overflow: "hidden" }}>
               <div style={{ padding: "4px 8px", fontSize: 12, color: T.textSecondary, display: "flex", alignItems: "center", gap: 4 }}>
                 {nameFor(sel.kinkId)}
-                <X size={11} style={{ cursor: "pointer" }} onClick={() => removeEntry(sel.kinkId)} />
+                <X size={11} style={{ cursor: "pointer" }} onClick={() => removeEntry(sel.kinkId)} aria-label="Remove kink" title="Remove kink" />
               </div>
               {trackRole && roleOptionsForThisKink && (
                 <div onClick={() => cycleRole(sel.kinkId)}
@@ -1180,7 +1180,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           should also have the module banner title, matching every
           other module screen. */}
       <div style={{ position: "sticky", top: 0, background: T.encountersPink, padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <X size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} />
+        <X size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16, color: "#FFFFFF" }}>{isNew ? "Add Encounter" : "Edit Encounter"}</span>
         <div onClick={save}
           style={{ padding: "6px 14px", borderRadius: radius.full, background: "#FFFFFF", color: T.encountersPink, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>

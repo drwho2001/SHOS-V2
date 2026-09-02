@@ -288,7 +288,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
           placeholder="Search contacts, medications, activities, tests, clinic visits..."
           style={{ flex: 1, border: "none", outline: "none", fontSize: 15, background: "transparent", color: T.textPrimary, fontFamily: FONT_FAMILY }}
         />
-        <X size={20} color={T.textSecondary} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onClose} />
+        <X size={20} color={T.textSecondary} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onClose} aria-label="Close search" />
       </div>
 
       {/* ADDED 26 Aug 2026 — real ask: sort toggle. */}

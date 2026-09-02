@@ -431,7 +431,7 @@ function StockCorrectionSheet({ med, currentStock, onConfirm, onClose, T }) {
       <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Correct stock level — {med.name}</span>
-          <X size={18} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+          <X size={18} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 14 }}>App currently shows {currentStock} left. Enter what you've actually counted.</div>
         <input type="number" value={actualStock} onChange={(e) => setActualStock(e.target.value === "" ? "" : Number(e.target.value))}
@@ -461,7 +461,7 @@ function QuantitySheet({ med, mode, onConfirm, onClose, T }) {
       <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>{isRefill ? "Log refill" : "Log waste/lost"} — {med.name}</span>
-          <X size={18} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+          <X size={18} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         {/* Duplicated from the Registry card, not moved — useful right at the point of logging too */}
         {isRefill && med.usualSupplier && <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 14 }}>Usually filled at: {med.usualSupplier}</div>}
@@ -532,7 +532,7 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
       <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Edit entry — {med.name}</span>
-          <X size={18} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+          <X size={18} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{typeLabel}</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginBottom: confirmVoid ? 18 : 4 }}>
@@ -603,24 +603,33 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
 // technically-not-deleted. ──
 function LogTab({ meds, T, onOpenCorrection }) {
   const [showVoided, setShowVoided] = useState(true);
-  const allEntries = meds.flatMap((m) => m.logs.map((l) => ({ ...l, med: m })));
-  const anyVoided = allEntries.some((l) => l.voided);
-  const rows = (showVoided ? allEntries : allEntries.filter((l) => !l.voided)).sort((a, b) => new Date(b.date) - new Date(a.date));
+  // CHANGED — real perf fix: this whole block (flatten every med's
+  // logs, sort, group by day then by exact timestamp) used to run
+  // directly in the render body on every re-render of this tab — not
+  // just when `meds` or `showVoided` actually changed. Dose logs are
+  // append-only and accumulate over months of real use, so this is the
+  // one dataset in the app most likely to actually grow large. Now
+  // only recomputes when its real inputs change.
+  const { anyVoided, byDay } = useMemo(() => {
+    const allEntries = meds.flatMap((m) => m.logs.map((l) => ({ ...l, med: m })));
+    const anyVoided = allEntries.some((l) => l.voided);
+    const rows = (showVoided ? allEntries : allEntries.filter((l) => !l.voided)).sort((a, b) => new Date(b.date) - new Date(a.date));
+    const byDay = [];
+    rows.forEach((r) => {
+      const key = dayLabel(r.date);
+      let dayGroup = byDay.find((g) => g.key === key);
+      if (!dayGroup) { dayGroup = { key, timeGroups: [] }; byDay.push(dayGroup); }
+      let timeGroup = dayGroup.timeGroups.find((g) => g.time === r.date);
+      if (!timeGroup) { timeGroup = { time: r.date, entries: [] }; dayGroup.timeGroups.push(timeGroup); }
+      timeGroup.entries.push(r);
+    });
+    return { anyVoided, byDay };
+  }, [meds, showVoided]);
   // Waste keeps its own red — that's still meaningful for an active
   // entry. Once voided, the strikethrough + dimmed color carries the
   // "this was undone" meaning instead, so voided overrides type color
   // rather than competing with it.
   const typeColor = (r) => (r.voided ? T.textDisabled : r.type === "refill" ? T.medsBlue : r.type === "waste" ? T.actionRed : T.textPrimary);
-
-  const byDay = [];
-  rows.forEach((r) => {
-    const key = dayLabel(r.date);
-    let dayGroup = byDay.find((g) => g.key === key);
-    if (!dayGroup) { dayGroup = { key, timeGroups: [] }; byDay.push(dayGroup); }
-    let timeGroup = dayGroup.timeGroups.find((g) => g.time === r.date);
-    if (!timeGroup) { timeGroup = { time: r.date, entries: [] }; dayGroup.timeGroups.push(timeGroup); }
-    timeGroup.entries.push(r);
-  });
 
   const GAP_HOURS = 4; // a bigger visual break for gaps larger than this, within the same day
 
@@ -886,7 +895,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
       <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "85vh", overflowY: "auto", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, display: "flex", flexDirection: "column" }}>
         <div style={{ background: T.medsBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>Update dose — {med.name}</span>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} />
+          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         <div style={{ padding: "8px 20px 20px" }}>
           <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 12, lineHeight: 1.5 }}>
@@ -973,7 +982,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
       <div style={{ background: T.surface, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 20px 4px", flexShrink: 0 }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Edit medication</span>
-          <X size={18} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+          <X size={18} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, padding: "0 20px 12px", flexShrink: 0 }}>Changes how stock/adherence are calculated going forward — doesn't touch past log entries.</div>
 
@@ -1109,8 +1118,16 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
   // long-archived one is a deliberate restart, not a live duplicate.
   const existingNames = useMemo(() => MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => m.name), []);
   const trimmedName = form.name.trim();
-  const exactNameMatch = trimmedName && existingNames.some((n) => n.toLowerCase() === trimmedName.toLowerCase());
-  const closeNameMatch = trimmedName && !exactNameMatch ? findClosestMatch(existingNames, trimmedName) : null;
+  // CHANGED — real perf fix: findClosestMatch runs Levenshtein against
+  // every active medication name — was recomputing on every render,
+  // i.e. every keystroke in the name field, even though existingNames
+  // itself was already memoized. Small dataset today, but the same
+  // missing-memoization pattern is worth closing here too.
+  const { exactNameMatch, closeNameMatch } = useMemo(() => {
+    const exactNameMatch = trimmedName && existingNames.some((n) => n.toLowerCase() === trimmedName.toLowerCase());
+    const closeNameMatch = trimmedName && !exactNameMatch ? findClosestMatch(existingNames, trimmedName) : null;
+    return { exactNameMatch, closeNameMatch };
+  }, [trimmedName, existingNames]);
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
@@ -1122,7 +1139,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
             module banner title. */}
         <div style={{ background: T.medsBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>Add medication</span>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} />
+          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
 
         <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>

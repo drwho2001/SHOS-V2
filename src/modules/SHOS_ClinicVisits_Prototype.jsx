@@ -414,7 +414,7 @@ function AdHocMedicationsManager({ value, onChange, T }) {
                 <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{m.name}</div>
                 {m.notes && <div style={{ fontSize: 11, color: T.textSecondary }}>{m.notes}</div>}
               </div>
-              <X size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => remove(m.id)} />
+              <X size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => remove(m.id)} aria-label="Remove medication" title="Remove medication" />
             </div>
           ))}
         </div>
@@ -500,7 +500,7 @@ function AttachmentManager({ visitId, attachments, onChanged, T }) {
                 <Paperclip size={13} color={T.textSecondary} />
                 <div style={{ fontSize: 12, color: T.textPrimary, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
               </div>
-              <Trash2 size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => remove(a.id)} />
+              <Trash2 size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => remove(a.id)} aria-label="Remove attachment" title="Remove attachment" />
             </div>
           ))}
         </div>
@@ -575,15 +575,6 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
     clearDraft(draftKey);
     if (isNew) {
       const created = ClinicVisitsRepository.create(form);
-      // Real two-way link: if tests were linked from this side, update
-      // each test's own clinicVisitIds too — same reasoning as the
-      // proven test in this session's Notion work.
-      form.linkedTestIds.forEach((testId) => {
-        const test = TestingRepository.getById(testId);
-        if (test && !test.clinicVisitIds.includes(created.id)) {
-          TestingRepository.update(testId, { clinicVisitIds: [...test.clinicVisitIds, created.id] });
-        }
-      });
       // ADDED — real ask: reminders for an actual booked appointment.
       // A brand-new visit could itself be the soonest one now, or
       // could displace/cancel-out a stale prior schedule — either way
@@ -595,25 +586,11 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
       syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
       onSaved(created.id);
     } else {
-      const before = ClinicVisitsRepository.getById(visitId);
       // ADDED 19 Aug 2026 — real undo/redo extension, same shared
       // mechanism as every other module.
       onBeforeEdit?.(visitId);
       ClinicVisitsRepository.update(visitId, form);
       onAfterEdit?.(visitId);
-      // Sync the two-way link for any tests added/removed this edit.
-      const added = form.linkedTestIds.filter((id) => !before.linkedTestIds.includes(id));
-      const removed = before.linkedTestIds.filter((id) => !form.linkedTestIds.includes(id));
-      added.forEach((testId) => {
-        const test = TestingRepository.getById(testId);
-        if (test && !test.clinicVisitIds.includes(visitId)) {
-          TestingRepository.update(testId, { clinicVisitIds: [...test.clinicVisitIds, visitId] });
-        }
-      });
-      removed.forEach((testId) => {
-        const test = TestingRepository.getById(testId);
-        if (test) TestingRepository.update(testId, { clinicVisitIds: test.clinicVisitIds.filter((id) => id !== visitId) });
-      });
       syncClinicVisitReminders();
       syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
       onSaved(visitId);
@@ -782,7 +759,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => onEdit(visitId)}>Edit</span>
-          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} />
+          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" />
         </div>
       </div>
       {confirmDelete && (

@@ -116,7 +116,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
               <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</div>
               <div style={{ fontSize: 11, color: T.textSecondary }}>{a.type} · {formatDate(a.date)} · {a.sourceTitle}</div>
             </div>
-            <Trash2 size={15} color={T.textDisabled} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => handleDelete(a)} />
+            <Trash2 size={15} color={T.textDisabled} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => handleDelete(a)} aria-label="Remove attachment" title="Remove attachment" />
           </div>
         ))}
       </div>

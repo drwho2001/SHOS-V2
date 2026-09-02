@@ -113,7 +113,7 @@ export function OptionListDetail({ listName, onClose }) {
             <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
               <ArrowUp size={14} color={i === 0 ? T.textDisabled : T.textSecondary} style={{ cursor: i === 0 ? "default" : "pointer" }} onClick={() => i > 0 && move(i, -1)} title="Move up" />
               <ArrowDown size={14} color={i === options.length - 1 ? T.textDisabled : T.textSecondary} style={{ cursor: i === options.length - 1 ? "default" : "pointer" }} onClick={() => i < options.length - 1 && move(i, 1)} title="Move down" />
-              <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => remove(opt)} title="Remove this option" />
+              <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => remove(opt)} title="Remove this option" aria-label="Remove this option" />
             </div>
           </div>
         ))}

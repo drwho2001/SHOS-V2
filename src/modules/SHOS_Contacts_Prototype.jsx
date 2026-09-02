@@ -70,7 +70,7 @@ import { AppPreferencesRepository } from "../repositories/appPreferencesReposito
 // in encounterRepository.js (Encounter holds attendeeIds, Contact-side
 // numbers are calculated, never duplicated back onto the Contact record).
 import { EncounterRepository } from "../repositories/encounterRepository";
-import { contactEncounterSummary, sortByDateDesc, formatRelativeDate } from "../calculations/encounterCalculations";
+import { contactEncounterSummary, contactEncounterSummaries, EMPTY_ENCOUNTER_SUMMARY, sortByDateDesc, formatRelativeDate } from "../calculations/encounterCalculations";
 // New 18 Aug 2026: Kink Registry and Chems Registry now exist as real
 // modules — Stated kinks/Limits/Known chems below switch from freeform
 // TagInput to real registry-linked pickers.
@@ -1104,7 +1104,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
           {rules.map((r) => (
             <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, background: T.surfaceVariant, fontSize: 12, color: T.textPrimary }}>
               <span>{describeRule(r)}</span>
-              <Trash2 size={13} color={T.textSecondary} style={{ cursor: "pointer", flexShrink: 0, marginLeft: 8 }} onClick={() => removeRule(r.id)} />
+              <Trash2 size={13} color={T.textSecondary} style={{ cursor: "pointer", flexShrink: 0, marginLeft: 8 }} onClick={() => removeRule(r.id)} aria-label="Remove rule" title="Remove rule" />
             </div>
           ))}
         </div>
@@ -1253,7 +1253,7 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
 }
 
 
-function ContactCard({ contact, onOpen, T, encounters = [], anonymise = false, inactiveThresholdDays = 90, activeFilters = null, selectMode = false, selected = false, onToggleSelected, onLongPress, onToggleFavourite }) {
+function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, anonymise = false, inactiveThresholdDays = 90, activeFilters = null, selectMode = false, selected = false, onToggleSelected, onLongPress, onToggleFavourite }) {
   // ADDED 26 Aug 2026 — real ask: "show on card which field is being
   // filtered/why result is coming up... especially needed for if
   // someone uses multiple filters at once." Computes only the parts
@@ -1288,9 +1288,11 @@ function ContactCard({ contact, onOpen, T, encounters = [], anonymise = false, i
   // logged yet) is NOT marked inactive — there's no evidence of
   // inactivity, just no history yet, so it stays the normal color.
   // Only a contact with a REAL gap since their last actual encounter
-  // shows red. Reuses contactEncounterSummary — the same calculation
-  // Contact Profile's Timeline already uses, not a separate one.
-  const summary = contactEncounterSummary(encounters, contact.id);
+  // shows red. `summary` is precomputed once per list-render by the
+  // caller (see contactEncounterSummaries in encounterCalculations.js —
+  // a real perf fix, this used to call contactEncounterSummary(encounters,
+  // contact.id) right here, a full encounters rescan per card, every
+  // render) rather than a separate calculation.
   const daysSinceLastInteraction = summary.lastInteraction
     ? Math.floor((Date.now() - new Date(summary.lastInteraction).getTime()) / 86400000)
     : null;
@@ -1526,7 +1528,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
             right control for this screen's actual navigation model. */}
         <div style={{ background: T.contactsTeal, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>{isNew ? "Add contact" : "Edit contact"}</span>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} />
+          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         {draftRestored && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, margin: "0 20px 8px", fontSize: 11, color: T.actionGreen, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px", flexShrink: 0 }}>
@@ -2129,6 +2131,13 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // ADDED 18 Aug 2026 — loaded once here rather than per-card, needed
   // for the card's active-status dot (see ContactCard below).
   const encounters = useMemo(() => EncounterRepository.getAll(), [contacts]);
+  // ADDED — real perf fix: was calling contactEncounterSummary(encounters,
+  // id) per card AND per pair compared while sorting by "Last encounter"
+  // — each call independently rescans the full encounters array. This
+  // builds every contact's summary in one O(M) pass, once per encounters
+  // change, so both the card render and the sort comparator below become
+  // O(1) lookups instead of rescans.
+  const encounterSummaries = useMemo(() => contactEncounterSummaries(encounters), [encounters]);
   const [showFilters, setShowFilters] = useState(false);
   // ADDED 26 Aug 2026 — real ask: long-press a card to enter multi-
   // select mode, then bulk delete/archive/edit. "Edit" deliberately
@@ -2200,8 +2209,8 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       // with no encounters at all sort to the very end regardless of
       // direction, since "no last encounter" isn't really "oldest".
       if (sortBy === "lastEncounter") {
-        const aLast = contactEncounterSummary(encounters, a.id).lastInteraction;
-        const bLast = contactEncounterSummary(encounters, b.id).lastInteraction;
+        const aLast = (encounterSummaries.get(a.id) || EMPTY_ENCOUNTER_SUMMARY).lastInteraction;
+        const bLast = (encounterSummaries.get(b.id) || EMPTY_ENCOUNTER_SUMMARY).lastInteraction;
         if (!aLast && !bLast) return 0;
         if (!aLast) return 1;
         if (!bLast) return -1;
@@ -2210,7 +2219,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       return displayName(a).localeCompare(displayName(b));
     });
     return sorted;
-  }, [activeContacts, query, sortBy, encounters, filterRoles, filterPositions, filterHosts, filterDrives]);
+  }, [activeContacts, query, sortBy, encounters, encounterSummaries, filterRoles, filterPositions, filterHosts, filterDrives]);
 
   return (
     <div>
@@ -2381,7 +2390,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "0 16px 100px" }}>
-          {filtered.map((c) => <ContactCard key={c.id} contact={c} onOpen={onOpen} T={T} encounters={encounters} anonymise={anonymise} inactiveThresholdDays={inactiveThresholdDays}
+          {filtered.map((c) => <ContactCard key={c.id} contact={c} onOpen={onOpen} T={T} summary={encounterSummaries.get(c.id) || EMPTY_ENCOUNTER_SUMMARY} anonymise={anonymise} inactiveThresholdDays={inactiveThresholdDays}
             activeFilters={activeFilterCount > 0 ? { roles: filterRoles, positions: filterPositions, hosts: filterHosts, drives: filterDrives } : null}
             selectMode={selectMode} selected={selectedIds.includes(c.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }}
             onToggleFavourite={(id) => { ContactRepository.update(id, { favourited: !c.favourited }); refresh(); }} />)}
