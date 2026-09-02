@@ -208,10 +208,13 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
       {/* FIXED — real gap this round's darker healthcare green surfaced:
           this screen's background is always dark (#1B1B1F) regardless
           of the app's own light/dark preference, so it needs the
-          bright dark-mode companion unconditionally, not the raw
-          (now much darker) ACCENTS.healthcare — same value every
-          Healthcare-tab screen uses in dark mode, see designTokens.js. */}
-      <button onClick={attempt} style={{ padding: "10px 24px", borderRadius: 999, border: "none", background: "#5EDE9A", color: "#1B1B1F", fontWeight: 700, cursor: "pointer" }}>
+          dark-mode companion unconditionally, not the raw (now much
+          darker) ACCENTS.healthcare — same value every Healthcare-tab
+          screen uses in dark mode, see designTokens.js. That companion
+          is deliberately chosen to stay dark enough for white text
+          (not just bright enough to show against near-black) — same
+          reasoning as every other Healthcare-tab button. */}
+      <button onClick={attempt} style={{ padding: "10px 24px", borderRadius: 999, border: "none", background: "#0E8144", color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
         Unlock
       </button>
     </div>

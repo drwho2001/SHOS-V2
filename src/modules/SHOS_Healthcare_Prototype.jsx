@@ -79,7 +79,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // green" default fails badly reused unmodified against the dark
   // surface (2.13:1, checked). Same resolveDarkAccent + hand-picked
   // companion every other Healthcare-tab file now uses.
-  const T = { healthcareBlue: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#5EDE9A") : ACCENTS.healthcare, border: N.border, textSecondary: N.textSecondary, surface: N.surface, bg: N.bg };
+  const T = { healthcareBlue: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare, border: N.border, textSecondary: N.textSecondary, surface: N.surface, bg: N.bg };
   const [menstrualTrackingEnabled] = useState(() => AppPreferencesRepository.getPreferences().menstrualTrackingEnabled);
 
   // ADDED — real ask: Healthcare was "bland vs Home/Medication" —

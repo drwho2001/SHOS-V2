@@ -103,11 +103,25 @@ export const NEUTRAL_DARK = {
 //   the SAME value reused unmodified on the dark-mode surface (as it
 //   was until now) reads too flat there (a real, checked number:
 //   2.13:1, well under the 3:1 floor) — so healthcare now gets its own
-//   hand-picked dark-mode companion, "#5EDE9A", the exact same pattern
-//   Encounters already uses below for the identical reason. See every
+//   hand-picked dark-mode companion, the exact same pattern Encounters
+//   already uses below for the identical reason. See every
 //   `resolveDarkAccent("healthcare", ...)` call site — now passes that
 //   companion as its third argument instead of defaulting to the same
 //   (too-dark-for-dark-mode) value.
+//
+// CHANGED again — the FIRST companion picked, "#5EDE9A", was tuned
+// only for one job (bright enough against the near-black surface) and
+// broke a second one: T.healthcareBlue is ALSO used everywhere as a
+// SOLID FILL with white text/icons on top (every Healthcare-tab sheet
+// header, Save/Add button, and "+" FAB — a genuinely widespread
+// pattern, not a one-off). A companion that bright can't hold white
+// text (2.13:1, checked) — it wasn't rejected on looks alone ("ew
+// mint"), it was actually broken. The real fix is a SINGLE value that
+// clears BOTH bars at once: ≥3:1 against the dark surface AND ≥4.5:1
+// under white text. That window exists (checked directly, not
+// guessed) — "#0E8144" sits in it (white text 4.95:1, dark-surface
+// 3.43:1), so every Healthcare-tab dark-mode fill and icon can keep
+// using the one value, no per-site text-color branching needed.
 const DEFAULT_ACCENTS = {
   contacts: "#B36205",
   encounters: "#7F30A6",
