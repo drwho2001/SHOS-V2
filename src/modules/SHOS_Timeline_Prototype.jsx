@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, WarningIcon as AlertTriangle, TrashIcon as Trash2, ArchiveIcon as Archive, ArrowsClockwiseIcon as RefreshCcw } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, WarningIcon as AlertTriangle, TrashIcon as Trash2, ArchiveIcon as Archive, ArrowsClockwiseIcon as RefreshCcw, ChatCircleTextIcon as MessageSquare, CopyIcon as Copy } from "@phosphor-icons/react";
 import { EpisodeRepository, RESOLUTION_OPTIONS } from "../repositories/episodeRepository";
 // ADDED 19 Aug 2026 — TRIGGER_REASON_OPTIONS now lives here, real
 // in-app editable option list.
@@ -9,6 +9,7 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { ResultsRegistry } from "../registries/resultsRegistry";
+import { OrganismRegistry } from "../registries/organismRegistry";
 import { getEncounterCoverage } from "../calculations/exposureWindows";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
@@ -57,6 +58,85 @@ function symptomLogLabel(s) {
 function testIsPositive(t) {
   const names = (t.resultIds || []).map((id) => ResultsRegistry.getById(id)?.name).filter(Boolean);
   return names.some((n) => n.toLowerCase() === "positive");
+}
+
+// ADDED 2 Sep 2026 — real ask: "partner notification message helper",
+// previously declined ("hold off on #2") and now built, last in this
+// batch. A draft message the user can copy and send themselves — this
+// app never sends anything on its own behalf (matches its whole "your
+// data never leaves your device unless you export/share it" stance).
+// Pure text-building only, no repository access — the caller resolves
+// infectionNames (or passes none) so this stays testable/predictable.
+// Generic by default: real partner-notification guidance (and this
+// episode feature's own existing privacy design — see
+// episodeRepository.js's own comment on why the trigger is a category,
+// not a live Contact relation) treats naming the exact result as the
+// discloser's choice to make explicitly, not an app default. Never
+// names WHO is being notified or WHO told the user — the message is
+// first-person, sent by the user themselves, so it needs neither.
+function buildPartnerMessage(includeInfection, infectionNames) {
+  const what = includeInfection && infectionNames.length > 0
+    ? infectionNames.join(", ")
+    : "an STI";
+  return `Hi — wanted to give you a heads up: I recently tested positive for ${what}, and based on when we last met up, you may have been exposed. It's worth getting tested soon, even without symptoms. No need to say who let you know — just wanted you to have the chance to take care of yourself.`;
+}
+
+// Small, self-contained draft-and-copy sheet — same
+// generate/edit/copy shape as My Profile's own share-text flow
+// (navigator.clipboard.writeText, try/catch, a plain status line), so
+// this reads as the same kind of tool rather than a new pattern.
+function PartnerMessageHelper({ infectionNames, T }) {
+  const [open, setOpen] = useState(false);
+  const [includeInfection, setIncludeInfection] = useState(false);
+  const [draft, setDraft] = useState(() => buildPartnerMessage(false, infectionNames));
+  const [status, setStatus] = useState(null);
+
+  const regenerate = (nextIncludeInfection) => {
+    setIncludeInfection(nextIncludeInfection);
+    setDraft(buildPartnerMessage(nextIncludeInfection, infectionNames));
+    setStatus(null);
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(draft);
+      setStatus({ ok: true, msg: "Copied — paste it into a message to send." });
+    } catch {
+      setStatus({ ok: false, msg: "Couldn't copy automatically — select and copy the text manually." });
+    }
+  };
+
+  if (!open) {
+    return (
+      <div onClick={() => setOpen(true)} style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: T.healthcareBlue, cursor: "pointer" }}>
+        <MessageSquare size={14} /> Draft a heads-up message
+      </div>
+    );
+  }
+  return (
+    <div style={{ marginTop: 10, padding: 12, borderRadius: radius.md, border: `1px solid ${T.border}`, background: T.surfaceVariant }}>
+      <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 8 }}>
+        A draft only — nothing sends automatically, and it never names who's being notified or who told you. Edit it however you like before sending it yourself.
+      </div>
+      {infectionNames.length > 0 && (
+        <div onClick={() => regenerate(!includeInfection)} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer" }}>
+          <div style={{ width: 34, height: 20, borderRadius: radius.full, background: includeInfection ? T.healthcareBlue : T.border, position: "relative", flexShrink: 0 }}>
+            <div style={{ width: 16, height: 16, borderRadius: radius.full, background: "#FFFFFF", position: "absolute", top: 2, left: includeInfection ? 16 : 2, transition: "left 120ms ease" }} />
+          </div>
+          <span style={{ fontSize: 12, color: T.textPrimary }}>Name the specific result ({infectionNames.join(", ")})</span>
+        </div>
+      )}
+      <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={5}
+        style={{ width: "100%", padding: 10, borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
+      <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
+        <button onClick={copy} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 999, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+          <Copy size={13} /> Copy
+        </button>
+        <span onClick={() => setOpen(false)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>Close</span>
+        {status && <span style={{ fontSize: 11, color: status.ok ? T.actionGreen : T.actionRed }}>{status.msg}</span>}
+      </div>
+    </div>
+  );
 }
 
 function SectionCard({ title, T, children }) {
@@ -196,6 +276,12 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
 
   const linkedTests = episode.testIds.map((id) => TestingRepository.getById(id)).filter(Boolean);
   const hasPositive = linkedTests.some(testIsPositive);
+  // ADDED 2 Sep 2026 — real ask: partner-notification message helper.
+  // Pulled from the positive test(s)' own linked organism(s), same
+  // real data the app already tracks — never invented or guessed.
+  const infectionNames = [...new Set(
+    linkedTests.filter(testIsPositive).flatMap((t) => t.organismIds || []).map((id) => OrganismRegistry.getById(id)?.name).filter(Boolean)
+  )];
 
   const update = (changes) => { EpisodeRepository.update(episodeId, changes); setRefreshKey((k) => k + 1); };
 
@@ -331,6 +417,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
                   </div>
                 );
               })}
+              <PartnerMessageHelper infectionNames={infectionNames} T={T} />
             </div>
           )}
         </SectionCard>
