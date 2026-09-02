@@ -25,7 +25,7 @@
 // that relationship visible rather than picking an arbitrary new hue.
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { UserIcon as User, DownloadSimpleIcon as Download, CopyIcon as Copy, CheckIcon as Check, XIcon as X, CaretLeftIcon as ChevronLeft, ShareNetworkIcon as Share, MessengerLogoIcon as MessengerLogo, TelegramLogoIcon as TelegramLogo, InstagramLogoIcon as InstagramLogo, WhatsappLogoIcon as WhatsappLogo, XLogoIcon as XLogo, SnapchatLogoIcon as SnapchatLogo } from "@phosphor-icons/react";
+import { UserIcon as User, DownloadSimpleIcon as Download, CopyIcon as Copy, CheckIcon as Check, XIcon as X, CaretLeftIcon as ChevronLeft, ShareNetworkIcon as Share, MessengerLogoIcon as MessengerLogo, TelegramLogoIcon as TelegramLogo, InstagramLogoIcon as InstagramLogo, WhatsappLogoIcon as WhatsappLogo, XLogoIcon as XLogo, SnapchatLogoIcon as SnapchatLogo, CrosshairIcon as Crosshair } from "@phosphor-icons/react";
 
 // Same real-platform-logo lookup as Contacts' own copy (self-contained
 // per this app's convention — duplicated, not imported). Grindr has no
@@ -44,6 +44,7 @@ function platformIconFor(tag) {
 }
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository";
 import { TestingRepository } from "../repositories/testingRepository";
+import { getCurrentLocationPlace } from "../storage/locationService";
 import {
   buildProfileShare, exportProfileShare,
 } from "../storage/profileShareService";
@@ -193,6 +194,107 @@ function SuggestField({ label, value, onChange, options, onAddNew, T, placeholde
         onKeyDown={(e) => { if (e.key === "Enter" && value && value.trim()) { e.preventDefault(); onAddNew(value.trim()); e.target.blur(); } }}
         placeholder={placeholder} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+    </div>
+  );
+}
+
+// ADDED — real ask: wire My Profile's City field up to the same
+// Nominatim service Contacts' own AddressAutocomplete already uses,
+// for "use current location" + typed search-as-you-go suggestions.
+// Deliberately NOT a copy of Contacts' AddressAutocomplete: this field
+// stays city-only by design (see its placeholder text below) — a
+// profile shared with a partner is a materially more sensitive
+// audience for a full home address than a Contact's own private
+// record, so both the typed-search results and "use current location"
+// extract just the city name from Nominatim's response, never the
+// full display_name/address.
+function CityAutocomplete({ label, value, onChange, T, placeholder }) {
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const debounceRef = useRef(null);
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState("");
+
+  const cityFromPlace = (place) =>
+    place.address?.city || place.address?.town || place.address?.village || place.address?.suburb || place.display_name?.split(",")[0];
+
+  const useCurrentLocation = async () => {
+    setLocating(true);
+    setLocateError("");
+    try {
+      const place = await getCurrentLocationPlace();
+      const city = cityFromPlace(place);
+      if (city) onChange(city);
+      setResults([]);
+      setOpen(false);
+    } catch (err) {
+      setLocateError(err.message);
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  const handleChange = (text) => {
+    onChange(text);
+    setOpen(true);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (text.trim().length < 3) { setResults([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&addressdetails=1&limit=5`);
+        const data = await res.json();
+        const cities = Array.isArray(data) ? data.map((place) => ({ place, city: cityFromPlace(place) })).filter((r) => r.city) : [];
+        // Same city can come back from multiple Nominatim results (a
+        // city plus its named districts) — dedupe by the label actually
+        // shown, not the raw result count.
+        const seen = new Set();
+        setResults(cities.filter((r) => (seen.has(r.city) ? false : (seen.add(r.city), true))));
+      } catch (err) {
+        console.error("City lookup failed:", err);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 600);
+  };
+
+  const pick = (result) => {
+    onChange(result.city);
+    setResults([]);
+    setOpen(false);
+  };
+
+  return (
+    <div style={{ padding: "8px 0", position: "relative" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
+        <span onClick={locating ? undefined : useCurrentLocation}
+          style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: T.contactsTeal, cursor: locating ? "default" : "pointer", opacity: locating ? 0.6 : 1 }}>
+          <Crosshair size={12} weight="bold" /> {locating ? "Locating…" : "Use current location"}
+        </span>
+      </div>
+      {locateError && <div style={{ fontSize: 11, color: T.actionRed, marginBottom: 4 }}>{locateError}</div>}
+      <input value={value ?? ""} onChange={(e) => handleChange(e.target.value)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={placeholder} aria-label={label}
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+      {open && (loading || results.length > 0) && (
+        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, marginTop: 2, zIndex: 10, maxHeight: 220, overflowY: "auto", boxShadow: "0 4px 16px rgba(0,0,0,.15)" }}>
+          {loading && <div style={{ padding: 10, fontSize: 12, color: T.textDisabled }}>Searching…</div>}
+          {results.map((r) => (
+            <div key={r.place.place_id} onMouseDown={() => pick(r)}
+              style={{ padding: "8px 10px", fontSize: 12, color: T.textPrimary, cursor: "pointer", borderBottom: `1px solid ${T.border}` }}>
+              {r.city}
+            </div>
+          ))}
+          {results.length > 0 && (
+            <div style={{ padding: "6px 10px", fontSize: 10, color: T.textDisabled, textAlign: "right" }}>© OpenStreetMap contributors</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -774,7 +876,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
               T={T} items={allContacts} placeholder="No contacts yet — add one under Contacts first" />
           )}
           <AgeField age={form.age} onChangeAge={set("age")} T={T} />
-          <TextField label="City" value={form.city} onChange={set("city")} T={T} placeholder="Deliberately city, not full address — see privacy note" />
+          <CityAutocomplete label="City" value={form.city} onChange={set("city")} T={T} placeholder="Start typing a city, or use current location" />
         </SectionCard>
 
         <SectionCard title="Find me on" T={T}>
