@@ -348,7 +348,13 @@ function TagInput({ label, value, onChange, T, placeholder }) {
   const commit = () => {
     const raw = draft.trim();
     if (!raw) return;
-    const parts = raw.split(",").map((t) => t.trim()).filter((t) => t && !value.includes(t));
+    // CHANGED — was `!value.includes(t)`, a case-SENSITIVE exact check,
+    // so a case-variant re-type (e.g. "penicillin" when "Penicillin" is
+    // already listed) slipped past this filter, then also past
+    // findClosestMatch below (which intentionally returns null on an
+    // exact case-insensitive match — see fuzzyMatch.js), landing as a
+    // silent duplicate entry.
+    const parts = raw.split(",").map((t) => t.trim()).filter((t) => t && !value.some((v) => v.toLowerCase() === t.toLowerCase()));
     if (parts.length === 1) {
       const match = findClosestMatch(value, parts[0]);
       if (match) {

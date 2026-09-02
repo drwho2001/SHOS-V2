@@ -212,7 +212,14 @@ export const CustomOptionListsRepository = {
   add(name, value) {
     const trimmed = (value || "").trim();
     const current = this.get(name);
-    if (!trimmed || current.includes(trimmed)) return current;
+    // CHANGED — was a case-SENSITIVE `current.includes(trimmed)` check,
+    // so typing "male" when "Male" already existed silently added a
+    // second, differently-cased option to the shared suggestion list
+    // (audited app-wide across every SuggestField/VaccineField caller —
+    // Gender, RelationshipType, Contraception, Vaccine, Medication
+    // Category — none of which guard against this themselves). Fixing
+    // it once here, at the single shared write path, covers all of them.
+    if (!trimmed || current.some((o) => o.toLowerCase() === trimmed.toLowerCase())) return current;
     lists = { ...lists, [name]: [...current, trimmed] };
     persist();
     return lists[name];

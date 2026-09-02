@@ -248,7 +248,13 @@ function ClinicianField({ value, onChange, T }) {
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
   const addClinician = (name) => {
     const trimmed = name.trim();
-    if (!trimmed || value.includes(trimmed)) { setDraft(""); return; }
+    // CHANGED — was a case-SENSITIVE `value.includes(trimmed)` check, so
+    // re-typing a clinician's name in different casing (e.g. "dr smith"
+    // when "Dr Smith" is already on this visit) slipped past it, then
+    // also past findClosestMatch below (which returns null on an exact
+    // case-insensitive match — see fuzzyMatch.js), landing as a silent
+    // duplicate clinician entry on the same visit.
+    if (!trimmed || value.some((v) => v.toLowerCase() === trimmed.toLowerCase())) { setDraft(""); return; }
     const match = findClosestMatch([...known, ...value], trimmed);
     if (match) {
       setPendingSuggestion({ typedAs: trimmed, suggestion: match });
