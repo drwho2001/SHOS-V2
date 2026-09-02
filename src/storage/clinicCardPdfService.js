@@ -32,6 +32,10 @@ import { formatRelativeDate, sortByDateDesc } from "../calculations/encounterCal
 import { MyProfileRepository } from "../repositories/myProfileRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
+import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
+import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository";
+import { ContraceptionRepository } from "../repositories/contraceptionRepository";
+import { PregnancyRepository } from "../repositories/pregnancyRepository";
 import { exportBinaryFile } from "./fileExportHelper";
 
 const MARGIN = 44;
@@ -73,6 +77,25 @@ function assembleClinicCardData() {
     return resultNames.some((r) => r.toLowerCase() === "positive") && !t.followUpActionedDate;
   }).map((t) => ({ title: (t.testingFor || []).join(", ") || t.title || "Positive result", subtitle: `${formatRelativeDate(t.date)} · awaiting follow-up` }));
 
+  // ADDED 2 Sep 2026 — mirrors SHOS_ClinicCard_Prototype.jsx's own
+  // "Menstrual & contraception" section exactly, sensitive-flag mask
+  // included — see that file's comment for the full reasoning.
+  const menstrualTrackingEnabled = AppPreferencesRepository.getPreferences().menstrualTrackingEnabled;
+  const activePregnancyRaw = menstrualTrackingEnabled ? PregnancyRepository.getActive() : null;
+  const activePregnancy = activePregnancyRaw && !activePregnancyRaw.sensitive ? activePregnancyRaw : null;
+  const lastPeriod = menstrualTrackingEnabled
+    ? [...MenstrualCycleRepository.getAll().filter((c) => !c.isArchived)].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0] || null
+    : null;
+  const activeContraception = menstrualTrackingEnabled ? ContraceptionRepository.getActive() : [];
+  const menstrualContraception = [
+    ...(activePregnancy ? [{ title: "Currently pregnant", subtitle: activePregnancy.estimatedDueDate ? `Due ${formatRelativeDate(activePregnancy.estimatedDueDate)}` : "Ongoing", alert: true }] : []),
+    ...activeContraception.map((c) => {
+      const overdue = c.nextDueDate && new Date(c.nextDueDate) < new Date();
+      return { title: c.method, subtitle: c.nextDueDate ? `${overdue ? "Overdue since" : "Next due"} ${formatRelativeDate(c.nextDueDate)}` : "Ongoing", alert: overdue };
+    }),
+    ...(lastPeriod && !activePregnancy ? [{ title: "Last period", subtitle: `${formatRelativeDate(lastPeriod.startDate)}${lastPeriod.endDate ? "" : " (ongoing)"}` }] : []),
+  ];
+
   return {
     profile,
     identity: [
@@ -97,6 +120,8 @@ function assembleClinicCardData() {
     }),
     recentTests,
     currentTreatment,
+    menstrualContraception,
+    menstrualTrackingEnabled,
     activeSymptoms: activeSymptoms.map((s) => ({
       title: s.title,
       subtitle: [nameFrom(SymptomsRegistry, s.symptomId), s.severity, formatRelativeDate(s.dateStarted), s.dateResolved ? `resolved ${formatRelativeDate(s.dateResolved)}` : null].filter(Boolean).join(" · "),
@@ -212,6 +237,9 @@ export async function generateClinicCardPdf(visibility) {
   section("vaccinations", "Vaccinations", data.vaccinations, "None recorded yet.", data.vaccinations.length);
   section("testing", "Recent STI testing", data.recentTests, "No tests logged yet.");
   section("treatment", "Current treatment", data.currentTreatment, "Nothing currently awaiting follow-up.");
+  if (data.menstrualTrackingEnabled) {
+    section("menstrualContraception", "Menstrual & contraception", data.menstrualContraception, "Nothing logged yet.");
+  }
   section("symptoms", "Active symptoms", data.activeSymptoms, "Nothing active right now.");
   section("encounters", "Recent encounters", data.recentEncounters, "No encounters logged yet.", data.recentEncounters.length);
   section("emergency", "Emergency information", data.emergency, "None recorded.");

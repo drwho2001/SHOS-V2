@@ -27,6 +27,12 @@ export const CLINIC_CARD_SECTIONS = [
   { key: "vaccinations", label: "Vaccinations" },
   { key: "testing", label: "Recent STI testing" },
   { key: "treatment", label: "Current treatment" },
+  // ADDED 2 Sep 2026 — real ask: contraception/pregnancy/menstruation
+  // context on the shareable clinic summary. Only ever offered as a
+  // toggle when the user has menstrual tracking on at all (see
+  // SHOS_ClinicCard_Prototype.jsx) — this key exists here regardless
+  // so a later re-enable doesn't lose whatever they'd set it to.
+  { key: "menstrualContraception", label: "Menstrual & contraception" },
   { key: "symptoms", label: "Active symptoms" },
   { key: "encounters", label: "Recent encounters" },
   { key: "emergency", label: "Emergency information" },

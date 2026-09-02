@@ -16,6 +16,10 @@ import { useClinicCardVisibility, CLINIC_CARD_SECTIONS } from "../calculations/c
 import { MyProfileRepository } from "../repositories/myProfileRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
+import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
+import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository";
+import { ContraceptionRepository } from "../repositories/contraceptionRepository";
+import { PregnancyRepository } from "../repositories/pregnancyRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
@@ -258,6 +262,26 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // the rest of this screen.
   const activeSymptoms = SymptomLogRepository.getActive();
 
+  // ADDED 2 Sep 2026 — real ask: "clinic cards may want some
+  // information about contraception and/or pregnancy and/or
+  // menstruation" — genuinely relevant clinical context (contraception
+  // interacts with treatment choices, an active pregnancy changes what
+  // testing/treatment is safe) that this screen had zero coverage of.
+  // Same "skip entirely when off" gating Home's own dashboard already
+  // uses — nothing real to show, and no reason to read three
+  // repositories, when the user doesn't use this feature at all.
+  const menstrualTrackingEnabled = AppPreferencesRepository.getPreferences().menstrualTrackingEnabled;
+  // Respects the same sensitive/masked flag the Menstrual & Contraception
+  // module itself already offers per-entry — a pregnancy the user has
+  // deliberately masked there doesn't surface on a screen built to be
+  // shown to someone else.
+  const activePregnancyRaw = menstrualTrackingEnabled ? PregnancyRepository.getActive() : null;
+  const activePregnancy = activePregnancyRaw && !activePregnancyRaw.sensitive ? activePregnancyRaw : null;
+  const lastPeriod = menstrualTrackingEnabled
+    ? [...MenstrualCycleRepository.getAll().filter((c) => !c.isArchived)].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0] || null
+    : null;
+  const activeContraception = menstrualTrackingEnabled ? ContraceptionRepository.getActive() : [];
+
   // CHANGED 19 Aug 2026 — real data, Vaccination Record now exists.
   // Shows recent vaccinations plus any overdue boosters/next-dues in
   // red — same Action State convention as the rest of this screen.
@@ -467,6 +491,28 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         {currentTreatment.length === 0 ? <EmptyRow T={T}>Nothing currently awaiting follow-up.</EmptyRow> : currentTreatment.map((t) => (
           <Row T={T} key={t.id} title={t.title} subtitle={t.subtitle} alert onTap={() => setPendingNav({ tab: "healthcare", subTab: "testing", recordId: t.id, label: t.title, moduleLabel: "Testing" })} />
         ))}
+      </SectionCard>
+
+        </>
+      )}
+
+      {visibility.menstrualContraception && menstrualTrackingEnabled && (
+        <>
+      <SectionHeader T={T} onTap={() => goTo("healthcare", "menstrualHealth")}>Menstrual & contraception</SectionHeader>
+      <SectionCard T={T}>
+        {activePregnancy && (
+          <Row T={T} title="Currently pregnant" subtitle={activePregnancy.estimatedDueDate ? `Due ${formatRelativeDate(activePregnancy.estimatedDueDate)}` : "Ongoing"} alert onTap={() => setPendingNav({ tab: "healthcare", subTab: "menstrualHealth", recordId: activePregnancy.id, label: "Pregnancy", moduleLabel: "Menstrual & contraception" })} />
+        )}
+        {activeContraception.length === 0 && !lastPeriod && !activePregnancy && <EmptyRow T={T}>Nothing logged yet.</EmptyRow>}
+        {activeContraception.map((c) => {
+          const overdue = c.nextDueDate && new Date(c.nextDueDate) < new Date();
+          return (
+            <Row T={T} key={c.id} title={c.method} subtitle={c.nextDueDate ? `${overdue ? "Overdue since" : "Next due"} ${formatRelativeDate(c.nextDueDate)}` : "Ongoing"} alert={overdue} onTap={() => setPendingNav({ tab: "healthcare", subTab: "menstrualHealth", recordId: c.id, label: c.method, moduleLabel: "Menstrual & contraception" })} />
+          );
+        })}
+        {lastPeriod && !activePregnancy && (
+          <Row T={T} title="Last period" subtitle={`${formatRelativeDate(lastPeriod.startDate)}${lastPeriod.endDate ? "" : " (ongoing)"}`} onTap={() => setPendingNav({ tab: "healthcare", subTab: "menstrualHealth", recordId: lastPeriod.id, label: "Last period", moduleLabel: "Menstrual & contraception" })} />
+        )}
       </SectionCard>
 
         </>
