@@ -29,6 +29,21 @@ import { ACCENTS, ACTION, RADIUS, deriveLightAccent, resolveDarkAccent } from ".
 // at module scope — see medsBlue/healthcareColor/actionRedColor/
 // actionGreenColor/homeColor just after the darkMode hook.
 import { formatRelativeDate } from "../calculations/encounterCalculations";
+// ADDED — real ask: a "status at a glance" visual layer, the biggest
+// opportunity surfaced by comparing SHOS against similar apps (Natural
+// Cycles' day-status colour, XtrkR's adherence rings) — trading a
+// couple of Recent Activity's text rows for something glanceable.
+// Reuses the SAME calculations Settings' own Stats page already uses
+// (getTestingFrequencyStats, getOverallAdherence) rather than
+// inventing new logic — one source of truth for "days since last
+// test"/"adherence rate", not two that could drift. Deliberately NOT
+// a single blended "wellness/safety score" the way some comparable
+// apps do that — Architecture Lock's own "no automated clinical
+// decision-making" boundary (see testingCalculations.js's comment)
+// means each ring stays a plain fact about one thing, not a computed
+// judgment blending several into one number.
+import { getTestingFrequencyStats, getOverallAdherence, BASHH_TESTING_INTERVAL_DAYS } from "../calculations/statsCalculations";
+import { computeAdherence } from "../calculations/medicationCalculations";
 import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService";
 import { checkForUpdate, RELEASE_APK_URL } from "../storage/updateCheckService";
 import {
@@ -99,6 +114,11 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   const [lastEncounter, setLastEncounter] = useState(null);
   const [lastDose, setLastDose] = useState(null);
   const [lastTest, setLastTest] = useState(null);
+  // ADDED — status-ring data, computed from the same real repository
+  // reads already happening in the mount effect below (tests/meds),
+  // not a second separate fetch.
+  const [testingStats, setTestingStats] = useState(null);
+  const [adherence, setAdherence] = useState(null);
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showClinicCard, setShowClinicCard] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
@@ -215,6 +235,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     setLastEncounter(sortedEncounters[0] || null);
 
     const meds = MedicationRepository.getAll();
+    // FIXED — real bug caught in testing: computeAdherence() reads
+    // med.logs directly (confirmed by reading SHOS_Medication_Dashboard_
+    // Prototype.jsx's own loadMedications(), the only other caller) —
+    // MedicationRepository.getAll() alone doesn't include it, logs live
+    // in their own repository keyed by medicationId. Same enrichment
+    // step that file already does before calling computeAdherence,
+    // reused here rather than assumed.
+    const medsWithLogs = meds.map((med) => ({ ...med, logs: LogRepository.getForMedication(med.id) }));
+    setAdherence(getOverallAdherence(medsWithLogs, computeAdherence));
     const doseLogs = LogRepository.getAll().filter((l) => l.type === "dose" && !l.voided);
     const sortedLogs = [...doseLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
     const lastLog = sortedLogs[0];
@@ -247,6 +276,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
     const sortedTests = [...tests].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
     setLastTest(sortedTests[0] || null);
+    setTestingStats(getTestingFrequencyStats(tests));
 
     // CHANGED — real bug from the user's own testing ("Next clinic visit
     // is displaying incorrect or incomplete data"): this used to filter
@@ -342,6 +372,33 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // CHANGED 26 Aug 2026 — real ask: value should always be black
   // (was teal on clickable rows), label should be its own module's
   // colour (was flat gray for every row regardless of what it's about).
+  // ADDED — real ask: a glanceable ring status, replacing raw numbers
+  // with a visual proportion (see this file's own import comment for
+  // why). `pct` is clamped to [0,100] — a testing gap well past the
+  // 90-day benchmark still shows as a full ring, not an overflowing
+  // one. Deliberately no built-in colour-by-goodness here: the caller
+  // decides `color` (e.g. shifting to the app's own existing overdue-
+  // red convention for testing, staying in the module's own identity
+  // colour unconditionally for adherence) — this component itself
+  // stays a plain, neutral rendering of a percentage.
+  const StatusRing = ({ pct, color, centerText, caption, onClick }) => {
+    const size = 64, stroke = 6, r = (size - stroke) / 2, c = 2 * Math.PI * r;
+    const clamped = Math.max(0, Math.min(100, pct));
+    const offset = c * (1 - clamped / 100);
+    return (
+      <div onClick={onClick} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, cursor: onClick ? "pointer" : "default", flex: 1 }}>
+        <div style={{ position: "relative", width: size, height: size }}>
+          <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={darkMode ? DARK.surfaceVariant : "#E7E7EB"} strokeWidth={stroke} />
+            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 300ms ease" }} />
+          </svg>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{centerText}</div>
+        </div>
+        <span style={{ fontSize: 11, fontWeight: 600, color: color, textAlign: "center" }}>{caption}</span>
+      </div>
+    );
+  };
+
   const SummaryRow = ({ label, value, onClick, moduleColor }) => (
     <div onClick={onClick} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: onClick ? "pointer" : "default" }}>
       <span style={{ fontSize: 13, color: moduleColor || "#5B5B62", fontWeight: 600 }}>{label}</span>
@@ -440,6 +497,31 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             </div>
           </div>
         </div>
+      )}
+
+      {/* ADDED — real ask: "status at a glance" visual layer — see this
+          file's own import comment for the full reasoning. Only shown
+          once there's real data for at least one ring (same "not
+          enough data" honesty as everywhere else in this app — no
+          empty/zero rings on a fresh install). */}
+      {(testingStats?.testCount > 0 || adherence != null) && (
+        <>
+          <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Status at a glance</div>
+          <div style={{ display: "flex", gap: 8, background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: "16px 8px", marginBottom: 24 }}>
+            {testingStats?.testCount > 0 && testingStats.daysSinceLast != null && (
+              <StatusRing
+                pct={(testingStats.daysSinceLast / BASHH_TESTING_INTERVAL_DAYS) * 100}
+                color={testingStats.withinBashhInterval === false ? actionRedColor : healthcareColor}
+                centerText={`${testingStats.daysSinceLast}d`}
+                caption={testingStats.withinBashhInterval === false ? "Testing — overdue" : "Last test"}
+                onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined}
+              />
+            )}
+            {adherence != null && (
+              <StatusRing pct={adherence} color={medsBlue} centerText={`${adherence}%`} caption="7-day adherence" />
+            )}
+          </div>
+        </>
       )}
 
       <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Recent activity</div>
