@@ -27,8 +27,10 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 // on DEFAULT_TEST with no UI anywhere. Same fix pattern as linkedVisits
 // above — Symptom Log's own relatedTestIds is the real source of truth
 // (its own RelationPicker already lets a user link a test from that
-// side), so this is a read-only reverse lookup, not a second editable
-// field for the same relationship.
+// side too), so linking/unlinking from Testing's side (see
+// linkSymptom/unlinkSymptom in TestEditSheet) writes into THAT array
+// rather than adding a second, unsynced field for the same relationship
+// — exactly the linkedTestIds/linkedVisits precedent above.
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 // ADDED — Measurements inline entry point, same "one room, three
 // doors" reasoning as Clinic Visits' own — CD4/viral load from a test
@@ -435,7 +437,12 @@ function AttachmentManager({ testId, attachments, onChanged, T }) {
 // RelationPicker (SymptomLog/ClinicVisits), replacing the bare native
 // <select> below — at most the 3 most recent shown by default, search
 // beyond that (matches name or clinician).
-function ClinicVisitLinkPicker({ items, onPick, T }) {
+// RENAMED from ClinicVisitLinkPicker — genuinely generic already (only
+// ever touched items/onPick/T), now reused for the symptom-entry link
+// picker below too. Same-file reuse, not a cross-module import, so this
+// doesn't break the app's own "don't share cross-cutting helpers across
+// files" convention.
+function LinkPicker({ items, onPick, T, placeholder = "Search by name…" }) {
   const [query, setQuery] = useState("");
   const queryLower = query.trim().toLowerCase();
   const visible = queryLower
@@ -444,7 +451,7 @@ function ClinicVisitLinkPicker({ items, onPick, T }) {
   return (
     <div>
       {items.length > 3 && (
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or clinician…"
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={placeholder}
           style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
       )}
       {visible.length > 0 ? (
@@ -516,6 +523,33 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
     if (!visit) return;
     ClinicVisitsRepository.update(visitId, { linkedTestIds: (visit.linkedTestIds || []).filter((id) => id !== testId) });
     setLinkVersion((v) => v + 1);
+  };
+  // CHANGED — real ask, after shipping this as read-only: link/unlink
+  // symptom entries directly from Testing too, same shape as
+  // linkVisit/unlinkVisit above — Symptom Log's own relatedTestIds
+  // stays the single source of truth (still not a second, unsynced
+  // field), this just adds a second EDITABLE entry point into it,
+  // exactly like Clinic Visits' linkedTestIds already has.
+  const [symptomLinkVersion, setSymptomLinkVersion] = useState(0);
+  const linkedSymptoms = useMemo(() => (testId ? SymptomLogRepository.getAll().filter((s) => (s.relatedTestIds || []).includes(testId)) : []), [testId, symptomLinkVersion]);
+  const unlinkedSymptoms = useMemo(() => {
+    if (!testId) return [];
+    return SymptomLogRepository.getAll()
+      .filter((s) => !(s.relatedTestIds || []).includes(testId))
+      .sort((a, b) => new Date(b.dateStarted || 0) - new Date(a.dateStarted || 0))
+      .map((s) => ({ id: s.id, name: `${s.title || "Symptom entry"} · ${formatDate(s.dateStarted)}`, searchText: "" }));
+  }, [testId, symptomLinkVersion]);
+  const linkSymptom = (symptomId) => {
+    const entry = SymptomLogRepository.getById(symptomId);
+    if (!entry) return;
+    SymptomLogRepository.update(symptomId, { relatedTestIds: [...(entry.relatedTestIds || []), testId] });
+    setSymptomLinkVersion((v) => v + 1);
+  };
+  const unlinkSymptom = (symptomId) => {
+    const entry = SymptomLogRepository.getById(symptomId);
+    if (!entry) return;
+    SymptomLogRepository.update(symptomId, { relatedTestIds: (entry.relatedTestIds || []).filter((id) => id !== testId) });
+    setSymptomLinkVersion((v) => v + 1);
   };
   // ADDED 19 Aug 2026 — real in-app editable option list.
   const sampleTypeOptions = useMemo(() => CustomOptionListsRepository.get("sampleType"), []);
@@ -633,7 +667,33 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
               ) : (
                 <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>Not linked to a clinic visit yet.</div>
               )}
-              {unlinkedVisits.length > 0 && <ClinicVisitLinkPicker items={unlinkedVisits} onPick={linkVisit} T={T} />}
+              {unlinkedVisits.length > 0 && <LinkPicker items={unlinkedVisits} onPick={linkVisit} T={T} placeholder="Search by name or clinician…" />}
+            </div>
+          )}
+          {/* ADDED — real ask, upgrading the earlier read-only version:
+              link/unlink Symptom Log entries directly from here, same
+              shape as "Linked clinic visit" above. Symptom Log's own
+              relatedTestIds stays the one place this relationship is
+              actually stored — this only adds a second editable
+              entry point into it. */}
+          {!isNew && (
+            <div style={{ padding: "8px 0" }}>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Related symptom entries</div>
+              {linkedSymptoms.length > 0 ? (
+                linkedSymptoms.map((s) => (
+                  <div key={s.id} onClick={() => { onNavigateToRecord?.("healthcare", s.id, "symptomLog"); onClose(); }}
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer", marginBottom: 6, gap: 8 }}>
+                    <span style={{ fontSize: 13, color: T.healthcareBlue, fontWeight: 600 }}>{s.title || "Symptom entry"} · {formatDate(s.dateStarted)}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                      <X size={14} color={T.healthcareBlue} onClick={(e) => { e.stopPropagation(); unlinkSymptom(s.id); }} title="Remove link" />
+                      <ChevronRight size={14} color={T.healthcareBlue} />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>Not linked to a symptom entry yet.</div>
+              )}
+              {unlinkedSymptoms.length > 0 && <LinkPicker items={unlinkedSymptoms} onPick={linkSymptom} T={T} placeholder="Search by title…" />}
             </div>
           )}
           {/* ADDED 19 Aug 2026 — real feedback batch: a free-text

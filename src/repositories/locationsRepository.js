@@ -43,15 +43,23 @@ export const DEFAULT_LOCATION = {
 // ADDED 18 Aug 2026 — real feedback: Location needed visible quick-tap
 // suggestions (see RegistrySinglePicker in SHOS_Encounters_Prototype.jsx),
 // and the user named specific examples they wanted covered — seeding them here
-// rather than shipping an empty suggestion list on first use. "His" maps
-// to His House (the more common case); His Car exists as its own type
-// for when that distinction actually matters.
+// rather than shipping an empty suggestion list on first use.
+//
+// CHANGED — real gap found in a full-app audit: `type` was never
+// wired to any UI (see Settings' Locations screen for that fix), and
+// once it was, these 5 seed entries' `type` just parroted their own
+// `name` word-for-word ("Sauna" typed "Sauna", "Public" typed
+// "Public"...) — accurate but pointless with only one of each. `type`
+// earns its keep once there's more than one location of the same kind
+// (two different named saunas, "his place" vs a second guy's place,
+// both grouped under the same type) — left unset here so the field
+// doesn't look like a redundant echo of the name on a fresh install.
 let seedLocations = [
-  { ...DEFAULT_LOCATION, id: "location_001", name: "Home", type: "My House", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
-  { ...DEFAULT_LOCATION, id: "location_002", name: "His place", type: "🏠 His House", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
-  { ...DEFAULT_LOCATION, id: "location_003", name: "Sauna", type: "🛀 Sauna", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
-  { ...DEFAULT_LOCATION, id: "location_004", name: "Public", type: "🌲 Public", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
-  { ...DEFAULT_LOCATION, id: "location_005", name: "Car", type: "My Car", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
+  { ...DEFAULT_LOCATION, id: "location_001", name: "Home", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
+  { ...DEFAULT_LOCATION, id: "location_002", name: "His place", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
+  { ...DEFAULT_LOCATION, id: "location_003", name: "Sauna", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
+  { ...DEFAULT_LOCATION, id: "location_004", name: "Public", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
+  { ...DEFAULT_LOCATION, id: "location_005", name: "Car", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
 ];
 
 let locations = storage.load(STORAGE_KEY, seedLocations);
