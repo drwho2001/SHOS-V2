@@ -137,10 +137,40 @@ function SymptomSelect({ value, onChange, T }) {
 
   const remove = (id) => onChange(value.filter((v) => v !== id));
   const add = (id) => { if (!value.includes(id)) onChange([...value, id]); };
+  // ADDED 2 Sep 2026 — real bug: clicking a suggestion chip blurs the
+  // input first (native focus behaviour, fires before the chip's own
+  // click), which used to run commit() on whatever partial text was
+  // still typed — creating/adding a half-typed garbage entry, AND the
+  // state update that triggers can unmount/reflow the chip mid-click,
+  // losing the click event entirely. Net effect exactly as reported:
+  // "clicking suggestions only enters half typed text and not the
+  // clicked suggested tag." tapSuggestion() is the real click path —
+  // preventDefault on the chip's mousedown stops the blur (and so
+  // commit()) from ever firing for this interaction.
+  const tapSuggestion = (entry) => {
+    add(entry.id);
+    setDraft("");
+    setDidYouMean(null);
+  };
 
   const commit = () => {
     const raw = draft.trim();
     if (!raw || didYouMean) return;
+    // ADDED 2 Sep 2026 — real bug: "multi enter at once with commas
+    // broken" — every OTHER registry-backed picker in this app splits
+    // a comma-separated draft into multiple entries; this one treated
+    // the whole string as one symptom name, so "dysuria, discharge"
+    // became a single garbage registry entry literally named that.
+    const parts = raw.split(",").map((t) => t.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      parts.forEach((part) => {
+        const closest = findClosestMatch(allEntries.filter((e) => !value.includes(e.id)).map((e) => e.name), part);
+        const entry = SymptomsRegistry.findOrCreate(closest || part);
+        if (entry) add(entry.id);
+      });
+      setDraft("");
+      return;
+    }
     // A likely-typo match against an EXISTING entry (not already
     // selected) gets offered as a choice instead of silently creating
     // a near-duplicate — same reasoning KinkRegistry's own synonym
@@ -181,7 +211,7 @@ function SymptomSelect({ value, onChange, T }) {
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((e) => (
-            <div key={e.id} onClick={() => add(e.id)}
+            <div key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
               {e.name}
             </div>
@@ -191,13 +221,13 @@ function SymptomSelect({ value, onChange, T }) {
       <input value={draft} onChange={(ev) => setDraft(ev.target.value)}
         onKeyDown={(ev) => { if (ev.key === "Enter") { ev.preventDefault(); commit(); } }}
         onBlur={commit}
-        placeholder="Type to add or search"
+        placeholder="Type to add or search — comma-separated for more than one"
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
       {didYouMean && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, padding: "8px 10px", borderRadius: radius.sm, background: T.surfaceVariant, fontSize: 12 }}>
           <span style={{ color: T.textSecondary, flex: 1 }}>Did you mean "<span style={{ fontWeight: 700, color: T.textPrimary }}>{didYouMean.closest}</span>", already in the registry?</span>
-          <span onClick={acceptDidYouMean} style={{ color: T.healthcareBlue, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>Use it</span>
-          <span onClick={dismissDidYouMean} style={{ color: T.textDisabled, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>No, add "{didYouMean.raw}"</span>
+          <span onMouseDown={(ev) => ev.preventDefault()} onClick={acceptDidYouMean} style={{ color: T.healthcareBlue, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>Use it</span>
+          <span onMouseDown={(ev) => ev.preventDefault()} onClick={dismissDidYouMean} style={{ color: T.textDisabled, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>No, add "{didYouMean.raw}"</span>
         </div>
       )}
     </div>
