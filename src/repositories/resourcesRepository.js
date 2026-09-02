@@ -51,23 +51,32 @@ export const CATEGORY_LABELS = {
   mentalHealth: "Mental health",
 };
 
+// UPDATED 2 Sep 2026 — real ask: a second batch of the user's own
+// verified links/numbers, filling in entries that were seeded blank
+// (name only, no link yet) and adding genuinely new ones. Phone
+// numbers go in `notes` — same "URL or number, whatever the user
+// actually gave" honesty as everywhere else here, not invented.
 const SEED_ENTRIES = {
   domesticViolence: [
-    { name: "Refuge", link: "", notes: "" },
-    { name: "National Domestic Abuse Helpline", link: "https://www.nationaldahelpline.org.uk/", notes: "" },
-    { name: "Men's Advice Line", link: "", notes: "" },
+    { name: "Refuge", link: "https://refuge.org.uk/", notes: "" },
+    { name: "National Domestic Abuse Helpline", link: "https://www.nationaldahelpline.org.uk/", notes: "0808 2000 247" },
+    { name: "Men's Advice Line", link: "https://mensadviceline.org.uk/", notes: "0808 8010327" },
     { name: "Galop (LGBT+ anti-abuse charity)", link: "https://www.galop.org.uk/", notes: "" },
     { name: "NHS — help after rape and sexual assault", link: "https://www.nhs.uk/live-well/sexual-health/help-after-rape-and-sexual-assault/", notes: "" },
+    { name: "National Rape Crisis Helpline", link: "", notes: "0808 500 2222 — free, 24/7" },
+    { name: "Suzy Lamplugh Trust — National Stalking Helpline", link: "https://www.suzylamplugh.org/Pages/Category/national-stalking-helpline", notes: "0808 8020 300" },
   ],
   contraception: [
     { name: "NHS sexual health services", link: "", notes: "" },
-    { name: "Brook", link: "", notes: "" },
+    { name: "Brook", link: "https://www.brook.org.uk/topics/contraception/", notes: "" },
     { name: "SH:24 — emergency contraception", link: "https://sh24.org.uk/contraception/emergency-contraception", notes: "" },
+    { name: "NHS — find emergency contraception", link: "https://www.nhs.uk/service-search/sexual-health-services/find-emergency-contraception/", notes: "" },
+    { name: "UK Medical Eligibility Criteria for Contraceptive Use (UKMEC)", link: "https://www.cosrh.org/Public/Public/Standards-and-Guidance/uk-medical-eligibility-criteria-for-contraceptive-use-ukmec.aspx", notes: "Clinical guidance" },
   ],
   transHrt: [
     { name: "Gendered Intelligence", link: "https://genderedintelligence.co.uk/", notes: "" },
     { name: "Mermaids", link: "https://mermaidsuk.org.uk/", notes: "" },
-    { name: "GIRES", link: "", notes: "" },
+    { name: "GIRES", link: "https://www.gires.org.uk/", notes: "" },
   ],
   charities: [
     { name: "Terrence Higgins Trust", link: "https://tht.org.uk/", notes: "" },
@@ -76,7 +85,7 @@ const SEED_ENTRIES = {
   gettingTested: [
     { name: "NHS.uk — find a sexual health clinic", link: "https://www.nhs.uk/nhs-services/sexual-health-services/find-a-sexual-health-clinic/", notes: "" },
     { name: "SH:24", link: "https://www.sh.uk/", notes: "" },
-    { name: "Freetesting.me", link: "", notes: "" },
+    { name: "Freetest.me", link: "https://www.freetest.me/", notes: "" },
   ],
   // ADDED 1 Sep 2026 — real ask, general sexual health info that
   // didn't belong under a specific "getting tested"/"contraception"
@@ -90,9 +99,15 @@ const SEED_ENTRIES = {
     { name: "DoxyPEP — how and when to take it", link: "https://www.buckshealthcare.nhs.uk/pifs/doxypep-how-and-when-to-take-it/", notes: "" },
     { name: "NHS — Mpox", link: "https://www.nhs.uk/conditions/mpox/", notes: "" },
     { name: "NHS — Hepatitis B", link: "https://www.nhs.uk/conditions/hepatitis-b/", notes: "" },
+    { name: "BASHH/BHIVA — HIV testing guidelines", link: "https://www.bashh.org/resources/2/hiv_testing_guidelines_with_bhivabia_2020/", notes: "" },
+    { name: "BASHH — UK DoxyPEP guidelines", link: "https://www.bashh.org/news/1686/bashh_publishes_ukfirst_guidelines_on_doxypep_for_the_prevention_of_syphilis/", notes: "" },
+    { name: "NHS — HPV vaccine", link: "https://www.nhs.uk/vaccinations/hpv-vaccine/", notes: "" },
+    { name: "i-Base — PEP and PEPSE", link: "https://i-base.info/guides/testing/pep-and-pepse", notes: "" },
+    { name: "BHIVA — PEP guidelines", link: "https://bhiva.org/clinical-guideline/pep-guidelines/", notes: "" },
+    { name: "i-Base — UK guide to PrEP", link: "https://i-base.info/uk-guide-to-prep/", notes: "" },
   ],
   lgbtqGender: [
-    { name: "Switchboard LGBT+ Helpline", link: "https://switchboard.lgbt/", notes: "" },
+    { name: "Switchboard LGBT+ Helpline", link: "https://switchboard.lgbt/", notes: "0800 0119 100" },
     { name: "Stonewall", link: "https://www.stonewall.org.uk/", notes: "" },
     { name: "LGBT Foundation", link: "https://lgbt.foundation/", notes: "" },
   ],
@@ -111,8 +126,10 @@ const SEED_ENTRIES = {
     { name: "Talk to Frank — find support near you", link: "https://talktofrank.com/get-help/find-support-near-you", notes: "" },
   ],
   mentalHealth: [
-    { name: "Mind", link: "https://www.mind.org.uk/", notes: "" },
-    { name: "Samaritans", link: "https://www.samaritans.org/how-we-can-help/contact-samaritan/", notes: "" },
+    { name: "Mind", link: "https://www.mind.org.uk/", notes: "0300 102 1234" },
+    { name: "Samaritans", link: "https://www.samaritans.org/how-we-can-help/contact-samaritan/", notes: "116 123 — free, 24/7" },
+    { name: "Andy's Man Club", link: "https://andysmanclub.co.uk/", notes: "" },
+    { name: "Papyrus — HOPELINE247", link: "https://www.papyrus-uk.org/", notes: "0300 1022470 — under-35 suicide prevention" },
   ],
 };
 

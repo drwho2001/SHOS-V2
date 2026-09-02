@@ -144,6 +144,34 @@ function SelectField({ label, value, onChange, options, T, hint }) {
     </div>
   );
 }
+// ADDED 2 Sep 2026 — real ask: standardise the flow icon — "stack and
+// offset/count droplets... to represent heavier (more red)" was
+// weighed against colour/hue intensity and droplet-count won: colour
+// intensity risks reading as a data-quality or error signal (this
+// app's own red already means "alert" elsewhere), and a stacked count
+// stays legible at small sizes where a subtle hue shift wouldn't.
+// Maps the DEFAULT 4-step vocabulary (Spotting/Light/Medium/Heavy —
+// see customOptionListsRepository.js) to a 1-4 drop count; a custom
+// flow value the user typed in themselves (this list is user-editable)
+// has no known position on that scale, so it falls back to plain text
+// rather than guessing a count for it.
+const FLOW_INTENSITY_LEVELS = { spotting: 1, light: 2, medium: 3, heavy: 4 };
+function getFlowIntensity(flow) {
+  if (!flow) return null;
+  return FLOW_INTENSITY_LEVELS[flow.trim().toLowerCase()] ?? null;
+}
+function FlowDrops({ flow, T, size = 11 }) {
+  const level = getFlowIntensity(flow);
+  if (level == null) return <span style={{ fontSize: 12, color: T.textSecondary }}>{flow || "Flow not set"}</span>;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 2 }} title={flow}>
+      {[1, 2, 3, 4].map((n) => (
+        <Drop key={n} size={size} weight="fill" color={n <= level ? T.menstrualPurple : T.border} />
+      ))}
+    </div>
+  );
+}
+
 function ReadRow({ label, value, T, alert }) {
   if (value === "" || value == null || (Array.isArray(value) && value.length === 0)) return null;
   const display = Array.isArray(value) ? value.join(", ") : String(value);
@@ -374,7 +402,12 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
             <span style={{ fontSize: 20, fontWeight: 700, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</span>
           </div>
           <SectionCard title="Details" T={T}>
-            <ReadRow label="Flow" value={c.flow} T={T} />
+            {c.flow && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
+                <span style={{ fontSize: 12, color: T.textSecondary, flexShrink: 0 }}>Flow</span>
+                <FlowDrops flow={c.flow} T={T} size={13} />
+              </div>
+            )}
             <ReadRow label="Symptoms" value={symptomNames} T={T} />
           </SectionCard>
           <SectionCard title="Notes" T={T}><ReadRow label="Notes" value={c.notes} T={T} /></SectionCard>
@@ -405,7 +438,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
               <Drop size={14} color={T.menstrualPurple} weight="fill" />
               <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</div>
             </div>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{c.flow || "Flow not set"}</div>
+            <div style={{ marginTop: 2 }}><FlowDrops flow={c.flow} T={T} size={10} /></div>
           </ListRow>
         ))}
       </div>
