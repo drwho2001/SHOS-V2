@@ -196,6 +196,54 @@ export async function checkNotificationPermission() {
   }
 }
 
+// ADDED 2 Sep 2026 — real ask: "was stressing notifications on
+// Android and didn't get any." Root cause found beyond the earlier
+// POST_NOTIFICATIONS fix: Android 12+ separately gates EXACT-timed
+// alarms (its own "Alarms & reminders" system setting, off by default
+// for most apps) — completely independent of the POST_NOTIFICATIONS
+// runtime permission checked above. Every real scheduleNotification()
+// call in this app (medication due-now/due-soon, DoxyPEP's 72h alert,
+// testing/refill/clinic-visit reminders) defaults to
+// isExactNotification: true, per @capacitor/local-notifications 8.x's
+// own default — without this OS setting granted, the plugin silently
+// falls back to an INEXACT alarm instead of failing loudly, which
+// Android can defer by minutes to hours depending on battery state.
+// That's a real, previously-unhandled way for "the app scheduled it
+// successfully" and "nothing arrived when expected" to both be true
+// at once. checkExactNotificationSetting()/changeExactNotificationSetting()
+// are real, Android-only methods this plugin version already exposes
+// (confirmed directly against its own type definitions, not guessed)
+// — this just wires them in. No-ops safely everywhere else (web,
+// iOS, plugin unavailable).
+export async function checkExactAlarmPermission() {
+  const plugin = await getPlugin();
+  if (!plugin || !plugin.checkExactNotificationSetting) return { status: "unavailable" };
+  try {
+    const result = await plugin.checkExactNotificationSetting();
+    return { status: result.exact_alarm };
+  } catch (err) {
+    console.warn("[notificationService] checkExactNotificationSetting() failed:", err);
+    return { status: "error" };
+  }
+}
+
+// Opens the system "Alarms & reminders" settings screen for this app
+// (Android 12+ only — on older Android this just resolves "granted"
+// immediately, per the plugin's own documented behaviour, since the
+// setting doesn't exist there). A real navigation away from the app,
+// same as any other "open system settings" permission flow.
+export async function requestExactAlarmPermission() {
+  const plugin = await getPlugin();
+  if (!plugin || !plugin.changeExactNotificationSetting) return { status: "unavailable" };
+  try {
+    const result = await plugin.changeExactNotificationSetting();
+    return { status: result.exact_alarm };
+  } catch (err) {
+    console.warn("[notificationService] changeExactNotificationSetting() failed:", err);
+    return { status: "error" };
+  }
+}
+
 // ADDED 1 Sep 2026 — real ask: "want to make sure actually works" — a
 // genuine, concrete way to find out, rather than trusting a reminder
 // scheduled hours or days out. Fires a real local notification through

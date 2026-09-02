@@ -65,7 +65,7 @@ import { PrivacySettingsRepository } from "../repositories/privacySettingsReposi
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
-import { checkNotificationPermission, requestNotificationPermission, sendTestNotification, TEST_NOTIFICATION_DELAY_MS } from "../storage/notificationService";
+import { checkNotificationPermission, requestNotificationPermission, sendTestNotification, TEST_NOTIFICATION_DELAY_MS, checkExactAlarmPermission, requestExactAlarmPermission } from "../storage/notificationService";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
 import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
@@ -1198,14 +1198,28 @@ function NotificationToggleRow({ label, description, enabled, onToggle, darkMode
 function NotificationPermissionBanner({ darkMode }) {
   const [status, setStatus] = useState(null);
   const [testState, setTestState] = useState(null);
+  // ADDED 2 Sep 2026 — real ask: "didn't get any [notifications]" —
+  // a real, separate gap beyond the POST_NOTIFICATIONS permission
+  // above: Android 12+'s own "Alarms & reminders" setting, which
+  // every reminder this app schedules relies on for exact timing (see
+  // notificationService.js's own comment on checkExactAlarmPermission
+  // for the full reasoning). "unavailable" covers both "not on Android"
+  // and "Android < 12" (the setting doesn't exist there) — same as
+  // basic permission status, this only ever shows real detected state.
+  const [exactAlarmStatus, setExactAlarmStatus] = useState(null);
 
   useEffect(() => {
     checkNotificationPermission().then((r) => setStatus(r.status));
+    checkExactAlarmPermission().then((r) => setExactAlarmStatus(r.status));
   }, []);
 
   const request = async () => {
     const r = await requestNotificationPermission();
     setStatus(r.status);
+  };
+  const requestExactAlarm = async () => {
+    const r = await requestExactAlarmPermission();
+    setExactAlarmStatus(r.status);
   };
   const runTest = async () => {
     setTestState("sending");
@@ -1231,8 +1245,28 @@ function NotificationPermissionBanner({ darkMode }) {
         </span>
       </div>
       {isGranted && (
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: testState ? 8 : 0 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
           Android has granted this permission. The toggles below control which reminders actually get scheduled.
+        </div>
+      )}
+      {/* ADDED 2 Sep 2026 — real ask: "didn't get any" — a real,
+          separate Android 12+ setting every reminder here relies on
+          for exact timing, distinct from the basic permission above.
+          Without it, a reminder still "schedules successfully" from
+          the app's own perspective but Android can silently defer it
+          by minutes to hours as an inexact alarm instead — the exact
+          gap that would make testing feel like nothing ever fires. */}
+      {isGranted && exactAlarmStatus && exactAlarmStatus !== "unavailable" && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: "8px 10px", borderRadius: 10, background: exactAlarmStatus === "granted" ? `${ACTION.green}15` : `${ACTION.red}15` }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: exactAlarmStatus === "granted" ? ACTION.green : ACTION.red, flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : "#1B1B1F", flex: 1 }}>
+            {exactAlarmStatus === "granted"
+              ? "Exact alarms allowed — reminders fire on time."
+              : "Exact alarms not allowed — reminders may arrive late (minutes to hours), or not at all during testing."}
+          </span>
+          {exactAlarmStatus !== "granted" && (
+            <span onClick={requestExactAlarm} style={{ fontSize: 12, fontWeight: 700, color: ACCENTS.healthcare, cursor: "pointer", flexShrink: 0 }}>Fix this</span>
+          )}
         </div>
       )}
       {isDenied && (
