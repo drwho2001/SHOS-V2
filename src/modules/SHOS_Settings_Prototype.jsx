@@ -42,7 +42,7 @@ import { computeAdherence } from "../calculations/medicationCalculations";
 import { isQualifyingEncounter, DOXYPEP_WINDOW_HOURS, findDoxyPepMedication } from "../calculations/doxyPepCalculations";
 import {
   getActivitiesPerMonth, getTopKinks, getTestingFrequencyStats, BASHH_TESTING_INTERVAL_DAYS, BASHH_TESTING_SOURCE_URL,
-  getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth,
+  getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth, getTestingIntervalTrend,
 } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { exportBackup, exportEncryptedBackup, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
@@ -1458,6 +1458,24 @@ function StatRow({ label, value, explanation, sourceUrl }) {
   );
 }
 
+// ADDED — real ask: "Stats is descriptive, not predictive" — a real
+// nudge, distinct from StatRow's plain label/value shape since this is
+// meant to be noticed and acted on, not just looked up. "alert" tone
+// (the direction that means testing less often than your own pattern)
+// reads the same red as every other real alert in this app; "neutral"
+// (interval getting shorter, or informational) stays the Healthcare
+// section's own teal rather than green — a shorter gap isn't
+// necessarily "good" either, just not the concerning direction.
+function TrendInsight({ text, tone, T }) {
+  const [darkMode] = useDarkModePreference();
+  const color = tone === "alert" ? (darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red) : ACCENTS.healthcare;
+  return (
+    <div style={{ margin: "10px 16px 12px", padding: "10px 12px", borderRadius: 10, border: `1px solid ${color}`, background: `${color}14`, fontSize: 12, color: T.textPrimary, lineHeight: 1.5 }}>
+      {text}
+    </div>
+  );
+}
+
 // ADDED 26 Aug 2026 — real ask: Stats page, grouped by context
 // (Activity/Healthcare/Medication/Contacts), each stat with a
 // clickable info explaining the calculation and citing real clinical
@@ -1476,6 +1494,11 @@ function StatsScreen({ onClose }) {
   const activityMonths = useMemo(() => getActivitiesPerMonth(encounters, 6), [encounters]);
   const topKinks = useMemo(() => getTopKinks(encounters, contacts, (id) => KinkRegistry.getById(id)?.name, 5), [encounters, contacts]);
   const testingStats = useMemo(() => getTestingFrequencyStats(tests), [tests]);
+  // ADDED — real ask: "Stats is descriptive, not predictive" — a real
+  // nudge against the person's OWN pattern (not just the fixed BASHH
+  // benchmark above), see getTestingIntervalTrend's own comment for
+  // the two distinct comparisons this covers.
+  const testingTrend = useMemo(() => getTestingIntervalTrend(tests), [tests]);
   const adherence = useMemo(() => getOverallAdherence(medications, computeAdherence), [medications]);
   const doxyCompliance = useMemo(() => {
     const doxyMed = findDoxyPepMedication(medications);
@@ -1536,6 +1559,16 @@ function StatsScreen({ onClose }) {
             value={testingStats.withinBashhInterval == null ? "—" : testingStats.withinBashhInterval ? "Yes" : "No"}
             explanation={`BASHH's 2023 summary guidance recommends 3-monthly (90-day) asymptomatic STI screening for higher-risk groups, matching CDC's own 3–6 month guidance for PrEP users. This compares days since your last test against that 90-day reference point — not a personalised recommendation, just the cited benchmark.`}
             sourceUrl={BASHH_TESTING_SOURCE_URL} />
+          {testingTrend.currentGapVsAverage && (
+            <TrendInsight T={darkMode ? DARK : NEUTRAL}
+              tone={testingTrend.currentGapVsAverage.direction === "longer" ? "alert" : "neutral"}
+              text={`It's been ${testingTrend.currentGapVsAverage.daysSinceLast} days since your last test — ${testingTrend.currentGapVsAverage.percent}% ${testingTrend.currentGapVsAverage.direction} than your own average gap of ${testingTrend.currentGapVsAverage.averageIntervalDays} days.`} />
+          )}
+          {testingTrend.recentTrend && (
+            <TrendInsight T={darkMode ? DARK : NEUTRAL}
+              tone={testingTrend.recentTrend.direction === "up" ? "alert" : "neutral"}
+              text={`Your testing interval has been trending ${testingTrend.recentTrend.direction === "up" ? "longer" : "shorter"} lately — recently averaging ${testingTrend.recentTrend.recentAvgDays} days between tests, vs. ${testingTrend.recentTrend.earlierAvgDays} days earlier on (${testingTrend.recentTrend.percent}% ${testingTrend.recentTrend.direction === "up" ? "slower" : "faster"}).`} />
+          )}
         </div>
 
         {/* Medication */}

@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, CaretDownIcon as CaretDown, PillIcon as Pill, HeartbeatIcon as HeartPulse, UsersIcon as Users, WarningIcon as AlertTriangle, PlusIcon as Plus, GearIcon as Settings, XIcon as X, CheckIcon as Check } from "@phosphor-icons/react";
+import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, CaretDownIcon as CaretDown, PillIcon as Pill, HeartbeatIcon as HeartPulse, UsersIcon as Users, WarningIcon as AlertTriangle, PlusIcon as Plus, GearIcon as Settings, XIcon as X, CheckIcon as Check, FilePdfIcon as FilePdf } from "@phosphor-icons/react";
+import { exportClinicCardPdf } from "../storage/clinicCardPdfService";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { LogRepository } from "../repositories/logRepository";
@@ -171,6 +172,23 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // Every section defaults to visible; this only ever narrows.
   const [visibility, , toggleSection] = useClinicCardVisibility();
   const [showVisibilitySettings, setShowVisibilitySettings] = useState(false);
+  // ADDED — real ask: "clinician-facing export" — a real PDF, not just
+  // the on-screen summary, honouring the same section visibility below
+  // so it can never show more than the screen does. exportingPdf guards
+  // against a second tap firing a second generation while the native
+  // Share sheet is still opening.
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const exportPdf = async () => {
+    if (exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      await exportClinicCardPdf(visibility);
+    } catch (err) {
+      console.error("[ClinicCard] PDF export failed:", err);
+    } finally {
+      setExportingPdf(false);
+    }
+  };
   // ADDED — real ask: Allergies/Emergency info's own empty-state used to
   // just describe where to go add this data instead of taking you
   // there — tapping it now opens My Profile directly, straight into
@@ -257,6 +275,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary, flex: 1 }}>{profile.nickname ? `${profile.nickname}'s clinic card` : "Clinic Card"}</span>
+        {/* ADDED — real ask: a real PDF export, for handing this to (or
+            printing for) a clinician rather than only reading it on
+            screen. Disabled mid-export rather than hidden, so a slow
+            device doesn't look like the tap did nothing. */}
+        <FilePdf size={20} color={exportingPdf ? T.textDisabled : T.textSecondary} style={{ cursor: exportingPdf ? "default" : "pointer" }} onClick={exportPdf} />
         {/* ADDED — real ask: settings to filter which sections show. */}
         <Settings size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(true)} />
       </div>

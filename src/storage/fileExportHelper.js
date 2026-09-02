@@ -98,6 +98,60 @@ export async function exportTextFile(filename, contents, mimeType = "text/plain"
   }
 }
 
+// ADDED — real ask: a genuine PDF export (Clinic Card), the first
+// binary file this app has ever needed to write — every export before
+// this was plain text (JSON/CSV/HTML). Same native-Filesystem-then-
+// Share-sheet path as exportTextFile() above, just without the
+// `encoding: UTF8` option — Capacitor's Filesystem plugin treats a
+// write with no `encoding` set as raw base64, which is exactly what a
+// PDF (or any binary format) needs, text encoding would corrupt it.
+// `base64Data` is expected WITHOUT a `data:...;base64,` prefix — strip
+// that at the call site if it came from a data URI.
+function downloadBinaryInBrowser(filename, base64Data, mimeType) {
+  const binary = atob(base64Data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const blob = new Blob([bytes], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export async function exportBinaryFile(filename, base64Data, mimeType = "application/octet-stream") {
+  const { Filesystem, Directory, Share } = await getPlugins();
+  if (!Filesystem || !Share) {
+    downloadBinaryInBrowser(filename, base64Data, mimeType);
+    return;
+  }
+  try {
+    const written = await Filesystem.writeFile({
+      path: filename,
+      data: base64Data,
+      directory: Directory.Cache,
+      recursive: true,
+    });
+    try {
+      await Filesystem.writeFile({
+        path: filename,
+        data: base64Data,
+        directory: Directory.Documents,
+        recursive: true,
+      });
+    } catch (docErr) {
+      console.warn("[fileExportHelper] Could not save an extra copy to the public Documents folder (Share sheet copy above is unaffected):", docErr);
+    }
+    await Share.share({ url: written.uri, dialogTitle: filename });
+  } catch (err) {
+    console.error("[fileExportHelper] Native binary export failed, falling back to browser download:", err);
+    downloadBinaryInBrowser(filename, base64Data, mimeType);
+  }
+}
+
 // ADDED — real ask: scheduled auto-export (backupService.js's
 // runAutoExportIfDue()) needs to write a real file with NO user
 // interaction — exportTextFile() above always opens the native Share

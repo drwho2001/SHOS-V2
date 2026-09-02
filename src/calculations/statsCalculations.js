@@ -75,6 +75,69 @@ export function getTestingFrequencyStats(tests) {
   return { averageIntervalDays, daysSinceLast, testCount: real.length, withinBashhInterval: daysSinceLast <= BASHH_TESTING_INTERVAL_DAYS };
 }
 
+// ADDED — real ask: "Stats is descriptive, not predictive... no 'your
+// average time between tests is drifting up' or 'this is 40% longer
+// since your last test than your own average' type nudge." Two
+// genuinely different comparisons, both against the user's OWN past
+// pattern rather than a fixed external benchmark (BASHH's 90 days
+// above already covers that comparison):
+//
+// 1. "Current gap vs. your own average" — needs only 2 real tests
+//    (reuses averageIntervalDays/daysSinceLast above), so it's useful
+//    almost immediately. Flags once the gap since the last test has
+//    already run meaningfully longer than the person's own typical
+//    interval — a real "you're overdue relative to YOUR pattern" nudge,
+//    distinct from the fixed BASHH comparison.
+// 2. "Recent trend vs. historical" — compares the average of the most
+//    recent gaps against the average of the earlier ones, so it can
+//    say the interval is genuinely lengthening or shortening over time,
+//    not just "currently a bit longer than usual". Needs at least 4
+//    real tests (3 gaps) to split into a meaningful recent/earlier
+//    comparison — returns null below that, same "not enough data"
+//    honesty as averageIntervalDays itself.
+//
+// Threshold is 20% either direction — small enough to catch a real
+// drift, large enough that ordinary test-to-test variance (scheduling
+// around a clinic's availability, a missed month) doesn't fire a nudge
+// on noise alone.
+const TREND_THRESHOLD = 0.2;
+const RECENT_GAP_COUNT = 2;
+
+export function getTestingIntervalTrend(tests) {
+  const real = tests.filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date));
+  if (real.length < 2) return { currentGapVsAverage: null, recentTrend: null };
+
+  const gaps = [];
+  for (let i = 1; i < real.length; i++) gaps.push((new Date(real[i].date) - new Date(real[i - 1].date)) / 86400000);
+  const averageIntervalDays = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+  const daysSinceLast = Math.floor((Date.now() - new Date(real[real.length - 1].date).getTime()) / 86400000);
+
+  // 1. Current gap vs. own average — a real ratio, not just a boolean,
+  // so the UI can say by how much rather than just "yes/no".
+  const gapRatio = averageIntervalDays > 0 ? daysSinceLast / averageIntervalDays : 1;
+  const currentGapVsAverage = Math.abs(gapRatio - 1) >= TREND_THRESHOLD
+    ? { direction: gapRatio > 1 ? "longer" : "shorter", percent: Math.round(Math.abs(gapRatio - 1) * 100), averageIntervalDays: Math.round(averageIntervalDays), daysSinceLast }
+    : null;
+
+  // 2. Recent vs. historical trend — only computed with enough real
+  // gaps to split meaningfully; a 2-gap history split into "1 recent,
+  // 1 earlier" would just be comparing two arbitrary numbers, not a
+  // real trend.
+  let recentTrend = null;
+  if (gaps.length >= RECENT_GAP_COUNT * 2) {
+    const recentGaps = gaps.slice(-RECENT_GAP_COUNT);
+    const earlierGaps = gaps.slice(0, gaps.length - RECENT_GAP_COUNT);
+    const recentAvg = recentGaps.reduce((a, b) => a + b, 0) / recentGaps.length;
+    const earlierAvg = earlierGaps.reduce((a, b) => a + b, 0) / earlierGaps.length;
+    const trendRatio = earlierAvg > 0 ? recentAvg / earlierAvg : 1;
+    if (Math.abs(trendRatio - 1) >= TREND_THRESHOLD) {
+      recentTrend = { direction: trendRatio > 1 ? "up" : "down", percent: Math.round(Math.abs(trendRatio - 1) * 100), recentAvgDays: Math.round(recentAvg), earlierAvgDays: Math.round(earlierAvg) };
+    }
+  }
+
+  return { currentGapVsAverage, recentTrend };
+}
+
 // ── Medication ──
 
 export function getOverallAdherence(medications, computeAdherenceFn) {
