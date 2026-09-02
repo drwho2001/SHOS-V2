@@ -415,6 +415,31 @@ const ONBOARDING_SLIDES = [
   { title: "Make it yours", body: "Settings → Design lets you customize each module's colour and switch to dark mode. Long-press (or tap Select) on any list to archive, delete, or export several records at once." },
 ];
 
+// ADDED — real ask: the app icon's own pulse mark, redrawn as inline
+// SVG (crisp at any size, unlike a raster asset) — same path/colors
+// the icon assets use (see the icon-regeneration notes), so Onboarding's
+// first "Welcome to SHOS" slide actually carries the brand mark instead
+// of being bare text.
+function PulseLogo({ size = 120 }) {
+  return (
+    <svg width={size} height={size * 0.9} viewBox="0 0 100 90" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="shosPulseGradient" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#4C6FE8" />
+          <stop offset="50%" stopColor="#964FD6" />
+          <stop offset="100%" stopColor="#E8834C" />
+        </linearGradient>
+      </defs>
+      <polyline points="0,55 10,55 16,38 22,55 30,55 36,4 39.5,55 43,86 47,55 56,55 65,34 74,55 86,55 100,45"
+        stroke="url(#shosPulseGradient)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="16" cy="38" r="5.5" fill="#FFFFFF" stroke="#4C6FE8" strokeWidth="2" />
+      <circle cx="36" cy="4" r="5.5" fill="#FFFFFF" stroke="#964FD6" strokeWidth="2" />
+      <circle cx="43" cy="86" r="5.5" fill="#FFFFFF" stroke="#964FD6" strokeWidth="2" />
+      <circle cx="65" cy="34" r="5.5" fill="#FFFFFF" stroke="#E8834C" strokeWidth="2" />
+    </svg>
+  );
+}
+
 function OnboardingScreen({ onFinish }) {
   const [step, setStep] = useState(0);
   const isLast = step === ONBOARDING_SLIDES.length - 1;
@@ -426,7 +451,24 @@ function OnboardingScreen({ onFinish }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: ACCENTS.home, display: "flex", flexDirection: "column", zIndex: 999, fontFamily: "'Inter', sans-serif" }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 32px", textAlign: "center" }}>
-        <div style={{ ...TYPE.screenTitle, color: "#FFFFFF", marginBottom: 14 }}>{slide.title}</div>
+        {/* CHANGED — real ask: the app's own icon/wordmark felt "zoomed
+            out" — this first slide used to be bare title text with no
+            brand mark at all. Only shown on the actual welcome slide
+            (step 0), not on every slide, where a repeated logo would
+            just be noise. */}
+        {step === 0 && (
+          <>
+            <PulseLogo size={130} />
+            {/* Same pairing as the app's own icon (pulse mark + "SHOS"
+                wordmark) — "Welcome" below names THIS screen without
+                repeating "SHOS" a second time (the duplicate-text
+                mistake just fixed in Contacts' own header). */}
+            <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: 1, color: "#FFFFFF", marginTop: 10 }}>SHOS</div>
+          </>
+        )}
+        <div style={{ ...(step === 0 ? { fontSize: 16, fontWeight: 700 } : TYPE.screenTitle), color: "#FFFFFF", marginTop: step === 0 ? 18 : 0, marginBottom: 14 }}>
+          {step === 0 ? "Welcome" : slide.title}
+        </div>
         <div style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>{slide.body}</div>
       </div>
       <div style={{ display: "flex", justifyContent: "center", gap: 6, paddingBottom: 20 }}>
