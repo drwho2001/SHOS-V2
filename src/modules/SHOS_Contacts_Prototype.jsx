@@ -355,7 +355,8 @@ function SuggestField({ label, value, onChange, options, onAddNew, T, placeholde
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((o) => (
-            <div key={o} onMouseDown={(ev) => ev.preventDefault()} onClick={() => onChange(o)}
+            <div key={o} onMouseDown={(ev) => ev.preventDefault()} onClick={() => onChange(o)} role="button" tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(o); } }}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
               {o}
             </div>
@@ -365,7 +366,7 @@ function SuggestField({ label, value, onChange, options, onAddNew, T, placeholde
       <input value={value ?? ""} onChange={(e) => onChange(e.target.value)}
         onBlur={() => { if (value && value.trim()) onAddNew(value.trim()); }}
         onKeyDown={(e) => { if (e.key === "Enter" && value && value.trim()) { e.preventDefault(); onAddNew(value.trim()); e.target.blur(); } }}
-        placeholder={placeholder}
+        placeholder={placeholder} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
@@ -1449,6 +1450,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   // same pattern as Vaccinations' vaccineOptions.
   const [relationshipTypeOptions, setRelationshipTypeOptions] = useState(() => CustomOptionListsRepository.get("relationshipType"));
   const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.get("gender"));
+  const [pronounsOptions, setPronounsOptions] = useState(() => CustomOptionListsRepository.get("pronouns"));
   const [contraceptionOptions, setContraceptionOptions] = useState(() => CustomOptionListsRepository.get("contraception"));
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);
@@ -1558,7 +1560,14 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
               text, not a fixed dropdown of "approved" options. */}
           <SuggestField T={T} label="Gender" value={form.gender} onChange={set("gender")} options={genderOptions}
             onAddNew={(v) => setGenderOptions(CustomOptionListsRepository.add("gender", v))} placeholder="e.g. Male, Female, Non-binary" />
-          <TextField T={T} label="Pronouns" value={form.pronouns} onChange={set("pronouns")} placeholder="e.g. he/him, she/her, they/them" />
+          {/* CHANGED — real ask, from a competitive-research finding:
+              plain free text with no suggestions at all, the one field
+              on this form that hadn't gotten the same SuggestField
+              treatment Gender already has just above. Same "type
+              anything, it just works" flexibility — this only adds
+              suggestion chips, nothing is locked down. */}
+          <SuggestField T={T} label="Pronouns" value={form.pronouns} onChange={set("pronouns")} options={pronounsOptions}
+            onAddNew={(v) => setPronounsOptions(CustomOptionListsRepository.add("pronouns", v))} placeholder="e.g. he/him, she/her, they/them" />
           <AgeField T={T} age={form.age} ageIsApprox={form.ageIsApprox} onChangeAge={set("age")} onChangeApprox={set("ageIsApprox")} />
           {/* ADDED 26 Aug 2026 — real ask: moved to the top of the form
               rather than buried in Location & logistics — the override

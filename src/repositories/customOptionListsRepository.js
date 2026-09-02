@@ -105,6 +105,12 @@ const SEED_LISTS = {
   // it" convention as vaccine above — Non-binary and anything else
   // typed in just works via the add-your-own field.
   gender: ["Male", "Female", "Trans-male", "Trans-female", "Non-binary"],
+  // ADDED — real ask, from a competitive-research finding: Pronouns
+  // (Contacts and My Profile) was plain free text, no suggestions at
+  // all — every comparable field on this list already gets real
+  // suggestion chips via SuggestField, this one was just missed. Same
+  // "no Other chip" convention as gender above.
+  pronouns: ["He/him", "She/her", "They/them"],
   // ADDED — real ask: contraception, gated to Female/Trans-male (see
   // both edit screens' own comments on the exact gating condition).
   // Testosterone is included because it's still worth tracking for a
@@ -162,6 +168,7 @@ export const OPTION_LIST_LABELS = {
   medicationCategory: "Medication category",
   relationshipType: "Relationship type",
   gender: "Gender",
+  pronouns: "Pronouns",
   contraception: "Contraception",
   measurementType: "Measurement type",
   menstrualFlow: "Menstrual flow",
@@ -191,6 +198,7 @@ export const OPTION_LIST_ICONS = {
   medicationCategory: { icon: "Tag", color: "#3D63C9" },
   relationshipType: { icon: "Heart", color: ACCENTS.contacts },
   gender: { icon: "User", color: ACCENTS.contacts },
+  pronouns: { icon: "User", color: ACCENTS.contacts },
   contraception: { icon: "Pill", color: ACCENTS.healthcare },
   measurementType: { icon: "Ruler", color: ACCENTS.healthcare },
   menstrualFlow: { icon: "Drop", color: ACCENTS.healthcare },

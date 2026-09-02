@@ -180,7 +180,8 @@ function SuggestField({ label, value, onChange, options, onAddNew, T, placeholde
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((o) => (
-            <div key={o} onMouseDown={(ev) => ev.preventDefault()} onClick={() => onChange(o)}
+            <div key={o} onMouseDown={(ev) => ev.preventDefault()} onClick={() => onChange(o)} role="button" tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(o); } }}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
               {o}
             </div>
@@ -190,7 +191,7 @@ function SuggestField({ label, value, onChange, options, onAddNew, T, placeholde
       <input value={value ?? ""} onChange={(e) => onChange(e.target.value)}
         onBlur={() => { if (value && value.trim()) onAddNew(value.trim()); }}
         onKeyDown={(e) => { if (e.key === "Enter" && value && value.trim()) { e.preventDefault(); onAddNew(value.trim()); e.target.blur(); } }}
-        placeholder={placeholder}
+        placeholder={placeholder} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
@@ -731,6 +732,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
     setTimeout(() => onSave(formRef.current), 0);
   };
   const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.get("gender"));
+  const [pronounsOptions, setPronounsOptions] = useState(() => CustomOptionListsRepository.get("pronouns"));
   const [relationshipStatusOptions, setRelationshipStatusOptions] = useState(() => CustomOptionListsRepository.get("relationshipStatus"));
   const allContacts = useMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived).map((c) => ({ id: c.id, name: c.name })), []);
   const [contraceptionOptions, setContraceptionOptions] = useState(() => CustomOptionListsRepository.get("contraception"));
@@ -756,7 +758,12 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
           <TextField label="Nickname" value={form.nickname} onChange={set("nickname")} T={T} placeholder="e.g. Alex" />
           <SuggestField label="Gender" value={form.gender} onChange={set("gender")} options={genderOptions}
             onAddNew={(v) => setGenderOptions(CustomOptionListsRepository.add("gender", v))} T={T} placeholder="e.g. Male, Female, Non-binary" />
-          <TextField label="Pronouns" value={form.pronouns} onChange={set("pronouns")} T={T} placeholder="e.g. he/him, she/her, they/them" />
+          {/* CHANGED — real ask, from a competitive-research finding:
+              plain free text with no suggestions, unlike Gender right
+              above it. Same "type anything, it just works" flexibility
+              — this only adds suggestion chips, nothing is locked down. */}
+          <SuggestField label="Pronouns" value={form.pronouns} onChange={set("pronouns")} options={pronounsOptions}
+            onAddNew={(v) => setPronounsOptions(CustomOptionListsRepository.add("pronouns", v))} T={T} placeholder="e.g. he/him, she/her, they/them" />
           {/* ADDED — real ask: relationship status, a different axis
               from Contacts' own relationshipType — describes your
               overall situation, not your connection to one person. */}
