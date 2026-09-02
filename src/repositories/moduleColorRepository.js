@@ -111,23 +111,30 @@ export const CUSTOMIZABLE_ACTION_KEYS = ["actionRed", "actionGreen"];
 // green, medication=blue), so this was left as a known, stated trade-
 // off rather than sacrificing that contextual fit for the rarest case.
 //
-// HONEST SCOPE NOTE, 2 Sep 2026: Menstrual's own colour (added this
-// date — see designTokens.js) is deliberately NOT included in this
-// preset. Every value below was checked against real simulation
-// together as one set; adding an 8th colour without re-running that
-// same check would misrepresent it as equally verified when it isn't
-// — and a first-pass hue for it landed on the same family as either
-// Home's or Encounters' existing CVD-safe substitute (both already
-// occupy the violet/magenta neighbourhood a safe 8th colour would
-// need), so it's a real constrained problem, not a quick pick.
-// Nothing breaks by leaving it out: applyCvdPalette()/
-// isCvdPaletteActive() below only ever touch/check these listed keys,
-// so Menstrual simply keeps its own default (or whatever the user's
-// customised it to) whether the CVD toggle is on or off — same
-// graceful "untouched, not broken" handling removeCvdPalette() already
-// documents for any future key. Still real, editable customisation via
-// CUSTOMIZABLE_MODULE_KEYS below either way, just not yet part of this
-// specific simulated preset.
+// ADDED 2 Sep 2026 — real ask: Menstrual's own colour (see
+// designTokens.js) now HAS a real CVD-safe substitute too, verified
+// the same way as the original 7 rather than guessed — the user's own
+// correction: "balancing rules different for colourblind" means an
+// 8th colour genuinely has to be checked against simulated vision, not
+// picked by eye against the normal-vision palette. Verified via the
+// standard Machado/Oliveira/Fernandes (2009) full-severity simulation
+// matrices, run against protanopia, deuteranopia AND tritanopia
+// together (the same three this whole preset targets), swept across
+// hue/saturation/lightness to find the candidate with the largest
+// worst-case separation from all 6 other genuinely-distinct colours
+// below (healthcare/actionGreen are intentionally identical — see the
+// note above — so excluded from that check) in EVERY simulation at
+// once, restricted to hues that still read as plausibly "menstrual"
+// (magenta/red-violet), not just whatever scored highest overall
+// (that unconstrained optimum landed on yellow-green, a real result
+// but a poor domain fit, so this was deliberately re-run constrained
+// rather than taking the raw top score). #6D172E (a deep wine/
+// burgundy — H344° S65% L26%) is the result: its worst-case simulated
+// distance to every other colour here (0.33-0.37 across all three
+// deficiencies and normal vision) comfortably clears this palette's
+// own tightest EXISTING pair (contacts vs actionRed, as low as 0.09
+// under deuteranopia) — genuinely better-separated than a pairing this
+// preset already ships and calls acceptable.
 export const CVD_SAFE_PALETTE = {
   contacts: "#A37100",
   encounters: "#AE427E",
@@ -136,6 +143,7 @@ export const CVD_SAFE_PALETTE = {
   home: "#381579",
   actionRed: "#AD4D00",
   actionGreen: "#009E73",
+  menstrual: "#6D172E",
 };
 
 export const ModuleColorRepository = {

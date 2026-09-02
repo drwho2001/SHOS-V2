@@ -65,7 +65,7 @@ import { PrivacySettingsRepository } from "../repositories/privacySettingsReposi
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
-import { checkNotificationPermission, requestNotificationPermission, sendTestNotification } from "../storage/notificationService";
+import { checkNotificationPermission, requestNotificationPermission, sendTestNotification, TEST_NOTIFICATION_DELAY_MS } from "../storage/notificationService";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
 import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
@@ -1251,12 +1251,22 @@ function NotificationPermissionBanner({ darkMode }) {
         </>
       )}
       {isGranted && (
-        <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={runTest} disabled={testState === "sending"} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: testState === "sending" ? "default" : "pointer", opacity: testState === "sending" ? 0.6 : 1 }}>
-            {testState === "sending" ? "Sending…" : "Send test notification"}
-          </button>
-          {testState === "sent" && <span style={{ fontSize: 11, color: ACTION.green, fontWeight: 600 }}>Sent — should appear in ~5 seconds.</span>}
-          {testState && testState.startsWith("failed") && <span style={{ fontSize: 11, color: ACTION.red, fontWeight: 600 }}>Failed to schedule ({testState.split(":")[1]}).</span>}
+        <div style={{ marginTop: 8 }}>
+          {/* CHANGED 2 Sep 2026 — real ask: the actual point of this
+              test is confirming a notification survives the app being
+              fully CLOSED, not just backgrounded — a real device
+              distinction a plain "sent" toast can't prove on its own.
+              Spelled out here instead of assumed. */}
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
+            Tap Send, then close the app (not just switch away — swipe it away or force-close it) before the {Math.round(TEST_NOTIFICATION_DELAY_MS / 1000)}s is up. If it still shows up, real reminders will too.
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button onClick={runTest} disabled={testState === "sending"} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: testState === "sending" ? "default" : "pointer", opacity: testState === "sending" ? 0.6 : 1 }}>
+              {testState === "sending" ? "Sending…" : "Send test notification"}
+            </button>
+            {testState === "sent" && <span style={{ fontSize: 11, color: ACTION.green, fontWeight: 600 }}>Sent — should appear in ~{Math.round(TEST_NOTIFICATION_DELAY_MS / 1000)} seconds.</span>}
+            {testState && testState.startsWith("failed") && <span style={{ fontSize: 11, color: ACTION.red, fontWeight: 600 }}>Failed to schedule ({testState.split(":")[1]}).</span>}
+          </div>
         </div>
       )}
     </div>

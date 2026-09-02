@@ -198,14 +198,22 @@ export async function checkNotificationPermission() {
 
 // ADDED 1 Sep 2026 — real ask: "want to make sure actually works" — a
 // genuine, concrete way to find out, rather than trusting a reminder
-// scheduled hours or days out. Fires a real local notification a few
-// seconds from now, through the exact same scheduleNotification() path
-// every real reminder in this app uses — if this one shows up, the
-// whole pipeline (permission, plugin, OS scheduling) is confirmed
-// actually working end to end; if it doesn't, that's real, useful
-// information too. Fixed id, own slot outside NOTIFICATION_IDS above
-// since this is diagnostic, not a real reminder type.
+// scheduled hours or days out. Fires a real local notification through
+// the exact same scheduleNotification() path every real reminder in
+// this app uses — if this one shows up, the whole pipeline
+// (permission, plugin, OS scheduling) is confirmed actually working
+// end to end; if it doesn't, that's real, useful information too.
+// Fixed id, own slot outside NOTIFICATION_IDS above since this is
+// diagnostic, not a real reminder type.
+// CHANGED 2 Sep 2026 — real ask: "run in 10 seconds/close and run" —
+// the actual point of this test is confirming a notification survives
+// the app being fully closed (a setTimeout inside a running app would
+// never prove that, only the OS-level alarm does), which means the
+// delay needs enough real time to tap the button, background or
+// fully close the app, and wait — 5s often wasn't enough to do that
+// before it fired. 10s now.
 const TEST_NOTIFICATION_ID = 9099;
+export const TEST_NOTIFICATION_DELAY_MS = 10000;
 export async function sendTestNotification() {
   const plugin = await getPlugin();
   if (!plugin) return { ok: false, reason: "unavailable" };
@@ -215,8 +223,8 @@ export async function sendTestNotification() {
     await scheduleNotification({
       id: TEST_NOTIFICATION_ID,
       title: "SHOS test notification",
-      body: "If you can see this, notifications are working on this device.",
-      at: new Date(Date.now() + 5000),
+      body: "If you can see this, notifications are working on this device — even closed.",
+      at: new Date(Date.now() + TEST_NOTIFICATION_DELAY_MS),
       smallIcon: moduleSmallIconName("home"),
     });
     return { ok: true };

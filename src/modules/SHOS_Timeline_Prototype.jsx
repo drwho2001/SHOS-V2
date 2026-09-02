@@ -307,8 +307,31 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
     update({ notifiedEncounterIds: already ? episode.notifiedEncounterIds.filter((id) => id !== encounterId) : [...episode.notifiedEncounterIds, encounterId] });
   };
 
+  // CHANGED 2 Sep 2026 — real ask: "episodes end date?" — resolvedDate
+  // used to be hardcoded to whatever day you happened to tap the
+  // button, with no way to set or correct it to when the episode
+  // actually resolved (e.g. logging a TOC result a few days after it
+  // came back). resolveDateDraft is a real, editable date — defaults
+  // to today, but overridable before confirming, and resets to
+  // episode.resolvedDate (or today) whenever a different episode is
+  // opened. Also added: reopen(), since a resolved episode previously
+  // had no undo at all — same "how do I undo this" standard every
+  // other action in this app already meets.
+  // NOTE: existing resolvedDate values (including seed data) are full
+  // ISO timestamps, not date-only strings — <input type="date"> only
+  // accepts "YYYY-MM-DD", same .slice(0,10) convention used everywhere
+  // else in this app for exactly that reason.
+  const [resolveDateDraft, setResolveDateDraft] = useState(() => (episode.resolvedDate || new Date().toISOString()).slice(0, 10));
+  useEffect(() => { setResolveDateDraft((episode.resolvedDate || new Date().toISOString()).slice(0, 10)); }, [episodeId]);
+
   const resolve = (resolution) => {
-    update({ resolvedDate: new Date().toISOString().slice(0, 10), resolution });
+    update({ resolvedDate: resolveDateDraft, resolution });
+  };
+  const saveResolvedDate = () => {
+    update({ resolvedDate: resolveDateDraft });
+  };
+  const reopen = () => {
+    update({ resolvedDate: null, resolution: "" });
   };
 
   // CHANGED 2 Sep 2026 — real ask: "episode's delete button still soft-
@@ -439,7 +462,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </SectionCard>
 
-        {isOpen && (
+        {isOpen ? (
           <SectionCard title="Resolve" T={T}>
             {(() => {
               const startCoverage = getEncounterCoverage(startDate, linkedTests);
@@ -452,6 +475,16 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
                 </div>
               ) : null;
             })()}
+            {/* ADDED 2 Sep 2026 — real ask: "episodes end date?" — this
+                used to always be silently "today", the day you happened
+                to open the app, with no way to backdate it to when the
+                episode actually resolved (e.g. a TOC result logged a
+                few days after it came back). */}
+            <div style={{ padding: "4px 0 8px" }}>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>End date</div>
+              <input type="date" value={resolveDateDraft} onChange={(e) => setResolveDateDraft(e.target.value)}
+                style={{ padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
               {RESOLUTION_OPTIONS.map((opt) => (
                 <button key={opt} onClick={() => resolve(opt)}
@@ -459,6 +492,23 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
                   Mark resolved — {opt}
                 </button>
               ))}
+            </div>
+          </SectionCard>
+        ) : (
+          <SectionCard title="Resolved" T={T}>
+            <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 10 }}>{episode.resolution}</div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginBottom: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>End date</div>
+                <input type="date" value={resolveDateDraft} onChange={(e) => setResolveDateDraft(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+              </div>
+              {resolveDateDraft !== (episode.resolvedDate || "").slice(0, 10) && (
+                <button onClick={saveResolvedDate} style={{ padding: "8px 14px", borderRadius: radius.sm, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Save</button>
+              )}
+            </div>
+            <div onClick={reopen} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: T.textSecondary, cursor: "pointer" }}>
+              <RefreshCcw size={13} /> Reopen this episode
             </div>
           </SectionCard>
         )}
