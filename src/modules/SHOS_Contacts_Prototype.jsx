@@ -1832,25 +1832,6 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 16px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} />
-          {/* CHANGED 19 Aug 2026 — real ask: font-size consistency
-              audit found this at 18/700 while every other module's
-              equivalent detail-view record title (Testing/Clinic
-              Visits/Vaccinations/Symptom Log/Timeline) uses 20/700 —
-              a real, isolated slip, not a deliberate choice. */}
-          {/* CHANGED — real ask: this title, right next to the back
-              button, was never checking Anonymise mode at all — the
-              name below it (line ~1618) already masked correctly, this
-              one leaked the real name regardless of the setting. */}
-          <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>
-          {/* ADDED — real ask: pronouns shown right next to the name,
-              the natural place people actually look for them. Gender
-              joins it here rather than a whole new section — same
-              "identity, at a glance" spot, not buried below. */}
-          {!anonymise && (contact.pronouns || contact.gender) && (
-            <span style={{ fontSize: 13, color: T.textSecondary, marginLeft: 6 }}>
-              ({[contact.gender, contact.pronouns].filter(Boolean).join(" · ")})
-            </span>
-          )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {/* ADDED — real ask: show-blank-fields toggle. */}
@@ -1921,6 +1902,19 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <MethodIcons methods={methods} T={T} />
         </div>
         {contact.nickname && !anonymise && <div style={{ fontSize: 12, color: T.textDisabled, marginLeft: 24 }}>Full name: {contact.name}</div>}
+        {/* MOVED — real ask: the name used to repeat verbatim in the
+            header bar right above this (visually redundant — every
+            other module's own detail screen only shows its record
+            title once, in the content area, not also next to the back
+            button — see Testing's own equivalent screen). Removed the
+            header-bar duplicate entirely and moved gender/pronouns
+            down here instead of just discarding it, still right next
+            to the name, not buried in a separate section. */}
+        {!anonymise && (contact.pronouns || contact.gender) && (
+          <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 24, marginBottom: 4 }}>
+            {[contact.gender, contact.pronouns].filter(Boolean).join(" · ")}
+          </div>
+        )}
 
         {/* REORDERED — real ask: Timeline (encounter history/stats with
             this contact) is the most clinically relevant summary, so
