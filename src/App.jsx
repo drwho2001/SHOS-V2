@@ -390,6 +390,26 @@ function AppLockPrompt({ onDismiss, onDismissForever, onOpenSettings }) {
 // guided setup before letting the person actually use anything.
 const ONBOARDING_SLIDES = [
   { title: "Welcome to SHOS", body: "Your own sexual health record — contacts, activity, testing, medication, and clinic visits, all in one private place on this device. Nothing leaves your phone unless you choose to export or share it." },
+  // ADDED — real ask, from a competitive-research finding: onboarding
+  // was purely informational slides with no path that actually
+  // reconfigures anything, unlike comparable apps whose onboarding
+  // asks a real question and immediately changes what surfaces
+  // afterward. This is the smallest, safest version of that: one real
+  // question wired to a preference that already exists and already
+  // gates a real tab (menstrualTrackingEnabled, same toggle Settings'
+  // own "Menstrual & contraception tracking" card uses) — not a new
+  // preference invented just for onboarding, and not a cosmetic
+  // question with no real effect behind it. Answering "Not for me"
+  // is a true no-op (the toggle's own default is already off), so
+  // skipping this slide entirely (the Skip button below) is exactly
+  // equivalent to answering "Not for me" — this never becomes a
+  // required gate.
+  {
+    type: "question",
+    title: "Track menstrual & contraception health?",
+    body: "Adds a Cycle/Contraception/Pregnancy tab under Healthcare. Off by default — you can turn this on or off any time from Settings either way, this is just a shortcut.",
+    onAnswer: (yes) => { if (yes) AppPreferencesRepository.update({ menstrualTrackingEnabled: true }); },
+  },
   { title: "Start with My Profile", body: "Settings → My Profile lets you record your own details, testing status, and preferences — it's also what gets shared if you ever export a profile to someone else." },
   { title: "DoxyPEP & reminders", body: "If it's relevant to you, SHOS can track the 72-hour DoxyPEP window after a qualifying activity, and remind you about daily medication doses — both real notifications, not just in-app banners." },
   { title: "Make it yours", body: "Settings → Design lets you customize each module's colour and switch to dark mode. Long-press (or tap Select) on any list to archive, delete, or export several records at once." },
@@ -399,6 +419,9 @@ function OnboardingScreen({ onFinish }) {
   const [step, setStep] = useState(0);
   const isLast = step === ONBOARDING_SLIDES.length - 1;
   const slide = ONBOARDING_SLIDES[step];
+  const isQuestion = slide.type === "question";
+  const advance = () => isLast ? onFinish() : setStep((s) => s + 1);
+  const answer = (yes) => { slide.onAnswer(yes); advance(); };
 
   return (
     <div style={{ position: "fixed", inset: 0, background: ACCENTS.home, display: "flex", flexDirection: "column", zIndex: 999, fontFamily: "'Inter', sans-serif" }}>
@@ -411,17 +434,29 @@ function OnboardingScreen({ onFinish }) {
           <div key={i} style={{ width: 6, height: 6, borderRadius: 999, background: i === step ? "#FFFFFF" : "rgba(255,255,255,0.35)" }} />
         ))}
       </div>
-      <div style={{ display: "flex", gap: 10, padding: "0 24px 32px" }}>
-        {!isLast && (
-          <button onClick={onFinish} style={{ flex: 1, padding: "14px 0", borderRadius: 999, border: "1px solid rgba(255,255,255,0.5)", background: "transparent", color: "#FFFFFF", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
-            Skip
+      {isQuestion ? (
+        <div style={{ display: "flex", gap: 10, padding: "0 24px 32px" }}>
+          <button onClick={() => answer(false)} style={{ flex: 1, padding: "14px 0", borderRadius: 999, border: "1px solid rgba(255,255,255,0.5)", background: "transparent", color: "#FFFFFF", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+            Not for me
           </button>
-        )}
-        <button onClick={() => isLast ? onFinish() : setStep((s) => s + 1)}
-          style={{ flex: 1, padding: "14px 0", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.home, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-          {isLast ? "Get started" : "Next"}
-        </button>
-      </div>
+          <button onClick={() => answer(true)}
+            style={{ flex: 1, padding: "14px 0", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.home, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+            Yes, turn it on
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", gap: 10, padding: "0 24px 32px" }}>
+          {!isLast && (
+            <button onClick={onFinish} style={{ flex: 1, padding: "14px 0", borderRadius: 999, border: "1px solid rgba(255,255,255,0.5)", background: "transparent", color: "#FFFFFF", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+              Skip
+            </button>
+          )}
+          <button onClick={advance}
+            style={{ flex: 1, padding: "14px 0", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.home, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+            {isLast ? "Get started" : "Next"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
