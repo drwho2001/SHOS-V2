@@ -69,7 +69,7 @@ import { PrivacySettingsRepository } from "../repositories/privacySettingsReposi
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
-import { checkNotificationPermission, requestNotificationPermission, sendTestNotification, TEST_NOTIFICATION_DELAY_MS, checkExactAlarmPermission, requestExactAlarmPermission } from "../storage/notificationService";
+import { checkNotificationPermission, requestNotificationPermission, sendTestNotification, TEST_NOTIFICATION_DELAY_MS, checkExactAlarmPermission, requestExactAlarmPermission, getNotificationPlatform } from "../storage/notificationService";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
 import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
@@ -1349,22 +1349,41 @@ function NotificationToggleRow({ label, description, enabled, onToggle, darkMode
 // seconds out, so "does this actually work on my phone" has a
 // concrete, immediate answer instead of waiting hours for a real
 // reminder to (maybe) show up.
+// REWORKED 3 Sep 2026 — real ask: "still not getting notifications...
+// no run demo option in global settings... critically think on this."
+// This banner used to hard-return null for `status === "unavailable"`
+// — which is exactly what every non-native environment resolved to
+// BEFORE notificationService.js's own ground-up rework (see its header
+// comment), including the web/PWA build. That's the real reason the
+// test button and every bit of guidance below was invisible: not a
+// bug in the banner itself, a real capability gap one layer down that
+// this banner had no way to know wasn't there yet. Now that the web
+// path is real, this renders on both platforms, with honestly
+// different copy for each — Android's exact-alarm section stays
+// native-only (see checkExactAlarmPermission's own comment — there is
+// no web equivalent), and a platform note explains web's real,
+// permanent ceiling (works while the tab/installed app stays open or
+// recently backgrounded; can't survive being fully closed for hours
+// the way the native Android app can) rather than implying parity.
 function NotificationPermissionBanner({ darkMode }) {
   const [status, setStatus] = useState(null);
+  const [platform, setPlatform] = useState(null);
   const [testState, setTestState] = useState(null);
   // ADDED 2 Sep 2026 — real ask: "didn't get any [notifications]" —
   // a real, separate gap beyond the POST_NOTIFICATIONS permission
   // above: Android 12+'s own "Alarms & reminders" setting, which
   // every reminder this app schedules relies on for exact timing (see
   // notificationService.js's own comment on checkExactAlarmPermission
-  // for the full reasoning). "unavailable" covers both "not on Android"
-  // and "Android < 12" (the setting doesn't exist there) — same as
-  // basic permission status, this only ever shows real detected state.
+  // for the full reasoning). "unavailable" covers "not on Android",
+  // "Android < 12" (the setting doesn't exist there), AND the web
+  // platform (no equivalent OS concept at all) — same as basic
+  // permission status, this only ever shows real detected state.
   const [exactAlarmStatus, setExactAlarmStatus] = useState(null);
 
   useEffect(() => {
     checkNotificationPermission().then((r) => setStatus(r.status));
     checkExactAlarmPermission().then((r) => setExactAlarmStatus(r.status));
+    getNotificationPlatform().then(setPlatform);
   }, []);
 
   const request = async () => {
@@ -1381,11 +1400,19 @@ function NotificationPermissionBanner({ darkMode }) {
     setTestState(r.ok ? "sent" : `failed:${r.reason}`);
   };
 
-  if (status === null) return null; // still checking, avoid a flash of the wrong state
+  if (status === null || platform === null) return null; // still checking, avoid a flash of the wrong state
+  const isNative = platform === "native";
   if (status === "unavailable") {
-    // Web build (or a dev/preview environment) — not a real problem to
-    // report, native notifications genuinely don't apply here.
-    return null;
+    // Genuinely neither platform's real notification system exists
+    // here (very old browser, or Capacitor itself missing) — rare, and
+    // there is truly nothing actionable to offer.
+    return (
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: `1px solid ${darkMode ? DARK.border : "#DCDCE1"}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>
+          Notifications aren't available in this environment (no notification support detected on this browser/device).
+        </div>
+      </div>
+    );
   }
 
   const isGranted = status === "granted";
@@ -1400,7 +1427,19 @@ function NotificationPermissionBanner({ darkMode }) {
       </div>
       {isGranted && (
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
-          Android has granted this permission. The toggles below control which reminders actually get scheduled.
+          {isNative
+            ? "Android has granted this permission. The toggles below control which reminders actually get scheduled."
+            : "Permission granted. The toggles below control which reminders actually get scheduled."}
+        </div>
+      )}
+      {/* ADDED — real, honest platform ceiling for the web/PWA path —
+          see this component's own header comment. Native-only banner
+          above (exact alarms) stays exactly as it was. */}
+      {isGranted && !isNative && (
+        <div style={{ marginBottom: 8, padding: "8px 10px", borderRadius: 10, background: darkMode ? DARK.surfaceVariant : "#F0F0F3" }}>
+          <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>
+            Running as a web app: reminders fire while SHOS is open or recently backgrounded, and for anything already due the moment you next open it — but can't reliably wake you up hours later if it's been fully closed. For that, install the Android app instead.
+          </span>
         </div>
       )}
       {/* ADDED 2 Sep 2026 — real ask: "didn't get any" — a real,
@@ -1425,13 +1464,15 @@ function NotificationPermissionBanner({ darkMode }) {
       )}
       {isDenied && (
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>
-          Android is blocking notifications for SHOS — none of the toggles below will actually fire until this changes. Android only shows the one-time in-app prompt once per install, so this has to be turned on manually: open your phone's <strong>Settings → Apps → SHOS → Notifications</strong> and allow them.
+          {isNative
+            ? <>Android is blocking notifications for SHOS — none of the toggles below will actually fire until this changes. Android only shows the one-time in-app prompt once per install, so this has to be turned on manually: open your phone's <strong>Settings → Apps → SHOS → Notifications</strong> and allow them.</>
+            : <>Your browser is blocking notifications for SHOS — none of the toggles below will actually fire until this changes. This has to be turned on manually in your browser's own site settings for SHOS (usually the padlock/site-info icon next to the address bar → Notifications → Allow).</>}
         </div>
       )}
       {!isGranted && !isDenied && (
         <>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
-            SHOS hasn't asked yet, or Android hasn't recorded an answer. Tap below for the real system prompt.
+            {isNative ? "SHOS hasn't asked yet, or Android hasn't recorded an answer." : "SHOS hasn't asked yet, or your browser hasn't recorded an answer."} Tap below for the real system prompt.
           </div>
           <button onClick={request} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             Allow notifications
@@ -1444,9 +1485,13 @@ function NotificationPermissionBanner({ darkMode }) {
               test is confirming a notification survives the app being
               fully CLOSED, not just backgrounded — a real device
               distinction a plain "sent" toast can't prove on its own.
-              Spelled out here instead of assumed. */}
+              Spelled out here instead of assumed. Web-specific wording
+              below since that's a real capability difference, not just
+              phrasing — see this component's own header comment. */}
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
-            Tap Send, then close the app (not just switch away — swipe it away or force-close it) before the {Math.round(TEST_NOTIFICATION_DELAY_MS / 1000)}s is up. If it still shows up, real reminders will too.
+            {isNative
+              ? <>Tap Send, then close the app (not just switch away — swipe it away or force-close it) before the {Math.round(TEST_NOTIFICATION_DELAY_MS / 1000)}s is up. If it still shows up, real reminders will too.</>
+              : <>Tap Send, then switch to another tab or app (or lock your screen) before the {Math.round(TEST_NOTIFICATION_DELAY_MS / 1000)}s is up — it should still appear. Fully closing the tab/app will stop it, which is the real web limitation noted above.</>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <button onClick={runTest} disabled={testState === "sending"} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: testState === "sending" ? "default" : "pointer", opacity: testState === "sending" ? 0.6 : 1 }}>

@@ -74,3 +74,39 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+// ADDED 3 Sep 2026 — real ask: reminders (medication due, DoxyPEP,
+// etc.) genuinely working on the web/installed-PWA build, not just the
+// native Android app — see src/storage/notificationService.js's own
+// header comment for the full reasoning. This is the other half of
+// that: a service worker is the only thing that can show a real
+// notification with action buttons (Take/Cancel/Snooze) on the web,
+// AND the only thing that can react to one of those buttons being
+// tapped — but a service worker has no access to this app's own data
+// (no localStorage here, a completely separate execution context), so
+// it can't log a dose or cancel a reminder itself. It can only RELAY
+// the tap to a real page that can: if one is already open, `focus()`
+// it and `postMessage` the action straight across, no reload; if none
+// is open, `openWindow()` a fresh one with the action encoded in the
+// URL (?notifAction=...), which notificationService.js's own
+// addNotificationActionListener() reads once on startup — same real
+// tap, just arriving via the URL instead of a live message because the
+// page didn't exist yet to receive one.
+self.addEventListener("notificationclick", (event) => {
+  const action = event.action || "";
+  event.notification.close();
+  const scope = self.registration.scope;
+  const targetUrl = action ? `${scope}?notifAction=${encodeURIComponent(action)}` : scope;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client) {
+          await client.focus();
+          if (action) client.postMessage({ type: "shos-notification-action", action });
+          return;
+        }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+    })
+  );
+});
