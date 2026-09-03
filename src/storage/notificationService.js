@@ -102,9 +102,9 @@ export async function registerNotificationActionTypes() {
       {
         id: MEDICATION_ACTION_TYPE_ID,
         actions: [
-          { id: MEDICATION_ACTIONS.takeAll, title: "Take all" },
-          { id: MEDICATION_ACTIONS.snooze, title: "Remind in 30 min" },
-          { id: MEDICATION_ACTIONS.skipToday, title: "Skip until tomorrow" },
+          { id: MEDICATION_ACTIONS.takeAll, title: "Take" },
+          { id: MEDICATION_ACTIONS.skipToday, title: "Cancel" },
+          { id: MEDICATION_ACTIONS.snooze, title: "Snooze 30 min" },
         ],
       },
       {

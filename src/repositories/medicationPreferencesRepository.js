@@ -12,7 +12,18 @@ import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 const STORAGE_KEY = "shos_medication_preferences";
 
 export const DEFAULT_MEDICATION_PREFERENCES = {
-  doseRemindersEnabled: false,
+  // CHANGED 3 Sep 2026 — real ask: "still not showing notifications."
+  // Root cause: this defaulted to OFF, so nothing was ever scheduled
+  // for a daily medication until someone found Settings > Notifications
+  // and manually turned it on — the rest of the notification pipeline
+  // (permission banner, action buttons, exact-alarm handling) was
+  // already real and working, this single default was silently
+  // suppressing all of it. Daily dose reminders are the notification
+  // type explicitly asked for most, so this now defaults to ON — still
+  // fully OS-permission-gated (see NotificationPermissionBanner), so it
+  // can never fire without the user having actually granted Android
+  // permission first.
+  doseRemindersEnabled: true,
   // ADDED 26 Aug 2026 — real ask: customizable settings, not just an
   // on/off toggle. 30 min matches TakeYourPills/Medisafe's own
   // default snooze length (confirmed via their store listings).

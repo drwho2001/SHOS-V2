@@ -113,4 +113,20 @@
          what was reported. Declared explicitly now, closing the same
          gap the app's own established pattern already existed to fix. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- ADDED 3 Sep 2026 — real ask: "still not showing notifications."
+         The plugin's own bundled manifest (confirmed by reading it
+         directly) DOES declare these three alongside POST_NOTIFICATIONS
+         above — SCHEDULE_EXACT_ALARM (needed for on-time dose/DoxyPEP/
+         clinic-visit reminders, not just POST_NOTIFICATIONS itself),
+         RECEIVE_BOOT_COMPLETED (so a scheduled alarm survives a phone
+         reboot instead of silently vanishing), and WAKE_LOCK (so the
+         device actually wakes to deliver it). POST_NOTIFICATIONS was
+         previously the only one of the four given this same explicit-
+         declaration treatment, on the reasoning that Gradle's manifest
+         merge alone wasn't reliably enough for this exact project — the
+         same reasoning applies equally to these three, so they get the
+         same treatment now rather than being left to the merge only. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 </manifest>
