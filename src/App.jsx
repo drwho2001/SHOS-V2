@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import ContactsModule from "./modules/SHOS_Contacts_Prototype";
 import { useDarkModePreference } from "./calculations/darkModePreference";
 import { NEUTRAL_DARK as DARK } from "./calculations/designTokens";
@@ -611,6 +611,65 @@ export default function App() {
   // so it's visible no matter which tab was open when a dose became
   // due.
   const [dueMeds, setDueMeds] = useState([]);
+  // ADDED 3 Sep 2026 — real bug found live-testing this feature: the
+  // banner is `position: fixed` at the very top, which meant it simply
+  // OVERLAID whatever was already there — including Home's own header
+  // (title, Search, Settings gear), making Settings genuinely
+  // unreachable through its normal icon for as long as a dose stayed
+  // due. Measured via ResizeObserver (its real rendered height varies
+  // — one line for a single medication, a taller multi-item list for
+  // several) and applied as extra top padding on the main content
+  // wrapper below, so content shifts DOWN out from under the banner
+  // instead of being covered by it.
+  const [dueBannerHeight, setDueBannerHeight] = useState(0);
+  // CALLBACK ref, not useRef+useEffect — real bug hit building this:
+  // a plain ref read inside useEffect(..., [dueMeds.length]) reported
+  // the ref as still null even on the very effect run where
+  // dueMeds.length had already become 1 (confirmed by direct console
+  // logging while debugging live) — some real interaction between this
+  // conditionally-rendered element, React 18/StrictMode's effect
+  // scheduling, and reading a ref from inside a separate passive
+  // effect rather than a callback ref. A callback ref sidesteps the
+  // question entirely: React calls it synchronously, as part of the
+  // same commit, the moment the node is actually attached (and again
+  // with `null` the moment it's removed) — the textbook-correct way to
+  // measure a conditionally-rendered element, not just a workaround.
+  const dueBannerObserverRef = useRef(null);
+  const dueBannerCallbackRef = useCallback((node) => {
+    if (dueBannerObserverRef.current) {
+      dueBannerObserverRef.current.disconnect();
+      dueBannerObserverRef.current = null;
+    }
+    if (node) {
+      const observer = new ResizeObserver((entries) => setDueBannerHeight(entries[0].contentRect.height));
+      observer.observe(node);
+      dueBannerObserverRef.current = observer;
+    } else {
+      setDueBannerHeight(0);
+    }
+  }, []);
+  // ADDED 3 Sep 2026 — real ask: "any missing or unconsidered
+  // notification... UI" — a real gap: nothing told a web/PWA user
+  // their cached service worker was stale after a new deploy, so
+  // they could be running old notification-relay logic (or any other
+  // fix) indefinitely until they happened to reload on their own.
+  // `controllerchange` fires exactly when a NEW service worker
+  // actually takes over from a previous one — never on a genuinely
+  // fresh install (no prior controller to change from), so this can't
+  // misfire on first visit. sw.js's own install/activate handlers
+  // already call skipWaiting()/clients.claim() as aggressively as
+  // possible, so by the time this fires the new worker is already in
+  // control — the one thing still stale is the currently-loaded page's
+  // own JS, which a refresh picks up fresh. Deliberately a dismissible
+  // prompt, not a forced silent reload — reloading out from under
+  // someone mid-form would be a worse bug than the staleness itself.
+  const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onControllerChange = () => setSwUpdateAvailable(true);
+    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+    return () => navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+  }, []);
   const [notifToast, setNotifToast] = useState(null);
   const notifToastTimerRef = useRef(null);
   const showNotifToast = (message) => {
@@ -618,7 +677,15 @@ export default function App() {
     setNotifToast(message);
     notifToastTimerRef.current = setTimeout(() => setNotifToast(null), 4000);
   };
-  const checkDueMeds = () => setDueMeds(getDailyMedsState().due);
+  // CHANGED 3 Sep 2026 — real ask: an app icon badge count (web only —
+  // see notificationService.js's own comment on updateAppBadge() for
+  // why native isn't covered here). Reflects the exact same due count
+  // the in-app banner already shows, so the two can never disagree.
+  const checkDueMeds = () => {
+    const due = getDailyMedsState().due;
+    setDueMeds(due);
+    import("./storage/notificationService").then(({ updateAppBadge }) => updateAppBadge(due.length));
+  };
 
   useEffect(() => {
     checkDueMeds();
@@ -640,7 +707,15 @@ export default function App() {
     let listenerHandle = null;
     (async () => {
       const { addNotificationReceivedListener } = await import("./storage/notificationService");
-      listenerHandle = await addNotificationReceivedListener(() => checkDueMeds());
+      const { NotificationHistoryRepository } = await import("./repositories/notificationHistoryRepository");
+      listenerHandle = await addNotificationReceivedListener((notification) => {
+        checkDueMeds();
+        // ADDED 3 Sep 2026 — real ask: a notification history log —
+        // same real delivery event already driving the banner's live
+        // refresh above, now also recorded so Settings > Notifications
+        // > History has a real answer to "did anything fire recently".
+        NotificationHistoryRepository.record({ id: notification?.id, title: notification?.title, body: notification?.body });
+      });
     })();
     return () => { listenerHandle?.remove(); };
   }, []);
@@ -821,8 +896,13 @@ export default function App() {
         if (action.actionId === MEDICATION_ACTIONS.takeAll) onDueMedsTake();
         else if (action.actionId === MEDICATION_ACTIONS.skipToday) onDueMedsSkip();
         else if (action.actionId === MEDICATION_ACTIONS.snooze) onDueMedsSnooze();
-        else if (action.actionId === DOXYPEP_ACTIONS.takeDose) handleTakeDoxyDose();
-        else if (action.actionId === DOXYPEP_ACTIONS.snooze) handleSnoozeDoxy();
+        else if (action.actionId === DOXYPEP_ACTIONS.takeDose) {
+          const result = handleTakeDoxyDose();
+          showNotifToast(result.medications.length ? `${result.medications.join(", ")} logged` : "Logged");
+        } else if (action.actionId === DOXYPEP_ACTIONS.snooze) {
+          const result = handleSnoozeDoxy();
+          showNotifToast(`Snoozed ${result.minutes} min`);
+        }
       });
     })();
     return () => { listenerHandle?.remove(); };
@@ -1065,12 +1145,25 @@ export default function App() {
           state's own declaration above for the full reasoning. Fixed
           at the very top, above every screen's own content (not tied
           to Home), so a due medication stays visible regardless of
-          which tab was open when it became due. zIndex 260: above a
-          module's own sheets/forms (210-220) since a due dose is worth
-          interrupting one, below the true top-level overlays (App
-          Lock/onboarding/decoy at 998-999). */}
+          which tab was open when it became due.
+          CHANGED 3 Sep 2026 — real bug found live-testing: at zIndex
+          260 this sat ABOVE every module's own full-screen sheets
+          (200-230 — Settings, Notifications, Measurement forms, etc.),
+          covering THEIR header/back-chevron the exact same way it
+          covered Home's — confirmed live: the Notification History
+          sheet opened with this banner still painted over its own
+          title bar. zIndex 100 instead: still above any screen's plain
+          in-page content (a fixed element paints above normal flow
+          regardless of its own z-index value, so Home's own header
+          stays correctly covered-then-pushed-down via the padding fix
+          above, not via z-index), but below every real modal/sheet
+          (lowest confirmed real usage: 200) — an open sheet now
+          correctly covers/replaces the banner instead of fighting it
+          for the same strip of screen, which is reasonable UX on its
+          own terms too: a sheet already has the user's full attention,
+          and the banner reappears the moment they close it. */}
       {dueMeds.length > 0 && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", background: ACCENTS.medication, zIndex: 260, boxShadow: "0 4px 16px rgba(0,0,0,.2)", fontFamily: "'Inter', sans-serif" }}>
+        <div ref={dueBannerCallbackRef} style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", background: ACCENTS.medication, zIndex: 100, boxShadow: "0 4px 16px rgba(0,0,0,.2)", fontFamily: "'Inter', sans-serif" }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
             <Pill size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -1103,7 +1196,7 @@ export default function App() {
                 on the next real check (visibilitychange, the 60s poll,
                 or a fresh notification) since it's not a persisted
                 dismissal, just local UI state. */}
-            <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setDueMeds([])} aria-label="Dismiss" />
+            <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setDueMeds([])} aria-label="Dismiss due medications banner" />
           </div>
         </div>
       )}
@@ -1111,6 +1204,30 @@ export default function App() {
       {notifToast && (
         <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", background: "#1B1B1F", color: "#FFFFFF", padding: "10px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, whiteSpace: "nowrap", maxWidth: "90vw", overflow: "hidden", textOverflow: "ellipsis", fontFamily: "'Inter', sans-serif" }}>
           {notifToast}
+        </div>
+      )}
+
+      {/* ADDED 3 Sep 2026 — real ask: a service-worker update prompt —
+          see swUpdateAvailable's own declaration above for the full
+          reasoning. Bottom placement (not top, unlike the due-meds
+          banner): this is a much lower-urgency, infrequent notice, and
+          keeping it off the top avoids any stacking fight with that
+          banner on the rare occasion both are true at once. Persistent
+          until acted on or dismissed — unlike notifToast, this
+          shouldn't silently vanish after a few seconds; missing it
+          just means running stale code a while longer.
+          CHANGED 3 Sep 2026 — real bug found live-testing: this shared
+          the EXACT same bottom offset as notifToast (and the older
+          backExitToast) below — sitting at literally the same position
+          as either would fully overlap it if both happened to be
+          visible at once (a genuine possibility: a notification action
+          toast firing while an update is pending). Bumped 60px higher
+          so the two stack instead of collide. */}
+      {swUpdateAvailable && (
+        <div style={{ position: "fixed", bottom: "calc(150px + env(safe-area-inset-bottom))", left: 16, right: 16, display: "flex", alignItems: "center", gap: 10, background: "#1B1B1F", color: "#FFFFFF", padding: "10px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, fontFamily: "'Inter', sans-serif" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>A new version of SHOS is ready — may include notification fixes.</span>
+          <span onClick={() => window.location.reload()} style={{ fontSize: 12, fontWeight: 700, color: ACCENTS.healthcare, cursor: "pointer", flexShrink: 0 }}>Refresh</span>
+          <X size={16} color="rgba(255,255,255,.7)" style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => setSwUpdateAvailable(false)} aria-label="Dismiss update notice" />
         </div>
       )}
 
@@ -1122,7 +1239,7 @@ export default function App() {
           above. env(safe-area-inset-top) is the live value the OS
           reports for that overlap (0 where there's none, so this is a
           no-op on any device/browser that isn't drawing edge-to-edge). */}
-      <div style={{ flex: 1, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
+      <div style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
         {active === "home" ? (
           <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} />
         ) : ActiveModule ? (

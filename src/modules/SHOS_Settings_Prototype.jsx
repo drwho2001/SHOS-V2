@@ -66,10 +66,12 @@ import { TrashRepository, MODULE_LABELS as TRASH_MODULE_LABELS } from "../reposi
 import { getCalendarEvents, groupEventsByDay } from "../calculations/calendarCalculations";
 import { LocationsRepository } from "../repositories/locationsRepository";
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
-import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
+import { NotificationPreferencesRepository, isPaused } from "../repositories/notificationPreferencesRepository";
+import { NotificationHistoryRepository } from "../repositories/notificationHistoryRepository";
+import { getDeferredInstallPrompt, onInstallPromptAvailable, triggerInstallPrompt } from "../storage/installPromptService";
 import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
-import { checkNotificationPermission, requestNotificationPermission, sendTestNotification, TEST_NOTIFICATION_DELAY_MS, checkExactAlarmPermission, requestExactAlarmPermission, getNotificationPlatform } from "../storage/notificationService";
+import { checkNotificationPermission, requestNotificationPermission, sendTestNotification, TEST_NOTIFICATION_DELAY_MS, checkExactAlarmPermission, requestExactAlarmPermission, getNotificationPlatform, isIOS, isStandalone } from "../storage/notificationService";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
 import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
@@ -1402,6 +1404,34 @@ function NotificationPermissionBanner({ darkMode }) {
 
   if (status === null || platform === null) return null; // still checking, avoid a flash of the wrong state
   const isNative = platform === "native";
+
+  // ADDED 3 Sep 2026 — real ask: "any missing or unconsidered
+  // notification... UI" — a real gap found in that audit. This used to
+  // show identical generic web copy to an iPhone user as to desktop/
+  // Android Chrome. iOS Safari has a materially different real
+  // requirement (confirmed via isIOS()/isStandalone()'s own comments
+  // in notificationService.js): notifications cannot work AT ALL in a
+  // plain browser tab there, even on 16.4+, until the page is added to
+  // the Home Screen and opened from that icon — no permission prompt,
+  // no toggle, nothing below would do anything until that's done
+  // first. Takes priority over the normal granted/denied/prompt states
+  // (whatever `status` naturally resolves to on a non-standalone iOS
+  // tab is unreliable/misleading — often reads "denied" immediately,
+  // which would wrongly imply the user blocked something).
+  if (!isNative && isIOS() && !isStandalone()) {
+    return (
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: `1px solid ${ACTION.red}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: ACTION.red, flexShrink: 0 }} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Notifications need SHOS added to your Home Screen</span>
+        </div>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>
+          iOS Safari can't show notifications from a page opened in a regular browser tab, no matter what's allowed here. Tap the Share icon, choose <strong>Add to Home Screen</strong>, then open SHOS from that new icon instead of Safari — this banner will offer the real permission prompt once you do.
+        </div>
+      </div>
+    );
+  }
+
   if (status === "unavailable") {
     // Genuinely neither platform's real notification system exists
     // here (very old browser, or Capacitor itself missing) — rare, and
@@ -1506,10 +1536,50 @@ function NotificationPermissionBanner({ darkMode }) {
   );
 }
 
+// ADDED 3 Sep 2026 — real ask: install-to-home-screen nudge tied to
+// notification reliability — see installPromptService.js's own header
+// for the full reasoning (why this needs a module-level listener
+// registered from main.jsx rather than one set up lazily in here).
+// Android/desktop Chrome/Edge only: iOS has no equivalent API at all
+// (Apple platform limitation) and gets its own dedicated guidance
+// inside NotificationPermissionBanner above instead — showing a second,
+// generic nudge on top of that specific one would just be noise.
+function InstallPwaNudge({ darkMode }) {
+  const [promptEvent, setPromptEvent] = useState(() => getDeferredInstallPrompt());
+  const [platform, setPlatform] = useState(null);
+  const [dismissed, setDismissed] = useState(false);
+  useEffect(() => onInstallPromptAvailable(setPromptEvent), []);
+  useEffect(() => { getNotificationPlatform().then(setPlatform); }, []);
+
+  if (platform !== "web" || isStandalone() || isIOS() || !promptEvent || dismissed) return null;
+
+  const install = async () => {
+    const choice = await triggerInstallPrompt();
+    if (choice) setDismissed(true); // real gesture used, whichever way they answered
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 16, padding: "12px 16px", borderRadius: RADIUS.md, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surface : "#FFFFFF" }}>
+      <Download size={16} color={ACCENTS.healthcare} style={{ flexShrink: 0, marginTop: 2 }} />
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Install SHOS for more reliable reminders</div>
+        <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2, marginBottom: 10 }}>
+          Installed as its own app (not just a browser tab), SHOS keeps its background notification handling registered more reliably.
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <button onClick={install} style={{ padding: "7px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Install</button>
+          <span onClick={() => setDismissed(true)} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : "#5B5B62", cursor: "pointer" }}>Not now</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function NotificationsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
   const [, forceRefresh] = useState(0);
   const refresh = () => forceRefresh((n) => n + 1);
+  const [showHistory, setShowHistory] = useState(false);
   const notifPrefs = NotificationPreferencesRepository.getPreferences();
   const medPrefs = MedicationPreferencesRepository.getPreferences();
 
@@ -1526,6 +1596,31 @@ function NotificationsScreen({ onClose }) {
     refresh();
   };
   const toggleMed = () => { MedicationPreferencesRepository.updatePreferences({ doseRemindersEnabled: !medPrefs.doseRemindersEnabled }); syncMedicationReminders(); refresh(); };
+
+  // Re-syncs every real reminder type at once — used by the master
+  // switch, quiet hours, and vacation pause below, all of which affect
+  // every type simultaneously rather than just one.
+  const resyncAll = () => {
+    syncMedicationReminders();
+    syncDoxyPepAlert();
+    syncTestingReminder();
+    syncRefillReminder();
+    syncClinicVisitReminders();
+  };
+
+  const toggleMaster = () => { NotificationPreferencesRepository.update({ masterEnabled: !notifPrefs.masterEnabled }); resyncAll(); refresh(); };
+
+  // ADDED 3 Sep 2026 — real ask: quiet hours + vacation pause.
+  const setQuietHours = (changes) => { NotificationPreferencesRepository.update(changes); resyncAll(); refresh(); };
+  const pausedActive = isPaused(notifPrefs);
+  const startPause = (days) => {
+    const until = new Date();
+    until.setDate(until.getDate() + days);
+    NotificationPreferencesRepository.update({ pausedUntil: until.toISOString() });
+    resyncAll();
+    refresh();
+  };
+  const resumeNow = () => { NotificationPreferencesRepository.update({ pausedUntil: null }); resyncAll(); refresh(); };
 
   const hoursInput = (value, onChange) => (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
@@ -1545,6 +1640,63 @@ function NotificationsScreen({ onClose }) {
 
       <div style={{ padding: 16 }}>
         <NotificationPermissionBanner darkMode={darkMode} />
+        <InstallPwaNudge darkMode={darkMode} />
+
+        {/* ADDED 3 Sep 2026 — real ask: a single master switch, distinct
+            from the 5 independent per-type toggles below. Checked in
+            notificationService.js's own scheduleNotification() before
+            any real reminder fires, regardless of type. */}
+        <NotificationToggleRow darkMode={darkMode} label="All notifications" enabled={notifPrefs.masterEnabled} onToggle={toggleMaster}
+          description="Turns every reminder type below on or off at once. Each toggle keeps its own setting for when this is back on." />
+
+        {/* ADDED 3 Sep 2026 — real ask: "pause all reminders" vacation
+            mode — a dated, self-expiring pause, distinct from the
+            master switch above (permanent preference) and from a
+            single medication's own "skip until tomorrow" (only covers
+            one medication, one day). */}
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Pause everything</div>
+          {pausedActive ? (
+            <>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2, marginBottom: 10 }}>
+                Paused until {new Date(notifPrefs.pausedUntil).toLocaleDateString([], { day: "numeric", month: "short" })}, {new Date(notifPrefs.pausedUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}.
+              </div>
+              <button onClick={resumeNow} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Resume now</button>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2, marginBottom: 10 }}>
+                Temporarily stop every reminder — travelling, a break, whatever the reason. Resumes on its own, no need to remember to turn it back on.
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {[{ label: "1 day", days: 1 }, { label: "3 days", days: 3 }, { label: "1 week", days: 7 }, { label: "2 weeks", days: 14 }].map((opt) => (
+                  <button key={opt.days} onClick={() => startPause(opt.days)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${darkMode ? DARK.border : "#DCDCE1"}`, background: "transparent", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{opt.label}</button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ADDED 3 Sep 2026 — real ask: quiet hours. Deferred, not
+            dropped — a reminder due inside the window is rescheduled
+            for the window's end, see quietHoursEndAfter() in
+            notificationPreferencesRepository.js. */}
+        <NotificationToggleRow darkMode={darkMode} label="Quiet hours" enabled={notifPrefs.quietHoursEnabled} onToggle={() => setQuietHours({ quietHoursEnabled: !notifPrefs.quietHoursEnabled })}
+          description="Reminders due inside this window wait until it ends, rather than firing overnight.">
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
+            <div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>From</div>
+              <input type="time" value={notifPrefs.quietHoursStart} onChange={(e) => setQuietHours({ quietHoursStart: e.target.value })}
+                style={{ padding: "6px 8px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 13 }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>To</div>
+              <input type="time" value={notifPrefs.quietHoursEnd} onChange={(e) => setQuietHours({ quietHoursEnd: e.target.value })}
+                style={{ padding: "6px 8px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 13 }} />
+            </div>
+          </div>
+        </NotificationToggleRow>
+
         <NotificationToggleRow darkMode={darkMode} label="Medication dose reminders" enabled={medPrefs.doseRemindersEnabled} onToggle={toggleMed}
           description="Alerts when a daily medication is due, or due soon." />
         <NotificationToggleRow darkMode={darkMode} label="Refill reminders" enabled={notifPrefs.refillReminderEnabled} onToggle={() => toggleNotif("refillReminderEnabled")}
@@ -1561,6 +1713,56 @@ function NotificationsScreen({ onClose }) {
           description="Second, closer reminder before a booked clinic appointment. Defaults to 2 hours.">
           {hoursInput(notifPrefs.clinicVisitReminderBHours, (v) => { NotificationPreferencesRepository.update({ clinicVisitReminderBHours: v }); syncClinicVisitReminders(); refresh(); })}
         </NotificationToggleRow>
+
+        {/* ADDED 3 Sep 2026 — real ask: a notification history log —
+            nothing anywhere previously recorded that a real
+            notification had delivered. */}
+        <div onClick={() => setShowHistory(true)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: RADIUS.md, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surface : "#FFFFFF", cursor: "pointer" }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Notification history</span>
+          <ChevronRight size={16} color={darkMode ? DARK.textSecondary : "#5B5B62"} />
+        </div>
+      </div>
+
+      {showHistory && <NotificationHistoryScreen darkMode={darkMode} onClose={() => setShowHistory(false)} />}
+    </div>
+  );
+}
+
+// ADDED 3 Sep 2026 — real ask: a real log of past notification
+// deliveries — see notificationHistoryRepository.js's own header for
+// the full reasoning. Read-only besides a Clear action; this is a
+// diagnostic/awareness view, not something with its own settings.
+function NotificationHistoryScreen({ darkMode, onClose }) {
+  const [entries, setEntries] = useState(() => NotificationHistoryRepository.getAll());
+  const clear = () => { NotificationHistoryRepository.clear(); setEntries([]); };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+          <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Notification history</span>
+        </div>
+        {entries.length > 0 && (
+          <span onClick={clear} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Clear</span>
+        )}
+      </div>
+      <div style={{ padding: 16 }}>
+        {entries.length === 0 ? (
+          <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", textAlign: "center", padding: "40px 16px" }}>
+            Nothing's fired yet. Real reminders (and the test notification) show up here the moment they actually deliver.
+          </div>
+        ) : entries.map((e, i) => (
+          <div key={i} style={{ padding: "10px 0", borderBottom: i < entries.length - 1 ? (darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1") : "none" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{e.title}</span>
+              <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", flexShrink: 0 }}>
+                {new Date(e.firedAt).toLocaleDateString([], { day: "numeric", month: "short" })}, {new Date(e.firedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+              </span>
+            </div>
+            {e.body && <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>{e.body}</div>}
+          </div>
+        ))}
       </div>
     </div>
   );

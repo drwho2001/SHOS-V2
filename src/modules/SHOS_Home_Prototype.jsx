@@ -53,6 +53,7 @@ import {
   TestTubeIcon as TestTube, FireIcon as Flame, StethoscopeIcon as Stethoscope,
   SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CalendarCheckIcon as CalendarCheck, StackIcon as Stack, DropIcon as Drop,
   IdentificationBadgeIcon as CreditCard, DownloadSimpleIcon as Download, LockIcon as Lock,
+  BellIcon as Bell,
 } from "@phosphor-icons/react";
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
 import { ContactRepository } from "../repositories/contactRepository";
@@ -72,7 +73,8 @@ import { ContraceptionRepository } from "../repositories/contraceptionRepository
 import { PregnancyRepository } from "../repositories/pregnancyRepository";
 import { formatDoxyPepCountdown } from "../calculations/doxyPepCalculations";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
-import { requestNotificationPermission } from "../storage/notificationService";
+import { requestNotificationPermission, checkNotificationPermission } from "../storage/notificationService";
+import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
 import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
@@ -81,6 +83,51 @@ import { syncClinicVisitsToCalendar } from "../storage/calendarSyncService";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
+
+// ADDED 3 Sep 2026 — real ask: fix the Safari/iOS gesture-gated
+// permission bug (see this file's own comment on notifPermStatus
+// above) with a real pre-permission explainer, not just a silent
+// direct request. Same dismissible-card pattern as the backup
+// reminder just above it — shown only while `status === "prompt"`
+// (genuinely never asked yet) and not permanently dismissed. The
+// "Enable notifications" button's onClick IS the real user gesture
+// this whole fix depends on — requestNotificationPermission() is
+// called directly inside it, synchronously enough to satisfy Safari's
+// own requirement, unlike the old auto-request on mount.
+function NotificationPermissionNudge({ status, onStatusChange }) {
+  const [darkMode] = useDarkModePreference();
+  const [dismissed, setDismissed] = useState(() => NotificationPreferencesRepository.getPreferences().permissionNudgeDismissed);
+  if (status !== "prompt" || dismissed) return null;
+
+  const notNow = () => {
+    NotificationPreferencesRepository.update({ permissionNudgeDismissed: true });
+    setDismissed(true);
+  };
+  const enable = async () => {
+    const r = await requestNotificationPermission();
+    onStatusChange(r.status);
+    if (r.status !== "prompt") {
+      NotificationPreferencesRepository.update({ permissionNudgeDismissed: true });
+      setDismissed(true);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surface : "#FFFFFF" }}>
+      <Bell size={16} color={ACCENTS.healthcare} style={{ flexShrink: 0, marginTop: 2 }} />
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Get reminded about medications and other due dates</div>
+        <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2, marginBottom: 10 }}>
+          SHOS can notify you when a dose or reminder is due. This asks your device once — you can change it any time in Settings.
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <button onClick={enable} style={{ padding: "7px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Enable notifications</button>
+          <span onClick={notNow} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : "#5B5B62", cursor: "pointer" }}>Not now</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, registerModuleBackHandler, onLockNow }) {
   const [darkMode] = useDarkModePreference();
@@ -177,14 +224,29 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     return () => clearInterval(interval);
   }, []);
 
-  // ADDED 26 Aug 2026 by Claude Code, mirrored back here to keep this
-  // copy in sync — real gap: a scheduled notification silently does
-  // nothing without permission granted first, and this was written but
-  // never actually called anywhere. Kept as its own one-time effect,
-  // separate from the 60s-repeating DoxyPEP effect above (this only
-  // ever needs to run once per app launch, not on every recompute).
+  // CHANGED 3 Sep 2026 — real bug found auditing notification gaps:
+  // this used to call requestNotificationPermission() directly, every
+  // single app open, from inside a plain useEffect — no user gesture
+  // anywhere in that call chain. Safari (desktop AND iOS 16.4+ PWA)
+  // requires a notification permission request to be triggered
+  // synchronously by a real click; a gesture-less call there simply
+  // does nothing, silently, forever — Safari users could never have
+  // been able to grant permission through this flow at all. It's also
+  // exactly the pattern Chrome's own "abusive notification permission
+  // request" heuristic targets (asking immediately on load, before any
+  // interaction), which can quietly downgrade the real prompt to a
+  // muted address-bar chip instead of showing it.
+  // Fixed: only CHECK status here (read-only, no prompt, safe to call
+  // anywhere). The actual request now only ever fires from a real
+  // click — see NotificationPermissionNudge below, a dismissible card
+  // (same pattern as the "never exported a backup" one on this same
+  // screen) that explains WHY before asking, then requests permission
+  // directly inside its own button's onClick — a genuine user gesture,
+  // which is what makes this work on Safari at all, not just Chrome/
+  // Android.
+  const [notifPermStatus, setNotifPermStatus] = useState(null);
   useEffect(() => {
-    requestNotificationPermission();
+    checkNotificationPermission().then((r) => setNotifPermStatus(r.status));
   }, []);
 
   // ADDED 26 Aug 2026 — real ask: custom medication reminder
@@ -682,6 +744,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           </span>
         </div>
       )}
+
+      <NotificationPermissionNudge status={notifPermStatus} onStatusChange={setNotifPermStatus} />
 
       {/* ADDED — real ask: "scheduled auto-export" — a real, one-off
           confirmation that a backup was just written unattended,

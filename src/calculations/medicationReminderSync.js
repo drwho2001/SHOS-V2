@@ -22,6 +22,7 @@ import { LogRepository } from "../repositories/logRepository";
 import { isDoseLockedOut, lockoutEndsAt } from "./medicationCalculations";
 import { scheduleNotification, cancelNotification, registerNotificationActionTypes, NOTIFICATION_IDS, MEDICATION_ACTION_TYPE_ID, moduleSmallIconName } from "../storage/notificationService";
 import { ACCENTS } from "./designTokens";
+import { nowAsStoredDateTime } from "./dateInputHelpers";
 
 // ADDED 3 Sep 2026 — exported (was module-private) — real ask: "clear
 // notification awareness" needs an in-app "medication due" banner
@@ -109,7 +110,16 @@ export async function syncMedicationReminders() {
 export function handleTakeAll() {
   const { due } = getDailyMedsState();
   const names = due.map((m) => m.name);
-  const timestamp = new Date().toISOString();
+  // nowAsStoredDateTime(), not new Date().toISOString() — real bug
+  // found auditing notification gaps: this stored a genuine real-UTC
+  // timestamp while every other dose-logging path in this app (the
+  // manual "Log dose" button, fixed earlier this session) stores this
+  // app's own fake-UTC convention (see dateInputHelpers.js). A dose
+  // logged by tapping Take here would display up to 1h off during BST,
+  // and would feed WRONG into isDoseLockedOut/lockoutEndsAt's own
+  // realTimestampFromStored() call (medicationCalculations.js), which
+  // assumes every stored dose date follows the fake-UTC convention.
+  const timestamp = nowAsStoredDateTime();
   due.forEach((m) => LogRepository.create({ medicationId: m.id, type: "dose", delta: -m.unitsPerDose, date: timestamp }));
   syncMedicationReminders();
   return { medications: names };

@@ -1,6 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
+// ADDED 3 Sep 2026 — real ask: an install-to-home-screen nudge tied to
+// notification reliability. Imported here (not lazily inside whatever
+// screen eventually shows the nudge) purely for its module-level side
+// effect — registering the beforeinstallprompt listener as early as
+// possible, since that real event can fire at any point after load,
+// entirely on the browser's own schedule, and is lost forever if
+// nothing was listening yet when it did. See that file's own header.
+import "./storage/installPromptService.js";
 
 // CHANGED 1 Sep 2026 — real fix, found during a smoothness/efficiency
 // review: index.html loaded Inter/JetBrains Mono from a render-blocking

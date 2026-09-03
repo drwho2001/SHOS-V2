@@ -47,7 +47,13 @@ async function dismissOnboarding(page) {
   // same as a real user glancing at it once and moving on, so the rest
   // of this script keeps testing the real medication list, not the
   // banner sitting on top of it.
-  await page.locator('[aria-label="Dismiss"]').first().click({ timeout: 3000 }).catch(() => {});
+  await page.locator('[aria-label="Dismiss due medications banner"]').first().click({ timeout: 3000 }).catch(() => {});
+  await page.waitForTimeout(300);
+  // ADDED 3 Sep 2026 — same reasoning for the new service-worker
+  // update prompt: a real update genuinely can fire mid dev-server
+  // testing (a rebuild swaps in a new sw.js) and its bottom-anchored
+  // banner can then sit over form controls lower on a scrolled screen.
+  await page.locator('[aria-label="Dismiss update notice"]').first().click({ timeout: 3000 }).catch(() => {});
   await page.waitForTimeout(300);
 }
 

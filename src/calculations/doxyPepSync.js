@@ -18,6 +18,7 @@ import { getDoxyPepStatus, findDoxyPepMedication } from "./doxyPepCalculations";
 import { scheduleNotification, cancelNotification, registerNotificationActionTypes, NOTIFICATION_IDS, DOXYPEP_ACTION_TYPE_ID, moduleSmallIconName } from "../storage/notificationService";
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
+import { nowAsStoredDateTime } from "./dateInputHelpers";
 
 // ADDED — real ask: unified notifications on/off switchboard. Gates
 // only the NATIVE notification below — the returned `status` object
@@ -89,11 +90,29 @@ export async function syncDoxyPepAlert() {
 // medicationReminderSync's own handleTakeAll/handleSnooze: a
 // notification tap can happen regardless of which screen is currently
 // open, so dispatch lives at the shell level, not a module.
+// CHANGED 3 Sep 2026 — real ask: "clear notification awareness" — this
+// used to run completely silently (App.jsx's action listener called it
+// with no confirmation of any kind), the exact same gap medication's
+// own Take/Skip/Snooze had before that got fixed — now returns what
+// actually happened so App.jsx can show the same real toast.
+//
+// Also fixed the SAME date-storage bug found while making this change:
+// this stored a genuine real-UTC `new Date().toISOString()` while every
+// other dose-logging path in this app stores its own fake-UTC
+// convention (dateInputHelpers.js) — the manual "Log dose" button was
+// fixed earlier this session, medicationReminderSync.js's own
+// handleTakeAll() just now, and this was the one remaining real
+// dose-logging path still doing it the old, wrong way. A dose logged
+// here would display up to 1h off during BST, and feed wrong into
+// getDoxyPepStatus()'s own realTimestampFromStored() call
+// (doxyPepCalculations.js), which assumes every stored dose date
+// follows the fake-UTC convention.
 export function handleTakeDoxyDose() {
   const doxyMed = findDoxyPepMedication(MedicationRepository.getAll());
-  if (!doxyMed) return;
-  LogRepository.create({ medicationId: doxyMed.id, type: "dose", delta: -doxyMed.unitsPerDose, date: new Date().toISOString() });
+  if (!doxyMed) return { medications: [] };
+  LogRepository.create({ medicationId: doxyMed.id, type: "dose", delta: -doxyMed.unitsPerDose, date: nowAsStoredDateTime() });
   syncDoxyPepAlert();
+  return { medications: [doxyMed.name] };
 }
 
 export function handleSnoozeDoxy() {
@@ -106,4 +125,5 @@ export function handleSnoozeDoxy() {
     smallIcon: moduleSmallIconName("home"),
     iconColor: ACCENTS.home,
   });
+  return { minutes: 30 };
 }

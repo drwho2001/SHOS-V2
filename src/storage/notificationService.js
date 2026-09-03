@@ -405,6 +405,10 @@ export async function sendTestNotification() {
       body: "If you can see this, notifications are working — even backgrounded.",
       at: new Date(Date.now() + TEST_NOTIFICATION_DELAY_MS),
       smallIcon: moduleSmallIconName("home"),
+      // A diagnostic "does this work at all" check must never be
+      // silently swallowed by quiet hours or a vacation pause — see
+      // scheduleNotification()'s own comment on bypassGlobalGates.
+      bypassGlobalGates: true,
     });
     return { ok: true };
   } catch (err) {
@@ -468,14 +472,41 @@ async function showWebNotification({ id, title, body, actionTypeId }) {
 // silently failed — two different code paths with different safety.)
 // Fixed at this one shared root instead of patching every caller:
 // never throws now, always logs a real reason on failure.
-export async function scheduleNotification({ id, title, body, at, actionTypeId, smallIcon, iconColor }) {
+//
+// CHANGED 3 Sep 2026 — real ask: a master notifications switch, quiet
+// hours, and a "pause everything" vacation mode. Implemented HERE, the
+// one shared chokepoint every real reminder type already calls
+// (medicationReminderSync.js, doxyPepSync.js, testingReminderSync.js,
+// refillReminderSync.js, clinicVisitReminderSync.js), rather than
+// duplicating the same three checks into all five of those files —
+// each of them keeps its own per-TYPE toggle (only it knows which
+// type it is), master/pause/quiet-hours are type-agnostic and apply
+// uniformly, so they belong at the one place everything already funnels
+// through. `bypassGlobalGates` exists only for sendTestNotification()
+// above: a diagnostic "does this work at all" check should never be
+// silently swallowed by quiet hours or a vacation pause — that would
+// make the one tool for verifying notifications work itself
+// unreliable during the exact windows someone might want to check it.
+export async function scheduleNotification({ id, title, body, at, actionTypeId, smallIcon, iconColor, bypassGlobalGates = false }) {
+  let effectiveAt = new Date(at);
+  if (!bypassGlobalGates) {
+    const { NotificationPreferencesRepository, notificationsGloballyEnabled, isWithinQuietHours, quietHoursEndAfter } = await import("../repositories/notificationPreferencesRepository");
+    const notifPrefs = NotificationPreferencesRepository.getPreferences();
+    if (!notificationsGloballyEnabled(notifPrefs)) {
+      await cancelNotification(id);
+      return false;
+    }
+    if (isWithinQuietHours(notifPrefs, effectiveAt)) {
+      effectiveAt = quietHoursEndAfter(notifPrefs, effectiveAt);
+    }
+  }
   const platform = await getPlatform();
   if (platform === "native") {
     const plugin = await getPlugin();
     if (!plugin) return false;
     try {
       await plugin.schedule({
-        notifications: [{ id, title, body, schedule: { at: new Date(at) }, ...(actionTypeId ? { actionTypeId } : {}), ...(smallIcon ? { smallIcon } : {}), ...(iconColor ? { iconColor } : {}) }],
+        notifications: [{ id, title, body, schedule: { at: effectiveAt }, ...(actionTypeId ? { actionTypeId } : {}), ...(smallIcon ? { smallIcon } : {}), ...(iconColor ? { iconColor } : {}) }],
       });
       return true;
     } catch (err) {
@@ -486,7 +517,7 @@ export async function scheduleNotification({ id, title, body, at, actionTypeId, 
   if (!webNotificationsSupported()) return false;
   const existing = webTimeouts.get(id);
   if (existing) clearTimeout(existing);
-  const delay = Math.max(0, new Date(at).getTime() - Date.now());
+  const delay = Math.max(0, effectiveAt.getTime() - Date.now());
   const timeoutId = setTimeout(() => {
     webTimeouts.delete(id);
     showWebNotification({ id, title, body, actionTypeId });
@@ -505,6 +536,57 @@ export async function scheduleNotification({ id, title, body, at, actionTypeId, 
 // the Notification API has no equivalent per-notification tinting.
 export function moduleSmallIconName(moduleKey) {
   return `ic_stat_${moduleKey}`;
+}
+
+// ADDED 3 Sep 2026 — real ask: "any missing or unconsidered
+// notification... UI" — an app icon badge count was one real gap.
+// Web-only for now: the Badging API (navigator.setAppBadge/
+// clearAppBadge) is a real, no-dependency browser API, but native
+// Android has no first-party Capacitor badge support without adding a
+// whole new plugin (@capacitor/badge or a community equivalent) —
+// genuinely out of scope for this pass, not an oversight; a caller on
+// native just gets a silent no-op here, same "degrade safely" pattern
+// as everywhere else in this file.
+// ADDED 3 Sep 2026 — real ask: "any missing or unconsidered
+// notification... UI" — the web banner showed identical generic copy
+// to an iPhone user as to desktop/Android Chrome, without mentioning
+// iOS's real, materially different requirement: Safari (even 16.4+)
+// cannot show notifications at all until the page is added to the
+// Home Screen and opened from there as its own standalone app — a
+// plain browser tab genuinely can't, no matter what permission is
+// granted. Used by both the permission banner's copy and the install
+// nudge below.
+export function isIOS() {
+  if (typeof navigator === "undefined") return false;
+  // iPad on iOS 13+ reports as "MacIntel" in its user agent (Apple's
+  // own desktop-Safari-compatibility change) — maxTouchPoints is the
+  // real, documented way to tell it apart from an actual Mac.
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+// Whether this page is currently running as an installed/standalone
+// app rather than a plain browser tab — the real, documented way to
+// detect it across browsers (`display-mode: standalone` is the
+// general PWA signal; `navigator.standalone` is Safari's own older,
+// iOS-specific equivalent, kept since iOS Safari doesn't always report
+// the display-mode media query consistently).
+export function isStandalone() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+export async function updateAppBadge(count) {
+  const platform = await getPlatform();
+  if (platform !== "web") return false;
+  if (typeof navigator === "undefined" || !("setAppBadge" in navigator)) return false;
+  try {
+    if (count > 0) await navigator.setAppBadge(count);
+    else await navigator.clearAppBadge();
+    return true;
+  } catch (err) {
+    console.warn("[notificationService] App badge update failed:", err);
+    return false;
+  }
 }
 
 // Cancels a previously scheduled notification by its fixed id — safe
