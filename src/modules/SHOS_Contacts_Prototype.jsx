@@ -1451,10 +1451,12 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   const draftKey = `contactEdit_${contact?.id || "new"}`;
   // ADDED 26 Aug 2026 — real ask: Relationship type now editable,
   // same pattern as Vaccinations' vaccineOptions.
-  const [relationshipTypeOptions, setRelationshipTypeOptions] = useState(() => CustomOptionListsRepository.get("relationshipType"));
-  const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.get("gender"));
-  const [pronounsOptions, setPronounsOptions] = useState(() => CustomOptionListsRepository.get("pronouns"));
-  const [contraceptionOptions, setContraceptionOptions] = useState(() => CustomOptionListsRepository.get("contraception"));
+  // getRanked, not get: suggestion chips surface newly-added and
+  // most-frequently-picked options first (real ask, 3 Sep 2026).
+  const [relationshipTypeOptions, setRelationshipTypeOptions] = useState(() => CustomOptionListsRepository.getRanked("relationshipType"));
+  const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.getRanked("gender"));
+  const [pronounsOptions, setPronounsOptions] = useState(() => CustomOptionListsRepository.getRanked("pronouns"));
+  const [contraceptionOptions, setContraceptionOptions] = useState(() => CustomOptionListsRepository.getRanked("contraception"));
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);
     if (draft) return draft.data;

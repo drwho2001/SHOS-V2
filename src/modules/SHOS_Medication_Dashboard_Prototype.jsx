@@ -980,9 +980,11 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
 
 function MedicationEditSheet({ med, onSave, onClose, T }) {
   // ADDED 19 Aug 2026 — real in-app editable option lists.
-  const medicationTypeOptions = useMemo(() => CustomOptionListsRepository.get("medicationType"), []);
-  const routeOptions = useMemo(() => CustomOptionListsRepository.get("route"), []);
-  const [categoryOptions, setCategoryOptions] = useState(() => CustomOptionListsRepository.get("medicationCategory"));
+  // getRanked, not get: suggestion chips surface newly-added and
+  // most-frequently-picked options first (real ask, 3 Sep 2026).
+  const medicationTypeOptions = useMemo(() => CustomOptionListsRepository.getRanked("medicationType"), []);
+  const routeOptions = useMemo(() => CustomOptionListsRepository.getRanked("route"), []);
+  const [categoryOptions, setCategoryOptions] = useState(() => CustomOptionListsRepository.getRanked("medicationCategory"));
   const [form, setForm] = useState({
     name: med.name, route: med.route || "", medicationType: med.medicationType || "",
     category: med.category || [],
@@ -1125,9 +1127,11 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
 // handler before. Daily/PRN only for now — Custom Schedule exists in the data model (Doc 5 §5)
 // but there's no schedule-builder UI yet, so it's not offered here rather than half-supported. ──
 function AddMedicationSheet({ onCreate, onClose, T }) {
-  const medicationTypeOptions = useMemo(() => CustomOptionListsRepository.get("medicationType"), []);
-  const routeOptions = useMemo(() => CustomOptionListsRepository.get("route"), []);
-  const [categoryOptions, setCategoryOptions] = useState(() => CustomOptionListsRepository.get("medicationCategory"));
+  // getRanked, not get: suggestion chips surface newly-added and
+  // most-frequently-picked options first (real ask, 3 Sep 2026).
+  const medicationTypeOptions = useMemo(() => CustomOptionListsRepository.getRanked("medicationType"), []);
+  const routeOptions = useMemo(() => CustomOptionListsRepository.getRanked("route"), []);
+  const [categoryOptions, setCategoryOptions] = useState(() => CustomOptionListsRepository.getRanked("medicationCategory"));
   const [form, setForm] = useState({
     name: "", route: "", medicationType: "", category: [], doseStrengthValue: "", doseStrengthUnit: "",
     usagePattern: "daily", scheduleIntervalDays: 2, unitsPerDose: 1, dosesPerDay: 1,

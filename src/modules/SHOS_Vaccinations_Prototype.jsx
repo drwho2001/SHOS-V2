@@ -205,9 +205,11 @@ function VaccineField({ value, onChange, options, onAddNew, T }) {
 function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   const isNew = !vaccination;
   // ADDED 19 Aug 2026 — real in-app editable option lists.
-  const [vaccineOptions, setVaccineOptions] = useState(() => CustomOptionListsRepository.get("vaccine"));
-  const vaccinationReasonOptions = useMemo(() => CustomOptionListsRepository.get("vaccinationReason"), []);
-  const injectionSiteOptions = useMemo(() => CustomOptionListsRepository.get("injectionSite"), []);
+  // getRanked, not get: suggestion chips surface newly-added and
+  // most-frequently-picked options first (real ask, 3 Sep 2026).
+  const [vaccineOptions, setVaccineOptions] = useState(() => CustomOptionListsRepository.getRanked("vaccine"));
+  const vaccinationReasonOptions = useMemo(() => CustomOptionListsRepository.getRanked("vaccinationReason"), []);
+  const injectionSiteOptions = useMemo(() => CustomOptionListsRepository.getRanked("injectionSite"), []);
   const draftKey = `vaccination_${vaccination?.id || "new"}`;
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);

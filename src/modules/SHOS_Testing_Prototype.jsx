@@ -553,7 +553,9 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
     setSymptomLinkVersion((v) => v + 1);
   };
   // ADDED 19 Aug 2026 — real in-app editable option list.
-  const sampleTypeOptions = useMemo(() => CustomOptionListsRepository.get("sampleType"), []);
+  // getRanked, not get: suggestion chips surface newly-added and
+  // most-frequently-picked options first (real ask, 3 Sep 2026).
+  const sampleTypeOptions = useMemo(() => CustomOptionListsRepository.getRanked("sampleType"), []);
   // ADDED 19 Aug 2026 — draft autosave.
   const draftKey = `testEdit_${testId || "new"}`;
   const [form, setForm] = useState(() => {

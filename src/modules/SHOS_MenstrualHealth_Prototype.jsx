@@ -347,7 +347,9 @@ function useDeleteUndo(repo, moduleKey) {
 // ═══════════════════════════════════════════════════════════════════
 function CycleSheet({ cycle, onSave, onClose, T }) {
   const isNew = !cycle;
-  const [flowOptions, setFlowOptions] = useState(() => CustomOptionListsRepository.get("menstrualFlow"));
+  // getRanked, not get: suggestion chips surface newly-added and
+  // most-frequently-picked options first (real ask, 3 Sep 2026).
+  const [flowOptions, setFlowOptions] = useState(() => CustomOptionListsRepository.getRanked("menstrualFlow"));
   const [form, setForm] = useState(() => cycle ? { ...cycle } : { ...DEFAULT_CYCLE, startDate: new Date().toISOString().slice(0, 10) });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const symptoms = useMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), []);
@@ -479,8 +481,8 @@ function daysForUnit(value, unit, fromDate) {
 }
 function ContraceptionSheet({ entry, onSave, onClose, T }) {
   const isNew = !entry;
-  const [methodOptions, setMethodOptions] = useState(() => CustomOptionListsRepository.get("contraception"));
-  const [formulationOptions, setFormulationOptions] = useState(() => CustomOptionListsRepository.get("medicationType"));
+  const [methodOptions, setMethodOptions] = useState(() => CustomOptionListsRepository.getRanked("contraception"));
+  const [formulationOptions, setFormulationOptions] = useState(() => CustomOptionListsRepository.getRanked("medicationType"));
   const [form, setForm] = useState(() => entry ? { ...entry } : { ...DEFAULT_CONTRACEPTION_ENTRY, startDate: new Date().toISOString().slice(0, 10) });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   // Real convenience: only auto-fills formulation while it's still

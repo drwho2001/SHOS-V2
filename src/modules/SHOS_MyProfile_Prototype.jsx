@@ -833,11 +833,13 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     setTimeout(() => onSave(formRef.current), 0);
   };
-  const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.get("gender"));
-  const [pronounsOptions, setPronounsOptions] = useState(() => CustomOptionListsRepository.get("pronouns"));
-  const [relationshipStatusOptions, setRelationshipStatusOptions] = useState(() => CustomOptionListsRepository.get("relationshipStatus"));
+  // getRanked, not get: suggestion chips surface newly-added and
+  // most-frequently-picked options first (real ask, 3 Sep 2026).
+  const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.getRanked("gender"));
+  const [pronounsOptions, setPronounsOptions] = useState(() => CustomOptionListsRepository.getRanked("pronouns"));
+  const [relationshipStatusOptions, setRelationshipStatusOptions] = useState(() => CustomOptionListsRepository.getRanked("relationshipStatus"));
   const allContacts = useMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived).map((c) => ({ id: c.id, name: c.name })), []);
-  const [contraceptionOptions, setContraceptionOptions] = useState(() => CustomOptionListsRepository.get("contraception"));
+  const [contraceptionOptions, setContraceptionOptions] = useState(() => CustomOptionListsRepository.getRanked("contraception"));
   // ADDED — real ask: contraception relevant when Gender is Female or
   // Trans-male. Exact match against these two only — not e.g. Non-
   // binary, since that's a real per-person question this app shouldn't

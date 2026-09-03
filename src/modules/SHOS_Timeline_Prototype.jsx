@@ -238,7 +238,9 @@ function StartSheet({ onSave, onClose, T }) {
   const [title, setTitle] = useState("");
   const [triggerReason, setTriggerReason] = useState("");
   const [startEncounterId, setStartEncounterId] = useState("");
-  const triggerReasonOptions = useMemo(() => CustomOptionListsRepository.get("episodeTriggerReason"), []);
+  // getRanked, not get: suggestion chips surface newly-added and
+  // most-frequently-picked options first (real ask, 3 Sep 2026).
+  const triggerReasonOptions = useMemo(() => CustomOptionListsRepository.getRanked("episodeTriggerReason"), []);
   const encounters = useMemo(() => EncounterRepository.getAll().sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => ({ id: e.id, name: encounterLabel(e) })), []);
   const canSave = title.trim().length > 0 && startEncounterId;
 
