@@ -144,6 +144,18 @@ export const LocationsRepository = {
     return this.update(id, { isArchived: false });
   },
 
+  // ADDED — real gap found via the new orphan-reference checker
+  // (orphanReferenceCheck.js): Location has no delete() of its own
+  // (archive-only), but `relatedContactId` still needs clearing when
+  // the CONTACT it points at is hard-deleted elsewhere — same "only
+  // clears the link" role as measurementRepository.js's own
+  // unlinkClinicVisit()/unlinkTest(), called by contactRepository.js's
+  // own delete().
+  unlinkContact(contactId) {
+    locations = locations.map((l) => (l.relatedContactId === contactId ? { ...l, relatedContactId: "" } : l));
+    persist();
+  },
+
   replaceAll(newLocations) {
     locations = newLocations;
     nextLocationNumber = computeNextLocationNumber(locations);

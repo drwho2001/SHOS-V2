@@ -125,6 +125,30 @@ export const PartnerNotificationRepository = {
     persist();
   },
 
+  // ADDED — real gap found via the new orphan-reference checker
+  // (orphanReferenceCheck.js): a checklist item's contactId needs
+  // clearing when that CONTACT is hard-deleted elsewhere — called by
+  // contactRepository.js's own delete(). Only clears the link, same
+  // "only clears the link" role as measurementRepository.js's own
+  // unlink methods; the item itself stays (name/methods/dob/age/
+  // address were captured as an independent snapshot at generation
+  // time per this file's own header comment, so nothing displayed is
+  // lost — it just stops pointing at a live Contact record).
+  unlinkContact(contactId) {
+    lists = lists.map((l) => ({ ...l, items: l.items.map((i) => (i.contactId === contactId ? { ...i, contactId: "" } : i)) }));
+    persist();
+  },
+
+  // ADDED — same reasoning, called by testingRepository.js's own
+  // delete(). Unlike unlinkContact above, this is a real delete, not a
+  // field clear — "ONE LIST PER TEST" (see this file's own header) means
+  // a list has no meaning once its Test is gone, same as
+  // logRepository.js's own deleteForMedication().
+  deleteForTest(testId) {
+    lists = lists.filter((l) => l.testId !== testId);
+    persist();
+  },
+
   // For backupService.js — same replaceAll(array) shape as every other
   // id-based repository, so this doesn't get left out of backup/
   // restore/merge the way this project's own history shows already

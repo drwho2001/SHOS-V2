@@ -124,3 +124,27 @@ export function formatDoxyPepCountdown(ms) {
   if (hours > 0) return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
   return `${minutes}m`;
 }
+
+// ADDED — real ask: the overdue banner's "642h 7m past the 72h window"
+// read as a raw hour count instead of something a person can place at
+// a glance. Days/hours reads naturally once you're multiple days past
+// a 72h window (the realistic overdue case — this is informational
+// flagging, not a live countdown someone's watching tick by); minutes
+// only add real precision while still under a day overdue, so they're
+// dropped once a day count is showing. Deliberately separate from
+// formatDoxyPepCountdown above — that one stays hours/minutes-only for
+// the still-counting-down "due soon" case, which is genuinely a short
+// window where a day count would never apply.
+export function formatDoxyPepOverdueDuration(ms) {
+  if (ms <= 0) return "0 minutes";
+  const totalMinutes = Math.floor(ms / 60000);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  const parts = [];
+  if (days > 0) parts.push(`${days} day${days === 1 ? "" : "s"}`);
+  if (hours > 0) parts.push(`${hours} hour${hours === 1 ? "" : "s"}`);
+  if (days === 0 && minutes > 0) parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
+  if (parts.length === 0) parts.push("under a minute");
+  return parts.join(", ");
+}

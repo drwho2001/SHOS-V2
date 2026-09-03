@@ -205,6 +205,83 @@ this date; summarized here for durability.
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
 
+## Recently shipped (3 Sep 2026, third session, continued — see Notion for full detail)
+
+Three more items from the same data-management brainstorm as the
+Developer Tools additions above: (1) delete-time reference cleanup —
+every repository with a real delete()/bulkDelete() now notifies every
+other repository/registry that can reference it (same unlinkX(id)
+pattern `measurementRepository.js`/`contraceptionRepository.js`
+already used for Clinic Visit deletes), closing a real gap the new
+orphan checker surfaced (`Contact.delete()` cleaned up MyProfile/
+Contact<->Contact links but never `Encounter.attendeeIds`/
+`Location.relatedContactId`/Partner Notification). Testing and Clinic
+Visits now import each other (a genuine circular import, safe because
+every use is a method call deferred inside `delete()`) — verified live
+in both directions with zero page errors. (2) A Contact-specific
+duplicate checker, multi-field and confidence-scored — new
+`findContactDuplicateCandidates` in `fuzzyMatch.js` catches an exact
+phone/Snapchat/Recon/FabGuys/FabSwingers match directly, with city/
+address/approximate age/notes-overlap only adding confidence once a
+pair is already flagged by name or a strong field — never a verdict,
+same restraint as the existing registry duplicate checker. (3) Backup
+export round-trip verification — `verifyBackupJson()` in
+`backupService.js` confirms the exact JSON about to be written
+survives a parse round-trip with every record count intact, before
+the file-write handoff; also fixed two real dead-state bugs found in
+the same area (the plain Export backup button showed no confirmation
+at all; Export-to-folder's own status was tracked but never rendered).
+All verified live via Playwright; `scripts/smoke-test.cjs` still
+passes unmodified.
+
+## Recently shipped (3 Sep 2026, third session — see Notion for full detail)
+
+Developer Tools gained two real data-management additions, following a
+brainstorm on cheap data-refinement techniques given this app's actual
+scope (single device, no server, small data volumes): a storage-usage
+indicator (`storageAdapter.js`'s `getStorageUsage()`, total bytes
+actually persisted plus a top-5-keys breakdown) and a read-only
+orphan-reference sweep (new `orphanReferenceCheck.js`, same "scan
+every possible referencer" approach as the existing
+`registryUsage.js`) that flags dangling relation-by-ID references
+across every repository/registry relation confirmed live by its own
+repository's documented field shape — deliberately excludes fields
+already documented as deprecated/obsolete elsewhere (Testing's
+`relatedSymptomIds`, Clinic Visit's `resultIds`, Symptom Log's
+singular `symptomId`). A third candidate idea — a persisted/cached
+search key for fuzzy matching — was deliberately NOT built:
+`SHOS_GlobalSearch_Prototype.jsx` already has an explicit comment
+rejecting that exact optimization as unnecessary at this app's real
+data scale, and several search fields are joined from other registries
+by ID, so baking them into a stored key would reintroduce the
+staleness class "store facts, derive state" exists to prevent.
+Running the new sweep against real seed data caught a genuine
+pre-existing bug: 4 seed Encounters stored Protection Registry's
+display NAME ("Condom") instead of its real id, silently blanking
+their "Protection used" field — fixed in the same change.
+
+## Recently shipped (3 Sep 2026, later session — see Notion for full detail)
+
+Five independent small asks in one session: a global first-day-of-week
+preference (Sunday/Monday, default Monday — `AppPreferencesRepository`,
+UI in Settings > Units, wired into the in-app Calendar grid's weekday
+header/offset in `SHOS_Settings_Prototype.jsx`'s `CalendarScreen`);
+the DoxyPEP overdue banner (Home) got a temporary (X, session-only,
+same "reappears on next real check" pattern as the due-meds/refill/
+testing/clinic-visit banners) and permanent ("Don't warn me about this
+exposure again", scoped to the current exposure window via
+`getDoxyPepStatus`'s `windowStart`, not the same as the existing
+`doxyPepAlertEnabled` notification toggle) dismiss; the overdue banner
+now reads "X days, Y hours past the 72h window"
+(`formatDoxyPepOverdueDuration` in `doxyPepCalculations.js`) instead of
+a raw "642h 7m"; clicking the overdue banner navigates to the DoxyPEP
+medication via the existing `onNavigateToRecord` plumbing; all 4 Stats
+bar charts (Encounters, Clinic visits, Medication adherence trend,
+Contacts) now print the raw value above each bar (confirmed with the
+user as the preferred approach over click-to-reveal or a visible axis,
+applied consistently across all four). Verified live via Playwright
+against the dev server for all 5 changes, plus `scripts/smoke-test.cjs`.
+
 ## Recently shipped (3 Sep 2026 session — see Notion for full detail)
 
 Ground-up notification rework (native Capacitor + web/PWA dual path,

@@ -188,6 +188,18 @@ export const LogRepository = {
     return this.update(id, { voided: false });
   },
 
+  // ADDED — real gap found via the new orphan-reference checker
+  // (orphanReferenceCheck.js): a dose/refill/waste log entry is
+  // meaningless without the Medication it belongs to (there's no
+  // "unknown medication" concept anywhere this reads), so deleting a
+  // Medication needs to delete its own log history too, not just leave
+  // it dangling. Real delete, not a field clear — called by
+  // medicationRepository.js's own delete().
+  deleteForMedication(medicationId) {
+    logs = logs.filter((l) => l.medicationId !== medicationId);
+    persist();
+  },
+
   // Wholesale replace — used only by backup restore. See ContactRepository
   // for the same pattern and reasoning.
   replaceAll(newLogs) {

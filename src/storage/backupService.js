@@ -319,6 +319,41 @@ export function parseBackupFile(jsonText) {
   return parsed;
 }
 
+// ADDED — real ask: a round-trip check before ever telling the user
+// "backup complete". The entire disaster-recovery story for this app
+// is a manual JSON export, so a corrupted or truncated file is the one
+// artifact where "cheap to check, expensive to be wrong about" is most
+// true — but this can only honestly verify what's actually checkable:
+// that the exact JSON text about to be written is itself valid and
+// internally consistent (re-parses via parseBackupFile() above, and
+// every array-shaped field in `.data` still holds the same record
+// count it started with). It CANNOT verify the write itself succeeded
+// — the plain "Export backup" button hands off to the OS share sheet,
+// which gives this app no way to read back what a user's chosen app
+// actually did with the file afterward (see exportBackup()'s own call
+// site for exactly where this runs, before that handoff). Called on
+// the SAME `backup` object moments before stringifying it, so this
+// won't catch a whole repository ever being left out of buildBackup()
+// itself (that's a code-review problem, not a runtime data-integrity
+// one) — it catches a JSON.stringify/parse round trip that didn't
+// actually preserve what was there, and gives real counts to show as
+// confirmation, not just a bare "done".
+export function verifyBackupJson(backup, json) {
+  const reparsed = parseBackupFile(json);
+  const counts = {};
+  let totalRecords = 0;
+  for (const [key, value] of Object.entries(backup.data)) {
+    if (!Array.isArray(value)) continue; // singleton objects (myProfile, privacySettings, etc.) - nothing to count
+    const roundTripped = reparsed.data[key];
+    if (!Array.isArray(roundTripped) || roundTripped.length !== value.length) {
+      throw new Error(`Backup verification failed — "${key}" had ${value.length} records but only ${Array.isArray(roundTripped) ? roundTripped.length : 0} round-tripped through the export. Try exporting again.`);
+    }
+    counts[key] = value.length;
+    totalRecords += value.length;
+  }
+  return { ok: true, totalRecords, counts };
+}
+
 // Restores a parsed backup — replaces ALL current data with what's in
 // the file. See mergeBackup() below for the additive alternative — the
 // UI now asks which one you want before either runs, since silently
@@ -515,6 +550,11 @@ export function hasUnbackedChanges() {
 export async function exportBackup(includeKeys = null, dateRange = null) {
   const backup = buildBackup(includeKeys, dateRange);
   const json = JSON.stringify(backup, null, 2);
+  // ADDED — real ask: verify before handing off, not after — see
+  // verifyBackupJson()'s own comment for exactly what this can and
+  // can't check. Throws (propagates to the caller) rather than
+  // silently exporting a bad file and calling it done.
+  const verification = verifyBackupJson(backup, json);
   const dateStamp = new Date().toISOString().slice(0, 10);
   const suffix = includeKeys ? "-selective" : "";
   await exportTextFile(`shos-backup-${dateStamp}${suffix}.json`, json, "application/json");
@@ -523,6 +563,7 @@ export async function exportBackup(includeKeys = null, dateRange = null) {
   // it shouldn't reset the clock on a reminder meant to catch "you
   // have no real safety net right now".
   if (!includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  return verification;
 }
 
 // ADDED — real ask: an explicit "choose exactly where this goes" export,
@@ -536,11 +577,14 @@ export async function exportBackup(includeKeys = null, dateRange = null) {
 export async function exportBackupToChosenFolder(includeKeys = null, dateRange = null) {
   const backup = buildBackup(includeKeys, dateRange);
   const json = JSON.stringify(backup, null, 2);
+  // ADDED — real ask: same round-trip verification as exportBackup()
+  // above, before this one's own write.
+  const verification = verifyBackupJson(backup, json);
   const dateStamp = new Date().toISOString().slice(0, 10);
   const suffix = includeKeys ? "-selective" : "";
   const result = await exportTextFileToChosenFolder(`shos-backup-${dateStamp}${suffix}.json`, json, "application/json");
   if (result.ok && !includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
-  return result;
+  return { ...result, totalRecords: verification.totalRecords };
 }
 
 // ADDED — real ask: "scheduled auto-export", distinct from the nag-

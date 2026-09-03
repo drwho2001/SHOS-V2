@@ -44,6 +44,13 @@
 // field here either. See encounterCalculations.js: timeOfDay(date).
 
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
+// ADDED — real gap found via the new orphan-reference checker
+// (orphanReferenceCheck.js): delete-time cleanup for Symptom Log's own
+// relatedEncounterIds and Episode's own startEncounterId/
+// atRiskEncounterIds/notifiedEncounterIds, all of which reference an
+// Encounter by id.
+import { SymptomLogRepository } from "./symptomLogRepository.js";
+import { EpisodeRepository } from "./episodeRepository.js";
 
 const STORAGE_KEY = "shos_encounters";
 
@@ -234,7 +241,7 @@ let seedEncounters = [
     myRole: "Switch",
     myDoxyPepStatus: "Not indicated",
     myPrepCoverage: "Adequate - daily (≥4/week)",
-    protectionUsed: ["Condom"],
+    protectionUsed: ["protection_001"], // FIXED — real bug found by the new orphan-reference checker (orphanReferenceCheck.js): this seed data stored Protection Registry's own display NAME ("Condom") instead of its real generated id. ProtectionRegistry's seedNames ["Condom", "PrEP", "PEP", "None"] deterministically produce protection_001/002/003/004 (see simpleRegistry.js's own generateId()) — "Condom" is always protection_001 on a fresh install.
     enjoymentRating: 80,
     wouldMeetAgain: "Yes",
     createdAt: daysAgo(6, 22, 0),
@@ -267,7 +274,7 @@ let seedEncounters = [
     encounterType: "Date/Chill",
     attendeeIds: ["contact_008"],
     myRole: "Switch",
-    protectionUsed: ["Condom"],
+    protectionUsed: ["protection_001"], // FIXED — real bug found by the new orphan-reference checker (orphanReferenceCheck.js): this seed data stored Protection Registry's own display NAME ("Condom") instead of its real generated id. ProtectionRegistry's seedNames ["Condom", "PrEP", "PEP", "None"] deterministically produce protection_001/002/003/004 (see simpleRegistry.js's own generateId()) — "Condom" is always protection_001 on a fresh install.
     enjoymentRating: 88,
     wouldMeetAgain: "Yes",
     notes: "Really clicked — seeing her again.",
@@ -351,7 +358,7 @@ let seedEncounters = [
     myRole: "Dom",
     myDoxyPepStatus: "Not indicated",
     myPrepCoverage: "Adequate - daily (≥4/week)",
-    protectionUsed: ["Condom"],
+    protectionUsed: ["protection_001"], // FIXED — real bug found by the new orphan-reference checker (orphanReferenceCheck.js): this seed data stored Protection Registry's own display NAME ("Condom") instead of its real generated id. ProtectionRegistry's seedNames ["Condom", "PrEP", "PEP", "None"] deterministically produce protection_001/002/003/004 (see simpleRegistry.js's own generateId()) — "Condom" is always protection_001 on a fresh install.
     enjoymentRating: 85,
     wouldMeetAgain: "Yes",
     createdAt: daysAgo(70, 23, 0),
@@ -368,7 +375,7 @@ let seedEncounters = [
     myRole: "Switch",
     myDoxyPepStatus: "Not indicated",
     myPrepCoverage: "Adequate - daily (≥4/week)",
-    protectionUsed: ["Condom"],
+    protectionUsed: ["protection_001"], // FIXED — real bug found by the new orphan-reference checker (orphanReferenceCheck.js): this seed data stored Protection Registry's own display NAME ("Condom") instead of its real generated id. ProtectionRegistry's seedNames ["Condom", "PrEP", "PEP", "None"] deterministically produce protection_001/002/003/004 (see simpleRegistry.js's own generateId()) — "Condom" is always protection_001 on a fresh install.
     enjoymentRating: 72,
     createdAt: daysAgo(45, 18, 0),
     isArchived: false,
@@ -511,6 +518,23 @@ export const EncounterRepository = {
   delete(id) {
     encounters = encounters.filter((e) => e.id !== id);
     persist();
+    // ADDED — real gap found via the new orphan-reference checker
+    // (orphanReferenceCheck.js): Symptom Log/Episode both reference an
+    // Encounter by id — only clears the link, same role as
+    // measurementRepository.js's own unlink methods.
+    SymptomLogRepository.unlinkEncounter(id);
+    EpisodeRepository.unlinkEncounter(id);
+  },
+
+  // ADDED — real gap found via the new orphan-reference checker
+  // (orphanReferenceCheck.js): attendeeIds needs cleaning up when a
+  // CONTACT is hard-deleted elsewhere — called by contactRepository.js's
+  // own delete(). Only clears the link, same role as
+  // measurementRepository.js's own unlink methods — the Encounter
+  // itself stays, it just stops naming a Contact that no longer exists.
+  unlinkContact(contactId) {
+    encounters = encounters.map((e) => ({ ...e, attendeeIds: (e.attendeeIds || []).filter((id) => id !== contactId) }));
+    persist();
   },
 
   unarchive(id) {
@@ -526,6 +550,7 @@ export const EncounterRepository = {
   bulkDelete(ids) {
     encounters = encounters.filter((e) => !ids.includes(e.id));
     persist();
+    ids.forEach((id) => { SymptomLogRepository.unlinkEncounter(id); EpisodeRepository.unlinkEncounter(id); });
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.

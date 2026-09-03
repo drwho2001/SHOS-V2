@@ -33,6 +33,14 @@ import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 // does NOT unlink (see myProfileRepository.js's own comment) — that's
 // a judgment call left to the user, not automatic.
 import { MyProfileRepository } from "./myProfileRepository.js";
+// ADDED — real gap found via the new orphan-reference checker
+// (orphanReferenceCheck.js): delete-time cleanup for Encounter's own
+// attendeeIds, Location's own relatedContactId, and Partner
+// Notification's own per-item contactId, all of which reference a
+// Contact by id.
+import { EncounterRepository } from "./encounterRepository.js";
+import { LocationsRepository } from "./locationsRepository.js";
+import { PartnerNotificationRepository } from "./partnerNotificationRepository.js";
 
 const STORAGE_KEY = "shos_contacts";
 
@@ -554,6 +562,13 @@ export const ContactRepository = {
     // so it just no-ops the already-deleted side and cleans up the
     // survivor.
     (record?.linkedContactIds || []).forEach((otherId) => this.unlinkContacts(id, otherId));
+    // ADDED — real gap found via the new orphan-reference checker
+    // (orphanReferenceCheck.js): Encounter/Location/Partner
+    // Notification all reference a Contact by id too — only clears the
+    // link, same role as measurementRepository.js's own unlink methods.
+    EncounterRepository.unlinkContact(id);
+    LocationsRepository.unlinkContact(id);
+    PartnerNotificationRepository.unlinkContact(id);
   },
 
   unarchive(id) {
@@ -574,6 +589,11 @@ export const ContactRepository = {
     ids.forEach((id) => MyProfileRepository.unlinkRelationshipContact(id));
     // Same dangling-link cleanup as delete() above, per contact.
     records.forEach((record) => (record.linkedContactIds || []).forEach((otherId) => this.unlinkContacts(record.id, otherId)));
+    ids.forEach((id) => {
+      EncounterRepository.unlinkContact(id);
+      LocationsRepository.unlinkContact(id);
+      PartnerNotificationRepository.unlinkContact(id);
+    });
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.

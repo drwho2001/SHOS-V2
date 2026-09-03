@@ -139,6 +139,116 @@ export function findDuplicatePairs(entries) {
   return pairs.sort((x, y) => x.distance - y.distance);
 }
 
+// ADDED — real ask: Contacts carry a genuinely different duplicate
+// risk than the 6 name-only registries above — the SAME real person
+// could plausibly get re-added under a different-looking name/
+// nickname, but share an unmistakable identifier (the same phone
+// number, the same Snapchat handle) that name similarity alone would
+// never catch. This widens the signal set specifically for Contacts,
+// SCORED rather than binary — "more matching fields = more
+// confidence", the user's own framing for this — but still never a
+// verdict: same "flag for a human to review, never silently merge"
+// restraint as findDuplicatePairs above. Deliberately kept separate
+// from findDuplicatePairs rather than generalizing that one — the 6
+// shared registries only ever have a name to compare, so bolting
+// Contact-only fields onto a function they all share would be the
+// wrong direction to extend it in.
+function normalizedEquals(a, b) {
+  const na = (a || "").trim().toLowerCase();
+  const nb = (b || "").trim().toLowerCase();
+  return na !== "" && nb !== "" && na === nb;
+}
+
+// Phone numbers get their own normalization — "07700 900123" and
+// "+44 7700 900123" are the same real number typed two different
+// ways; formatting-only differences shouldn't hide an otherwise exact
+// match. Matches on the last 10 digits, tolerating a leading country
+// code or trunk 0 differing between two entries for the same number.
+function normalizedPhoneEquals(a, b) {
+  const digitsA = (a || "").replace(/\D/g, "");
+  const digitsB = (b || "").replace(/\D/g, "");
+  if (digitsA.length < 6 || digitsB.length < 6) return false; // too short to be a meaningful match
+  return digitsA.slice(-10) === digitsB.slice(-10);
+}
+
+function namesLikelyMatch(a, b) {
+  const na = (a || "").trim().toLowerCase();
+  const nb = (b || "").trim().toLowerCase();
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  const longer = Math.max(na.length, nb.length);
+  if (longer < DUPLICATE_MIN_LENGTH) return false;
+  return levenshteinDistance(na, nb) / longer <= DUPLICATE_RATIO_THRESHOLD;
+}
+
+// Deliberately crude, not real NLP — "light compare", the user's own
+// phrasing for this. Two contacts' free-text notes sharing a few
+// genuinely distinctive (4+ letter) words is a soft signal worth
+// folding into the score, not something worth building real text
+// similarity for.
+function notesLightlyOverlap(a, b) {
+  const wordsA = new Set((a || "").toLowerCase().match(/[a-z']{4,}/g) || []);
+  const wordsB = new Set((b || "").toLowerCase().match(/[a-z']{4,}/g) || []);
+  if (wordsA.size === 0 || wordsB.size === 0) return false;
+  let shared = 0;
+  wordsA.forEach((w) => { if (wordsB.has(w)) shared += 1; });
+  return shared >= 2;
+}
+
+const APPROX_AGE_TOLERANCE = 2;
+
+export function findContactDuplicateCandidates(contacts) {
+  const candidates = [];
+  for (let i = 0; i < contacts.length; i++) {
+    for (let j = i + 1; j < contacts.length; j++) {
+      const a = contacts[i], b = contacts[j];
+      const matched = [];
+
+      const nameMatch = namesLikelyMatch(a.name, b.name) || namesLikelyMatch(a.nickname, b.nickname) ||
+        namesLikelyMatch(a.name, b.nickname) || namesLikelyMatch(a.nickname, b.name);
+      if (nameMatch) matched.push("name");
+
+      const strongFields = [
+        ["phone", normalizedPhoneEquals(a.phone, b.phone)],
+        ["Snapchat", normalizedEquals(a.snapchat, b.snapchat)],
+        ["Recon", normalizedEquals(a.recon, b.recon)],
+        ["FabGuys", normalizedEquals(a.fabguys, b.fabguys)],
+        ["FabSwingers", normalizedEquals(a.fabswingers, b.fabswingers)],
+      ];
+      const strongMatches = strongFields.filter(([, isMatch]) => isMatch).map(([label]) => label);
+      matched.push(...strongMatches);
+
+      // Nothing to flag at all unless there's at least one real
+      // identifying signal — sharing just a city or a rough age is
+      // not remotely suspicious on its own, only worth folding in
+      // once something else already put this pair in question.
+      if (!nameMatch && strongMatches.length === 0) continue;
+
+      const lightFields = [
+        ["city", normalizedEquals(a.city, b.city)],
+        ["address", normalizedEquals(a.address, b.address)],
+        ["approx. age", a.age != null && b.age != null && Math.abs(a.age - b.age) <= APPROX_AGE_TOLERANCE],
+        ["notes", notesLightlyOverlap(a.notes, b.notes)],
+      ];
+      const lightMatches = lightFields.filter(([, isMatch]) => isMatch).map(([label]) => label);
+      matched.push(...lightMatches);
+
+      // Confidence is a read on how many independent reasons point the
+      // same way — never a verdict. Even "High" here just means
+      // "worth a human actually looking", same restraint as
+      // findDuplicatePairs' own "nothing is merged automatically".
+      let confidence;
+      if (strongMatches.length > 0 || (nameMatch && lightMatches.length >= 2)) confidence = "High";
+      else if (nameMatch && lightMatches.length >= 1) confidence = "Medium";
+      else confidence = "Low";
+
+      candidates.push({ a, b, confidence, matched });
+    }
+  }
+  const order = { High: 0, Medium: 1, Low: 2 };
+  return candidates.sort((x, y) => order[x.confidence] - order[y.confidence]);
+}
+
 // The real function Global Search actually calls. `searchText` is the
 // full record's indexed text (name, notes, resolved kink names, etc.),
 // `query` is exactly what's typed into the search box.

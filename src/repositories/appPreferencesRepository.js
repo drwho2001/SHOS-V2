@@ -105,6 +105,25 @@ export const DEFAULT_APP_PREFERENCES = {
   // disclosure copy for exactly what's sent where.
   addressLookupEnabled: true,
   updateCheckEnabled: true,
+  // ADDED — real ask: "first day of week preference (Sunday/Monday)".
+  // "monday" is the default (UK-first app, ISO 8601 convention) —
+  // only the in-app Calendar grid (Settings > Calendar) reads this;
+  // nothing else in the app renders a week-start-dependent grid.
+  weekStartsOn: "monday",
+  // ADDED — real ask: "DoxyPEP overdue banner needs a dismiss option
+  // (temporary and/or permanent)". This is the "permanent" half —
+  // NOT the same as doxyPepAlertEnabled (that's the global native-
+  // notification switch, see notificationPreferencesRepository.js) and
+  // NOT the same as logging/snoozing a dose (doxyPepSync.js already
+  // covers that) — this is "stop showing me the in-app warning for
+  // THIS specific overdue exposure window", scoped by keying off
+  // getDoxyPepStatus()'s own windowStart (doxyPepCalculations.js):
+  // the earliest qualifying encounter since the last logged dose,
+  // which changes the moment a new window opens (next qualifying
+  // encounter after a dose is logged) — so this naturally goes stale
+  // and stops applying on its own once that happens, no cleanup
+  // needed. null = nothing dismissed.
+  doxyPepOverdueDismissedWindowStart: null,
 };
 
 export const AppPreferencesRepository = {
