@@ -178,7 +178,7 @@ export async function registerNotificationActionTypes() {
   try {
     await withTimeout(plugin.registerActionTypes({
       types: Object.entries(ACTION_TYPE_DEFS).map(([id, actions]) => ({ id, actions })),
-    }));
+    }), 8000, "registerActionTypes()");
     return true;
   } catch (err) {
     // Same reasoning as scheduleNotification()'s own try/catch below —
@@ -319,10 +319,15 @@ export async function getNotificationPlatform() {
 // silently freezing forever — a genuine robustness fix regardless of
 // whether MIUI throttling turns out to be the exact mechanism on any
 // given device.
-function withTimeout(promise, ms = 8000) {
+// `label` names the specific bridge call for the caller's own error
+// message — see checkNotificationPermission()/checkExactAlarmPermission()
+// below, which now surface that exact string on-screen (not just to
+// the console) so a hang can be diagnosed without adb/USB debugging,
+// which this app's real users won't all have access to.
+function withTimeout(promise, ms = 8000, label = "call") {
   return Promise.race([
     promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error(`Native call timed out after ${ms}ms`)), ms)),
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)),
   ]);
 }
 
@@ -363,11 +368,11 @@ export async function requestNotificationPermission() {
     const plugin = await getPlugin();
     if (!plugin) return { status: "unavailable" };
     try {
-      const result = await withTimeout(plugin.requestPermissions());
+      const result = await withTimeout(plugin.requestPermissions(), 8000, "requestPermissions()");
       return { status: result.display };
     } catch (err) {
       console.warn("[notificationService] requestPermissions() failed:", err);
-      return { status: "error" };
+      return { status: "error", detail: err.message };
     }
   }
   if (!webNotificationsSupported()) return { status: "unavailable" };
@@ -396,11 +401,15 @@ export async function checkNotificationPermission() {
     const plugin = await getPlugin();
     if (!plugin) return { status: "unavailable" };
     try {
-      const result = await withTimeout(plugin.checkPermissions());
+      const result = await withTimeout(plugin.checkPermissions(), 8000, "checkPermissions()");
       return { status: result.display };
     } catch (err) {
       console.warn("[notificationService] checkPermissions() failed:", err);
-      return { status: "error" };
+      // ADDED — real ask: surface the exact failing call on-screen (see
+      // NotificationPermissionBanner's own use of this field) so a hang
+      // like this can be diagnosed without adb/USB debugging, which
+      // isn't available to every real user reporting this.
+      return { status: "error", detail: err.message };
     }
   }
   if (!webNotificationsSupported()) return { status: "unavailable" };
@@ -420,11 +429,11 @@ export async function checkExactAlarmPermission() {
   const plugin = await getPlugin();
   if (!plugin || !plugin.checkExactNotificationSetting) return { status: "unavailable" };
   try {
-    const result = await withTimeout(plugin.checkExactNotificationSetting());
+    const result = await withTimeout(plugin.checkExactNotificationSetting(), 8000, "checkExactNotificationSetting()");
     return { status: result.exact_alarm };
   } catch (err) {
     console.warn("[notificationService] checkExactNotificationSetting() failed:", err);
-    return { status: "error" };
+    return { status: "error", detail: err.message };
   }
 }
 
@@ -437,11 +446,11 @@ export async function requestExactAlarmPermission() {
   const plugin = await getPlugin();
   if (!plugin || !plugin.changeExactNotificationSetting) return { status: "unavailable" };
   try {
-    const result = await withTimeout(plugin.changeExactNotificationSetting());
+    const result = await withTimeout(plugin.changeExactNotificationSetting(), 8000, "changeExactNotificationSetting()");
     return { status: result.exact_alarm };
   } catch (err) {
     console.warn("[notificationService] changeExactNotificationSetting() failed:", err);
-    return { status: "error" };
+    return { status: "error", detail: err.message };
   }
 }
 
@@ -569,7 +578,7 @@ export async function scheduleNotification({ id, title, body, at, actionTypeId, 
     try {
       await withTimeout(plugin.schedule({
         notifications: [{ id, title, body, schedule: { at: effectiveAt }, ...(actionTypeId ? { actionTypeId } : {}), ...(smallIcon ? { smallIcon } : {}), ...(iconColor ? { iconColor } : {}) }],
-      }));
+      }), 8000, "schedule()");
       return true;
     } catch (err) {
       console.error(`[notificationService] Native schedule() failed for notification id ${id} ("${title}"):`, err);
@@ -663,7 +672,7 @@ export async function cancelNotification(id) {
     const plugin = await getPlugin();
     if (!plugin) return false;
     try {
-      await withTimeout(plugin.cancel({ notifications: [{ id }] }));
+      await withTimeout(plugin.cancel({ notifications: [{ id }] }), 8000, "cancel()");
       return true;
     } catch (err) {
       console.error(`[notificationService] Native cancel() failed for notification id ${id}:`, err);

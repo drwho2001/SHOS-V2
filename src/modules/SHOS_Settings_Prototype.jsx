@@ -1381,20 +1381,32 @@ function NotificationPermissionBanner({ darkMode }) {
   // platform (no equivalent OS concept at all) — same as basic
   // permission status, this only ever shows real detected state.
   const [exactAlarmStatus, setExactAlarmStatus] = useState(null);
+  // ADDED — real ask: "notifications allowed, install SHOS for
+  // reliable reminders — neither appear on app... pure android." A
+  // status of "error" alone didn't say WHICH native call actually
+  // failed — not useful for a real report from a user with no adb/USB
+  // debugging access. notificationService.js's own checks now return
+  // this raw detail string (e.g. "checkPermissions() timed out after
+  // 8000ms") straight from the failure; shown on-screen below so it
+  // can be read and relayed without any dev tools at all.
+  const [statusDetail, setStatusDetail] = useState(null);
+  const [exactAlarmDetail, setExactAlarmDetail] = useState(null);
 
   useEffect(() => {
-    checkNotificationPermission().then((r) => setStatus(r.status));
-    checkExactAlarmPermission().then((r) => setExactAlarmStatus(r.status));
+    checkNotificationPermission().then((r) => { setStatus(r.status); setStatusDetail(r.detail || null); });
+    checkExactAlarmPermission().then((r) => { setExactAlarmStatus(r.status); setExactAlarmDetail(r.detail || null); });
     getNotificationPlatform().then(setPlatform);
   }, []);
 
   const request = async () => {
     const r = await requestNotificationPermission();
     setStatus(r.status);
+    setStatusDetail(r.detail || null);
   };
   const requestExactAlarm = async () => {
     const r = await requestExactAlarmPermission();
     setExactAlarmStatus(r.status);
+    setExactAlarmDetail(r.detail || null);
   };
   const runTest = async () => {
     setTestState("sending");
@@ -1447,14 +1459,34 @@ function NotificationPermissionBanner({ darkMode }) {
 
   const isGranted = status === "granted";
   const isDenied = status === "denied";
+  // ADDED — real ask: distinguish a genuine native-call failure (a
+  // hung/rejected bridge call — see notificationService.js's own
+  // withTimeout comment) from "never asked yet". Previously both fell
+  // into the same generic "hasn't asked yet, tap below" copy, which
+  // would be actively misleading here — tapping "Allow notifications"
+  // again just re-triggers the same failing call.
+  const isError = status === "error";
   return (
     <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: `1px solid ${isGranted ? ACTION.green : ACTION.red}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <div style={{ width: 8, height: 8, borderRadius: "50%", background: isGranted ? ACTION.green : ACTION.red, flexShrink: 0 }} />
         <span style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>
-          {isGranted ? "Notifications are allowed" : isDenied ? "Notifications are blocked" : "Notifications not yet allowed"}
+          {isGranted ? "Notifications are allowed" : isDenied ? "Notifications are blocked" : isError ? "Couldn't check notification status" : "Notifications not yet allowed"}
         </span>
       </div>
+      {isError && (
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
+          The check itself failed rather than returning a real answer — this is worth reporting as a bug.
+          {statusDetail && (
+            <div style={{ marginTop: 6, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "monospace", fontSize: 11, wordBreak: "break-word" }}>
+              {statusDetail}
+            </div>
+          )}
+          <button onClick={request} style={{ marginTop: 8, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            Try again
+          </button>
+        </div>
+      )}
       {isGranted && (
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
           {isNative
@@ -1480,15 +1512,26 @@ function NotificationPermissionBanner({ darkMode }) {
           by minutes to hours as an inexact alarm instead — the exact
           gap that would make testing feel like nothing ever fires. */}
       {isGranted && exactAlarmStatus && exactAlarmStatus !== "unavailable" && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: "8px 10px", borderRadius: 10, background: exactAlarmStatus === "granted" ? `${ACTION.green}15` : `${ACTION.red}15` }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: exactAlarmStatus === "granted" ? ACTION.green : ACTION.red, flexShrink: 0 }} />
-          <span style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : "#1B1B1F", flex: 1 }}>
-            {exactAlarmStatus === "granted"
-              ? "Exact alarms allowed — reminders fire on time."
-              : "Exact alarms not allowed — reminders may arrive late (minutes to hours), or not at all during testing."}
-          </span>
-          {exactAlarmStatus !== "granted" && (
-            <span onClick={requestExactAlarm} style={{ fontSize: 12, fontWeight: 700, color: ACCENTS.healthcare, cursor: "pointer", flexShrink: 0 }}>Fix this</span>
+        <div style={{ marginBottom: 8, padding: "8px 10px", borderRadius: 10, background: exactAlarmStatus === "granted" ? `${ACTION.green}15` : `${ACTION.red}15` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: exactAlarmStatus === "granted" ? ACTION.green : ACTION.red, flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : "#1B1B1F", flex: 1 }}>
+              {exactAlarmStatus === "granted"
+                ? "Exact alarms allowed — reminders fire on time."
+                : exactAlarmStatus === "error"
+                ? "Couldn't check exact-alarm status — the check itself failed."
+                : "Exact alarms not allowed — reminders may arrive late (minutes to hours), or not at all during testing."}
+            </span>
+            {exactAlarmStatus !== "granted" && (
+              <span onClick={requestExactAlarm} style={{ fontSize: 12, fontWeight: 700, color: ACCENTS.healthcare, cursor: "pointer", flexShrink: 0 }}>
+                {exactAlarmStatus === "error" ? "Try again" : "Fix this"}
+              </span>
+            )}
+          </div>
+          {exactAlarmStatus === "error" && exactAlarmDetail && (
+            <div style={{ marginTop: 6, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "monospace", fontSize: 11, wordBreak: "break-word" }}>
+              {exactAlarmDetail}
+            </div>
           )}
         </div>
       )}
@@ -1499,7 +1542,7 @@ function NotificationPermissionBanner({ darkMode }) {
             : <>Your browser is blocking notifications for SHOS — none of the toggles below will actually fire until this changes. This has to be turned on manually in your browser's own site settings for SHOS (usually the padlock/site-info icon next to the address bar → Notifications → Allow).</>}
         </div>
       )}
-      {!isGranted && !isDenied && (
+      {!isGranted && !isDenied && !isError && (
         <>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
             {isNative ? "SHOS hasn't asked yet, or Android hasn't recorded an answer." : "SHOS hasn't asked yet, or your browser hasn't recorded an answer."} Tap below for the real system prompt.
