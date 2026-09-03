@@ -331,6 +331,36 @@ function withTimeout(promise, ms = 8000, label = "call") {
   ]);
 }
 
+// ADDED — real ask: a bare error string ("checkPermissions() timed
+// out after 8000ms") didn't say whether that's a wrong-platform issue,
+// a rejected call, or a genuinely unresolved one — the three read
+// identically to someone without a console. This makes each field
+// explicit and readable on its own line, so it can be photographed/
+// typed out and relayed without needing dev tools.
+function formatNativeError(method, err) {
+  const result = /timed out/i.test(err?.message || "") ? "timed out (never resolved)" : "rejected";
+  return `Platform: android\nPlugin: LocalNotifications\nMethod: ${method}\nResult: ${result}\nMessage: ${err?.message || String(err)}`;
+}
+
+// ADDED — real ask: isolate WHERE a hang is happening — the whole
+// Capacitor bridge (every native plugin call affected) vs just the
+// LocalNotifications plugin specifically. @capacitor/app is already a
+// dependency of this project (used for the hardware back button — see
+// App.jsx) and its getInfo() call has nothing to do with notifications
+// at all, so timing IT the same way is a clean control: if this also
+// times out, the problem is bridge-wide, not notification-specific.
+export async function checkNativeBridgeHealth() {
+  const platform = await getPlatform();
+  if (platform !== "native") return { ok: null };
+  try {
+    const { App } = await import("@capacitor/app");
+    const info = await withTimeout(App.getInfo(), 8000, "App.getInfo()");
+    return { ok: true, detail: `App.getInfo() OK — ${info.name} ${info.version}` };
+  } catch (err) {
+    return { ok: false, detail: formatNativeError("App.getInfo()", err) };
+  }
+}
+
 async function getPlugin() {
   if (pluginLoadAttempted) return LocalNotifications;
   pluginLoadAttempted = true;
@@ -372,7 +402,7 @@ export async function requestNotificationPermission() {
       return { status: result.display };
     } catch (err) {
       console.warn("[notificationService] requestPermissions() failed:", err);
-      return { status: "error", detail: err.message };
+      return { status: "error", detail: formatNativeError("requestPermissions()", err) };
     }
   }
   if (!webNotificationsSupported()) return { status: "unavailable" };
@@ -409,7 +439,7 @@ export async function checkNotificationPermission() {
       // NotificationPermissionBanner's own use of this field) so a hang
       // like this can be diagnosed without adb/USB debugging, which
       // isn't available to every real user reporting this.
-      return { status: "error", detail: err.message };
+      return { status: "error", detail: formatNativeError("checkPermissions()", err) };
     }
   }
   if (!webNotificationsSupported()) return { status: "unavailable" };
@@ -433,7 +463,7 @@ export async function checkExactAlarmPermission() {
     return { status: result.exact_alarm };
   } catch (err) {
     console.warn("[notificationService] checkExactNotificationSetting() failed:", err);
-    return { status: "error", detail: err.message };
+    return { status: "error", detail: formatNativeError("checkExactNotificationSetting()", err) };
   }
 }
 
@@ -450,7 +480,7 @@ export async function requestExactAlarmPermission() {
     return { status: result.exact_alarm };
   } catch (err) {
     console.warn("[notificationService] changeExactNotificationSetting() failed:", err);
-    return { status: "error", detail: err.message };
+    return { status: "error", detail: formatNativeError("changeExactNotificationSetting()", err) };
   }
 }
 

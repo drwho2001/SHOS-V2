@@ -71,7 +71,7 @@ import { NotificationHistoryRepository } from "../repositories/notificationHisto
 import { getDeferredInstallPrompt, onInstallPromptAvailable, triggerInstallPrompt } from "../storage/installPromptService";
 import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
-import { checkNotificationPermission, requestNotificationPermission, sendTestNotification, TEST_NOTIFICATION_DELAY_MS, checkExactAlarmPermission, requestExactAlarmPermission, getNotificationPlatform, isIOS, isStandalone } from "../storage/notificationService";
+import { checkNotificationPermission, requestNotificationPermission, sendTestNotification, TEST_NOTIFICATION_DELAY_MS, checkExactAlarmPermission, requestExactAlarmPermission, getNotificationPlatform, isIOS, isStandalone, checkNativeBridgeHealth } from "../storage/notificationService";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
 import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
@@ -1391,12 +1391,22 @@ function NotificationPermissionBanner({ darkMode }) {
   // can be read and relayed without any dev tools at all.
   const [statusDetail, setStatusDetail] = useState(null);
   const [exactAlarmDetail, setExactAlarmDetail] = useState(null);
+  // ADDED — real ask: isolate whether a stuck native check is bridge-
+  // wide (every plugin affected) or specific to LocalNotifications —
+  // see checkNativeBridgeHealth()'s own comment. Only run this extra
+  // native round-trip once the permission check has actually failed —
+  // no reason to spend it on the normal working path.
+  const [bridgeHealth, setBridgeHealth] = useState(null);
 
   useEffect(() => {
     checkNotificationPermission().then((r) => { setStatus(r.status); setStatusDetail(r.detail || null); });
     checkExactAlarmPermission().then((r) => { setExactAlarmStatus(r.status); setExactAlarmDetail(r.detail || null); });
     getNotificationPlatform().then(setPlatform);
   }, []);
+
+  useEffect(() => {
+    if (status === "error") checkNativeBridgeHealth().then(setBridgeHealth);
+  }, [status]);
 
   const request = async () => {
     const r = await requestNotificationPermission();
@@ -1478,8 +1488,21 @@ function NotificationPermissionBanner({ darkMode }) {
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
           The check itself failed rather than returning a real answer — this is worth reporting as a bug.
           {statusDetail && (
-            <div style={{ marginTop: 6, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "monospace", fontSize: 11, wordBreak: "break-word" }}>
+            <div style={{ marginTop: 6, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "monospace", fontSize: 11, wordBreak: "break-word", whiteSpace: "pre-line" }}>
               {statusDetail}
+            </div>
+          )}
+          {/* ADDED — real ask: isolate bridge-wide vs notifications-
+              specific. A non-notification native call (App.getInfo())
+              times out too -> the whole bridge is affected, not this
+              plugin. It resolves fine -> the problem is specific to
+              LocalNotifications. */}
+          {bridgeHealth && (
+            <div style={{ marginTop: 6, fontSize: 11, color: bridgeHealth.ok ? ACTION.green : ACTION.red }}>
+              {bridgeHealth.ok ? "Bridge check: other native calls work fine — this looks specific to notifications." : "Bridge check: a totally unrelated native call also failed — this looks like a broader native bridge issue, not just notifications."}
+              <div style={{ marginTop: 4, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "monospace", fontSize: 11, wordBreak: "break-word", whiteSpace: "pre-line", color: darkMode ? DARK.textSecondary : "#5B5B62" }}>
+                {bridgeHealth.detail}
+              </div>
             </div>
           )}
           <button onClick={request} style={{ marginTop: 8, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
