@@ -19,9 +19,22 @@
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { LogRepository } from "../repositories/logRepository";
 import { computeStock } from "./medicationCalculations";
-import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName } from "../storage/notificationService";
+import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName, REFILL_ACTION_TYPE_ID } from "../storage/notificationService";
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
+
+// Pure "what currently needs a refill" read, shared by syncRefillReminder
+// (decides whether to schedule) and App.jsx's in-app due-state banner
+// (same live check, no separate concept to drift out of sync).
+export function getRefillDueMedications() {
+  const meds = MedicationRepository.getAll()
+    .filter((m) => !m.isArchived && m.inventoryTracked)
+    .map((m) => ({ ...m, logs: LogRepository.getForMedication(m.id) }));
+  // Already flagged "requested" — the user's already acted on it (see
+  // Medication's own markRequested()), a repeat notification for the
+  // same low stock would just be noise until it's actually refilled.
+  return meds.filter((m) => computeStock(m).needsAction && !m.refillRequestedAt);
+}
 
 export async function syncRefillReminder() {
   if (!NotificationPreferencesRepository.getPreferences().refillReminderEnabled) {
@@ -29,14 +42,7 @@ export async function syncRefillReminder() {
     return { scheduled: false };
   }
 
-  const meds = MedicationRepository.getAll()
-    .filter((m) => !m.isArchived && m.inventoryTracked)
-    .map((m) => ({ ...m, logs: LogRepository.getForMedication(m.id) }));
-
-  // Already flagged "requested" — the user's already acted on it (see
-  // Medication's own markRequested()), a repeat notification for the
-  // same low stock would just be noise until it's actually refilled.
-  const needsRefill = meds.filter((m) => computeStock(m).needsAction && !m.refillRequestedAt);
+  const needsRefill = getRefillDueMedications();
 
   if (needsRefill.length === 0) {
     await cancelNotification(NOTIFICATION_IDS.refillReminder);
@@ -49,8 +55,41 @@ export async function syncRefillReminder() {
     title: "Refill needed",
     body: `${names} — running low, time to reorder`,
     at: new Date(Date.now() + 3000),
+    actionTypeId: REFILL_ACTION_TYPE_ID,
     smallIcon: moduleSmallIconName("medication"),
     iconColor: ACCENTS.medication,
   });
   return { scheduled: true, needsRefill };
+}
+
+// ADDED — real ask: parity with Medication/DoxyPEP's own notification
+// action buttons. Mirrors Medication Dashboard's existing one-tap
+// markRequested() exactly (same field, same real-UTC timestamp
+// convention — refillRequestedAt is only ever shown at day granularity
+// via daysFromNow(), never an exact time, so real-UTC here matches
+// existing precedent rather than needing the fake-UTC helper). Marking
+// every currently-due medication as requested naturally clears them
+// from getRefillDueMedications() on the next sync, so re-syncing here
+// is what actually cancels the notification/banner — same "acting
+// clears the reminder" pattern Take-all uses for medication doses.
+export function handleMarkRefillRequested() {
+  const needsRefill = getRefillDueMedications();
+  const names = needsRefill.map((m) => m.name);
+  needsRefill.forEach((m) => MedicationRepository.update(m.id, { refillRequestedAt: new Date().toISOString() }));
+  return { medications: names };
+}
+
+export async function handleSnoozeRefill() {
+  const needsRefill = getRefillDueMedications();
+  const names = needsRefill.map((m) => m.name).join(", ");
+  await scheduleNotification({
+    id: NOTIFICATION_IDS.refillReminder,
+    title: "Refill needed",
+    body: names ? `${names} — running low, time to reorder` : "Reminder snoozed",
+    at: new Date(Date.now() + 30 * 60000),
+    actionTypeId: REFILL_ACTION_TYPE_ID,
+    smallIcon: moduleSmallIconName("medication"),
+    iconColor: ACCENTS.medication,
+  });
+  return { minutes: 30 };
 }

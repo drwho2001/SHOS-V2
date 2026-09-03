@@ -22,9 +22,23 @@
 // test due", not two that could quietly drift apart.
 import { TestingRepository } from "../repositories/testingRepository";
 import { suggestedRoutineRetestDate } from "./testingCalculations";
-import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName } from "../storage/notificationService";
+import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName, TESTING_ACTION_TYPE_ID } from "../storage/notificationService";
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
+
+// Pure "is a retest due right now" read, shared by syncTestingReminder
+// (decides whether to schedule) and App.jsx's in-app due-state banner.
+// Same suggestedRoutineRetestDate() source of truth as the schedule
+// path below — no separate concept to drift out of sync.
+export function getTestingDueState() {
+  const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+  if (tests.length === 0) return { due: false };
+  const mostRecent = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+  const suggested = suggestedRoutineRetestDate(mostRecent);
+  if (!suggested) return { due: false };
+  const dueDate = new Date(suggested);
+  return { due: dueDate <= new Date(), dueDate };
+}
 
 export async function syncTestingReminder() {
   // ADDED — real ask: unified notifications on/off switchboard.
@@ -67,8 +81,27 @@ export async function syncTestingReminder() {
     title: "Testing due",
     body: "Routine retest suggested around now — 3 months after your last negative test.",
     at: dueDate,
+    actionTypeId: TESTING_ACTION_TYPE_ID,
     smallIcon: moduleSmallIconName("healthcare"),
     iconColor: ACCENTS.healthcare,
   });
   return { scheduled: true, dueDate };
+}
+
+// ADDED — real ask: parity with Medication/DoxyPEP's own notification
+// action buttons. No "done" action here — see this file's own
+// notificationService.js action-type comment for why (logging a real
+// test needs a real result form, not a single tap); App.jsx's due-state
+// banner instead offers a "Log a test" shortcut into that real form.
+export async function handleSnoozeTesting() {
+  await scheduleNotification({
+    id: NOTIFICATION_IDS.testingReminder,
+    title: "Testing due",
+    body: "Reminder snoozed",
+    at: new Date(Date.now() + 30 * 60000),
+    actionTypeId: TESTING_ACTION_TYPE_ID,
+    smallIcon: moduleSmallIconName("healthcare"),
+    iconColor: ACCENTS.healthcare,
+  });
+  return { minutes: 30 };
 }

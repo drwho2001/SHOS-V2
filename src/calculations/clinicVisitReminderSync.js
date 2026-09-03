@@ -21,12 +21,12 @@
 // countdown right now — the same "earliest" reasoning
 // medicationReminderSync already uses for its own "upcoming" case.
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
-import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName } from "../storage/notificationService";
+import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName, CLINIC_VISIT_ACTION_TYPE_ID } from "../storage/notificationService";
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
 import { realTimestampFromStored } from "./dateInputHelpers";
 
-function getSoonestBookedVisit() {
+export function getSoonestBookedVisit() {
   const nowMs = Date.now();
   const booked = ClinicVisitsRepository.getAll()
     .filter((v) => !v.isArchived && v.isFutureAppointment && v.date && realTimestampFromStored(v.date) > nowMs);
@@ -56,6 +56,7 @@ async function syncOneSlot({ visit, enabled, hoursBefore, notificationId, label 
     title: "Upcoming clinic appointment",
     body: `${visit.title || "Appointment"} — ${label}`,
     at: reminderAt,
+    actionTypeId: CLINIC_VISIT_ACTION_TYPE_ID,
     smallIcon: moduleSmallIconName("healthcare"),
     iconColor: ACCENTS.healthcare,
   });
@@ -82,4 +83,55 @@ export async function syncClinicVisitReminders() {
   });
 
   return { visit, resultA, resultB };
+}
+
+// ADDED — real ask: in-app due-state awareness, same as Medication's
+// own due-meds banner. "Due" here means we're inside EITHER reminder
+// slot's own window (reminderAt has passed) for the soonest booked
+// visit, and the visit itself hasn't happened yet — a plain future
+// booking with neither slot's window reached yet is not "due".
+export function getClinicVisitDueState() {
+  const prefs = NotificationPreferencesRepository.getPreferences();
+  const visit = getSoonestBookedVisit();
+  if (!visit) return { due: false };
+  const nowMs = Date.now();
+  const slots = [
+    { enabled: prefs.clinicVisitReminderAEnabled, hoursBefore: prefs.clinicVisitReminderAHours },
+    { enabled: prefs.clinicVisitReminderBEnabled, hoursBefore: prefs.clinicVisitReminderBHours },
+  ];
+  const due = slots.some(
+    (s) => s.enabled && realTimestampFromStored(visit.date) - s.hoursBefore * 3600000 <= nowMs
+  );
+  return { due, visit };
+}
+
+// ADDED — real ask: parity with Medication/DoxyPEP's own notification
+// action buttons. Both fixed reminder slots share one snooze action
+// rather than needing to know which specific slot fired — see this
+// file's own NOTIFICATION_IDS comment: both are for the same underlying
+// booked visit, so snoozing re-arms both 30 minutes out with the same
+// "reminder snoozed" body, no orphaned slot either way.
+export async function handleSnoozeClinicVisit() {
+  const visit = getSoonestBookedVisit();
+  const body = visit ? `${visit.title || "Appointment"} — reminder snoozed` : "Reminder snoozed";
+  const at = new Date(Date.now() + 30 * 60000);
+  await scheduleNotification({
+    id: NOTIFICATION_IDS.clinicVisitReminderA,
+    title: "Upcoming clinic appointment",
+    body,
+    at,
+    actionTypeId: CLINIC_VISIT_ACTION_TYPE_ID,
+    smallIcon: moduleSmallIconName("healthcare"),
+    iconColor: ACCENTS.healthcare,
+  });
+  await scheduleNotification({
+    id: NOTIFICATION_IDS.clinicVisitReminderB,
+    title: "Upcoming clinic appointment",
+    body,
+    at,
+    actionTypeId: CLINIC_VISIT_ACTION_TYPE_ID,
+    smallIcon: moduleSmallIconName("healthcare"),
+    iconColor: ACCENTS.healthcare,
+  });
+  return { minutes: 30 };
 }

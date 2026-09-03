@@ -23,6 +23,13 @@ import { AppPreferencesRepository } from "./repositories/appPreferencesRepositor
 // small, dependency-light pure-logic module — negligible bundle cost
 // for a feature visible on every screen, every day.
 import { getDailyMedsState, handleTakeAll, handleSkipToday, handleSnooze } from "./calculations/medicationReminderSync";
+// ADDED — real ask: "Build the Testing/Refill/Clinic-visit reminder
+// parity" — same static-import reasoning as medicationReminderSync
+// above: these are now also called directly from in-app due-state
+// banner buttons, not just background listeners.
+import { getRefillDueMedications, handleMarkRefillRequested, handleSnoozeRefill } from "./calculations/refillReminderSync";
+import { getTestingDueState, handleSnoozeTesting } from "./calculations/testingReminderSync";
+import { getClinicVisitDueState, handleSnoozeClinicVisit } from "./calculations/clinicVisitReminderSync";
 // ADDED — real ask: "standardise UI/appearance." Shared design tokens,
 // the actual foundation — see designTokens.js for full reasoning and
 // honest scope (this is a start, not a finished migration).
@@ -487,6 +494,33 @@ function OnboardingScreen({ onFinish }) {
   );
 }
 
+// ADDED — real ask: Refill/Testing/Clinic-visit due-state banners need
+// the exact same "measure my own rendered height via ResizeObserver,
+// via a callback ref rather than useRef+useEffect" logic the existing
+// due-meds banner already proved correct (see dueBannerCallbackRef's
+// own comment inside App() for the real React timing bug that ruled
+// out the useRef+useEffect version). Extracted as a small hook rather
+// than copy-pasted three more times — the existing, already-verified
+// due-meds banner is left exactly as-is below, not touched by this.
+function useMeasuredBannerHeight() {
+  const [height, setHeight] = useState(0);
+  const observerRef = useRef(null);
+  const ref = useCallback((node) => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+    if (node) {
+      const observer = new ResizeObserver((entries) => setHeight(entries[0].contentRect.height));
+      observer.observe(node);
+      observerRef.current = observer;
+    } else {
+      setHeight(0);
+    }
+  }, []);
+  return [height, ref];
+}
+
 export default function App() {
   const [darkMode] = useDarkModePreference();
 
@@ -611,6 +645,21 @@ export default function App() {
   // so it's visible no matter which tab was open when a dose became
   // due.
   const [dueMeds, setDueMeds] = useState([]);
+  // ADDED — real ask: "Build the Testing/Refill/Clinic-visit reminder
+  // parity" — same in-app due-state awareness the medication banner
+  // above already has, one state slot + measured banner height per
+  // type (see useMeasuredBannerHeight above). refillDue is an array
+  // (can be several medications at once, same as dueMeds); testingDue/
+  // clinicVisitDue are each either null (not due) or a small object
+  // carrying what the banner needs — no "due" boolean floating loose
+  // alongside stale leftover data the way an empty-but-truthy object
+  // would.
+  const [refillDue, setRefillDue] = useState([]);
+  const [refillBannerHeight, refillBannerCallbackRef] = useMeasuredBannerHeight();
+  const [testingDue, setTestingDue] = useState(null);
+  const [testingBannerHeight, testingBannerCallbackRef] = useMeasuredBannerHeight();
+  const [clinicVisitDue, setClinicVisitDue] = useState(null);
+  const [clinicVisitBannerHeight, clinicVisitBannerCallbackRef] = useMeasuredBannerHeight();
   // ADDED 3 Sep 2026 — real bug found live-testing this feature: the
   // banner is `position: fixed` at the very top, which meant it simply
   // OVERLAID whatever was already there — including Home's own header
@@ -684,7 +733,18 @@ export default function App() {
   const checkDueMeds = () => {
     const due = getDailyMedsState().due;
     setDueMeds(due);
-    import("./storage/notificationService").then(({ updateAppBadge }) => updateAppBadge(due.length));
+    // ADDED — real ask: Refill/Testing/Clinic-visit parity. Same single
+    // chokepoint (mount, visibilitychange, 60s poll, and every real
+    // notification delivery all already call this one function) rather
+    // than four separate near-identical effects.
+    const refill = getRefillDueMedications();
+    setRefillDue(refill);
+    const testing = getTestingDueState();
+    setTestingDue(testing.due ? testing : null);
+    const clinicVisit = getClinicVisitDueState();
+    setClinicVisitDue(clinicVisit.due ? clinicVisit : null);
+    const totalDue = due.length + refill.length + (testing.due ? 1 : 0) + (clinicVisit.due ? 1 : 0);
+    import("./storage/notificationService").then(({ updateAppBadge }) => updateAppBadge(totalDue));
   };
 
   useEffect(() => {
@@ -732,6 +792,44 @@ export default function App() {
   };
   const onDueMedsSnooze = () => {
     const result = handleSnooze();
+    showNotifToast(`Snoozed ${result.minutes} min`);
+    checkDueMeds();
+  };
+
+  // ADDED — real ask: "Build the Testing/Refill/Clinic-visit reminder
+  // parity." Refill's "Requested" mirrors Medication Dashboard's own
+  // existing markRequested() one-tap action — see
+  // handleMarkRefillRequested's own comment in refillReminderSync.js.
+  const onRefillRequested = () => {
+    const result = handleMarkRefillRequested();
+    showNotifToast(result.medications.length ? `${result.medications.join(", ")} marked as requested` : "Marked as requested");
+    checkDueMeds();
+  };
+  const onRefillSnooze = async () => {
+    const result = await handleSnoozeRefill();
+    showNotifToast(`Snoozed ${result.minutes} min`);
+    checkDueMeds();
+  };
+  // No one-tap "log a test" action — logging a real test needs a real
+  // result form (organism/result choice), not a single tap. This opens
+  // that real form directly, same handleQuickAdd Home's own "Log test"
+  // shortcut already uses.
+  const onTestingLogTest = () => {
+    handleQuickAdd("healthcare", "testing");
+  };
+  const onTestingSnooze = async () => {
+    const result = await handleSnoozeTesting();
+    showNotifToast(`Snoozed ${result.minutes} min`);
+    checkDueMeds();
+  };
+  // Same reasoning as testing above: nothing to confirm ahead of the
+  // visit itself, so this opens the real appointment record instead of
+  // offering a fake one-tap "done" action.
+  const onClinicVisitView = () => {
+    if (clinicVisitDue?.visit) navigateToRecord("healthcare", clinicVisitDue.visit.id, "clinicVisits");
+  };
+  const onClinicVisitSnooze = async () => {
+    const result = await handleSnoozeClinicVisit();
     showNotifToast(`Snoozed ${result.minutes} min`);
     checkDueMeds();
   };
@@ -883,7 +981,7 @@ export default function App() {
   useEffect(() => {
     let listenerHandle = null;
     (async () => {
-      const { addNotificationActionListener, MEDICATION_ACTIONS, DOXYPEP_ACTIONS } = await import("./storage/notificationService");
+      const { addNotificationActionListener, MEDICATION_ACTIONS, DOXYPEP_ACTIONS, REFILL_ACTIONS, TESTING_ACTIONS, CLINIC_VISIT_ACTIONS } = await import("./storage/notificationService");
       const { handleTakeDoxyDose, handleSnoozeDoxy } = await import("./calculations/doxyPepSync");
       // CHANGED 3 Sep 2026 — real ask: "clear notification awareness" —
       // tapping an action button used to silently change state with
@@ -902,7 +1000,10 @@ export default function App() {
         } else if (action.actionId === DOXYPEP_ACTIONS.snooze) {
           const result = handleSnoozeDoxy();
           showNotifToast(`Snoozed ${result.minutes} min`);
-        }
+        } else if (action.actionId === REFILL_ACTIONS.markRequested) onRefillRequested();
+        else if (action.actionId === REFILL_ACTIONS.snooze) onRefillSnooze();
+        else if (action.actionId === TESTING_ACTIONS.snooze) onTestingSnooze();
+        else if (action.actionId === CLINIC_VISIT_ACTIONS.snooze) onClinicVisitSnooze();
       });
     })();
     return () => { listenerHandle?.remove(); };
@@ -1162,42 +1263,125 @@ export default function App() {
           for the same strip of screen, which is reasonable UX on its
           own terms too: a sheet already has the user's full attention,
           and the banner reappears the moment they close it. */}
-      {dueMeds.length > 0 && (
-        <div ref={dueBannerCallbackRef} style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", background: ACCENTS.medication, zIndex: 100, boxShadow: "0 4px 16px rgba(0,0,0,.2)", fontFamily: "'Inter', sans-serif" }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
-            <Pill size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>
-                {dueMeds.length === 1 ? `${dueMeds[0].name} — due now` : `${dueMeds.length} medications due now`}
-              </div>
-              {/* ADDED — real ask: "group if say daily meds all due,
-                  list all meds that will be updated/logged" — a
-                  comma-joined single line didn't make it clear exactly
-                  which medications "Take" was actually about to log at
-                  once. One name stays inline (no list needed for a
-                  single item); two or more get a real itemized list. */}
-              {dueMeds.length > 1 && (
-                <ul style={{ margin: "4px 0 0", padding: "0 0 0 18px", fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,.92)" }}>
-                  {dueMeds.map((m) => <li key={m.id}>{m.name}</li>)}
-                </ul>
-              )}
-              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                <button onClick={onDueMedsTake} style={{ padding: "6px 14px", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.medication, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Take</button>
-                <button onClick={onDueMedsSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
-                <button onClick={onDueMedsSkip} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Cancel</button>
+      {/* CHANGED — real ask: "Build the Testing/Refill/Clinic-visit
+          reminder parity" — up to four due-state banners can now be
+          visible at once, so this is now one shared fixed wrapper
+          (safe-area padding + zIndex applied once, here) with each
+          banner stacked inside as a plain flow child, rather than each
+          banner independently `position: fixed`-ing itself at the very
+          top (which is what the single medication banner did before —
+          fine for exactly one banner, but four independently-fixed
+          banners would all draw at the same top-0 spot and overlap
+          rather than stack). Each banner's own ref now measures just
+          its own content height (no baked-in safe-area padding), summed
+          below for the main content wrapper's paddingTop. */}
+      {(dueMeds.length > 0 || refillDue.length > 0 || testingDue || clinicVisitDue) && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 100, fontFamily: "'Inter', sans-serif" }}>
+          {dueMeds.length > 0 && (
+            <div ref={dueBannerCallbackRef} style={{ background: ACCENTS.medication, boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
+                <Pill size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>
+                    {dueMeds.length === 1 ? `${dueMeds[0].name} — due now` : `${dueMeds.length} medications due now`}
+                  </div>
+                  {/* ADDED — real ask: "group if say daily meds all due,
+                      list all meds that will be updated/logged" — a
+                      comma-joined single line didn't make it clear exactly
+                      which medications "Take" was actually about to log at
+                      once. One name stays inline (no list needed for a
+                      single item); two or more get a real itemized list. */}
+                  {dueMeds.length > 1 && (
+                    <ul style={{ margin: "4px 0 0", padding: "0 0 0 18px", fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,.92)" }}>
+                      {dueMeds.map((m) => <li key={m.id}>{m.name}</li>)}
+                    </ul>
+                  )}
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <button onClick={onDueMedsTake} style={{ padding: "6px 14px", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.medication, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Take</button>
+                    <button onClick={onDueMedsSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
+                    <button onClick={onDueMedsSkip} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Cancel</button>
+                  </div>
+                </div>
+                {/* Dismiss-only close — deliberately distinct from Take/
+                    Snooze/Cancel above: those all change real medication
+                    data, this just hides the banner for now without
+                    touching anything, for "I saw it, I'll deal with it
+                    myself later" without being forced to pick one of the
+                    three real actions just to get it off screen. Reappears
+                    on the next real check (visibilitychange, the 60s poll,
+                    or a fresh notification) since it's not a persisted
+                    dismissal, just local UI state. */}
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setDueMeds([])} aria-label="Dismiss due medications banner" />
               </div>
             </div>
-            {/* Dismiss-only close — deliberately distinct from Take/
-                Snooze/Cancel above: those all change real medication
-                data, this just hides the banner for now without
-                touching anything, for "I saw it, I'll deal with it
-                myself later" without being forced to pick one of the
-                three real actions just to get it off screen. Reappears
-                on the next real check (visibilitychange, the 60s poll,
-                or a fresh notification) since it's not a persisted
-                dismissal, just local UI state. */}
-            <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setDueMeds([])} aria-label="Dismiss due medications banner" />
-          </div>
+          )}
+
+          {/* ADDED — real ask: Refill parity. "Requested" mirrors
+              Medication Dashboard's own existing one-tap markRequested()
+              — see handleMarkRefillRequested's own comment. */}
+          {refillDue.length > 0 && (
+            <div ref={refillBannerCallbackRef} style={{ background: ACCENTS.medication, boxShadow: "0 4px 16px rgba(0,0,0,.2)", borderTop: "1px solid rgba(255,255,255,.25)" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
+                <Pill size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>
+                    {refillDue.length === 1 ? `${refillDue[0].name} — refill needed` : `${refillDue.length} medications need a refill`}
+                  </div>
+                  {refillDue.length > 1 && (
+                    <ul style={{ margin: "4px 0 0", padding: "0 0 0 18px", fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,.92)" }}>
+                      {refillDue.map((m) => <li key={m.id}>{m.name}</li>)}
+                    </ul>
+                  )}
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <button onClick={onRefillRequested} style={{ padding: "6px 14px", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.medication, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Requested</button>
+                    <button onClick={onRefillSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
+                  </div>
+                </div>
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setRefillDue([])} aria-label="Dismiss refill banner" />
+              </div>
+            </div>
+          )}
+
+          {/* ADDED — real ask: Testing parity. No one-tap "done" action
+              — logging a real test needs a real result form, see
+              onTestingLogTest's own comment above. */}
+          {testingDue && (
+            <div ref={testingBannerCallbackRef} style={{ background: ACCENTS.healthcare, boxShadow: "0 4px 16px rgba(0,0,0,.2)", borderTop: "1px solid rgba(255,255,255,.25)" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
+                <TestTube size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>Testing due</div>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,.92)", marginTop: 2 }}>Routine retest suggested around now</div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <button onClick={onTestingLogTest} style={{ padding: "6px 14px", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.healthcare, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Log a test</button>
+                    <button onClick={onTestingSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
+                  </div>
+                </div>
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setTestingDue(null)} aria-label="Dismiss testing banner" />
+              </div>
+            </div>
+          )}
+
+          {/* ADDED — real ask: Clinic visit parity. No one-tap "done"
+              action — nothing to confirm ahead of the visit itself, see
+              onClinicVisitView's own comment above. */}
+          {clinicVisitDue && (
+            <div ref={clinicVisitBannerCallbackRef} style={{ background: ACCENTS.healthcare, boxShadow: "0 4px 16px rgba(0,0,0,.2)", borderTop: "1px solid rgba(255,255,255,.25)" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
+                <Hospital size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>
+                    {clinicVisitDue.visit?.title || "Appointment"} — coming up
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <button onClick={onClinicVisitView} style={{ padding: "6px 14px", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.healthcare, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>View appointment</button>
+                    <button onClick={onClinicVisitSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
+                  </div>
+                </div>
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setClinicVisitDue(null)} aria-label="Dismiss clinic visit banner" />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1239,7 +1423,7 @@ export default function App() {
           above. env(safe-area-inset-top) is the live value the OS
           reports for that overlap (0 where there's none, so this is a
           no-op on any device/browser that isn't drawing edge-to-edge). */}
-      <div style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
+      <div style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + testingBannerHeight + clinicVisitBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
         {active === "home" ? (
           <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} />
         ) : ActiveModule ? (

@@ -49,6 +49,13 @@ async function dismissOnboarding(page) {
   // banner sitting on top of it.
   await page.locator('[aria-label="Dismiss due medications banner"]').first().click({ timeout: 3000 }).catch(() => {});
   await page.waitForTimeout(300);
+  // ADDED — same reasoning, for the Refill/Testing/Clinic-visit
+  // parity banners: harmless no-ops via .catch() if the seed data
+  // doesn't happen to trigger any of them.
+  await page.locator('[aria-label="Dismiss refill banner"]').first().click({ timeout: 2000 }).catch(() => {});
+  await page.locator('[aria-label="Dismiss testing banner"]').first().click({ timeout: 2000 }).catch(() => {});
+  await page.locator('[aria-label="Dismiss clinic visit banner"]').first().click({ timeout: 2000 }).catch(() => {});
+  await page.waitForTimeout(300);
   // ADDED 3 Sep 2026 — same reasoning for the new service-worker
   // update prompt: a real update genuinely can fire mid dev-server
   // testing (a rebuild swaps in a new sw.js) and its bottom-anchored

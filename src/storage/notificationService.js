@@ -125,6 +125,35 @@ export const DOXYPEP_ACTIONS = {
   snooze: "SNOOZE_DOXY_30",
 };
 
+// ADDED — real ask: bring Refill/Testing/Clinic-visit reminders up to
+// the same real-action-button standard as Medication/DoxyPEP above,
+// rather than being plain "read only" notifications with nothing to
+// tap. Each one's actions are deliberately narrower than Medication's:
+// "Requested" mirrors Medication Dashboard's own existing one-tap
+// markRequested() (sets refillRequestedAt, which is exactly what
+// clears refillReminderSync's own needsRefill filter — no new concept
+// invented). Testing and Clinic visit get Snooze only, same reasoning
+// DoxyPEP's own comment above already gives for skipping a "done"
+// action: logging an actual test result or confirming attendance both
+// need real form input (organism/result choice; nothing to confirm
+// ahead of the visit itself) that doesn't map to a single notification
+// tap — see App.jsx's due-state banners for the real "go log it" path.
+export const REFILL_ACTION_TYPE_ID = "REFILL_REMINDER_ACTIONS";
+export const REFILL_ACTIONS = {
+  markRequested: "MARK_REFILL_REQUESTED",
+  snooze: "SNOOZE_REFILL_30",
+};
+
+export const TESTING_ACTION_TYPE_ID = "TESTING_REMINDER_ACTIONS";
+export const TESTING_ACTIONS = {
+  snooze: "SNOOZE_TESTING_30",
+};
+
+export const CLINIC_VISIT_ACTION_TYPE_ID = "CLINIC_VISIT_REMINDER_ACTIONS";
+export const CLINIC_VISIT_ACTIONS = {
+  snooze: "SNOOZE_CLINIC_VISIT_30",
+};
+
 const ACTION_TYPE_DEFS = {
   [MEDICATION_ACTION_TYPE_ID]: [
     { id: MEDICATION_ACTIONS.takeAll, title: "Take" },
@@ -135,6 +164,12 @@ const ACTION_TYPE_DEFS = {
     { id: DOXYPEP_ACTIONS.takeDose, title: "Take dose" },
     { id: DOXYPEP_ACTIONS.snooze, title: "Remind in 30 min" },
   ],
+  [REFILL_ACTION_TYPE_ID]: [
+    { id: REFILL_ACTIONS.markRequested, title: "Requested" },
+    { id: REFILL_ACTIONS.snooze, title: "Snooze 30 min" },
+  ],
+  [TESTING_ACTION_TYPE_ID]: [{ id: TESTING_ACTIONS.snooze, title: "Snooze 30 min" }],
+  [CLINIC_VISIT_ACTION_TYPE_ID]: [{ id: CLINIC_VISIT_ACTIONS.snooze, title: "Snooze 30 min" }],
 };
 
 export async function registerNotificationActionTypes() {
