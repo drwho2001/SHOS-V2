@@ -44,8 +44,22 @@ async function getPlugins() {
 // folder picker.
 let FilePicker = null;
 let filePickerLoadAttempted = false;
+// FIXED — real bug found live-debugging notifications on a real device
+// (chrome://inspect showed "FilePicker.then() is not implemented on
+// android" as an uncaught rejection): this used to `return FilePicker;`
+// — the bare Capacitor plugin proxy — as an async function's own
+// return value. Returning ANY value from an async function runs it
+// through Promise resolution, which checks `typeof value.then ===
+// "function"` to decide if it's "thenable" — and a Capacitor plugin
+// proxy intercepts EVERY property access as a potential native call,
+// so probing `.then` gets treated as a real call to a method literally
+// named "then", which isn't implemented, and the whole promise this
+// function returns rejects, uncaught, before any caller's own error
+// handling ever runs. Same root cause, same fix, as
+// notificationService.js's getPlugin() — never let the raw proxy be a
+// promise's resolved value; wrap it.
 async function getFilePickerPlugin() {
-  if (filePickerLoadAttempted) return FilePicker;
+  if (filePickerLoadAttempted) return { plugin: FilePicker };
   filePickerLoadAttempted = true;
   try {
     const mod = await import("@capawesome/capacitor-file-picker");
@@ -53,7 +67,7 @@ async function getFilePickerPlugin() {
   } catch {
     console.warn("[fileExportHelper] @capawesome/capacitor-file-picker not available — 'choose a folder' export won't be offered in this environment.");
   }
-  return FilePicker;
+  return { plugin: FilePicker };
 }
 
 function downloadInBrowser(filename, contents, mimeType) {
@@ -167,7 +181,7 @@ export async function exportTextFileToChosenFolder(filename, contents, mimeType 
   const { Capacitor } = await import("@capacitor/core");
   const isNative = Capacitor.isNativePlatform();
   const { Filesystem, Directory, Encoding } = isNative ? await getPlugins() : {};
-  const FilePickerPlugin = isNative ? await getFilePickerPlugin() : null;
+  const FilePickerPlugin = isNative ? (await getFilePickerPlugin()).plugin : null;
   if (!isNative || !Filesystem || !FilePickerPlugin) {
     // Web fallback: a real save dialog if the browser supports it,
     // otherwise this whole feature just isn't offered (the caller
@@ -209,7 +223,7 @@ export async function exportTextFileToChosenFolder(filename, contents, mimeType 
 export async function isChooseFolderExportAvailable() {
   const { Capacitor } = await import("@capacitor/core");
   if (Capacitor.isNativePlatform()) {
-    const FilePickerPlugin = await getFilePickerPlugin();
+    const { plugin: FilePickerPlugin } = await getFilePickerPlugin();
     if (FilePickerPlugin) return true;
   }
   return typeof window !== "undefined" && !!window.showSaveFilePicker;

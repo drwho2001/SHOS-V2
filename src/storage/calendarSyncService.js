@@ -52,8 +52,15 @@ import { AppPreferencesRepository } from "../repositories/appPreferencesReposito
 let Calendar = null;
 let pluginLoadAttempted = false;
 
+// FIXED — real bug found live-debugging notifications on a real device
+// (chrome://inspect showed "X.then() is not implemented on android" as
+// an uncaught rejection for other plugins with this exact pattern —
+// see notificationService.js's own getPlugin() comment for the full
+// mechanism). This used to `return Calendar;` — the bare Capacitor
+// plugin proxy — as an async function's own return value, which is
+// exactly the shape that triggers it. Wrapped instead.
 async function getPlugin() {
-  if (pluginLoadAttempted) return Calendar;
+  if (pluginLoadAttempted) return { plugin: Calendar };
   pluginLoadAttempted = true;
   try {
     const mod = await import("@capacitor/calendar");
@@ -61,7 +68,7 @@ async function getPlugin() {
   } catch {
     console.warn("[calendarSyncService] @capacitor/calendar not available — calendar sync will not run in this environment.");
   }
-  return Calendar;
+  return { plugin: Calendar };
 }
 
 export const SHOS_CALENDAR_NAME = "SHOS (private)";
@@ -74,7 +81,7 @@ function markerFor(visitId) {
 // Real device/permission check happens here at toggle-on time — never
 // just flips a stored flag and hopes. Returns { available, reason }.
 export async function checkCalendarAvailable() {
-  const plugin = await getPlugin();
+  const { plugin } = await getPlugin();
   if (!plugin) return { available: false, reason: "Calendar sync isn't available in this environment." };
   const status = await plugin.checkPermissions();
   if (status.readCalendar === "granted" && status.writeCalendar === "granted") return { available: true };
@@ -89,7 +96,7 @@ export async function checkCalendarAvailable() {
 // accounts added on this phone), could include a Google/Outlook/
 // Apple-synced calendar if that account already exists here.
 export async function listAvailableCalendars() {
-  const plugin = await getPlugin();
+  const { plugin } = await getPlugin();
   if (!plugin) return [];
   const { calendars } = await plugin.listCalendars();
   return calendars.filter((c) => c.name !== SHOS_CALENDAR_NAME);
@@ -176,7 +183,7 @@ export async function syncClinicVisitsToCalendar(visits) {
   // Clinic Visits' own save) doesn't need to separately remember to
   // check it — one place decides whether this feature is actually on.
   if (!AppPreferencesRepository.getPreferences().calendarSyncEnabled) return { synced: false };
-  const plugin = await getPlugin();
+  const { plugin } = await getPlugin();
   if (!plugin) return { synced: false };
   const calendar = await resolveTargetCalendar(plugin);
   const now = new Date();
@@ -205,7 +212,7 @@ export async function syncClinicVisitsToCalendar(visits) {
 // app-owned, so that one also gets deleted outright once it's empty,
 // rather than lingering as an empty calendar forever.
 export async function removeSyncedEventsFrom(calendarName) {
-  const plugin = await getPlugin();
+  const { plugin } = await getPlugin();
   if (!plugin) return;
   const { calendars } = await plugin.listCalendars();
   if (!calendars.some((c) => c.name === calendarName)) return;

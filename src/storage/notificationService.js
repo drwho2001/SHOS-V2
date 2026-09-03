@@ -173,7 +173,7 @@ const ACTION_TYPE_DEFS = {
 };
 
 export async function registerNotificationActionTypes() {
-  const plugin = await getPlugin();
+  const { plugin } = await getPlugin();
   if (!plugin) return false;
   try {
     await withTimeout(plugin.registerActionTypes({
@@ -207,7 +207,7 @@ export async function registerNotificationActionTypes() {
 export async function addNotificationActionListener(handler) {
   const platform = await getPlatform();
   if (platform === "native") {
-    const plugin = await getPlugin();
+    const { plugin } = await getPlugin();
     if (!plugin) return null;
     return plugin.addListener("localNotificationActionPerformed", handler);
   }
@@ -258,7 +258,7 @@ export async function addNotificationActionListener(handler) {
 export async function addNotificationReceivedListener(handler) {
   const platform = await getPlatform();
   if (platform === "native") {
-    const plugin = await getPlugin();
+    const { plugin } = await getPlugin();
     if (!plugin) return null;
     return plugin.addListener("localNotificationReceived", handler);
   }
@@ -361,18 +361,41 @@ export async function checkNativeBridgeHealth() {
   }
 }
 
+// ADDED — real root cause found via live chrome://inspect debugging on
+// the actual device: the console showed repeated, uncaught
+// "LocalNotifications.then() is not implemented on android" errors
+// (and the same for an unrelated plugin, FilePicker, elsewhere in the
+// app) — a well-known Capacitor footgun. A Capacitor plugin proxy
+// intercepts EVERY property access as a potential native method call.
+// This function used to `return LocalNotifications;` (the bare proxy)
+// as an async function's own return value — but returning ANY value
+// from an async function runs it through Promise resolution, which
+// checks `typeof value.then === "function"` to decide if it's
+// "thenable". Accessing `.then` on the proxy is exactly the kind of
+// property access the proxy intercepts as a real native call attempt
+// — for a method literally named "then", which obviously isn't
+// implemented, so the promise resolving THIS function's own return
+// rejects, uncaught, before ever reaching any of this file's own try/
+// catch blocks (which all wrap calls made INSIDE the caller, one line
+// after `const { plugin } = await getPlugin();` — never the getPlugin()
+// call itself). That's why every earlier layer of error-handling and
+// timeout-wrapping in this file never helped: the actual failure was
+// one level up, in how the plugin reference itself got handed back.
+// Fixed by never letting the raw proxy be a promise's resolved value —
+// wrapped in a plain object instead, which has no `.then` for the
+// engine to find.
 async function getPlugin() {
-  if (pluginLoadAttempted) return LocalNotifications;
+  if (pluginLoadAttempted) return { plugin: LocalNotifications };
   pluginLoadAttempted = true;
   const platform = await getPlatform();
-  if (platform !== "native") return null;
+  if (platform !== "native") return { plugin: null };
   try {
     const mod = await import("@capacitor/local-notifications");
     LocalNotifications = mod.LocalNotifications;
   } catch {
     console.warn("[notificationService] @capacitor/local-notifications not available - native notifications disabled in this environment.");
   }
-  return LocalNotifications;
+  return { plugin: LocalNotifications };
 }
 
 // Real, honest check for whether the WEB path can do anything at all
@@ -395,7 +418,7 @@ function webNotificationsSupported() {
 export async function requestNotificationPermission() {
   const platform = await getPlatform();
   if (platform === "native") {
-    const plugin = await getPlugin();
+    const { plugin } = await getPlugin();
     if (!plugin) return { status: "unavailable" };
     try {
       const result = await withTimeout(plugin.requestPermissions(), 8000, "requestPermissions()");
@@ -428,7 +451,7 @@ export async function requestNotificationPermission() {
 export async function checkNotificationPermission() {
   const platform = await getPlatform();
   if (platform === "native") {
-    const plugin = await getPlugin();
+    const { plugin } = await getPlugin();
     if (!plugin) return { status: "unavailable" };
     try {
       const result = await withTimeout(plugin.checkPermissions(), 8000, "checkPermissions()");
@@ -456,7 +479,7 @@ export async function checkNotificationPermission() {
 // path below has no equivalent OS-level exact-alarm setting to check,
 // so this correctly and permanently resolves "unavailable" there.
 export async function checkExactAlarmPermission() {
-  const plugin = await getPlugin();
+  const { plugin } = await getPlugin();
   if (!plugin || !plugin.checkExactNotificationSetting) return { status: "unavailable" };
   try {
     const result = await withTimeout(plugin.checkExactNotificationSetting(), 8000, "checkExactNotificationSetting()");
@@ -473,7 +496,7 @@ export async function checkExactAlarmPermission() {
 // setting doesn't exist there). A real navigation away from the app,
 // same as any other "open system settings" permission flow.
 export async function requestExactAlarmPermission() {
-  const plugin = await getPlugin();
+  const { plugin } = await getPlugin();
   if (!plugin || !plugin.changeExactNotificationSetting) return { status: "unavailable" };
   try {
     const result = await withTimeout(plugin.changeExactNotificationSetting(), 8000, "changeExactNotificationSetting()");
@@ -603,7 +626,7 @@ export async function scheduleNotification({ id, title, body, at, actionTypeId, 
   }
   const platform = await getPlatform();
   if (platform === "native") {
-    const plugin = await getPlugin();
+    const { plugin } = await getPlugin();
     if (!plugin) return false;
     try {
       await withTimeout(plugin.schedule({
@@ -699,7 +722,7 @@ export async function updateAppBadge(count) {
 export async function cancelNotification(id) {
   const platform = await getPlatform();
   if (platform === "native") {
-    const plugin = await getPlugin();
+    const { plugin } = await getPlugin();
     if (!plugin) return false;
     try {
       await withTimeout(plugin.cancel({ notifications: [{ id }] }), 8000, "cancel()");

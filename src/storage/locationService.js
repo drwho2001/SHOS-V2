@@ -29,8 +29,15 @@
 let Geolocation = null;
 let pluginLoadAttempted = false;
 
+// FIXED — real bug found live-debugging notifications on a real device
+// (chrome://inspect showed "X.then() is not implemented on android" as
+// an uncaught rejection for other plugins with this exact pattern —
+// see notificationService.js's own getPlugin() comment for the full
+// mechanism). This used to `return Geolocation;` — the bare Capacitor
+// plugin proxy — as an async function's own return value, which is
+// exactly the shape that triggers it. Wrapped instead.
 async function getPlugin() {
-  if (pluginLoadAttempted) return Geolocation;
+  if (pluginLoadAttempted) return { plugin: Geolocation };
   pluginLoadAttempted = true;
   try {
     const mod = await import("@capacitor/geolocation");
@@ -38,14 +45,14 @@ async function getPlugin() {
   } catch {
     console.warn("[locationService] @capacitor/geolocation not available — falling back to the browser's own navigator.geolocation in this environment.");
   }
-  return Geolocation;
+  return { plugin: Geolocation };
 }
 
 // Resolves to { latitude, longitude }, or throws a plain-language
 // Error the UI can show directly (permission denied, unavailable,
 // timed out) — never a raw platform exception.
 async function getCurrentCoords() {
-  const plugin = await getPlugin();
+  const { plugin } = await getPlugin();
   if (plugin) {
     const status = await plugin.checkPermissions();
     if (status.location !== "granted" && status.coarseLocation !== "granted") {
