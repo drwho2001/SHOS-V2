@@ -15,6 +15,26 @@ the source of truth for *why*; this file is the source of truth for
 *what's true right now*. Keep both current: log real work in Notion,
 keep this file's "Known issues" section honest as things get fixed.
 
+## Starting a new session — read this first
+
+1. Read this file in full — it's the current-state snapshot.
+2. Check the Notion "Development" log's most recent entries (workspace
+   "Sexual Health Operating System (SHOS)" → Backend files →
+   "Development") for anything since this file's "Recently shipped"
+   date below — a prior session may have shipped real work there that
+   this file hasn't caught up to yet.
+3. `git log --oneline -20` against the actual repo to cross-check —
+   Notion and this file both describe *intended* current state; the
+   git history is what's actually shipped. If they disagree, trust the
+   repo and fix the docs, not the other way around.
+4. When you finish real work in this session: update this file's
+   "Known issues"/"Recently shipped" sections in the same change, AND
+   append a dated entry to the Notion "Development" log in the same
+   voice/density as existing entries (see that page's own history for
+   the pattern — one dense paragraph per date, real specifics, not a
+   bullet summary). Don't let either drift stale again — that's
+   exactly the gap that made this section necessary in the first place.
+
 ## Who this is for
 
 UK adult users, LGBT-inclusive but not exclusively labeled as an "LGBT
@@ -133,8 +153,27 @@ oversight.
   their output here. Treat a relayed recommendation as a proposal to
   check against real code/session history, not something to adopt
   uncritically — it may not have visibility into what's already shipped.
-- Commits end with the attribution footer (see git log for exact
-  format); this is a hard requirement for every commit in this repo.
+- Every commit ends with an attribution footer — a hard requirement,
+  not optional:
+  ```
+  Co-Authored-By: Claude <model-name> <noreply@anthropic.com>
+  Claude-Session: <this session's own claude.ai/code/session/... URL>
+  ```
+  Both lines are specific to whichever session/model made the commit —
+  don't copy a literal URL from a past commit into a new one; use the
+  current session's own values (`git log -1` shows the exact format
+  the previous session used).
+- **Build → verify → ship workflow**, used consistently this session
+  for every real change: `npm run build` (catches syntax errors) →
+  `npm run dev -- --port <free-port>` + `node scripts/smoke-test.cjs`
+  against it (catches real regressions — this caught genuine bugs
+  more than once) → commit → `git push -u origin main` → check CI via
+  the GitHub Actions API (`build-apk.yml` run for the pushed commit;
+  Java/native changes in particular can't be compiled locally in a
+  typical session sandbox, so a green CI run is the only real
+  confirmation they compile). Don't skip the live verify step even
+  for a change that "looks safe" — several real bugs this session
+  only surfaced that way, not from reading the diff.
 
 ## Known issues (as of 3 Sep 2026 — update this section as things change)
 
@@ -175,4 +214,9 @@ all 5 reminder types); root-cause fix for the plugin-proxy bug above;
 `FLAG_SECURE`; third-party network call disclosure (Nominatim, GitHub
 update-check) with off switches in Settings > Data > "Data & network";
 closed the `updatedAt` gap in the 3 repositories that genuinely lacked
-it (`episodeRepository`, `logRepository`, `locationsRepository`).
+it (`episodeRepository`, `logRepository`, `locationsRepository`); Stats
+expanded (Symptoms section, Clinic Visits section, a medication
+adherence trend chart); this file created and the Notion "Development"
+log caught up to match, after discovering it — not any prior coding
+session's own notes — had been the actual current project history all
+along.
