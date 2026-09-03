@@ -1132,7 +1132,20 @@ export default function App() {
             <div key={tab.key} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", opacity: isBuilt ? 1 : 0.45 }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 14px", borderRadius: 14, background: isActive ? resolveTabAccent(tab, darkMode) : "transparent" }}>
-                <Icon size={22} color={isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : "#656568")} weight={isActive ? "fill" : "regular"} />
+                {/* FIXED — real device bug: Phosphor's "fill" weight for
+                    the Encounter tab's own Pulse icon isn't just a
+                    bolder line like every other icon's fill weight —
+                    it's a whole rounded-square badge shape with the
+                    pulse line cut out of it (confirmed in the icon's
+                    own SVG path data), stacking on top of this div's
+                    own selected-state background and reading as a
+                    second, slightly differently-sized box. Every other
+                    tab's icon genuinely just gets bolder in fill
+                    weight, so only this one tab is excluded — it stays
+                    on "regular" (same glyph, same size/position as
+                    deselected) even when active, just recoloured white
+                    like the others. */}
+                <Icon size={22} color={isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : "#656568")} weight={isActive && tab.key !== "activity" ? "fill" : "regular"} />
                 <span style={{ fontSize: 10, color: isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : "#656568"), fontWeight: isActive ? 600 : 400 }}>{tab.label}</span>
               </div>
             </div>

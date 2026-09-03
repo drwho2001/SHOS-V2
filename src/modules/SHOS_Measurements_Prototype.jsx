@@ -15,7 +15,7 @@
 // noise. Each type gets its own section, newest entry first.
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X, GearIcon as Gear, FolderIcon as Folder } from "@phosphor-icons/react";
-import { MeasurementRepository, DEFAULT_MEASUREMENT, BLOOD_PRESSURE_TYPE, BLOOD_PRESSURE_UNIT, getAvailableUnits, getDefaultUnit, KIND_UNITS, KIND_LABELS } from "../repositories/measurementRepository";
+import { MeasurementRepository, DEFAULT_MEASUREMENT, BLOOD_PRESSURE_TYPE, BLOOD_PRESSURE_UNIT, getAvailableUnits, getDefaultUnit, hasUnitConversion, KIND_UNITS, KIND_LABELS } from "../repositories/measurementRepository";
 import { MeasurementPreferencesRepository } from "../repositories/measurementPreferencesRepository";
 import { CustomGroupsRepository } from "../repositories/customGroupsRepository";
 import { TrashRepository } from "../repositories/trashRepository";
@@ -368,7 +368,23 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
               <div style={{ width: 70 }}><TextField label="Unit" value={BLOOD_PRESSURE_UNIT} onChange={() => {}} T={T} readOnly /></div>
             </div>
           ) : (
-            form.type && <ValueUnitFields type={form.type} value={form.value} unit={form.unit} onValueChange={set("value")} onUnitChange={set("unit")} T={T} />
+            <>
+              {form.type && <ValueUnitFields type={form.type} value={form.value} unit={form.unit} onValueChange={set("value")} onUnitChange={set("unit")} T={T} />}
+              {/* ADDED — real ask: a kind-tagged type (e.g. "Height"
+                  mistakenly picked as Count-like) used to be stuck with
+                  that choice forever after the one-time prompt above —
+                  this reopens it for the CURRENT type, any time. Hidden
+                  for a type with real UNIT_CONFIG conversion (Weight,
+                  Height, Testosterone, Estradiol) — those have a
+                  genuine canonical unit, not a re-pickable "kind". */}
+              {form.type && !hasUnitConversion(form.type) && MeasurementPreferencesRepository.getTypeKind(form.type) && (
+                <div style={{ padding: "0 0 8px" }}>
+                  <span onClick={() => setNewTypeNeedingKind(form.type)} style={{ fontSize: 11, color: T.textSecondary, cursor: "pointer", textDecoration: "underline" }}>
+                    Wrong unit suggestions? Change what kind of measurement this is
+                  </span>
+                </div>
+              )}
+            </>
           )}
           {(linkedVisit || linkedTest) && (
             <div style={{ padding: "8px 0" }}>

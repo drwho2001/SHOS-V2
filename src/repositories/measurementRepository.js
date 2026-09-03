@@ -62,13 +62,27 @@ export const BLOOD_PRESSURE_UNIT = "mmHg";
 
 // Canonical unit per type, plus conversion factors FROM each alternate
 // unit TO that canonical unit. Types not listed here (Viral load, CD4
-// count, LH, FSH, Weight, Other, and any custom type the user adds)
-// have no conversion — value/unit are stored exactly as entered, and
+// count, LH, FSH, Other, and any custom type the user adds) have no
+// conversion — value/unit are stored exactly as entered, and
 // enteredValue/enteredUnit simply mirror value/unit.
+// ADDED — real bug: Height had no entry here at all, so a new "Height"
+// type fell through to the generic kind-tagging flow, and picking the
+// wrong kind there (reported: ended up "Count-like") locked its unit
+// chips to "count" — not cm/in the way it should have. Same real
+// UNIT_CONFIG treatment as Weight now, so Height just works without
+// that extra kind-tagging step, with a genuine cm<->in conversion
+// (1 in = 2.54cm, the standard exact factor). Feet specifically isn't
+// its own unit here — decimal feet ("5.67 ft") isn't how anyone
+// actually reads a height out loud, and a real feet+inches compound
+// input (5'8") is a different field shape than every other
+// measurement in this file; "in" already covers the same information
+// a foot-and-inches reading does (68 in = 5'8"), and the unit field
+// still accepts free-typed text if a different unit is ever needed.
 const UNIT_CONFIG = {
   Testosterone: { canonical: "nmol/L", alternates: { "ng/dL": (v) => v * 0.0347 } },
   Estradiol: { canonical: "pmol/L", alternates: { "pg/mL": (v) => v * 3.671 } },
   Weight: { canonical: "kg", alternates: { lb: (v) => v * 0.453592 } },
+  Height: { canonical: "cm", alternates: { in: (v) => v * 2.54 } },
 };
 
 // "Suggest appropriate units — volume for volume, weight for weight"
@@ -90,6 +104,17 @@ export const KIND_UNITS = {
   length: ["cm", "in", "m"],
 };
 export const KIND_LABELS = { mass: "Weight-like", volume: "Volume-like", concentration: "Concentration-like", count: "Count-like", length: "Length-like" };
+
+// ADDED — real ask: "should be easy to override this option when
+// blatantly wrong" — a type tagged with the wrong kind (e.g. "Height"
+// picked as Count-like by mistake) should be easy to re-tag, not stuck
+// forever after a one-time prompt. Only meaningful for kind-tagged
+// types — one with real UNIT_CONFIG conversion (Weight, Height,
+// Testosterone, Estradiol) has a genuine canonical unit, not a
+// re-pickable "kind", so the UI hides the re-tag option there.
+export function hasUnitConversion(type) {
+  return !!UNIT_CONFIG[type];
+}
 
 export function getAvailableUnits(type) {
   const config = UNIT_CONFIG[type];

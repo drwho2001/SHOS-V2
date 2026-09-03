@@ -517,8 +517,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined}
               />
             )}
+            {/* ADDED — real ask: this ring wasn't clickable at all,
+                unlike "Last test" right beside it. Adherence isn't
+                tied to one specific dose entry the way a test result
+                is, so there's no single record to open — goes to
+                Medication itself instead, same "go see the detail
+                behind this number" intent as every other tap target
+                on this screen. */}
             {adherence != null && (
-              <StatusRing pct={adherence} color={medsBlue} centerText={`${adherence}%`} caption="7-day adherence" />
+              <StatusRing pct={adherence} color={medsBlue} centerText={`${adherence}%`} caption="7-day adherence" onClick={() => onNavigateToRecord("medication")} />
             )}
           </div>
         </>

@@ -130,7 +130,7 @@ const SEED_LISTS = {
   // (systolic/diastolic shape, fixed mmHg, its own trend view), so
   // unlike every other entry here it can't be renamed or removed via
   // this same editable-list mechanism.
-  measurementType: ["Viral load", "CD4 count", "Estradiol", "Testosterone", "LH", "FSH", "Weight", "Blood pressure", "Other"],
+  measurementType: ["Viral load", "CD4 count", "Estradiol", "Testosterone", "LH", "FSH", "Weight", "Height", "Blood pressure", "Other"],
   // ADDED — real ask: Menstrual Cycle's own Flow field.
   menstrualFlow: ["Spotting", "Light", "Medium", "Heavy"],
   // ADDED — real ask: My Profile's own overall relationship status —
