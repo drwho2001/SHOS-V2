@@ -1877,6 +1877,14 @@ function UnitsScreen({ onClose }) {
     setPrefs(updated);
   };
 
+  // ADDED — real ask: first day of week preference (Sunday/Monday,
+  // default Monday). A different repository (AppPreferencesRepository,
+  // not measurement units) but this screen is the closest existing
+  // "how things display" home rather than a new near-empty screen —
+  // same reasoning as InactiveThresholdCard folding into DesignScreen.
+  const [appPrefs, setAppPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const setWeekStartsOn = (value) => setAppPrefs(AppPreferencesRepository.update({ weekStartsOn: value }));
+
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
@@ -1920,6 +1928,23 @@ function UnitsScreen({ onClose }) {
             </div>
           );
         })}
+
+        <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : "#656568", marginTop: 24, marginBottom: 8 }}>Calendar</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0" }}>
+          <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Week starts on</span>
+          <div role="radiogroup" aria-label="Week starts on" style={{ display: "flex", gap: 6 }}>
+            {[{ value: "monday", label: "Monday" }, { value: "sunday", label: "Sunday" }].map((opt) => (
+              <div key={opt.value} onClick={() => setWeekStartsOn(opt.value)} role="radio" tabIndex={0} aria-checked={appPrefs.weekStartsOn === opt.value}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setWeekStartsOn(opt.value); } }}
+                style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: appPrefs.weekStartsOn === opt.value ? 700 : 400, cursor: "pointer",
+                  border: `1px solid ${appPrefs.weekStartsOn === opt.value ? ACCENTS.healthcare : (darkMode ? DARK.border : "#DCDCE1")}`,
+                  color: appPrefs.weekStartsOn === opt.value ? "#FFFFFF" : (darkMode ? DARK.textSecondary : "#5B5B62"),
+                  background: appPrefs.weekStartsOn === opt.value ? ACCENTS.healthcare : "transparent" }}>
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -2200,9 +2225,14 @@ function StatsScreen({ onClose }) {
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
               <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Encounters per month</span>
             </div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60 }}>
+            {/* ADDED — real ask: bars had no visible value, unreadable
+                on mobile touch (no hover). Raw count printed above each
+                bar, same pattern applied consistently across all 4 bar
+                charts in this screen (see the other 3 below). */}
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 78 }}>
               {activityMonths.map((b) => (
                 <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{b.count}</span>
                   <div style={{ width: "100%", height: `${Math.max(4, (b.count / maxActivity) * 44)}px`, background: ACCENTS.encounters, borderRadius: 3 }} />
                   <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#656568" }}>{b.label}</span>
                 </div>
@@ -2273,9 +2303,10 @@ function StatsScreen({ onClose }) {
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
               <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Visits per month</span>
             </div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60 }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 78 }}>
               {clinicVisitMonths.map((b) => (
                 <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{b.count}</span>
                   <div style={{ width: "100%", height: `${Math.max(4, (b.count / maxClinicVisits) * 44)}px`, background: ACCENTS.healthcare, borderRadius: 3 }} />
                   <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#656568" }}>{b.label}</span>
                 </div>
@@ -2302,9 +2333,10 @@ function StatsScreen({ onClose }) {
           <div style={{ padding: "12px 16px" }}>
             <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>Adherence trend (days with a dose logged, per month)</div>
             <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", marginBottom: 10 }}>A simpler month-by-month measure than the precise 7-day figure above — useful for spotting a trend, not a like-for-like comparison.</div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60 }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 78 }}>
               {adherenceTrend.map((b) => (
                 <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: b.pct != null ? (darkMode ? DARK.textSecondary : "#5B5B62") : (darkMode ? DARK.textDisabled : "#656568") }}>{b.pct != null ? `${b.pct}%` : "–"}</span>
                   <div style={{ width: "100%", height: b.pct != null ? `${Math.max(4, (b.pct / 100) * 44)}px` : "4px", background: b.pct != null ? ACCENTS.medication : (darkMode ? DARK.border : "#DCDCE1"), borderRadius: 3 }} />
                   <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#656568" }}>{b.label}</span>
                 </div>
@@ -2320,9 +2352,10 @@ function StatsScreen({ onClose }) {
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
               <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Contacts added per month</span>
             </div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60 }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 78 }}>
               {contactMonths.map((b) => (
                 <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{b.count}</span>
                   <div style={{ width: "100%", height: `${Math.max(4, (b.count / maxContacts) * 44)}px`, background: ACCENTS.contacts, borderRadius: 3 }} />
                   <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#656568" }}>{b.label}</span>
                 </div>
@@ -2954,9 +2987,20 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   const events = useMemo(() => allEvents.filter((e) => activeModules.includes(e.moduleKey)), [allEvents, activeModules]);
   const grouped = useMemo(() => groupEventsByDay(events), [events]);
 
+  // ADDED — real ask: first day of week preference (Sunday/Monday,
+  // default Monday). getDay() is always 0=Sun..6=Sat regardless of
+  // preference — when the week starts Monday, shift it so Monday
+  // lands in column 0 instead.
+  const weekStartsOn = AppPreferencesRepository.getPreferences().weekStartsOn;
+  const weekStartsMonday = weekStartsOn !== "sunday";
+  const WEEKDAY_LABELS = weekStartsMonday
+    ? ["M", "T", "W", "T", "F", "S", "S"]
+    : ["S", "M", "T", "W", "T", "F", "S"];
+
   const year = cursor.getFullYear(), month = cursor.getMonth();
   const firstOfMonth = new Date(year, month, 1);
-  const startOffset = firstOfMonth.getDay(); // 0=Sun
+  const rawDay = firstOfMonth.getDay(); // 0=Sun..6=Sat
+  const startOffset = weekStartsMonday ? (rawDay + 6) % 7 : rawDay;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const todayKey = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
 
@@ -3030,7 +3074,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
           <ChevronRight size={20} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={() => { setCursor(new Date(year, month + 1, 1)); setSelectedDay(null); }} />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
-          {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+          {WEEKDAY_LABELS.map((d, i) => (
             <div key={i} style={{ textAlign: "center", fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", fontWeight: 700, padding: "4px 0" }}>{d}</div>
           ))}
         </div>

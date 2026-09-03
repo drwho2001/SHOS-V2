@@ -38,6 +38,11 @@ export async function syncDoxyPepAlert() {
   const encounters = EncounterRepository.getAll();
   const doxyLogs = LogRepository.getForMedication(doxyMed.id);
   const status = getDoxyPepStatus(encounters, doxyLogs);
+  // ADDED — real ask: the in-app banner needs to navigate to (and,
+  // for the "permanent" dismiss below, key off) this specific
+  // medication record — cheap to attach here rather than have Home
+  // re-look it up itself.
+  status.medicationId = doxyMed.id;
 
   if (!status.active) {
     // Covers both "never needed it" and "dose was just logged,

@@ -53,7 +53,7 @@ import {
   TestTubeIcon as TestTube, FireIcon as Flame, StethoscopeIcon as Stethoscope,
   SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CalendarCheckIcon as CalendarCheck, StackIcon as Stack, DropIcon as Drop,
   IdentificationBadgeIcon as CreditCard, DownloadSimpleIcon as Download, LockIcon as Lock,
-  BellIcon as Bell,
+  BellIcon as Bell, XIcon as X,
 } from "@phosphor-icons/react";
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
 import { ContactRepository } from "../repositories/contactRepository";
@@ -71,7 +71,7 @@ import { AppPreferencesRepository } from "../repositories/appPreferencesReposito
 import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository";
 import { ContraceptionRepository } from "../repositories/contraceptionRepository";
 import { PregnancyRepository } from "../repositories/pregnancyRepository";
-import { formatDoxyPepCountdown } from "../calculations/doxyPepCalculations";
+import { formatDoxyPepCountdown, formatDoxyPepOverdueDuration, DOXYPEP_WINDOW_HOURS } from "../calculations/doxyPepCalculations";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { requestNotificationPermission, checkNotificationPermission } from "../storage/notificationService";
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
@@ -217,12 +217,41 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // a qualifying Activity is saved (Encounters) or a DoxyPEP dose is
   // logged (Medication) — see those files' own comments.
   const [doxyStatus, setDoxyStatus] = useState({ active: false });
+  // ADDED — real ask: dismiss option for the overdue banner, temporary
+  // and/or permanent. Temporary is deliberately just local UI state,
+  // same "reappears on next real check" pattern as the due-meds/
+  // refill/testing/clinic-visit banners in App.jsx (there, dismissing
+  // clears the same state a poll later overwrites; doxyStatus isn't a
+  // list that can be emptied the same way, so this mirrors it
+  // explicitly — reset every time recompute() actually runs, the same
+  // 60s safety-net poll those banners share). Permanent is scoped to
+  // one exposure window (see AppPreferencesRepository's own
+  // doxyPepOverdueDismissedWindowStart comment for why) — read fresh
+  // each recompute so a stale dismissal from a since-closed window
+  // never suppresses a new one.
+  const [doxyTempDismissed, setDoxyTempDismissed] = useState(false);
   useEffect(() => {
-    const recompute = () => { syncDoxyPepAlert().then(setDoxyStatus); };
+    const recompute = () => {
+      syncDoxyPepAlert().then((status) => {
+        setDoxyStatus(status);
+        setDoxyTempDismissed(false);
+      });
+    };
     recompute();
     const interval = setInterval(recompute, 60000);
     return () => clearInterval(interval);
   }, []);
+  const doxyPermanentlyDismissed = doxyStatus.active && doxyStatus.overdue &&
+    AppPreferencesRepository.getPreferences().doxyPepOverdueDismissedWindowStart === doxyStatus.windowStart;
+  const dismissDoxyForever = () => {
+    AppPreferencesRepository.update({ doxyPepOverdueDismissedWindowStart: doxyStatus.windowStart });
+    // Persisted read above is fresh on every render already (same
+    // pattern as CalendarScreen's own syncEnabled) — this just forces
+    // that re-render to actually happen right now, same role
+    // doxyTempDismissed already plays for the temporary case.
+    setDoxyTempDismissed(true);
+  };
+  const doxyBannerVisible = doxyStatus.active && !doxyTempDismissed && !doxyPermanentlyDismissed;
 
   // CHANGED 3 Sep 2026 — real bug found auditing notification gaps:
   // this used to call requestNotificationPermission() directly, every
@@ -548,23 +577,43 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           surfaces the window. Overdue uses the app's real Action-State
           red; still-counting-down uses a neutral informational tint,
           matching the C5 convention that red means "needs action now". */}
-      {doxyStatus.active && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, marginBottom: 16,
+      {/* CHANGED — real ask: clicking through to the DoxyPEP section of
+          Medication (reusing onNavigateToRecord, the exact same
+          navigation prop the "Last test"/adherence rings below already
+          use — no new navigation path), plus a dismiss option. X is the
+          temporary, session-only dismiss (same "reappears on next real
+          check" pattern as the due-meds/refill/testing/clinic-visit
+          banners in App.jsx). "Don't warn me about this exposure" is
+          the permanent option, deliberately scoped to just this one
+          overdue window rather than reusing doxyPepAlertEnabled (that's
+          the separate native-notification switch) — see
+          AppPreferencesRepository's own comment on why only overdue
+          gets this: still-counting-down is a short-lived countdown, not
+          something worth permanently silencing. */}
+      {doxyBannerVisible && (
+        <div onClick={() => onNavigateToRecord("medication", doxyStatus.medicationId)} style={{
+          display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", borderRadius: 14, marginBottom: 16, cursor: "pointer",
           background: doxyStatus.overdue ? `${actionRedColor}18` : `${medsBlue}12`,
           border: `1px solid ${doxyStatus.overdue ? actionRedColor : medsBlue}`,
         }}>
-          <Syringe size={18} color={doxyStatus.overdue ? actionRedColor : medsBlue} />
+          <Syringe size={18} color={doxyStatus.overdue ? actionRedColor : medsBlue} style={{ marginTop: 1 }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: doxyStatus.overdue ? "#E5484D" : "#1B1B1F" }}>
               {doxyStatus.overdue ? "DoxyPEP dose overdue" : "DoxyPEP dose due soon"}
             </div>
             <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 1 }}>
               {doxyStatus.overdue
-                ? `${formatDoxyPepCountdown(doxyStatus.msOverdue)} past the 72h window`
-                : `${formatDoxyPepCountdown(doxyStatus.msRemaining)} remaining in the 72h window`}
+                ? `${formatDoxyPepOverdueDuration(doxyStatus.msOverdue)} past the ${DOXYPEP_WINDOW_HOURS}h window`
+                : `${formatDoxyPepCountdown(doxyStatus.msRemaining)} remaining in the ${DOXYPEP_WINDOW_HOURS}h window`}
             </div>
+            {doxyStatus.overdue && (
+              <div onClick={(e) => { e.stopPropagation(); dismissDoxyForever(); }} style={{ fontSize: 11, fontWeight: 600, color: doxyStatus.overdue ? actionRedColor : medsBlue, marginTop: 6, cursor: "pointer", textDecoration: "underline" }}>
+                Don't warn me about this exposure again
+              </div>
+            )}
           </div>
+          <X size={16} color={doxyStatus.overdue ? actionRedColor : medsBlue} style={{ cursor: "pointer", flexShrink: 0, marginTop: 1 }}
+            onClick={(e) => { e.stopPropagation(); setDoxyTempDismissed(true); }} aria-label="Dismiss DoxyPEP banner" />
         </div>
       )}
 
