@@ -63,7 +63,12 @@ const radius = RADIUS;
 
 function formatDate(iso) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  // timeZone: "UTC" reads the stored digits back literally rather than
+  // applying a real timezone shift — this app's stored dates are a
+  // deliberate "Z"-suffixed lie (see dateInputHelpers.js), not real
+  // UTC, so a plain toLocaleDateString() would shift the displayed
+  // time by the device's UTC offset (0 in GMT, 1h in BST).
+  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 }
 
 // ADDED 26 Aug 2026 — the main visit date now genuinely carries a
@@ -73,7 +78,12 @@ function formatDate(iso) {
 function formatDateTime(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
-  return `${d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })} · ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+  // timeZone: "UTC" on both calls — see formatDate's comment above.
+  // Fixed 3 Sep 2026: this was previously missing here, causing a
+  // booked appointment's displayed time to read up to an hour later
+  // than what was actually entered (the same bug already fixed for
+  // Medication's dose times).
+  return `${d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })} · ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", timeZone: "UTC" })}`;
 }
 
 function SectionCard({ title, T, children }) {
@@ -525,8 +535,11 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
   const isNew = !visitId;
   const existing = visitId ? ClinicVisitsRepository.getById(visitId) : null;
   // ADDED 19 Aug 2026 — real in-app editable option lists.
-  const reasonForVisitOptions = useMemo(() => CustomOptionListsRepository.get("reasonForVisit"), []);
-  const followUpTypeOptions = useMemo(() => CustomOptionListsRepository.get("followUpType"), []);
+  // getRanked, not get: suggestion chips surface newly-added and
+  // most-frequently-picked options first (real ask, 3 Sep 2026) — see
+  // customOptionListsRepository.js's own comment on the two methods.
+  const reasonForVisitOptions = useMemo(() => CustomOptionListsRepository.getRanked("reasonForVisit"), []);
+  const followUpTypeOptions = useMemo(() => CustomOptionListsRepository.getRanked("followUpType"), []);
   // ADDED 19 Aug 2026 — draft autosave.
   const draftKey = `visitEdit_${visitId || "new"}`;
   const [form, setForm] = useState(() => {

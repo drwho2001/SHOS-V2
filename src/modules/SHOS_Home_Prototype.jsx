@@ -331,7 +331,14 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   function formatExactDate(iso) {
     if (!iso) return "—";
     const d = new Date(iso);
-    return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()} · ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+    // getUTCDate/getUTCMonth/getUTCFullYear + timeZone: "UTC" on the
+    // time, not the local getters/toLocaleTimeString(): this app's
+    // stored dates are a deliberate "Z"-suffixed lie (see
+    // dateInputHelpers.js), not real UTC, so reading them with local
+    // getters/plain toLocaleTimeString() shifts the displayed time by
+    // the device's UTC offset (0 in GMT, 1h in BST) — the same bug
+    // already fixed for Medication's dose times. Fixed 3 Sep 2026.
+    return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()} · ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", timeZone: "UTC" })}`;
   }
   // A date-only variant of the above — contraception's own nextDueDate
   // (and similar plain "YYYY-MM-DD" facts) has no real time component,
