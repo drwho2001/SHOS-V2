@@ -125,7 +125,11 @@ export const LocationsRepository = {
     let updated = null;
     locations = locations.map((l) => {
       if (l.id !== id) return l;
-      updated = { ...l, ...changes };
+      // ADDED — real ask, from a build audit: consistency with every
+      // other repository's own updatedAt stamping (see episodeRepository.js/
+      // logRepository.js's own comments on why this matters for
+      // backupService.js's staleness check).
+      updated = { ...l, ...changes, updatedAt: new Date().toISOString() };
       return updated;
     });
     persist();

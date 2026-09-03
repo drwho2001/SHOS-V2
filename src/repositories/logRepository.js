@@ -160,7 +160,14 @@ export const LogRepository = {
     let updatedEntry = null;
     logs = logs.map((l) => {
       if (l.id !== id) return l;
-      updatedEntry = { ...l, ...changes };
+      // ADDED — real ask, from a build audit: this genuine "correct a
+      // mis-logged entry" path had no updatedAt at all — exactly the
+      // "edit an existing record's fields, no new record created" case
+      // backupService.js's own hasUnbackedChanges() comment names as
+      // its known blind spot. Real dose/refill/waste log corrections
+      // now count toward the backup-staleness reminder like any other
+      // real activity.
+      updatedEntry = { ...l, ...changes, updatedAt: new Date().toISOString() };
       return updatedEntry;
     });
     persist();

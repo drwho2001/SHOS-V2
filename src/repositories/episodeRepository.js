@@ -155,7 +155,13 @@ export const EpisodeRepository = {
     let updated = null;
     episodes = episodes.map((e) => {
       if (e.id !== id) return e;
-      updated = { ...e, ...changes };
+      // ADDED — real ask, from a build audit: this was the one real
+      // repository silently missing updatedAt entirely — backupService.js's
+      // hasUnbackedChanges() reads it wherever present to catch edits to
+      // an existing record (not just brand-new ones); without it, editing
+      // an Episode's own fields couldn't trigger the "you should back up"
+      // reminder at all.
+      updated = { ...e, ...changes, updatedAt: new Date().toISOString() };
       return updated;
     });
     persist();

@@ -27,7 +27,7 @@ import {
   CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck,
   LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen,
   SlidersHorizontalIcon as SlidersHorizontal, MapPinIcon as MapPin, XIcon as X,
-  RulerIcon as Ruler,
+  RulerIcon as Ruler, WifiHighIcon as WifiHigh,
 } from "@phosphor-icons/react";
 // FIXED 1 Sep 2026 — real ask: "Managed lists crashes app on
 // attempting to open" / "Same for resources [crashes], in light [mode]
@@ -2010,6 +2010,65 @@ function AutomaticBackupsScreen({ onClose }) {
   );
 }
 
+// ADDED — real ask, from a build audit: two real network calls in this
+// app (Nominatim address lookup, GitHub update checks) were previously
+// undisclosed anywhere in the UI and had no way to turn off — worth
+// being upfront about for an app whose whole framing is on-device-only,
+// privacy-paramount. Both default ON (see AppPreferencesRepository's
+// own comment on why) — this is disclosure and control, not a warning
+// to be scared of. Same standalone-screen pattern as AutomaticBackupsScreen.
+function DataNetworkScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+  const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+
+  const toggleAddressLookup = () => {
+    setPrefs(AppPreferencesRepository.update({ addressLookupEnabled: !prefs.addressLookupEnabled }));
+  };
+  const toggleUpdateCheck = () => {
+    setPrefs(AppPreferencesRepository.update({ updateCheckEnabled: !prefs.updateCheckEnabled }));
+  };
+
+  const row = (label, enabled, onToggle, description) => (
+    <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{label}</span>
+        <div onClick={onToggle} role="switch" tabIndex={0} aria-checked={enabled} aria-label={label}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
+          style={{ width: 44, height: 26, borderRadius: 999, background: enabled ? "#1B1B1F" : "#DCDCE1", position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
+          <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: enabled ? 21 : 3, transition: "left 0.15s" }} />
+        </div>
+      </div>
+      <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{description}</div>
+    </div>
+  );
+
+  return (
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Data & network</span>
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16 }}>
+          SHOS is on-device only — nothing is ever sent to a server SHOS runs. Two features do call a third party directly from your device to do their job. Both are listed here exactly, and can be turned off.
+        </div>
+        {row(
+          "Address lookup",
+          prefs.addressLookupEnabled,
+          toggleAddressLookup,
+          "“Use current location” and address autocomplete (Contacts, My Profile, Clinic Visits, Encounters) send a typed address or your GPS coordinates to OpenStreetMap's free Nominatim service to look up a real address or place name. Off: you can still type an address by hand, just without suggestions or auto-lookup."
+        )}
+        {row(
+          "Check for app updates",
+          prefs.updateCheckEnabled,
+          toggleUpdateCheck,
+          "On the installed Android app only, checks GitHub's public API on launch for a newer build. Reveals your IP address to GitHub, nothing else. Off: you can still check manually from the About screen."
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ADDED 26 Aug 2026 — real ask: design/preferences section for colour
 // scheme, ability to customize a module's base colour. See
 // moduleColorRepository.js for the actual mechanism (merged into
@@ -3365,6 +3424,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // its own row here in the Data section (see AutomaticBackupsScreen's
   // own comment on why).
   const [showAutoBackupSettings, setShowAutoBackupSettings] = useState(false);
+  // ADDED — real ask, from a build audit: a real, previously-undisclosed
+  // place two network calls (Nominatim, GitHub) leave this device from.
+  const [showDataNetwork, setShowDataNetwork] = useState(false);
   // ADDED 1 Sep 2026 — real ask: a Resources section.
   const [showResources, setShowResources] = useState(false);
   // ADDED 1 Sep 2026 — real ask, item 2 of the follow-up feature list: a glossary.
@@ -3517,6 +3579,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             bundled with an unrelated Contacts-display setting under a
             generic "Preferences" label. */}
         <SettingsRow icon={Upload} label="Automatic backups" onClick={() => setShowAutoBackupSettings(true)} />
+        <SettingsRow icon={WifiHigh} label="Data & network" onClick={() => setShowDataNetwork(true)} />
       </div>
       {status && (
         <div style={{ margin: "0 16px 20px", padding: "10px 14px", borderRadius: 12, background: "#FFF4CE", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 12 }}>{status}</div>
@@ -3613,6 +3676,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showAutoBackupSettings && (
         <AutomaticBackupsScreen onClose={() => setShowAutoBackupSettings(false)} />
+      )}
+      {showDataNetwork && (
+        <DataNetworkScreen onClose={() => setShowDataNetwork(false)} />
       )}
       {showResources && (
         <ResourcesScreen onClose={() => setShowResources(false)} />

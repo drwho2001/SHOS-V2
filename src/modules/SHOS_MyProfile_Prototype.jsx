@@ -44,7 +44,7 @@ function platformIconFor(tag) {
 }
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository";
 import { TestingRepository } from "../repositories/testingRepository";
-import { getCurrentLocationPlace } from "../storage/locationService";
+import { getCurrentLocationPlace, forwardGeocode } from "../storage/locationService";
 import {
   buildProfileShare, exportProfileShare,
 } from "../storage/profileShareService";
@@ -243,8 +243,7 @@ function CityAutocomplete({ label, value, onChange, T, placeholder }) {
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&addressdetails=1&limit=5`);
-        const data = await res.json();
+        const data = await forwardGeocode(text);
         const cities = Array.isArray(data) ? data.map((place) => ({ place, city: cityFromPlace(place) })).filter((r) => r.city) : [];
         // Same city can come back from multiple Nominatim results (a
         // city plus its named districts) — dedupe by the label actually

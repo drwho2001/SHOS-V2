@@ -26,8 +26,18 @@
 // native Capacitor plugin isn't present (browser preview) — unlike
 // those other plugins, geolocation is a real, standard Web API too, so
 // this fallback is a genuine working path, not just a no-op.
+import { AppPreferencesRepository } from "../repositories/appPreferencesRepository.js";
+
 let Geolocation = null;
 let pluginLoadAttempted = false;
+
+// ADDED — real ask, from a build audit: this real network call to
+// Nominatim was previously undisclosed and un-gateable — now checked
+// before every use, both here (reverse) and by forwardGeocode() below
+// (forward search), the two real Nominatim entry points in this app.
+function addressLookupAllowed() {
+  return AppPreferencesRepository.getPreferences().addressLookupEnabled;
+}
 
 // FIXED — real bug found live-debugging notifications on a real device
 // (chrome://inspect showed "X.then() is not implemented on android" as
@@ -98,8 +108,24 @@ async function reverseGeocode(latitude, longitude) {
 // Error on any failure along the way (permission denied, no signal,
 // lookup failed) — callers show it directly, never crash silently.
 export async function getCurrentLocationPlace() {
+  if (!addressLookupAllowed()) {
+    throw new Error("Address lookup is turned off in Settings. You can still type an address manually.");
+  }
   const { latitude, longitude } = await getCurrentCoords();
   return reverseGeocode(latitude, longitude);
+}
+
+// ADDED — real ask, from a build audit: previously duplicated as an
+// identical inline fetch in both Contacts and My Profile's own address
+// autocomplete fields — centralized here so there's exactly one place
+// that calls out to Nominatim's forward-search endpoint, one place to
+// gate, and one place to fix if the API ever changes. Same Nominatim
+// result shape (display_name + address.*) both callers already handle.
+export async function forwardGeocode(query) {
+  if (!addressLookupAllowed()) return [];
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`);
+  if (!res.ok) return [];
+  return res.json();
 }
 
 // ADDED — real ask: Encounters' own Location field stores a short

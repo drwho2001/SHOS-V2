@@ -31,7 +31,7 @@ function platformIconFor(tag) {
   const match = PLATFORM_ICONS.find((p) => p.test.test(tag.trim()));
   return match ? match.Icon : null;
 }
-import { getCurrentLocationPlace } from "../storage/locationService";
+import { getCurrentLocationPlace, forwardGeocode } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
@@ -469,8 +469,7 @@ function AddressAutocomplete({ label, value, onChange, T, placeholder, onCityDet
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&addressdetails=1&limit=5`);
-        const data = await res.json();
+        const data = await forwardGeocode(text);
         setResults(Array.isArray(data) ? data : []);
       } catch (err) {
         // A failed lookup should never block manual typing — the field

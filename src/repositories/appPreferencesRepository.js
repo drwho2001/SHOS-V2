@@ -93,6 +93,18 @@ export const DEFAULT_APP_PREFERENCES = {
   // true hard block on your own real data" rule the gender default
   // already follows.
   pregnancyTrackingHidden: false,
+  // ADDED — real ask, from a build audit: address lookup ("use current
+  // location", address autocomplete) sends real, user-typed or GPS
+  // location data to the public OpenStreetMap Nominatim server, and the
+  // update-check pings GitHub's API — both real, previously undisclosed
+  // network calls in an app whose whole framing is "on-device only,
+  // privacy paramount". Both default ON (they're genuinely useful, and
+  // Nominatim/GitHub are reasonable, minimal-data third parties, not a
+  // hidden risk) — this is about disclosure and control, not distrust
+  // by default. See locationService.js's own gating and Settings' own
+  // disclosure copy for exactly what's sent where.
+  addressLookupEnabled: true,
+  updateCheckEnabled: true,
 };
 
 export const AppPreferencesRepository = {
