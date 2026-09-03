@@ -44,6 +44,7 @@ import { isQualifyingEncounter, DOXYPEP_WINDOW_HOURS, findDoxyPepMedication } fr
 import {
   getActivitiesPerMonth, getTopKinks, getTestingFrequencyStats, BASHH_TESTING_INTERVAL_DAYS, BASHH_TESTING_SOURCE_URL,
   getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth, getTestingIntervalTrend,
+  getAdherenceTrend, getTopSymptoms, getClinicVisitStats, getClinicVisitsPerMonth,
 } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { exportBackup, exportEncryptedBackup, exportBackupToChosenFolder, exportEncryptedBackupToChosenFolder, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
@@ -2152,6 +2153,9 @@ function StatsScreen({ onClose }) {
   // repository record, so it has to be stitched on here too (same as
   // SHOS_Medication_Dashboard_Prototype.jsx's loadMedications()).
   const medications = useMemo(() => MedicationRepository.getAll().map((med) => ({ ...med, logs: LogRepository.getForMedication(med.id) })), []);
+  // ADDED — real ask: "expand stats".
+  const symptomEntries = useMemo(() => SymptomLogRepository.getAll(), []);
+  const clinicVisits = useMemo(() => ClinicVisitsRepository.getAll(), []);
 
   const activityMonths = useMemo(() => getActivitiesPerMonth(encounters, 6), [encounters]);
   const topKinks = useMemo(() => getTopKinks(encounters, contacts, (id) => KinkRegistry.getById(id)?.name, 5), [encounters, contacts]);
@@ -2168,9 +2172,18 @@ function StatsScreen({ onClose }) {
     return getDoxyPepComplianceRate(encounters, LogRepository.getForMedication(doxyMed.id), isQualifyingEncounter, DOXYPEP_WINDOW_HOURS);
   }, [encounters, medications]);
   const contactMonths = useMemo(() => getContactsAddedPerMonth(contacts, 6), [contacts]);
+  // ADDED — real ask: "expand stats". See getAdherenceTrend's own
+  // comment for why this is deliberately a simpler, self-contained
+  // measure rather than reusing computeAdherence() (hardcoded to
+  // "today", not safely reusable for a past month).
+  const adherenceTrend = useMemo(() => getAdherenceTrend(medications, 6), [medications]);
+  const topSymptoms = useMemo(() => getTopSymptoms(symptomEntries, (id) => SymptomsRegistry.getById(id)?.name, 5), [symptomEntries]);
+  const clinicVisitStats = useMemo(() => getClinicVisitStats(clinicVisits), [clinicVisits]);
+  const clinicVisitMonths = useMemo(() => getClinicVisitsPerMonth(clinicVisits, 6), [clinicVisits]);
 
   const maxActivity = Math.max(1, ...activityMonths.map((b) => b.count));
   const maxContacts = Math.max(1, ...contactMonths.map((b) => b.count));
+  const maxClinicVisits = Math.max(1, ...clinicVisitMonths.map((b) => b.count));
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -2233,6 +2246,46 @@ function StatsScreen({ onClose }) {
           )}
         </div>
 
+        {/* ADDED — real ask: "expand stats". Symptoms had no stats
+            section at all before this — same "Top X" list pattern
+            already established for kinks above. */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.healthcare, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Symptoms</div>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>Most logged symptoms</div>
+            {topSymptoms.length === 0 ? (
+              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568", fontStyle: "italic" }}>Nothing logged yet.</div>
+            ) : topSymptoms.map((s) => (
+              <div key={s.name} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+                <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{s.name}</span>
+                <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600 }}>{s.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ADDED — real ask: "expand stats". Clinic Visits had no stats
+            section at all before this — same monthly-bar-chart pattern
+            already established for Activity/Contacts below. */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.healthcare, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Clinic visits</div>
+        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
+          <div style={{ padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Visits per month</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60 }}>
+              {clinicVisitMonths.map((b) => (
+                <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <div style={{ width: "100%", height: `${Math.max(4, (b.count / maxClinicVisits) * 44)}px`, background: ACCENTS.healthcare, borderRadius: 3 }} />
+                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#656568" }}>{b.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <StatRow label="Days since last visit" value={clinicVisitStats.daysSinceLast != null ? `${clinicVisitStats.daysSinceLast} days` : "No past visits logged"}
+            explanation="Days since your most recent real (already happened, not a future booking) clinic visit." />
+        </div>
+
         {/* Medication */}
         <div style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.medication, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Medication</div>
         <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
@@ -2240,6 +2293,24 @@ function StatsScreen({ onClose }) {
             explanation="Average of each daily/scheduled medication's own 7-day adherence rate (doses actually logged vs. doses expected). PRN medications aren't included — there's no fixed expected schedule to measure against." />
           <StatRow label="DoxyPEP compliance" value={doxyCompliance != null ? `${doxyCompliance}%` : "No DoxyPEP medication set up"}
             explanation="Of each qualifying-activity window (see the DoxyPEP alert's own logic — mucous-membrane contact, BASHH/CDC-sourced), the percentage where a dose was actually logged within the real 72-hour window. Sequential activity in the same window counts once, matching the real alert's own anchoring rule." />
+          {/* ADDED — real ask: "expand stats" — the adherence figure
+              above was a single current snapshot with no sense of
+              whether things are improving or slipping over time. A
+              deliberately SIMPLER measure than the precise figure
+              above (see getAdherenceTrend's own comment) — labelled
+              honestly as such, not presented as the same number. */}
+          <div style={{ padding: "12px 16px" }}>
+            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>Adherence trend (days with a dose logged, per month)</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", marginBottom: 10 }}>A simpler month-by-month measure than the precise 7-day figure above — useful for spotting a trend, not a like-for-like comparison.</div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60 }}>
+              {adherenceTrend.map((b) => (
+                <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <div style={{ width: "100%", height: b.pct != null ? `${Math.max(4, (b.pct / 100) * 44)}px` : "4px", background: b.pct != null ? ACCENTS.medication : (darkMode ? DARK.border : "#DCDCE1"), borderRadius: 3 }} />
+                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#656568" }}>{b.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Contacts */}

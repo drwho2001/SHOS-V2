@@ -185,6 +185,95 @@ export function getDoxyPepComplianceRate(encounters, doxyDoseLogs, isQualifyingE
   return Math.round((compliant / totalStreaks) * 100);
 }
 
+// ADDED — real ask: "expand stats". computeAdherence() in
+// medicationCalculations.js is hardcoded to "today" as its reference
+// point (used live by Medication Dashboard/Home) — not safely
+// reusable here for a PAST month without risking that shared,
+// already-depended-on function. Deliberately a simpler, self-contained
+// measure instead: per medication per month, the plain fraction of
+// days with at least one real dose logged (from whichever is later,
+// the month's start or the medication's own startDate, through the
+// month's end or today, whichever is earlier) — then averaged across
+// all non-PRN medications that existed at all that month. This is
+// intentionally NOT the same precise calculation as the "Overall
+// adherence (7-day)" figure above it (which correctly accounts for
+// custom every-N-days scheduling) — labelled honestly as such in the
+// UI, not presented as a like-for-like number.
+export function getAdherenceTrend(medications, monthsBack = 6) {
+  const now = new Date();
+  const buckets = [];
+  for (let i = monthsBack - 1; i >= 0; i--) {
+    const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+    const rangeEnd = monthEnd < now ? monthEnd : now;
+    let sumPct = 0, countMeds = 0;
+    medications.filter((m) => !m.isArchived && m.usagePattern !== "prn").forEach((m) => {
+      const start = m.startDate ? new Date(m.startDate) : null;
+      const effectiveStart = start && start > monthStart ? start : monthStart;
+      if (effectiveStart > rangeEnd) return; // medication didn't exist yet this month
+      const totalDays = Math.floor((rangeEnd - effectiveStart) / 86400000) + 1;
+      if (totalDays <= 0) return;
+      const doseDays = new Set(
+        (m.logs || []).filter((l) => l.type === "dose" && !l.voided).map((l) => {
+          const d = new Date(l.date); d.setHours(0, 0, 0, 0); return d.getTime();
+        })
+      );
+      let hit = 0;
+      for (let d = 0; d < totalDays; d++) {
+        const day = new Date(effectiveStart); day.setDate(day.getDate() + d); day.setHours(0, 0, 0, 0);
+        if (doseDays.has(day.getTime())) hit++;
+      }
+      sumPct += (hit / totalDays) * 100;
+      countMeds++;
+    });
+    buckets.push({ label: monthStart.toLocaleDateString(undefined, { month: "short", year: "2-digit" }), pct: countMeds > 0 ? Math.round(sumPct / countMeds) : null });
+  }
+  return buckets;
+}
+
+// ── Symptoms ──
+
+// Same shape/reasoning as getTopKinks above — real symptom names via a
+// registry resolver, kept repository-agnostic.
+export function getTopSymptoms(symptomEntries, resolveSymptomName, topN = 5) {
+  const counts = {};
+  symptomEntries.filter((e) => !e.isArchived).forEach((e) => {
+    (e.symptomIds || []).forEach((id) => {
+      const name = resolveSymptomName(id);
+      if (name) counts[name] = (counts[name] || 0) + 1;
+    });
+  });
+  return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, topN).map(([name, count]) => ({ name, count }));
+}
+
+// ── Clinic Visits ──
+
+// Only PAST, real visits — a future booked appointment isn't something
+// that's "happened" yet, same real/scheduled distinction every other
+// stat in this file already applies (see getTestingFrequencyStats).
+export function getClinicVisitStats(visits) {
+  const real = visits.filter((v) => !v.isArchived && v.date && !v.isFutureAppointment && new Date(v.date) <= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date));
+  if (real.length === 0) return { visitCount: 0, daysSinceLast: null };
+  const lastDate = real[real.length - 1].date;
+  const daysSinceLast = Math.floor((Date.now() - new Date(lastDate).getTime()) / 86400000);
+  return { visitCount: real.length, daysSinceLast };
+}
+
+export function getClinicVisitsPerMonth(visits, monthsBack = 6) {
+  const now = new Date();
+  const buckets = [];
+  for (let i = monthsBack - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    buckets.push({ label: d.toLocaleDateString(undefined, { month: "short", year: "2-digit" }), year: d.getFullYear(), month: d.getMonth(), count: 0 });
+  }
+  visits.filter((v) => !v.isArchived && v.date && !v.isFutureAppointment).forEach((v) => {
+    const d = new Date(v.date);
+    const bucket = buckets.find((b) => b.year === d.getFullYear() && b.month === d.getMonth());
+    if (bucket) bucket.count++;
+  });
+  return buckets;
+}
+
 // ── Contacts ──
 
 export function getContactsAddedPerMonth(contacts, monthsBack = 6) {
