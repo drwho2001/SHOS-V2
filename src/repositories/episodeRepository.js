@@ -192,6 +192,39 @@ export const EpisodeRepository = {
     persist();
   },
 
+  // ADDED — real gap found via the new orphan-reference checker
+  // (orphanReferenceCheck.js): an Episode's own Encounter/Test/Clinic
+  // Visit/Symptom Log id fields need cleaning up when the record they
+  // point at is hard-deleted elsewhere — called by each of those
+  // repositories' own delete(). Only clears the link, same role as
+  // measurementRepository.js's own unlink methods — startEncounterId
+  // is the one single (non-array) field here, cleared to "" rather
+  // than filtered out of a list.
+  unlinkEncounter(encounterId) {
+    episodes = episodes.map((e) => ({
+      ...e,
+      startEncounterId: e.startEncounterId === encounterId ? "" : e.startEncounterId,
+      atRiskEncounterIds: (e.atRiskEncounterIds || []).filter((id) => id !== encounterId),
+      notifiedEncounterIds: (e.notifiedEncounterIds || []).filter((id) => id !== encounterId),
+    }));
+    persist();
+  },
+
+  unlinkTest(testId) {
+    episodes = episodes.map((e) => ({ ...e, testIds: (e.testIds || []).filter((id) => id !== testId) }));
+    persist();
+  },
+
+  unlinkClinicVisit(visitId) {
+    episodes = episodes.map((e) => ({ ...e, clinicVisitIds: (e.clinicVisitIds || []).filter((id) => id !== visitId) }));
+    persist();
+  },
+
+  unlinkSymptomLog(symptomLogId) {
+    episodes = episodes.map((e) => ({ ...e, symptomLogIds: (e.symptomLogIds || []).filter((id) => id !== symptomLogId) }));
+    persist();
+  },
+
   restore(record) {
     if (episodes.some((e) => e.id === record.id)) return;
     episodes = [...episodes, record];

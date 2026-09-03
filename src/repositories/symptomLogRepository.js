@@ -29,6 +29,12 @@
 // checked at more than one test, is a real and plausible case here,
 // unlike Location's genuinely-always-one-per-encounter pattern.
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
+// ADDED — real gap found via the new orphan-reference checker
+// (orphanReferenceCheck.js): delete-time cleanup for Clinic Visit's
+// own symptomsDiscussedIds/primaryReasonSymptomLogId and Episode's own
+// symptomLogIds, both of which reference a Symptom Log entry by id.
+import { ClinicVisitsRepository } from "./clinicVisitsRepository.js";
+import { EpisodeRepository } from "./episodeRepository.js";
 
 const STORAGE_KEY = "shos_symptom_log";
 
@@ -166,6 +172,28 @@ export const SymptomLogRepository = {
   delete(id) {
     entries = entries.filter((e) => e.id !== id);
     persist();
+    // ADDED — real gap found via the new orphan-reference checker
+    // (orphanReferenceCheck.js): Clinic Visit/Episode both reference a
+    // Symptom Log entry by id too — only clears the link, same role as
+    // measurementRepository.js's own unlink methods.
+    ClinicVisitsRepository.unlinkSymptomLog(id);
+    EpisodeRepository.unlinkSymptomLog(id);
+  },
+
+  // ADDED — real gap found via the new orphan-reference checker
+  // (orphanReferenceCheck.js): relatedEncounterIds/relatedTestIds need
+  // cleaning up when the Encounter/Test they point at is hard-deleted
+  // elsewhere — called by encounterRepository.js's/testingRepository.js's
+  // own delete(). Only clears the link, same role as
+  // measurementRepository.js's own unlink methods.
+  unlinkEncounter(encounterId) {
+    entries = entries.map((e) => ({ ...e, relatedEncounterIds: (e.relatedEncounterIds || []).filter((id) => id !== encounterId) }));
+    persist();
+  },
+
+  unlinkTest(testId) {
+    entries = entries.map((e) => ({ ...e, relatedTestIds: (e.relatedTestIds || []).filter((id) => id !== testId) }));
+    persist();
   },
 
   unarchive(id) {
@@ -181,6 +209,7 @@ export const SymptomLogRepository = {
   bulkDelete(ids) {
     entries = entries.filter((e) => !ids.includes(e.id));
     persist();
+    ids.forEach((id) => { ClinicVisitsRepository.unlinkSymptomLog(id); EpisodeRepository.unlinkSymptomLog(id); });
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.

@@ -167,10 +167,18 @@ export function findOrphanReferences() {
     checkSingle(results, medicationExists, log.medicationId, { recordType: "Medication log entry", recordLabel: `${log.type || "entry"} · ${log.date || ""}`, recordId: log.id, field: "medicationId", targetType: "Medication" });
   });
 
+  // FIXED — real bug found writing this fix: this originally checked
+  // n.contactId/n.title, neither of which exist on the list object
+  // itself (partnerNotificationRepository.js's own DEFAULT_NOTIFICATION_LIST
+  // shape: testId lives on the list, contactId lives on each of its
+  // own items[]) — a silent no-op, not a crash, since checkSingle just
+  // skips a falsy id. Corrected to the real shape.
   PartnerNotificationRepository.getAll().forEach((n) => {
-    const ctx = { recordType: "Partner Notification", recordLabel: n.title || n.id, recordId: n.id };
-    checkSingle(results, contactExists, n.contactId, { ...ctx, field: "contactId", targetType: "Contact" });
+    const ctx = { recordType: "Partner Notification", recordLabel: `Notification list for test ${n.testId}`, recordId: n.id };
     checkSingle(results, testExists, n.testId, { ...ctx, field: "testId", targetType: "Test" });
+    (n.items || []).forEach((item, i) => {
+      checkSingle(results, contactExists, item.contactId, { ...ctx, field: `items[${i}].contactId`, targetType: "Contact" });
+    });
   });
 
   MenstrualCycleRepository.getAll().forEach((cycle) => {

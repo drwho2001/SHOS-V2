@@ -17,6 +17,13 @@
 // as an array matching Notion's own relation shape.
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 import { SymptomsRegistry } from "../registries/symptomsRegistry.js";
+// ADDED — real gap found via the new orphan-reference checker
+// (orphanReferenceCheck.js): delete-time cleanup needs both directions
+// of the Vaccination↔Clinic Visits relationship — clinicVisitsRepository.js
+// imports this file right back, a genuine circular import, safe here
+// because every use on both sides is a method CALL deferred inside a
+// function body (delete()), never read at module-evaluation time.
+import { ClinicVisitsRepository } from "./clinicVisitsRepository.js";
 
 const STORAGE_KEY = "shos_vaccinations";
 
@@ -183,10 +190,24 @@ export const VaccinationRepository = {
   delete(id) {
     vaccinations = vaccinations.filter((v) => v.id !== id);
     persist();
+    // ADDED — real gap found via the new orphan-reference checker
+    // (orphanReferenceCheck.js): Clinic Visit's own vaccinationsGivenIds
+    // references a Vaccination by id — only clears the link, same role
+    // as measurementRepository.js's own unlink methods.
+    ClinicVisitsRepository.unlinkVaccination(id);
   },
 
   unarchive(id) {
     return this.update(id, { isArchived: false });
+  },
+
+  // ADDED — real gap found via the new orphan-reference checker
+  // (orphanReferenceCheck.js): clinicVisitIds needs cleaning up when
+  // the Clinic Visit it points at is hard-deleted elsewhere — called
+  // by clinicVisitsRepository.js's own delete().
+  unlinkClinicVisit(visitId) {
+    vaccinations = vaccinations.map((v) => ({ ...v, clinicVisitIds: (v.clinicVisitIds || []).filter((id) => id !== visitId) }));
+    persist();
   },
 
   // ADDED 26 Aug 2026 — real ask: long-press multi-select rolled out
@@ -198,6 +219,7 @@ export const VaccinationRepository = {
   bulkDelete(ids) {
     vaccinations = vaccinations.filter((v) => !ids.includes(v.id));
     persist();
+    ids.forEach((id) => ClinicVisitsRepository.unlinkVaccination(id));
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.

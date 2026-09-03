@@ -43,6 +43,18 @@ import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 // measurementRepository.js's own "one room, three doors" comment).
 import { MeasurementRepository } from "./measurementRepository.js";
 import { ContraceptionRepository } from "./contraceptionRepository.js";
+// ADDED — real gap found via the new orphan-reference checker
+// (orphanReferenceCheck.js): delete-time cleanup needs both
+// directions of the Testing↔Clinic Visits relationship (see
+// linkedTestIds' own "two-way" comment below) and Vaccination/Episode,
+// which both reference a Clinic Visit by id. testingRepository.js
+// imports this file right back (for the same reason, the other
+// direction) — a genuine circular import, safe here because every use
+// on both sides is a method CALL deferred inside a function body
+// (delete()), never read at module-evaluation time.
+import { TestingRepository } from "./testingRepository.js";
+import { VaccinationRepository } from "./vaccinationRepository.js";
+import { EpisodeRepository } from "./episodeRepository.js";
 
 const STORAGE_KEY = "shos_clinic_visits";
 
@@ -267,6 +279,38 @@ export const ClinicVisitsRepository = {
     return this.update(id, { isArchived: false });
   },
 
+  // ADDED — real gap found via the new orphan-reference checker
+  // (orphanReferenceCheck.js): linkedTestIds/medicationsGivenIds/
+  // symptomsDiscussedIds+primaryReasonSymptomLogId/vaccinationsGivenIds
+  // all need cleaning up when the record they point at is hard-deleted
+  // elsewhere — called by testingRepository.js's/medicationRepository.js's/
+  // symptomLogRepository.js's/vaccinationRepository.js's own delete().
+  // Only clears the link, same role as measurementRepository.js's own
+  // unlink methods.
+  unlinkTest(testId) {
+    visits = visits.map((v) => ({ ...v, linkedTestIds: (v.linkedTestIds || []).filter((id) => id !== testId) }));
+    persist();
+  },
+
+  unlinkMedication(medicationId) {
+    visits = visits.map((v) => ({ ...v, medicationsGivenIds: (v.medicationsGivenIds || []).filter((id) => id !== medicationId) }));
+    persist();
+  },
+
+  unlinkSymptomLog(symptomLogId) {
+    visits = visits.map((v) => ({
+      ...v,
+      symptomsDiscussedIds: (v.symptomsDiscussedIds || []).filter((id) => id !== symptomLogId),
+      primaryReasonSymptomLogId: v.primaryReasonSymptomLogId === symptomLogId ? "" : v.primaryReasonSymptomLogId,
+    }));
+    persist();
+  },
+
+  unlinkVaccination(vaccinationId) {
+    visits = visits.map((v) => ({ ...v, vaccinationsGivenIds: (v.vaccinationsGivenIds || []).filter((id) => id !== vaccinationId) }));
+    persist();
+  },
+
   // ADDED — real ask: "no delete option" — same reasoning as Testing/
   // Vaccinations/Symptom Log's own delete(): archive stays correct for
   // anything real that's just outdated, this is specifically for a
@@ -276,6 +320,14 @@ export const ClinicVisitsRepository = {
     persist();
     MeasurementRepository.unlinkClinicVisit(id);
     ContraceptionRepository.unlinkClinicVisit(id);
+    // ADDED — real gap found via the new orphan-reference checker
+    // (orphanReferenceCheck.js): Testing.clinicVisitIds/
+    // Vaccination.clinicVisitIds/Episode.clinicVisitIds all reference a
+    // Clinic Visit by id too, same "only clears the link" role as the
+    // two calls above.
+    TestingRepository.unlinkClinicVisit(id);
+    VaccinationRepository.unlinkClinicVisit(id);
+    EpisodeRepository.unlinkClinicVisit(id);
   },
 
   // ADDED 26 Aug 2026 — real ask: long-press multi-select rolled out
@@ -287,7 +339,13 @@ export const ClinicVisitsRepository = {
   bulkDelete(ids) {
     visits = visits.filter((v) => !ids.includes(v.id));
     persist();
-    ids.forEach((id) => { MeasurementRepository.unlinkClinicVisit(id); ContraceptionRepository.unlinkClinicVisit(id); });
+    ids.forEach((id) => {
+      MeasurementRepository.unlinkClinicVisit(id);
+      ContraceptionRepository.unlinkClinicVisit(id);
+      TestingRepository.unlinkClinicVisit(id);
+      VaccinationRepository.unlinkClinicVisit(id);
+      EpisodeRepository.unlinkClinicVisit(id);
+    });
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.

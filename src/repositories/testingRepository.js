@@ -21,6 +21,17 @@ import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 // link to it, never delete the Measurement itself (see
 // measurementRepository.js's own "one room, three doors" comment).
 import { MeasurementRepository } from "./measurementRepository.js";
+// ADDED — real gap found via the new orphan-reference checker
+// (orphanReferenceCheck.js): delete-time cleanup needs both directions
+// of the Testing↔Clinic Visits relationship — clinicVisitsRepository.js
+// imports this file right back, a genuine circular import, safe here
+// because every use on both sides is a method CALL deferred inside a
+// function body (delete()), never read at module-evaluation time. See
+// that file's own import comment for the fuller reasoning.
+import { ClinicVisitsRepository } from "./clinicVisitsRepository.js";
+import { SymptomLogRepository } from "./symptomLogRepository.js";
+import { EpisodeRepository } from "./episodeRepository.js";
+import { PartnerNotificationRepository } from "./partnerNotificationRepository.js";
 
 const STORAGE_KEY = "shos_tests";
 
@@ -306,6 +317,16 @@ export const TestingRepository = {
     return this.update(id, { isArchived: false });
   },
 
+  // ADDED — real gap found via the new orphan-reference checker
+  // (orphanReferenceCheck.js): clinicVisitIds needs cleaning up when
+  // the Clinic Visit it points at is hard-deleted elsewhere — called
+  // by clinicVisitsRepository.js's own delete(). Only clears the link,
+  // same role as measurementRepository.js's own unlink methods.
+  unlinkClinicVisit(visitId) {
+    tests = tests.map((t) => ({ ...t, clinicVisitIds: (t.clinicVisitIds || []).filter((id) => id !== visitId) }));
+    persist();
+  },
+
   // ADDED — real ask: "no option to delete erroneous tests." Archive
   // stays the default, correct choice for anything real that just
   // isn't current anymore — this is specifically for a genuinely
@@ -318,6 +339,16 @@ export const TestingRepository = {
     tests = tests.filter((t) => t.id !== id);
     persist();
     MeasurementRepository.unlinkTest(id);
+    // ADDED — real gap found via the new orphan-reference checker
+    // (orphanReferenceCheck.js): Clinic Visit/Symptom Log/Episode all
+    // reference a Test by id too, same "only clears the link" role as
+    // the call above. Partner Notification is different — "ONE LIST
+    // PER TEST" means its own list has no meaning once the Test is
+    // gone, so that one is a real delete, not a link clear.
+    ClinicVisitsRepository.unlinkTest(id);
+    SymptomLogRepository.unlinkTest(id);
+    EpisodeRepository.unlinkTest(id);
+    PartnerNotificationRepository.deleteForTest(id);
   },
 
   // ADDED 26 Aug 2026 — real ask: long-press multi-select rolled out
@@ -329,7 +360,13 @@ export const TestingRepository = {
   bulkDelete(ids) {
     tests = tests.filter((t) => !ids.includes(t.id));
     persist();
-    ids.forEach((id) => MeasurementRepository.unlinkTest(id));
+    ids.forEach((id) => {
+      MeasurementRepository.unlinkTest(id);
+      ClinicVisitsRepository.unlinkTest(id);
+      SymptomLogRepository.unlinkTest(id);
+      EpisodeRepository.unlinkTest(id);
+      PartnerNotificationRepository.deleteForTest(id);
+    });
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.

@@ -140,11 +140,21 @@ function SelectiveExportSheet({ onClose, onExported }) {
     });
   };
 
-  const doExport = () => {
+  const doExport = async () => {
     const dateRange = (dateFrom || dateTo) ? { from: dateFrom || null, to: dateTo || null } : null;
-    exportBackup(checked.size === allKeys.length ? null : Array.from(checked), dateRange);
-    onExported?.();
-    onClose();
+    // CHANGED — real gap found in the same pass as adding round-trip
+    // verification (backupService.js's own verifyBackupJson()):
+    // exportBackup() can now genuinely throw, and this used to call it
+    // fire-and-forget then close immediately regardless — an
+    // unhandled rejection, and a failure the user would never see.
+    // Now awaited, and the sheet only closes on real success.
+    try {
+      await exportBackup(checked.size === allKeys.length ? null : Array.from(checked), dateRange);
+      onExported?.();
+      onClose();
+    } catch (err) {
+      setFolderExportStatus({ msg: err.message, ok: false });
+    }
   };
   const doExportToFolder = async () => {
     setFolderExportStatus({ msg: "Choose a folder…", ok: null });
@@ -3640,12 +3650,34 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   const [chooseFolderAvailable, setChooseFolderAvailable] = useState(false);
   const [plainFolderExportStatus, setPlainFolderExportStatus] = useState(null);
   useEffect(() => { isChooseFolderExportAvailable().then(setChooseFolderAvailable); }, []);
+  // ADDED — real ask: round-trip verification (backupService.js's own
+  // verifyBackupJson()) means the plain "Export backup" button can now
+  // genuinely fail — same real-status pattern as doPlainExportToFolder
+  // right below, which this button never had before.
+  const [plainExportStatus, setPlainExportStatus] = useState(null);
+  const doPlainExport = async () => {
+    setPlainExportStatus(null);
+    try {
+      const result = await onExport();
+      setPlainExportStatus({ msg: `Backup complete — ${result.totalRecords} records verified`, ok: true });
+    } catch (err) {
+      setPlainExportStatus({ msg: err.message, ok: false });
+    }
+  };
   const doPlainExportToFolder = async () => {
     setPlainFolderExportStatus({ msg: "Choose a folder…", ok: null });
-    const result = await exportBackupToChosenFolder();
-    if (result.ok) setPlainFolderExportStatus({ msg: `Saved to ${result.path}`, ok: true });
-    else if (result.reason === "cancelled") setPlainFolderExportStatus(null);
-    else setPlainFolderExportStatus({ msg: "Couldn't save there — try Export backup instead.", ok: false });
+    try {
+      const result = await exportBackupToChosenFolder();
+      if (result.ok) setPlainFolderExportStatus({ msg: `Saved to ${result.path} — ${result.totalRecords} records verified`, ok: true });
+      else if (result.reason === "cancelled") setPlainFolderExportStatus(null);
+      else setPlainFolderExportStatus({ msg: "Couldn't save there — try Export backup instead.", ok: false });
+    } catch (err) {
+      // ADDED — real ask: verifyBackupJson() (backupService.js) can now
+      // throw here if the export round-trip actually failed — same
+      // "don't silently claim success" reasoning as every other branch
+      // in this function.
+      setPlainFolderExportStatus({ msg: err.message, ok: false });
+    }
   };
   // ADDED 26 Aug 2026 — real ask: design/preferences section for
   // colour scheme, ability to customize a module's base colour.
@@ -3738,7 +3770,17 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             export never hit this because its own button already
             wrapped the call in an arrow function that discards the
             event. Wrapping this one the same way. */}
-        <SettingsRow icon={Upload} label="Export backup" onClick={() => onExport()} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
+        <SettingsRow icon={Upload} label="Export backup" onClick={doPlainExport} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
+        {/* ADDED — real ask: real confirmation for this button — it
+            fires the OS share sheet with no feedback of its own, and
+            round-trip verification (backupService.js's own
+            verifyBackupJson()) now genuinely can fail here, which
+            deserves to be visible, not swallowed. Same status-row
+            pattern already used for Export backup to a folder/
+            Encrypted export below — this exact row just never had one. */}
+        {plainExportStatus && (
+          <div style={{ fontSize: 12, color: plainExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : "#5B5B62"), padding: "0 16px 10px", textAlign: "center" }}>{plainExportStatus.msg}</div>
+        )}
         {/* ADDED — real ask: an explicit "choose exactly where this
             goes" alternative to the row above, which opens the Share
             sheet (send it somewhere) rather than a real folder picker.
@@ -3746,6 +3788,13 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             fileExportHelper.js's isChooseFolderExportAvailable. */}
         {chooseFolderAvailable && (
           <SettingsRow icon={Upload} label="Export backup to a folder…" onClick={doPlainExportToFolder} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} />
+        )}
+        {/* FIXED — real bug found in the same pass as the round-trip
+            verification above: this status was tracked (set on every
+            export attempt) but never actually rendered anywhere —
+            silently dead state, the failure branches included. */}
+        {plainFolderExportStatus && (
+          <div style={{ fontSize: 12, color: plainFolderExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : "#5B5B62"), padding: "0 16px 10px", textAlign: "center" }}>{plainFolderExportStatus.msg}</div>
         )}
         {/* ADDED 19 Aug 2026 — real ask: default export stays one tap
             (the row above, unchanged), this is the opt-in "choose what

@@ -29,6 +29,14 @@
 // hypothetical.
 
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
+// ADDED — real gap found via the new orphan-reference checker
+// (orphanReferenceCheck.js): delete-time cleanup for Clinic Visit's
+// own medicationsGivenIds (a link to clear) and the medication's own
+// dose/refill/waste log history (a real delete — a log entry is
+// meaningless without its Medication, see logRepository.js's own
+// deleteForMedication() comment).
+import { ClinicVisitsRepository } from "./clinicVisitsRepository.js";
+import { LogRepository } from "./logRepository.js";
 
 const STORAGE_KEY = "shos_medications";
 
@@ -339,6 +347,15 @@ export const MedicationRepository = {
   delete(id) {
     medications = medications.filter((m) => m.id !== id);
     persist();
+    // ADDED — real gap found via the new orphan-reference checker
+    // (orphanReferenceCheck.js): Clinic Visit's own medicationsGivenIds
+    // references a Medication by id — only clears the link. The dose/
+    // refill/waste log history is different: it's meaningless without
+    // its Medication, so that's a real delete, not a link clear (same
+    // reasoning as testingRepository.js's own Partner Notification
+    // handling above).
+    ClinicVisitsRepository.unlinkMedication(id);
+    LogRepository.deleteForMedication(id);
   },
 
   unarchive(id) {
@@ -354,6 +371,7 @@ export const MedicationRepository = {
   bulkDelete(ids) {
     medications = medications.filter((m) => !ids.includes(m.id));
     persist();
+    ids.forEach((id) => { ClinicVisitsRepository.unlinkMedication(id); LogRepository.deleteForMedication(id); });
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.

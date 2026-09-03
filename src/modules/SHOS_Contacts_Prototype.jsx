@@ -34,7 +34,7 @@ function platformIconFor(tag) {
 import { getCurrentLocationPlace, forwardGeocode } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
-import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
+import { fuzzyIncludes, findClosestMatch, findContactDuplicateCandidates } from "../calculations/fuzzyMatch";
 import {
   ContactRepository, DEFAULT_CONTACT,
   HOSTS_OPTIONS, TRAVELS_OPTIONS, TRAVEL_MODE_OPTIONS,
@@ -2153,6 +2153,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // O(1) lookups instead of rescans.
   const encounterSummaries = useMemo(() => contactEncounterSummaries(encounters), [encounters]);
   const [showFilters, setShowFilters] = useState(false);
+  // ADDED — real ask: a duplicate checker for Contacts specifically,
+  // scored across multiple fields (not just name) — see
+  // findContactDuplicateCandidates' own comment in fuzzyMatch.js for
+  // the confidence-tier reasoning. Same "compute once, the data's
+  // small enough" judgment as the shared-registry duplicate checker
+  // this is modeled on.
+  const duplicateCandidates = useMemo(() => findContactDuplicateCandidates(activeContacts), [activeContacts]);
+  const [showDuplicates, setShowDuplicates] = useState(false);
   // ADDED 26 Aug 2026 — real ask: long-press a card to enter multi-
   // select mode, then bulk delete/archive/edit. "Edit" deliberately
   // not included in bulk actions — editing several different
@@ -2256,6 +2264,19 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               additional quick entry, this is the reliable click-based
               one (long-press alone can be unreliable via mouse, e.g.
               in a desktop preview). */}
+          {/* ADDED — real ask: a duplicate checker for Contacts, same
+              badge-opens-a-panel pattern as the shared registries' own
+              duplicate checker (SHOS_RegistryManagement_Prototype.jsx),
+              styled to match this file's own existing amber duplicate-
+              warning (the live "possible duplicate" nudge shown while
+              adding a new contact, further down this file) rather than
+              that screen's red — this is a softer, scored signal, not
+              a same-name exact flag. */}
+          {duplicateCandidates.length > 0 && (
+            <div onClick={() => setShowDuplicates(true)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 999, background: "#FFF3C4", color: "#9A6700", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              <AlertTriangle size={12} color="#9A6700" /> {duplicateCandidates.length}
+            </div>
+          )}
           <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
             {selectMode ? "Done" : "Select"}
           </span>
@@ -2268,6 +2289,46 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           {onOpenMyProfile && <User size={19} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onOpenMyProfile} />}
         </div>
       </div>
+
+      {showDuplicates && (
+        <div onClick={() => setShowDuplicates(false)} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 39 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", background: T.contactsTeal, borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF" }}>Possible duplicates</span>
+              <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => setShowDuplicates(false)} aria-label="Close duplicates panel" />
+            </div>
+            <div style={{ padding: "6px 20px 0", fontSize: 12, color: T.textSecondary }}>
+              Flagged by name, phone, and social-handle matches — plus lighter signals (city, address, approximate age, shared notes wording) that only count once something else already put a pair in question. Higher confidence just means more of these line up — nothing is merged automatically; check each pair yourself.
+            </div>
+            <div style={{ overflowY: "auto", padding: "10px 20px 24px", flex: 1 }}>
+              {duplicateCandidates.map(({ a, b, confidence, matched }, i) => (
+                <div key={`${a.id}-${b.id}`} style={{ border: `1px solid ${T.border}`, borderRadius: 12, padding: 12, marginBottom: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
+                      color: confidence === "High" ? "#B42318" : confidence === "Medium" ? "#9A6700" : T.textSecondary,
+                      background: confidence === "High" ? "#FEE4E2" : confidence === "Medium" ? "#FFF3C4" : T.surfaceVariant,
+                    }}>{confidence} confidence</span>
+                    <span style={{ fontSize: 11, color: T.textDisabled }}>matched: {matched.join(", ")}</span>
+                  </div>
+                  {[a, b].map((entry) => (
+                    <div key={entry.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: entry.isArchived ? T.textDisabled : T.textPrimary }}>
+                        {entry.nickname || entry.name}{entry.isArchived ? " (archived)" : ""}
+                        {(entry.city || entry.phone) && <span style={{ fontSize: 11, fontWeight: 400, color: T.textDisabled }}> · {[entry.city, entry.phone].filter(Boolean).join(" · ")}</span>}
+                      </span>
+                      {!entry.isArchived && (
+                        <span onClick={() => { ContactRepository.archive(entry.id); refresh(); }} style={{ fontSize: 11, fontWeight: 700, color: T.actionRed, cursor: "pointer" }}>Archive this one</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar, shown while
           in multi-select mode (entered via long-press on a card). */}
       {selectMode && (
