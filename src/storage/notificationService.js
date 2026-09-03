@@ -140,10 +140,20 @@ const ACTION_TYPE_DEFS = {
 export async function registerNotificationActionTypes() {
   const plugin = await getPlugin();
   if (!plugin) return false;
-  await plugin.registerActionTypes({
-    types: Object.entries(ACTION_TYPE_DEFS).map(([id, actions]) => ({ id, actions })),
-  });
-  return true;
+  try {
+    await plugin.registerActionTypes({
+      types: Object.entries(ACTION_TYPE_DEFS).map(([id, actions]) => ({ id, actions })),
+    });
+    return true;
+  } catch (err) {
+    // Same reasoning as scheduleNotification()'s own try/catch below —
+    // every sync file (medicationReminderSync.js etc.) awaits this
+    // with no try/catch of its own, so a rejection here used to be a
+    // silent, untraced failure that could quietly block every
+    // subsequent schedule() call in the same sync pass.
+    console.error("[notificationService] registerActionTypes() failed:", err);
+    return false;
+  }
 }
 
 // Registers a handler for when the user taps an action button on a
@@ -403,15 +413,38 @@ async function showWebNotification({ id, title, body, actionTypeId }) {
 // Schedules (or replaces, via the fixed id) a single notification at
 // an exact future time. No-ops safely if neither platform's real
 // notification system is available.
+//
+// CHANGED 3 Sep 2026 — real gap found auditing "still not notifying"
+// on the native Android app: this had NO error handling around the
+// native plugin.schedule() call. Capacitor's own plugin genuinely can
+// reject that call (its own Kotlin source: schedule() explicitly
+// rejects with NOTIFICATIONS_DISABLED if Android's notification
+// manager reports notifications aren't enabled, among other real
+// failure modes) — and every REAL reminder (medicationReminderSync.js,
+// doxyPepSync.js, testingReminderSync.js, refillReminderSync.js,
+// clinicVisitReminderSync.js) calls this with no try/catch of its own,
+// so a rejection here became a silent, untraced, unhandled promise
+// rejection — the reminder just never got scheduled, with nothing
+// anywhere to show it even tried and failed. (sendTestNotification()
+// above happened to be protected by its OWN try/catch, which is
+// exactly why the demo button could look fine while a real reminder
+// silently failed — two different code paths with different safety.)
+// Fixed at this one shared root instead of patching every caller:
+// never throws now, always logs a real reason on failure.
 export async function scheduleNotification({ id, title, body, at, actionTypeId, smallIcon, iconColor }) {
   const platform = await getPlatform();
   if (platform === "native") {
     const plugin = await getPlugin();
     if (!plugin) return false;
-    await plugin.schedule({
-      notifications: [{ id, title, body, schedule: { at: new Date(at) }, ...(actionTypeId ? { actionTypeId } : {}), ...(smallIcon ? { smallIcon } : {}), ...(iconColor ? { iconColor } : {}) }],
-    });
-    return true;
+    try {
+      await plugin.schedule({
+        notifications: [{ id, title, body, schedule: { at: new Date(at) }, ...(actionTypeId ? { actionTypeId } : {}), ...(smallIcon ? { smallIcon } : {}), ...(iconColor ? { iconColor } : {}) }],
+      });
+      return true;
+    } catch (err) {
+      console.error(`[notificationService] Native schedule() failed for notification id ${id} ("${title}"):`, err);
+      return false;
+    }
   }
   if (!webNotificationsSupported()) return false;
   const existing = webTimeouts.get(id);
@@ -448,8 +481,13 @@ export async function cancelNotification(id) {
   if (platform === "native") {
     const plugin = await getPlugin();
     if (!plugin) return false;
-    await plugin.cancel({ notifications: [{ id }] });
-    return true;
+    try {
+      await plugin.cancel({ notifications: [{ id }] });
+      return true;
+    } catch (err) {
+      console.error(`[notificationService] Native cancel() failed for notification id ${id}:`, err);
+      return false;
+    }
   }
   const pending = webTimeouts.get(id);
   if (pending) { clearTimeout(pending); webTimeouts.delete(id); }
