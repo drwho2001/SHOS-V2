@@ -9,6 +9,15 @@ import App from "./App.jsx";
 // entirely on the browser's own schedule, and is lost forever if
 // nothing was listening yet when it did. See that file's own header.
 import "./storage/installPromptService.js";
+// ADDED — real ask: researched known Capacitor bugs. Imported here for
+// the same reason as installPromptService.js above — primeEarlyNativeActionBuffer()
+// inside this file runs as a module-level side effect, starting to
+// listen for a notification action tap as early as this app's JS can
+// possibly run, closing as much as this app's own code can of a real,
+// still-open Capacitor gap where localNotificationActionPerformed can
+// fire before React has mounted and registered its own listener — see
+// that function's own comment in notificationService.js.
+import "./storage/notificationService.js";
 
 // CHANGED 1 Sep 2026 — real fix, found during a smoothness/efficiency
 // review: index.html loaded Inter/JetBrains Mono from a render-blocking

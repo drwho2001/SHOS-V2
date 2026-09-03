@@ -204,11 +204,78 @@ export async function registerNotificationActionTypes() {
 // window with the action encoded in the URL (?notifAction=...) — this
 // reads that once on startup, the same real tap, just arriving via the
 // URL instead of a live message because the page didn't exist yet.
+// ADDED — real ask: researched known Capacitor bugs beyond the plugin-
+// proxy issue already fixed. Confirmed via multiple still-open GitHub
+// issues (ionic-team/capacitor-plugins#2289, ionic-team/capacitor#1178,
+// #1181): localNotificationActionPerformed is well-documented as
+// unreliable when the app was fully killed (not just backgrounded) —
+// the event can fire before the app's own JS has registered a
+// listener for it, and Capacitor doesn't buffer/replay it once one
+// does. That's a genuine, still-open upstream gap this app can't fully
+// close from the JS side — if the event fires before this app's JS
+// context exists at all, nothing here can help.
+// What IS within this app's control: the gap between "JS started
+// running" and "React mounted App.jsx and its own effect registered a
+// handler" — real time, since React's effects only run after first
+// paint. Registering a RAW listener here, at MODULE load (main.jsx
+// imports this file for exactly this side effect — see its own
+// comment), starts listening as early as this app's code possibly
+// can, and buffers one action if it arrives before the real handler
+// attaches, replaying it the moment addNotificationActionListener()
+// below is actually called — same buffer-and-replay shape already
+// used for the web path's own `?notifAction=` URL parameter just
+// below, not a new pattern.
+let earlyBufferedNativeAction = null;
+let earlyBufferPrimed = false;
+let earlyListenerHandle = null;
+async function primeEarlyNativeActionBuffer() {
+  if (earlyBufferPrimed) return;
+  earlyBufferPrimed = true;
+  const platform = await getPlatform();
+  if (platform !== "native") return;
+  const { plugin } = await getPlugin();
+  if (!plugin) return;
+  try {
+    earlyListenerHandle = await plugin.addListener("localNotificationActionPerformed", (action) => {
+      earlyBufferedNativeAction = action;
+    });
+  } catch (err) {
+    console.warn("[notificationService] Priming the early native action buffer failed:", err);
+  }
+}
+// FIXED — real bug caught by scripts/smoke-test.cjs: calling this
+// immediately, right here, threw "Cannot access 'cachedPlatform'
+// before initialization" — cachedPlatform (used inside getPlatform(),
+// which this calls) is declared with `let` further down this same
+// file, and JS's temporal dead zone means it can't be read yet at
+// THIS point during the module's own top-to-bottom evaluation.
+// queueMicrotask defers this call until the current synchronous
+// module-evaluation pass finishes (every `let`/`const` in this file
+// initialized), a negligible delay against the "as early as this
+// app's JS can" goal this exists for in the first place.
+queueMicrotask(primeEarlyNativeActionBuffer);
+
 export async function addNotificationActionListener(handler) {
   const platform = await getPlatform();
   if (platform === "native") {
     const { plugin } = await getPlugin();
     if (!plugin) return null;
+    // Retire the early listener now that a real one is attaching — it
+    // already received every live event up to this point via
+    // Capacitor's own multi-subscriber emitter, so it's redundant from
+    // here on, and leaving it running risks a STALE buffered action
+    // (from some later live event) getting wrongly replayed on a
+    // hypothetical future re-registration.
+    earlyListenerHandle?.remove();
+    earlyListenerHandle = null;
+    if (earlyBufferedNativeAction) {
+      const buffered = earlyBufferedNativeAction;
+      earlyBufferedNativeAction = null;
+      // Deferred a tick so the caller's own effect finishes setting up
+      // before the handler runs — same reasoning as the web path's own
+      // deferred replay just below.
+      setTimeout(() => handler(buffered), 0);
+    }
     return plugin.addListener("localNotificationActionPerformed", handler);
   }
   if (platform === "web" && typeof window !== "undefined") {
@@ -629,8 +696,21 @@ export async function scheduleNotification({ id, title, body, at, actionTypeId, 
     const { plugin } = await getPlugin();
     if (!plugin) return false;
     try {
+      // ADDED — real ask: researched known Capacitor/Android gotchas
+      // beyond the plugin-proxy bug already fixed. Confirmed via
+      // Capacitor's own current LocalNotificationSchema docs (not
+      // assumed): without `allowWhileIdle: true` on the schedule
+      // object, Android's Doze mode (extended screen-off/idle periods)
+      // can defer an exact alarm — a real risk for THIS app
+      // specifically, since every reminder here schedules hours to
+      // days ahead (medication doses, the 72h DoxyPEP alert, 24h-ahead
+      // clinic visit reminders), squarely the window Doze applies to.
+      // Android itself still throttles this to once per 9 minutes per
+      // app — a real OS-level ceiling no app can bypass, not a bug to
+      // chase further; this just stops the app from making Doze worse
+      // than the OS already allows.
       await withTimeout(plugin.schedule({
-        notifications: [{ id, title, body, schedule: { at: effectiveAt }, ...(actionTypeId ? { actionTypeId } : {}), ...(smallIcon ? { smallIcon } : {}), ...(iconColor ? { iconColor } : {}) }],
+        notifications: [{ id, title, body, schedule: { at: effectiveAt, allowWhileIdle: true }, ...(actionTypeId ? { actionTypeId } : {}), ...(smallIcon ? { smallIcon } : {}), ...(iconColor ? { iconColor } : {}) }],
       }), 8000, "schedule()");
       return true;
     } catch (err) {
