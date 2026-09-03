@@ -19,6 +19,7 @@
 // exact same functions that used to live directly inside the dashboard
 // component file, just moved here so they can be reused, tested, or
 // reasoned about on their own.
+import { realTimestampFromStored } from "./dateInputHelpers";
 
 // Days-remaining, dropping to hours/minutes under 1 day — so the display
 // keeps counting down meaningfully right as stock actually runs low,
@@ -204,7 +205,7 @@ export function computeAdherence(med) {
 export function isDoseLockedOut(med, lastDoseDate) {
   const intervalHours = effectiveDoseIntervalHours(med);
   if (!lastDoseDate || !intervalHours) return false;
-  const hoursSinceLastDose = (Date.now() - new Date(lastDoseDate).getTime()) / 3600000;
+  const hoursSinceLastDose = (Date.now() - realTimestampFromStored(lastDoseDate)) / 3600000;
   return hoursSinceLastDose < intervalHours * 0.8;
 }
 
@@ -220,7 +221,7 @@ export function isDoseLockedOut(med, lastDoseDate) {
 export function lockoutEndsEstimate(med, lastDoseDate) {
   const intervalHours = effectiveDoseIntervalHours(med);
   if (!lastDoseDate || !intervalHours) return null;
-  const unlockAt = new Date(new Date(lastDoseDate).getTime() + intervalHours * 0.8 * 3600000);
+  const unlockAt = new Date(realTimestampFromStored(lastDoseDate) + intervalHours * 0.8 * 3600000);
   const hoursLeft = Math.round((unlockAt.getTime() - Date.now()) / 3600000);
   if (hoursLeft <= 0) return "now";
   if (hoursLeft < 24) return `~${hoursLeft}h`;
@@ -235,7 +236,7 @@ export function lockoutEndsEstimate(med, lastDoseDate) {
 export function lockoutEndsAt(med, lastDoseDate) {
   const intervalHours = effectiveDoseIntervalHours(med);
   if (!lastDoseDate || !intervalHours) return null;
-  return new Date(new Date(lastDoseDate).getTime() + intervalHours * 0.8 * 3600000);
+  return new Date(realTimestampFromStored(lastDoseDate) + intervalHours * 0.8 * 3600000);
 }
 
 
@@ -245,7 +246,7 @@ export function lockoutEndsAt(med, lastDoseDate) {
 export function nextDoseEstimate(med, lastDoseDate) {
   const intervalHours = effectiveDoseIntervalHours(med);
   if (!lastDoseDate || med.usagePattern === "prn" || !intervalHours) return null;
-  const next = new Date(new Date(lastDoseDate).getTime() + intervalHours * 3600000);
+  const next = new Date(realTimestampFromStored(lastDoseDate) + intervalHours * 3600000);
   const hoursLeft = Math.round((next.getTime() - Date.now()) / 3600000);
   if (hoursLeft <= 0) return "due now";
   if (hoursLeft < 24) return `~${hoursLeft}h`;

@@ -64,3 +64,31 @@ export function inDaysAsStoredDate(days) {
   d.setDate(d.getDate() + days);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00.000Z`;
 }
+
+// ADDED — real bug found while fixing notification scheduling: this
+// app's stored dates are a deliberate lie (see file header) — the "Z"
+// suffix is NOT real UTC, so `new Date(storedString).getTime()` returns
+// an epoch that's shifted by the device's real UTC offset (0 in GMT,
+// 1h in BST) from the instant actually meant. DISPLAY code already
+// undoes this correctly by reading the digits back via
+// `toLocaleString(..., { timeZone: "UTC" })` — see e.g. Medication
+// Dashboard's formatLastDose(). But several places also do real
+// ARITHMETIC against `Date.now()`/`new Date()` (dose lockout timing,
+// DoxyPEP's 72h window, clinic-visit reminder offsets) — mixing a
+// fake-UTC epoch with a real one there doesn't just mis-DISPLAY a
+// time, it silently shifts the actual computed deadline by the same
+// offset, which is why medication reminders/DoxyPEP's countdown/clinic
+// reminders could fire up to an hour later (or earlier) than the real
+// due moment depending on BST/GMT. This is the read-back-correctly
+// equivalent for arithmetic: parse the stored string, read its digits
+// back literally via the UTC getters (undoing the "Z" lie), then
+// rebuild a genuine local-time Date from those same digits — whose
+// .getTime() is the real, correct instant, safe to diff against
+// Date.now() or pass straight to a notification scheduler.
+export function realTimestampFromStored(storedIso) {
+  const d = new Date(storedIso);
+  return new Date(
+    d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(),
+    d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()
+  ).getTime();
+}

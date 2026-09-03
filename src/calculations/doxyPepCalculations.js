@@ -40,6 +40,8 @@
 // genuinely involved qualifying mucosal contact, log it under the
 // actual act (Oral/Anal/Vaginal/Rimming) instead, same as any other
 // encounter.
+import { realTimestampFromStored } from "./dateInputHelpers";
+
 export const DOXYPEP_QUALIFYING_POSITIONS = [
   "Oral - giving", "Oral - receiving",
   "Rimming - giving", "Rimming - receiving",
@@ -86,16 +88,21 @@ export function getDoxyPepStatus(encounters, doxyDoseLogs, now = new Date()) {
   const lastDose = [...(doxyDoseLogs || [])]
     .filter((l) => l.type === "dose" && !l.voided)
     .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-  const lastDoseTime = lastDose ? new Date(lastDose.date).getTime() : null;
+  // realTimestampFromStored, not a plain new Date().getTime(): dose/
+  // encounter dates are this app's stored fake-UTC strings (see
+  // dateInputHelpers.js) — parsing them the plain way and comparing
+  // against `now` (a real Date) would silently shift this 72h deadline
+  // by the device's UTC offset (0 in GMT, 1h in BST).
+  const lastDoseTime = lastDose ? realTimestampFromStored(lastDose.date) : null;
 
   const qualifyingSinceLastDose = (encounters || [])
     .filter((e) => !e.isArchived && e.date && isQualifyingEncounter(e))
-    .filter((e) => lastDoseTime === null || new Date(e.date).getTime() > lastDoseTime)
+    .filter((e) => lastDoseTime === null || realTimestampFromStored(e.date) > lastDoseTime)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   if (qualifyingSinceLastDose.length === 0) return { active: false };
 
-  const windowStart = new Date(qualifyingSinceLastDose[0].date).getTime();
+  const windowStart = realTimestampFromStored(qualifyingSinceLastDose[0].date);
   const deadline = windowStart + DOXYPEP_WINDOW_HOURS * 3600000;
   const nowMs = now.getTime();
 

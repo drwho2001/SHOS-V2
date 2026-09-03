@@ -24,13 +24,14 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName } from "../storage/notificationService";
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
+import { realTimestampFromStored } from "./dateInputHelpers";
 
 function getSoonestBookedVisit() {
-  const now = new Date();
+  const nowMs = Date.now();
   const booked = ClinicVisitsRepository.getAll()
-    .filter((v) => !v.isArchived && v.isFutureAppointment && v.date && new Date(v.date) > now);
+    .filter((v) => !v.isArchived && v.isFutureAppointment && v.date && realTimestampFromStored(v.date) > nowMs);
   if (booked.length === 0) return null;
-  return booked.reduce((a, b) => (new Date(a.date) < new Date(b.date) ? a : b));
+  return booked.reduce((a, b) => (realTimestampFromStored(a.date) < realTimestampFromStored(b.date) ? a : b));
 }
 
 async function syncOneSlot({ visit, enabled, hoursBefore, notificationId, label }) {
@@ -38,7 +39,11 @@ async function syncOneSlot({ visit, enabled, hoursBefore, notificationId, label 
     await cancelNotification(notificationId);
     return { scheduled: false };
   }
-  const reminderAt = new Date(new Date(visit.date).getTime() - hoursBefore * 3600000);
+  // realTimestampFromStored, not a plain new Date(visit.date): the
+  // visit's date is this app's stored fake-UTC string (see
+  // dateInputHelpers.js) — diffing it the plain way against a real
+  // Date would shift this reminder's offset by up to an hour (BST/GMT).
+  const reminderAt = new Date(realTimestampFromStored(visit.date) - hoursBefore * 3600000);
   if (reminderAt <= new Date()) {
     // Already inside this reminder's own window (or past it) by the
     // time this ran — nothing to schedule for a time already in the
