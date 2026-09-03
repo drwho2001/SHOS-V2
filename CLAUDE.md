@@ -205,6 +205,28 @@ this date; summarized here for durability.
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
 
+## Recently shipped (3 Sep 2026, later session — see Notion for full detail)
+
+Five independent small asks in one session: a global first-day-of-week
+preference (Sunday/Monday, default Monday — `AppPreferencesRepository`,
+UI in Settings > Units, wired into the in-app Calendar grid's weekday
+header/offset in `SHOS_Settings_Prototype.jsx`'s `CalendarScreen`);
+the DoxyPEP overdue banner (Home) got a temporary (X, session-only,
+same "reappears on next real check" pattern as the due-meds/refill/
+testing/clinic-visit banners) and permanent ("Don't warn me about this
+exposure again", scoped to the current exposure window via
+`getDoxyPepStatus`'s `windowStart`, not the same as the existing
+`doxyPepAlertEnabled` notification toggle) dismiss; the overdue banner
+now reads "X days, Y hours past the 72h window"
+(`formatDoxyPepOverdueDuration` in `doxyPepCalculations.js`) instead of
+a raw "642h 7m"; clicking the overdue banner navigates to the DoxyPEP
+medication via the existing `onNavigateToRecord` plumbing; all 4 Stats
+bar charts (Encounters, Clinic visits, Medication adherence trend,
+Contacts) now print the raw value above each bar (confirmed with the
+user as the preferred approach over click-to-reveal or a visible axis,
+applied consistently across all four). Verified live via Playwright
+against the dev server for all 5 changes, plus `scripts/smoke-test.cjs`.
+
 ## Recently shipped (3 Sep 2026 session — see Notion for full detail)
 
 Ground-up notification rework (native Capacitor + web/PWA dual path,
