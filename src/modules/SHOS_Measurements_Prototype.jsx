@@ -15,7 +15,7 @@
 // noise. Each type gets its own section, newest entry first.
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X, GearIcon as Gear, FolderIcon as Folder } from "@phosphor-icons/react";
-import { MeasurementRepository, DEFAULT_MEASUREMENT, BLOOD_PRESSURE_TYPE, BLOOD_PRESSURE_UNIT, getAvailableUnits, getDefaultUnit, hasUnitConversion, KIND_UNITS, KIND_LABELS } from "../repositories/measurementRepository";
+import { MeasurementRepository, DEFAULT_MEASUREMENT, BLOOD_PRESSURE_TYPE, BLOOD_PRESSURE_UNIT, getAvailableUnits, getDefaultUnit, hasUnitConversion, convertFromCanonical, KIND_UNITS, KIND_LABELS } from "../repositories/measurementRepository";
 import { MeasurementPreferencesRepository } from "../repositories/measurementPreferencesRepository";
 import { CustomGroupsRepository } from "../repositories/customGroupsRepository";
 import { TrashRepository } from "../repositories/trashRepository";
@@ -105,17 +105,23 @@ function ReadRow({ label, value, T, alert }) {
 // is locked read-only when editing an existing BP entry (can't switch
 // out of it either) — both sides of the "excluded from the picker, not
 // forced into a mismatched edit form" fix agreed during design.
-function MeasurementTypeField({ value, onChange, options, onAddNew, onNewTypeCreated, T, locked }) {
+function MeasurementTypeField({ value, onChange, options, rankedOptions, listName, onAddNew, onNewTypeCreated, T, locked }) {
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
   const typed = (value || "").trim();
-  const visibleSuggestions = (typed ? options.filter((v) => v.toLowerCase().includes(typed.toLowerCase())) : options)
+  // rankedOptions (newest-added + most-frequently-picked first) drives
+  // what's actually SHOWN while typing; options (the raw curated list,
+  // unchanged order) is still what validity/exact-match checks use
+  // below, so ranking never affects whether something counts as a
+  // duplicate.
+  const suggestionSource = rankedOptions || options;
+  const visibleSuggestions = (typed ? suggestionSource.filter((v) => v.toLowerCase().includes(typed.toLowerCase())) : suggestionSource)
     .filter((v) => v !== value).slice(0, 8);
 
   const commit = (raw) => {
     const trimmed = raw.trim();
     if (!trimmed) return;
-    const exact = options.some((o) => o.toLowerCase() === trimmed.toLowerCase());
-    if (exact) { setPendingSuggestion(null); return; }
+    const exactMatch = options.find((o) => o.toLowerCase() === trimmed.toLowerCase());
+    if (exactMatch) { if (listName) CustomOptionListsRepository.recordUsage(listName, exactMatch); setPendingSuggestion(null); return; }
     const close = findClosestMatch(options, trimmed);
     if (close) { setPendingSuggestion(close); return; }
     onAddNew(trimmed);
@@ -146,7 +152,7 @@ function MeasurementTypeField({ value, onChange, options, onAddNew, onNewTypeCre
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((v) => (
-            <div key={v} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange(v); setPendingSuggestion(null); }}
+            <div key={v} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange(v); if (listName) CustomOptionListsRepository.recordUsage(listName, v); setPendingSuggestion(null); }}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
               {v}
             </div>
@@ -275,11 +281,15 @@ function LocationField({ locationType, clinicName, onLocationTypeChange, onClini
 function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose, T }) {
   const isNew = !measurement;
   const [typeOptions, setTypeOptions] = useState(() => CustomOptionListsRepository.get("measurementType"));
+  const [rankedTypeOptions, setRankedTypeOptions] = useState(() => CustomOptionListsRepository.getRanked("measurementType"));
   // "Blood pressure" excluded from what's offered when editing an
   // existing non-BP entry — can't switch INTO it (see file comment).
   const editableOptions = !isNew && measurement.type !== BLOOD_PRESSURE_TYPE
     ? typeOptions.filter((o) => o !== BLOOD_PRESSURE_TYPE)
     : typeOptions;
+  const rankedEditableOptions = !isNew && measurement.type !== BLOOD_PRESSURE_TYPE
+    ? rankedTypeOptions.filter((o) => o !== BLOOD_PRESSURE_TYPE)
+    : rankedTypeOptions;
   const draftKey = `measurement_${measurement?.id || "new"}`;
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);
@@ -345,8 +355,8 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
-          <MeasurementTypeField value={form.type} onChange={setType} options={editableOptions}
-            onAddNew={(v) => setTypeOptions(CustomOptionListsRepository.add("measurementType", v))}
+          <MeasurementTypeField value={form.type} onChange={setType} options={editableOptions} rankedOptions={rankedEditableOptions} listName="measurementType"
+            onAddNew={(v) => { setTypeOptions(CustomOptionListsRepository.add("measurementType", v)); setRankedTypeOptions(CustomOptionListsRepository.getRanked("measurementType")); }}
             onNewTypeCreated={(v) => v !== BLOOD_PRESSURE_TYPE && setNewTypeNeedingKind(v)} T={T} locked={!isNew && measurement.type === BLOOD_PRESSURE_TYPE} />
           {newTypeNeedingKind && (
             <TypeKindPrompt typeName={newTypeNeedingKind} T={T}
@@ -411,6 +421,26 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
   );
 }
 
+// ADDED — real ask: global default units. The stored value/unit are
+// always the canonical one (kg/cm/°C — see measurementRepository.js),
+// so without this every reading displayed in canonical units forever,
+// regardless of what unit someone actually prefers to see (e.g.
+// Settings > Units set to Imperial). This converts FOR DISPLAY ONLY —
+// storage is never touched — to whatever unit is currently preferred
+// for that type, falling back to the stored unit untouched when there's
+// no real conversion (or no preference set) for it.
+function displayReading(m) {
+  if (m.type === BLOOD_PRESSURE_TYPE) return `${m.systolic}/${m.diastolic} mmHg`;
+  if (m.value == null) return "";
+  if (hasUnitConversion(m.type)) {
+    const preferred = getDefaultUnit(m.type);
+    if (preferred && preferred !== m.unit) {
+      return `${convertFromCanonical(m.type, m.value, preferred)} ${preferred}`;
+    }
+  }
+  return `${m.value} ${m.unit}`;
+}
+
 function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, refresh }) {
   const [m, setM] = useState(() => MeasurementRepository.getById(measurementId));
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -455,7 +485,7 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
             <ReadRow label="Blood pressure" value={`${m.systolic}/${m.diastolic} mmHg`} T={T} />
           ) : (
             <>
-              <ReadRow label="Value" value={m.value != null ? `${m.value} ${m.unit}` : ""} T={T} />
+              <ReadRow label="Value" value={displayReading(m)} T={T} />
               {showsConversion && <ReadRow label="As entered" value={`${m.enteredValue} ${m.enteredUnit}`} T={T} />}
             </>
           )}
@@ -530,7 +560,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
   const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); };
   const allVisibleIds = useMemo(() => byTypeGroups.flatMap((g) => g.entries.map((e) => e.id)), [byTypeGroups]);
 
-  const readingLabel = (m) => m.type === BLOOD_PRESSURE_TYPE ? `${m.systolic}/${m.diastolic} mmHg` : (m.value != null ? `${m.value} ${m.unit}` : "—");
+  const readingLabel = (m) => displayReading(m) || "—";
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -740,7 +770,11 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
 // into group management above.
 function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
   const [prefs, setPrefs] = useState(() => MeasurementPreferencesRepository.getPreferences());
-  const CONVERTIBLE_TYPES = ["Weight", "Testosterone", "Estradiol"];
+  // CHANGED 3 Sep 2026 — Height and Temperature both got real
+  // UNIT_CONFIG conversion but were never added to this list, so their
+  // default unit was never settable here (also now settable app-wide
+  // via Settings > Units, which writes to this same preference).
+  const CONVERTIBLE_TYPES = ["Weight", "Height", "Temperature", "Testosterone", "Estradiol"];
   const setPreferred = (type, unit) => setPrefs(MeasurementPreferencesRepository.setPreferredUnit(type, unit));
 
   return (

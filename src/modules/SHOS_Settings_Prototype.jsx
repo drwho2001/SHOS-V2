@@ -27,6 +27,7 @@ import {
   CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck,
   LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen,
   SlidersHorizontalIcon as SlidersHorizontal, MapPinIcon as MapPin, XIcon as X,
+  RulerIcon as Ruler,
 } from "@phosphor-icons/react";
 // FIXED 1 Sep 2026 — real ask: "Managed lists crashes app on
 // attempting to open" / "Same for resources [crashes], in light [mode]
@@ -59,7 +60,8 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
-import { MeasurementRepository } from "../repositories/measurementRepository";
+import { MeasurementRepository, getAvailableUnits, getDefaultUnit } from "../repositories/measurementRepository";
+import { MeasurementPreferencesRepository } from "../repositories/measurementPreferencesRepository";
 import { TrashRepository, MODULE_LABELS as TRASH_MODULE_LABELS } from "../repositories/trashRepository";
 import { getCalendarEvents, groupEventsByDay } from "../calculations/calendarCalculations";
 import { LocationsRepository } from "../repositories/locationsRepository";
@@ -1514,6 +1516,96 @@ function NotificationsScreen({ onClose }) {
           description="Second, closer reminder before a booked clinic appointment. Defaults to 2 hours.">
           {hoursInput(notifPrefs.clinicVisitReminderBHours, (v) => { NotificationPreferencesRepository.update({ clinicVisitReminderBHours: v }); syncClinicVisitReminders(); refresh(); })}
         </NotificationToggleRow>
+      </div>
+    </div>
+  );
+}
+
+// ADDED 3 Sep 2026 — real ask: "can we add a global default units
+// settings? ie temp, height, weight... international standards.
+// convert automatically if user puts a value in with units on a
+// different scale." The real per-type conversion machinery already
+// existed (measurementRepository.js's UNIT_CONFIG) with a preferred-
+// unit preference (measurementPreferencesRepository.js) — but it was
+// only ever reachable from Measurements' own gear icon, not from
+// Settings, and Height/Temperature weren't even offered there yet
+// (Temperature had no measurement type at all — added alongside this).
+// This screen is the same underlying preference, made genuinely
+// global and discoverable, plus a one-tap Metric/Imperial switch that
+// sets Weight/Height/Temperature together — the individual per-type
+// chips underneath still let anyone mix, e.g. metric weight with an
+// imperial temperature.
+// EXPLICITLY DOES NOT touch time or timezone — the user's own repeated,
+// explicit instruction ("never change time zones/recorded times as
+// described in last and this message"). A recorded date/time isn't a
+// "unit" in the sense this screen means, and a timezone control here
+// risks reintroducing exactly the BST/GMT display bug fixed elsewhere
+// in this app (see dateInputHelpers.js).
+const UNIT_SYSTEM_TYPES = ["Weight", "Height", "Temperature"];
+const METRIC_UNITS = { Weight: "kg", Height: "cm", Temperature: "°C" };
+const IMPERIAL_UNITS = { Weight: "lb", Height: "in", Temperature: "°F" };
+
+function detectUnitSystem(prefs) {
+  const isImperial = UNIT_SYSTEM_TYPES.every((t) => (prefs.preferredUnitByType[t] || getDefaultUnit(t)) === IMPERIAL_UNITS[t]);
+  return isImperial ? "imperial" : "metric";
+}
+
+function UnitsScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+  const [prefs, setPrefs] = useState(() => MeasurementPreferencesRepository.getPreferences());
+  const system = detectUnitSystem(prefs);
+
+  const setPreferred = (type, unit) => setPrefs(MeasurementPreferencesRepository.setPreferredUnit(type, unit));
+  const setSystem = (target) => {
+    const units = target === "imperial" ? IMPERIAL_UNITS : METRIC_UNITS;
+    let updated = prefs;
+    UNIT_SYSTEM_TYPES.forEach((type) => { updated = MeasurementPreferencesRepository.setPreferredUnit(type, units[type]); });
+    setPrefs(updated);
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Units</span>
+      </div>
+
+      <div style={{ padding: 16 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 10 }}>
+          Sets the default unit new entries start on, and how existing readings are displayed. Nothing already saved is rewritten — the value you originally entered is always kept too, alongside the converted one.
+        </div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+          {["metric", "imperial"].map((opt) => (
+            <div key={opt} onClick={() => setSystem(opt)}
+              style={{ flex: 1, textAlign: "center", padding: "10px 0", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                border: `1px solid ${system === opt ? ACCENTS.healthcare : (darkMode ? DARK.border : "#DCDCE1")}`,
+                color: system === opt ? "#FFFFFF" : (darkMode ? DARK.textPrimary : "#1B1B1F"),
+                background: system === opt ? ACCENTS.healthcare : "transparent" }}>
+              {opt === "metric" ? "Metric" : "Imperial"}
+            </div>
+          ))}
+        </div>
+
+        {UNIT_SYSTEM_TYPES.map((type) => {
+          const units = getAvailableUnits(type);
+          const current = prefs.preferredUnitByType[type] || units[0];
+          return (
+            <div key={type} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+              <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{type}</span>
+              <div style={{ display: "flex", gap: 6 }}>
+                {units.map((u) => (
+                  <div key={u} onClick={() => setPreferred(type, u)}
+                    style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: current === u ? 700 : 400, cursor: "pointer",
+                      border: `1px solid ${current === u ? ACCENTS.healthcare : (darkMode ? DARK.border : "#DCDCE1")}`,
+                      color: current === u ? "#FFFFFF" : (darkMode ? DARK.textSecondary : "#5B5B62"),
+                      background: current === u ? ACCENTS.healthcare : "transparent" }}>
+                    {u}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -2974,6 +3066,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // turn each real reminder type on/off rather than each one being
   // invisible/buried in its own module.
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUnits, setShowUnits] = useState(false);
   // ADDED — real ask: an explicit "choose exactly where this goes"
   // export, alongside the one-tap Share-sheet "Export backup" row
   // below — see backupService.js's exportBackupToChosenFolder for the
@@ -3014,6 +3107,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showPreferences) { setShowPreferences(false); return true; }
       if (showPrivacy) { setShowPrivacy(false); return true; }
       if (showNotifications) { setShowNotifications(false); return true; }
+      if (showUnits) { setShowUnits(false); return true; }
       if (showResources) { setShowResources(false); return true; }
       if (showGlossary) { setShowGlossary(false); return true; }
       if (showAutoBackupSettings) { setShowAutoBackupSettings(false); return true; }
@@ -3026,7 +3120,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showManageLists, showAutoBackupSettings, showResources, showGlossary, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showUnits, showManageLists, showAutoBackupSettings, showResources, showGlossary, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.
@@ -3140,6 +3234,10 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         {/* ADDED — real ask: unified notifications management, one
             place to turn each real reminder type on/off. */}
         <SettingsRow icon={Bell} label="Notifications" onClick={() => setShowNotifications(true)} />
+        {/* ADDED 3 Sep 2026 — real ask: a discoverable, global default-
+            units setting (Weight/Height/Temperature), not buried inside
+            Measurements' own gear icon. */}
+        <SettingsRow icon={Ruler} label="Units" onClick={() => setShowUnits(true)} />
         {/* REMOVED 1 Sep 2026 — Preferences row removed; its one real
             setting (inactive-contact threshold) now lives inside
             Design, see InactiveThresholdCard's own comment. */}
@@ -3196,6 +3294,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showNotifications && (
         <NotificationsScreen onClose={() => setShowNotifications(false)} />
+      )}
+      {showUnits && (
+        <UnitsScreen onClose={() => setShowUnits(false)} />
       )}
       {showAutoBackupSettings && (
         <AutomaticBackupsScreen onClose={() => setShowAutoBackupSettings(false)} />

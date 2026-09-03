@@ -130,7 +130,7 @@ const SEED_LISTS = {
   // (systolic/diastolic shape, fixed mmHg, its own trend view), so
   // unlike every other entry here it can't be renamed or removed via
   // this same editable-list mechanism.
-  measurementType: ["Viral load", "CD4 count", "Estradiol", "Testosterone", "LH", "FSH", "Weight", "Height", "Blood pressure", "Other"],
+  measurementType: ["Viral load", "CD4 count", "Estradiol", "Testosterone", "LH", "FSH", "Weight", "Height", "Temperature", "Blood pressure", "Other"],
   // ADDED — real ask: Menstrual Cycle's own Flow field.
   menstrualFlow: ["Spotting", "Light", "Medium", "Heavy"],
   // ADDED — real ask: My Profile's own overall relationship status —
@@ -208,9 +208,72 @@ export const OPTION_LIST_ICONS = {
 let lists = { ...SEED_LISTS, ...storage.load(STORAGE_KEY, {}) };
 function persist() { storage.save(STORAGE_KEY, lists); }
 
+// ADDED 3 Sep 2026 — real ask: "newly added user data should be
+// suggested at top of any autofill/suggest as typing. balance that
+// with most frequently selected options shown first too." This file's
+// own earlier header comment explicitly reasoned real usage-count
+// tracking would be over-engineering for a plain string list — that
+// was true until this became an actual ask, not a hypothetical one.
+// Kept as its OWN storage key, separate from `lists` above: this is
+// ranking metadata, not the option data itself, and — critically —
+// `.get()` below stays completely UNCHANGED (still returns the raw,
+// manually-curated order) since Manage Lists' own drag-to-reorder
+// (`.reorder()`) is a real, deliberate feature a silent re-sort would
+// undermine. Only `.getRanked()`, a new opt-in method for suggestion/
+// autocomplete UI specifically, uses this metadata.
+const USAGE_STORAGE_KEY = "shos_custom_option_lists_usage";
+let usageMeta = storage.load(USAGE_STORAGE_KEY, {});
+function persistUsage() { storage.save(USAGE_STORAGE_KEY, usageMeta); }
+
+// A brand-new entry gets a decaying head start (worth ~5 real uses,
+// fading to 0 over 14 days) so it actually surfaces while it's new
+// rather than being buried behind established options with real
+// history — the literal ask — while a genuinely popular option still
+// overtakes it as the boost fades, which is the "balance" half of the
+// ask: neither recency nor frequency permanently dominates the other.
+const NEW_ITEM_BOOST = 5;
+const NEW_ITEM_BOOST_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+
+function scoreFor(name, value, now) {
+  const meta = usageMeta[name]?.[value];
+  if (!meta) return 0;
+  const count = meta.count || 0;
+  const addedAt = meta.addedAt ? new Date(meta.addedAt).getTime() : null;
+  const age = addedAt != null ? now - addedAt : Infinity;
+  const recencyBoost = age < NEW_ITEM_BOOST_WINDOW_MS ? NEW_ITEM_BOOST * (1 - age / NEW_ITEM_BOOST_WINDOW_MS) : 0;
+  return count + recencyBoost;
+}
+
 export const CustomOptionListsRepository = {
   get(name) {
     return [...(lists[name] || SEED_LISTS[name] || [])];
+  },
+
+  // Suggestion/autocomplete order: highest-scoring first (recently
+  // added, blended with how often it's actually been picked), original
+  // list order as the stable tie-break for anything with no real
+  // history yet. Every other consumer of a list (Manage Lists' editor,
+  // any place that needs the literal curated order) should keep using
+  // plain get() — this is deliberately opt-in, not a replacement.
+  getRanked(name) {
+    const options = this.get(name);
+    const now = Date.now();
+    return options
+      .map((value, index) => ({ value, index, score: scoreFor(name, value, now) }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .map((entry) => entry.value);
+  },
+
+  // Called whenever a value is actually chosen — either picked from
+  // suggestions or freshly typed as new (add() below calls this
+  // itself for the "new" case, so callers only need this explicitly
+  // for the "picked an existing suggestion" case).
+  recordUsage(name, value) {
+    if (!value) return;
+    const forList = usageMeta[name] || {};
+    const existing = forList[value];
+    usageMeta = { ...usageMeta, [name]: { ...forList, [value]: { count: (existing?.count || 0) + 1, addedAt: existing?.addedAt || null } } };
+    persistUsage();
   },
 
   getAllListNames() {
@@ -230,6 +293,13 @@ export const CustomOptionListsRepository = {
     if (!trimmed || current.some((o) => o.toLowerCase() === trimmed.toLowerCase())) return current;
     lists = { ...lists, [name]: [...current, trimmed] };
     persist();
+    // Records WHEN this was added — the "newly added" half of
+    // getRanked()'s scoring above. A brand new value starts at count 0
+    // (recordUsage below would double-count it as "used once" too,
+    // which isn't true yet — it was just created, not picked).
+    const forList = usageMeta[name] || {};
+    usageMeta = { ...usageMeta, [name]: { ...forList, [trimmed]: { count: 0, addedAt: new Date().toISOString() } } };
+    persistUsage();
     return lists[name];
   },
 

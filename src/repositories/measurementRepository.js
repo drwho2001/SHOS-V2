@@ -83,7 +83,45 @@ const UNIT_CONFIG = {
   Estradiol: { canonical: "pmol/L", alternates: { "pg/mL": (v) => v * 3.671 } },
   Weight: { canonical: "kg", alternates: { lb: (v) => v * 0.453592 } },
   Height: { canonical: "cm", alternates: { in: (v) => v * 2.54 } },
+  // ADDED — real ask: global default units settings covering "temp,
+  // timezone, height, weight" — Temperature had no real measurement
+  // type at all before this. °C is canonical (matches Height/Weight
+  // both already being metric-canonical) with a real °F<->°C
+  // conversion, same UNIT_CONFIG treatment as everything else here.
+  Temperature: { canonical: "°C", alternates: { "°F": (v) => (v - 32) * 5 / 9 } },
 };
+
+// ADDED — real ask: "convert automatically... show 165cm" needs the
+// REVERSE of the alternates above too — UNIT_CONFIG only ever
+// converts an entered alternate-unit value INTO canonical at save
+// time; nothing previously converted a canonical value back OUT to
+// whatever unit the user currently prefers to see (e.g. a Weight
+// logged in kg months ago, displayed in lb after switching Settings >
+// Units to Imperial). Kept as its own explicit map rather than
+// algebraically inverting `alternates` at runtime — Temperature's
+// conversion is affine (v-32)*5/9, not a pure multiplier, so a
+// generic "1/factor" inverse would silently be wrong for it.
+const REVERSE_CONVERTERS = {
+  Testosterone: { "ng/dL": (v) => v / 0.0347 },
+  Estradiol: { "pg/mL": (v) => v / 3.671 },
+  Weight: { lb: (v) => v / 0.453592 },
+  Height: { in: (v) => v / 2.54 },
+  Temperature: { "°F": (v) => (v * 9 / 5) + 32 },
+};
+
+// Converts a stored CANONICAL value into whatever unit the user
+// currently prefers to see (from Settings > Units / Measurements'
+// own preferences), for display only — never rewrites what's stored.
+// Returns the canonical value unchanged if there's no real conversion
+// for that type/unit (e.g. an unrecognised custom unit).
+export function convertFromCanonical(type, canonicalValue, targetUnit) {
+  const config = UNIT_CONFIG[type];
+  if (!config || canonicalValue == null || canonicalValue === "") return canonicalValue;
+  if (!targetUnit || targetUnit === config.canonical) return canonicalValue;
+  const reverse = REVERSE_CONVERTERS[type]?.[targetUnit];
+  if (!reverse) return canonicalValue;
+  return Math.round(reverse(Number(canonicalValue)) * 100) / 100;
+}
 
 // "Suggest appropriate units — volume for volume, weight for weight"
 // for a custom type the app has no real conversion for: a curated
