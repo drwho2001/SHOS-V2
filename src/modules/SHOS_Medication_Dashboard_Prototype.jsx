@@ -815,11 +815,14 @@ function ToggleRow({ label, value, onChange, T }) {
 // ToggleRow cover number/boolean fields only) — this is the plain
 // text-field pattern used elsewhere in this sheet, adapted to a
 // <select>, same visual language.
-function SelectRow({ label, value, onChange, options, T }) {
+// listName optional: only the CustomOptionListsRepository-backed
+// fields pass it, so real selections there count toward getRanked()'s
+// frequency ranking (real ask, 3 Sep 2026).
+function SelectRow({ label, value, onChange, options, T, listName }) {
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{label}</div>
-      <select value={value} onChange={(e) => onChange(e.target.value)}
+      <select value={value} onChange={(e) => { onChange(e.target.value); if (listName && e.target.value) CustomOptionListsRepository.recordUsage(listName, e.target.value); }}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}>
         <option value="">—</option>
         {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
@@ -841,11 +844,17 @@ function SelectRow({ label, value, onChange, options, T }) {
 // the same in-app-editable option list every other custom list here
 // already uses, then selects it, matching the add-new pattern already
 // established in Vaccinations' VaccineField.
-function MultiSelectRow({ label, value, onChange, options, T, onAddNew }) {
+function MultiSelectRow({ label, value, onChange, options, T, onAddNew, listName }) {
   const [newValue, setNewValue] = useState("");
   const toggle = (opt) => {
     const has = value.includes(opt);
     onChange(has ? value.filter((v) => v !== opt) : [...value, opt]);
+    // ADDED — real ask: frequency-weighted suggestion ranking (real ask,
+    // 3 Sep 2026) — a real pick counts as a use even though this
+    // component's own "Add new" input (onAddNew below) already routes
+    // through CustomOptionListsRepository.add(), which only credits
+    // usage for values typed there, not for tapping an existing chip.
+    if (!has && listName) CustomOptionListsRepository.recordUsage(listName, opt);
   };
   const addNew = () => {
     const trimmed = newValue.trim();
@@ -1032,11 +1041,11 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
 
         {/* REORDERED 19 Aug 2026 — same reasoning as Add medication:
             identity facts before dosing mechanics. */}
-        <SelectRow T={T} label="Medication type" value={form.medicationType} onChange={set("medicationType")} options={medicationTypeOptions} />
-        <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions}
+        <SelectRow T={T} label="Medication type" value={form.medicationType} onChange={set("medicationType")} options={medicationTypeOptions} listName="medicationType" />
+        <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions} listName="medicationCategory"
           onAddNew={(v) => setCategoryOptions(CustomOptionListsRepository.add("medicationCategory", v))} />
         <DoseStrengthField T={T} value={form.doseStrengthValue} unit={form.doseStrengthUnit} onChangeValue={set("doseStrengthValue")} onChangeUnit={set("doseStrengthUnit")} />
-        <SelectRow T={T} label="Route" value={form.route} onChange={set("route")} options={routeOptions} />
+        <SelectRow T={T} label="Route" value={form.route} onChange={set("route")} options={routeOptions} listName="route" />
 
         {/* CHANGED 19 Aug 2026 — real custom-scheduling support: Custom
             is now a genuine, reachable third option, not just a stubbed
@@ -1201,11 +1210,11 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
         {/* REORDERED 19 Aug 2026 — identity facts right after the name:
             what it is, how strong, how taken — before the dosing-
             pattern/inventory mechanics below. */}
-        <SelectRow T={T} label="Medication type" value={form.medicationType} onChange={set("medicationType")} options={medicationTypeOptions} />
-        <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions}
+        <SelectRow T={T} label="Medication type" value={form.medicationType} onChange={set("medicationType")} options={medicationTypeOptions} listName="medicationType" />
+        <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions} listName="medicationCategory"
           onAddNew={(v) => setCategoryOptions(CustomOptionListsRepository.add("medicationCategory", v))} />
         <DoseStrengthField T={T} value={form.doseStrengthValue} unit={form.doseStrengthUnit} onChangeValue={set("doseStrengthValue")} onChangeUnit={set("doseStrengthUnit")} />
-        <SelectRow T={T} label="Route" value={form.route} onChange={set("route")} options={routeOptions} />
+        <SelectRow T={T} label="Route" value={form.route} onChange={set("route")} options={routeOptions} listName="route" />
 
         <div style={{ display: "flex", background: T.surfaceVariant, borderRadius: radius.full, padding: 3, marginBottom: 12 }}>
           {["daily", "custom", "prn"].map((p) => (

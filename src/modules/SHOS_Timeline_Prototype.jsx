@@ -158,11 +158,14 @@ function TextField({ label, value, onChange, T, placeholder }) {
   );
 }
 
-function SelectField({ label, value, onChange, options, T }) {
+// listName optional: only the CustomOptionListsRepository-backed
+// fields pass it, so real selections there count toward getRanked()'s
+// frequency ranking (real ask, 3 Sep 2026).
+function SelectField({ label, value, onChange, options, T, listName }) {
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
-      <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
+      <select value={value ?? ""} onChange={(e) => { onChange(e.target.value); if (listName && e.target.value) CustomOptionListsRepository.recordUsage(listName, e.target.value); }} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
         {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
@@ -252,7 +255,7 @@ function StartSheet({ onSave, onClose, T }) {
         </div>
         <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <TextField label="Title" value={title} onChange={setTitle} T={T} placeholder="e.g. Chlamydia exposure, Aug 2026" />
-          <SelectField label="Why this started" value={triggerReason} onChange={setTriggerReason} options={triggerReasonOptions} T={T} />
+          <SelectField label="Why this started" value={triggerReason} onChange={setTriggerReason} options={triggerReasonOptions} listName="episodeTriggerReason" T={T} />
           <SingleEncounterSelect value={startEncounterId} onChange={setStartEncounterId} T={T} items={encounters} />
         </div>
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>

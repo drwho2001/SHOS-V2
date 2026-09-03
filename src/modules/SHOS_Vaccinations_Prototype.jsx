@@ -71,11 +71,14 @@ function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
   );
 }
 
-function SelectField({ label, value, onChange, options, T }) {
+// listName optional: only the CustomOptionListsRepository-backed
+// fields pass it, so real selections there count toward getRanked()'s
+// frequency ranking (real ask, 3 Sep 2026).
+function SelectField({ label, value, onChange, options, T, listName }) {
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
-      <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
+      <select value={value ?? ""} onChange={(e) => { onChange(e.target.value); if (listName && e.target.value) CustomOptionListsRepository.recordUsage(listName, e.target.value); }} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
         {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
@@ -84,8 +87,8 @@ function SelectField({ label, value, onChange, options, T }) {
   );
 }
 
-function MultiSelectChips({ label, value, onChange, options, T }) {
-  const toggle = (opt) => { const has = value.includes(opt); onChange(has ? value.filter((v) => v !== opt) : [...value, opt]); };
+function MultiSelectChips({ label, value, onChange, options, T, listName }) {
+  const toggle = (opt) => { const has = value.includes(opt); onChange(has ? value.filter((v) => v !== opt) : [...value, opt]); if (!has && listName) CustomOptionListsRepository.recordUsage(listName, opt); };
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{label}</div>
@@ -264,11 +267,11 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder="e.g. Hep B booster" />
           <VaccineField value={form.vaccine} onChange={set("vaccine")} options={vaccineOptions}
             onAddNew={(v) => setVaccineOptions(CustomOptionListsRepository.add("vaccine", v))} T={T} />
-          <MultiSelectChips label="Reason" value={form.reason} onChange={set("reason")} options={vaccinationReasonOptions} T={T} />
+          <MultiSelectChips label="Reason" value={form.reason} onChange={set("reason")} options={vaccinationReasonOptions} listName="vaccinationReason" T={T} />
           <TextField label="Dose number" value={form.doseNumber ?? ""} onChange={(v) => set("doseNumber")(v === "" ? null : Number(v))} T={T} type="number" />
           <TextField label="Date" value={form.date} onChange={set("date")} T={T} type="date" />
           <TextField label="Next due" value={form.nextDue} onChange={set("nextDue")} T={T} type="date" />
-          <SelectField label="Injection site" value={form.injectionSite} onChange={set("injectionSite")} options={injectionSiteOptions} T={T} />
+          <SelectField label="Injection site" value={form.injectionSite} onChange={set("injectionSite")} options={injectionSiteOptions} listName="injectionSite" T={T} />
           <TextField label="Provider" value={form.provider} onChange={set("provider")} T={T} placeholder="e.g. Sexual Health Clinic" />
           {/* FIXED 1 Sep 2026 — real ask: "Vaccination log symptoms not
               correct type." MultiSelectChips is a plain string-toggle

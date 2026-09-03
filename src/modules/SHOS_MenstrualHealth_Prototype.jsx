@@ -132,11 +132,14 @@ function TextField({ label, value, onChange, T, placeholder, type = "text", read
     </div>
   );
 }
-function SelectField({ label, value, onChange, options, T, hint }) {
+// listName optional: only the CustomOptionListsRepository-backed
+// fields pass it, so real selections there count toward getRanked()'s
+// frequency ranking (real ask, 3 Sep 2026).
+function SelectField({ label, value, onChange, options, T, hint, listName }) {
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}{hint && <span style={{ color: T.textDisabled, fontWeight: 400 }}> — {hint}</span>}</div>
-      <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
+      <select value={value ?? ""} onChange={(e) => { onChange(e.target.value); if (listName && e.target.value) CustomOptionListsRepository.recordUsage(listName, e.target.value); }} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
         {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
@@ -358,7 +361,7 @@ function CycleSheet({ cycle, onSave, onClose, T }) {
     <BottomSheet title={isNew ? "Log period" : "Edit period"} onClose={onClose} T={T} footer={<SaveButton label={isNew ? "Add" : "Save changes"} onClick={() => onSave(form)} canSave={canSave} T={T} />}>
       <TextField label="Start date" value={form.startDate} onChange={set("startDate")} T={T} type="date" />
       <TextField label="End date (optional — leave blank if ongoing)" value={form.endDate} onChange={set("endDate")} T={T} type="date" />
-      <SelectField label="Flow" value={form.flow} onChange={set("flow")} options={flowOptions} T={T} />
+      <SelectField label="Flow" value={form.flow} onChange={set("flow")} options={flowOptions} listName="menstrualFlow" T={T} />
       <RelationPicker label="Symptoms during this period" value={form.symptomIds} onChange={set("symptomIds")} T={T} items={symptoms} placeholder="No symptoms in registry" />
       <div style={{ padding: "8px 0 20px" }}>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
@@ -545,7 +548,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
     <BottomSheet title={isNew ? "Add contraception" : "Edit contraception"} onClose={onClose} T={T} footer={<SaveButton label={isNew ? "Add" : "Save changes"} onClick={() => onSave(form)} canSave={canSave} T={T} />}>
       <FreeTextSuggestField label="Method" value={form.method} onChange={setMethod} options={methodOptions}
         onAddNew={(v) => setMethodOptions(CustomOptionListsRepository.add("contraception", v))} T={T} placeholder="e.g. Depot, IUD, Combined pill" />
-      <SelectField label="Formulation" value={form.formulation} onChange={set("formulation")} options={formulationOptions} T={T} hint="sets the icon shown for this entry" />
+      <SelectField label="Formulation" value={form.formulation} onChange={set("formulation")} options={formulationOptions} listName="medicationType" T={T} hint="sets the icon shown for this entry" />
       <TextField label="Start date" value={form.startDate} onChange={setStartDate} T={T} type="date" />
       <TextField label="End date (leave blank if currently active)" value={form.endDate} onChange={set("endDate")} T={T} type="date" />
       <div style={{ padding: "8px 0" }}>

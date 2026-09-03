@@ -282,6 +282,7 @@ export const CustomOptionListsRepository = {
 
   add(name, value) {
     const trimmed = (value || "").trim();
+    if (!trimmed) return this.get(name);
     const current = this.get(name);
     // CHANGED — was a case-SENSITIVE `current.includes(trimmed)` check,
     // so typing "male" when "Male" already existed silently added a
@@ -290,13 +291,32 @@ export const CustomOptionListsRepository = {
     // Gender, RelationshipType, Contraception, Vaccine, Medication
     // Category — none of which guard against this themselves). Fixing
     // it once here, at the single shared write path, covers all of them.
-    if (!trimmed || current.some((o) => o.toLowerCase() === trimmed.toLowerCase())) return current;
+    const existingMatch = current.find((o) => o.toLowerCase() === trimmed.toLowerCase());
+    if (existingMatch) {
+      // ADDED 3 Sep 2026 — real ask: "balance [recency] with most
+      // frequently selected options shown first too." add() is this
+      // app's universal commit path — nearly every SuggestField-style
+      // field across the app calls it on blur/Enter regardless of
+      // whether the value was freshly typed or picked from a
+      // suggestion chip (audited: Gender, Pronouns, Relationship
+      // Status/Type, Contraception, Vaccine, Medication Type/Category/
+      // Route, Reason for Visit, Follow-up Type, Sample Type, Episode
+      // Trigger, Menstrual Flow — every one of them). Crediting a real
+      // USE here, at this one shared spot, is what makes frequency-
+      // based ranking (getRanked() above) actually work everywhere
+      // that ranking is wired in, without touching each of those files
+      // individually — re-picking an existing option is exactly as
+      // real a "use" as typing a new one, it just doesn't change the
+      // list itself.
+      this.recordUsage(name, existingMatch);
+      return current;
+    }
     lists = { ...lists, [name]: [...current, trimmed] };
     persist();
     // Records WHEN this was added — the "newly added" half of
     // getRanked()'s scoring above. A brand new value starts at count 0
-    // (recordUsage below would double-count it as "used once" too,
-    // which isn't true yet — it was just created, not picked).
+    // (recordUsage would double-count it as "used once" too, which
+    // isn't true yet — it was just created, not picked).
     const forList = usageMeta[name] || {};
     usageMeta = { ...usageMeta, [name]: { ...forList, [trimmed]: { count: 0, addedAt: new Date().toISOString() } } };
     persistUsage();

@@ -132,11 +132,15 @@ function DateTimeField({ label, value, onChange, T }) {
   );
 }
 
-function SelectField({ label, value, onChange, options, T }) {
+// listName optional: only the CustomOptionListsRepository-backed
+// fields pass it, so real selections there count toward getRanked()'s
+// frequency ranking (real ask, 3 Sep 2026) — a fixed hardcoded option
+// array (no listName) simply skips recordUsage, same as before.
+function SelectField({ label, value, onChange, options, T, listName }) {
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
-      <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
+      <select value={value ?? ""} onChange={(e) => { onChange(e.target.value); if (listName && e.target.value) CustomOptionListsRepository.recordUsage(listName, e.target.value); }} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
         {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
@@ -145,8 +149,8 @@ function SelectField({ label, value, onChange, options, T }) {
   );
 }
 
-function MultiSelectChips({ label, value, onChange, options, T }) {
-  const toggle = (opt) => { const has = value.includes(opt); onChange(has ? value.filter((v) => v !== opt) : [...value, opt]); };
+function MultiSelectChips({ label, value, onChange, options, T, listName }) {
+  const toggle = (opt) => { const has = value.includes(opt); onChange(has ? value.filter((v) => v !== opt) : [...value, opt]); if (!has && listName) CustomOptionListsRepository.recordUsage(listName, opt); };
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{label}</div>
@@ -640,14 +644,14 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
               genuinely free-text). */}
           <ClinicianField value={form.clinician} onChange={set("clinician")} T={T} />
           <ClinicVisitLocationField value={form.location} onChange={set("location")} T={T} />
-          <MultiSelectChips label="Reason for visit" value={form.reasonForVisit} onChange={set("reasonForVisit")} options={reasonForVisitOptions} T={T} />
+          <MultiSelectChips label="Reason for visit" value={form.reasonForVisit} onChange={set("reasonForVisit")} options={reasonForVisitOptions} listName="reasonForVisit" T={T} />
           {/* CHANGED 19 Aug 2026 — explicit yes/no question, not a
               bare toggle. */}
           <YesNoQuestion question="Is this a future appointment?" value={form.isFutureAppointment} onChange={set("isFutureAppointment")} T={T} />
           {/* ADDED 19 Aug 2026 — real feedback batch: "arrange
               follow-up" — what kind, paired with the existing date
               field for when. */}
-          <SelectField label="Arrange follow-up" value={form.followUpType} onChange={set("followUpType")} options={followUpTypeOptions} T={T} />
+          <SelectField label="Arrange follow-up" value={form.followUpType} onChange={set("followUpType")} options={followUpTypeOptions} listName="followUpType" T={T} />
           {/* ADDED 19 Aug 2026 — real ask: a small descriptor for
               anything ambiguous/unlabelled. "TOC" is a genuine medical
               abbreviation, not obvious without sexual-health context. */}

@@ -532,11 +532,17 @@ function AddressAutocomplete({ label, value, onChange, T, placeholder, onCityDet
   );
 }
 
-function MultiSelectChips({ label, value, onChange, options, T, onAddNew }) {
+function MultiSelectChips({ label, value, onChange, options, T, onAddNew, listName }) {
   const [newValue, setNewValue] = useState("");
   const toggle = (opt) => {
     const has = value.includes(opt);
     onChange(has ? value.filter((v) => v !== opt) : [...value, opt]);
+    // ADDED — real ask: frequency-weighted suggestion ranking (3 Sep
+    // 2026) — a real pick counts as a use, same reasoning as
+    // Measurements/Medication's own suggestion fields; the "Add new"
+    // input below already credits usage via CustomOptionListsRepository.add()
+    // itself, but only for values typed there, not existing chips.
+    if (!has && listName) CustomOptionListsRepository.recordUsage(listName, opt);
   };
   // ADDED 26 Aug 2026 — real ask: Relationship type should be able to
   // add more options, not just pick from a fixed list. Deliberately
@@ -1609,7 +1615,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
 
         <SectionCard T={T} title="Relationship">
           <SelectField T={T} label="Rating" value={form.rating} onChange={set("rating")} options={RATING_OPTIONS} />
-          <MultiSelectChips T={T} label="Relationship type" value={form.relationshipType} onChange={set("relationshipType")} options={relationshipTypeOptions}
+          <MultiSelectChips T={T} label="Relationship type" value={form.relationshipType} onChange={set("relationshipType")} options={relationshipTypeOptions} listName="relationshipType"
             onAddNew={(v) => setRelationshipTypeOptions(CustomOptionListsRepository.add("relationshipType", v))} />
           <TagInput T={T} label="How did we meet?" value={form.howDidWeMeet} onChange={set("howDidWeMeet")} suggestions={howMetOptions} />
           <SelectField T={T} label="Meet again?" value={form.meetAgain} onChange={set("meetAgain")} options={MEET_AGAIN_OPTIONS} />
@@ -1747,7 +1753,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
               already proven for Cummer/PrEP-Doxy below, with its own
               onAddNew for a value not in the option list yet. */}
           {["female", "trans-male"].includes((form.gender || "").trim().toLowerCase()) && (
-            <MultiSelectChips T={T} label="Contraception" value={form.contraception} onChange={set("contraception")} options={contraceptionOptions}
+            <MultiSelectChips T={T} label="Contraception" value={form.contraception} onChange={set("contraception")} options={contraceptionOptions} listName="contraception"
               onAddNew={(v) => setContraceptionOptions(CustomOptionListsRepository.add("contraception", v))} />
           )}
           <MultiSelectChips T={T} label="Known to be on" value={form.knownPrepDoxy} onChange={set("knownPrepDoxy")} options={PREP_DOXY_OPTIONS} />

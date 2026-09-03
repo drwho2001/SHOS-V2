@@ -163,8 +163,13 @@ function SelectField({ label, value, onChange, options, T }) {
   );
 }
 
-function MultiSelectChips({ label, value, onChange, options, T }) {
-  const toggle = (opt) => { const has = value.includes(opt); onChange(has ? value.filter((v) => v !== opt) : [...value, opt]); };
+// listName optional: only the CustomOptionListsRepository-backed
+// fields pass it (e.g. Sample type; "Testing for?" stays fixed/not
+// editable by design, see customOptionListsRepository.js's own
+// comment), so real selections count toward getRanked()'s frequency
+// ranking (real ask, 3 Sep 2026).
+function MultiSelectChips({ label, value, onChange, options, T, listName }) {
+  const toggle = (opt) => { const has = value.includes(opt); onChange(has ? value.filter((v) => v !== opt) : [...value, opt]); if (!has && listName) CustomOptionListsRepository.recordUsage(listName, opt); };
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{label}</div>
@@ -624,7 +629,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
               it depending on sample/lab turnaround. */}
           <TextField label="Result date" value={form.resultDate ? form.resultDate.slice(0, 10) : ""} onChange={(v) => set("resultDate")(v ? new Date(v).toISOString() : null)} T={T} type="date" />
           <SelectField label="Setting" value={form.setting} onChange={set("setting")} options={SETTING_OPTIONS} T={T} />
-          <MultiSelectChips label="Sample type" value={form.sampleType} onChange={set("sampleType")} options={sampleTypeOptions} T={T} />
+          <MultiSelectChips label="Sample type" value={form.sampleType} onChange={set("sampleType")} options={sampleTypeOptions} listName="sampleType" T={T} />
           <MultiSelectChips label="Testing for?" value={form.testingFor} onChange={set("testingFor")} options={TESTING_FOR_OPTIONS} T={T} />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
             <span style={{ fontSize: 13, color: T.textPrimary }}>Most recent</span>
