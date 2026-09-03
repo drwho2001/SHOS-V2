@@ -25,7 +25,7 @@ import { computeStock, computeAdherence, nextDoseEstimate, isDoseLockedOut, lock
 // it after" case. Same shared "Now" helper and plain-string-slicing
 // safety already established by Encounters'/Clinic Visits' own
 // DateTimeField — no Date-object round-trip, no silent BST/UTC shift.
-import { nowAsDateTimeLocalString } from "../calculations/dateInputHelpers";
+import { nowAsDateTimeLocalString, nowAsStoredDateTime } from "../calculations/dateInputHelpers";
 // ADDED 19 Aug 2026 — real ask: allergies visible "± medications at
 // the top" too, not just on Clinic Card. Read-only here — Allergies
 // itself is edited on My Profile, this is just a visibility surface.
@@ -104,22 +104,45 @@ const radius = RADIUS;
 // (medicationCalculations.js) — this component no longer defines them
 // itself, it just asks for the answer.
 
+// CHANGED — real bug: this app's own stored dates are literal
+// wall-clock digits with a fake "Z" suffix (see dateInputHelpers.js's
+// own comment — "must never be shifted for BST/UTC/DST after the
+// fact"), so reading them back via a plain, no-timeZone
+// toLocaleTimeString() applies a REAL timezone conversion on top of an
+// already-local value, silently shifting the displayed time by the
+// local UTC offset (BST: 1 hour later than what was actually entered
+// — exactly what was reported). timeZone: "UTC" here doesn't mean
+// "show UTC" — it means "read the digits back literally, don't
+// convert them", which is what correctly recovers the real local time
+// that was typed or tapped "Now" for.
 function formatLastDose(dateStr) {
   if (!dateStr) return "No doses logged";
   const d = new Date(dateStr);
   const diffDays = Math.floor((Date.now() - d.getTime()) / 86400000);
-  const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: "UTC" });
   const dayLabel = diffDays <= 0 ? "Today" : diffDays === 1 ? "Yesterday" : `${diffDays}d ago`;
   return `${dayLabel} at ${time}`;
 }
+// CHANGED — same root bug as formatLastDose/timeLabel above: comparing
+// via LOCAL setHours(0,0,0,0) on a fake-UTC date reads its digits as if
+// they needed a real timezone conversion, which can shift a late-night
+// dose onto the wrong calendar day (BST: a dose logged at 23:30 would
+// misread as 00:30 the next day). Extracting the calendar day via the
+// UTC getters instead recovers the literal date that was actually
+// logged.
 function dayLabel(dateStr) {
-  const d = new Date(dateStr); const today = new Date();
-  const diffDays = Math.floor((today.setHours(0, 0, 0, 0) - new Date(d).setHours(0, 0, 0, 0)) / 86400000);
+  const d = new Date(dateStr);
+  const dDay = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const today = new Date();
+  const todayDay = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  const diffDays = Math.floor((todayDay - dDay) / 86400000);
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Yesterday";
-  return new Date(dateStr).toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
+  return new Date(dateStr).toLocaleDateString([], { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 }
-function timeLabel(dateStr) { return new Date(dateStr).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+// Same fix as formatLastDose just above — timeZone: "UTC" recovers
+// the literal wall-clock digits instead of re-shifting them.
+function timeLabel(dateStr) { return new Date(dateStr).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: "UTC" }); }
 function daysFromNow(dateStr) {
   const diffDays = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
   return diffDays <= 0 ? "today" : diffDays === 1 ? "yesterday" : `${diffDays}d ago`;
@@ -1488,7 +1511,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   const logDose = (id) => {
     const med = MedicationRepository.getById(id);
     if (!med) return;
-    const entry = LogRepository.create({ medicationId: id, type: "dose", delta: -med.unitsPerDose, date: new Date().toISOString() });
+    const entry = LogRepository.create({ medicationId: id, type: "dose", delta: -med.unitsPerDose, date: nowAsStoredDateTime() });
     setLastLoggedEntry(entry);
     setRedoAvailable(null);
     setTimeout(() => setLastLoggedEntry((current) => (current?.id === entry.id ? null : current)), 8000);
@@ -1510,7 +1533,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
       setTimeout(() => setBulkLockFlash(false), 1800);
       return;
     }
-    const timestamp = new Date().toISOString();
+    const timestamp = nowAsStoredDateTime();
     dueDailyMeds.forEach((m) => LogRepository.create({ medicationId: m.id, type: "dose", delta: -m.unitsPerDose, date: timestamp }));
     syncDoxyPepAlert();
     syncMedicationReminders();
@@ -1524,7 +1547,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     const isRefill = sheet.mode === "refill";
     const delta = isRefill ? units : -units;
     const type = isRefill ? "refill" : "waste";
-    LogRepository.create({ medicationId: sheet.med.id, type, delta, date: new Date().toISOString() });
+    LogRepository.create({ medicationId: sheet.med.id, type, delta, date: nowAsStoredDateTime() });
     // Logging a real refill clears any pending "requested" flag — matches
     // the original behavior, which only cleared it on the refill branch.
     if (isRefill) MedicationRepository.update(sheet.med.id, { refillRequestedAt: null });
@@ -1534,7 +1557,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     setSheet(null);
   };
   const correctStock = (delta) => {
-    LogRepository.create({ medicationId: sheet.med.id, type: delta > 0 ? "refill" : "waste", delta, date: new Date().toISOString(), notes: "Manual stock correction" });
+    LogRepository.create({ medicationId: sheet.med.id, type: delta > 0 ? "refill" : "waste", delta, date: nowAsStoredDateTime(), notes: "Manual stock correction" });
     syncRefillReminder();
     refreshMeds();
     flashComplete(sheet.med.id);
@@ -1544,7 +1567,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   const confirmDoseUpdate = ({ doseStrengthValue, doseStrengthUnit, unitsPerDose, note, stockDelta }) => {
     MedicationRepository.updateDose(updatingDose.id, { doseStrengthValue, doseStrengthUnit, unitsPerDose, note });
     if (stockDelta !== null && stockDelta !== 0) {
-      LogRepository.create({ medicationId: updatingDose.id, type: stockDelta > 0 ? "refill" : "waste", delta: stockDelta, date: new Date().toISOString(), notes: `Stock update alongside dose change${note ? `: ${note}` : ""}` });
+      LogRepository.create({ medicationId: updatingDose.id, type: stockDelta > 0 ? "refill" : "waste", delta: stockDelta, date: nowAsStoredDateTime(), notes: `Stock update alongside dose change${note ? `: ${note}` : ""}` });
     }
     syncRefillReminder();
     refreshMeds();
@@ -1593,7 +1616,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     // Initial stock is just the first Refill-type log entry (Doc 5 §5) —
     // no separate Opening Stock field, same rule as everywhere else.
     if (form.inventoryTracked) {
-      LogRepository.create({ medicationId: newMed.id, type: "refill", delta: form.defaultRefillQuantity || 0, date: new Date().toISOString() });
+      LogRepository.create({ medicationId: newMed.id, type: "refill", delta: form.defaultRefillQuantity || 0, date: nowAsStoredDateTime() });
     }
     refreshMeds();
     setAddingMed(false);
