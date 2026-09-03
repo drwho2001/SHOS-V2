@@ -585,7 +585,7 @@ export async function requestExactAlarmPermission() {
 // outside NOTIFICATION_IDS above since this is diagnostic, not a real
 // reminder type.
 const TEST_NOTIFICATION_ID = 9099;
-export const TEST_NOTIFICATION_DELAY_MS = 10000;
+export const TEST_NOTIFICATION_DELAY_MS = 5000;
 export async function sendTestNotification() {
   const permission = await checkNotificationPermission();
   if (permission.status !== "granted") return { ok: false, reason: permission.status };
