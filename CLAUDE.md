@@ -205,6 +205,35 @@ this date; summarized here for durability.
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
 
+## Recently shipped (3 Sep 2026, third session, continued — see Notion for full detail)
+
+Three more items from the same data-management brainstorm as the
+Developer Tools additions above: (1) delete-time reference cleanup —
+every repository with a real delete()/bulkDelete() now notifies every
+other repository/registry that can reference it (same unlinkX(id)
+pattern `measurementRepository.js`/`contraceptionRepository.js`
+already used for Clinic Visit deletes), closing a real gap the new
+orphan checker surfaced (`Contact.delete()` cleaned up MyProfile/
+Contact<->Contact links but never `Encounter.attendeeIds`/
+`Location.relatedContactId`/Partner Notification). Testing and Clinic
+Visits now import each other (a genuine circular import, safe because
+every use is a method call deferred inside `delete()`) — verified live
+in both directions with zero page errors. (2) A Contact-specific
+duplicate checker, multi-field and confidence-scored — new
+`findContactDuplicateCandidates` in `fuzzyMatch.js` catches an exact
+phone/Snapchat/Recon/FabGuys/FabSwingers match directly, with city/
+address/approximate age/notes-overlap only adding confidence once a
+pair is already flagged by name or a strong field — never a verdict,
+same restraint as the existing registry duplicate checker. (3) Backup
+export round-trip verification — `verifyBackupJson()` in
+`backupService.js` confirms the exact JSON about to be written
+survives a parse round-trip with every record count intact, before
+the file-write handoff; also fixed two real dead-state bugs found in
+the same area (the plain Export backup button showed no confirmation
+at all; Export-to-folder's own status was tracked but never rendered).
+All verified live via Playwright; `scripts/smoke-test.cjs` still
+passes unmodified.
+
 ## Recently shipped (3 Sep 2026, third session — see Notion for full detail)
 
 Developer Tools gained two real data-management additions, following a
