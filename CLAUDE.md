@@ -205,6 +205,32 @@ this date; summarized here for durability.
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
 
+## Recently shipped (3 Sep 2026, third session — see Notion for full detail)
+
+Developer Tools gained two real data-management additions, following a
+brainstorm on cheap data-refinement techniques given this app's actual
+scope (single device, no server, small data volumes): a storage-usage
+indicator (`storageAdapter.js`'s `getStorageUsage()`, total bytes
+actually persisted plus a top-5-keys breakdown) and a read-only
+orphan-reference sweep (new `orphanReferenceCheck.js`, same "scan
+every possible referencer" approach as the existing
+`registryUsage.js`) that flags dangling relation-by-ID references
+across every repository/registry relation confirmed live by its own
+repository's documented field shape — deliberately excludes fields
+already documented as deprecated/obsolete elsewhere (Testing's
+`relatedSymptomIds`, Clinic Visit's `resultIds`, Symptom Log's
+singular `symptomId`). A third candidate idea — a persisted/cached
+search key for fuzzy matching — was deliberately NOT built:
+`SHOS_GlobalSearch_Prototype.jsx` already has an explicit comment
+rejecting that exact optimization as unnecessary at this app's real
+data scale, and several search fields are joined from other registries
+by ID, so baking them into a stored key would reintroduce the
+staleness class "store facts, derive state" exists to prevent.
+Running the new sweep against real seed data caught a genuine
+pre-existing bug: 4 seed Encounters stored Protection Registry's
+display NAME ("Condom") instead of its real id, silently blanking
+their "Protection used" field — fixed in the same change.
+
 ## Recently shipped (3 Sep 2026, later session — see Notion for full detail)
 
 Five independent small asks in one session: a global first-day-of-week
