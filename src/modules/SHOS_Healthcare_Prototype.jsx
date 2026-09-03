@@ -207,7 +207,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           registerModuleBackHandler={registerModuleBackHandler} />
       )}
       {showTimeline && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 210 }}>
+        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 210 }}>
           <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
         </div>
       )}

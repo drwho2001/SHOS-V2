@@ -278,7 +278,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 200, display: "flex", flexDirection: "column", fontFamily: FONT_FAMILY }}>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: T.bg, zIndex: 200, display: "flex", flexDirection: "column", fontFamily: FONT_FAMILY }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, borderBottom: `1px solid ${T.border}`, background: T.surface }}>
         <Search size={18} color={T.textDisabled} style={{ flexShrink: 0 }} />
         <input
