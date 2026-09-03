@@ -27,7 +27,7 @@ import {
   CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck,
   LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen,
   SlidersHorizontalIcon as SlidersHorizontal, MapPinIcon as MapPin, XIcon as X,
-  RulerIcon as Ruler, WifiHighIcon as WifiHigh,
+  RulerIcon as Ruler, WifiHighIcon as WifiHigh, LinkBreakIcon as LinkBreak,
 } from "@phosphor-icons/react";
 // FIXED 1 Sep 2026 — real ask: "Managed lists crashes app on
 // attempting to open" / "Same for resources [crashes], in light [mode]
@@ -52,6 +52,7 @@ import { isChooseFolderExportAvailable } from "../storage/fileExportHelper";
 import { exportRecordsAsCSV } from "../storage/csvExportService";
 import { localStorageAdapter } from "../storage/storageAdapter";
 import { computeKinkUsage, computeChemsUsage, computeProtectionUsage, computeSymptomsUsage, computeOrganismUsage, computeResultsUsage, computeLocationsUsage } from "../calculations/registryUsage";
+import { findOrphanReferences } from "../calculations/orphanReferenceCheck";
 import { LOCATION_TYPE_OPTIONS } from "../repositories/locationsRepository";
 import { ContactRepository } from "../repositories/contactRepository";
 import { EncounterRepository } from "../repositories/encounterRepository";
@@ -526,10 +527,35 @@ function EncryptedExportSheet({ onClose }) {
 // the font/theme system's own cross-cutting refactor already flagged
 // as needing its own dedicated session) that shouldn't be guessed at
 // just to fill in a Settings row.
+// ADDED — real ask: a human-readable size for the storage-usage
+// indicator below. Kept local — the only place this app currently
+// needs to print a byte count.
+function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 function DeveloperToolsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
 
   const [resetStage, setResetStage] = useState("idle"); // idle -> confirming -> done
+  // ADDED — real ask: a storage-usage indicator, cheap given this
+  // app's actual mechanics (one device, no server to overflow into,
+  // Attachments the one thing that could push toward the browser's
+  // localStorage quota over time). See storageAdapter.js's own
+  // getStorageUsage() comment for the byte-counting approach.
+  const storageUsage = useMemo(() => localStorageAdapter.getStorageUsage(), []);
+  const [showStorageBreakdown, setShowStorageBreakdown] = useState(false);
+  // ADDED — real ask: a data-integrity sweep for dangling relation-by-
+  // ID references (e.g. a hard-deleted Contact an old Encounter's
+  // attendeeIds still points at) — see orphanReferenceCheck.js's own
+  // header for exactly what this does and doesn't cover. Same "compute
+  // once per screen-open, the data's small enough" judgment already
+  // applied to Global Search's own index and the Registry duplicate
+  // checker.
+  const orphans = useMemo(() => findOrphanReferences(), []);
+  const [showOrphans, setShowOrphans] = useState(false);
   const counts = [
     { label: "Contacts", value: ContactRepository.getAll().length },
     { label: "Encounters", value: EncounterRepository.getAll().length },
@@ -572,12 +598,62 @@ function DeveloperToolsScreen({ onClose }) {
 
       <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "16px 16px 6px" }}>Storage overview</div>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
+        <div onClick={() => setShowStorageBreakdown((s) => !s)} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: "pointer" }}>
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Local storage used{storageUsage.byKey.length > 0 ? (showStorageBreakdown ? " ▲" : " ▼") : ""}</span>
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>{formatBytes(storageUsage.totalBytes)}</span>
+        </div>
+        {showStorageBreakdown && (
+          <div style={{ padding: "6px 0 9px" }}>
+            {/* ADDED — real ask: which part is actually big, not just
+                the total — Attachments (base64 file data) is the one
+                thing in this app that could realistically grow large
+                over time, worth being able to see that directly rather
+                than guessing. Top 5 keys by size is plenty for "what's
+                using the space" without turning this into its own
+                screen. */}
+            {storageUsage.byKey.slice(0, 5).map((k) => (
+              <div key={k.key} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12 }}>
+                <span style={{ color: darkMode ? DARK.textDisabled : "#656568", fontFamily: "'JetBrains Mono', monospace" }}>{k.key.replace(/^shos_/, "")}</span>
+                <span style={{ color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{formatBytes(k.bytes)}</span>
+              </div>
+            ))}
+          </div>
+        )}
         {counts.map((c) => (
           <div key={c.label} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{c.label}</span>
             <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>{c.value}</span>
           </div>
         ))}
+      </div>
+
+      {/* ADDED — real ask: surface dangling relation-by-ID references
+          (e.g. an Encounter whose attendeeIds still names a Contact
+          that's since been hard-deleted) — nothing else in the app
+          currently notices these. Read-only: flags them for a human to
+          fix by hand, same "never silently merge/fix" restraint the
+          Registry duplicate checker already applies. */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Data integrity</div>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
+        <div onClick={() => orphans.length > 0 && setShowOrphans((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: orphans.length > 0 ? "pointer" : "default" }}>
+          <LinkBreak size={15} color={orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textDisabled : "#656568")} />
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", flex: 1 }}>Broken references</span>
+          <span style={{ fontSize: 13, color: orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textPrimary : "#1B1B1F"), fontWeight: 700 }}>
+            {orphans.length === 0 ? "None found" : `${orphans.length}${showOrphans ? " ▲" : " ▼"}`}
+          </span>
+        </div>
+        {showOrphans && orphans.length > 0 && (
+          <div style={{ padding: "0 0 9px" }}>
+            {orphans.map((o, i) => (
+              <div key={i} style={{ padding: "8px 0", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+                <div style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600 }}>{o.recordType}: {o.recordLabel}</div>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", marginTop: 2 }}>
+                  its <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{o.field}</span> points at a {o.targetType} that no longer exists (id: {o.danglingId})
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Danger zone</div>

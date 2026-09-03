@@ -234,7 +234,7 @@ let seedEncounters = [
     myRole: "Switch",
     myDoxyPepStatus: "Not indicated",
     myPrepCoverage: "Adequate - daily (≥4/week)",
-    protectionUsed: ["Condom"],
+    protectionUsed: ["protection_001"], // FIXED — real bug found by the new orphan-reference checker (orphanReferenceCheck.js): this seed data stored Protection Registry's own display NAME ("Condom") instead of its real generated id. ProtectionRegistry's seedNames ["Condom", "PrEP", "PEP", "None"] deterministically produce protection_001/002/003/004 (see simpleRegistry.js's own generateId()) — "Condom" is always protection_001 on a fresh install.
     enjoymentRating: 80,
     wouldMeetAgain: "Yes",
     createdAt: daysAgo(6, 22, 0),
@@ -267,7 +267,7 @@ let seedEncounters = [
     encounterType: "Date/Chill",
     attendeeIds: ["contact_008"],
     myRole: "Switch",
-    protectionUsed: ["Condom"],
+    protectionUsed: ["protection_001"], // FIXED — real bug found by the new orphan-reference checker (orphanReferenceCheck.js): this seed data stored Protection Registry's own display NAME ("Condom") instead of its real generated id. ProtectionRegistry's seedNames ["Condom", "PrEP", "PEP", "None"] deterministically produce protection_001/002/003/004 (see simpleRegistry.js's own generateId()) — "Condom" is always protection_001 on a fresh install.
     enjoymentRating: 88,
     wouldMeetAgain: "Yes",
     notes: "Really clicked — seeing her again.",
@@ -351,7 +351,7 @@ let seedEncounters = [
     myRole: "Dom",
     myDoxyPepStatus: "Not indicated",
     myPrepCoverage: "Adequate - daily (≥4/week)",
-    protectionUsed: ["Condom"],
+    protectionUsed: ["protection_001"], // FIXED — real bug found by the new orphan-reference checker (orphanReferenceCheck.js): this seed data stored Protection Registry's own display NAME ("Condom") instead of its real generated id. ProtectionRegistry's seedNames ["Condom", "PrEP", "PEP", "None"] deterministically produce protection_001/002/003/004 (see simpleRegistry.js's own generateId()) — "Condom" is always protection_001 on a fresh install.
     enjoymentRating: 85,
     wouldMeetAgain: "Yes",
     createdAt: daysAgo(70, 23, 0),
@@ -368,7 +368,7 @@ let seedEncounters = [
     myRole: "Switch",
     myDoxyPepStatus: "Not indicated",
     myPrepCoverage: "Adequate - daily (≥4/week)",
-    protectionUsed: ["Condom"],
+    protectionUsed: ["protection_001"], // FIXED — real bug found by the new orphan-reference checker (orphanReferenceCheck.js): this seed data stored Protection Registry's own display NAME ("Condom") instead of its real generated id. ProtectionRegistry's seedNames ["Condom", "PrEP", "PEP", "None"] deterministically produce protection_001/002/003/004 (see simpleRegistry.js's own generateId()) — "Condom" is always protection_001 on a fresh install.
     enjoymentRating: 72,
     createdAt: daysAgo(45, 18, 0),
     isArchived: false,

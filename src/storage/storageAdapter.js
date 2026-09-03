@@ -62,4 +62,30 @@ export const localStorageAdapter = {
     keysToRemove.forEach((key) => localStorage.removeItem(key));
     return keysToRemove;
   },
+
+  // ADDED — real ask: a storage-usage indicator for Developer Tools.
+  // No backend to overflow into and no encryption-at-rest yet means
+  // this one device's localStorage quota (~5-10MB depending on
+  // browser/WebView) is the only ceiling this app has, and Attachments
+  // (base64 file data) is the one thing that could actually push
+  // toward it over a long enough time. Same "shos_"-prefix scan as
+  // clearAllAppData() above, so this never touches or reports on an
+  // unrelated site's storage sharing the same origin's storage APIs.
+  // Byte counts use Blob (real UTF-8 byte size), not raw .length
+  // (UTF-16 code units) — a closer match to how a human reads "KB/MB"
+  // and to how most browsers actually count a string against quota.
+  getStorageUsage() {
+    const byKey = [];
+    let totalBytes = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith("shos_")) continue;
+      const raw = localStorage.getItem(key) || "";
+      const bytes = new Blob([raw]).size;
+      totalBytes += bytes;
+      byKey.push({ key, bytes });
+    }
+    byKey.sort((a, b) => b.bytes - a.bytes);
+    return { totalBytes, byKey };
+  },
 };
