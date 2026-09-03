@@ -1070,13 +1070,24 @@ export default function App() {
           interrupting one, below the true top-level overlays (App
           Lock/onboarding/decoy at 998-999). */}
       {dueMeds.length > 0 && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", background: ACCENTS.medication, zIndex: 260, boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px" }}>
-            <Pill size={20} color="#FFFFFF" style={{ flexShrink: 0 }} />
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", background: ACCENTS.medication, zIndex: 260, boxShadow: "0 4px 16px rgba(0,0,0,.2)", fontFamily: "'Inter', sans-serif" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
+            <Pill size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>
-                {dueMeds.map((m) => m.name).join(", ")} — due now
+                {dueMeds.length === 1 ? `${dueMeds[0].name} — due now` : `${dueMeds.length} medications due now`}
               </div>
+              {/* ADDED — real ask: "group if say daily meds all due,
+                  list all meds that will be updated/logged" — a
+                  comma-joined single line didn't make it clear exactly
+                  which medications "Take" was actually about to log at
+                  once. One name stays inline (no list needed for a
+                  single item); two or more get a real itemized list. */}
+              {dueMeds.length > 1 && (
+                <ul style={{ margin: "4px 0 0", padding: "0 0 0 18px", fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,.92)" }}>
+                  {dueMeds.map((m) => <li key={m.id}>{m.name}</li>)}
+                </ul>
+              )}
               <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                 <button onClick={onDueMedsTake} style={{ padding: "6px 14px", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.medication, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Take</button>
                 <button onClick={onDueMedsSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
@@ -1098,7 +1109,7 @@ export default function App() {
       )}
 
       {notifToast && (
-        <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", background: "#1B1B1F", color: "#FFFFFF", padding: "10px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, whiteSpace: "nowrap", maxWidth: "90vw", overflow: "hidden", textOverflow: "ellipsis" }}>
+        <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", background: "#1B1B1F", color: "#FFFFFF", padding: "10px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, whiteSpace: "nowrap", maxWidth: "90vw", overflow: "hidden", textOverflow: "ellipsis", fontFamily: "'Inter', sans-serif" }}>
           {notifToast}
         </div>
       )}
