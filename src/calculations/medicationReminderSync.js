@@ -23,7 +23,12 @@ import { isDoseLockedOut, lockoutEndsAt } from "./medicationCalculations";
 import { scheduleNotification, cancelNotification, registerNotificationActionTypes, NOTIFICATION_IDS, MEDICATION_ACTION_TYPE_ID, moduleSmallIconName } from "../storage/notificationService";
 import { ACCENTS } from "./designTokens";
 
-function getDailyMedsState() {
+// ADDED 3 Sep 2026 — exported (was module-private) — real ask: "clear
+// notification awareness" needs an in-app "medication due" banner
+// (App.jsx), reading the exact same due/upcoming state the real
+// reminder notifications are scheduled from, so the two can never
+// disagree with each other.
+export function getDailyMedsState() {
   const meds = MedicationRepository.getAll().filter((m) => !m.isArchived && m.usagePattern === "daily");
   const prefs = MedicationPreferencesRepository.getPreferences();
 
@@ -95,17 +100,27 @@ export async function syncMedicationReminders() {
 // concern since a notification tap can happen regardless of which
 // screen is currently open, same reasoning as the hardware back
 // button living there).
+// CHANGED 3 Sep 2026 — real ask: "clear notification awareness" — now
+// returns what actually happened (which medications, or the snooze
+// length) instead of nothing, so a caller (App.jsx's in-app due-meds
+// banner, or its notification-action listener) can show a real,
+// specific confirmation — "Vitamin D3 logged", not just a silent
+// state change with no visible acknowledgment anywhere.
 export function handleTakeAll() {
   const { due } = getDailyMedsState();
+  const names = due.map((m) => m.name);
   const timestamp = new Date().toISOString();
   due.forEach((m) => LogRepository.create({ medicationId: m.id, type: "dose", delta: -m.unitsPerDose, date: timestamp }));
   syncMedicationReminders();
+  return { medications: names };
 }
 
 export function handleSkipToday() {
   const { due } = getDailyMedsState();
+  const names = due.map((m) => m.name);
   due.forEach((m) => MedicationPreferencesRepository.skipUntilTomorrow(m.id));
   syncMedicationReminders();
+  return { medications: names };
 }
 
 export function handleSnooze() {
@@ -119,4 +134,5 @@ export function handleSnooze() {
       smallIcon: moduleSmallIconName("medication"),
       iconColor: ACCENTS.medication,
   });
+  return { minutes: prefs.snoozeMinutes };
 }

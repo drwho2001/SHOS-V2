@@ -38,6 +38,17 @@ async function dismissOnboarding(page) {
     await page.locator("text=Not now").first().click({ timeout: 3000 }).catch(() => {});
   });
   await page.waitForTimeout(600);
+  // ADDED 3 Sep 2026 — the seed data's own PrEP dose is always "due
+  // now", which (correctly, as of the new in-app due-meds awareness
+  // banner) now shows a real banner reading "PrEP (Descovy) — due now"
+  // above every screen. That text otherwise collides with this
+  // script's own `text=PrEP (Descovy)` locator further down (matches
+  // the banner instead of the real list entry) — dismissed here,
+  // same as a real user glancing at it once and moving on, so the rest
+  // of this script keeps testing the real medication list, not the
+  // banner sitting on top of it.
+  await page.locator('[aria-label="Dismiss"]').first().click({ timeout: 3000 }).catch(() => {});
+  await page.waitForTimeout(300);
 }
 
 async function testMedicationReasonSideEffects(page) {

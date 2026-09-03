@@ -203,6 +203,38 @@ export async function addNotificationActionListener(handler) {
   return null;
 }
 
+// ADDED 3 Sep 2026 — real ask: "clear notification awareness... when
+// fires when app is open [foreground], when app is open but not on
+// screen [background], and if screen is locked." addNotificationActionListener
+// above only ever fires when the user actually TAPS the notification —
+// nothing previously told the app a reminder had DELIVERED at all if
+// it was just sitting in the tray unactioned. This is that: fires the
+// moment a notification actually shows, regardless of whether it's
+// ever tapped. Native: Capacitor's own `localNotificationReceived`
+// event (confirmed real in the installed plugin's own Kotlin/type
+// definitions — LocalNotificationsPlugin.kt's dispatchReceived(),
+// definitions.d.ts's own addListener overload for it), which fires
+// whether the app is foregrounded, backgrounded, or the screen is
+// locked — the OS delivers the notification either way and tells the
+// JS side about it. Web: no native equivalent exists, so
+// showWebNotification() below dispatches its own real DOM CustomEvent
+// at the exact same moment it calls showNotification() — same shape,
+// same timing, just a platform-appropriate mechanism.
+export async function addNotificationReceivedListener(handler) {
+  const platform = await getPlatform();
+  if (platform === "native") {
+    const plugin = await getPlugin();
+    if (!plugin) return null;
+    return plugin.addListener("localNotificationReceived", handler);
+  }
+  if (typeof window !== "undefined") {
+    const listener = (event) => handler(event.detail);
+    window.addEventListener("shos-notification-delivered", listener);
+    return { remove: () => window.removeEventListener("shos-notification-delivered", listener) };
+  }
+  return null;
+}
+
 let LocalNotifications = null;
 let pluginLoadAttempted = false;
 let cachedPlatform = null;
@@ -403,6 +435,11 @@ async function showWebNotification({ id, title, body, actionTypeId }) {
       badge: `${import.meta.env.BASE_URL}pwa-192.png`,
       actions: actionTypeId ? ACTION_TYPE_DEFS[actionTypeId]?.map((a) => ({ action: a.id, title: a.title })) : undefined,
     });
+    // Web's own equivalent of native's localNotificationReceived — see
+    // addNotificationReceivedListener()'s own comment above.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("shos-notification-delivered", { detail: { id, title, body } }));
+    }
     return true;
   } catch (err) {
     console.warn("[notificationService] showNotification() failed:", err);

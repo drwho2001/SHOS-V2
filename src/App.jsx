@@ -15,12 +15,20 @@ import GlobalSearchScreen from "./modules/SHOS_GlobalSearch_Prototype";
 import { PrivacySettingsRepository } from "./repositories/privacySettingsRepository";
 import { checkBiometryAvailable, authenticateWithBiometrics } from "./storage/biometricAuthService";
 import { AppPreferencesRepository } from "./repositories/appPreferencesRepository";
+// ADDED 3 Sep 2026 — real ask: "clear notification awareness" — a
+// static top-level import (unlike the existing dynamic ones inside the
+// notification-action effect below) since these are now also called
+// directly from the in-app due-meds banner's own button clicks, not
+// just from a background listener. medicationReminderSync.js is a
+// small, dependency-light pure-logic module — negligible bundle cost
+// for a feature visible on every screen, every day.
+import { getDailyMedsState, handleTakeAll, handleSkipToday, handleSnooze } from "./calculations/medicationReminderSync";
 // ADDED — real ask: "standardise UI/appearance." Shared design tokens,
 // the actual foundation — see designTokens.js for full reasoning and
 // honest scope (this is a start, not a finished migration).
 import { NEUTRAL, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent } from "./calculations/designTokens";
 // ADDED — real ask: Home's title should read "[Name]'s dashboard".
-import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HeartbeatIcon as HeartPulse, HospitalIcon as Hospital, DownloadSimpleIcon as Download, UploadSimpleIcon as Upload, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon, CaretLeftIcon as ChevronLeft, UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database, TrashIcon as Trash2, WarningIcon as AlertTriangle, CheckIcon as Check, ClipboardTextIcon as ClipboardList, TreeStructureIcon as ListTree, PaperclipIcon as Paperclip, ClockCounterClockwiseIcon as History, EyeSlashIcon as EyeOff, EyeIcon as Eye, TestTubeIcon as TestTube, FireIcon as Flame, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MicroscopeIcon as Microscope, ListChecksIcon as ClipboardCheck, SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CreditCardIcon as CreditCard, FingerprintIcon as Fingerprint, LockIcon as Lock } from "@phosphor-icons/react";
+import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HeartbeatIcon as HeartPulse, HospitalIcon as Hospital, DownloadSimpleIcon as Download, UploadSimpleIcon as Upload, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon, CaretLeftIcon as ChevronLeft, UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database, TrashIcon as Trash2, WarningIcon as AlertTriangle, CheckIcon as Check, ClipboardTextIcon as ClipboardList, TreeStructureIcon as ListTree, PaperclipIcon as Paperclip, ClockCounterClockwiseIcon as History, EyeSlashIcon as EyeOff, EyeIcon as Eye, TestTubeIcon as TestTube, FireIcon as Flame, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MicroscopeIcon as Microscope, ListChecksIcon as ClipboardCheck, SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CreditCardIcon as CreditCard, FingerprintIcon as Fingerprint, LockIcon as Lock, XIcon as X } from "@phosphor-icons/react";
 // CHANGED — real Tier 1 decision: Phosphor, replacing lucide-react.
 // Every icon aliased directly in ONE import statement, back to its
 // original lucide name — deliberately one consistent pattern (not
@@ -589,6 +597,70 @@ export default function App() {
   // inside SettingsScreen, so it would've been invisible here.
   const [backExitToast, setBackExitToast] = useState(false);
 
+  // ADDED 3 Sep 2026 — real ask: "clear notification awareness" across
+  // all three real app states — foreground, backgrounded (app open but
+  // not on screen), and screen locked. Deliberately driven by the
+  // app's own real data (is a daily medication actually due right now)
+  // rather than by whether an OS notification happened to deliver —
+  // the OS layer can silently fail for reasons entirely outside this
+  // app's control (permission never granted, exact-alarm setting off,
+  // an OEM's own battery-saver killing background alarms), and this
+  // banner stays correct regardless, since it's just reading the same
+  // real due/not-due state syncMedicationReminders() already computes.
+  // Rendered above every screen (see the render below), not just Home,
+  // so it's visible no matter which tab was open when a dose became
+  // due.
+  const [dueMeds, setDueMeds] = useState([]);
+  const [notifToast, setNotifToast] = useState(null);
+  const notifToastTimerRef = useRef(null);
+  const showNotifToast = (message) => {
+    clearTimeout(notifToastTimerRef.current);
+    setNotifToast(message);
+    notifToastTimerRef.current = setTimeout(() => setNotifToast(null), 4000);
+  };
+  const checkDueMeds = () => setDueMeds(getDailyMedsState().due);
+
+  useEffect(() => {
+    checkDueMeds();
+    const onVisible = () => { if (document.visibilityState === "visible") checkDueMeds(); };
+    document.addEventListener("visibilitychange", onVisible);
+    // Safety-net poll, deliberately independent of the OS notification
+    // pipeline actually working — see this block's own comment above.
+    // 60s is frequent enough that "clear awareness" holds even if a
+    // real notification never fires at all, without being wasteful.
+    const interval = setInterval(checkDueMeds, 60000);
+    return () => { document.removeEventListener("visibilitychange", onVisible); clearInterval(interval); };
+  }, []);
+
+  // Live update the moment a reminder actually delivers (foreground OR
+  // background OR locked — see addNotificationReceivedListener's own
+  // comment in notificationService.js), rather than waiting for the
+  // next poll/visibility change.
+  useEffect(() => {
+    let listenerHandle = null;
+    (async () => {
+      const { addNotificationReceivedListener } = await import("./storage/notificationService");
+      listenerHandle = await addNotificationReceivedListener(() => checkDueMeds());
+    })();
+    return () => { listenerHandle?.remove(); };
+  }, []);
+
+  const onDueMedsTake = () => {
+    const result = handleTakeAll();
+    showNotifToast(result.medications.length ? `${result.medications.join(", ")} logged` : "Logged");
+    checkDueMeds();
+  };
+  const onDueMedsSkip = () => {
+    handleSkipToday();
+    showNotifToast("Skipped until tomorrow");
+    checkDueMeds();
+  };
+  const onDueMedsSnooze = () => {
+    const result = handleSnooze();
+    showNotifToast(`Snoozed ${result.minutes} min`);
+    checkDueMeds();
+  };
+
   // ADDED 26 Aug 2026 — real ask: the Android hardware back button was
   // closing the app instantly instead of behaving like in-app back
   // navigation. Handles what App.jsx can actually see: closes an open
@@ -737,12 +809,18 @@ export default function App() {
     let listenerHandle = null;
     (async () => {
       const { addNotificationActionListener, MEDICATION_ACTIONS, DOXYPEP_ACTIONS } = await import("./storage/notificationService");
-      const { handleTakeAll, handleSkipToday, handleSnooze } = await import("./calculations/medicationReminderSync");
       const { handleTakeDoxyDose, handleSnoozeDoxy } = await import("./calculations/doxyPepSync");
+      // CHANGED 3 Sep 2026 — real ask: "clear notification awareness" —
+      // tapping an action button used to silently change state with
+      // zero visible confirmation anywhere in the app. Now shows the
+      // same in-app toast the due-meds banner's own buttons show (see
+      // onDueMedsTake/Skip/Snooze above), so acting from the
+      // notification and acting from inside the app both give the same
+      // real, visible acknowledgment.
       listenerHandle = await addNotificationActionListener((action) => {
-        if (action.actionId === MEDICATION_ACTIONS.takeAll) handleTakeAll();
-        else if (action.actionId === MEDICATION_ACTIONS.skipToday) handleSkipToday();
-        else if (action.actionId === MEDICATION_ACTIONS.snooze) handleSnooze();
+        if (action.actionId === MEDICATION_ACTIONS.takeAll) onDueMedsTake();
+        else if (action.actionId === MEDICATION_ACTIONS.skipToday) onDueMedsSkip();
+        else if (action.actionId === MEDICATION_ACTIONS.snooze) onDueMedsSnooze();
         else if (action.actionId === DOXYPEP_ACTIONS.takeDose) handleTakeDoxyDose();
         else if (action.actionId === DOXYPEP_ACTIONS.snooze) handleSnoozeDoxy();
       });
@@ -981,6 +1059,49 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: darkMode ? DARK.bg : "#F0F0F3", display: "flex", flexDirection: "column" }}>
       <input ref={fileInputRef} type="file" accept="application/json" onChange={handleFileChosen} style={{ display: "none" }} />
+
+      {/* ADDED 3 Sep 2026 — real ask: "clear notification awareness"
+          across foreground/background/locked-screen states — see this
+          state's own declaration above for the full reasoning. Fixed
+          at the very top, above every screen's own content (not tied
+          to Home), so a due medication stays visible regardless of
+          which tab was open when it became due. zIndex 260: above a
+          module's own sheets/forms (210-220) since a due dose is worth
+          interrupting one, below the true top-level overlays (App
+          Lock/onboarding/decoy at 998-999). */}
+      {dueMeds.length > 0 && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", background: ACCENTS.medication, zIndex: 260, boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px" }}>
+            <Pill size={20} color="#FFFFFF" style={{ flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>
+                {dueMeds.map((m) => m.name).join(", ")} — due now
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button onClick={onDueMedsTake} style={{ padding: "6px 14px", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.medication, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Take</button>
+                <button onClick={onDueMedsSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
+                <button onClick={onDueMedsSkip} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Cancel</button>
+              </div>
+            </div>
+            {/* Dismiss-only close — deliberately distinct from Take/
+                Snooze/Cancel above: those all change real medication
+                data, this just hides the banner for now without
+                touching anything, for "I saw it, I'll deal with it
+                myself later" without being forced to pick one of the
+                three real actions just to get it off screen. Reappears
+                on the next real check (visibilitychange, the 60s poll,
+                or a fresh notification) since it's not a persisted
+                dismissal, just local UI state. */}
+            <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setDueMeds([])} aria-label="Dismiss" />
+          </div>
+        </div>
+      )}
+
+      {notifToast && (
+        <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", background: "#1B1B1F", color: "#FFFFFF", padding: "10px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, whiteSpace: "nowrap", maxWidth: "90vw", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {notifToast}
+        </div>
+      )}
 
       {/* ADDED — real device bug: every screen's own header (back
           chevron, title, menu) was rendering right at the very top of
