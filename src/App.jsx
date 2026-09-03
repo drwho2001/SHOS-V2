@@ -415,27 +415,82 @@ const ONBOARDING_SLIDES = [
   { title: "Make it yours", body: "Settings → Design lets you customize each module's colour and switch to dark mode. Long-press (or tap Select) on any list to archive, delete, or export several records at once." },
 ];
 
-// ADDED — real ask: the app icon's own pulse mark, redrawn as inline
-// SVG (crisp at any size, unlike a raster asset) — same path/colors
-// the icon assets use (see the icon-regeneration notes), so Onboarding's
-// first "Welcome to SHOS" slide actually carries the brand mark instead
-// of being bare text.
+// CHANGED — third real correction on this glyph. Prior passes fixed
+// scale, then (from a user-supplied reference screenshot) the actual 5
+// icons and their proportions — but still had 3 real problems the user
+// caught: (1) the mini icons were hand-drawn approximations, not the
+// app's own Phosphor icons; (2) the pulse line used sharp angular
+// bumps everywhere, when a real ECG trace's P wave and T wave are
+// smooth rounded curves — only the QRS complex (the tall spike) is
+// genuinely sharp/angular; (3) the node dots sat centered ON the
+// line's own peaks, so the stroke visually pierced through each
+// circle; (4) the line's gradient (blue→purple→orange) read as an
+// Instagram-logo gradient, not a rainbow.
+//
+// Fixed here: mini icons are the EXACT "fill"-weight path data from
+// this project's own @phosphor-icons/react package (Users, Heart,
+// Stethoscope, Pill, Microscope — copied straight from
+// node_modules/@phosphor-icons/react/dist/defs/*.es.js, each icon's
+// own 256x256 viewBox, scaled+recentered per node) — not redrawn by
+// hand. The path is now P wave (smooth Q-curve bump) → QRS (sharp L
+// zigzag) → T wave (smooth Q-curve bump), real ECG terminology and
+// real ECG shape. Each dot is offset clear of its peak (a real gap,
+// not touching the stroke) instead of centered on it. The gradient is
+// the actual 6-stripe Pride flag palette (red/orange/yellow/green/
+// blue/violet), not a 3-stop warm gradient.
 function PulseLogo({ size = 120 }) {
+  const ICON_COLOR = "#0A6466";
+  // Verbatim "fill"-weight `d` attributes from this repo's own
+  // @phosphor-icons/react package, 256x256 viewBox each.
+  const PHOSPHOR_FILL = {
+    users: "M164.47,195.63a8,8,0,0,1-6.7,12.37H10.23a8,8,0,0,1-6.7-12.37,95.83,95.83,0,0,1,47.22-37.71,60,60,0,1,1,66.5,0A95.83,95.83,0,0,1,164.47,195.63Zm87.91-.15a95.87,95.87,0,0,0-47.13-37.56A60,60,0,0,0,144.7,54.59a4,4,0,0,0-1.33,6A75.83,75.83,0,0,1,147,150.53a4,4,0,0,0,1.07,5.53,112.32,112.32,0,0,1,29.85,30.83,23.92,23.92,0,0,1,3.65,16.47,4,4,0,0,0,3.95,4.64h60.3a8,8,0,0,0,7.73-5.93A8.22,8.22,0,0,0,252.38,195.48Z",
+    heart: "M240,102c0,70-103.79,126.66-108.21,129a8,8,0,0,1-7.58,0C119.79,228.66,16,172,16,102A62.07,62.07,0,0,1,78,40c20.65,0,38.73,8.88,50,23.89C139.27,48.88,157.35,40,178,40A62.07,62.07,0,0,1,240,102Z",
+    stethoscope: "M240,160a32,32,0,1,0-39.93,31,8,8,0,0,0-.07,1,32,32,0,0,1-32,32H144a32,32,0,0,1-32-32V151.48c31.47-4,56-31.47,56-64.31V40a8,8,0,0,0-8-8H136a8,8,0,0,0,0,16h16V87.17c0,26.58-21.25,48.49-47.36,48.83A48,48,0,0,1,56,88V48H72a8,8,0,0,0,0-16H48a8,8,0,0,0-8,8V88a64,64,0,0,0,56,63.49V192a48.05,48.05,0,0,0,48,48h24a48.05,48.05,0,0,0,48-48,8,8,0,0,0-.07-1A32,32,0,0,0,240,160Zm-32,8a8,8,0,1,1,8-8A8,8,0,0,1,208,168Z",
+    pill: "M216.43,39.6a53.27,53.27,0,0,0-75.33,0L39.6,141.09a53.26,53.26,0,0,0,75.32,75.31L216.43,114.91A53.32,53.32,0,0,0,216.43,39.6Zm-11.32,64-50.75,50.74-52.69-52.68,50.75-50.75a37.26,37.26,0,0,1,52.69,52.69ZM189.68,82.34a8,8,0,0,1,0,11.32l-24,24a8,8,0,1,1-11.31-11.32l24-24A8,8,0,0,1,189.68,82.34Z",
+    microscope: "M232,216a8,8,0,0,1-8,8H32a8,8,0,0,1,0-16H181.25A72,72,0,0,0,144,80.46V136a16,16,0,0,1-16,16H80a16,16,0,0,1-16-16V32A16,16,0,0,1,80,16h48a16,16,0,0,1,16,16V64.37A88.05,88.05,0,0,1,203.94,208H224A8,8,0,0,1,232,216Zm-96-32a8,8,0,0,0,0-16H72a8,8,0,0,0,0,16Z",
+  };
+  // CHANGED — user feedback on the previous pass: the 6-stripe Pride
+  // flag gradient read as "too LGBT" — they want the blue/purple/
+  // orange scheme from their own reference photo (closer to
+  // Messenger's gradient), not a literal flag. And the dots floated
+  // too far from their peaks, disconnected from the pulse line rather
+  // than reading as badges marking it — pulled back to a small,
+  // deliberate offset (just enough that the stroke doesn't visibly
+  // pierce the white circle) instead of the earlier large jump.
+  // Each dot offset just clear of its own peak/trough point — order
+  // matches the pulse line left-to-right: Users beside the P wave,
+  // Heart above the QRS spike, Stethoscope beside the T wave, Pill and
+  // Microscope flanking the trough.
+  const NODES = [
+    { x: 11.3, y: 7.3, icon: "users" },
+    { x: 26, y: -1.4, icon: "heart" },
+    { x: 43.4, y: 5.4, icon: "stethoscope" },
+    { x: 25.5, y: 42.2, icon: "pill" },
+    { x: 32.5, y: 42.2, icon: "microscope" },
+  ];
+  const DOT_R = 2.8;
+  const ICON_SCALE = 3.6 / 256; // Phosphor's 256x256 box -> ~3.6-unit icon, fits inside DOT_R with a ring margin.
   return (
-    <svg width={size} height={size * 0.9} viewBox="0 0 100 90" fill="none" aria-hidden="true">
+    <svg width={size} height={size * (50 / 60)} viewBox="0 -4 60 50" fill="none" aria-hidden="true">
       <defs>
-        <linearGradient id="shosPulseGradient" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse">
+        {/* Blue -> purple -> orange, matching the user's own reference
+            icon (a Messenger-style gradient), not a literal Pride flag. */}
+        <linearGradient id="shosPulseGradient" x1="0" y1="0" x2="60" y2="0" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#4C6FE8" />
           <stop offset="50%" stopColor="#964FD6" />
           <stop offset="100%" stopColor="#E8834C" />
         </linearGradient>
       </defs>
-      <polyline points="0,55 10,55 16,38 22,55 30,55 36,4 39.5,55 43,86 47,55 56,55 65,34 74,55 86,55 100,45"
-        stroke="url(#shosPulseGradient)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="16" cy="38" r="5.5" fill="#FFFFFF" stroke="#4C6FE8" strokeWidth="2" />
-      <circle cx="36" cy="4" r="5.5" fill="#FFFFFF" stroke="#964FD6" strokeWidth="2" />
-      <circle cx="43" cy="86" r="5.5" fill="#FFFFFF" stroke="#964FD6" strokeWidth="2" />
-      <circle cx="65" cy="34" r="5.5" fill="#FFFFFF" stroke="#E8834C" strokeWidth="2" />
+      {/* P wave (smooth) - flat - QRS complex (sharp) - flat - T wave
+          (smooth) - flat, real ECG shape/terminology. */}
+      <path d="M 1.8,24.7 L 6,24.7 Q 10,10 14,24.7 L 18,24.7 L 22,24.7 L 26,1.8 L 29,39.7 L 32,24.7 L 37,24.7 Q 46,8 52,24.7 L 57.8,24.7"
+        stroke="url(#shosPulseGradient)" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+      {NODES.map((n) => (
+        <g key={n.icon} transform={`translate(${n.x},${n.y})`}>
+          <circle cx="0" cy="0" r={DOT_R} fill="#FFFFFF" stroke={ICON_COLOR} strokeWidth="0.9" />
+          <path transform={`scale(${ICON_SCALE}) translate(-128,-128)`} fill={ICON_COLOR} d={PHOSPHOR_FILL[n.icon]} />
+        </g>
+      ))}
     </svg>
   );
 }
@@ -458,12 +513,15 @@ function OnboardingScreen({ onFinish }) {
             just be noise. */}
         {step === 0 && (
           <>
-            <PulseLogo size={130} />
+            <PulseLogo size={145} />
             {/* Same pairing as the app's own icon (pulse mark + "SHOS"
                 wordmark) — "Welcome" below names THIS screen without
                 repeating "SHOS" a second time (the duplicate-text
-                mistake just fixed in Contacts' own header). */}
-            <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: 1, color: "#FFFFFF", marginTop: 10 }}>SHOS</div>
+                mistake just fixed in Contacts' own header). fontSize
+                tuned against PulseLogo's own height for a ~3.3:1
+                pulse-height:text-height ratio, matching the real
+                reference icon (see PulseLogo's own comment). */}
+            <div style={{ fontSize: 43, fontWeight: 800, letterSpacing: 1, color: "#FFFFFF", marginTop: 10 }}>SHOS</div>
           </>
         )}
         <div style={{ ...(step === 0 ? { fontSize: 16, fontWeight: 700 } : TYPE.screenTitle), color: "#FFFFFF", marginTop: step === 0 ? 18 : 0, marginBottom: 14 }}>
