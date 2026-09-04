@@ -468,6 +468,33 @@ this date; summarized here for durability.
   Full smoke-test suite passes, including the Testing<->Symptom Log
   link flow, which directly exercises this file's own linkedSymptoms/
   unlinkedSymptoms conversion.
+  `SHOS_ClinicVisits_Prototype.jsx` (10 sites) converted next, and
+  turned up a THIRD grep-methodology gap: `allSymptomLogEntries`/
+  `allVaccinations` use `useMemo` split across multiple lines
+  (`useMemo(\n () => ..., \n [])`), invisible to the single-line
+  `"useMemo(() =>"` grep this whole audit has been running. Swept every
+  other module for the same shape (`grep -rn "useState($\|useMemo($"`):
+  2 more matches, both harmless (Contacts' `contactableViaOptions` is a
+  pure computation over an already-in-scope variable, not a repository
+  call itself; Healthcare's `subTab` is a plain ternary on a prop, not
+  even a real lazy initializer) — isolated to this one file again, not
+  systemic, but the THIRD time this audit's own grep has missed a real
+  site (bare function references in Encounters, now multi-line calls
+  here). Worth a quick visual scan of each remaining file for `useMemo(`/
+  `useState(` with a bare trailing `(`, not just trusting the grep.
+  Otherwise a clean batch: `ClinicianField`'s/`ClinicVisitLocationField`'s
+  `known`, `VisitEditSheet`'s `reasonForVisitOptions`/`followUpTypeOptions`/
+  `allTests`/`allMeds`/`allSymptoms`/`allSymptomLogEntries`/
+  `allVaccinations`, and the top-level `visits` are all plain swaps
+  (`VisitEditSheet`'s own `form` initializer stays untouched, same
+  render-body-`existing`-const shape as Testing/Vaccinations).
+  `VisitDetail`'s `visit`/`measurements` got the same real `[visitId]`
+  deps fix as Testing's `test`/`measurements` (same latent-staleness
+  risk, same "not remounted via a key prop" shape). Verified live
+  against real seed data (Visit Detail's full clinician/location/linked
+  tests/medications/symptoms; Edit sheet's clinician chips and
+  reason/follow-up option chips) — no page errors. Full smoke-test
+  suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
