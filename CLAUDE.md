@@ -175,7 +175,7 @@ oversight.
   for a change that "looks safe" — several real bugs this session
   only surfaced that way, not from reading the diff.
 
-## Known issues (as of 3 Sep 2026 — update this section as things change)
+## Known issues (as of 4 Sep 2026 — update this section as things change)
 
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
@@ -200,10 +200,61 @@ this date; summarized here for durability.
   for a missed tap.
 - **App icon is unfinished** — a direction was picked (2 Sep) but real
   vector assets weren't produced yet as of this writing.
+- **"Export backup to a folder" doesn't actually write the file on
+  native Android** — confirmed 4 Sep by reading
+  `@capawesome/capacitor-file-picker`'s own Android source directly.
+  `pickDirectory()` returns a Storage Access Framework tree URI, not a
+  filesystem path; this plugin has no `createDocument`-equivalent
+  method to mint a real, writable document inside that tree, so the
+  feature is built on a capability that doesn't exist in this
+  dependency. The failure no longer masquerades as a silent
+  "cancelled" (fixed 4 Sep), but the underlying write still can't
+  succeed. Needs a decision: drop the feature (Share-sheet export +
+  the automatic Documents-folder copy both already work) or swap in a
+  plugin that actually supports SAF document creation — either way,
+  needs confirming on a real Android device, which this environment
+  can't do.
 - Registry-entry merge, per-value icons within a registry, and a true
   no-code schema editor are deliberate scope cuts, not gaps — don't
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
+
+## Recently shipped (4 Sep 2026 — see Notion for full detail)
+
+First session developing directly on `main` rather than a feature
+branch, per the owner's own instruction (the prior session's PR #2 had
+already been merged, and there's no dedicated code-reviewer for this
+solo project — a branch/PR step was pure overhead). Two new Resources
+categories (Menstruation & menopause, Abortion & pregnancy loss) —
+6 UK organisations, every non-NHS URL/phone number verified via live
+web search, not assumed from the owner's own typed text (caught one
+real near-miss: "Miscarriage UK" is the current live branding of what
+used to be The Miscarriage Association, not a different org). Three
+real bug reports investigated and two fixed outright: "Snooze 30 min"
+never actually dismissed any of the 4 due-reminder banners (due-meds/
+refill/testing/clinic-visit) — root cause was that every handleSnoozeX()
+only ever rescheduled the native OS notification, never persisting a
+fact the in-app due-check itself read, so the same due state reappeared
+a moment later; fixed with a `snoozedUntil`-style persisted fact
+mirroring `skippedUntil`/`pausedUntil`, patterns this codebase had
+already proven out elsewhere. Global Search's 30-result cap was
+applying BEFORE sorting, on raw index push order (Contacts always
+pushed before Encounters) — a query matching 30+ Contacts could
+silently cut a genuinely relevant, recent Encounter out of results
+entirely; fixed by sorting first, then capping. "Export backup to a
+folder" doesn't actually save was root-caused by reading
+`@capawesome/capacitor-file-picker`'s own Android source directly:
+`pickDirectory()` returns a Storage Access Framework tree URI, not a
+filesystem path, and naively concatenating a filename onto it (the
+existing code) never identified a real, writable document — this
+plugin has no `createDocument`-equivalent method, so the feature is
+built on a capability that doesn't exist. Not fixable without either
+removing the feature or swapping the plugin (needs real-device
+verification this environment can't do) — fixed the silent-failure
+symptom (a real write failure now reports as a real error instead of
+being masked as a harmless "cancelled") and left the underlying
+decision with the owner. All fixes verified live via Playwright except
+the export one (build + source-reading only, honestly flagged as such).
 
 ## Recently shipped (3 Sep 2026, third session, continued — see Notion for full detail)
 
