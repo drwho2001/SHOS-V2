@@ -42,32 +42,51 @@ async function getPlugins() {
 // folder) but neither lets the user actually PICK a folder — this is
 // that missing piece, via Android's real Storage Access Framework
 // folder picker.
-let FilePicker = null;
-let filePickerLoadAttempted = false;
-// FIXED — real bug found live-debugging notifications on a real device
-// (chrome://inspect showed "FilePicker.then() is not implemented on
-// android" as an uncaught rejection): this used to `return FilePicker;`
-// — the bare Capacitor plugin proxy — as an async function's own
-// return value. Returning ANY value from an async function runs it
-// through Promise resolution, which checks `typeof value.then ===
-// "function"` to decide if it's "thenable" — and a Capacitor plugin
-// proxy intercepts EVERY property access as a potential native call,
-// so probing `.then` gets treated as a real call to a method literally
-// named "then", which isn't implemented, and the whole promise this
-// function returns rejects, uncaught, before any caller's own error
-// handling ever runs. Same root cause, same fix, as
-// notificationService.js's getPlugin() — never let the raw proxy be a
-// promise's resolved value; wrap it.
-async function getFilePickerPlugin() {
-  if (filePickerLoadAttempted) return { plugin: FilePicker };
-  filePickerLoadAttempted = true;
+//
+// SWAPPED 4 Sep 2026 — real bug found and root-caused (see this
+// file's own git history / CLAUDE.md Known Issues): the plugin used
+// here before this, @capawesome/capacitor-file-picker, exposes
+// pickDirectory() (a SAF tree picker) but no way to actually create a
+// new writable document inside that tree — confirmed by reading its
+// own Android source directly. Its copyFile() only opens a
+// ContentResolver stream to a URI it's handed; it never calls
+// DocumentsContract.createDocument() (or the AndroidX DocumentFile
+// wrapper around it) first, so a URI built by string-concatenating a
+// filename onto the tree URI was never a real document and every
+// write silently failed. @daniele-rolli/capacitor-scoped-storage was
+// chosen as the replacement after reading ITS Android source directly
+// too (not just its README) — its writeFile() genuinely does the
+// missing step: DocumentFile.fromTreeUri(...).createFile(mime, name)
+// before opening the output stream, the correct, standard AndroidX
+// primitive for minting a new SAF document. It's a young, small
+// package (v0.1.0 at the time of this swap, single maintainer) — a
+// real, disclosed maturity risk this project's own "verify a write
+// actually landed" standard doesn't let slide on trust alone, but the
+// actual write path was read and verified line-by-line, not assumed
+// from its docs, and its 3 open issues at the time (readFileInChunks
+// request, an absolute-URI edge case in resolveFile, a readdir/stat
+// shape mismatch) don't touch the pickFolder+writeFile path this
+// feature uses. Still genuinely needs confirming end-to-end on a real
+// device — this environment can't do that — same honest limit as
+// before the swap.
+let ScopedStorage = null;
+let scopedStorageLoadAttempted = false;
+// Same "never let the raw Capacitor plugin proxy be a promise's
+// resolved value" wrapping as every other native-plugin loader in
+// this project (see notificationService.js's own getPlugin()) —
+// returning the bare proxy directly from an async function makes
+// Promise resolution probe its `.then` property, which the proxy
+// treats as a real (unimplemented) native call and rejects on.
+async function getScopedStoragePlugin() {
+  if (scopedStorageLoadAttempted) return { plugin: ScopedStorage };
+  scopedStorageLoadAttempted = true;
   try {
-    const mod = await import("@capawesome/capacitor-file-picker");
-    FilePicker = mod.FilePicker;
+    const mod = await import("@daniele-rolli/capacitor-scoped-storage");
+    ScopedStorage = mod.ScopedStorage;
   } catch {
-    console.warn("[fileExportHelper] @capawesome/capacitor-file-picker not available — 'choose a folder' export won't be offered in this environment.");
+    console.warn("[fileExportHelper] @daniele-rolli/capacitor-scoped-storage not available — 'choose a folder' export won't be offered in this environment.");
   }
-  return { plugin: FilePicker };
+  return { plugin: ScopedStorage };
 }
 
 function downloadInBrowser(filename, contents, mimeType) {
@@ -143,23 +162,14 @@ export async function exportTextFile(filename, contents, mimeType = "text/plain"
 // native plugin needed. Falls back to a plain download (no folder
 // choice) on a browser without it.
 //
-// On native Android: writes to Cache first (same as exportTextFile
-// above), then opens Android's real Storage Access Framework folder
-// picker via @capawesome/capacitor-file-picker's pickDirectory(), and
-// copies the cached file into whatever folder was chosen.
-//
-// HONEST LIMIT, checked rather than assumed but not fully provable
-// without a real device: pickDirectory() is documented by its own
-// plugin as an IMPORT-flow tool ("select a directory to retrieve all
-// files it contains"), and copyFile()'s own example copies INTO the
-// app's data directory, not out to an arbitrary SAF-picked one. Using
-// the two together to WRITE a new file into a user-picked folder is a
-// combination the plugin's docs don't explicitly walk through or
-// guarantee — it's expected to work (the plugin exposes exactly the
-// pieces this needs, and Android does allow apps to write into a
-// folder tree they were just granted access to), but this is the one
-// part of this feature that genuinely needs confirming on a real
-// device, not just a clean build.
+// On native Android: opens Android's real Storage Access Framework
+// folder picker via @daniele-rolli/capacitor-scoped-storage's
+// pickFolder(), then writes the file directly into that folder with
+// writeFile() — no staging copy through Cache needed, since this
+// plugin writes straight from string data into the picked SAF tree
+// (see this function's own history — the previous plugin needed a
+// Cache-then-copy dance because it never actually created a writable
+// document inside the picked tree at all).
 //
 // Returns { ok: true, path } on success, { ok: false, reason } where
 // reason is "cancelled" (user backed out of the picker — not an
@@ -167,22 +177,16 @@ export async function exportTextFile(filename, contents, mimeType = "text/plain"
 // showSaveFilePicker), or "error" (something else went wrong, `error`
 // carries the original exception for the caller to log/display).
 export async function exportTextFileToChosenFolder(filename, contents, mimeType = "text/plain") {
-  // FIXED — real bug found in Playwright testing: @capawesome/capacitor-
-  // file-picker (like every Capacitor plugin) ships a web JS fallback
-  // that always *imports* successfully even in a plain browser tab, so
-  // checking "did the plugin import OK" can't tell native Android apart
-  // from the GitHub Pages web build — both looked "available". On web
-  // its pickDirectory()/copyFile() aren't implemented and throw, which
-  // this function's own catch block was mistakenly treating as a
-  // harmless user-cancel — silently doing nothing instead of using the
-  // real browser Save-As dialog below. Same isNativePlatform() check
-  // already used by notificationService.js and updateCheckService.js
-  // for this exact native-vs-web-shim distinction.
+  // Same isNativePlatform() check already used by
+  // notificationService.js and updateCheckService.js for the same
+  // native-vs-web-shim distinction — every Capacitor plugin ships a
+  // web JS fallback that always *imports* successfully even in a
+  // plain browser tab, so "did the plugin import OK" alone can't tell
+  // native Android apart from the GitHub Pages web build.
   const { Capacitor } = await import("@capacitor/core");
   const isNative = Capacitor.isNativePlatform();
-  const { Filesystem, Directory, Encoding } = isNative ? await getPlugins() : {};
-  const FilePickerPlugin = isNative ? (await getFilePickerPlugin()).plugin : null;
-  if (!isNative || !Filesystem || !FilePickerPlugin) {
+  const ScopedStoragePlugin = isNative ? (await getScopedStoragePlugin()).plugin : null;
+  if (!isNative || !ScopedStoragePlugin) {
     // Web fallback: a real save dialog if the browser supports it,
     // otherwise this whole feature just isn't offered (the caller
     // checks availability before showing the button — see
@@ -201,44 +205,23 @@ export async function exportTextFileToChosenFolder(filename, contents, mimeType 
     }
     return { ok: false, reason: "unavailable" };
   }
-  const written = await Filesystem.writeFile({ path: filename, data: contents, directory: Directory.Cache, encoding: Encoding.UTF8 });
-  let folderPath;
+  let folder;
   try {
-    ({ path: folderPath } = await FilePickerPlugin.pickDirectory());
+    ({ folder } = await ScopedStoragePlugin.pickFolder());
   } catch (err) {
     // A cancelled system picker throws on some Android versions rather
-    // than resolving with an empty path — treated as a cancel, since
-    // backing out of the dialog is the single most common non-success
-    // outcome and shouldn't read as a scary error. Scoped to ONLY this
-    // call, not the copyFile() below — see that catch's own comment
-    // for why conflating the two used to hide a real, confirmed bug.
+    // than resolving with nothing — treated as a cancel, since backing
+    // out of the dialog is the single most common non-success outcome
+    // and shouldn't read as a scary error.
     console.warn("[fileExportHelper] Folder picker did not complete:", err);
     return { ok: false, reason: "cancelled" };
   }
-  if (!folderPath) return { ok: false, reason: "cancelled" };
-  // FIXED — real bug found live: pickDirectory() returns the picked
-  // folder's own Storage Access Framework TREE uri (e.g.
-  // "content://.../tree/primary%3ADownload"), not a real filesystem
-  // path — naively string-concatenating "/filename" onto it (the
-  // previous code here) does NOT identify a real, writable document
-  // within that tree; Android requires minting one via
-  // DocumentsContract.createDocument() first, which this plugin's own
-  // copyFile() (confirmed by reading its Android source directly —
-  // io.capawesome.capacitorjs.plugins.filepicker.FilePicker.java) does
-  // NOT do — it only opens a ContentResolver output stream to
-  // whatever URI it's given, which fails for a URI that was never
-  // actually created as a document. This previous code's own catch
-  // block then treated THAT failure the same as a cancelled picker,
-  // silently reporting nothing wrong. Confirmed broken on a real
-  // device — surfaced here as a real, honest error instead of a
-  // silent no-op until this plugin (or a different one) actually
-  // supports creating a new document inside a picked SAF tree.
+  if (!folder) return { ok: false, reason: "cancelled" };
   try {
-    const destination = `${folderPath}/${filename}`;
-    await FilePickerPlugin.copyFile({ from: written.uri, to: destination });
-    return { ok: true, path: destination };
+    await ScopedStoragePlugin.writeFile({ folder, path: filename, data: contents, encoding: "utf8", mimeType });
+    return { ok: true, path: `${folder.name || "chosen folder"}/${filename}` };
   } catch (err) {
-    console.error("[fileExportHelper] Writing into the chosen folder failed (see this function's own comment — a known plugin limitation, not a transient error):", err);
+    console.error("[fileExportHelper] Writing into the chosen folder failed:", err);
     return { ok: false, reason: "error", error: err };
   }
 }
@@ -248,8 +231,8 @@ export async function exportTextFileToChosenFolder(filename, contents, mimeType 
 export async function isChooseFolderExportAvailable() {
   const { Capacitor } = await import("@capacitor/core");
   if (Capacitor.isNativePlatform()) {
-    const { plugin: FilePickerPlugin } = await getFilePickerPlugin();
-    if (FilePickerPlugin) return true;
+    const { plugin: ScopedStoragePlugin } = await getScopedStoragePlugin();
+    if (ScopedStoragePlugin) return true;
   }
   return typeof window !== "undefined" && !!window.showSaveFilePicker;
 }

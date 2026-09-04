@@ -18,7 +18,7 @@
     "@capacitor/geolocation": "^8.2.2",
     "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/share": "^8.0.1",
-    "@capawesome/capacitor-file-picker": "^8.0.5",
+    "@daniele-rolli/capacitor-scoped-storage": "^0.1.0",
     "@fontsource/inter": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@phosphor-icons/react": "^2.1.7",

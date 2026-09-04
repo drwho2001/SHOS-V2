@@ -200,20 +200,23 @@ this date; summarized here for durability.
   for a missed tap.
 - **App icon is unfinished** — a direction was picked (2 Sep) but real
   vector assets weren't produced yet as of this writing.
-- **"Export backup to a folder" doesn't actually write the file on
-  native Android** — confirmed 4 Sep by reading
-  `@capawesome/capacitor-file-picker`'s own Android source directly.
-  `pickDirectory()` returns a Storage Access Framework tree URI, not a
-  filesystem path; this plugin has no `createDocument`-equivalent
-  method to mint a real, writable document inside that tree, so the
-  feature is built on a capability that doesn't exist in this
-  dependency. The failure no longer masquerades as a silent
-  "cancelled" (fixed 4 Sep), but the underlying write still can't
-  succeed. Needs a decision: drop the feature (Share-sheet export +
-  the automatic Documents-folder copy both already work) or swap in a
-  plugin that actually supports SAF document creation — either way,
-  needs confirming on a real Android device, which this environment
-  can't do.
+- **"Export backup to a folder" plugin swapped, still unconfirmed on a
+  real device.** `@capawesome/capacitor-file-picker`'s `pickDirectory()`
+  returned a SAF tree URI with no `createDocument`-equivalent to mint a
+  writable document inside it — confirmed 4 Sep by reading its Android
+  source directly, a capability gap, not a bug in this app's own code.
+  Swapped (4 Sep, owner's explicit call) for
+  `@daniele-rolli/capacitor-scoped-storage`, whose `writeFile()` was
+  verified the same way — read line-by-line, not trusted from its
+  README — and genuinely does the missing step
+  (`DocumentFile.fromTreeUri(...).createFile(...)` before opening the
+  output stream). Real, disclosed risk: v0.1.0, single maintainer, no
+  visible test suite; its 3 open issues at swap time don't touch the
+  pickFolder+writeFile path this feature uses. Builds clean (JS + a
+  green `build-apk.yml` Java compile), but the actual write into a
+  user-picked folder still needs confirming on a real Android device —
+  this environment can't do that, same honest limit as before the
+  swap.
 - Registry-entry merge, per-value icons within a registry, and a true
   no-code schema editor are deliberate scope cuts, not gaps — don't
   rebuild without a real, demonstrated need (see "avoid over-normalisation"

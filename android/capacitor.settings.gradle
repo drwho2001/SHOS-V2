@@ -23,5 +23,5 @@ project(':capacitor-local-notifications').projectDir = new File('../node_modules
 include ':capacitor-share'
 project(':capacitor-share').projectDir = new File('../node_modules/@capacitor/share/android')
 
-include ':capawesome-capacitor-file-picker'
-project(':capawesome-capacitor-file-picker').projectDir = new File('../node_modules/@capawesome/capacitor-file-picker/android')
+include ':daniele-rolli-capacitor-scoped-storage'
+project(':daniele-rolli-capacitor-scoped-storage').projectDir = new File('../node_modules/@daniele-rolli/capacitor-scoped-storage/android')
