@@ -495,6 +495,26 @@ this date; summarized here for durability.
   tests/medications/symptoms; Edit sheet's clinician chips and
   reason/follow-up option chips) — no page errors. Full smoke-test
   suite passes.
+  `SHOS_Measurements_Prototype.jsx` (9 sites) converted next — a clean
+  batch. Plain swaps: `LocationField`'s `knownClinics`,
+  `MeasurementSheet`'s `typeOptions`/`rankedTypeOptions` (both setters
+  reused together in one `onAddNew` handler), `MeasurementDetail`'s `m`
+  (same safe hooks-before-guard shape as everywhere else), `ManageGroupsScreen`'s
+  `groups`, `MeasurementPreferencesSheet`'s `prefs` (fallback
+  `DEFAULT_MEASUREMENT_PREFERENCES` — `prefs.preferredUnitByType` is
+  read unconditionally), the top-level `measurements`, and
+  `allTypesEverUsed`. One judgment call: `MeasurementsLanding`'s
+  `customGroupSections` (calls `CustomGroupsRepository.get()` directly)
+  WAS converted despite depending on `groupMode`/`groupsVersion`,
+  unlike the query-driven `byTypeGroups`/other-modules'-`sorted`-style
+  computations left alone elsewhere — its deps only change on a toggle
+  tap or a group-management action, never per keystroke, so the
+  effect-based reload adds no perceptible lag; this is the actual
+  distinguishing test for "convert vs. leave as plain useMemo," not
+  simply "does it call a repository." Verified live (landing in both
+  "By type" and "By group" modes — the latter correctly renders an
+  UNGROUPED section; an existing entry's detail view) — no page errors.
+  Full smoke-test suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
