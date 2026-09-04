@@ -550,6 +550,22 @@ this date; summarized here for durability.
   real history and correct average-cycle-length calculation, Cycle
   Edit's real Flow suggestion chips. No page errors. Full smoke-test
   suite passes.
+  `SHOS_Contacts_Prototype.jsx` (11 sites, the largest single-file
+  batch so far) converted next — clean, every site a variant of a
+  pattern already established: `LinkedContactsField`'s linkedIds/
+  labels, `ContactEditSheet`'s relationshipTypeOptions/genderOptions/
+  pronounsOptions/contraceptionOptions, `ContactProfile`'s and
+  `ContactsList`'s privacy (fallback `DEFAULT_PRIVACY_SETTINGS`),
+  `ContactsList`'s inactiveThresholdDays (fallback 90, matching
+  `ContactCard`'s own existing default prop) and encounters, and the
+  top-level `contacts`. `ContactProfile`'s own `contact` stays a direct
+  render-body `ContactRepository.getById()` call (not a hook — same
+  shape as Encounters' `RegistrySinglePicker`/Testing's `existing`),
+  confirmed safe against its `if (!contact) return null` guard since
+  every real hook in the component sits before it. Verified live
+  against real seed data (list's real "Last interaction" data; Grace
+  J.'s full profile; its Edit sheet's real Gender/Pronouns chips) — no
+  page errors. Full smoke-test suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
