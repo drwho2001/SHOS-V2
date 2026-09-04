@@ -652,6 +652,98 @@ this date; summarized here for durability.
   `componentDidCatch`), and its raw-`localStorage` read/write only runs
   inside a synchronous button-click handler after a caught render
   error, not a render-time hook. Full smoke-test suite passes.
+  Scoped the next tier — making `storageAdapter.js`/repositories
+  genuinely async — before touching it. Real inventory: 22 repository
+  files cache data at module-load time (`let x = storage.load(key,
+  seed)`, evaluated once at import); 5 repository files
+  (`customGroupsRepository`/`measurementPreferencesRepository`/
+  `medicationPreferencesRepository`/`moduleColorRepository`/
+  `trashRepository`) read fresh inside each method call, no caching;
+  `simpleRegistry.js`'s `createSimpleRegistry()` factory (backing
+  Kink/Protection/Chems/Symptoms registries) uses the same
+  module-load-cached pattern as the hard 22, so `kinkRegistry.js`/
+  `protectionRegistry.js` belong with that harder bucket despite
+  looking simple at a glance — each also has its own top-level
+  `if (!storage.load(FLAG_KEY, false)) {...}` migration-flag side
+  effect that runs at import time, a THIRD real pattern beyond the
+  other two. `designTokens.js` (a calculations file, not a repository)
+  has its own separate module-load-time call into
+  `ModuleColorRepository.getOverrides()` to build the `ACCENTS` object
+  every module imports — so `ModuleColorRepository` ALSO isn't safe to
+  convert in isolation despite having no caching of its own; the risk
+  lives in a caller, not the repository file itself. Real constraint
+  found before writing any code: `storageAdapter.js`'s `load`/`save`
+  can't be converted incrementally at all — the moment they return a
+  Promise, every repository that doesn't yet `await` them breaks
+  instantly (returns a Promise object instead of real data). The fix:
+  a repository's own methods go `async` FIRST (with a harmless
+  `await storage.load/save(...)` on the still-100%-synchronous
+  adapter — `await` on a plain value is a no-op), proving the full
+  "repo goes async, every caller adapts" pattern end-to-end without
+  needing `storageAdapter.js` to change at all yet; its own real
+  conversion (and eventually real `crypto.subtle` encryption) is later,
+  separate work once every repository already expects it.
+  `useLoadedState`/`useLoadedMemo` (`loadedRepositoryState.js`) updated
+  first — now `await`s the loader inside the effect (with a
+  `cancelled` guard) instead of assigning its return value directly,
+  a no-op today but what lets a repository's methods start returning
+  real Promises later with zero further change needed at any of the
+  ~100 existing call sites, PROVIDED the loader itself doesn't chain a
+  synchronous operation onto the repo call. Audited for exactly that
+  and found 17 real sites across 11 module files doing
+  `useLoadedMemo(() => Repo.getAll().filter(...).sort(...), ...)` —
+  these WILL break once their repo goes async (`.filter` doesn't exist
+  on a Promise, throwing before the hook ever gets to await anything).
+  All 17 sites belong to repositories in the hard 22-file bucket, so
+  fixing them now (before their own repo converts) would be
+  speculative churn — deliberately left alone for now, to be split
+  into a raw load + a separate derived `useMemo` as part of THAT
+  specific repository's own future conversion, not as a standalone
+  pass.
+  `CustomGroupsRepository` converted first, chosen specifically because
+  every one of its methods already reads/writes fresh per-call (no
+  caching redesign needed) — the smallest genuine full proof of the
+  pattern. Its own caller chain turned out to reach much further than
+  expected: `backupService.js`'s `buildBackup()`/`restoreBackup()` call
+  it directly, and `buildBackup()` itself has its own deep internal
+  chain (`hasUnbackedChanges()` → `getLastBackupInfo()` →
+  `isAutoExportDue()` → `runAutoExportIfDue()`, plus
+  `exportBackup()`/`exportBackupToChosenFolder()`/
+  `buildEncryptedBackup()`/`restoreFromParsedBackup()`) — all converted
+  to `async`/`await` in the same change, tracing every caller out to
+  its real edge. Two real findings along the way: (1) Settings'
+  `DeveloperToolsScreen` called `hasUnbackedChanges()` directly in its
+  render body (`{hasUnbackedChanges() && (...)}`) — a Promise is always
+  truthy, so this would have shown the "unbacked changes" warning
+  permanently once the function went async; fixed with a
+  `useLoadedMemo`. (2) `App.jsx`'s `finishImport` called
+  `restoreFromParsedBackup(...)` without awaiting it, then immediately
+  called `window.location.reload()` — once that call became async,
+  the reload could fire before the restore actually finished writing
+  data; fixed by awaiting it first. Every other caller (Home's
+  `getLastBackupInfo()`/`runAutoExportIfDue()`, Settings' CSV/encrypted
+  export buttons) was already either behind `useLoadedState` (handled
+  automatically by the hook fix above) or already properly `await`ed.
+  `SHOS_Measurements_Prototype.jsx`'s 6 direct `CustomGroupsRepository`
+  call sites fixed: `customGroupSections`' loader made `async` (it does
+  real post-processing on the result, not a bare passthrough);
+  `ManageGroupsScreen`'s `refresh`/`createGroup`/delete/setMemberGroup
+  handlers all made `async` with real `await`s — these directly called
+  `setGroups(CustomGroupsRepository.get(...))` and fire-and-forget
+  `create()`/`delete()`/`setMemberGroup()` calls, which would have set
+  state to a raw Promise or raced the actual write once real async
+  latency exists. Verified live end-to-end, all in one continuous
+  browser session (a fresh `chromium.launch()` per script starts with
+  empty storage, which cost some debugging time before realizing it):
+  create → real `localStorage` write confirmed; member-toggle → same;
+  delete → same; "By group" read view renders real UNGROUPED sections
+  correctly; a real Export backup produces a valid, parseable JSON file
+  with no stray `"[object Promise]"`/Promise-shaped values anywhere in
+  it; a real Restore from backup (Replace All) correctly lands real
+  data (8 contacts, etc.) with no page errors; Developer Tools' reset
+  confirmation correctly shows the real unbacked-changes warning
+  (true, accurately, right after a restore). No page errors anywhere.
+  Full smoke-test suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

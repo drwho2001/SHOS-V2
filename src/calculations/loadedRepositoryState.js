@@ -43,7 +43,22 @@ import { useState, useEffect } from "react";
 export function useLoadedState(loader, deps, fallback) {
   const [value, setValue] = useState(fallback);
   useEffect(() => {
-    setValue(loader());
+    // CHANGED — real groundwork step: awaiting loader()'s result (rather
+    // than assigning it directly) is a no-op for every call site today,
+    // since every repository is still 100% synchronous — `await` on a
+    // plain value just resolves immediately. This is what actually lets
+    // a repository's methods start returning real Promises later,
+    // repository-by-repository, with zero further change needed at any
+    // of this hook's ~100 call sites. `cancelled` guards against setting
+    // state after this effect's own cleanup (deps changed, or unmount)
+    // — harmless today (nothing is ever actually async yet), becomes a
+    // real guard once a loader can take real time to resolve.
+    let cancelled = false;
+    (async () => {
+      const result = await loader();
+      if (!cancelled) setValue(result);
+    })();
+    return () => { cancelled = true; };
     // deps is caller-supplied and intentionally the only real
     // dependency — loader is a fresh closure every render by design,
     // matching how the useMemo/useState call sites this replaces

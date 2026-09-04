@@ -241,7 +241,14 @@ function sanitizePrivacySettingsForPlainExport(settings) {
   return rest;
 }
 
-export function buildBackup(includeKeys = null, dateRange = null, { redactSecrets = true } = {}) {
+// CHANGED — real groundwork for encryption at rest: async now because
+// it awaits CustomGroupsRepository (converted first as the real
+// end-to-end proof of the repo-goes-async pattern — see
+// customGroupsRepository.js's own comment). Every other repository
+// call here is still fully synchronous and stays exactly as written —
+// calling a synchronous function inside an async one works unchanged,
+// no `await` needed until that specific repository converts too.
+export async function buildBackup(includeKeys = null, dateRange = null, { redactSecrets = true } = {}) {
   const allData = {
     contacts: ContactRepository.getAll(),
     medications: MedicationRepository.getAll(),
@@ -265,7 +272,7 @@ export function buildBackup(includeKeys = null, dateRange = null, { redactSecret
     contraception: ContraceptionRepository.getAll(),
     pregnancies: PregnancyRepository.getAll(),
     measurementPreferences: MeasurementPreferencesRepository.getPreferences(),
-    customGroups: CustomGroupsRepository.getAllForBackup(),
+    customGroups: await CustomGroupsRepository.getAllForBackup(),
     customOptionLists: CustomOptionListsRepository.getAllForBackup(),
     privacySettings: redactSecrets
       ? sanitizePrivacySettingsForPlainExport(PrivacySettingsRepository.getSettings())
@@ -359,7 +366,7 @@ export function verifyBackupJson(backup, json) {
 // UI now asks which one you want before either runs, since silently
 // wiping everything with no confirmation was a real gap on its own,
 // separate from merge existing at all.
-export function restoreBackup(parsedBackup) {
+export async function restoreBackup(parsedBackup) {
   const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies } = parsedBackup.data;
   if (Array.isArray(contacts)) ContactRepository.replaceAll(contacts);
   if (Array.isArray(medications)) MedicationRepository.replaceAll(medications);
@@ -384,7 +391,7 @@ export function restoreBackup(parsedBackup) {
   if (Array.isArray(contraception)) ContraceptionRepository.replaceAll(contraception);
   if (Array.isArray(pregnancies)) PregnancyRepository.replaceAll(pregnancies);
   if (measurementPreferences && typeof measurementPreferences === "object") MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
-  if (customGroups && typeof customGroups === "object") CustomGroupsRepository.replaceAll(customGroups);
+  if (customGroups && typeof customGroups === "object") await CustomGroupsRepository.replaceAll(customGroups);
   if (customOptionLists && typeof customOptionLists === "object") CustomOptionListsRepository.replaceAll(customOptionLists);
   if (privacySettings && typeof privacySettings === "object") PrivacySettingsRepository.update(privacySettings);
   if (resources && typeof resources === "object") ResourcesRepository.replaceAll(resources);
@@ -505,11 +512,11 @@ function getLastBackupTimestamp() {
   return storage.load(LAST_BACKUP_KEY, null);
 }
 
-export function getLastBackupInfo() {
+export async function getLastBackupInfo() {
   const lastAt = getLastBackupTimestamp();
-  if (!lastAt) return { lastAt: null, daysSince: null, dueForReminder: hasUnbackedChanges() };
+  if (!lastAt) return { lastAt: null, daysSince: null, dueForReminder: await hasUnbackedChanges() };
   const daysSince = Math.floor((Date.now() - new Date(lastAt).getTime()) / 86400000);
-  return { lastAt, daysSince, dueForReminder: daysSince >= BACKUP_REMINDER_DAYS && hasUnbackedChanges() };
+  return { lastAt, daysSince, dueForReminder: daysSince >= BACKUP_REMINDER_DAYS && (await hasUnbackedChanges()) };
 }
 
 // ADDED 26 Aug 2026 — real ask: "warn if not exported backup since
@@ -524,11 +531,11 @@ export function getLastBackupInfo() {
 // reads rather than a second, separately-maintained list of every
 // repository — if a new data type is ever added to backups, this
 // check picks it up automatically too.
-export function hasUnbackedChanges() {
+export async function hasUnbackedChanges() {
   const lastAt = getLastBackupTimestamp();
   if (!lastAt) return true; // never backed up at all
   const lastBackupTime = new Date(lastAt).getTime();
-  const { data } = buildBackup(null);
+  const { data } = await buildBackup(null);
   for (const [moduleKey, value] of Object.entries(data)) {
     const records = Array.isArray(value) ? value : [value];
     for (const record of records) {
@@ -548,7 +555,7 @@ export function hasUnbackedChanges() {
 }
 
 export async function exportBackup(includeKeys = null, dateRange = null) {
-  const backup = buildBackup(includeKeys, dateRange);
+  const backup = await buildBackup(includeKeys, dateRange);
   const json = JSON.stringify(backup, null, 2);
   // ADDED — real ask: verify before handing off, not after — see
   // verifyBackupJson()'s own comment for exactly what this can and
@@ -575,7 +582,7 @@ export async function exportBackup(includeKeys = null, dateRange = null) {
 // way the fire-and-forget Share-sheet version can (the OS dialog
 // itself is that version's feedback; this one has none built in).
 export async function exportBackupToChosenFolder(includeKeys = null, dateRange = null) {
-  const backup = buildBackup(includeKeys, dateRange);
+  const backup = await buildBackup(includeKeys, dateRange);
   const json = JSON.stringify(backup, null, 2);
   // ADDED — real ask: same round-trip verification as exportBackup()
   // above, before this one's own write.
@@ -597,12 +604,12 @@ export async function exportBackupToChosenFolder(includeKeys = null, dateRange =
 // already covering them. Also reuses hasUnbackedChanges() unchanged —
 // no point silently writing an identical file with nothing new in it
 // every time the interval ticks over.
-export function isAutoExportDue() {
+export async function isAutoExportDue() {
   const prefs = AppPreferencesRepository.getPreferences();
   if (!prefs.autoExportEnabled) return false;
-  const { lastAt, daysSince } = getLastBackupInfo();
+  const { lastAt, daysSince } = await getLastBackupInfo();
   if (!lastAt) return true; // never backed up at all — due immediately
-  return daysSince >= prefs.autoExportIntervalDays && hasUnbackedChanges();
+  return daysSince >= prefs.autoExportIntervalDays && (await hasUnbackedChanges());
 }
 
 // The one function callers actually use — call unconditionally on app
@@ -616,8 +623,8 @@ export function isAutoExportDue() {
 // (writeTextFileSilently) — see that function's own comment for why a
 // popup dialog on app load would be the wrong UX here.
 export async function runAutoExportIfDue() {
-  if (!isAutoExportDue()) return { ran: false };
-  const backup = buildBackup(null);
+  if (!(await isAutoExportDue())) return { ran: false };
+  const backup = await buildBackup(null);
   const json = JSON.stringify(backup, null, 2);
   const dateStamp = new Date().toISOString().slice(0, 10);
   const ok = await writeTextFileSilently(`shos-backup-${dateStamp}-auto.json`, json, "application/json");
@@ -679,7 +686,7 @@ export async function buildEncryptedBackup(password, includeKeys = null, dateRan
   // own comment above buildBackup(). This whole envelope is already
   // password-gated, so the real App Lock PIN can safely travel through
   // here and come back intact on restore, unlike the plain path.
-  const backup = buildBackup(includeKeys, dateRange, { redactSecrets: false });
+  const backup = await buildBackup(includeKeys, dateRange, { redactSecrets: false });
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveBackupKey(password, salt);
@@ -777,6 +784,6 @@ export async function inspectBackupFile(file) {
 // final step for both the plain and encrypted import paths, so
 // there's exactly one place that decides what "replace" vs "merge"
 // actually does.
-export function restoreFromParsedBackup(parsed, mode = "replace") {
-  if (mode === "merge") mergeBackup(parsed); else restoreBackup(parsed);
+export async function restoreFromParsedBackup(parsed, mode = "replace") {
+  if (mode === "merge") mergeBackup(parsed); else await restoreBackup(parsed);
 }

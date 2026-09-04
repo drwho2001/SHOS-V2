@@ -567,6 +567,12 @@ function DeveloperToolsScreen({ onClose }) {
   // checker.
   const orphans = useLoadedMemo(() => findOrphanReferences(), [], []);
   const [showOrphans, setShowOrphans] = useState(false);
+  // ADDED — real groundwork for encryption at rest: hasUnbackedChanges()
+  // is now async (see backupService.js's own comment), so this can no
+  // longer be called straight in the render body below — a Promise is
+  // always truthy, so `{hasUnbackedChanges() && (...)}` would render
+  // the warning permanently, regardless of the real answer.
+  const unbackedChanges = useLoadedMemo(() => hasUnbackedChanges(), [], false);
   const counts = [
     { label: "Contacts", value: ContactRepository.getAll().length },
     { label: "Encounters", value: EncounterRepository.getAll().length },
@@ -681,7 +687,7 @@ function DeveloperToolsScreen({ onClose }) {
                 are genuinely unbacked-up changes, not just a generic
                 "back up first" reminder every time regardless of
                 whether anything's actually at risk. */}
-            {hasUnbackedChanges() && (
+            {unbackedChanges && (
               <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12, padding: "10px 12px", borderRadius: 10, background: `${ACTION.red}15`, border: `1px solid ${ACTION.red}` }}>
                 <AlertTriangle size={14} color={ACTION.red} style={{ flexShrink: 0, marginTop: 2 }} />
                 <div style={{ fontSize: 12, color: ACTION.red, fontWeight: 600 }}>You have changes since your last backup that would be lost. Export a backup before continuing.</div>

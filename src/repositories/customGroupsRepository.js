@@ -22,11 +22,23 @@ import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 
 const STORAGE_KEY = "shos_custom_groups";
 
-function loadAll() {
-  return storage.load(STORAGE_KEY, {});
+// CHANGED — real groundwork for encryption at rest (see CLAUDE.md's
+// Known Issues / the Notion Development log for the full plan): every
+// method below is now `async`, `await`ing storage.load()/save() even
+// though storageAdapter itself is still 100% synchronous today — a
+// no-op behaviorally (await on a plain value just resolves
+// immediately), but what lets storageAdapter's own real async/
+// encrypted conversion land later without a second breaking change
+// here. This repository was chosen first for this real end-to-end
+// proof (repo goes async, every real caller across the app adapts)
+// because every read/write already happened fresh inside a function —
+// no module-load-time caching to redesign, unlike most repositories
+// (see loadedRepositoryState.js's own header for the fuller plan).
+async function loadAll() {
+  return await storage.load(STORAGE_KEY, {});
 }
-function saveAll(all) {
-  storage.save(STORAGE_KEY, all);
+async function saveAll(all) {
+  await storage.save(STORAGE_KEY, all);
 }
 function generateId() {
   return `group_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -35,68 +47,68 @@ function generateId() {
 export const CustomGroupsRepository = {
   // Real ask, matching this session's "did you mean" reasoning:
   // returns [{ id, name, members: [string] }] for one domain.
-  get(domain) {
-    return [...(loadAll()[domain] || [])];
+  async get(domain) {
+    return [...((await loadAll())[domain] || [])];
   },
 
-  create(domain, name) {
+  async create(domain, name) {
     const trimmed = (name || "").trim();
     if (!trimmed) return this.get(domain);
-    const all = loadAll();
+    const all = await loadAll();
     const current = all[domain] || [];
     const group = { id: generateId(), name: trimmed, members: [] };
-    saveAll({ ...all, [domain]: [...current, group] });
+    await saveAll({ ...all, [domain]: [...current, group] });
     return group;
   },
 
-  rename(domain, groupId, newName) {
+  async rename(domain, groupId, newName) {
     const trimmed = (newName || "").trim();
     if (!trimmed) return this.get(domain);
-    const all = loadAll();
+    const all = await loadAll();
     const current = all[domain] || [];
     const updated = current.map((g) => (g.id === groupId ? { ...g, name: trimmed } : g));
-    saveAll({ ...all, [domain]: updated });
+    await saveAll({ ...all, [domain]: updated });
     return updated;
   },
 
-  delete(domain, groupId) {
-    const all = loadAll();
+  async delete(domain, groupId) {
+    const all = await loadAll();
     const current = all[domain] || [];
-    saveAll({ ...all, [domain]: current.filter((g) => g.id !== groupId) });
+    await saveAll({ ...all, [domain]: current.filter((g) => g.id !== groupId) });
   },
 
   // A member (e.g. "Testosterone") can only belong to one group at a
   // time within a domain — adding it to a group removes it from any
   // other group in that same domain first, so "which group is this
   // type in" always has one unambiguous answer for the grouped view.
-  setMemberGroup(domain, member, groupId) {
-    const all = loadAll();
+  async setMemberGroup(domain, member, groupId) {
+    const all = await loadAll();
     const current = (all[domain] || []).map((g) => ({
       ...g,
       members: g.id === groupId ? [...g.members.filter((m) => m !== member), member] : g.members.filter((m) => m !== member),
     }));
-    saveAll({ ...all, [domain]: current });
+    await saveAll({ ...all, [domain]: current });
     return current;
   },
 
-  removeMemberFromAllGroups(domain, member) {
-    const all = loadAll();
+  async removeMemberFromAllGroups(domain, member) {
+    const all = await loadAll();
     const current = (all[domain] || []).map((g) => ({ ...g, members: g.members.filter((m) => m !== member) }));
-    saveAll({ ...all, [domain]: current });
+    await saveAll({ ...all, [domain]: current });
     return current;
   },
 
   // Real convenience for a grouped view: which group (if any) a given
   // member currently belongs to.
-  getGroupForMember(domain, member) {
-    return this.get(domain).find((g) => g.members.includes(member)) || null;
+  async getGroupForMember(domain, member) {
+    return (await this.get(domain)).find((g) => g.members.includes(member)) || null;
   },
 
-  getAllForBackup() {
-    return loadAll();
+  async getAllForBackup() {
+    return await loadAll();
   },
 
-  replaceAll(newAll) {
-    saveAll(newAll || {});
+  async replaceAll(newAll) {
+    await saveAll(newAll || {});
   },
 };

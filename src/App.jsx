@@ -1187,8 +1187,8 @@ export default function App() {
     setShowImportModeDialog(false);
     fileInputRef.current?.click();
   };
-  const finishImport = (parsed) => {
-    restoreFromParsedBackup(parsed, importMode);
+  const finishImport = async (parsed) => {
+    await restoreFromParsedBackup(parsed, importMode);
     setStatus(importMode === "merge" ? "Backup merged in — reload the page to see it everywhere." : "Backup restored — reload the page to see it everywhere.");
     window.location.reload();
   };
@@ -1210,7 +1210,7 @@ export default function App() {
       if (result.encrypted) {
         setPendingEncryptedEnvelope(result.envelope);
       } else {
-        finishImport(result.parsed);
+        await finishImport(result.parsed);
       }
     } catch (err) {
       setStatus(`Import failed: ${err.message}`);
@@ -1222,7 +1222,7 @@ export default function App() {
       setPendingEncryptedEnvelope(null);
       setDecryptPassword("");
       setDecryptError("");
-      finishImport(parsed);
+      await finishImport(parsed);
     } catch (err) {
       setDecryptError(err.message);
     }

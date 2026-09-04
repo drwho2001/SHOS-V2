@@ -541,9 +541,9 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
   // each type belongs to (see customGroupsRepository.js), with
   // anything not assigned to a group falling under "Ungrouped".
   const [groupMode, setGroupMode] = useState("type");
-  const customGroupSections = useLoadedMemo(() => {
+  const customGroupSections = useLoadedMemo(async () => {
     if (groupMode !== "custom") return null;
-    const customGroups = CustomGroupsRepository.get(GROUP_DOMAIN);
+    const customGroups = await CustomGroupsRepository.get(GROUP_DOMAIN);
     const sections = customGroups.map((g) => ({
       id: g.id, name: g.name,
       subGroups: byTypeGroups.filter((tg) => g.members.includes(tg.type)),
@@ -703,13 +703,13 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
   const [groups, setGroups] = useLoadedState(() => CustomGroupsRepository.get(domain), [], []);
   const [newName, setNewName] = useState("");
   const [expandedId, setExpandedId] = useState(null);
-  const refresh = () => { setGroups(CustomGroupsRepository.get(domain)); onChanged?.(); };
+  const refresh = async () => { setGroups(await CustomGroupsRepository.get(domain)); onChanged?.(); };
 
-  const createGroup = () => {
+  const createGroup = async () => {
     if (!newName.trim()) return;
-    CustomGroupsRepository.create(domain, newName.trim());
+    await CustomGroupsRepository.create(domain, newName.trim());
     setNewName("");
-    refresh();
+    await refresh();
   };
 
   return (
@@ -737,7 +737,7 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
                 <div style={{ fontSize: 11, color: T.textSecondary }}>{g.members.length} item{g.members.length === 1 ? "" : "s"}</div>
               </div>
               <Trash2 size={16} color={T.actionRed} style={{ cursor: "pointer" }}
-                onClick={(e) => { e.stopPropagation(); if (window.confirm(`Delete "${g.name}"? Its items stay, just ungrouped.`)) { CustomGroupsRepository.delete(domain, g.id); refresh(); } }}
+                onClick={async (e) => { e.stopPropagation(); if (window.confirm(`Delete "${g.name}"? Its items stay, just ungrouped.`)) { await CustomGroupsRepository.delete(domain, g.id); await refresh(); } }}
                 aria-label="Delete group" title="Delete group" />
             </div>
             {expandedId === g.id && (
@@ -747,7 +747,7 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
                   {allMembers.map((member) => {
                     const inThisGroup = g.members.includes(member);
                     return (
-                      <div key={member} onClick={() => { CustomGroupsRepository.setMemberGroup(domain, member, inThisGroup ? null : g.id); refresh(); }}
+                      <div key={member} onClick={async () => { await CustomGroupsRepository.setMemberGroup(domain, member, inThisGroup ? null : g.id); await refresh(); }}
                         style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${inThisGroup ? T.healthcareBlue : T.border}`, color: inThisGroup ? T.healthcareBlue : T.textSecondary, background: inThisGroup ? `${T.healthcareBlue}15` : "transparent" }}>
                         {member}
                       </div>
