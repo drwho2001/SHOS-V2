@@ -34,12 +34,36 @@ export const DEFAULT_MEDICATION_PREFERENCES = {
   // moment the app reopens. Keyed by medicationId → ISO date string
   // for "don't remind again until after this date".
   skippedUntil: {},
+  // ADDED — real bug found live: "Snooze 30 min" on the due-meds/
+  // refill banners only ever rescheduled the NATIVE notification —
+  // nothing here persisted a "snoozed until" fact the way skippedUntil
+  // above already does for Skip, so the in-app banner's own due-check
+  // (medicationReminderSync.js's getDailyMedsState()) found the exact
+  // same medication still due a moment later and never actually
+  // dismissed. Same shape as skippedUntil, just a shorter horizon and
+  // two separate maps — snoozing a dose reminder and snoozing a refill
+  // reminder for the SAME medication are different facts, so they get
+  // their own keys rather than sharing one.
+  snoozedDoseUntil: {},
+  snoozedRefillUntil: {},
 };
 
 export function isSkippedToday(prefs, medicationId) {
   const skippedUntil = prefs.skippedUntil?.[medicationId];
   if (!skippedUntil) return false;
   return new Date() < new Date(skippedUntil);
+}
+
+export function isDoseSnoozed(prefs, medicationId) {
+  const until = prefs.snoozedDoseUntil?.[medicationId];
+  if (!until) return false;
+  return new Date() < new Date(until);
+}
+
+export function isRefillSnoozed(prefs, medicationId) {
+  const until = prefs.snoozedRefillUntil?.[medicationId];
+  if (!until) return false;
+  return new Date() < new Date(until);
 }
 
 export const MedicationPreferencesRepository = {
@@ -59,5 +83,20 @@ export const MedicationPreferencesRepository = {
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
     return this.updatePreferences({ skippedUntil: { ...prefs.skippedUntil, [medicationId]: tomorrow.toISOString() } });
+  },
+
+  // ADDED — the real "Snooze 30 min" action: suppresses the in-app
+  // due-meds banner for this medication for `minutes`, same pattern as
+  // skipUntilTomorrow above.
+  snoozeDose(medicationId, minutes) {
+    const prefs = this.getPreferences();
+    const until = new Date(Date.now() + minutes * 60000);
+    return this.updatePreferences({ snoozedDoseUntil: { ...prefs.snoozedDoseUntil, [medicationId]: until.toISOString() } });
+  },
+
+  snoozeRefill(medicationId, minutes) {
+    const prefs = this.getPreferences();
+    const until = new Date(Date.now() + minutes * 60000);
+    return this.updatePreferences({ snoozedRefillUntil: { ...prefs.snoozedRefillUntil, [medicationId]: until.toISOString() } });
   },
 };

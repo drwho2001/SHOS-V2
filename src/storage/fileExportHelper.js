@@ -201,20 +201,45 @@ export async function exportTextFileToChosenFolder(filename, contents, mimeType 
     }
     return { ok: false, reason: "unavailable" };
   }
+  const written = await Filesystem.writeFile({ path: filename, data: contents, directory: Directory.Cache, encoding: Encoding.UTF8 });
+  let folderPath;
   try {
-    const written = await Filesystem.writeFile({ path: filename, data: contents, directory: Directory.Cache, encoding: Encoding.UTF8 });
-    const { path: folderPath } = await FilePickerPlugin.pickDirectory();
-    if (!folderPath) return { ok: false, reason: "cancelled" };
+    ({ path: folderPath } = await FilePickerPlugin.pickDirectory());
+  } catch (err) {
+    // A cancelled system picker throws on some Android versions rather
+    // than resolving with an empty path — treated as a cancel, since
+    // backing out of the dialog is the single most common non-success
+    // outcome and shouldn't read as a scary error. Scoped to ONLY this
+    // call, not the copyFile() below — see that catch's own comment
+    // for why conflating the two used to hide a real, confirmed bug.
+    console.warn("[fileExportHelper] Folder picker did not complete:", err);
+    return { ok: false, reason: "cancelled" };
+  }
+  if (!folderPath) return { ok: false, reason: "cancelled" };
+  // FIXED — real bug found live: pickDirectory() returns the picked
+  // folder's own Storage Access Framework TREE uri (e.g.
+  // "content://.../tree/primary%3ADownload"), not a real filesystem
+  // path — naively string-concatenating "/filename" onto it (the
+  // previous code here) does NOT identify a real, writable document
+  // within that tree; Android requires minting one via
+  // DocumentsContract.createDocument() first, which this plugin's own
+  // copyFile() (confirmed by reading its Android source directly —
+  // io.capawesome.capacitorjs.plugins.filepicker.FilePicker.java) does
+  // NOT do — it only opens a ContentResolver output stream to
+  // whatever URI it's given, which fails for a URI that was never
+  // actually created as a document. This previous code's own catch
+  // block then treated THAT failure the same as a cancelled picker,
+  // silently reporting nothing wrong. Confirmed broken on a real
+  // device — surfaced here as a real, honest error instead of a
+  // silent no-op until this plugin (or a different one) actually
+  // supports creating a new document inside a picked SAF tree.
+  try {
     const destination = `${folderPath}/${filename}`;
     await FilePickerPlugin.copyFile({ from: written.uri, to: destination });
     return { ok: true, path: destination };
   } catch (err) {
-    // A cancelled system picker throws on some Android versions rather
-    // than resolving with an empty path — treated as a cancel too,
-    // since backing out of the dialog is the single most common
-    // non-success outcome and shouldn't read as a scary error.
-    console.warn("[fileExportHelper] Choose-folder export did not complete:", err);
-    return { ok: false, reason: "cancelled" };
+    console.error("[fileExportHelper] Writing into the chosen folder failed (see this function's own comment — a known plugin limitation, not a transient error):", err);
+    return { ok: false, reason: "error", error: err };
   }
 }
 

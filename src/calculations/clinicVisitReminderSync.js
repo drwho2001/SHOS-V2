@@ -22,7 +22,7 @@
 // medicationReminderSync already uses for its own "upcoming" case.
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName, CLINIC_VISIT_ACTION_TYPE_ID } from "../storage/notificationService";
-import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
+import { NotificationPreferencesRepository, isClinicVisitSnoozed } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
 import { realTimestampFromStored } from "./dateInputHelpers";
 
@@ -102,6 +102,11 @@ export function getClinicVisitDueState() {
   const due = slots.some(
     (s) => s.enabled && realTimestampFromStored(visit.date) - s.hoursBefore * 3600000 <= nowMs
   );
+  // FIXED — real bug: "Snooze 30 min" only ever rescheduled the native
+  // notification — nothing here checked it, so the in-app banner never
+  // actually dismissed. See notificationPreferencesRepository.js's own
+  // isClinicVisitSnoozed() comment.
+  if (due && isClinicVisitSnoozed(prefs)) return { due: false, visit };
   return { due, visit };
 }
 
@@ -115,6 +120,9 @@ export async function handleSnoozeClinicVisit() {
   const visit = getSoonestBookedVisit();
   const body = visit ? `${visit.title || "Appointment"} — reminder snoozed` : "Reminder snoozed";
   const at = new Date(Date.now() + 30 * 60000);
+  // FIXED — real bug: this used to only reschedule the native
+  // notification — see this file's own getClinicVisitDueState() comment.
+  NotificationPreferencesRepository.update({ clinicVisitSnoozedUntil: at.toISOString() });
   await scheduleNotification({
     id: NOTIFICATION_IDS.clinicVisitReminderA,
     title: "Upcoming clinic appointment",

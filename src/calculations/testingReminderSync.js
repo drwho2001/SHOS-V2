@@ -23,7 +23,7 @@
 import { TestingRepository } from "../repositories/testingRepository";
 import { suggestedRoutineRetestDate } from "./testingCalculations";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName, TESTING_ACTION_TYPE_ID } from "../storage/notificationService";
-import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
+import { NotificationPreferencesRepository, isTestingSnoozed } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
 
 // Pure "is a retest due right now" read, shared by syncTestingReminder
@@ -37,6 +37,11 @@ export function getTestingDueState() {
   const suggested = suggestedRoutineRetestDate(mostRecent);
   if (!suggested) return { due: false };
   const dueDate = new Date(suggested);
+  // FIXED — real bug: "Snooze 30 min" only ever rescheduled the native
+  // notification — nothing here checked it, so the in-app banner never
+  // actually dismissed. See notificationPreferencesRepository.js's own
+  // isTestingSnoozed() comment.
+  if (isTestingSnoozed(NotificationPreferencesRepository.getPreferences())) return { due: false, dueDate };
   return { due: dueDate <= new Date(), dueDate };
 }
 
@@ -94,6 +99,9 @@ export async function syncTestingReminder() {
 // test needs a real result form, not a single tap); App.jsx's due-state
 // banner instead offers a "Log a test" shortcut into that real form.
 export async function handleSnoozeTesting() {
+  // FIXED — real bug: this used to only reschedule the native
+  // notification — see this file's own getTestingDueState() comment.
+  NotificationPreferencesRepository.update({ testingSnoozedUntil: new Date(Date.now() + 30 * 60000).toISOString() });
   await scheduleNotification({
     id: NOTIFICATION_IDS.testingReminder,
     title: "Testing due",

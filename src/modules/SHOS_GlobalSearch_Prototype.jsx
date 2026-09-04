@@ -227,19 +227,28 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
     // CHANGED — real ask: typo-tolerant matching, not just case-
     // insensitive substring. See fuzzyMatch.js for exactly what this
     // does and doesn't cover.
-    const matched = index.filter((r) => fuzzyIncludes(r.searchText, q)).slice(0, 30);
-    if (sortMode === "alphabetical") {
-      return [...matched].sort((a, b) => a.title.localeCompare(b.title));
-    }
-    // Chronological: most recent first. Results with no real date
-    // (Medication always, Contacts sometimes) sort to the end rather
-    // than being guessed into a fake position.
-    return [...matched].sort((a, b) => {
-      if (!a.date && !b.date) return 0;
-      if (!a.date) return 1;
-      if (!b.date) return -1;
-      return new Date(b.date) - new Date(a.date);
-    });
+    // FIXED — real bug found live: the 30-result cap used to apply
+    // BEFORE sorting, on raw index push order (buildIndex() always
+    // pushes Contacts first, Encounters after) — so a query matching
+    // 30+ Contacts (plausible for a common kink tag shared across many
+    // logged contacts) could silently cut a genuinely relevant, recent
+    // Encounter out of the results entirely, however well it matched.
+    // Sort first, THEN cap, so the cap actually keeps the 30 most
+    // relevant/recent matches instead of whichever 30 happened to be
+    // pushed into the index first.
+    const matched = index.filter((r) => fuzzyIncludes(r.searchText, q));
+    const sorted = sortMode === "alphabetical"
+      ? [...matched].sort((a, b) => a.title.localeCompare(b.title))
+      // Chronological: most recent first. Results with no real date
+      // (Medication always, Contacts sometimes) sort to the end rather
+      // than being guessed into a fake position.
+      : [...matched].sort((a, b) => {
+          if (!a.date && !b.date) return 0;
+          if (!a.date) return 1;
+          if (!b.date) return -1;
+          return new Date(b.date) - new Date(a.date);
+        });
+    return sorted.slice(0, 30);
   }, [query, index, sortMode]);
 
   // ADDED 26 Aug 2026 — date-bucket grouping, chronological mode only

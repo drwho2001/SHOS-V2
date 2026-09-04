@@ -21,19 +21,25 @@ import { LogRepository } from "../repositories/logRepository";
 import { computeStock } from "./medicationCalculations";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName, REFILL_ACTION_TYPE_ID } from "../storage/notificationService";
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
+import { MedicationPreferencesRepository, isRefillSnoozed } from "../repositories/medicationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
 
 // Pure "what currently needs a refill" read, shared by syncRefillReminder
 // (decides whether to schedule) and App.jsx's in-app due-state banner
 // (same live check, no separate concept to drift out of sync).
 export function getRefillDueMedications() {
+  const prefs = MedicationPreferencesRepository.getPreferences();
   const meds = MedicationRepository.getAll()
     .filter((m) => !m.isArchived && m.inventoryTracked)
     .map((m) => ({ ...m, logs: LogRepository.getForMedication(m.id) }));
   // Already flagged "requested" — the user's already acted on it (see
   // Medication's own markRequested()), a repeat notification for the
   // same low stock would just be noise until it's actually refilled.
-  return meds.filter((m) => computeStock(m).needsAction && !m.refillRequestedAt);
+  // FIXED — real bug: "Snooze 30 min" only ever rescheduled the native
+  // notification, never persisted anything this read checked, so the
+  // in-app banner never actually dismissed — see
+  // medicationPreferencesRepository.js's own isRefillSnoozed() comment.
+  return meds.filter((m) => computeStock(m).needsAction && !m.refillRequestedAt && !isRefillSnoozed(prefs, m.id));
 }
 
 export async function syncRefillReminder() {
@@ -82,6 +88,11 @@ export function handleMarkRefillRequested() {
 export async function handleSnoozeRefill() {
   const needsRefill = getRefillDueMedications();
   const names = needsRefill.map((m) => m.name).join(", ");
+  // FIXED — real bug: this used to only reschedule the native
+  // notification — see medicationPreferencesRepository.js's own
+  // isRefillSnoozed() comment for why that never actually dismissed
+  // the in-app banner.
+  needsRefill.forEach((m) => MedicationPreferencesRepository.snoozeRefill(m.id, 30));
   await scheduleNotification({
     id: NOTIFICATION_IDS.refillReminder,
     title: "Refill needed",

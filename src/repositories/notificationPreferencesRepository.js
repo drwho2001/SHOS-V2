@@ -65,6 +65,18 @@ export const DEFAULT_NOTIFICATION_PREFERENCES = {
   // "skip until tomorrow" (medicationPreferencesRepository.js), which
   // only ever covers one medication, one day. null = not paused.
   pausedUntil: null,
+  // ADDED — real bug found live: "Snooze 30 min" on the Testing/Clinic
+  // Visit due banners only ever rescheduled the native notification —
+  // nothing persisted a fact getTestingDueState()/getClinicVisitDueState()
+  // could check, so the in-app banner re-showed a moment later. Same
+  // self-expiring shape as pausedUntil above, just scoped to one
+  // reminder type each rather than everything — a single global
+  // timestamp per type is enough (not per-record): only one "soonest"
+  // instance of either is ever tracked at a time, and "stop nagging
+  // for 30 min" is the real ask, not something more granular. null =
+  // not snoozed.
+  testingSnoozedUntil: null,
+  clinicVisitSnoozedUntil: null,
 };
 
 // ADDED 3 Sep 2026 — real ask: quiet hours. Real, correct handling of
@@ -107,6 +119,14 @@ export function quietHoursEndAfter(prefs, at) {
 // ADDED 3 Sep 2026 — real ask: "pause all reminders" vacation mode.
 export function isPaused(prefs) {
   return !!prefs.pausedUntil && new Date() < new Date(prefs.pausedUntil);
+}
+
+export function isTestingSnoozed(prefs) {
+  return !!prefs.testingSnoozedUntil && new Date() < new Date(prefs.testingSnoozedUntil);
+}
+
+export function isClinicVisitSnoozed(prefs) {
+  return !!prefs.clinicVisitSnoozedUntil && new Date() < new Date(prefs.clinicVisitSnoozedUntil);
 }
 
 // ADDED 3 Sep 2026 — real ask: master switch checked before any

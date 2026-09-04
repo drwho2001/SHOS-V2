@@ -40,6 +40,8 @@ const STORAGE_KEY = "shos_resources";
 export const CATEGORY_LABELS = {
   domesticViolence: "Domestic violence & sexual abuse support",
   contraception: "Contraceptive advice",
+  menstruationMenopause: "Menstruation & menopause",
+  abortionPregnancyLoss: "Abortion & pregnancy loss",
   transHrt: "HRT & trans support",
   charities: "Charities",
   gettingTested: "Get tested — find a clinic or order a postal kit",
@@ -72,6 +74,33 @@ const SEED_ENTRIES = {
     { name: "SH:24 — emergency contraception", link: "https://sh24.org.uk/contraception/emergency-contraception", notes: "" },
     { name: "NHS — find emergency contraception", link: "https://www.nhs.uk/service-search/sexual-health-services/find-emergency-contraception/", notes: "" },
     { name: "UK Medical Eligibility Criteria for Contraceptive Use (UKMEC)", link: "https://www.cosrh.org/Public/Public/Standards-and-Guidance/uk-medical-eligibility-criteria-for-contraceptive-use-ukmec.aspx", notes: "Clinical guidance" },
+  ],
+  // ADDED 4 Sep 2026 — real ask: a concise UK resource bank for
+  // menstruation/menopause and abortion/pregnancy loss, neither of
+  // which fit the existing categories (contraception is specifically
+  // about preventing pregnancy; sexualHealth is STI-focused). The
+  // user's own curated shortlist, optimised for a 16-30 sexual-health-
+  // service demographic per their own follow-up — deliberately not the
+  // full 9-organisation first draft, which they narrowed themselves
+  // (dropped MSI as redundant alongside BPAS; dropped the plain NHS
+  // rows from the final six in favour of the specialist/charity set,
+  // added here anyway as the leading entry in both categories to match
+  // every other category's own established "NHS first, then charities"
+  // convention in this file). Every non-NHS URL/number verified via
+  // live web search 4 Sep 2026, not assumed from the user's own typed
+  // text — same sourcing standard as doxyPepCalculations.js.
+  menstruationMenopause: [
+    { name: "NHS — Women's health", link: "https://www.nhs.uk/womens-health/", notes: "" },
+    { name: "The Menopause Charity", link: "https://themenopausecharity.org/", notes: "" },
+    { name: "Wellbeing of Women", link: "https://www.wellbeingofwomen.org.uk/", notes: "" },
+    { name: "Women's Health Concern (British Menopause Society)", link: "https://www.womens-health-concern.org/", notes: "" },
+  ],
+  abortionPregnancyLoss: [
+    { name: "NHS — Abortion", link: "https://www.nhs.uk/tests-and-treatments/abortion/", notes: "" },
+    { name: "NHS — Miscarriage", link: "https://www.nhs.uk/conditions/miscarriage/", notes: "" },
+    { name: "BPAS", link: "https://www.bpas.org/", notes: "03457 30 40 30" },
+    { name: "Tommy's", link: "https://www.tommys.org/", notes: "0800 0147 800 — PregnancyLine" },
+    { name: "Miscarriage UK", link: "https://www.miscarriageuk.org/", notes: "0303 003 6464 — support line" },
   ],
   transHrt: [
     { name: "Gendered Intelligence", link: "https://genderedintelligence.co.uk/", notes: "" },

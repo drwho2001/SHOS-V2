@@ -17,7 +17,7 @@
 // remind about; custom-interval could be added later the same way if
 // wanted, not done here).
 import { MedicationRepository } from "../repositories/medicationRepository";
-import { MedicationPreferencesRepository, isSkippedToday } from "../repositories/medicationPreferencesRepository";
+import { MedicationPreferencesRepository, isSkippedToday, isDoseSnoozed } from "../repositories/medicationPreferencesRepository";
 import { LogRepository } from "../repositories/logRepository";
 import { isDoseLockedOut, lockoutEndsAt } from "./medicationCalculations";
 import { scheduleNotification, cancelNotification, registerNotificationActionTypes, NOTIFICATION_IDS, MEDICATION_ACTION_TYPE_ID, moduleSmallIconName } from "../storage/notificationService";
@@ -37,6 +37,11 @@ export function getDailyMedsState() {
   const upcoming = [];
   for (const med of meds) {
     if (isSkippedToday(prefs, med.id)) continue;
+    // FIXED — real bug: "Snooze 30 min" rescheduled the native
+    // notification but never checked here, so the in-app banner
+    // re-showed the exact same medication as due a moment later. Same
+    // check as isSkippedToday above, just a shorter horizon.
+    if (isDoseSnoozed(prefs, med.id)) continue;
     const logs = LogRepository.getForMedication(med.id);
     const lastDose = [...logs].filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
     if (!lastDose || !isDoseLockedOut(med, lastDose.date)) {
@@ -135,6 +140,15 @@ export function handleSkipToday() {
 
 export function handleSnooze() {
   const prefs = MedicationPreferencesRepository.getPreferences();
+  // FIXED — real bug found live: this only ever rescheduled the
+  // native notification — nothing persisted a "snoozed until" fact
+  // the way handleSkipToday's own skipUntilTomorrow() call above
+  // does, so the in-app banner's next due-check (getDailyMedsState())
+  // found the exact same medications still due and never actually
+  // dismissed. Same "snooze applies to whatever's currently showing
+  // on the banner" shape as handleSkipToday.
+  const { due } = getDailyMedsState();
+  due.forEach((m) => MedicationPreferencesRepository.snoozeDose(m.id, prefs.snoozeMinutes));
   scheduleNotification({
     id: NOTIFICATION_IDS.medicationReminder,
     title: "Medication due",
