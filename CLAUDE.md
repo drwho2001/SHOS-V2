@@ -305,7 +305,39 @@ this date; summarized here for durability.
   guard near a loaded value. Both verified live against real seed data
   (Clinic Card's full section set; Episodes list, an existing episode's
   full detail view, and the Start Episode sheet) — no crashes, no page
-  errors. Full smoke-test suite passes on both. ~87 sites still
+  errors. Full smoke-test suite passes on both.
+  Three more files converted the same session: `SHOS_Attachments_Prototype.jsx`'s
+  1 site and `SHOS_RegistryManagement_Prototype.jsx`'s 1 site (both
+  plain `useLoadedMemo` swaps, already keyed off `refreshKey` or no deps
+  at all), and `SHOS_MyProfile_Prototype.jsx`'s 5 sites.
+  `MyProfileEditScreen`'s 4 `CustomOptionListsRepository` reads were
+  plain `useLoadedState` swaps (each setter reused as-is by its own
+  `onAddNew` handler); `MyProfileModule`'s top-level `profile` needed
+  the same `DEFAULT_PROFILE` fallback treatment as Clinic Card's above
+  (its child views read `profile.allergies`-style fields
+  unconditionally). That conversion surfaced a THIRD real regression:
+  `MyProfileEditScreen`'s `const [form, setForm] = useState(profile)`
+  only reads its argument once, at mount, never resyncing — harmless
+  when `profile` loaded synchronously (always already real by the time
+  this screen could mount) but broken now that `MyProfileModule`'s
+  `openEditingOnMount` prop (a real path — Clinic Card's "Add these
+  under My Profile → Clinical & emergency info" link) can mount this
+  screen on the exact render where `profile` is still the
+  `DEFAULT_PROFILE` fallback, freezing `form` on an empty default
+  forever once the real value loads a tick later. Fixed with a
+  `useEffect` resyncing `form` on `profile` changes (safe here — nothing
+  else updates `profile` while this screen is open). Three real bugs
+  now found via this same conversion process (PartnerNotification's
+  `list`/`editing`, Timeline's `EpisodeDetail` hook order, this one) —
+  each a different flavor of the same root issue: code that assumed a
+  loaded value's shape/timing was guaranteed, written back when the
+  load really was synchronous and safe to assume. Worth treating as the
+  standing checklist for every remaining site: (1) is the value read
+  unconditionally without a null/empty guard, (2) does any hook after
+  it depend on its shape at mount, (3) does any early-return sit between
+  hooks. All three verified live (openEditingOnMount path retains typed
+  input and shows real suggestion chips; normal path renders real seed
+  profile data). Full smoke-test suite passes. ~81 sites still
   untouched.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
