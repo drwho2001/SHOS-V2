@@ -17,6 +17,7 @@ import { getEncounterCoverage } from "../calculations/exposureWindows";
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 // ADDED 19 Aug 2026 — Timeline (the nav-facing name; "Episode" is the
 // underlying data unit — see episodeRepository.js for the full
@@ -243,8 +244,8 @@ function StartSheet({ onSave, onClose, T }) {
   const [startEncounterId, setStartEncounterId] = useState("");
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const triggerReasonOptions = useMemo(() => CustomOptionListsRepository.getRanked("episodeTriggerReason"), []);
-  const encounters = useMemo(() => EncounterRepository.getAll().sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => ({ id: e.id, name: encounterLabel(e) })), []);
+  const triggerReasonOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("episodeTriggerReason"), [], []);
+  const encounters = useLoadedMemo(() => EncounterRepository.getAll().sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => ({ id: e.id, name: encounterLabel(e) })), [], []);
   const canSave = title.trim().length > 0 && startEncounterId;
 
   return (
@@ -272,7 +273,26 @@ function StartSheet({ onSave, onClose, T }) {
 function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const episode = useMemo(() => EpisodeRepository.getById(episodeId), [episodeId, refreshKey]);
+  const episode = useLoadedMemo(() => EpisodeRepository.getById(episodeId), [episodeId, refreshKey], null);
+  // CHANGED 2 Sep 2026 — real ask: "episodes end date?" — resolvedDate
+  // used to be hardcoded to whatever day you happened to tap the
+  // button, with no way to set or correct it to when the episode
+  // actually resolved (e.g. logging a TOC result a few days after it
+  // came back). resolveDateDraft is a real, editable date — defaults
+  // to today, but overridable before confirming, and resets to
+  // episode.resolvedDate (or today) whenever a different episode is
+  // opened.
+  // NOTE: existing resolvedDate values (including seed data) are full
+  // ISO timestamps, not date-only strings — <input type="date"> only
+  // accepts "YYYY-MM-DD", same .slice(0,10) convention used everywhere
+  // else in this app for exactly that reason.
+  // Must stay ABOVE the `if (!episode) return null` below — every hook
+  // in a component has to run on every render (Rules of Hooks), and
+  // episode is genuinely null for the one render before the load effect
+  // above resolves, now that this reads asynchronously instead of
+  // synchronously off useMemo. Guarded with episode?. accordingly.
+  const [resolveDateDraft, setResolveDateDraft] = useState(() => (episode?.resolvedDate || new Date().toISOString()).slice(0, 10));
+  useEffect(() => { setResolveDateDraft((episode?.resolvedDate || new Date().toISOString()).slice(0, 10)); }, [episodeId]);
   if (!episode) return null;
 
   const startEncounter = EncounterRepository.getById(episode.startEncounterId);
@@ -312,22 +332,9 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
     update({ notifiedEncounterIds: already ? episode.notifiedEncounterIds.filter((id) => id !== encounterId) : [...episode.notifiedEncounterIds, encounterId] });
   };
 
-  // CHANGED 2 Sep 2026 — real ask: "episodes end date?" — resolvedDate
-  // used to be hardcoded to whatever day you happened to tap the
-  // button, with no way to set or correct it to when the episode
-  // actually resolved (e.g. logging a TOC result a few days after it
-  // came back). resolveDateDraft is a real, editable date — defaults
-  // to today, but overridable before confirming, and resets to
-  // episode.resolvedDate (or today) whenever a different episode is
-  // opened. Also added: reopen(), since a resolved episode previously
-  // had no undo at all — same "how do I undo this" standard every
-  // other action in this app already meets.
-  // NOTE: existing resolvedDate values (including seed data) are full
-  // ISO timestamps, not date-only strings — <input type="date"> only
-  // accepts "YYYY-MM-DD", same .slice(0,10) convention used everywhere
-  // else in this app for exactly that reason.
-  const [resolveDateDraft, setResolveDateDraft] = useState(() => (episode.resolvedDate || new Date().toISOString()).slice(0, 10));
-  useEffect(() => { setResolveDateDraft((episode.resolvedDate || new Date().toISOString()).slice(0, 10)); }, [episodeId]);
+  // Also added (2 Sep 2026): reopen(), since a resolved episode
+  // previously had no undo at all — same "how do I undo this" standard
+  // every other action in this app already meets.
 
   const resolve = (resolution) => {
     update({ resolvedDate: resolveDateDraft, resolution });
@@ -523,7 +530,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
 }
 
 function TimelineLanding({ onOpen, onAdd, onClose, T }) {
-  const [episodes] = useState(() => EpisodeRepository.getAll().filter((e) => !e.isArchived));
+  const episodes = useLoadedMemo(() => EpisodeRepository.getAll().filter((e) => !e.isArchived), [], []);
   const sorted = useMemo(() => {
     const withDate = episodes.map((e) => ({ ...e, _date: EncounterRepository.getById(e.startEncounterId)?.date || e.createdAt }));
     return withDate.sort((a, b) => (a.resolvedDate ? 1 : 0) - (b.resolvedDate ? 1 : 0) || new Date(b._date) - new Date(a._date));
