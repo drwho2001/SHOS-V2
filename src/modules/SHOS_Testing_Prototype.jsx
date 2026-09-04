@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCcw } from "@phosphor-icons/react";
 import { useEditUndo } from "../calculations/editUndoHelpers";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import PartnerNotificationSheet from "./SHOS_PartnerNotification_Prototype";
 import { PartnerNotificationRepository } from "../repositories/partnerNotificationRepository";
@@ -493,7 +494,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   // directly, keeping one single source of truth instead of adding a
   // second, unsynced way to represent the same relationship.
   const [linkVersion, setLinkVersion] = useState(0);
-  const linkedVisits = useMemo(() => (testId ? ClinicVisitsRepository.getByLinkedTest(testId) : []), [testId, linkVersion]);
+  const linkedVisits = useLoadedMemo(() => (testId ? ClinicVisitsRepository.getByLinkedTest(testId) : []), [testId, linkVersion], []);
   // CHANGED 1 Sep 2026 — real ask: "old options listed first and not
   // searchable" — this list had no .sort() at all (storage order =
   // oldest first) and rendered into a bare native <select>, the exact
@@ -502,7 +503,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   // RelationPicker instance. Sorted newest-first now; searchText adds
   // clinician name(s) as a second match field, same "search by name or
   // [this module's nearest equivalent field]" spec used elsewhere.
-  const unlinkedVisits = useMemo(() => {
+  const unlinkedVisits = useLoadedMemo(() => {
     if (!testId) return [];
     return ClinicVisitsRepository.getAll()
       .filter((v) => !v.isArchived && !(v.linkedTestIds || []).includes(testId))
@@ -512,7 +513,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
         name: `${v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(v.date)}`,
         searchText: (v.clinician || []).join(" ").toLowerCase(),
       }));
-  }, [testId, linkVersion]);
+  }, [testId, linkVersion], []);
   const linkVisit = (visitId) => {
     const visit = ClinicVisitsRepository.getById(visitId);
     if (!visit) return;
@@ -537,14 +538,14 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   // field), this just adds a second EDITABLE entry point into it,
   // exactly like Clinic Visits' linkedTestIds already has.
   const [symptomLinkVersion, setSymptomLinkVersion] = useState(0);
-  const linkedSymptoms = useMemo(() => (testId ? SymptomLogRepository.getAll().filter((s) => (s.relatedTestIds || []).includes(testId)) : []), [testId, symptomLinkVersion]);
-  const unlinkedSymptoms = useMemo(() => {
+  const linkedSymptoms = useLoadedMemo(() => (testId ? SymptomLogRepository.getAll().filter((s) => (s.relatedTestIds || []).includes(testId)) : []), [testId, symptomLinkVersion], []);
+  const unlinkedSymptoms = useLoadedMemo(() => {
     if (!testId) return [];
     return SymptomLogRepository.getAll()
       .filter((s) => !(s.relatedTestIds || []).includes(testId))
       .sort((a, b) => new Date(b.dateStarted || 0) - new Date(a.dateStarted || 0))
       .map((s) => ({ id: s.id, name: `${s.title || "Symptom entry"} · ${formatDate(s.dateStarted)}`, searchText: "" }));
-  }, [testId, symptomLinkVersion]);
+  }, [testId, symptomLinkVersion], []);
   const linkSymptom = (symptomId) => {
     const entry = SymptomLogRepository.getById(symptomId);
     if (!entry) return;
@@ -560,7 +561,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   // ADDED 19 Aug 2026 — real in-app editable option list.
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const sampleTypeOptions = useMemo(() => CustomOptionListsRepository.getRanked("sampleType"), []);
+  const sampleTypeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("sampleType"), [], []);
   // ADDED 19 Aug 2026 — draft autosave.
   const draftKey = `testEdit_${testId || "new"}`;
   const [form, setForm] = useState(() => {
@@ -773,7 +774,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
 
 // ── Detail view ──
 function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDelete, refresh, allTests }) {
-  const [test, setTest] = useState(() => TestingRepository.getById(testId));
+  const [test, setTest] = useLoadedState(() => TestingRepository.getById(testId), [testId], null);
   // ADDED — real ask: "hide result until result date... similar to
   // Dom/sub half-toggle." Soft-masked by default rather than fully
   // hidden with no way to see it — a real result is real data, not
@@ -793,7 +794,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   const [, setPartnerNotifyVersion] = useState(0);
   // ADDED — Measurements inline entry point (see import comment above).
   const [showAddMeasurement, setShowAddMeasurement] = useState(false);
-  const [measurements, setMeasurements] = useState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedTestId === testId));
+  const [measurements, setMeasurements] = useLoadedState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedTestId === testId), [testId], []);
   const refreshMeasurements = () => setMeasurements(MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedTestId === testId));
   if (!test) return null;
 
@@ -1189,7 +1190,7 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
   // TestingLanding (see that component's own comment) — tests/
   // deletedRecent/undoDelete/triggerDelete now live at the real module
   // level, shared by both TestingLanding and TestDetail.
-  const [tests, setTests] = useState(() => TestingRepository.getAll().filter((t) => !t.isArchived));
+  const [tests, setTests] = useLoadedState(() => TestingRepository.getAll().filter((t) => !t.isArchived), [], []);
   const refresh = () => setTests(TestingRepository.getAll().filter((t) => !t.isArchived));
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
