@@ -437,6 +437,16 @@ this date; summarized here for durability.
   sheet's chips; Vaccinations: an existing record's full detail, its
   Edit sheet's chips and symptom/clinic-visit pickers) — no page errors
   either file. Full smoke-test suite passes both times.
+  `SHOS_Home_Prototype.jsx` (5 sites, the app's own landing screen)
+  converted next — all plain `useLoadedState` swaps, including
+  `backupInfo` (fallback matches `getLastBackupInfo()`'s own real
+  empty-state shape exactly, since `dueForReminder` is read
+  unconditionally). Verified live against Home's real first-load state
+  (no banners pre-dismissed): the backup-reminder banner renders
+  correctly, real Status-at-a-glance/Recent-activity data shows, and
+  the "Your dashboard" fallback title is correct (confirmed against
+  seed data — `MyProfile`'s `nickname` genuinely defaults to `""`, not
+  a missed load). No page errors. Full smoke-test suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
