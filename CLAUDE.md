@@ -198,8 +198,6 @@ this date; summarized here for durability.
   mitigation shipped (an early listener buffer in
   `notificationService.js`); the due-meds banner is the real safety net
   for a missed tap.
-- **App icon is unfinished** — a direction was picked (2 Sep) but real
-  vector assets weren't produced yet as of this writing.
 - **"Export backup to a folder" plugin swapped, still unconfirmed on a
   real device.** `@capawesome/capacitor-file-picker`'s `pickDirectory()`
   returned a SAF tree URI with no `createDocument`-equivalent to mint a
@@ -221,6 +219,28 @@ this date; summarized here for durability.
   no-code schema editor are deliberate scope cuts, not gaps — don't
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
+
+## Recently shipped (4 Sep 2026, later still — see Notion for full detail)
+
+Real app icon assets produced, closing the "unfinished icon" Known
+Issue — the winning "ECG Pulse" direction from the earlier icon-review
+Artifact (real Lead II trace, 5 real Phosphor glyphs at the P/Q/R/S/T
+deflections, SHOS wordmark in Inter Black) rebuilt as true vector/SVG
+paths and rendered via headless Chromium at every required export
+size, rather than left as flat CSS/SVG mockup stand-ins. Background
+teal pulled exact from `ACCENTS.home` (`#008585` in designTokens.js,
+deepened for gradient contrast) rather than the mockup's own eyeballed
+value, per the artifact's own stated next step. All 22 real assets
+now in place: legacy `ic_launcher`/`ic_launcher_round` PNGs at
+mdpi–xxxhdpi (48–192px), adaptive-icon foreground/background layer
+PNGs at mdpi–xxxhdpi (108–432px, foreground content confirmed
+centered and sized within Android's safe zone via a real pixel
+bounding-box check, not eyeballed), plus `favicon.png` and
+`apple-touch-icon.png` for the web/PWA build. Legibility checked at
+actual render sizes: clean at xxhdpi/xxxhdpi (the densities modern
+phones actually show), the legacy mdpi 48px fallback does soften as
+the original review honestly flagged it might — an accepted tradeoff
+of the chosen direction, not a new problem.
 
 ## Recently shipped (4 Sep 2026, continued — see Notion for full detail)
 
