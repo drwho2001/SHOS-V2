@@ -186,9 +186,34 @@ this date; summarized here for durability.
 - **No encryption at rest.** Live app data is plain `localStorage`.
   Backup export *can* be encrypted (AES-256-GCM, PBKDF2 250k rounds —
   solid where it's used) but day-to-day data isn't. This is the one
-  Critical finding deliberately not yet fixed — it touches the storage
-  layer every repository reads/writes through and needs its own
-  dedicated pass, not a quick patch.
+  Critical finding deliberately not yet fixed. Real scoping done 4 Sep
+  (audit + design, no code changed — see Notion for the full write-up):
+  the storage layer isn't one clean chokepoint — 32 files touch it, in
+  three distinct patterns with different fixes (module-load-time
+  synchronous reads in ~19 repository files, function-scoped reads in
+  ~10 "preferences"-style repositories, and one React `useState` lazy
+  initializer), plus a crash-recovery path in `main.jsx`'s
+  `ErrorBoundary` that reads/writes `shos_app_preferences` directly and
+  assumes plaintext JSON. `crypto.subtle` (the real Web Crypto API,
+  same one `backupService.js` already uses for encrypted export) is
+  async-only, so this is a genuine sync-to-async migration of the
+  whole repository layer, not a drop-in add at `storageAdapter.js` —
+  that conversion has to happen BEFORE any real cryptography, as its
+  own separately-shippable, separately-verifiable phase.
+  Key design: `appLockEnabled` defaults to `false` — most users have
+  no PIN/biometric at all — so a PIN/biometric-derived key can't be
+  the only mechanism without leaving the default case unprotected. A
+  device-bound key (Android Keystore natively; a non-extractable Web
+  Crypto key for the web/PWA build, so it works the same way there)
+  is the real baseline, generated with no user secret required, always
+  active regardless of App Lock. When App Lock IS enabled, an
+  additional PIN/biometric-derived wrapping layer goes on top —
+  envelope encryption, not a replacement — so a real intruder holding
+  an *unlocked* device still needs the PIN too, while never asking the
+  owner to remember a separate passphrase of their own (owner's own
+  explicit ask, and a real concern: "people will lose encryption keys
+  often"). Still needs its own dedicated pass to actually build —
+  this session only audited and designed it.
 - **Still near-zero real test coverage, though the one existing script
   is now CI-gated.** `scripts/smoke-test.cjs` (3 flows) got wired into
   a new `.github/workflows/smoke-test.yml` (4 Sep) — runs the exact
