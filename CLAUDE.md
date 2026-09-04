@@ -258,10 +258,29 @@ this date; summarized here for durability.
   mounted beneath it) — same class of mistake as an earlier Global
   Search test this session, now fixed the same way (scope to the
   specific `position: fixed; inset: 0` overlay, not the whole body).
-  Still ~98 real sites untouched, plus `main.jsx`'s `ErrorBoundary` —
-  still needs its own dedicated pass for the rest, now with a proven
-  tool to do it with rather than a bespoke effect per site. Local
-  commits only as of 4 Sep — owner asked to hold all pushes until the
+  Three more sites converted the same session:
+  `SHOS_Healthcare_Prototype.jsx`'s `menstrualTrackingEnabled` (a plain
+  1:1 `useLoadedState` swap) and `SHOS_PartnerNotification_Prototype.jsx`'s
+  `contacts` (`useLoadedMemo`, another plain swap). Its `list`/`editing`
+  pair was NOT a plain swap and caught a real bug live: `editing`'s own
+  initial value used to derive from `!list` at mount — safe in the old
+  synchronous code, where `editing` was only ever `false` once `list`
+  was already a real object, but the naive fix (`list` starting `null`,
+  `editing` starting `false` for the one render before the load effect
+  resolves) violated that invariant and crashed with "Cannot read
+  properties of null (reading 'items')" the moment the Checklist view
+  tried to render. Fixed by starting `editing` at `true` instead — the
+  ContactPickerStep branch never touches `list`, so it's always safe to
+  render first, the same worst-case assumption the original `!list`
+  made. Verified live end-to-end against a real positive test: generate
+  a contact list, confirm the checklist renders, close and reopen,
+  confirm it loads straight back to the checklist (not the picker) with
+  the real saved list — no crash, matches old behavior exactly. This is
+  the real lesson for the remaining ~95 sites: most are plain swaps,
+  but any site with state that DEPENDS on another loaded value's
+  initial synchronous shape needs the same real scrutiny, not a
+  find-replace.
+  Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally.
 - **Still near-zero real test coverage, though the one existing script
   is now CI-gated.** `scripts/smoke-test.cjs` (3 flows) got wired into

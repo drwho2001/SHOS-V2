@@ -12,7 +12,8 @@
 // Reached from a positive Test's own detail screen (Testing module) —
 // not a standalone module with its own tab, per the user's explicit
 // "that's a tangent" on the bigger nav/module-architecture question.
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { CaretLeftIcon as ChevronLeft, XIcon as X, MagnifyingGlassIcon as Search, CheckIcon as Check, PencilSimpleIcon as Edit, ExportIcon as ExportIcon, TrashIcon as Trash2 } from "@phosphor-icons/react";
 import { ContactRepository } from "../repositories/contactRepository";
 import { EncounterRepository } from "../repositories/encounterRepository";
@@ -57,7 +58,10 @@ function itemFromContact(c) {
 
 // ── Contact picker (the "build/edit" step) ──
 function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, onCancel, T }) {
-  const contacts = useMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived), []);
+  // CHANGED 4 Sep 2026 — encryption-at-rest groundwork (see CLAUDE.md's
+  // Known Issues / the Notion Development log): useLoadedMemo instead
+  // of a plain useMemo, one of the ~100 real sites the audit found.
+  const contacts = useLoadedMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived), [], []);
   // Most-recently-encountered first — same "recent is most relevant"
   // reasoning as every other suggestion list this session, real value
   // here specifically since partner notification is inherently about
@@ -246,8 +250,32 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
 export default function PartnerNotificationSheet({ testId, onClose }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
-  const [list, setList] = useState(() => PartnerNotificationRepository.getByTestId(testId));
-  const [editing, setEditing] = useState(!list);
+  // CHANGED 4 Sep 2026 — encryption-at-rest groundwork (see CLAUDE.md's
+  // Known Issues / the Notion Development log): NOT a mechanical
+  // useLoadedState swap — editing's own initial value depends on
+  // whether `list` is null, and if `list` starts at the fallback (null)
+  // before loading, then resolves to a real list shortly after,
+  // `editing` (computed once at ITS OWN mount time) would go stale —
+  // stuck on "no list yet, start on the generate step" even once a
+  // real list has loaded. Both need to resolve together, in the same
+  // effect, so editing is always in sync with the real, loaded list.
+  // REAL BUG caught live: initially set editing=false to "match" list's
+  // own null fallback, but the render below only ever reads list.items
+  // in the `!editing` (ChecklistStep) branch — in the OLD synchronous
+  // code that was always safe, since editing was only ever false when
+  // list was already a real object. list=null + editing=false (for the
+  // one render before the effect resolves) broke that invariant and
+  // crashed with "Cannot read properties of null (reading 'items')".
+  // editing defaults to true instead — the ContactPickerStep branch
+  // doesn't touch `list` at all, so it's always safe to render first,
+  // exactly the same worst-case assumption the original `!list` made.
+  const [list, setList] = useState(null);
+  const [editing, setEditing] = useState(true);
+  useEffect(() => {
+    const loaded = PartnerNotificationRepository.getByTestId(testId);
+    setList(loaded);
+    setEditing(!loaded);
+  }, [testId]);
 
   const handleGenerate = (chosenContacts, clinical) => {
     // Preserves notified/edited fields for a contact that's still on
