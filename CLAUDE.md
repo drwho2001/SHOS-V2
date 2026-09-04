@@ -612,6 +612,46 @@ this date; summarized here for durability.
   crash-recovery paths, not per-screen React state) and were flagged
   from the start as needing their own dedicated, careful pass rather
   than folding into this same sweep.
+  `App.jsx`'s own bootstrap state tackled next — 5 lazy-init sites found
+  (`locked`, `appLockEnabled`, `showOnboarding`, `showAppLockPrompt`,
+  `active`; `decoyActive` is a plain `useState(false)`, out of scope).
+  `locked` (gates the whole app behind `AppLockScreen`) deliberately
+  left UNCONVERTED — `shouldRelock()` defaults `false` when App Lock is
+  off (the common case), so a fail-closed fallback would flash a lock
+  screen on every launch for most users, while a fail-open fallback
+  would flash real app content before locking for anyone who DOES have
+  App Lock on — unacceptable for this app. Converting it properly needs
+  a real loading/splash screen as part of Phase 3's actual async-crypto
+  work, not a mechanical swap. `appLockEnabled`/`showOnboarding`/
+  `showAppLockPrompt` converted cleanly — confirmed every read of them
+  sits after the still-synchronous `if (locked) return <AppLockScreen>`
+  gate (so their one-tick fallback window is never visible to someone
+  who should be locked out), and `showOnboarding` has its own
+  early-return gate with no hooks after it. `active` (resume-last-tab)
+  was converted, then live-tested, then REVERTED after catching a real
+  bug: a write-back effect a few lines below it
+  (`useEffect(() => AppPreferencesRepository.update({ lastActiveTab:
+  active, ... }), [active])`) exists to persist every real tab change.
+  Under StrictMode's mount double-invoke, that effect fired with
+  `active`'s pre-load fallback ("home") in the same commit as (but
+  after) the loader effect's own read — the loader's `setActive()`
+  hadn't taken effect yet, so the write-back effect wrote the stale
+  fallback over the real stored value before it was ever read back.
+  Reproduced live: set `lastActiveTab` to a distinctive "medication" in
+  localStorage, reloaded, and the app incorrectly resumed on Home,
+  with the stored value itself silently corrupted back to "home" — not
+  just a cosmetic flash, genuine data loss. `active` reverted to plain
+  synchronous `useState`, same as `locked`, with a comment explaining
+  why. Verified live after reverting: distinctive stored tab now
+  correctly resumes (Medication tab shown, not Home); reload settles
+  with the correct value still in storage (no clobbering); switching
+  tabs for real still correctly persists via the write-back effect;
+  onboarding-already-complete still doesn't reappear on reload. No
+  page errors. `main.jsx`'s `ErrorBoundary` confirmed out of scope for
+  this pattern — it's a class component (required for
+  `componentDidCatch`), and its raw-`localStorage` read/write only runs
+  inside a synchronous button-click handler after a caught render
+  error, not a render-time hook. Full smoke-test suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

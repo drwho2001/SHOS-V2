@@ -15,6 +15,7 @@ import GlobalSearchScreen from "./modules/SHOS_GlobalSearch_Prototype";
 import { PrivacySettingsRepository } from "./repositories/privacySettingsRepository";
 import { checkBiometryAvailable, authenticateWithBiometrics } from "./storage/biometricAuthService";
 import { AppPreferencesRepository } from "./repositories/appPreferencesRepository";
+import { useLoadedState } from "./calculations/loadedRepositoryState";
 // ADDED 3 Sep 2026 — real ask: "clear notification awareness" — a
 // static top-level import (unlike the existing dynamic ones inside the
 // notification-action effect below) since these are now also called
@@ -561,18 +562,18 @@ export default function App() {
   // live when App Lock is actually on, so it can never trap someone
   // with no PIN to unlock with. Read once, same lazy-useState pattern
   // used for the identical check on Home's own header icon.
-  const [appLockEnabled] = useState(() => PrivacySettingsRepository.getSettings().appLockEnabled);
+  const [appLockEnabled] = useLoadedState(() => PrivacySettingsRepository.getSettings().appLockEnabled, [], false);
   // ADDED 26 Aug 2026 — real ask: onboarding, real single-user
   // personal app — checked once on load, same pattern as `locked`
   // above.
-  const [showOnboarding, setShowOnboarding] = useState(() => !AppPreferencesRepository.getPreferences().hasCompletedOnboarding);
+  const [showOnboarding, setShowOnboarding] = useLoadedState(() => !AppPreferencesRepository.getPreferences().hasCompletedOnboarding, [], false);
   // ADDED 19 Aug 2026 — real ask: the setup prompt itself. Read once
   // on load, same pattern as `locked` above — shows whenever App Lock
   // isn't on AND the prompt hasn't been permanently dismissed.
-  const [showAppLockPrompt, setShowAppLockPrompt] = useState(() => {
+  const [showAppLockPrompt, setShowAppLockPrompt] = useLoadedState(() => {
     const settings = PrivacySettingsRepository.getSettings();
     return !settings.appLockEnabled && !settings.appLockPromptDismissed;
-  });
+  }, [], false);
   // ADDED — real ask: "opening back to last page" — reopening within a
   // short grace window resumes on whatever tab was open when you left,
   // same shouldRelock()-style grace-window pattern App Lock's own
@@ -580,6 +581,23 @@ export default function App() {
   // than a new mechanism. Past the window (or on a genuinely fresh
   // install/first launch, where lastActiveTab is still null), falls
   // back to Home — the 19 Aug default this replaces, not removes.
+  // NOT converted to useLoadedState (Phase 2 encryption groundwork,
+  // Sep 2026) — deliberately, unlike appLockEnabled/showOnboarding/
+  // showAppLockPrompt just above. `active` feeds a write-back effect
+  // just below (the "keeps lastActiveTab in sync" one) that persists
+  // `active`'s CURRENT value on every change. Tried the async
+  // conversion and caught a real bug live: under StrictMode's mount
+  // double-invoke, that write-back effect fires with the pre-load
+  // fallback ("home") BEFORE this loader's own effect (declared
+  // earlier, so it runs first, but its setActive() doesn't take
+  // effect until the next render) has applied the real stored value —
+  // the fallback write clobbers the genuine lastActiveTab in storage
+  // before it's ever read back, so a distinctive stored value
+  // ("medication") got silently overwritten and the app always
+  // resumed to Home. That's real stored-data corruption, not just a
+  // one-tick flash — same bootstrap-critical category as `locked`
+  // above, so left synchronous rather than adding more machinery to
+  // work around the race.
   const [active, setActive] = useState(() => {
     const prefs = AppPreferencesRepository.getPreferences();
     // CHANGED — critical fix: validate lastActiveTab is still a real
