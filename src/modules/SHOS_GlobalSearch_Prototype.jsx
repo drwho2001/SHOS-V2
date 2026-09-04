@@ -82,13 +82,21 @@ function buildIndex() {
   const results = [];
 
   ContactRepository.getAll().filter((c) => !c.isArchived).forEach((c) => {
-    // CHANGED — real bug fix: resolve kink IDs to real names and
-    // include them in the search text — statedKinks/limits store
-    // {kinkId, role} selections, not names, so this needs an explicit
-    // resolve step, the same one every kink-displaying screen already
-    // does.
-    const kinkNames = [...c.statedKinks, ...c.limits].map((sel) => KinkRegistry.getById(sel.kinkId)?.name).filter(Boolean);
-    const searchText = [c.name, c.nickname, c.phone, c.snapchat, c.fabguys, c.fabswingers, c.recon, c.city, c.notes, ...kinkNames].join(" ");
+    // CHANGED 4 Sep 2026 — real ask, from a real device report: a
+    // kink-term search (e.g. "piss") was pulling records that never
+    // actually mention it — the free-text grab-bag below (phone/
+    // snapchat/city/notes) is where those false positives were
+    // actually coming from, not a data bug. Narrowed to identity
+    // (name/nickname) + kink tags only, so a kink search only ever
+    // matches an actual kink tag or a real name, nothing incidental.
+    // ALSO real: this used to resolve `limits` (things a Contact has
+    // explicitly said they WON'T do) into the same search text as
+    // `statedKinks` — meaning searching a kink could surface someone
+    // as if they were into it when the truth on file is the opposite.
+    // Limits are deliberately excluded now; only real stated interest
+    // makes a Contact findable by that kink.
+    const kinkNames = c.statedKinks.map((sel) => KinkRegistry.getById(sel.kinkId)?.name).filter(Boolean);
+    const searchText = [c.name, c.nickname, ...kinkNames].join(" ");
     results.push({
       type: "contact", id: c.id,
       title: c.nickname || c.name || "Unnamed contact",
@@ -116,9 +124,19 @@ function buildIndex() {
   });
 
   EncounterRepository.getAll().filter((e) => !e.isArchived).forEach((e) => {
-    // CHANGED — same real fix as Contacts above.
+    // CHANGED 4 Sep 2026 — same real fix as Contacts above: narrowed
+    // to attendee names + kink tags actually recorded on the
+    // encounter, dropped title/encounterType/notes as searchable
+    // fields — those free-text fields were the real source of a kink
+    // search ("piss") pulling records that never mention it.
+    // Attendee names are a genuinely new match field here (Global
+    // Search never resolved attendeeIds to names before this).
+    const attendeeNames = (e.attendeeIds || []).map((id) => {
+      const contact = ContactRepository.getById(id);
+      return contact?.nickname || contact?.name;
+    }).filter(Boolean);
     const kinkNames = (e.kinksInvolved || []).map((sel) => KinkRegistry.getById(sel.kinkId)?.name).filter(Boolean);
-    const searchText = [e.title, e.encounterType, e.notes, ...kinkNames].join(" ");
+    const searchText = [...attendeeNames, ...kinkNames].join(" ");
     results.push({
       type: "encounter", id: e.id,
       title: e.title || e.encounterType || "Encounter",
@@ -251,29 +269,25 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
     return sorted.slice(0, 30);
   }, [query, index, sortMode]);
 
-  // ADDED 26 Aug 2026 — date-bucket grouping, chronological mode only
-  // — grouping by module AS WELL would genuinely contradict a single
-  // date-ordered list (can't have one global chronological order and
-  // separate per-module clusters at the same time), so per the user's own
-  // "less important if too contradictory" call, this is date-bucket
-  // grouping only, not module grouping.
+  // CHANGED 4 Sep 2026 — real ask: "group results by contact or
+  // encounter. and then by chronology." Replaced date-bucket grouping
+  // (Today/This week/etc., chronological-mode only) with grouping by
+  // RESULT TYPE, always on — `results` is already sorted by the
+  // active sortMode before this runs, so bucketing by type preserves
+  // that order (most-recent-first or A-Z) within each group.
+  const TYPE_ORDER = ["contact", "encounter", "medication", "test", "clinicVisit", "symptomLog", "vaccination"];
+  const TYPE_PLURAL = {
+    contact: "Contacts", encounter: "Encounters", medication: "Medications",
+    test: "Tests", clinicVisit: "Clinic Visits", symptomLog: "Symptom Log",
+    vaccination: "Vaccinations",
+  };
   const groupedResults = useMemo(() => {
-    if (sortMode !== "chronological") return null;
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekStart = new Date(todayStart.getTime() - 7 * 86400000);
-    const monthStart = new Date(todayStart.getTime() - 30 * 86400000);
-    const buckets = { "Today": [], "This week": [], "This month": [], "Older": [], "No date": [] };
+    const buckets = {};
     results.forEach((r) => {
-      if (!r.date) { buckets["No date"].push(r); return; }
-      const d = new Date(r.date);
-      if (d >= todayStart) buckets["Today"].push(r);
-      else if (d >= weekStart) buckets["This week"].push(r);
-      else if (d >= monthStart) buckets["This month"].push(r);
-      else buckets["Older"].push(r);
+      (buckets[r.type] ||= []).push(r);
     });
-    return Object.entries(buckets).filter(([, items]) => items.length > 0);
-  }, [results, sortMode]);
+    return TYPE_ORDER.filter((t) => buckets[t]?.length).map((t) => [TYPE_PLURAL[t], buckets[t]]);
+  }, [results]);
 
   // CHANGED — real ask: "whatever I click should open that
   // card/record, not nav to the list with it in somewhere." Was
@@ -323,16 +337,12 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
             No matches for "{query}".
           </div>
         )}
-        {groupedResults
-          ? groupedResults.map(([label, items]) => (
-              <div key={label}>
-                <div style={{ padding: "10px 16px 4px", fontSize: 11, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, background: T.bg }}>{label}</div>
-                {items.map((r) => <ResultRow key={`${r.type}-${r.id}`} result={r} onSelect={handleSelect} />)}
-              </div>
-            ))
-          : results.map((r) => (
-              <ResultRow key={`${r.type}-${r.id}`} result={r} onSelect={handleSelect} />
-            ))}
+        {groupedResults.map(([label, items]) => (
+          <div key={label}>
+            <div style={{ padding: "10px 16px 4px", fontSize: 11, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, background: T.bg }}>{label}</div>
+            {items.map((r) => <ResultRow key={`${r.type}-${r.id}`} result={r} onSelect={handleSelect} />)}
+          </div>
+        ))}
       </div>
     </div>
   );

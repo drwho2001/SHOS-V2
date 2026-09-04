@@ -265,10 +265,30 @@ export function fuzzyIncludes(searchText, query) {
   if (queryWords.length === 0) return false;
   const textWords = tokenize(normText);
 
+  // FIXED 4 Sep 2026 — real, confirmed bug found from a live device
+  // report ("searched 'piss', got records that never mention it"):
+  // this file's own header comment above already documents the
+  // intended rule — "short words (3 characters or fewer) require an
+  // EXACT match, not fuzzy" — but the substring shortcut below ran
+  // BEFORE that rule was ever checked, with no length floor at all.
+  // `qWord.includes(tWord)` in particular means the QUERY containing
+  // ANY short word anywhere in a record's own text counts as a match
+  // — and "piss" itself contains "i", one of the single most common
+  // standalone words in ordinary written English (as in "I felt..."),
+  // so almost any record with free-text notes would eventually match
+  // almost any query by sheer coincidence. Reproduced directly:
+  // fuzzyIncludes("i felt off today", "piss") was returning true.
+  // Now the substring shortcut only fires once the SHORTER of the two
+  // words clears the same length floor the Levenshtein fallback
+  // already used — "fist" still correctly matches "fisting" (shorter
+  // word is 4 letters), but a lone "a"/"i"/"s" no longer silently
+  // matches everything just because it's a literal substring of
+  // whatever was typed.
   return queryWords.every((qWord) =>
     textWords.some((tWord) => {
-      if (tWord.includes(qWord) || qWord.includes(tWord)) return true;
-      const threshold = maxAllowedDistance(Math.min(qWord.length, tWord.length));
+      const shorterLen = Math.min(qWord.length, tWord.length);
+      if (shorterLen > 3 && (tWord.includes(qWord) || qWord.includes(tWord))) return true;
+      const threshold = maxAllowedDistance(shorterLen);
       return threshold > 0 && levenshteinDistance(qWord, tWord) <= threshold;
     })
   );

@@ -230,6 +230,55 @@ this date; summarized here for durability.
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
 
+## Recently shipped (4 Sep 2026, real-device follow-up — see Notion for full detail)
+
+Real device testing (build #183, after the CI-wiring commit) surfaced
+a genuine Global Search bug beyond what the earlier "fisting" case
+had exposed: searching "piss" pulled records that never mention it
+at all. Root-caused to an actual algorithm bug in `fuzzyMatch.js`'s
+`fuzzyIncludes()`, not a data or field-coverage issue — its own header
+comment already documented the intended rule ("short words (3
+characters or fewer) require an EXACT match, not fuzzy") but the
+bidirectional substring shortcut (`tWord.includes(qWord) ||
+qWord.includes(tWord)`) ran with no length floor at all, so a query
+containing a lone "i" ("piss" does) matched almost any record whose
+free text happened to contain the standalone word "i" — reproduced
+directly (`fuzzyIncludes("i felt off today", "piss")` was `true`).
+Fixed by gating that shortcut behind the same length floor the
+Levenshtein fallback already used — verified "fist"/"fisting" and
+genuine typo tolerance both still work, while the lone-letter false
+positive is gone.
+
+Same report also asked for a real behavior change: Global Search on
+Contacts/Encounters was matching kink-term queries against free-text
+fields (title/notes/phone/city/etc.), which is what actually let a
+term "pull records without the term" even before the fuzzy bug —
+narrowed both to kink tags + identity (name/nickname for Contacts,
+resolved attendee names for Encounters — a genuinely new match field,
+Global Search never resolved attendeeIds to names before this) and
+dropped title/encounterType/notes/phone/snapchat/city entirely from
+what a kink search can match. Separately, real and worth calling out
+on its own: Contacts search used to resolve BOTH `statedKinks` and
+`limits` into the same search text — meaning a kink someone explicitly
+said they will NOT do could surface them in results as if they were
+into it. Limits are excluded now; only real stated interest makes a
+Contact findable by that kink. Other result types (Medication/Test/
+Clinic Visit/Symptom Log/Vaccination) were left untouched — they have
+no kink-tag concept to narrow to, and the report was specifically
+about kink-term search behavior.
+
+Also grouped results by type (Contacts/Encounters/etc., in a fixed
+order) with chronological order preserved within each group, replacing
+the old date-bucket grouping (Today/This week/etc.) — the explicit
+ask, and a more useful shape once a kink term can genuinely match both
+a Contact and an Encounter for real, different reasons.
+
+All three changes verified live via Playwright against synthetic data
+designed to isolate each claim (a stated-kink match, a limit correctly
+excluded, free-text/title correctly excluded, attendee-name matching,
+multi-type grouping) — plus the full `scripts/smoke-test.cjs` suite,
+unaffected since it doesn't touch Global Search.
+
 ## Recently shipped (4 Sep 2026, later still — see Notion for full detail)
 
 Real app icon assets produced, closing the "unfinished icon" Known
