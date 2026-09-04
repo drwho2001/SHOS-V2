@@ -402,8 +402,22 @@ this date; summarized here for durability.
   `innerText`), opening+closing without editing leaves no draft, a real
   edit still autosaves correctly, Add Encounter still starts blank,
   search and the "since last test" filter both still work. Full
-  smoke-test suite passes. ~72 known sites remain (undercount — see the
-  bare-function-reference gap above).
+  smoke-test suite passes.
+  Re-swept every other module file for the same bare-reference
+  shorthand right after finding it (`grep -rnE
+  "useState\([a-zA-Z_][a-zA-Z0-9_]*\)|useMemo\([a-zA-Z_][a-zA-Z0-9_]*,\s*\["`,
+  filtered for `useState(true|false|null|undefined)`): 7 more matches
+  across `SHOS_Medication_Dashboard_Prototype.jsx`,
+  `SHOS_MyProfile_Prototype.jsx` (2, one already fixed above),
+  `SHOS_Settings_Prototype.jsx` (2), `SHOS_PartnerNotification_Prototype.jsx`,
+  and `RegistrySinglePicker` in Encounters itself — checked every one
+  individually and all 7 are safe (props or plain constants, e.g.
+  `useState(currentStock)`/`useState(ALL_MODULE_KEYS)`, not a
+  repository call). So the bare-reference gap really was isolated to
+  Encounters' own `loadContacts`/`loadEncounters` module-level helper
+  naming convention, not a systemic blind spot — the ~72 remaining-site
+  estimate from the original grep can be trusted after all, not treated
+  as an undercount.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
