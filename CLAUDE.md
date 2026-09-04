@@ -242,6 +242,22 @@ phones actually show), the legacy mdpi 48px fallback does soften as
 the original review honestly flagged it might — an accepted tradeoff
 of the chosen direction, not a new problem.
 
+Real bug in that first render pass, caught by the owner's own eyes:
+the icons read as blurry. Root cause was `deviceScaleFactor =
+targetPx/108` applied directly for every export — for the legacy
+48–96px sizes that's a scale factor BELOW 1, which Chromium doesn't
+rasterize crisply. Fixed by rendering each layer once at a large
+fixed master (1080×1080) and downsampling to every real target size
+with Pillow's LANCZOS filter instead of asking the browser to
+rasterize small targets natively — same design, same verified
+centering, visibly sharper at every size. Also removed
+`drawable/ic_launcher_background.xml` and
+`drawable-v24/ic_launcher_foreground.xml` — Android Studio's stock
+default-template icon leftovers, confirmed genuinely unreferenced
+anywhere (the real adaptive-icon XML points at `@mipmap/...`, never
+`@drawable/...`) via a full grep across the Android project before
+deleting. Pure clutter now that real assets exist.
+
 ## Recently shipped (4 Sep 2026, continued — see Notion for full detail)
 
 Confirmed the real root cause behind the Global Search bug report ("Tried
