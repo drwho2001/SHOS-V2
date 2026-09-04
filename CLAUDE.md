@@ -208,29 +208,20 @@ this date; summarized here for durability.
   mitigation shipped (an early listener buffer in
   `notificationService.js`); the due-meds banner is the real safety net
   for a missed tap.
-- **"Export backup to a folder" plugin swapped, still unconfirmed on a
-  real device.** `@capawesome/capacitor-file-picker`'s `pickDirectory()`
-  returned a SAF tree URI with no `createDocument`-equivalent to mint a
-  writable document inside it — confirmed 4 Sep by reading its Android
-  source directly, a capability gap, not a bug in this app's own code.
-  Swapped (4 Sep, owner's explicit call) for
-  `@daniele-rolli/capacitor-scoped-storage`, whose `writeFile()` was
-  verified the same way — read line-by-line, not trusted from its
-  README — and genuinely does the missing step
-  (`DocumentFile.fromTreeUri(...).createFile(...)` before opening the
-  output stream). Real, disclosed risk: v0.1.0, single maintainer, no
-  visible test suite; its 3 open issues at swap time don't touch the
-  pickFolder+writeFile path this feature uses. Builds clean (JS + a
-  green `build-apk.yml` Java compile), but the actual write into a
-  user-picked folder still needs confirming on a real Android device —
-  this environment can't do that, same honest limit as before the
-  swap.
 - Registry-entry merge, per-value icons within a registry, and a true
   no-code schema editor are deliberate scope cuts, not gaps — don't
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
 
 ## Recently shipped (4 Sep 2026, real-device follow-up — see Notion for full detail)
+
+Owner reports the "export backup to a folder" write ("I believe" —
+his own hedge, not re-tested by a second explicit confirmation) now
+actually lands on his real device after the plugin swap to
+`@daniele-rolli/capacitor-scoped-storage`. Moved out of Known Issues
+on that basis; if a real failure surfaces later, the honest disclosed
+risk from the swap itself (v0.1.0, single maintainer, no visible test
+suite) is still the first place to look.
 
 Real device testing (build #183, after the CI-wiring commit) surfaced
 a genuine Global Search bug beyond what the earlier "fisting" case
