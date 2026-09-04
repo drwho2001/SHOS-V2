@@ -227,11 +227,42 @@ this date; summarized here for durability.
   raw `localStorage` read, which turned out to be the wrong way to
   check: registry seed data lives in memory until a real `create()`
   actually persists it, so an empty raw key on a fresh profile isn't
-  itself a bug. The ~19 real repository files, the ~10 preferences
-  repositories, and `main.jsx`'s `ErrorBoundary` are still untouched —
-  still needs its own dedicated pass for the rest. Local commits only
-  as of 4 Sep — owner asked to hold all pushes until the full Phase 2
-  migration is done and reviewed, not push incrementally.
+  itself a bug.
+  Real correction to the original audit's own framing: "convert one
+  repository at a time" doesn't match reality. The actual sync-conflict
+  site is a specific PATTERN — `useState(() => Repo.getX())` or
+  `useMemo(() => Repo.getX(), deps)` — not a repository file boundary.
+  A full sweep found roughly 100 real sites using this exact pattern
+  across ~20 module files, spanning nearly every repository
+  (`AppPreferencesRepository` alone is read this way independently in
+  8+ files), plus `App.jsx`'s own bootstrap logic (`locked`,
+  `appLockEnabled`, `showOnboarding` — load-bearing for the whole
+  app's first render). Hand-writing a bespoke `useEffect` at each of
+  ~100 sites (the Clinic Card approach) would be slow and genuinely
+  risky at that volume — built a shared, reusable pair of hooks
+  instead: `src/calculations/loadedRepositoryState.js` exports
+  `useLoadedState` (mirrors `useState`'s own `[value, setValue]`
+  tuple) and `useLoadedMemo` (mirrors `useMemo`'s return-only shape),
+  both loading via an effect instead of a lazy initializer. Both
+  proved out live: `clinicCardVisibilityPreference.js` refactored to
+  use `useLoadedState` instead of its own bespoke effect (same
+  verified persistence behavior), and `SHOS_Settings_Prototype.jsx`'s
+  `ResourceCategory`'s `entries` converted to `useLoadedMemo` — proved
+  both the mount-once path and the deps-driven reload path (adding a
+  resource entry correctly bumps `refreshKey` and the new entry
+  appears without a full page reload). Also caught and corrected a
+  real test-methodology mistake in the process, not an app bug: a
+  Settings-navigation check kept reading the wrong DOM scope
+  (`document.body.innerText` truncated before reaching the actual
+  overlay content, with the underlying screen apparently staying
+  mounted beneath it) — same class of mistake as an earlier Global
+  Search test this session, now fixed the same way (scope to the
+  specific `position: fixed; inset: 0` overlay, not the whole body).
+  Still ~98 real sites untouched, plus `main.jsx`'s `ErrorBoundary` —
+  still needs its own dedicated pass for the rest, now with a proven
+  tool to do it with rather than a bespoke effect per site. Local
+  commits only as of 4 Sep — owner asked to hold all pushes until the
+  full Phase 2 migration is done and reviewed, not push incrementally.
 - **Still near-zero real test coverage, though the one existing script
   is now CI-gated.** `scripts/smoke-test.cjs` (3 flows) got wired into
   a new `.github/workflows/smoke-test.yml` (4 Sep) — runs the exact

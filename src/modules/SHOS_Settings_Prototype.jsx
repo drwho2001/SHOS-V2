@@ -47,6 +47,7 @@ import {
   getAdherenceTrend, getTopSymptoms, getClinicVisitStats, getClinicVisitsPerMonth,
 } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { exportBackup, exportEncryptedBackup, exportBackupToChosenFolder, exportEncryptedBackupToChosenFolder, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
 import { isChooseFolderExportAvailable } from "../storage/fileExportHelper";
 import { exportRecordsAsCSV } from "../storage/csvExportService";
@@ -927,7 +928,17 @@ function ResourceCategory({ categoryKey, darkMode, query }) {
   const T = darkMode ? DARK : NEUTRAL;
   const [refreshKey, setRefreshKey] = useState(0);
   const [addingName, setAddingName] = useState("");
-  const entries = useMemo(() => ResourcesRepository.getEntries(categoryKey), [categoryKey, refreshKey]);
+  // CHANGED 4 Sep 2026 — real groundwork for encryption at rest (see
+  // CLAUDE.md's Known Issues / the Notion Development log for the
+  // full plan): useLoadedMemo instead of a plain useMemo — same
+  // shape/ergonomics, but loads via an effect instead of
+  // synchronously, since storage.load() behind getEntries() is
+  // slated to become async once real encryption lands. Second real
+  // proof point for the shared hook (loadedRepositoryState.js),
+  // exercising the deps-driven recompute path specifically —
+  // clinicCardVisibilityPreference.js already proved the mount-once
+  // path.
+  const entries = useLoadedMemo(() => ResourcesRepository.getEntries(categoryKey), [categoryKey, refreshKey], []);
   const refresh = () => setRefreshKey((k) => k + 1);
   const q = query.trim().toLowerCase();
   const filtered = q ? entries.filter((e) => [e.name, e.link, e.notes].filter(Boolean).some((v) => v.toLowerCase().includes(q))) : entries;
