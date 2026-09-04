@@ -83,6 +83,7 @@ import { syncClinicVisitsToCalendar } from "../storage/calendarSyncService";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
+import { useLoadedState } from "../calculations/loadedRepositoryState";
 
 // ADDED 3 Sep 2026 — real ask: fix the Safari/iOS gesture-gated
 // permission bug (see this file's own comment on notifPermStatus
@@ -96,7 +97,7 @@ import TimelineModule from "./SHOS_Timeline_Prototype";
 // own requirement, unlike the old auto-request on mount.
 function NotificationPermissionNudge({ status, onStatusChange }) {
   const [darkMode] = useDarkModePreference();
-  const [dismissed, setDismissed] = useState(() => NotificationPreferencesRepository.getPreferences().permissionNudgeDismissed);
+  const [dismissed, setDismissed] = useLoadedState(() => NotificationPreferencesRepository.getPreferences().permissionNudgeDismissed, [], false);
   if (status !== "prompt" || dismissed) return null;
 
   const notNow = () => {
@@ -148,7 +149,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // bare "Home". My Profile only has `nickname`, no separate name
   // field — falls back to a generic label if it's never been filled
   // in, rather than showing "'s dashboard" with a blank in front.
-  const [profileName] = useState(() => MyProfileRepository.getProfile().nickname);
+  const [profileName] = useLoadedState(() => MyProfileRepository.getProfile().nickname, [], "");
   // CHANGED 1 Sep 2026 — real fix, found during a smoothness/efficiency
   // review: unlike every other repository read on this screen (all
   // read once via a lazy useState initializer or a mount-only
@@ -156,7 +157,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // directly in the render body — a real localStorage read + JSON.parse
   // on every single re-render of Home, not just once. Same lazy-
   // useState pattern as profileName just above.
-  const [appLockEnabled] = useState(() => PrivacySettingsRepository.getSettings().appLockEnabled);
+  const [appLockEnabled] = useLoadedState(() => PrivacySettingsRepository.getSettings().appLockEnabled, [], false);
   const [lastContact, setLastContact] = useState(null);
   const [lastEncounter, setLastEncounter] = useState(null);
   const [lastDose, setLastDose] = useState(null);
@@ -174,13 +175,13 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // ADDED — real ask: Menstrual/Contraception shortcuts + real results
   // on the dashboard, gated behind the same toggle the Healthcare
   // sub-tab itself is gated behind.
-  const [menstrualTrackingEnabled] = useState(() => AppPreferencesRepository.getPreferences().menstrualTrackingEnabled);
+  const [menstrualTrackingEnabled] = useLoadedState(() => AppPreferencesRepository.getPreferences().menstrualTrackingEnabled, [], false);
   const [lastPeriod, setLastPeriod] = useState(null);
   const [contraceptionDue, setContraceptionDue] = useState(null);
   // ADDED 19 Aug 2026 — real ask: a backup reminder. Read once on
   // mount, same pattern as everything else on Home — see
   // backupService.js's getLastBackupInfo() for how "due" is computed.
-  const [backupInfo] = useState(() => getLastBackupInfo());
+  const [backupInfo] = useLoadedState(() => getLastBackupInfo(), [], { lastAt: null, daysSince: null, dueForReminder: false });
   // ADDED — real ask: "scheduled auto-export" — self-gated inside
   // runAutoExportIfDue() on whether the preference is actually turned
   // on (Settings -> Preferences), safe to call unconditionally here,
