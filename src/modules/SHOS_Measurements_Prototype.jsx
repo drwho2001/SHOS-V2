@@ -16,7 +16,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X, GearIcon as Gear, FolderIcon as Folder } from "@phosphor-icons/react";
 import { MeasurementRepository, DEFAULT_MEASUREMENT, BLOOD_PRESSURE_TYPE, BLOOD_PRESSURE_UNIT, getAvailableUnits, getDefaultUnit, hasUnitConversion, convertFromCanonical, KIND_UNITS, KIND_LABELS } from "../repositories/measurementRepository";
-import { MeasurementPreferencesRepository } from "../repositories/measurementPreferencesRepository";
+import { MeasurementPreferencesRepository, DEFAULT_MEASUREMENT_PREFERENCES } from "../repositories/measurementPreferencesRepository";
 import { CustomGroupsRepository } from "../repositories/customGroupsRepository";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
@@ -29,6 +29,7 @@ import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 // Domain key for CustomGroupsRepository — shared mechanism, this
 // module's own namespace within it (see customGroupsRepository.js).
@@ -243,7 +244,7 @@ function ValueUnitFields({ type, value, unit, onValueChange, onUnitChange, T }) 
 // whatever's already been typed before (getKnownClinicNames), same
 // "free text with real suggestions" pattern used throughout this app.
 function LocationField({ locationType, clinicName, onLocationTypeChange, onClinicNameChange, T }) {
-  const knownClinics = useMemo(() => MeasurementRepository.getKnownClinicNames(), []);
+  const knownClinics = useLoadedMemo(() => MeasurementRepository.getKnownClinicNames(), [], []);
   const typed = (clinicName || "").trim();
   const suggestions = (typed ? knownClinics.filter((c) => c.toLowerCase().includes(typed.toLowerCase())) : knownClinics)
     .filter((c) => c !== clinicName).slice(0, 6);
@@ -280,8 +281,8 @@ function LocationField({ locationType, clinicName, onLocationTypeChange, onClini
 
 function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose, T }) {
   const isNew = !measurement;
-  const [typeOptions, setTypeOptions] = useState(() => CustomOptionListsRepository.get("measurementType"));
-  const [rankedTypeOptions, setRankedTypeOptions] = useState(() => CustomOptionListsRepository.getRanked("measurementType"));
+  const [typeOptions, setTypeOptions] = useLoadedState(() => CustomOptionListsRepository.get("measurementType"), [], []);
+  const [rankedTypeOptions, setRankedTypeOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("measurementType"), [], []);
   // "Blood pressure" excluded from what's offered when editing an
   // existing non-BP entry — can't switch INTO it (see file comment).
   const editableOptions = !isNew && measurement.type !== BLOOD_PRESSURE_TYPE
@@ -442,7 +443,7 @@ function displayReading(m) {
 }
 
 function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, refresh }) {
-  const [m, setM] = useState(() => MeasurementRepository.getById(measurementId));
+  const m = useLoadedMemo(() => MeasurementRepository.getById(measurementId), [measurementId], null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   if (!m) return null;
   const isBP = m.type === BLOOD_PRESSURE_TYPE;
@@ -540,7 +541,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
   // each type belongs to (see customGroupsRepository.js), with
   // anything not assigned to a group falling under "Ungrouped".
   const [groupMode, setGroupMode] = useState("type");
-  const customGroupSections = useMemo(() => {
+  const customGroupSections = useLoadedMemo(() => {
     if (groupMode !== "custom") return null;
     const customGroups = CustomGroupsRepository.get(GROUP_DOMAIN);
     const sections = customGroups.map((g) => ({
@@ -552,7 +553,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
     if (ungrouped.length > 0) sections.push({ id: "ungrouped", name: "Ungrouped", subGroups: ungrouped });
     return sections;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupMode, byTypeGroups, groupsVersion]);
+  }, [groupMode, byTypeGroups, groupsVersion], null);
 
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -699,7 +700,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
 // values (measurement types, medication categories, …) that can be
 // assigned into a group.
 function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
-  const [groups, setGroups] = useState(() => CustomGroupsRepository.get(domain));
+  const [groups, setGroups] = useLoadedState(() => CustomGroupsRepository.get(domain), [], []);
   const [newName, setNewName] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const refresh = () => { setGroups(CustomGroupsRepository.get(domain)); onChanged?.(); };
@@ -769,7 +770,7 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
 // see UNIT_CONFIG in measurementRepository.js) plus the entry point
 // into group management above.
 function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
-  const [prefs, setPrefs] = useState(() => MeasurementPreferencesRepository.getPreferences());
+  const [prefs, setPrefs] = useLoadedState(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
   // CHANGED 3 Sep 2026 — Height and Temperature both got real
   // UNIT_CONFIG conversion but were never added to this list, so their
   // default unit was never settable here (also now settable app-wide
@@ -813,7 +814,7 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
   const [screen, setScreen] = useState({ name: "list" });
-  const [measurements, setMeasurements] = useState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived));
+  const [measurements, setMeasurements] = useLoadedState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived), [], []);
   const refresh = () => { setMeasurements(MeasurementRepository.getAll().filter((m) => !m.isArchived)); onDataChanged?.(); };
   const [deleteToast, setDeleteToast] = useState(null);
   const undoTimerRef = useRef(null);
@@ -846,7 +847,7 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
   const [showPreferences, setShowPreferences] = useState(false);
   const [showManageGroups, setShowManageGroups] = useState(false);
   const [groupsVersion, setGroupsVersion] = useState(0);
-  const allTypesEverUsed = useMemo(() => CustomOptionListsRepository.get("measurementType"), [groupsVersion]);
+  const allTypesEverUsed = useLoadedMemo(() => CustomOptionListsRepository.get("measurementType"), [groupsVersion], []);
 
   useEffect(() => {
     if (openAddOnMount) {
