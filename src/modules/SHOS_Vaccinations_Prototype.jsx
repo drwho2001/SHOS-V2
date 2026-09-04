@@ -12,6 +12,7 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -210,9 +211,9 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   // ADDED 19 Aug 2026 — real in-app editable option lists.
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const [vaccineOptions, setVaccineOptions] = useState(() => CustomOptionListsRepository.getRanked("vaccine"));
-  const vaccinationReasonOptions = useMemo(() => CustomOptionListsRepository.getRanked("vaccinationReason"), []);
-  const injectionSiteOptions = useMemo(() => CustomOptionListsRepository.getRanked("injectionSite"), []);
+  const [vaccineOptions, setVaccineOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("vaccine"), [], []);
+  const vaccinationReasonOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("vaccinationReason"), [], []);
+  const injectionSiteOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("injectionSite"), [], []);
   const draftKey = `vaccination_${vaccination?.id || "new"}`;
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);
@@ -232,7 +233,7 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   }, [form]);
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const canSave = form.title.trim().length > 0;
-  const symptoms = useMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), []);
+  const symptoms = useLoadedMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), [], []);
   // CHANGED 1 Sep 2026 — real omission found in a broader audit: this
   // had no .sort() at all (storage order = oldest first), the same
   // "old options listed first" bug already fixed elsewhere. Sorted
@@ -240,13 +241,13 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   // field, same "search by name or [relevant field]" pattern used
   // elsewhere (Encounters searches by attendee, this searches by
   // clinician — Vaccinations' nearest equivalent).
-  const visits = useMemo(() => [...ClinicVisitsRepository.getAll()].filter((v) => !v.isArchived)
+  const visits = useLoadedMemo(() => [...ClinicVisitsRepository.getAll()].filter((v) => !v.isArchived)
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
     .map((v) => ({
       id: v.id,
       name: `${v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(v.date)}`,
       searchText: (v.clinician || []).join(" ").toLowerCase(),
-    })), []);
+    })), [], []);
 
   const doSave = () => {
     clearDraft(draftKey);
@@ -304,7 +305,7 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
 }
 
 function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, refresh }) {
-  const [v, setV] = useState(() => VaccinationRepository.getById(vaccinationId));
+  const v = useLoadedMemo(() => VaccinationRepository.getById(vaccinationId), [vaccinationId], null);
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven for Testing.
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -552,7 +553,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   // VaccinationsLanding — vaccinations/deletedRecent/undoDelete/
   // triggerDelete now live at the real module level, shared with
   // VaccinationDetail.
-  const [vaccinations, setVaccinations] = useState(() => VaccinationRepository.getAll().filter((v) => !v.isArchived));
+  const [vaccinations, setVaccinations] = useLoadedState(() => VaccinationRepository.getAll().filter((v) => !v.isArchived), [], []);
   const refresh = () => setVaccinations(VaccinationRepository.getAll().filter((v) => !v.isArchived));
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
