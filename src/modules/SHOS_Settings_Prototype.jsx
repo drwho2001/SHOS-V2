@@ -47,7 +47,7 @@ import {
   getAdherenceTrend, getTopSymptoms, getClinicVisitStats, getClinicVisitsPerMonth,
 } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
-import { useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { useLoadedMemo, useLoadedState } from "../calculations/loadedRepositoryState";
 import { exportBackup, exportEncryptedBackup, exportBackupToChosenFolder, exportEncryptedBackupToChosenFolder, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
 import { isChooseFolderExportAvailable } from "../storage/fileExportHelper";
 import { exportRecordsAsCSV } from "../storage/csvExportService";
@@ -64,11 +64,11 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
 import { MeasurementRepository, getAvailableUnits, getDefaultUnit } from "../repositories/measurementRepository";
-import { MeasurementPreferencesRepository } from "../repositories/measurementPreferencesRepository";
+import { MeasurementPreferencesRepository, DEFAULT_MEASUREMENT_PREFERENCES } from "../repositories/measurementPreferencesRepository";
 import { TrashRepository, MODULE_LABELS as TRASH_MODULE_LABELS } from "../repositories/trashRepository";
 import { getCalendarEvents, groupEventsByDay } from "../calculations/calendarCalculations";
 import { LocationsRepository } from "../repositories/locationsRepository";
-import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
+import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../repositories/privacySettingsRepository";
 import { NotificationPreferencesRepository, isPaused } from "../repositories/notificationPreferencesRepository";
 import { NotificationHistoryRepository } from "../repositories/notificationHistoryRepository";
 import { getDeferredInstallPrompt, onInstallPromptAvailable, triggerInstallPrompt } from "../storage/installPromptService";
@@ -81,7 +81,7 @@ import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
 import { checkBiometryAvailable } from "../storage/biometricAuthService";
 import { checkCalendarAvailable, syncClinicVisitsToCalendar, removeAllSyncedEvents, removeSyncedEventsFrom, listAvailableCalendars, SHOS_CALENDAR_NAME } from "../storage/calendarSyncService";
-import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
+import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../repositories/appPreferencesRepository";
 import { EpisodeRepository } from "../repositories/episodeRepository";
 import { KinkRegistry } from "../registries/kinkRegistry";
 import { ChemsRegistry } from "../registries/chemsRegistry";
@@ -556,7 +556,7 @@ function DeveloperToolsScreen({ onClose }) {
   // Attachments the one thing that could push toward the browser's
   // localStorage quota over time). See storageAdapter.js's own
   // getStorageUsage() comment for the byte-counting approach.
-  const storageUsage = useMemo(() => localStorageAdapter.getStorageUsage(), []);
+  const storageUsage = useLoadedMemo(() => localStorageAdapter.getStorageUsage(), [], { totalBytes: 0, byKey: [] });
   const [showStorageBreakdown, setShowStorageBreakdown] = useState(false);
   // ADDED — real ask: a data-integrity sweep for dangling relation-by-
   // ID references (e.g. a hard-deleted Contact an old Encounter's
@@ -565,7 +565,7 @@ function DeveloperToolsScreen({ onClose }) {
   // once per screen-open, the data's small enough" judgment already
   // applied to Global Search's own index and the Registry duplicate
   // checker.
-  const orphans = useMemo(() => findOrphanReferences(), []);
+  const orphans = useLoadedMemo(() => findOrphanReferences(), [], []);
   const [showOrphans, setShowOrphans] = useState(false);
   const counts = [
     { label: "Contacts", value: ContactRepository.getAll().length },
@@ -726,7 +726,7 @@ function DeveloperToolsScreen({ onClose }) {
 function LocationExtraFields({ entry, refresh, T, color }) {
   const [address, setAddress] = useState(entry.address || "");
   const [notes, setNotes] = useState(entry.notes || "");
-  const contacts = useMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived), []);
+  const contacts = useLoadedMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived), [], []);
   const setType = (type) => { LocationsRepository.update(entry.id, { type: entry.type === type ? "" : type }); refresh(); };
   const commitAddress = () => { LocationsRepository.update(entry.id, { address: address.trim() }); refresh(); };
   const commitNotes = () => { LocationsRepository.update(entry.id, { notes: notes.trim() }); refresh(); };
@@ -1047,7 +1047,7 @@ function ResourcesScreen({ onClose }) {
 function PrivacyScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
 
-  const [settings, setSettings] = useState(() => PrivacySettingsRepository.getSettings());
+  const [settings, setSettings] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const [pinEntry, setPinEntry] = useState("");
   const [pinError, setPinError] = useState("");
   const [settingPin, setSettingPin] = useState(false);
@@ -1897,7 +1897,7 @@ function NotificationsScreen({ onClose }) {
 // the full reasoning. Read-only besides a Clear action; this is a
 // diagnostic/awareness view, not something with its own settings.
 function NotificationHistoryScreen({ darkMode, onClose }) {
-  const [entries, setEntries] = useState(() => NotificationHistoryRepository.getAll());
+  const [entries, setEntries] = useLoadedState(() => NotificationHistoryRepository.getAll(), [], []);
   const clear = () => { NotificationHistoryRepository.clear(); setEntries([]); };
 
   return (
@@ -1963,7 +1963,7 @@ function detectUnitSystem(prefs) {
 
 function UnitsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
-  const [prefs, setPrefs] = useState(() => MeasurementPreferencesRepository.getPreferences());
+  const [prefs, setPrefs] = useLoadedState(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
   const system = detectUnitSystem(prefs);
 
   const setPreferred = (type, unit) => setPrefs(MeasurementPreferencesRepository.setPreferredUnit(type, unit));
@@ -1979,7 +1979,7 @@ function UnitsScreen({ onClose }) {
   // not measurement units) but this screen is the closest existing
   // "how things display" home rather than a new near-empty screen —
   // same reasoning as InactiveThresholdCard folding into DesignScreen.
-  const [appPrefs, setAppPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const [appPrefs, setAppPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const setWeekStartsOn = (value) => setAppPrefs(AppPreferencesRepository.update({ weekStartsOn: value }));
 
   return (
@@ -2081,7 +2081,7 @@ const AUTO_EXPORT_INTERVAL_OPTIONS = [
 // and reachable directly from the Data section next to Export/Restore.
 function AutomaticBackupsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
-  const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
 
   const toggleAutoExport = () => {
     setPrefs(AppPreferencesRepository.update({ autoExportEnabled: !prefs.autoExportEnabled }));
@@ -2142,7 +2142,7 @@ function AutomaticBackupsScreen({ onClose }) {
 // to be scared of. Same standalone-screen pattern as AutomaticBackupsScreen.
 function DataNetworkScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
-  const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
 
   const toggleAddressLookup = () => {
     setPrefs(AppPreferencesRepository.update({ addressLookupEnabled: !prefs.addressLookupEnabled }));
@@ -2268,16 +2268,16 @@ function TrendInsight({ text, tone, T }) {
 function StatsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
 
-  const encounters = useMemo(() => EncounterRepository.getAll(), []);
-  const contacts = useMemo(() => ContactRepository.getAll(), []);
-  const tests = useMemo(() => TestingRepository.getAll(), []);
+  const encounters = useLoadedMemo(() => EncounterRepository.getAll(), [], []);
+  const contacts = useLoadedMemo(() => ContactRepository.getAll(), [], []);
+  const tests = useLoadedMemo(() => TestingRepository.getAll(), [], []);
   // computeAdherence() reads med.logs directly — not part of the raw
   // repository record, so it has to be stitched on here too (same as
   // SHOS_Medication_Dashboard_Prototype.jsx's loadMedications()).
-  const medications = useMemo(() => MedicationRepository.getAll().map((med) => ({ ...med, logs: LogRepository.getForMedication(med.id) })), []);
+  const medications = useLoadedMemo(() => MedicationRepository.getAll().map((med) => ({ ...med, logs: LogRepository.getForMedication(med.id) })), [], []);
   // ADDED — real ask: "expand stats".
-  const symptomEntries = useMemo(() => SymptomLogRepository.getAll(), []);
-  const clinicVisits = useMemo(() => ClinicVisitsRepository.getAll(), []);
+  const symptomEntries = useLoadedMemo(() => SymptomLogRepository.getAll(), [], []);
+  const clinicVisits = useLoadedMemo(() => ClinicVisitsRepository.getAll(), [], []);
 
   const activityMonths = useMemo(() => getActivitiesPerMonth(encounters, 6), [encounters]);
   const topKinks = useMemo(() => getTopKinks(encounters, contacts, (id) => KinkRegistry.getById(id)?.name, 5), [encounters, contacts]);
@@ -2873,7 +2873,7 @@ function AboutScreen({ onClose }) {
 // my phone's calendar," not a generic Settings menu several taps away.
 function CalendarSyncSheet({ onClose }) {
   const [darkMode] = useDarkModePreference();
-  const [appPrefs, setAppPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const [appPrefs, setAppPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const [calendarSyncError, setCalendarSyncError] = useState("");
   const [calendarSyncing, setCalendarSyncing] = useState(false);
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
@@ -3073,14 +3073,14 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   const [activeModules, setActiveModules] = useState(ALL_MODULE_KEYS);
   const toggleModule = (key) => setActiveModules((cur) => cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]);
 
-  const allEvents = useMemo(() => getCalendarEvents({
+  const allEvents = useLoadedMemo(() => getCalendarEvents({
     encounters: EncounterRepository.getAll(),
     tests: TestingRepository.getAll(),
     clinicVisits: ClinicVisitsRepository.getAll(),
     vaccinations: VaccinationRepository.getAll(),
     symptomEntries: SymptomLogRepository.getAll(),
     medications: MedicationRepository.getAll(),
-  }), []);
+  }), [], []);
   const events = useMemo(() => allEvents.filter((e) => activeModules.includes(e.moduleKey)), [allEvents, activeModules]);
   const grouped = useMemo(() => groupEventsByDay(events), [events]);
 
@@ -3235,7 +3235,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
 function TrashScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
 
-  const [items, setItems] = useState(() => TrashRepository.getAll());
+  const [items, setItems] = useLoadedState(() => TrashRepository.getAll(), [], []);
   const refresh = () => setItems(TrashRepository.getAll());
   // ADDED 26 Aug 2026 — real ask: 4 real actions (restore all/
   // selected, delete all/selected), with real multi-select on this
@@ -3359,7 +3359,7 @@ function TrashScreen({ onClose }) {
 }
 
 function DesignScreen({ onClose }) {
-  const [overrides, setOverrides] = useState(() => ModuleColorRepository.getOverrides());
+  const [overrides, setOverrides] = useLoadedState(() => ModuleColorRepository.getOverrides(), [], {});
   const [changed, setChanged] = useState(false);
   // ADDED 26 Aug 2026 — real ask: single global dark mode toggle here,
   // replacing Medication's own per-module icon. Same shared
@@ -3502,8 +3502,18 @@ function DesignScreen({ onClose }) {
 }
 
 function InactiveThresholdCard({ T }) {
-  const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const [draftValue, setDraftValue] = useState(() => String(prefs.inactiveThresholdDays));
+  // ADDED 4 Sep 2026 — encryption groundwork: prefs now loads via an
+  // effect instead of synchronously, so draftValue's own initializer
+  // (which reads prefs.inactiveThresholdDays at mount) would otherwise
+  // freeze on DEFAULT_APP_PREFERENCES' value forever once the real
+  // prefs loads a tick later — same regression class as MyProfile's
+  // form earlier in this audit. Resyncing on every prefs change is
+  // safe here: the only thing that ever changes prefs while this card
+  // is mounted is the user's own save() below, and resyncing to the
+  // value they just saved is a no-op, not a clobber.
+  useEffect(() => { setDraftValue(String(prefs.inactiveThresholdDays)); }, [prefs]);
 
   const save = () => {
     const parsed = parseInt(draftValue, 10);
@@ -3536,7 +3546,7 @@ function InactiveThresholdCard({ T }) {
 // needs this). Off by default, same "opt-in feature area" toggle
 // pattern as calendar sync above.
 function MenstrualTrackingToggleCard({ T }) {
-  const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const toggle = () => setPrefs(AppPreferencesRepository.update({ menstrualTrackingEnabled: !prefs.menstrualTrackingEnabled }));
   return (
     <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
