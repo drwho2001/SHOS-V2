@@ -9,6 +9,7 @@ import { NEUTRAL, ACTION, RADIUS, resolveDarkAccent } from "../calculations/desi
 // ADDED — real ask: "add button to check through registries... for
 // duplicates using fuzzy matching... so user doesn't have to dig."
 import { findDuplicatePairs } from "../calculations/fuzzyMatch";
+import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 // ADDED 19 Aug 2026 — Registry Management, per the user's priority order.
 // ONE shared screen for all 6 registries (Kink/Chems/Protection/
@@ -95,7 +96,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
   // flags for review rather than auto-merging.
   const [showDuplicates, setShowDuplicates] = useState(false);
 
-  const allEntries = useMemo(() => registry.getAll(), [refreshKey]);
+  const allEntries = useLoadedMemo(() => registry.getAll(), [refreshKey], []);
   const active = allEntries.filter((e) => !e.isArchived).sort((a, b) => a.name.localeCompare(b.name));
   const archived = allEntries.filter((e) => e.isArchived).sort((a, b) => a.name.localeCompare(b.name));
   const duplicatePairs = useMemo(() => findDuplicatePairs(allEntries), [allEntries]);

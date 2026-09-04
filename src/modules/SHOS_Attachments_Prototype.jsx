@@ -7,6 +7,7 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 // retyped here. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 const TYPE_OPTIONS = ["Test result", "Prescription", "ID", "Photo", "Other"];
 
@@ -66,7 +67,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
     registerModuleBackHandler(() => { onClose?.(); return true; });
     return () => registerModuleBackHandler(null);
   }, [registerModuleBackHandler, onClose]);
-  const all = useMemo(() => loadAllAttachments(), [refreshKey]);
+  const all = useLoadedMemo(() => loadAllAttachments(), [refreshKey], []);
   const filtered = filterType ? all.filter((a) => a.type === filterType) : all;
 
   const handleDelete = (a) => {
