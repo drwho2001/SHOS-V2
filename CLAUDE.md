@@ -218,9 +218,20 @@ this date; summarized here for durability.
   `useState` lazy initializer (the one non-repository sync-conflict
   site the audit found) moved to a mount-time `useEffect` — verified
   live that visibility toggles still persist correctly across a
-  reload. The ~19 real repository files, the ~10 preferences
+  reload. Next: the three raw-`localStorage` migration-flag bypasses
+  found in the audit (`protectionRegistry.js`'s PEP-added flag,
+  `kinkRegistry.js`'s expansion flag, `customOptionListsRepository.js`'s
+  sample-type flag) routed through `storageAdapter` properly instead
+  of bypassing it — verified live via the real UI (PEP still shows up
+  correctly as an existing Protection option) rather than trusting a
+  raw `localStorage` read, which turned out to be the wrong way to
+  check: registry seed data lives in memory until a real `create()`
+  actually persists it, so an empty raw key on a fresh profile isn't
+  itself a bug. The ~19 real repository files, the ~10 preferences
   repositories, and `main.jsx`'s `ErrorBoundary` are still untouched —
-  still needs its own dedicated pass for the rest.
+  still needs its own dedicated pass for the rest. Local commits only
+  as of 4 Sep — owner asked to hold all pushes until the full Phase 2
+  migration is done and reviewed, not push incrementally.
 - **Still near-zero real test coverage, though the one existing script
   is now CI-gated.** `scripts/smoke-test.cjs` (3 flows) got wired into
   a new `.github/workflows/smoke-test.yml` (4 Sep) — runs the exact

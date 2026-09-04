@@ -374,13 +374,14 @@ export const CustomOptionListsRepository = {
 // for PEP (Protection Registry) and the Kink Registry expansion —
 // `add()` itself is idempotent (checks for an existing value first),
 // so this is genuinely safe to run even if the value's already there.
+// CHANGED 4 Sep 2026 — real groundwork for encryption at rest (see
+// CLAUDE.md's Known Issues / the Notion Development log for the full
+// plan): this used to touch `localStorage` directly, bypassing
+// `storageAdapter` — one of a handful of real bypasses the audit
+// found. Routed through the same adapter this file already uses for
+// its own real data above.
 const SAMPLE_TYPE_MIGRATION_FLAG = "shos_sampletype_vaginal_added_v1";
-try {
-  if (typeof localStorage !== "undefined" && !localStorage.getItem(SAMPLE_TYPE_MIGRATION_FLAG)) {
-    CustomOptionListsRepository.add("sampleType", "Vaginal/front hole swab");
-    localStorage.setItem(SAMPLE_TYPE_MIGRATION_FLAG, "true");
-  }
-} catch {
-  // Same "never let a background convenience break the app" reasoning
-  // as every other real-device migration this session.
+if (!storage.load(SAMPLE_TYPE_MIGRATION_FLAG, false)) {
+  CustomOptionListsRepository.add("sampleType", "Vaginal/front hole swab");
+  storage.save(SAMPLE_TYPE_MIGRATION_FLAG, true);
 }

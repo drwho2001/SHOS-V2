@@ -34,6 +34,7 @@
 // real, sourced foundation; anything missing gets added the normal way
 // (typed once, findOrCreate handles the rest), same as before.
 import { createSimpleRegistry } from "./simpleRegistry.js";
+import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 // ADDED — real ask: "did you mean...?" suggestions for likely typos,
 // same fuzzy-matching engine Global Search uses.
 import { findClosestMatch } from "../calculations/fuzzyMatch.js";
@@ -106,17 +107,18 @@ export const KinkRegistry = createSimpleRegistry({
 // the whole list on every single app boot — not required for
 // correctness (re-running would still be harmless), just avoids
 // pointless repeated work.
+// CHANGED 4 Sep 2026 — real groundwork for encryption at rest (see
+// CLAUDE.md's Known Issues / the Notion Development log for the full
+// plan): this used to touch `localStorage` directly, bypassing
+// `storageAdapter` — one of a handful of real bypasses the audit
+// found. Routed through the same adapter every other flag/preference
+// in this app already uses (storage.load/save already have their own
+// internal try/catch — see storageAdapter.js — so the extra wrapper
+// here was redundant once routed through it).
 const EXPANSION_FLAG_KEY = "shos_kink_registry_expanded_v1";
-try {
-  if (typeof localStorage !== "undefined" && !localStorage.getItem(EXPANSION_FLAG_KEY)) {
-    SEED_NAMES.forEach((name) => KinkRegistry.findOrCreate(name));
-    localStorage.setItem(EXPANSION_FLAG_KEY, "true");
-  }
-} catch {
-  // Same "never let a background convenience break the app" reasoning
-  // as draftStorage.js — worst case, the expanded list just doesn't
-  // retroactively populate this one run, exactly as if this fix didn't
-  // exist yet.
+if (!storage.load(EXPANSION_FLAG_KEY, false)) {
+  SEED_NAMES.forEach((name) => KinkRegistry.findOrCreate(name));
+  storage.save(EXPANSION_FLAG_KEY, true);
 }
 
 // ADDED 18 Aug 2026 — real feedback: typing a common synonym (e.g.
