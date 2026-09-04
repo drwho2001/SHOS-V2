@@ -337,8 +337,73 @@ this date; summarized here for durability.
   it depend on its shape at mount, (3) does any early-return sit between
   hooks. All three verified live (openEditingOnMount path retains typed
   input and shows real suggestion chips; normal path renders real seed
-  profile data). Full smoke-test suite passes. ~81 sites still
-  untouched.
+  profile data). Full smoke-test suite passes.
+  `SHOS_Encounters_Prototype.jsx` (9 sites) converted next, and turned
+  up two more real findings — one about the AUDIT ITSELF, one a fourth
+  genuine regression.
+  First: this file grepped clean at first pass but had 4 more real
+  sync-conflict sites the `useState(() =>`/`useMemo(() =>` grep pattern
+  never matches — `useState(loadContacts)`/`useState(loadEncounters)`,
+  a bare function reference instead of an inline arrow. React treats a
+  bare function reference as a lazy initializer identically to
+  `useState(() => ...)`, so these are just as broken, just invisible to
+  the grep this whole audit has been running. Found only by reading the
+  file directly. **The other ~19 module files need re-sweeping for this
+  same shorthand before Phase 2 can be called complete** — the
+  remaining-site count elsewhere in this section is a grep count and is
+  now known to be an undercount by an unknown amount.
+  Second: `EncounterEditSheet`'s `form` (loads via
+  `EncounterRepository.getById(encounterId)` for the edit case,
+  `DEFAULT_ENCOUNTER`/a `loadDraft()` sessionStorage read for the
+  new/draft cases — only the first is async-sensitive) sits next to a
+  real autosave effect that mirrors `form` to a sessionStorage draft on
+  every change, guarded by an `isFirstRender` ref so opening a blank
+  "Add Encounter" and closing without touching anything doesn't leave a
+  phantom draft. The first fix attempt added a second ref
+  (`skipNextAutosave`, set right before the load effect's `setForm`)
+  mirroring the exact pattern already proven for
+  PartnerNotification/Timeline above — and it was WRONG. React
+  StrictMode (enabled in `main.jsx`) double-invokes effects on mount,
+  before the resulting state update is actually applied and
+  re-rendered — so both the loader effect and the autosave effect ran
+  TWICE against the still-stale `form` closure in that double-invoke
+  window, consuming the one-shot skip flag before the real render (the
+  one where `form` actually becomes the loaded record) ever happened.
+  Caught live, not by inspection: reading `sessionStorage` directly
+  after opening Edit on an untouched existing Encounter showed a real
+  draft appear within 300ms. Root-caused to StrictMode specifically (not
+  a timing fluke) by tracing the double-invoke sequence by hand.
+  Fixed by abandoning the flag/ref-timing approach entirely in favor of
+  an explicit `isDirty` ref that only `set()` — the one code path a
+  genuine user edit takes — is allowed to flip, so the autosave effect
+  never has to infer "was this the load or a real edit" from render
+  order at all. This is the more general lesson: a "skip the next one"
+  ref is fragile under StrictMode's double-invoke whenever the skip is
+  armed AND consumed within effects rather than at the actual point of
+  user interaction — worth checking on any earlier PartnerNotification/
+  Timeline-style fix again if similar symptoms ever show up there.
+  Also worth its own note: verifying the fix live nearly produced a
+  FALSE positive — checking loaded-form correctness via
+  `document.body.innerText` showed blank titles, because `innerText`
+  never reflects `<input value>` content at all (inputs have no text
+  children). Re-checked via the real `input.value` DOM property instead
+  and confirmed the load was actually correct — a genuine test-
+  methodology trap distinct from the earlier "wrong overlay scope"
+  mistake, worth remembering for any other form-heavy screen still to
+  convert. Also split `visible`'s `useMemo` (ActivityLanding's search/
+  filter list) deliberately rather than converting it wholesale — it
+  depends on `query`/`dateFilter`/`showArchived`, which change on every
+  keystroke, and an effect-based reload would add a real one-tick lag to
+  a live search box. Pulled just the "since last test" filter's own
+  `TestingRepository` call into its own `useLoadedMemo`
+  (`lastTestDate`), leaving `visible` as a plain `useMemo` reading that
+  value — same split as ClinicCard's `cutoffDate` earlier. All verified
+  live: real record loads into the edit form (checked via `.value`, not
+  `innerText`), opening+closing without editing leaves no draft, a real
+  edit still autosaves correctly, Add Encounter still starts blank,
+  search and the "since last test" filter both still work. Full
+  smoke-test suite passes. ~72 known sites remain (undercount — see the
+  bare-function-reference gap above).
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
