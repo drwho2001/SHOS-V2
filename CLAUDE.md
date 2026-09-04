@@ -447,6 +447,27 @@ this date; summarized here for durability.
   the "Your dashboard" fallback title is correct (confirmed against
   seed data — `MyProfile`'s `nickname` genuinely defaults to `""`, not
   a missed load). No page errors. Full smoke-test suite passes.
+  `SHOS_Testing_Prototype.jsx` (8 sites) converted next.
+  `TestEditSheet`'s linkedVisits/unlinkedVisits/linkedSymptoms/
+  unlinkedSymptoms/sampleTypeOptions are plain swaps; its own `form`
+  initializer reads `existing`, a plain render-body const (not a hook,
+  recomputes every render) rather than a repository call directly —
+  same "direct repo call in the render body" shape as Encounters'
+  `RegistrySinglePicker`, left alone per that precedent.
+  `TestDetail`'s test/measurements got the same safe hooks-before-guard
+  treatment as everywhere else this session, but this one was a genuine
+  fix, not just a swap: the original `useState(() => ...)` only ever
+  computed once per mount with no deps at all, so navigating from one
+  test's detail straight to another's (no unmount in between — this
+  component isn't remounted via a `key` prop) would have kept showing
+  the FIRST test's stale data forever. Added real `[testId]` deps as
+  part of the conversion — untested whether that exact stale-data path
+  was ever actually reachable, but the fix is strictly safer regardless.
+  Verified live against real seed data (Test Detail's full result/
+  linked clinic visit, Edit sheet's sample-type chips) — no page errors.
+  Full smoke-test suite passes, including the Testing<->Symptom Log
+  link flow, which directly exercises this file's own linkedSymptoms/
+  unlinkedSymptoms conversion.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
