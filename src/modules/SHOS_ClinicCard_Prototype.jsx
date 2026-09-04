@@ -13,7 +13,7 @@ import { computeStock } from "../calculations/medicationCalculations";
 import { formatRelativeDate, sortByDateDesc } from "../calculations/encounterCalculations";
 import { nowAsStoredDate, inDaysAsStoredDate } from "../calculations/dateInputHelpers";
 import { useClinicCardVisibility, CLINIC_CARD_SECTIONS } from "../calculations/clinicCardVisibilityPreference";
-import { MyProfileRepository } from "../repositories/myProfileRepository";
+import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
@@ -25,6 +25,7 @@ import { PregnancyRepository } from "../repositories/pregnancyRepository";
 // retyped here. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 const LIGHT = {
   ...NEUTRAL,
@@ -136,10 +137,10 @@ function StubRow({ children, T }) {
 export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickAddWithPrefill, registerModuleBackHandler }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
-  const meds = useMemo(() => loadMedicationsWithLogs(), []);
-  const tests = useMemo(() => sortByDateDesc(TestingRepository.getAll().filter((t) => !t.isArchived)), []);
-  const encounters = useMemo(() => sortByDateDesc(EncounterRepository.getAll()), []);
-  const [profile, setProfile] = useState(() => MyProfileRepository.getProfile());
+  const meds = useLoadedMemo(() => loadMedicationsWithLogs(), [], []);
+  const tests = useLoadedMemo(() => sortByDateDesc(TestingRepository.getAll().filter((t) => !t.isArchived)), [], []);
+  const encounters = useLoadedMemo(() => sortByDateDesc(EncounterRepository.getAll()), [], []);
+  const [profile, setProfile] = useLoadedState(() => MyProfileRepository.getProfile(), [], DEFAULT_PROFILE);
 
   // ADDED — real ask: "Recent partners should have filterable
   // timeframe... maybe generic for whole clinic card — so can say all
