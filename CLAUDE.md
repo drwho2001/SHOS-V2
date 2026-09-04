@@ -418,6 +418,25 @@ this date; summarized here for durability.
   naming convention, not a systemic blind spot — the ~72 remaining-site
   estimate from the original grep can be trusted after all, not treated
   as an undercount.
+  Two more files converted the same session, both clean — no new bugs,
+  every site a variant of patterns already established above.
+  `SHOS_SymptomLog_Prototype.jsx` (5 sites): `EntrySheet`'s contacts/
+  encounters/tests and the top-level module's entries are plain swaps;
+  `EntrySheet`'s own `form` initializer reads the `entry` PROP (already
+  loaded by its parent), not a repository, so it's out of scope
+  entirely — same shape as Vaccinations' `VaccinationSheet` below.
+  `EntryDetail`'s `entry` has the same safe "hooks-before-guard, nothing
+  after" shape confirmed for Encounters' `ActivityDetails` — converted
+  directly. `SHOS_Vaccinations_Prototype.jsx` (6 sites): `VaccinationSheet`'s
+  vaccineOptions/vaccinationReasonOptions/injectionSiteOptions/symptoms/
+  visits are plain swaps (`vaccineOptions`' setter reused by its own
+  `onAddNew`); `VaccinationDetail`'s `v` is the same safe guard shape
+  again, and the top-level `vaccinations` is a plain swap. Both verified
+  live against real seed data (SymptomLog: an existing entry's full
+  detail including resolved Encounter/Test links, the Log Symptom
+  sheet's chips; Vaccinations: an existing record's full detail, its
+  Edit sheet's chips and symptom/clinic-visit pickers) — no page errors
+  either file. Full smoke-test suite passes both times.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
