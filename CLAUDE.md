@@ -534,6 +534,22 @@ this date; summarized here for durability.
   bug; Medication Settings' real toggle state) — no page errors. Full
   smoke-test suite passes, including the Medication log flow, which
   directly exercises this file.
+  `SHOS_MenstrualHealth_Prototype.jsx` (7 sites) converted next.
+  `CycleSheet`'s flowOptions/symptoms, `CycleTab`'s cycles/avgLength,
+  `ContraceptionSheet`'s methodOptions/formulationOptions/visits are
+  plain swaps. Real finding: `ContraceptionTab`/`PregnancyTab` were
+  left untouched on purpose — they already use a DIFFERENT pattern (a
+  `[, force]` re-render counter plus a direct `Repository.getAll()`
+  call in the render body, re-running every render) instead of the
+  useState-lazy-init pattern this whole audit targets, so they were
+  never subject to the "frozen forever" bug this pass fixes — a
+  reminder that not every repository-reading site in a file needs
+  touching, only the ones actually using the broken pattern. Verified
+  live (had to enable Menstrual & contraception tracking first via
+  Settings — off by default, a real toggle, not a bug): Cycle tab's
+  real history and correct average-cycle-length calculation, Cycle
+  Edit's real Flow suggestion chips. No page errors. Full smoke-test
+  suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
