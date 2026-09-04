@@ -10,7 +10,7 @@
 // underlying data already provides. Same shared-hook, single-storage-
 // key pattern as darkModePreference.js, so the choice persists across
 // sessions rather than resetting every time Clinic Card is opened.
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 
 const STORAGE_KEY = "shos_clinic_card_visibility";
@@ -41,7 +41,21 @@ export const CLINIC_CARD_SECTIONS = [
 const DEFAULT_VISIBILITY = Object.fromEntries(CLINIC_CARD_SECTIONS.map((s) => [s.key, true]));
 
 export function useClinicCardVisibility() {
-  const [visibility, setVisibilityState] = useState(() => ({ ...DEFAULT_VISIBILITY, ...storage.load(STORAGE_KEY, {}) }));
+  // CHANGED 4 Sep 2026 — real groundwork for encryption at rest (see
+  // CLAUDE.md's Known Issues / the Notion Development log for the
+  // full plan): storage.load() is slated to become async once real
+  // encryption lands, and a useState lazy initializer can't await a
+  // Promise. Moved the initial read into a mount-time effect instead,
+  // so this hook no longer depends on storage.load() being
+  // synchronous. Starts from DEFAULT_VISIBILITY (every section
+  // visible — the "most detail permitted" default this file's own
+  // header already documents) for the one render before the effect
+  // resolves, the same kind of brief loading moment every other
+  // screen already has, not a new one.
+  const [visibility, setVisibilityState] = useState(DEFAULT_VISIBILITY);
+  useEffect(() => {
+    setVisibilityState({ ...DEFAULT_VISIBILITY, ...storage.load(STORAGE_KEY, {}) });
+  }, []);
   const setVisibility = (updater) => {
     setVisibilityState((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;

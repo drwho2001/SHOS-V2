@@ -212,8 +212,15 @@ this date; summarized here for durability.
   an *unlocked* device still needs the PIN too, while never asking the
   owner to remember a separate passphrase of their own (owner's own
   explicit ask, and a real concern: "people will lose encryption keys
-  often"). Still needs its own dedicated pass to actually build —
-  this session only audited and designed it.
+  often"). Phase 2 (converting the storage layer to async, ahead of
+  any real cryptography) started 4 Sep, smallest-first per the
+  phase's own ordering: `clinicCardVisibilityPreference.js`'s
+  `useState` lazy initializer (the one non-repository sync-conflict
+  site the audit found) moved to a mount-time `useEffect` — verified
+  live that visibility toggles still persist correctly across a
+  reload. The ~19 real repository files, the ~10 preferences
+  repositories, and `main.jsx`'s `ErrorBoundary` are still untouched —
+  still needs its own dedicated pass for the rest.
 - **Still near-zero real test coverage, though the one existing script
   is now CI-gated.** `scripts/smoke-test.cjs` (3 flows) got wired into
   a new `.github/workflows/smoke-test.yml` (4 Sep) — runs the exact
