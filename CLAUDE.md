@@ -515,6 +515,25 @@ this date; summarized here for durability.
   "By type" and "By group" modes — the latter correctly renders an
   UNGROUPED section; an existing entry's detail view) — no page errors.
   Full smoke-test suite passes.
+  `SHOS_Medication_Dashboard_Prototype.jsx` (9 sites) converted next,
+  another clean batch. `medicationTypeOptions`/`routeOptions`/
+  `categoryOptions` appear twice (`MedicationEditSheet` and
+  `AddMedicationSheet`) — all plain swaps. `existingNames` (the
+  Add-medication dedupe nudge's source list) is a plain swap too; the
+  actual keystroke-driven comparison that reads it
+  (`exactNameMatch`/`closeNameMatch`) stays a plain `useMemo`, same
+  "don't add lag to a live-typed field" reasoning applied consistently
+  all session. `MedicationSettingsScreen`'s `prefs` (fallback
+  `DEFAULT_MEDICATION_PREFERENCES`), the top-level `meds`, and
+  `allergies` (fallback `[]`, matching `DEFAULT_PROFILE`) round it out.
+  Verified live against real seed data (dashboard landing's real
+  medication/stock/adherence numbers; Add Medication's real Category
+  chips — confirmed via screenshot after `mouse.click()` at computed
+  coordinates intermittently missed its target in this environment, a
+  test-tooling quirk worked around with `dispatchEvent`, not an app
+  bug; Medication Settings' real toggle state) — no page errors. Full
+  smoke-test suite passes, including the Medication log flow, which
+  directly exercises this file.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
