@@ -9,6 +9,7 @@ import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
 import { formatRelativeDate } from "../calculations/encounterCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // ADDED — real bug found in the user's own testing: kinks were never
 // indexed in Global Search at all — searching "fisting" found nothing,
@@ -238,7 +239,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
   // relevance-only list. Chronological is the real default per the user's
   // own stated preference.
   const [sortMode, setSortMode] = useState("chronological"); // "chronological" | "alphabetical"
-  const index = useMemo(() => buildIndex(), []);
+  const index = useLoadedMemo(() => buildIndex(), [], []);
   const results = useMemo(() => {
     const q = query.trim();
     if (!q.length) return [];

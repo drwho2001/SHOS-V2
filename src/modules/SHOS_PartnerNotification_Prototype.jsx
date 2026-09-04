@@ -66,7 +66,7 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
   // reasoning as every other suggestion list this session, real value
   // here specifically since partner notification is inherently about
   // recent activity.
-  const lastEncounterAt = useMemo(() => {
+  const lastEncounterAt = useLoadedMemo(() => {
     const map = new Map();
     EncounterRepository.getAll().forEach((e) => {
       (e.attendeeIds || []).forEach((id) => {
@@ -75,7 +75,7 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
       });
     });
     return map;
-  }, []);
+  }, [], new Map());
   const sortedContacts = useMemo(() => {
     return [...contacts].sort((a, b) => new Date(lastEncounterAt.get(b.id) || 0) - new Date(lastEncounterAt.get(a.id) || 0));
   }, [contacts, lastEncounterAt]);
