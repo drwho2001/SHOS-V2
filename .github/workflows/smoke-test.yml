@@ -1,0 +1,69 @@
+name: SHOS Smoke Test
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+# ADDED 4 Sep 2026 — real gap named directly in CLAUDE.md's own Known
+# Issues: "Near-zero automated test coverage. One manual, non-CI
+# Playwright script (3 flows)... very likely why a real, four-
+# subsystem-breaking bug shipped silently for weeks before live
+# device debugging caught it." scripts/smoke-test.cjs already exists
+# and already proved useful catching real regressions this session —
+# it just never ran anywhere except a developer's own terminal. This
+# wires the SAME script, unmodified, into a real CI gate: every push
+# to main now gets it run for real, not "run it if you remember to."
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # scripts/smoke-test.cjs's own header notes this repo doesn't
+      # depend on playwright directly (a dev-machine convenience, not
+      # meant to bloat every real install) — installed here, in CI
+      # only, the same way a developer running the script by hand
+      # already has to.
+      - name: Install Playwright + Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Build web app
+        run: npm run build
+
+      # `vite preview` serves the real production build (dist/), a
+      # closer match to what actually ships than the dev server the
+      # script's own header instructions use for local runs.
+      - name: Start preview server
+        run: nohup npx vite preview --port 5183 --strictPort > preview.log 2>&1 &
+
+      - name: Wait for the preview server to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5183 -o /dev/null; then
+              echo "Preview server is up."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Preview server did not come up in time. Log:"
+          cat preview.log
+          exit 1
+
+      - name: Run smoke test
+        run: node scripts/smoke-test.cjs
+        env:
+          SMOKE_TEST_URL: http://localhost:5183

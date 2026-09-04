@@ -129,10 +129,13 @@ oversight.
 - `.github/workflows/build-apk.yml` — builds a debug APK on every push
   to `main`, publishes it to a public, login-free GitHub Release tagged
   `latest`. `.github/workflows/web-alpha.yml` — deploys the web build to
-  GitHub Pages. Both are the only CI that exists.
-- `scripts/smoke-test.cjs` — a manual (not CI-wired) Playwright script,
-  3 flows. Run it before/after any risky change:
-  `npm run dev -- --port 5183` then `node scripts/smoke-test.cjs`.
+  GitHub Pages. `.github/workflows/smoke-test.yml` (added 4 Sep) runs
+  `scripts/smoke-test.cjs` against a real `vite preview` build on every
+  push — the one piece of automated regression coverage this project
+  has, now actually gated rather than manual-only.
+- `scripts/smoke-test.cjs` — 3 flows, CI-wired (see above) but also
+  still worth running by hand before/after any risky change during a
+  session: `npm run dev -- --port 5183` then `node scripts/smoke-test.cjs`.
 
 ## Working conventions for this project specifically
 
@@ -186,11 +189,18 @@ this date; summarized here for durability.
   Critical finding deliberately not yet fixed — it touches the storage
   layer every repository reads/writes through and needs its own
   dedicated pass, not a quick patch.
-- **Near-zero automated test coverage.** One manual, non-CI Playwright
-  script (3 flows). No linting, no type-checking. This is very likely
-  why a real, four-subsystem-breaking bug (a Capacitor plugin-proxy
-  footgun affecting notifications/calendar-sync/geolocation/file-export)
-  shipped silently for weeks before live device debugging caught it.
+- **Still near-zero real test coverage, though the one existing script
+  is now CI-gated.** `scripts/smoke-test.cjs` (3 flows) got wired into
+  a new `.github/workflows/smoke-test.yml` (4 Sep) — runs the exact
+  same script, unmodified, against a real `vite preview` production
+  build on every push to `main`, verified locally against that same
+  preview build before shipping. Still only 3 flows, still no
+  linting, no type-checking — this closes "nothing runs automatically"
+  specifically, not "not enough coverage" generally. The absence of
+  any of this is very likely why a real, four-subsystem-breaking bug
+  (a Capacitor plugin-proxy footgun affecting notifications/calendar-
+  sync/geolocation/file-export) shipped silently for weeks before live
+  device debugging caught it.
 - **Cold-start notification-action race** — a still-open upstream
   Capacitor limitation (not fixable purely from this app's JS): tapping
   a notification action after the app was fully killed can fail to
