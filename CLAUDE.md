@@ -280,8 +280,38 @@ this date; summarized here for durability.
   but any site with state that DEPENDS on another loaded value's
   initial synchronous shape needs the same real scrutiny, not a
   find-replace.
+  Two more files converted the same session: `SHOS_ClinicCard_Prototype.jsx`'s
+  4 sites (`meds`/`tests`/`encounters` via `useLoadedMemo`, `profile` via
+  `useLoadedState` — `profile` needed a real fallback, not `null`, since
+  render reads `profile.allergies.length` etc. unconditionally with no
+  optional chaining; used `MyProfileRepository`'s own exported
+  `DEFAULT_PROFILE`, the exact shape `getProfile()` already merges onto,
+  so the fallback renders identically to a genuinely-empty profile
+  instead of crashing) and `SHOS_Timeline_Prototype.jsx`'s 4 sites. Two
+  of Timeline's (`StartSheet`'s `triggerReasonOptions`/`encounters`,
+  `TimelineLanding`'s `episodes`) were plain swaps; `EpisodeDetail`'s
+  `episode` was not — the existing code had `if (!episode) return null`
+  sitting between two hooks (`episode`'s own load and a later
+  `resolveDateDraft` `useState`/`useEffect` pair reading
+  `episode.resolvedDate`), a Rules-of-Hooks violation that was latent
+  and harmless under synchronous `useMemo` (episode was never actually
+  null) but would crash with "rendered fewer hooks than expected" once
+  `episode` genuinely starts `null` for one render under the async load
+  effect. Fixed by moving `resolveDateDraft`'s hooks above the guard and
+  null-guarding the reads (`episode?.resolvedDate`) — same class of bug
+  as PartnerNotification's `list`/`editing` case above, just triggered
+  by hook order instead of a null property read; worth specifically
+  checking for on every remaining site that has an early `return null`
+  guard near a loaded value. Both verified live against real seed data
+  (Clinic Card's full section set; Episodes list, an existing episode's
+  full detail view, and the Start Episode sheet) — no crashes, no page
+  errors. Full smoke-test suite passes on both. ~87 sites still
+  untouched.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
-  full Phase 2 migration is done and reviewed, not push incrementally.
+  full Phase 2 migration is done and reviewed, not push incrementally
+  (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
+  trigger the Smoke Test CI workflow for verification are fine — `main`
+  itself, which triggers the real APK/web builds, is not touched).
 - **Still near-zero real test coverage, though the one existing script
   is now CI-gated.** `scripts/smoke-test.cjs` (3 flows) got wired into
   a new `.github/workflows/smoke-test.yml` (4 Sep) — runs the exact
