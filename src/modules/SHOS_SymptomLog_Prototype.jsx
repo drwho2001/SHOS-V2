@@ -11,6 +11,7 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -331,12 +332,12 @@ function EntrySheet({ entry, onSave, onClose, T }) {
   // just a date/type, not memorable; who was there usually is. Each
   // encounter's attendee names now ride along as searchText, so typing
   // a contact's name finds it even though it isn't in the visible label.
-  const contacts = useMemo(() => ContactRepository.getAll(), []);
-  const encounters = useMemo(() => [...EncounterRepository.getAll()].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => {
+  const contacts = useLoadedMemo(() => ContactRepository.getAll(), [], []);
+  const encounters = useLoadedMemo(() => [...EncounterRepository.getAll()].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => {
     const attendeeNames = (e.attendeeIds || []).map((id) => contacts.find((c) => c.id === id)?.nickname || contacts.find((c) => c.id === id)?.name).filter(Boolean);
     return { id: e.id, name: `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}`, searchText: attendeeNames.join(" ").toLowerCase() };
-  }), [contacts]);
-  const tests = useMemo(() => [...TestingRepository.getAll()].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` })), []);
+  }), [contacts], []);
+  const tests = useLoadedMemo(() => [...TestingRepository.getAll()].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` })), [], []);
 
   const doSave = () => {
     clearDraft(draftKey);
@@ -380,7 +381,7 @@ function EntrySheet({ entry, onSave, onClose, T }) {
 }
 
 function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
-  const [entry, setEntry] = useState(() => SymptomLogRepository.getById(entryId));
+  const entry = useLoadedMemo(() => SymptomLogRepository.getById(entryId), [entryId], null);
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven for Testing/Vaccinations.
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -638,7 +639,7 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // SymptomLogLanding — entries/deletedRecent/undoDelete/triggerDelete
   // now live at the real module level, shared with EntryDetail.
-  const [entries, setEntries] = useState(() => SymptomLogRepository.getAll().filter((e) => !e.isArchived));
+  const [entries, setEntries] = useLoadedState(() => SymptomLogRepository.getAll().filter((e) => !e.isArchived), [], []);
   const refresh = () => setEntries(SymptomLogRepository.getAll().filter((e) => !e.isArchived));
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
