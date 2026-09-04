@@ -19,6 +19,7 @@ import { useEditUndo } from "../calculations/editUndoHelpers";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { nowAsDateTimeLocalString } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import {
   EncounterRepository, DEFAULT_ENCOUNTER,
   ENCOUNTER_TYPE_OPTIONS, MY_POSITION_OPTIONS, CUM_LOCATION_OPTIONS, MY_ROLE_OPTIONS,
@@ -533,7 +534,7 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
   // EncounterRepository directly (this component only has one real
   // caller, Location, so the coupling is honest rather than forcing a
   // generic prop-callback for a single consumer).
-  const locationLastUsed = useMemo(() => {
+  const locationLastUsed = useLoadedMemo(() => {
     const map = new Map();
     for (const enc of EncounterRepository.getAll()) {
       if (!enc.locationId || !enc.date) continue;
@@ -541,7 +542,7 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
       if (!existing || enc.date > existing) map.set(enc.locationId, enc.date);
     }
     return map;
-  }, []);
+  }, [], new Map());
   const draftLower = draft.trim().toLowerCase();
   const contactById = useMemo(() => {
     const map = new Map();
@@ -844,7 +845,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
 
 // ── 3a. Activity Landing ──
 function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
-  const [contacts] = useState(loadContacts);
+  const contacts = useLoadedMemo(loadContacts, [], []);
   const [showArchived, setShowArchived] = useState(false);
   // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
   // to every module.
@@ -880,6 +881,22 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // now matches the exact same field set for consistency.
   const [query, setQuery] = useState("");
 
+  // ADDED 4 Sep 2026 — encryption groundwork: pulled the "sinceLastTest"
+  // filter's own TestingRepository.getAll() call out of the useMemo
+  // below into its own useLoadedMemo. Deliberately NOT converting the
+  // whole `visible` computation the same way — it depends on query/
+  // dateFilter/showArchived, which change on every keystroke/tap, and
+  // useLoadedMemo (effect-based) would introduce a real one-tick lag/
+  // flicker on each of those instead of the instant useMemo recompute
+  // this search box needs. Same "split slow-loading data from fast pure
+  // computation" split already used for ClinicCard's cutoffDate and
+  // RegistryManagement's duplicatePairs/usageMap earlier in this audit.
+  const lastTestDate = useLoadedMemo(() => {
+    const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+    const lastTest = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    return lastTest?.date || null;
+  }, [], null);
+
   const visible = useMemo(() => {
     const base = encounters.filter((e) => (showArchived ? true : !e.isArchived));
     let filtered = base;
@@ -892,9 +909,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         const cutoff = Date.now() - 30 * 86400000;
         filtered = dated.filter((e) => new Date(e.date).getTime() >= cutoff);
       } else if (dateFilter === "sinceLastTest") {
-        const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
-        const lastTest = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-        filtered = lastTest ? dated.filter((e) => new Date(e.date).getTime() >= new Date(lastTest.date).getTime()) : dated;
+        filtered = lastTestDate ? dated.filter((e) => new Date(e.date).getTime() >= new Date(lastTestDate).getTime()) : dated;
       }
     }
     const q = query.trim().toLowerCase();
@@ -906,7 +921,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
       });
     }
     return sortByDateDesc(filtered);
-  }, [encounters, showArchived, dateFilter, query, contacts]);
+  }, [encounters, showArchived, dateFilter, query, contacts, lastTestDate]);
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", paddingBottom: 90 }}>
@@ -1032,8 +1047,8 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
 
 // ── 3b. Activity Details ──
 function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, triggerDelete, refresh }) {
-  const [encounter, setEncounter] = useState(() => EncounterRepository.getById(encounterId));
-  const [contacts] = useState(loadContacts);
+  const [encounter, setEncounter] = useLoadedState(() => EncounterRepository.getById(encounterId), [encounterId], null);
+  const contacts = useLoadedMemo(loadContacts, [], []);
   const [menuOpen, setMenuOpen] = useState(false);
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven across every other module this session.
@@ -1197,7 +1212,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
 // ── Add/Edit sheet ──
 function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord }) {
   const isNew = !encounterId;
-  const [contacts, setContacts] = useState(loadContacts);
+  const [contacts, setContacts] = useLoadedState(loadContacts, [], []);
   // ADDED 26 Aug 2026 — real ask, decided: can't add an Activity for
   // someone not yet in Contacts, since AttendeePicker only searches
   // existing contacts. Rather than blocking with a warning, allow a
@@ -1217,10 +1232,19 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   // ADDED 19 Aug 2026 — draft autosave, same pattern/reasoning as
   // Contacts — see draftStorage.js.
   const draftKey = `encounterEdit_${encounterId || "new"}`;
+  // CHANGED 4 Sep 2026 — encryption groundwork: the isNew/draft cases
+  // stay a plain synchronous useState initializer (loadDraft reads
+  // sessionStorage directly, not storageAdapter — genuinely synchronous
+  // forever, and DEFAULT_ENCOUNTER needs no repository call at all). The
+  // edit case's EncounterRepository.getById(encounterId) is the one
+  // real async-sensitive call, so it moved to its own effect below
+  // instead of the useState initializer, with form falling back to
+  // DEFAULT_ENCOUNTER for the one render before it resolves rather than
+  // undefined (nothing here null-guards form before rendering fields).
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);
     if (draft) return draft.data;
-    return isNew ? { ...DEFAULT_ENCOUNTER } : EncounterRepository.getById(encounterId);
+    return { ...DEFAULT_ENCOUNTER };
   });
   const [draftRestored] = useState(() => !!loadDraft(draftKey));
   // CHANGED — real bug from the user's own testing: this fired on the
@@ -1230,13 +1254,36 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   // behind, which then showed as a false "Restored unsaved changes"
   // next time. Skips the initial mount with a ref, only saves once the
   // form has genuinely changed from what it started as.
-  const isFirstRender = useRef(true);
+  //
+  // REVISED 4 Sep 2026 — the original fix here (an isFirstRender ref
+  // plus a "skip the next autosave" ref set right before the edit-load
+  // effect's setForm) looked right but broke under React StrictMode
+  // (enabled in main.jsx): StrictMode double-invokes effects on mount,
+  // BEFORE the state update from the first invocation is actually
+  // applied and re-rendered — so both the loader effect and the
+  // autosave effect run twice against the still-stale `form` closure,
+  // consuming the one-shot skip flag during that double-invoke dance
+  // and leaving nothing to protect the real, later render where `form`
+  // actually becomes the loaded record. Caught live: opening Edit on an
+  // untouched existing Encounter created a real sessionStorage draft
+  // within 300ms, confirmed by reading sessionStorage directly.
+  // Fixed with an explicit dirty flag instead of inferring "was this a
+  // real edit" from timing/reference-equality: `set()` (the only path
+  // a genuine user edit takes) is the one place that flips it, so the
+  // autosave effect no longer has to guess.
+  const isDirty = useRef(false);
   useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (isNew || loadDraft(draftKey)) return;
+    const real = EncounterRepository.getById(encounterId);
+    if (real) setForm(real);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [encounterId]);
+  useEffect(() => {
+    if (!isDirty.current) return;
     saveDraft(draftKey, form);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
-  const set = (key) => (val) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (key) => (val) => { isDirty.current = true; setForm((f) => ({ ...f, [key]: val })); };
 
   const save = () => {
     clearDraft(draftKey);
@@ -1390,7 +1437,7 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
   // reasoning) — encounters/deletedRecent/undoDelete/triggerDelete now
   // live at the real module level, shared by both ActivityLanding and
   // ActivityDetails.
-  const [encounters, setEncounters] = useState(loadEncounters);
+  const [encounters, setEncounters] = useLoadedState(loadEncounters, [], []);
   const refresh = () => setEncounters(loadEncounters());
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, not just undo — same {mode, records}
