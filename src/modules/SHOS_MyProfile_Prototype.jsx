@@ -43,6 +43,7 @@ function platformIconFor(tag) {
   return match ? match.Icon : null;
 }
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { TestingRepository } from "../repositories/testingRepository";
 import { getCurrentLocationPlace, forwardGeocode } from "../storage/locationService";
 import {
@@ -810,6 +811,18 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
 // ── Edit screen ──
 function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   const [form, setForm] = useState(profile);
+  // ADDED 4 Sep 2026 — real regression caught while converting the
+  // parent's profile load to async (see loadedRepositoryState.js):
+  // profile now starts as DEFAULT_PROFILE for the one render before
+  // the real value loads, and this screen can mount on that exact
+  // render (MyProfileModule's openEditingOnMount, reached from Clinic
+  // Card's identity-edit shortcut). Without this, form would freeze on
+  // the empty DEFAULT_PROFILE forever — useState(profile) only reads
+  // its argument once, at mount, never again. Resyncing on every
+  // profile change is safe here: nothing else updates the parent's
+  // profile while this screen is open (refresh() only runs from
+  // saveEdit, which immediately closes this screen right after).
+  useEffect(() => { setForm(profile); }, [profile]);
   const set = (field) => (value) => setForm((f) => ({ ...f, [field]: value }));
   // FIXED — real ask: "think my profile kinks and limits haven't
   // actually saved/disappear after a while." Root cause: RegistryTagPicker's
@@ -834,11 +847,11 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   };
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.getRanked("gender"));
-  const [pronounsOptions, setPronounsOptions] = useState(() => CustomOptionListsRepository.getRanked("pronouns"));
-  const [relationshipStatusOptions, setRelationshipStatusOptions] = useState(() => CustomOptionListsRepository.getRanked("relationshipStatus"));
-  const allContacts = useMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived).map((c) => ({ id: c.id, name: c.name })), []);
-  const [contraceptionOptions, setContraceptionOptions] = useState(() => CustomOptionListsRepository.getRanked("contraception"));
+  const [genderOptions, setGenderOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("gender"), [], []);
+  const [pronounsOptions, setPronounsOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("pronouns"), [], []);
+  const [relationshipStatusOptions, setRelationshipStatusOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("relationshipStatus"), [], []);
+  const allContacts = useLoadedMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived).map((c) => ({ id: c.id, name: c.name })), [], []);
+  const [contraceptionOptions, setContraceptionOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
   // ADDED — real ask: contraception relevant when Gender is Female or
   // Trans-male. Exact match against these two only — not e.g. Non-
   // binary, since that's a real per-person question this app shouldn't
@@ -1277,7 +1290,7 @@ function ProfileSummary({ profile, T, onEdit }) {
 // optional, every existing call site keeps its current behavior by
 // simply not passing it.
 export default function MyProfileModule({ onClose, registerModuleBackHandler, openEditingOnMount = false }) {
-  const [profile, setProfile] = useState(() => MyProfileRepository.getProfile());
+  const [profile, setProfile] = useLoadedState(() => MyProfileRepository.getProfile(), [], DEFAULT_PROFILE);
   const [editing, setEditing] = useState(openEditingOnMount);
   // CHANGED 26 Aug 2026 — real ask: Share/Export placement, deferred
   // earlier this session pending a real click-through, now decided —
