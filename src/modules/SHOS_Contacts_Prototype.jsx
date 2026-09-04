@@ -55,7 +55,7 @@ import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomple
 // ADDED 19 Aug 2026 — Anonymise mode. See privacySettingsRepository.js
 // for the full reasoning. Read-only from Contacts' side, same
 // one-directional pattern as every other cross-module read in this app.
-import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
+import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../repositories/privacySettingsRepository";
 // ADDED — real ask: link/unlink this contact as who My Profile's own
 // relationshipStatus is with, settable from either screen (see
 // myProfileRepository.js's own comment — single array lives there,
@@ -97,6 +97,7 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 const LIGHT = {
   ...NEUTRAL,
@@ -1181,8 +1182,8 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
 function LinkedContactsField({ contactId, allContacts, T, refresh }) {
   const [pickerValue, setPickerValue] = useState("");
   const [pendingLabel, setPendingLabel] = useState("");
-  const [linkedIds, setLinkedIds] = useState(() => ContactRepository.getById(contactId)?.linkedContactIds || []);
-  const [labels, setLabels] = useState(() => ContactRepository.getById(contactId)?.linkedContactLabels || {});
+  const [linkedIds, setLinkedIds] = useLoadedState(() => ContactRepository.getById(contactId)?.linkedContactIds || [], [contactId], []);
+  const [labels, setLabels] = useLoadedState(() => ContactRepository.getById(contactId)?.linkedContactLabels || {}, [contactId], {});
   const linked = allContacts.filter((c) => linkedIds.includes(c.id));
   const linkable = allContacts.filter((c) => c.id !== contactId && !linkedIds.includes(c.id));
 
@@ -1458,10 +1459,10 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   // same pattern as Vaccinations' vaccineOptions.
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const [relationshipTypeOptions, setRelationshipTypeOptions] = useState(() => CustomOptionListsRepository.getRanked("relationshipType"));
-  const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.getRanked("gender"));
-  const [pronounsOptions, setPronounsOptions] = useState(() => CustomOptionListsRepository.getRanked("pronouns"));
-  const [contraceptionOptions, setContraceptionOptions] = useState(() => CustomOptionListsRepository.getRanked("contraception"));
+  const [relationshipTypeOptions, setRelationshipTypeOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("relationshipType"), [], []);
+  const [genderOptions, setGenderOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("gender"), [], []);
+  const [pronounsOptions, setPronounsOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("pronouns"), [], []);
+  const [contraceptionOptions, setContraceptionOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);
     if (draft) return draft.data;
@@ -1816,7 +1817,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
   // option to delete permanently."
   const [confirmDelete, setConfirmDelete] = useState(false);
   // ADDED 19 Aug 2026 — Anonymise mode, same read pattern as ContactsList.
-  const [privacy] = useState(() => PrivacySettingsRepository.getSettings());
+  const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const anonymise = privacy.anonymiseModeActive;
   const hideFurther = anonymise && privacy.hideFurtherEnabled;
   // ADDED — real ask: toggle to reveal blank fields, so it's obvious
@@ -2137,14 +2138,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // pattern as every other cross-module settings read in this app —
   // toggling it in Settings and switching back to Contacts (a fresh
   // remount) picks up the new value naturally.
-  const [privacy] = useState(() => PrivacySettingsRepository.getSettings());
+  const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const anonymise = privacy.anonymiseModeActive;
   // ADDED 19 Aug 2026 — real ask: configurable inactive threshold.
-  const [inactiveThresholdDays] = useState(() => AppPreferencesRepository.getPreferences().inactiveThresholdDays);
+  const [inactiveThresholdDays] = useLoadedState(() => AppPreferencesRepository.getPreferences().inactiveThresholdDays, [], 90);
   const activeContacts = useMemo(() => contacts.filter((c) => !c.isArchived), [contacts]);
   // ADDED 18 Aug 2026 — loaded once here rather than per-card, needed
   // for the card's active-status dot (see ContactCard below).
-  const encounters = useMemo(() => EncounterRepository.getAll(), [contacts]);
+  const encounters = useLoadedMemo(() => EncounterRepository.getAll(), [contacts], []);
   // ADDED — real perf fix: was calling contactEncounterSummary(encounters,
   // id) per card AND per pair compared while sorting by "Last encounter"
   // — each call independently rescans the full encounters array. This
@@ -2519,7 +2520,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
 }
 
 export default function ContactsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, registerModuleBackHandler } = {}) {
-  const [contacts, setContacts] = useState(() => loadContacts());
+  const [contacts, setContacts] = useLoadedState(() => loadContacts(), [], []);
   const refresh = () => setContacts(loadContacts());
   // ADDED 19 Aug 2026 — real undo/redo, same shared mechanism as
   // Encounters — see editUndoHelpers.js.
