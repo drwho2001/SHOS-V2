@@ -43,6 +43,7 @@ import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 // CHANGED 2 Sep 2026 — real ask: Menstrual gets its own dedicated
 // colour (menstrualPurple) instead of borrowing ACTION.red purely for
@@ -352,10 +353,10 @@ function CycleSheet({ cycle, onSave, onClose, T }) {
   const isNew = !cycle;
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const [flowOptions, setFlowOptions] = useState(() => CustomOptionListsRepository.getRanked("menstrualFlow"));
+  const [flowOptions, setFlowOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("menstrualFlow"), [], []);
   const [form, setForm] = useState(() => cycle ? { ...cycle } : { ...DEFAULT_CYCLE, startDate: new Date().toISOString().slice(0, 10) });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
-  const symptoms = useMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), []);
+  const symptoms = useLoadedMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), [], []);
   const canSave = !!form.startDate;
   return (
     <BottomSheet title={isNew ? "Log period" : "Edit period"} onClose={onClose} T={T} footer={<SaveButton label={isNew ? "Add" : "Save changes"} onClick={() => onSave(form)} canSave={canSave} T={T} />}>
@@ -379,11 +380,11 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
     else if (openAddOnMount) { setScreen({ name: "add" }); onConsumedQuickAdd?.(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openRecordId, openAddOnMount]);
-  const [cycles, setCycles] = useState(() => MenstrualCycleRepository.getAll().filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)));
+  const [cycles, setCycles] = useLoadedState(() => MenstrualCycleRepository.getAll().filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)), [], []);
   const refresh = () => setCycles(MenstrualCycleRepository.getAll().filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)));
   const deleteUndo = useDeleteUndo(MenstrualCycleRepository, "menstrualCycles");
   const editUndo = useEditUndo(MenstrualCycleRepository);
-  const avgLength = useMemo(() => MenstrualCycleRepository.getAverageCycleLengthDays(), [cycles]);
+  const avgLength = useLoadedMemo(() => MenstrualCycleRepository.getAverageCycleLengthDays(), [cycles], null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const create = (data) => { MenstrualCycleRepository.create(data); refresh(); setScreen({ name: "list" }); };
@@ -484,8 +485,8 @@ function daysForUnit(value, unit, fromDate) {
 }
 function ContraceptionSheet({ entry, onSave, onClose, T }) {
   const isNew = !entry;
-  const [methodOptions, setMethodOptions] = useState(() => CustomOptionListsRepository.getRanked("contraception"));
-  const [formulationOptions, setFormulationOptions] = useState(() => CustomOptionListsRepository.getRanked("medicationType"));
+  const [methodOptions, setMethodOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
+  const [formulationOptions, setFormulationOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("medicationType"), [], []);
   const [form, setForm] = useState(() => entry ? { ...entry } : { ...DEFAULT_CONTRACEPTION_ENTRY, startDate: new Date().toISOString().slice(0, 10) });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   // Real convenience: only auto-fills formulation while it's still
@@ -493,7 +494,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
   // already has — same "suggest, never overwrite" rule already used
   // elsewhere in this app (e.g. Measurements' preferred-unit default).
   const setMethod = (v) => setForm((f) => ({ ...f, method: v, formulation: f.formulation || guessFormulation(v) }));
-  const visits = useMemo(() => ClinicVisitsRepository.getAll().filter((v) => !v.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), []);
+  const visits = useLoadedMemo(() => ClinicVisitsRepository.getAll().filter((v) => !v.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), [], []);
   const canSave = !!form.method && !!form.startDate;
   const [intervalUnit, setIntervalUnit] = useState("Days");
   // Real display value in whichever unit is currently selected — kept
