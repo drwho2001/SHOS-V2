@@ -219,6 +219,31 @@ this date; summarized here for durability.
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
 
+## Recently shipped (4 Sep 2026, continued — see Notion for full detail)
+
+Confirmed the real root cause behind the Global Search bug report ("Tried
+searching through like fisting and didn't come up with encounter from
+yesterday") against the owner's own real backup data, shared locally for
+this one purpose only (never committed, never touched seed/demo data —
+per the standing personal-alpha/public-alpha split above). Reconstructed
+the exact `buildIndex()`+`fuzzyIncludes()` algorithm and ran it against
+the real dataset: 27 real Contacts independently share the same Fisting
+kink tag, all pushed into the index before any Encounter (per
+`buildIndex()`'s own Contacts-then-Encounters push order) — the real
+"Fisting Adam at mine" Encounter landed at raw index 42, past the old
+30-cap-before-sort, exactly reproducing the report. This confirms the
+cap/sort-order fix already shipped in this same 4 Sep session (below)
+was the real fix, not a guess. Comparing Global Search's own field
+coverage against the Encounters tab's own separate local search box
+(added 1 Sep 2026) while investigating turned up a second, distinct,
+confirmed gap: that box only ever matched `title`/attendee names, never
+`notes`/`encounterType`/`kinksInvolved` resolved to kink names — so any
+Encounter tagged with a kink not literally in its title was invisible to
+it even though Global Search (which does resolve kink names) would find
+it. Widened it to match Global Search's exact field set (verified live:
+a synthetic kink-tagged Encounter with no matching title word, findable
+via the Encounters tab's own search only after the fix, not before).
+
 ## Recently shipped (4 Sep 2026 — see Notion for full detail)
 
 First session developing directly on `main` rather than a feature

@@ -867,8 +867,17 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // ADDED 1 Sep 2026 — real ask: "add encounters search" — every
   // sibling module (Contacts, Medication, Testing, Symptom Log,
   // Resources, Glossary) already has a search box; this was the one
-  // module missing it. Matches title or an attendee's name, same
-  // fields the card itself already shows.
+  // module missing it.
+  // WIDENED 4 Sep 2026 — real bug found while investigating a report
+  // that searching "fisting" didn't surface a matching encounter: this
+  // box only checked title + attendee names, never notes/encounterType
+  // or kinksInvolved resolved to kink names — a real, silent gap
+  // against Global Search (SHOS_GlobalSearch_Prototype.jsx), which
+  // already resolves kinksInvolved via KinkRegistry.getById(...).name.
+  // Any encounter tagged with a kink but not naming it in the title
+  // (e.g. a kink-tagged encounter with an unrelated title) was
+  // invisible to this box even though Global Search would find it —
+  // now matches the exact same field set for consistency.
   const [query, setQuery] = useState("");
 
   const visible = useMemo(() => {
@@ -892,7 +901,8 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
     if (q) {
       filtered = filtered.filter((e) => {
         const attendeeNames = e.attendeeIds.map((id) => contactName(contacts, id));
-        return [e.title, ...attendeeNames].filter(Boolean).some((v) => v.toLowerCase().includes(q));
+        const kinkNames = (e.kinksInvolved || []).map((sel) => KinkRegistry.getById(sel.kinkId)?.name);
+        return [e.title, e.encounterType, e.notes, ...attendeeNames, ...kinkNames].filter(Boolean).some((v) => v.toLowerCase().includes(q));
       });
     }
     return sortByDateDesc(filtered);
