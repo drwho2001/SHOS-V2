@@ -566,6 +566,52 @@ this date; summarized here for durability.
   against real seed data (list's real "Last interaction" data; Grace
   J.'s full profile; its Edit sheet's real Gender/Pronouns chips) — no
   page errors. Full smoke-test suite passes.
+  `SHOS_Settings_Prototype.jsx` (17 sites — the largest single file)
+  converted next, working through every screen: DeveloperToolsScreen's
+  storageUsage/orphans, PrivacyScreen's settings, NotificationHistoryScreen's
+  entries, UnitsScreen's/AutomaticBackupsScreen's/DataNetworkScreen's/
+  CalendarSyncSheet's/MenstrualTrackingToggleCard's prefs/appPrefs
+  (fallback `DEFAULT_MEASUREMENT_PREFERENCES`/`DEFAULT_APP_PREFERENCES`),
+  StatsScreen's 6 direct repository reads (its ~9 downstream aggregate
+  computations stay plain `useMemo` — no direct repo call of their
+  own), CalendarScreen's allEvents, TrashScreen's items, DesignScreen's
+  overrides (a genuinely different, safe call site from designTokens.js's
+  own flagged module-load-time call — confirmed by file, not assumed).
+  `InactiveThresholdCard` needed the MyProfile-style resync fix again
+  (`draftValue` read `prefs.inactiveThresholdDays` synchronously at
+  mount) — verified by setting the real value to a distinctive 137
+  directly in localStorage and confirming the input showed 137, not
+  90 (the default), proving the fix actually works rather than merely
+  not crashing.
+  Immediately after finishing Settings, re-swept every module file's
+  remaining count one more time and found 2 real sites that had
+  slipped through EARLIER work this session, before the current
+  single-line + multi-line + bare-reference checklist had fully
+  matured: `SHOS_GlobalSearch_Prototype.jsx`'s `index` (`buildIndex()`,
+  a real multi-repository aggregator) and
+  `SHOS_PartnerNotification_Prototype.jsx`'s `lastEncounterAt`. Both
+  fixed the same way as everywhere else. **This is the real lesson**:
+  a file being "already touched" this session doesn't mean its own
+  sync-load audit was complete — the checklist has to be re-run
+  against every file, including ones fixed for an unrelated reason
+  earlier, not just files converted after the checklist matured.
+  Re-ran the full 3-part sweep (single-line grep, multi-line grep,
+  bare-reference grep) against every file in `src/modules/` one final
+  time after this fix — every remaining match confirmed legitimate
+  (props, plain constants, sessionStorage-only reads, browser-event
+  state, or pure computations with no direct repository call of their
+  own). **`src/modules/` is now fully converted for this specific
+  pattern** — every file audited, every genuine site fixed, several
+  real regressions caught and fixed along the way (see above). What's
+  NOT yet done, deliberately deferred: the ~19 repository files'
+  own module-load-time `let x = storage.load(...)` patterns,
+  `App.jsx`'s own bootstrap `useState` calls (`locked`/`appLockEnabled`/
+  `showOnboarding`), and `main.jsx`'s `ErrorBoundary` (still reads
+  `shos_app_preferences` via raw `localStorage`) — these are a
+  different, higher-stakes tier of Phase 2 work (module bootstrap and
+  crash-recovery paths, not per-screen React state) and were flagged
+  from the start as needing their own dedicated, careful pass rather
+  than folding into this same sweep.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
