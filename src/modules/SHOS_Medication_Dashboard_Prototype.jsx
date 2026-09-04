@@ -17,7 +17,8 @@ import { syncMedicationReminders } from "../calculations/medicationReminderSync"
 import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { localStorageAdapter } from "../storage/storageAdapter";
 import { useDarkModePreference } from "../calculations/darkModePreference";
-import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../repositories/medicationPreferencesRepository";
 import { LogRepository, REASON_OPTIONS, SIDE_EFFECT_OPTIONS } from "../repositories/logRepository";
 import { computeStock, computeAdherence, nextDoseEstimate, isDoseLockedOut, lockoutEndsEstimate, effectiveDoseIntervalHours } from "../calculations/medicationCalculations";
 // ADDED — real ask: Correction Sheet needs to change WHEN a dose was
@@ -991,9 +992,9 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
   // ADDED 19 Aug 2026 — real in-app editable option lists.
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const medicationTypeOptions = useMemo(() => CustomOptionListsRepository.getRanked("medicationType"), []);
-  const routeOptions = useMemo(() => CustomOptionListsRepository.getRanked("route"), []);
-  const [categoryOptions, setCategoryOptions] = useState(() => CustomOptionListsRepository.getRanked("medicationCategory"));
+  const medicationTypeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("medicationType"), [], []);
+  const routeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("route"), [], []);
+  const [categoryOptions, setCategoryOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("medicationCategory"), [], []);
   const [form, setForm] = useState({
     name: med.name, route: med.route || "", medicationType: med.medicationType || "",
     category: med.category || [],
@@ -1138,9 +1139,9 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
 function AddMedicationSheet({ onCreate, onClose, T }) {
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const medicationTypeOptions = useMemo(() => CustomOptionListsRepository.getRanked("medicationType"), []);
-  const routeOptions = useMemo(() => CustomOptionListsRepository.getRanked("route"), []);
-  const [categoryOptions, setCategoryOptions] = useState(() => CustomOptionListsRepository.getRanked("medicationCategory"));
+  const medicationTypeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("medicationType"), [], []);
+  const routeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("route"), [], []);
+  const [categoryOptions, setCategoryOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("medicationCategory"), [], []);
   const [form, setForm] = useState({
     name: "", route: "", medicationType: "", category: [], doseStrengthValue: "", doseStrengthUnit: "",
     usagePattern: "daily", scheduleIntervalDays: 2, unitsPerDose: 1, dosesPerDay: 1,
@@ -1165,7 +1166,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
   // capable as before, just with a heads-up when it's worth a second
   // look. Checked only against ACTIVE medications — a re-add of a
   // long-archived one is a deliberate restart, not a live duplicate.
-  const existingNames = useMemo(() => MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => m.name), []);
+  const existingNames = useLoadedMemo(() => MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => m.name), [], []);
   const trimmedName = form.name.trim();
   // CHANGED — real perf fix: findClosestMatch runs Levenshtein against
   // every active medication name — was recomputing on every render,
@@ -1290,7 +1291,7 @@ function DoseReminderBanner({ med, onTake, onSnooze, onSkip, T }) {
 // Design's dark mode toggle, for visual consistency across the app's
 // two settings surfaces.
 function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
-  const [prefs, setPrefs] = useState(() => MedicationPreferencesRepository.getPreferences());
+  const [prefs, setPrefs] = useLoadedState(() => MedicationPreferencesRepository.getPreferences(), [], DEFAULT_MEDICATION_PREFERENCES);
   const toggleReminders = () => {
     const updated = MedicationPreferencesRepository.updatePreferences({ doseRemindersEnabled: !prefs.doseRemindersEnabled });
     setPrefs(updated);
@@ -1348,7 +1349,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
 }
 
 export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, registerModuleBackHandler } = {}) {
-  const [meds, setMeds] = useState(() => loadMedications());
+  const [meds, setMeds] = useLoadedState(() => loadMedications(), [], []);
   // ADDED 19 Aug 2026 — real undo/redo for editing a medication's own
   // record (name/dose/route/etc.) — see editUndoHelpers.js. Separate
   // from the dose-log undo/redo just below (lastLoggedEntry/
@@ -1358,7 +1359,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // module's read-only cross-repository reference (e.g. Contacts'
   // Timeline reading EncounterRepository). Allergies is edited on My
   // Profile, not here.
-  const allergies = useMemo(() => MyProfileRepository.getProfile().allergies, []);
+  const allergies = useLoadedMemo(() => MyProfileRepository.getProfile().allergies, [], []);
   // Called after every write to either repository — re-reads both and
   // rebuilds the merged view so the screen reflects what's now actually
   // stored, the same way setMeds always used to trigger a re-render.
