@@ -6,6 +6,7 @@ import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, Pap
 // provider introduced.
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { nowAsDateString, nowAsDateTimeLocalString } from "../calculations/dateInputHelpers";
 import {
   ClinicVisitsRepository, DEFAULT_CLINIC_VISIT, generateAdHocMedId,
@@ -251,7 +252,7 @@ function getKnownClinicians() {
   return Array.from(new Set([...CLINICIAN_OPTIONS, ...typed]));
 }
 function ClinicianField({ value, onChange, T }) {
-  const known = useMemo(() => getKnownClinicians(), []);
+  const known = useLoadedMemo(() => getKnownClinicians(), [], []);
   const [draft, setDraft] = useState("");
   // CHANGED — same static-suggestions-never-narrow bug fixed elsewhere
   // this session: typing used to do nothing to the chip list at all.
@@ -331,7 +332,7 @@ function getKnownClinicVisitLocations() {
   return Array.from(new Set(typed));
 }
 function ClinicVisitLocationField({ value, onChange, T }) {
-  const known = useMemo(() => getKnownClinicVisitLocations(), []);
+  const known = useLoadedMemo(() => getKnownClinicVisitLocations(), [], []);
   // CHANGED — same real ask as Encounters' Location field this session:
   // narrow to real matches once typing begins, instead of showing the
   // same static list of every known location regardless of input.
@@ -542,8 +543,8 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026) — see
   // customOptionListsRepository.js's own comment on the two methods.
-  const reasonForVisitOptions = useMemo(() => CustomOptionListsRepository.getRanked("reasonForVisit"), []);
-  const followUpTypeOptions = useMemo(() => CustomOptionListsRepository.getRanked("followUpType"), []);
+  const reasonForVisitOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("reasonForVisit"), [], []);
+  const followUpTypeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("followUpType"), [], []);
   // ADDED 19 Aug 2026 — draft autosave.
   const draftKey = `visitEdit_${visitId || "new"}`;
   const [form, setForm] = useState(() => {
@@ -573,19 +574,21 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
   // CHANGED — real ask: "suggestions shown oldest to newest, wrong way
   // round... same with latest tests" — getAll() returns storage order
   // (oldest first), never sorted for display before.
-  const allTests = useMemo(() => [...TestingRepository.getAll()].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: t.title || "Untitled test" })), [refreshKey]);
-  const allMeds = useMemo(() => MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => ({ id: m.id, name: m.name })), []);
-  const allSymptoms = useMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), []);
+  const allTests = useLoadedMemo(() => [...TestingRepository.getAll()].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: t.title || "Untitled test" })), [refreshKey], []);
+  const allMeds = useLoadedMemo(() => MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => ({ id: m.id, name: m.name })), [], []);
+  const allSymptoms = useLoadedMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), [], []);
   // ADDED 19 Aug 2026 — real feedback batch: "pulling from recent"
   // symptoms means suggesting real Symptom Log occurrences, not just
   // the vocabulary. Recent-first ordering.
-  const allSymptomLogEntries = useMemo(
+  const allSymptomLogEntries = useLoadedMemo(
     () => SymptomLogRepository.getAll().filter((s) => !s.isArchived).sort((a, b) => new Date(b.dateStarted || 0) - new Date(a.dateStarted || 0))
       .map((s) => ({ id: s.id, name: `${s.title || "Symptom entry"} · ${formatDate(s.dateStarted)}` })),
+    [],
     []
   );
-  const allVaccinations = useMemo(
+  const allVaccinations = useLoadedMemo(
     () => VaccinationRepository.getAll().filter((v) => !v.isArchived).map((v) => ({ id: v.id, name: `${v.title || v.vaccine || "Vaccination"} · ${formatDate(v.date)}` })),
+    [],
     []
   );
 
@@ -755,13 +758,13 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
 
 // ── Detail view ──
 function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, refresh }) {
-  const [visit, setVisit] = useState(() => ClinicVisitsRepository.getById(visitId));
+  const [visit, setVisit] = useLoadedState(() => ClinicVisitsRepository.getById(visitId), [visitId], null);
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven for Testing/Vaccinations/Symptom Log.
   const [confirmDelete, setConfirmDelete] = useState(false);
   // ADDED — Measurements inline entry point (see import comment above).
   const [showAddMeasurement, setShowAddMeasurement] = useState(false);
-  const [measurements, setMeasurements] = useState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedClinicVisitId === visitId));
+  const [measurements, setMeasurements] = useLoadedState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedClinicVisitId === visitId), [visitId], []);
   const refreshMeasurements = () => setMeasurements(MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedClinicVisitId === visitId));
   if (!visit) return null;
 
@@ -1066,7 +1069,7 @@ export default function ClinicVisitsModule({ openAddOnMount = false, onConsumedQ
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // VisitsLanding — visits/deletedRecent/undoDelete/triggerDelete now
   // live at the real module level, shared with VisitDetail.
-  const [visits, setVisits] = useState(() => ClinicVisitsRepository.getAll().filter((v) => !v.isArchived));
+  const [visits, setVisits] = useLoadedState(() => ClinicVisitsRepository.getAll().filter((v) => !v.isArchived), [], []);
   const refresh = () => setVisits(ClinicVisitsRepository.getAll().filter((v) => !v.isArchived));
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
