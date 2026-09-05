@@ -1963,7 +1963,7 @@ const METRIC_UNITS = { Weight: "kg", Height: "cm", Temperature: "°C" };
 const IMPERIAL_UNITS = { Weight: "lb", Height: "in", Temperature: "°F" };
 
 function detectUnitSystem(prefs) {
-  const isImperial = UNIT_SYSTEM_TYPES.every((t) => (prefs.preferredUnitByType[t] || getDefaultUnit(t)) === IMPERIAL_UNITS[t]);
+  const isImperial = UNIT_SYSTEM_TYPES.every((t) => (prefs.preferredUnitByType[t] || getDefaultUnit(t, prefs)) === IMPERIAL_UNITS[t]);
   return isImperial ? "imperial" : "metric";
 }
 
@@ -1972,11 +1972,11 @@ function UnitsScreen({ onClose }) {
   const [prefs, setPrefs] = useLoadedState(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
   const system = detectUnitSystem(prefs);
 
-  const setPreferred = (type, unit) => setPrefs(MeasurementPreferencesRepository.setPreferredUnit(type, unit));
-  const setSystem = (target) => {
+  const setPreferred = async (type, unit) => setPrefs(await MeasurementPreferencesRepository.setPreferredUnit(type, unit));
+  const setSystem = async (target) => {
     const units = target === "imperial" ? IMPERIAL_UNITS : METRIC_UNITS;
     let updated = prefs;
-    UNIT_SYSTEM_TYPES.forEach((type) => { updated = MeasurementPreferencesRepository.setPreferredUnit(type, units[type]); });
+    for (const type of UNIT_SYSTEM_TYPES) updated = await MeasurementPreferencesRepository.setPreferredUnit(type, units[type]);
     setPrefs(updated);
   };
 
@@ -2012,7 +2012,7 @@ function UnitsScreen({ onClose }) {
         </div>
 
         {UNIT_SYSTEM_TYPES.map((type) => {
-          const units = getAvailableUnits(type);
+          const units = getAvailableUnits(type, prefs.typeKinds[type]);
           const current = prefs.preferredUnitByType[type] || units[0];
           return (
             <div key={type} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>

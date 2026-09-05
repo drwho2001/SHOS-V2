@@ -775,6 +775,63 @@ this date; summarized here for durability.
   `shos_trash` — both directly exercising the `for...of`-rewritten
   `restoreEntries`. No page errors anywhere. Full smoke-test suite
   passes.
+  `MeasurementPreferencesRepository` converted next (5 Sep) — a
+  genuinely different, harder case than the first two, backed out of
+  once already (see the App.jsx-style reasoning above) before being
+  done properly. The real complication: `measurementRepository.js`'s
+  own `getAvailableUnits()`/`getDefaultUnit()` called
+  `MeasurementPreferencesRepository` internally, and were themselves
+  called from ~8 real UI sites — several inline in render bodies or
+  component-body variables (a `ValueUnitFields` prop computation, a
+  `useState(() => {...})` form initializer, a plain `displayReading()`
+  helper called per list row) — not behind any hook. Converting the
+  repository to async would have forced all 8 into an async-aware
+  redesign at once. Real fix, better than a mechanical hook-ification:
+  made `getAvailableUnits(type, typeKind)`/`getDefaultUnit(type, prefs)`
+  pure functions that take the relevant preference data as a
+  parameter instead of fetching it themselves — this was already an
+  architecture smell independent of the async question (one repository
+  quietly depending on another for a plain calculation, when CLAUDE.md's
+  own rule is "a repository is pure data access... a calculations file
+  is pure business logic, no I/O") and fixing it happens to also
+  sidestep the async problem entirely for every call site that already
+  has `prefs` loaded for other reasons (Settings' `UnitsScreen`,
+  Measurements' `MeasurementPreferencesSheet` — both already did).
+  Three sites needed real new plumbing: `MeasurementDetail` and
+  `MeasurementsLanding` didn't have `prefs` loaded at all (added a
+  `useLoadedMemo`, threaded into `displayReading(m, prefs)`); `ValueUnitFields`
+  needed a new `typeKind` prop from its parent `MeasurementSheet`. The
+  trickiest real design decision: `MeasurementSheet`'s own
+  `useState(() => {...})` form initializer calls `getDefaultUnit(presetType,
+  prefs)` for a preset-type quick-add with no prior entry — `prefs` is
+  still its `useLoadedState` fallback value on this exact first render
+  (real preferences resolve a tick later), so the initial unit shown
+  could be briefly wrong (canonical instead of a real saved
+  preference) before self-correcting. Fixed with a resync effect
+  matching this session's established "only correct if still
+  untouched" pattern (reference-checked against the captured fallback,
+  same shape as every other loaded-value race fixed earlier this
+  session) — `setType`'s own live `getDefaultUnit(newType, prefs)` call
+  needed no such treatment, since by the time a user manually changes
+  the type, `prefs` has already loaded for real in every practical
+  case. Also fixed a second real render-body Promise-truthiness bug of
+  the same class as Settings' `hasUnbackedChanges()` one:
+  `MeasurementSheet`'s "wrong unit suggestions?" re-prompt link called
+  `MeasurementPreferencesRepository.getTypeKind(form.type)` directly in
+  JSX — replaced with the already-loaded `prefs.typeKinds[form.type]`,
+  which also fixed a related staleness gap (the sheet's own `prefs` is
+  loaded once at mount, so `TypeKindPrompt`'s `onPick` handler now
+  calls `setPrefs()` with `setTypeKind()`'s own return value, not just
+  awaiting it, so the just-picked kind is reflected immediately rather
+  than needing a reopen). Verified live end-to-end: a built-in-type
+  (Weight) entry saved correctly with real kg/lb chips; a brand-new
+  custom type ("Verify Custom Analyte") through the full
+  type-a-new-type → `TypeKindPrompt` → pick "Weight-like" → real
+  mass-unit chips (kg/lb/g/mg) appearing immediately → save flow,
+  confirmed against real `localStorage` state at each step; Settings'
+  Units screen's Metric/Imperial toggle confirmed writing the correct
+  real preference object. No page errors anywhere. Full smoke-test
+  suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

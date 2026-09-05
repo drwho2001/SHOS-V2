@@ -271,7 +271,7 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     menstrualCycles: MenstrualCycleRepository.getAll(),
     contraception: ContraceptionRepository.getAll(),
     pregnancies: PregnancyRepository.getAll(),
-    measurementPreferences: MeasurementPreferencesRepository.getPreferences(),
+    measurementPreferences: await MeasurementPreferencesRepository.getPreferences(),
     customGroups: await CustomGroupsRepository.getAllForBackup(),
     customOptionLists: CustomOptionListsRepository.getAllForBackup(),
     privacySettings: redactSecrets
@@ -390,7 +390,7 @@ export async function restoreBackup(parsedBackup) {
   if (Array.isArray(menstrualCycles)) MenstrualCycleRepository.replaceAll(menstrualCycles);
   if (Array.isArray(contraception)) ContraceptionRepository.replaceAll(contraception);
   if (Array.isArray(pregnancies)) PregnancyRepository.replaceAll(pregnancies);
-  if (measurementPreferences && typeof measurementPreferences === "object") MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
+  if (measurementPreferences && typeof measurementPreferences === "object") await MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
   if (customGroups && typeof customGroups === "object") await CustomGroupsRepository.replaceAll(customGroups);
   if (customOptionLists && typeof customOptionLists === "object") CustomOptionListsRepository.replaceAll(customOptionLists);
   if (privacySettings && typeof privacySettings === "object") PrivacySettingsRepository.update(privacySettings);

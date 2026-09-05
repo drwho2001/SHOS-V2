@@ -53,7 +53,6 @@
 // clinical interpretation" ethos (no reference ranges, no
 // normal/abnormal flagging anywhere in this file).
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
-import { MeasurementPreferencesRepository } from "./measurementPreferencesRepository.js";
 
 const STORAGE_KEY = "shos_measurements";
 
@@ -154,15 +153,25 @@ export function hasUnitConversion(type) {
   return !!UNIT_CONFIG[type];
 }
 
-export function getAvailableUnits(type) {
+// CHANGED — real groundwork for encryption at rest (see CLAUDE.md's
+// Known Issues / the Notion Development log for the full plan): used
+// to call MeasurementPreferencesRepository.getTypeKind() internally —
+// already a real architecture smell (this file's own repository
+// quietly depending on another repository for a plain calculation),
+// and one that would have forced every one of this function's ~8 real
+// call sites — several inline in render bodies, not behind any hook —
+// to become async-aware the moment MeasurementPreferencesRepository's
+// own methods go real async. Now a pure function: the caller (which
+// already loads preferences for other reasons) passes the relevant
+// type's kind in directly.
+export function getAvailableUnits(type, typeKind) {
   const config = UNIT_CONFIG[type];
   if (config) return [config.canonical, ...Object.keys(config.alternates)];
   // No real conversion for this type — but if the user tagged it with
   // a kind (see measurementPreferencesRepository.js), still offer that
   // kind's usual units as suggestions, so "HRT dose in mL" gets a
   // sensible picker even though it's not one of the 3 built-ins.
-  const kind = MeasurementPreferencesRepository.getTypeKind(type);
-  return kind ? (KIND_UNITS[kind] || []) : [];
+  return typeKind ? (KIND_UNITS[typeKind] || []) : [];
 }
 
 // Real ask: a settable default per convertible type ("always default
@@ -170,9 +179,12 @@ export function getAvailableUnits(type) {
 // canonical. Only meaningful for a type with real UNIT_CONFIG
 // conversion — a kind-only suggestion list has no single "canonical"
 // unit to override, so this falls through to that list's first entry.
-export function getDefaultUnit(type) {
-  const preferred = MeasurementPreferencesRepository.getPreferences().preferredUnitByType[type];
-  const available = getAvailableUnits(type);
+// CHANGED — same pure-function reasoning as getAvailableUnits() above:
+// takes the already-loaded MeasurementPreferencesRepository.getPreferences()
+// result instead of fetching it itself.
+export function getDefaultUnit(type, prefs) {
+  const preferred = prefs?.preferredUnitByType?.[type];
+  const available = getAvailableUnits(type, prefs?.typeKinds?.[type]);
   if (preferred && available.includes(preferred)) return preferred;
   return available[0] || "";
 }

@@ -208,8 +208,8 @@ function TypeKindPrompt({ typeName, onPick, onSkip, T }) {
 // string gracefully (stores as-is, no conversion attempted) so this
 // doesn't risk breaking the real cross-lab conversion this file exists
 // for — it only removes the case where NO unit fit at all.
-function ValueUnitFields({ type, value, unit, onValueChange, onUnitChange, T }) {
-  const unitOptions = getAvailableUnits(type);
+function ValueUnitFields({ type, value, unit, onValueChange, onUnitChange, T, typeKind }) {
+  const unitOptions = getAvailableUnits(type, typeKind);
   const hints = PLACEHOLDER_HINTS[type] || { value: "e.g. 42", unit: "e.g. units" };
   return (
     <div style={{ display: "flex", gap: 10 }}>
@@ -283,6 +283,17 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
   const isNew = !measurement;
   const [typeOptions, setTypeOptions] = useLoadedState(() => CustomOptionListsRepository.get("measurementType"), [], []);
   const [rankedTypeOptions, setRankedTypeOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("measurementType"), [], []);
+  // ADDED — real groundwork for encryption at rest: getDefaultUnit()/
+  // getAvailableUnits() now take preferences as a parameter (see
+  // measurementRepository.js's own comment) rather than fetching them
+  // internally — loaded here since this is the one place that needs
+  // it for the form's own initial unit and live type-switching below.
+  const [prefs, setPrefs] = useLoadedState(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
+  // Captures whatever `prefs` was AT MOUNT (the fallback default, since
+  // the real value only resolves a tick later) — lets the resync effect
+  // below tell "still the fallback" apart from "genuinely loaded" by
+  // reference, without a separate loaded-flag.
+  const initialPrefsRef = useRef(prefs);
   // "Blood pressure" excluded from what's offered when editing an
   // existing non-BP entry — can't switch INTO it (see file comment).
   const editableOptions = !isNew && measurement.type !== BLOOD_PRESSURE_TYPE
@@ -309,8 +320,12 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
       // conversion units still needs a real default unit written into
       // state up front (now preference-aware via getDefaultUnit, see
       // "add settings for default unit preferences"), not just shown
-      // as the select's visual default.
-      return { ...base, unit: getDefaultUnit(presetType) };
+      // as the select's visual default. `prefs` is still its fallback
+      // value on this very first render (real preferences resolve a
+      // tick later) — the effect below corrects this once they load,
+      // same as everywhere else this session handles a value that's
+      // briefly a fallback before a real async load resolves.
+      return { ...base, unit: getDefaultUnit(presetType, prefs) };
     }
     return base;
   });
@@ -319,6 +334,22 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
     if (isFirstRender.current) { isFirstRender.current = false; return; }
     saveDraft(draftKey, form);
   }, [form]);
+  // ADDED — corrects the new-presetType-entry's initial `unit` (set
+  // above from `prefs`' fallback value) once real preferences load, IF
+  // the user hasn't already changed it — same "only correct if still
+  // untouched" safety as every other resync fix this session (see
+  // App.jsx's InactiveThresholdCard/MyProfile's `form` for the same
+  // pattern). Reference-checks against the captured fallback rather
+  // than a separate loaded-flag, since useLoadedState doesn't expose
+  // one.
+  useEffect(() => {
+    if (prefs === initialPrefsRef.current) return; // still the fallback
+    if (!isNew || !presetType || MeasurementRepository.getLastEntry(presetType)) return;
+    const fallbackDefault = getDefaultUnit(presetType, initialPrefsRef.current);
+    const realDefault = getDefaultUnit(presetType, prefs);
+    if (realDefault === fallbackDefault) return;
+    setForm((f) => (f.type === presetType && f.unit === fallbackDefault ? { ...f, unit: realDefault } : f));
+  }, [prefs]);
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const isBP = form.type === BLOOD_PRESSURE_TYPE;
   const canSave = form.type.trim().length > 0 && (isBP ? (form.systolic != null && form.diastolic != null) : form.value != null);
@@ -333,7 +364,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
   const setType = (newType) => {
     if (isNew && newType && newType !== BLOOD_PRESSURE_TYPE) {
       const last = MeasurementRepository.getLastEntry(newType);
-      const defaultUnit = last ? last.unit : getDefaultUnit(newType);
+      const defaultUnit = last ? last.unit : getDefaultUnit(newType, prefs);
       setForm((f) => ({ ...f, type: newType, unit: defaultUnit, value: null }));
     } else {
       setForm((f) => ({ ...f, type: newType }));
@@ -361,8 +392,14 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
             onNewTypeCreated={(v) => v !== BLOOD_PRESSURE_TYPE && setNewTypeNeedingKind(v)} T={T} locked={!isNew && measurement.type === BLOOD_PRESSURE_TYPE} />
           {newTypeNeedingKind && (
             <TypeKindPrompt typeName={newTypeNeedingKind} T={T}
-              onPick={(kind) => {
-                MeasurementPreferencesRepository.setTypeKind(newTypeNeedingKind, kind);
+              onPick={async (kind) => {
+                // Also updates local `prefs` state directly — this
+                // component's own `prefs` is loaded once at mount
+                // (useLoadedState with empty deps), so without this the
+                // "wrong unit suggestions? change kind" re-prompt link
+                // just below would keep reading the pre-pick value
+                // until the sheet is reopened.
+                setPrefs(await MeasurementPreferencesRepository.setTypeKind(newTypeNeedingKind, kind));
                 const units = KIND_UNITS[kind] || [];
                 setForm((f) => (f.type === newTypeNeedingKind ? { ...f, unit: units[0] || f.unit } : f));
                 setNewTypeNeedingKind(null);
@@ -380,7 +417,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
             </div>
           ) : (
             <>
-              {form.type && <ValueUnitFields type={form.type} value={form.value} unit={form.unit} onValueChange={set("value")} onUnitChange={set("unit")} T={T} />}
+              {form.type && <ValueUnitFields type={form.type} value={form.value} unit={form.unit} onValueChange={set("value")} onUnitChange={set("unit")} T={T} typeKind={prefs.typeKinds[form.type]} />}
               {/* ADDED — real ask: a kind-tagged type (e.g. "Height"
                   mistakenly picked as Count-like) used to be stuck with
                   that choice forever after the one-time prompt above —
@@ -388,7 +425,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
                   for a type with real UNIT_CONFIG conversion (Weight,
                   Height, Testosterone, Estradiol) — those have a
                   genuine canonical unit, not a re-pickable "kind". */}
-              {form.type && !hasUnitConversion(form.type) && MeasurementPreferencesRepository.getTypeKind(form.type) && (
+              {form.type && !hasUnitConversion(form.type) && prefs.typeKinds[form.type] && (
                 <div style={{ padding: "0 0 8px" }}>
                   <span onClick={() => setNewTypeNeedingKind(form.type)} style={{ fontSize: 11, color: T.textSecondary, cursor: "pointer", textDecoration: "underline" }}>
                     Wrong unit suggestions? Change what kind of measurement this is
@@ -430,11 +467,15 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
 // storage is never touched — to whatever unit is currently preferred
 // for that type, falling back to the stored unit untouched when there's
 // no real conversion (or no preference set) for it.
-function displayReading(m) {
+// CHANGED — real groundwork for encryption at rest: getDefaultUnit()
+// now takes preferences as a parameter rather than fetching them
+// itself (see measurementRepository.js's own comment) — this function
+// takes the same, from its own callers.
+function displayReading(m, prefs) {
   if (m.type === BLOOD_PRESSURE_TYPE) return `${m.systolic}/${m.diastolic} mmHg`;
   if (m.value == null) return "";
   if (hasUnitConversion(m.type)) {
-    const preferred = getDefaultUnit(m.type);
+    const preferred = getDefaultUnit(m.type, prefs);
     if (preferred && preferred !== m.unit) {
       return `${convertFromCanonical(m.type, m.value, preferred)} ${preferred}`;
     }
@@ -444,6 +485,7 @@ function displayReading(m) {
 
 function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, refresh }) {
   const m = useLoadedMemo(() => MeasurementRepository.getById(measurementId), [measurementId], null);
+  const prefs = useLoadedMemo(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
   const [confirmDelete, setConfirmDelete] = useState(false);
   if (!m) return null;
   const isBP = m.type === BLOOD_PRESSURE_TYPE;
@@ -486,7 +528,7 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
             <ReadRow label="Blood pressure" value={`${m.systolic}/${m.diastolic} mmHg`} T={T} />
           ) : (
             <>
-              <ReadRow label="Value" value={displayReading(m)} T={T} />
+              <ReadRow label="Value" value={displayReading(m, prefs)} T={T} />
               {showsConversion && <ReadRow label="As entered" value={`${m.enteredValue} ${m.enteredUnit}`} T={T} />}
             </>
           )}
@@ -514,6 +556,7 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
 }
 
 function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, measurements, refresh, deleteToast, undoDelete, redoDelete, triggerDelete, groupsVersion }) {
+  const prefs = useLoadedMemo(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
   const [query, setQuery] = useState("");
   const byTypeGroups = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -561,7 +604,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
   const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); };
   const allVisibleIds = useMemo(() => byTypeGroups.flatMap((g) => g.entries.map((e) => e.id)), [byTypeGroups]);
 
-  const readingLabel = (m) => displayReading(m) || "—";
+  const readingLabel = (m) => displayReading(m, prefs) || "—";
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -776,7 +819,7 @@ function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
   // default unit was never settable here (also now settable app-wide
   // via Settings > Units, which writes to this same preference).
   const CONVERTIBLE_TYPES = ["Weight", "Height", "Temperature", "Testosterone", "Estradiol"];
-  const setPreferred = (type, unit) => setPrefs(MeasurementPreferencesRepository.setPreferredUnit(type, unit));
+  const setPreferred = async (type, unit) => setPrefs(await MeasurementPreferencesRepository.setPreferredUnit(type, unit));
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 215 }} onClick={onClose}>
@@ -788,7 +831,7 @@ function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
         <div style={{ overflowY: "auto", padding: "16px 20px 24px", flex: 1 }}>
           <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, marginBottom: 8 }}>Default units</div>
           {CONVERTIBLE_TYPES.map((type) => {
-            const units = getAvailableUnits(type);
+            const units = getAvailableUnits(type, prefs.typeKinds[type]);
             const current = prefs.preferredUnitByType[type] || units[0];
             return (
               <div key={type} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${T.border}` }}>
