@@ -790,7 +790,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-            <button onClick={() => { triggerDelete([visit]); refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
+            <button onClick={async () => { await triggerDelete([visit]); refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
           </div>
         </div>
       )}
@@ -976,11 +976,11 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
             <span onClick={() => { if (selectedIds.length > 0) { ClinicVisitsRepository.bulkArchive(selectedIds); syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll()); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-            <span onClick={() => {
+            <span onClick={async () => {
               if (selectedIds.length === 0) return;
               if (window.confirm(`Delete ${selectedIds.length} visit${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
                 const toRestore = ClinicVisitsRepository.getAll().filter((v) => selectedIds.includes(v.id));
-                triggerDelete(toRestore);
+                await triggerDelete(toRestore);
                 refresh();
                 exitSelectMode();
               }
@@ -1092,17 +1092,17 @@ export default function ClinicVisitsModule({ openAddOnMount = false, onConsumedQ
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
   };
-  const redoDelete = () => {
+  const redoDelete = async () => {
     if (!deleteToast) return;
-    TrashRepository.add("clinicVisits", deleteToast.records);
+    await TrashRepository.add("clinicVisits", deleteToast.records);
     deleteToast.records.forEach((r) => ClinicVisitsRepository.delete(r.id));
     refresh();
     syncCalendar();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
-  const triggerDelete = (records) => {
-    TrashRepository.add("clinicVisits", records);
+  const triggerDelete = async (records) => {
+    await TrashRepository.add("clinicVisits", records);
     records.forEach((r) => ClinicVisitsRepository.delete(r.id));
     syncCalendar();
     setDeleteToast({ mode: "undo", records });

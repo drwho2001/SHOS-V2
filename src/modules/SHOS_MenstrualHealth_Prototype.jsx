@@ -329,15 +329,15 @@ function useDeleteUndo(repo, moduleKey) {
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setToast(null), 8000);
   };
-  const redo = () => {
+  const redo = async () => {
     if (!toast) return;
-    TrashRepository.add(moduleKey, toast.records);
+    await TrashRepository.add(moduleKey, toast.records);
     toast.records.forEach((r) => repo.delete(r.id));
     setToast(null);
     clearTimeout(timerRef.current);
   };
-  const trigger = (records) => {
-    TrashRepository.add(moduleKey, records);
+  const trigger = async (records) => {
+    await TrashRepository.add(moduleKey, records);
     records.forEach((r) => repo.delete(r.id));
     setToast({ mode: "undo", records });
     clearTimeout(timerRef.current);
@@ -403,7 +403,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
     return (
       <div>
         <DetailHeader onBack={() => setScreen({ name: "list" })} onEdit={() => setScreen({ name: "edit", id: c.id })} onDelete={() => setConfirmDelete(true)} T={T} />
-        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={() => { deleteUndo.trigger([c]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
+        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([c]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Drop size={16} color={T.menstrualPurple} weight="fill" />
@@ -621,7 +621,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
     return (
       <div>
         <DetailHeader onBack={() => setScreen({ name: "list" })} onEdit={() => setScreen({ name: "edit", id: e.id })} onDelete={() => setConfirmDelete(true)} T={T} />
-        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={() => { deleteUndo.trigger([e]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
+        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([e]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <ContraceptionIcon formulation={e.formulation} size={16} color={T.healthcareBlue} />
@@ -776,7 +776,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
     return (
       <div>
         <DetailHeader onBack={() => setScreen({ name: "list" })} onEdit={() => setScreen({ name: "edit", id: p.id })} onDelete={() => setConfirmDelete(true)} T={T} />
-        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={() => { deleteUndo.trigger([p]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
+        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([p]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Baby size={16} color={T.healthcareBlue} weight="fill" />

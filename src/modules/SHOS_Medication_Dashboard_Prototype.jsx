@@ -1416,16 +1416,16 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
   };
-  const redoDelete = () => {
+  const redoDelete = async () => {
     if (!deleteToast) return;
-    TrashRepository.add("medications", deleteToast.records);
+    await TrashRepository.add("medications", deleteToast.records);
     deleteToast.records.forEach((r) => MedicationRepository.delete(r.id));
     refreshMeds();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
-  const triggerDelete = (records) => {
-    TrashRepository.add("medications", records);
+  const triggerDelete = async (records) => {
+    await TrashRepository.add("medications", records);
     records.forEach((r) => MedicationRepository.delete(r.id));
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
@@ -1652,7 +1652,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   const unarchiveMedication = (id) => { MedicationRepository.unarchive(id); refreshMeds(); };
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven across every other module this session.
-  const deleteMedication = (id) => { const med = MedicationRepository.getById(id); if (med) { triggerDelete([med]); refreshMeds(); } };
+  const deleteMedication = async (id) => { const med = MedicationRepository.getById(id); if (med) { await triggerDelete([med]); refreshMeds(); } };
 
   const takeReminder = () => { logDose(dueReminder.id); flashComplete(dueReminder.id, "logged"); setDueReminder(null); };
   const snoozeReminder = () => { setSnoozedUntil((prev) => ({ ...prev, [dueReminder.id]: new Date(Date.now() + 30 * 60000).toISOString() })); setDueReminder(null); };
@@ -1789,11 +1789,11 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
                 style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
               <span onClick={() => { if (selectedIds.length > 0) { MedicationRepository.bulkArchive(selectedIds); refreshMeds(); exitSelectMode(); } }}
                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-              <span onClick={() => {
+              <span onClick={async () => {
                 if (selectedIds.length === 0) return;
                 if (window.confirm(`Delete ${selectedIds.length} medication${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
                   const toRestore = MedicationRepository.getAll().filter((m) => selectedIds.includes(m.id));
-                  triggerDelete(toRestore);
+                  await triggerDelete(toRestore);
                   refreshMeds();
                   exitSelectMode();
                 }

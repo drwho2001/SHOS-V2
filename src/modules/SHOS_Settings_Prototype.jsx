@@ -3242,7 +3242,7 @@ function TrashScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
 
   const [items, setItems] = useLoadedState(() => TrashRepository.getAll(), [], []);
-  const refresh = () => setItems(TrashRepository.getAll());
+  const refresh = async () => setItems(await TrashRepository.getAll());
   // ADDED 26 Aug 2026 — real ask: 4 real actions (restore all/
   // selected, delete all/selected), with real multi-select on this
   // screen — reuses the exact same Select-toggle + toolbar pattern
@@ -3253,34 +3253,34 @@ function TrashScreen({ onClose }) {
   const toggleSelected = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
   const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); };
 
-  const restoreEntries = (entries) => {
-    entries.forEach((entry) => {
+  const restoreEntries = async (entries) => {
+    for (const entry of entries) {
       const repo = TRASH_REPOSITORIES[entry.moduleKey];
       if (repo) repo.restore(entry.record);
-      TrashRepository.removeEntry(entry.trashId);
-    });
+      await TrashRepository.removeEntry(entry.trashId);
+    }
     refresh();
   };
 
   const restoreItem = (entry) => restoreEntries([entry]);
   const restoreAll = () => restoreEntries(items);
-  const restoreSelected = () => { restoreEntries(items.filter((e) => selectedIds.includes(e.trashId))); exitSelectMode(); };
+  const restoreSelected = async () => { await restoreEntries(items.filter((e) => selectedIds.includes(e.trashId))); exitSelectMode(); };
 
-  const deletePermanently = (entry) => {
+  const deletePermanently = async (entry) => {
     if (window.confirm("Delete this permanently? It won't be recoverable after this.")) {
-      TrashRepository.removeEntry(entry.trashId);
+      await TrashRepository.removeEntry(entry.trashId);
       refresh();
     }
   };
-  const deleteAll = () => {
+  const deleteAll = async () => {
     if (window.confirm(`Permanently delete all ${items.length} item${items.length > 1 ? "s" : ""} in the trash? This can't be undone.`)) {
-      TrashRepository.emptyAll();
+      await TrashRepository.emptyAll();
       refresh();
     }
   };
-  const deleteSelected = () => {
+  const deleteSelected = async () => {
     if (window.confirm(`Permanently delete ${selectedIds.length} item${selectedIds.length > 1 ? "s" : ""}? This can't be undone.`)) {
-      selectedIds.forEach((id) => TrashRepository.removeEntry(id));
+      for (const id of selectedIds) await TrashRepository.removeEntry(id);
       exitSelectMode();
       refresh();
     }

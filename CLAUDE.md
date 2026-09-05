@@ -744,6 +744,37 @@ this date; summarized here for durability.
   confirmation correctly shows the real unbacked-changes warning
   (true, accurately, right after a restore). No page errors anywhere.
   Full smoke-test suite passes.
+  `TrashRepository` converted next — same shape as `CustomGroupsRepository`
+  (no module-load caching, every method reads/writes fresh). Its own
+  caller chain turned out to be the widest yet: `add()` is called from
+  10 module files' shared "delete with undo/redo toast" handlers
+  (`triggerDelete`/`redoDelete`, or MenstrualHealth's generically-named
+  `trigger`/`redo` variant of the same pattern) — 24 call sites total,
+  all fire-and-forget before this change. All made `async`/`await`ed,
+  including 8 further "Delete permanently" confirm buttons (the
+  single-record hard-delete path on each module's own detail screen)
+  that called `triggerDelete()` without awaiting it at all. Settings'
+  `TrashScreen` (`getAll`/`removeEntry`×2/`emptyAll`/bulk `removeEntry`
+  via `forEach`) converted too — `forEach` can't `await`, so
+  `restoreEntries`/`deleteSelected` were rewritten as `for...of` loops.
+  Verified live end-to-end, working around several real navigation
+  quirks in this app's own structure discovered along the way (worth
+  recording so a future session doesn't re-lose time to them): the
+  bottom nav bar only holds Contacts/Encounters/Medication/Healthcare —
+  Settings is reached via a gear icon on Home itself
+  (`title="Settings"` on the icon), not a 5th tab; the app's own
+  resume-last-tab feature means a plain page reload during a test
+  session keeps resuming wherever a prior action left `lastActiveTab`,
+  so a test needs to clear it explicitly, not just reload. Once
+  navigation was right: a real single-contact "Delete permanently"
+  (profile → menu → confirm) produced a correct, fully-shaped
+  `shos_trash` entry and correctly dropped the live count (7→6 active);
+  the Trash screen rendered a seeded real entry correctly (name,
+  "Contact · deleted [date]", Restore/Delete actions) and a real
+  Restore tap correctly moved it back into `shos_contacts` and cleared
+  `shos_trash` — both directly exercising the `for...of`-rewritten
+  `restoreEntries`. No page errors anywhere. Full smoke-test suite
+  passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

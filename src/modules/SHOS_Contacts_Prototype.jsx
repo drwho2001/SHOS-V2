@@ -1899,7 +1899,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
             This permanently deletes the contact — unlike archiving, there's no getting it back. Only use this for a genuinely erroneous or unwelcome entry.
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => { triggerDelete([contact]); refresh(); onBack(); }} style={{ ...btnStyle(T.actionRed, "filled"), padding: "8px 10px" }}>Delete permanently</button>
+            <button onClick={async () => { await triggerDelete([contact]); refresh(); onBack(); }} style={{ ...btnStyle(T.actionRed, "filled"), padding: "8px 10px" }}>Delete permanently</button>
             <button onClick={() => setConfirmDelete(false)} style={{ ...btnStyle(T.textSecondary, "outline"), padding: "8px 10px" }}>Cancel</button>
           </div>
         </div>
@@ -2352,7 +2352,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
             <span onClick={() => { if (selectedIds.length > 0) { ContactRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-            <span onClick={() => {
+            <span onClick={async () => {
               if (selectedIds.length === 0) return;
               if (window.confirm(`Delete ${selectedIds.length} contact${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
                 // CHANGED 26 Aug 2026 — now uses the shared
@@ -2362,7 +2362,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 // BEFORE deleting via getAll(), not the possibly-stale
                 // `contacts` prop.
                 const toRestore = ContactRepository.getAll().filter((c) => selectedIds.includes(c.id));
-                triggerDelete(toRestore);
+                await triggerDelete(toRestore);
                 refresh();
                 exitSelectMode();
               }
@@ -2565,9 +2565,9 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
   };
-  const redoDelete = () => {
+  const redoDelete = async () => {
     if (!deleteToast) return;
-    TrashRepository.add("contacts", deleteToast.records);
+    await TrashRepository.add("contacts", deleteToast.records);
     deleteToast.records.forEach((r) => ContactRepository.delete(r.id));
     refresh();
     setDeleteToast(null);
@@ -2576,8 +2576,8 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
   // Single source of truth for "delete this record safely" — Trash
   // write + toast, used identically whether triggered from the List's
   // bulk-select toolbar or a single record's own Profile screen.
-  const triggerDelete = (records) => {
-    TrashRepository.add("contacts", records);
+  const triggerDelete = async (records) => {
+    await TrashRepository.add("contacts", records);
     records.forEach((r) => ContactRepository.delete(r.id));
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
