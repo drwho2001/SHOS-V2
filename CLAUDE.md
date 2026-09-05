@@ -901,6 +901,43 @@ this date; summarized here for durability.
   call belong to repositories in that harder bucket and should be
   fixed as part of each specific repository's own future conversion,
   not as a standalone pass.
+  First real proof of the harder "ensureLoaded()" pattern landed (5
+  Sep), on the smallest and most isolated of the 22 module-load-cached
+  repositories — `notificationHistoryRepository.js` (51 lines, called
+  from just 2 files), chosen the same way `CustomGroupsRepository` was
+  chosen first for the easier pattern. The redesign: the cached
+  variable (`entries`) starts `null` instead of the real seed/stored
+  value, and every exported method now awaits a shared `ensureLoaded()`
+  helper before touching it. `ensureLoaded()` memoizes the in-flight
+  load itself (a module-level `loadPromise`, set BEFORE it's awaited)
+  so a second caller arriving before the first load resolves awaits
+  the SAME promise rather than triggering a duplicate, possibly-racing
+  read — the one piece of real synchronization complexity a plain
+  module-level variable needs that `useLoadedState` didn't (React's
+  own state updates are already sequential). Considered and rejected a
+  shared factory for this pattern (the way `simpleRegistry.js` shares
+  one for its own shape) — each of the 22 repositories mutates its own
+  differently-shaped local state (derived ID counters, legacy-shape
+  migrations on read, etc.), too much real per-file variation to
+  genuinely share beyond documenting the same named pattern
+  consistently. All 3 real call sites fixed: Settings'
+  `NotificationHistoryScreen`'s `getAll()` needed no change at all
+  (already a bare `useLoadedState` passthrough, handled automatically
+  by this session's earlier hook fix); its `clear()` button handler
+  got `await` added; `App.jsx`'s own `record()` call (inside the real
+  notification-delivery listener) stays deliberately fire-and-forget,
+  same as several other calls in that exact listener already were.
+  Verified live: a seeded real history entry rendered correctly
+  (title/body/timestamp), and a real Clear tap correctly wrote `[]` to
+  `localStorage` with the UI updating to its real empty state. No page
+  errors. Full smoke-test suite passes. The other 21 repositories in
+  this bucket remain — each needs its own real caller-cascade trace
+  before conversion, the same way `MeasurementPreferencesRepository`'s
+  8 render-body sites and `MedicationPreferencesRepository`'s
+  notification-scheduling depth turned out to need real, not
+  mechanical, attention; this file's own small size and 2-file
+  footprint is exactly why it went first and is not representative of
+  what most of the remaining 21 will take.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

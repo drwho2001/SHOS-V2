@@ -1909,7 +1909,7 @@ function NotificationsScreen({ onClose }) {
 // diagnostic/awareness view, not something with its own settings.
 function NotificationHistoryScreen({ darkMode, onClose }) {
   const [entries, setEntries] = useLoadedState(() => NotificationHistoryRepository.getAll(), [], []);
-  const clear = () => { NotificationHistoryRepository.clear(); setEntries([]); };
+  const clear = async () => { await NotificationHistoryRepository.clear(); setEntries([]); };
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
