@@ -1292,15 +1292,15 @@ function DoseReminderBanner({ med, onTake, onSnooze, onSkip, T }) {
 // two settings surfaces.
 function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
   const [prefs, setPrefs] = useLoadedState(() => MedicationPreferencesRepository.getPreferences(), [], DEFAULT_MEDICATION_PREFERENCES);
-  const toggleReminders = () => {
-    const updated = MedicationPreferencesRepository.updatePreferences({ doseRemindersEnabled: !prefs.doseRemindersEnabled });
+  const toggleReminders = async () => {
+    const updated = await MedicationPreferencesRepository.updatePreferences({ doseRemindersEnabled: !prefs.doseRemindersEnabled });
     setPrefs(updated);
     syncMedicationReminders();
   };
   // ADDED 26 Aug 2026 — real ask: customizable settings, not just
   // on/off. Snooze length matches TakeYourPills/Medisafe's own
   // default (30 min, confirmed via their store listings).
-  const setSnoozeMinutes = (mins) => setPrefs(MedicationPreferencesRepository.updatePreferences({ snoozeMinutes: mins }));
+  const setSnoozeMinutes = async (mins) => setPrefs(await MedicationPreferencesRepository.updatePreferences({ snoozeMinutes: mins }));
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>

@@ -29,9 +29,9 @@ import { nowAsStoredDateTime } from "./dateInputHelpers";
 // (App.jsx), reading the exact same due/upcoming state the real
 // reminder notifications are scheduled from, so the two can never
 // disagree with each other.
-export function getDailyMedsState() {
+export async function getDailyMedsState() {
   const meds = MedicationRepository.getAll().filter((m) => !m.isArchived && m.usagePattern === "daily");
-  const prefs = MedicationPreferencesRepository.getPreferences();
+  const prefs = await MedicationPreferencesRepository.getPreferences();
 
   const due = [];
   const upcoming = [];
@@ -55,7 +55,7 @@ export function getDailyMedsState() {
 }
 
 export async function syncMedicationReminders() {
-  const prefs = MedicationPreferencesRepository.getPreferences();
+  const prefs = await MedicationPreferencesRepository.getPreferences();
   if (!prefs.doseRemindersEnabled) {
     await cancelNotification(NOTIFICATION_IDS.medicationReminder);
     return { scheduled: false };
@@ -63,7 +63,7 @@ export async function syncMedicationReminders() {
 
   await registerNotificationActionTypes();
 
-  const { due, upcoming } = getDailyMedsState();
+  const { due, upcoming } = await getDailyMedsState();
 
   if (due.length > 0) {
     // Already due right now — schedule for a few seconds out (Capacitor
@@ -112,8 +112,8 @@ export async function syncMedicationReminders() {
 // banner, or its notification-action listener) can show a real,
 // specific confirmation — "Vitamin D3 logged", not just a silent
 // state change with no visible acknowledgment anywhere.
-export function handleTakeAll() {
-  const { due } = getDailyMedsState();
+export async function handleTakeAll() {
+  const { due } = await getDailyMedsState();
   const names = due.map((m) => m.name);
   // nowAsStoredDateTime(), not new Date().toISOString() — real bug
   // found auditing notification gaps: this stored a genuine real-UTC
@@ -130,16 +130,16 @@ export function handleTakeAll() {
   return { medications: names };
 }
 
-export function handleSkipToday() {
-  const { due } = getDailyMedsState();
+export async function handleSkipToday() {
+  const { due } = await getDailyMedsState();
   const names = due.map((m) => m.name);
-  due.forEach((m) => MedicationPreferencesRepository.skipUntilTomorrow(m.id));
+  for (const m of due) await MedicationPreferencesRepository.skipUntilTomorrow(m.id);
   syncMedicationReminders();
   return { medications: names };
 }
 
-export function handleSnooze() {
-  const prefs = MedicationPreferencesRepository.getPreferences();
+export async function handleSnooze() {
+  const prefs = await MedicationPreferencesRepository.getPreferences();
   // FIXED — real bug found live: this only ever rescheduled the
   // native notification — nothing persisted a "snoozed until" fact
   // the way handleSkipToday's own skipUntilTomorrow() call above
@@ -147,8 +147,8 @@ export function handleSnooze() {
   // found the exact same medications still due and never actually
   // dismissed. Same "snooze applies to whatever's currently showing
   // on the banner" shape as handleSkipToday.
-  const { due } = getDailyMedsState();
-  due.forEach((m) => MedicationPreferencesRepository.snoozeDose(m.id, prefs.snoozeMinutes));
+  const { due } = await getDailyMedsState();
+  for (const m of due) await MedicationPreferencesRepository.snoozeDose(m.id, prefs.snoozeMinutes);
   scheduleNotification({
     id: NOTIFICATION_IDS.medicationReminder,
     title: "Medication due",

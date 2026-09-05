@@ -72,7 +72,7 @@ import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../reposito
 import { NotificationPreferencesRepository, isPaused } from "../repositories/notificationPreferencesRepository";
 import { NotificationHistoryRepository } from "../repositories/notificationHistoryRepository";
 import { getDeferredInstallPrompt, onInstallPromptAvailable, triggerInstallPrompt } from "../storage/installPromptService";
-import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
+import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../repositories/medicationPreferencesRepository";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { checkNotificationPermission, requestNotificationPermission, sendTestNotification, TEST_NOTIFICATION_DELAY_MS, checkExactAlarmPermission, requestExactAlarmPermission, getNotificationPlatform, isIOS, isStandalone, checkNativeBridgeHealth } from "../storage/notificationService";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
@@ -1747,11 +1747,16 @@ function InstallPwaNudge({ darkMode }) {
 
 function NotificationsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
-  const [, forceRefresh] = useState(0);
+  const [refreshKey, forceRefresh] = useState(0);
   const refresh = () => forceRefresh((n) => n + 1);
   const [showHistory, setShowHistory] = useState(false);
   const notifPrefs = NotificationPreferencesRepository.getPreferences();
-  const medPrefs = MedicationPreferencesRepository.getPreferences();
+  // CHANGED — real groundwork for encryption at rest: MedicationPreferencesRepository
+  // is now async, so this can no longer be a plain render-body call —
+  // reloads on `refreshKey`, same as this screen's own re-render trigger
+  // for notifPrefs above (still safe there since NotificationPreferencesRepository
+  // is a different, still-synchronous repository).
+  const medPrefs = useLoadedMemo(() => MedicationPreferencesRepository.getPreferences(), [refreshKey], DEFAULT_MEDICATION_PREFERENCES);
 
   // Re-syncs immediately on toggle rather than waiting for the next
   // Home mount or relevant save — turning a reminder off should cancel
@@ -1765,7 +1770,7 @@ function NotificationsScreen({ onClose }) {
     else syncClinicVisitReminders();
     refresh();
   };
-  const toggleMed = () => { MedicationPreferencesRepository.updatePreferences({ doseRemindersEnabled: !medPrefs.doseRemindersEnabled }); syncMedicationReminders(); refresh(); };
+  const toggleMed = async () => { await MedicationPreferencesRepository.updatePreferences({ doseRemindersEnabled: !medPrefs.doseRemindersEnabled }); syncMedicationReminders(); refresh(); };
 
   // Re-syncs every real reminder type at once — used by the master
   // switch, quiet hours, and vacation pause below, all of which affect

@@ -66,19 +66,32 @@ export function isRefillSnoozed(prefs, medicationId) {
   return new Date() < new Date(until);
 }
 
+// CHANGED — real groundwork for encryption at rest (see CLAUDE.md's
+// Known Issues / the Notion Development log for the full plan): every
+// method below is now `async`, `await`ing storage.load()/save() even
+// though storageAdapter itself is still 100% synchronous today — a
+// no-op behaviorally, same real end-to-end proof as this session's
+// other repository conversions. This one's real callers reach into
+// live native-notification scheduling and the in-app Take/Snooze/Skip
+// due-meds banner (medicationReminderSync.js/refillReminderSync.js,
+// via App.jsx) — isSkippedToday()/isDoseSnoozed()/isRefillSnoozed()
+// above were already pure (take `prefs` as a parameter), which is
+// exactly what kept those two calculations files' own real
+// architecture violation (calling this repository internally) from
+// being worse than it already was.
 export const MedicationPreferencesRepository = {
-  getPreferences() {
-    return { ...DEFAULT_MEDICATION_PREFERENCES, ...storage.load(STORAGE_KEY, {}) };
+  async getPreferences() {
+    return { ...DEFAULT_MEDICATION_PREFERENCES, ...(await storage.load(STORAGE_KEY, {})) };
   },
-  updatePreferences(changes) {
-    const updated = { ...this.getPreferences(), ...changes };
-    storage.save(STORAGE_KEY, updated);
+  async updatePreferences(changes) {
+    const updated = { ...(await this.getPreferences()), ...changes };
+    await storage.save(STORAGE_KEY, updated);
     return updated;
   },
   // ADDED 26 Aug 2026 — real "Skip until tomorrow" action: suppresses
   // re-notifying for this medication until local midnight tonight.
-  skipUntilTomorrow(medicationId) {
-    const prefs = this.getPreferences();
+  async skipUntilTomorrow(medicationId) {
+    const prefs = await this.getPreferences();
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
@@ -88,14 +101,14 @@ export const MedicationPreferencesRepository = {
   // ADDED — the real "Snooze 30 min" action: suppresses the in-app
   // due-meds banner for this medication for `minutes`, same pattern as
   // skipUntilTomorrow above.
-  snoozeDose(medicationId, minutes) {
-    const prefs = this.getPreferences();
+  async snoozeDose(medicationId, minutes) {
+    const prefs = await this.getPreferences();
     const until = new Date(Date.now() + minutes * 60000);
     return this.updatePreferences({ snoozedDoseUntil: { ...prefs.snoozedDoseUntil, [medicationId]: until.toISOString() } });
   },
 
-  snoozeRefill(medicationId, minutes) {
-    const prefs = this.getPreferences();
+  async snoozeRefill(medicationId, minutes) {
+    const prefs = await this.getPreferences();
     const until = new Date(Date.now() + minutes * 60000);
     return this.updatePreferences({ snoozedRefillUntil: { ...prefs.snoozedRefillUntil, [medicationId]: until.toISOString() } });
   },

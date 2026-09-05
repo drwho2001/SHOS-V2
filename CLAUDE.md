@@ -832,6 +832,75 @@ this date; summarized here for durability.
   Units screen's Metric/Imperial toggle confirmed writing the correct
   real preference object. No page errors anywhere. Full smoke-test
   suite passes.
+  `MedicationPreferencesRepository` converted next (5 Sep) — the
+  fourth and last of the originally-scoped "easy bucket," and the
+  highest-stakes one: its real callers reach into live native-
+  notification scheduling and the in-app due-meds banner's Take/
+  Snooze/Skip buttons, via `medicationReminderSync.js`/
+  `refillReminderSync.js`. `isSkippedToday()`/`isDoseSnoozed()`/
+  `isRefillSnoozed()` in the repository file were already pure
+  (take `prefs` as a parameter) — the same design already used for
+  `getAvailableUnits()`/`getDefaultUnit()` in the previous batch, just
+  not yet applied to this file's OWN `getDailyMedsState()`/
+  `getRefillDueMedications()`, which called
+  `MedicationPreferencesRepository.getPreferences()` directly. Those
+  two, plus every function that calls them
+  (`syncMedicationReminders`/`syncRefillReminder`,
+  `handleTakeAll`/`handleSkipToday`/`handleSnooze`/
+  `handleMarkRefillRequested`/`handleSnoozeRefill`), converted to
+  `async`/`await` — several had a `.forEach()` firing off unawaited
+  `MedicationPreferencesRepository.snoozeDose()`/`snoozeRefill()`/
+  `skipUntilTomorrow()` calls, rewritten as `for...of` loops the same
+  way `TrashRepository`'s bulk-restore/delete needed. `App.jsx`'s
+  `checkDueMeds()` — the one real chokepoint already shared by mount,
+  a visibility-change listener, a 60-second safety-net poll, AND real
+  notification-delivery events — made `async`; all four callers were
+  already fire-and-forget (never awaited its return), so this needed
+  no further change at the call sites themselves. Its five onClick-
+  style handlers (`onDueMedsTake`/`onDueMedsSkip`/`onDueMedsSnooze`/
+  `onRefillRequested`; `onRefillSnooze` was already async) converted
+  the same way. Two more direct callers found and fixed: Settings'
+  `NotificationsScreen` read `medPrefs` straight in the render body
+  (no hook at all) — converted to `useLoadedMemo` keyed off this
+  screen's own existing `refreshKey` force-render counter; both this
+  screen's `toggleMed` and Medication Dashboard's own
+  `MedicationSettingsScreen`'s `toggleReminders`/`setSnoozeMinutes`
+  needed `await` added (previously fire-and-forget, passing the
+  updated value straight into `setPrefs` before the write actually
+  landed). Verified live: `getDailyMedsState()`'s real read path ran
+  correctly and produced a real, consistent "nothing due right now"
+  result with zero errors (the seed data's own dose timestamps are
+  relative to actual real-world time, which has genuinely moved on
+  since earlier in this session — confirmed this wasn't a regression
+  by checking the Medication Dashboard's own real per-medication dose
+  history directly, not just the banner); manufacturing an artificial
+  "due" state to exercise Take/Snooze/Skip directly would have needed
+  deeper seed-timing manipulation than was worth it here, so the
+  write-path handlers were instead verified via the two Settings
+  screens that share the exact same `MedicationPreferencesRepository`
+  calls: Medication Dashboard's own dose-reminder toggle confirmed
+  writing a real `{"doseRemindersEnabled":false,...}`, and its snooze-
+  duration picker confirmed writing `{"snoozeMinutes":60,...}` — both
+  against real `localStorage` state. No page errors anywhere. Full
+  smoke-test suite passes, including the Medication log flow, which
+  directly exercises this batch's own dose-logging code path.
+  With this, the four repositories originally scoped as the safe,
+  no-module-load-caching "easy bucket" (`CustomGroupsRepository`,
+  `TrashRepository`, `MeasurementPreferencesRepository`,
+  `MedicationPreferencesRepository`) are all converted. What's left in
+  this tier: `kinkRegistry.js`/`protectionRegistry.js` and everything
+  else built on `simpleRegistry.js`'s factory (Chems/Symptoms/
+  Organism/Results registries), `ModuleColorRepository` (via
+  `designTokens.js`'s own module-load-time cache of it), and the 22
+  repository files that cache data at module-load time
+  (`let x = storage.load(key, seed)`, evaluated once at import) —
+  these need the "ensureLoaded()"-style memoized-promise redesign
+  flagged when this tier was first scoped, not the direct-conversion
+  treatment that worked for the easy four. The 17 sites found earlier
+  that chain `.filter()`/`.map()`/`.sort()` directly onto a `Repo.getAll()`
+  call belong to repositories in that harder bucket and should be
+  fixed as part of each specific repository's own future conversion,
+  not as a standalone pass.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

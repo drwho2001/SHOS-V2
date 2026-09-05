@@ -748,14 +748,14 @@ export default function App() {
   // see notificationService.js's own comment on updateAppBadge() for
   // why native isn't covered here). Reflects the exact same due count
   // the in-app banner already shows, so the two can never disagree.
-  const checkDueMeds = () => {
-    const due = getDailyMedsState().due;
+  const checkDueMeds = async () => {
+    const due = (await getDailyMedsState()).due;
     setDueMeds(due);
     // ADDED — real ask: Refill/Testing/Clinic-visit parity. Same single
     // chokepoint (mount, visibilitychange, 60s poll, and every real
     // notification delivery all already call this one function) rather
     // than four separate near-identical effects.
-    const refill = getRefillDueMedications();
+    const refill = await getRefillDueMedications();
     setRefillDue(refill);
     const testing = getTestingDueState();
     setTestingDue(testing.due ? testing : null);
@@ -798,18 +798,18 @@ export default function App() {
     return () => { listenerHandle?.remove(); };
   }, []);
 
-  const onDueMedsTake = () => {
-    const result = handleTakeAll();
+  const onDueMedsTake = async () => {
+    const result = await handleTakeAll();
     showNotifToast(result.medications.length ? `${result.medications.join(", ")} logged` : "Logged");
     checkDueMeds();
   };
-  const onDueMedsSkip = () => {
-    handleSkipToday();
+  const onDueMedsSkip = async () => {
+    await handleSkipToday();
     showNotifToast("Skipped until tomorrow");
     checkDueMeds();
   };
-  const onDueMedsSnooze = () => {
-    const result = handleSnooze();
+  const onDueMedsSnooze = async () => {
+    const result = await handleSnooze();
     showNotifToast(`Snoozed ${result.minutes} min`);
     checkDueMeds();
   };
@@ -818,8 +818,8 @@ export default function App() {
   // parity." Refill's "Requested" mirrors Medication Dashboard's own
   // existing markRequested() one-tap action — see
   // handleMarkRefillRequested's own comment in refillReminderSync.js.
-  const onRefillRequested = () => {
-    const result = handleMarkRefillRequested();
+  const onRefillRequested = async () => {
+    const result = await handleMarkRefillRequested();
     showNotifToast(result.medications.length ? `${result.medications.join(", ")} marked as requested` : "Marked as requested");
     checkDueMeds();
   };
