@@ -938,6 +938,46 @@ this date; summarized here for durability.
   mechanical, attention; this file's own small size and 2-file
   footprint is exactly why it went first and is not representative of
   what most of the remaining 21 will take.
+  `resourcesRepository.js` converted next — second-smallest caller
+  footprint (2 files) among the 22, but a real step up from
+  `notificationHistoryRepository.js`: its module-load-time IIFE did a
+  genuine multi-step MERGE (stored-entry-wins, blank-link-backfilled-
+  from-a-newer-seed, brand-new-seed-entries-appended), not just a bare
+  `storage.load()`. Moved that merge logic unchanged into an async
+  `computeInitialCategories()`, called lazily through the same
+  `ensureLoaded()`/memoized-`loadPromise` pattern proved on the first
+  repository. `getAllCategoryKeys()` deliberately stayed synchronous —
+  it only reads `CATEGORY_LABELS`, a static constant, never the stored
+  data, so it never needed `ensureLoaded()` at all; a repository's
+  methods don't all have to move together, only the ones that actually
+  touch stored state. Caught a real render-body Promise-truthiness bug
+  of the same class found twice already this session (Settings'
+  `hasUnbackedChanges()`, Measurements' `getTypeKind()`):
+  `hasAnyResourceMatch(query)`, called straight in `ResourcesScreen`'s
+  render body as `!hasAnyResourceMatch(query)` to show a "no results"
+  empty state, now has to `await` `getEntries()` per category — fixed
+  by making it `async` and loading it via `useLoadedMemo(() =>
+  hasAnyResourceMatch(query), [query], true)`, deliberately preserving
+  its exact prior reactivity (recomputes only when `query` changes,
+  same as the original plain-function-in-render-body version already
+  did — it was never reactive to a sibling `ResourceCategory`'s own
+  local add/edit/remove state either, so this is a faithful, not
+  broadened, conversion). Also found `mergeBackup()` in
+  `backupService.js` — untouched by the earlier `CustomGroupsRepository`
+  work since it didn't call that repository — now touches
+  `ResourcesRepository` too, so it needed the same `async` treatment
+  and its own caller (`restoreFromParsedBackup`'s merge branch) needed
+  `await` added. Verified live: real seed categories/entries render
+  correctly; searching for a genuine no-match term correctly shows "No
+  resources match your search"; searching for a real match
+  ("Samaritans") correctly finds it and correctly does NOT show the
+  no-match state (proving both the true and false paths of the
+  Promise-truthiness fix); editing a real entry's link and saving
+  confirmed against actual `localStorage` content (the on-screen check
+  gave a false negative from an overlay-text-slice limit in the test
+  script itself, not a real bug — confirmed by reading
+  `shos_resources` directly). No page errors. Full smoke-test suite
+  passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

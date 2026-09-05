@@ -183,8 +183,19 @@ function withIds(entries) {
 // still picks up a future seed update automatically" intent this
 // comment always described — now actually true at the entry level,
 // not just when the whole category was untouched.
-let categories = (() => {
-  const stored = storage.load(STORAGE_KEY, null);
+// CHANGED — real groundwork for encryption at rest (see CLAUDE.md's
+// Known Issues / the Notion Development log for the full plan): this
+// used to compute `categories` in a synchronous IIFE at module-load
+// time (`let categories = (() => { const stored = storage.load(...);
+// ...merge...; return merged; })();`). Same real constraint as
+// notificationHistoryRepository.js's own conversion — once
+// storage.load() genuinely returns a Promise, that can't `await`
+// without top-level await. The merge logic itself (stored-entry-wins,
+// blank-link-gets-backfilled, brand-new-entries-appended) is
+// unchanged, just moved into an async function computed lazily via
+// the same `ensureLoaded()`/memoized-`loadPromise` pattern.
+async function computeInitialCategories() {
+  const stored = await storage.load(STORAGE_KEY, null);
   const seeded = {};
   for (const key of Object.keys(SEED_ENTRIES)) seeded[key] = withIds(SEED_ENTRIES[key]);
   if (!stored) return seeded;
@@ -202,52 +213,70 @@ let categories = (() => {
     if (newOnes.length) merged[key] = [...merged[key], ...withIds(newOnes)];
   }
   return merged;
-})();
+}
 
-function persist() {
-  storage.save(STORAGE_KEY, categories);
+let categories = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (categories === null) {
+    if (!loadPromise) loadPromise = computeInitialCategories();
+    categories = await loadPromise;
+  }
+  return categories;
+}
+
+async function persist() {
+  await storage.save(STORAGE_KEY, categories);
 }
 
 export const ResourcesRepository = {
+  // Reads only CATEGORY_LABELS (a static constant, not stored data) —
+  // deliberately left synchronous, no ensureLoaded() needed.
   getAllCategoryKeys() {
     return Object.keys(CATEGORY_LABELS);
   },
 
-  getEntries(categoryKey) {
+  async getEntries(categoryKey) {
+    await ensureLoaded();
     return [...(categories[categoryKey] || [])];
   },
 
-  addEntry(categoryKey, { name, link = "", notes = "" }) {
+  async addEntry(categoryKey, { name, link = "", notes = "" }) {
+    await ensureLoaded();
     const trimmed = (name || "").trim();
-    if (!trimmed) return this.getEntries(categoryKey);
-    const current = this.getEntries(categoryKey);
+    if (!trimmed) return [...(categories[categoryKey] || [])];
+    const current = categories[categoryKey] || [];
     categories = { ...categories, [categoryKey]: [...current, { id: generateEntryId(), name: trimmed, link, notes }] };
-    persist();
+    await persist();
     return categories[categoryKey];
   },
 
-  updateEntry(categoryKey, entryId, changes) {
-    const current = this.getEntries(categoryKey);
+  async updateEntry(categoryKey, entryId, changes) {
+    await ensureLoaded();
+    const current = categories[categoryKey] || [];
     categories = { ...categories, [categoryKey]: current.map((e) => (e.id === entryId ? { ...e, ...changes } : e)) };
-    persist();
+    await persist();
     return categories[categoryKey];
   },
 
-  removeEntry(categoryKey, entryId) {
-    const current = this.getEntries(categoryKey);
+  async removeEntry(categoryKey, entryId) {
+    await ensureLoaded();
+    const current = categories[categoryKey] || [];
     categories = { ...categories, [categoryKey]: current.filter((e) => e.id !== entryId) };
-    persist();
+    await persist();
     return categories[categoryKey];
   },
 
   // For backupService.js — same singleton-object shape/reasoning as
   // CustomOptionListsRepository's own getAllForBackup()/replaceAll().
-  getAllForBackup() {
+  async getAllForBackup() {
+    await ensureLoaded();
     return { ...categories };
   },
 
-  replaceAll(newCategories) {
+  async replaceAll(newCategories) {
+    await ensureLoaded();
     categories = newCategories && typeof newCategories === "object" ? newCategories : categories;
-    persist();
+    await persist();
   },
 };

@@ -866,12 +866,14 @@ function ManageListsScreen({ onClose }) {
 // logic just to answer "did ANY category match" — kept a plain
 // function, not a hook, since it only ever runs against the query
 // string already in scope, nothing stateful.
-function hasAnyResourceMatch(query) {
+async function hasAnyResourceMatch(query) {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  return ResourcesRepository.getAllCategoryKeys().some((key) =>
-    ResourcesRepository.getEntries(key).some((e) => [e.name, e.link, e.notes].filter(Boolean).some((v) => v.toLowerCase().includes(q)))
-  );
+  for (const key of ResourcesRepository.getAllCategoryKeys()) {
+    const entries = await ResourcesRepository.getEntries(key);
+    if (entries.some((e) => [e.name, e.link, e.notes].filter(Boolean).some((v) => v.toLowerCase().includes(q)))) return true;
+  }
+  return false;
 }
 
 // ADDED 1 Sep 2026 — real ask: "want resources section in settings
@@ -887,12 +889,12 @@ function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
   const [link, setLink] = useState(entry.link);
   const [notes, setNotes] = useState(entry.notes);
 
-  const save = () => {
-    ResourcesRepository.updateEntry(categoryKey, entry.id, { link, notes });
+  const save = async () => {
+    await ResourcesRepository.updateEntry(categoryKey, entry.id, { link, notes });
     onChanged();
   };
-  const remove = () => {
-    ResourcesRepository.removeEntry(categoryKey, entry.id);
+  const remove = async () => {
+    await ResourcesRepository.removeEntry(categoryKey, entry.id);
     onChanged();
   };
 
@@ -949,9 +951,9 @@ function ResourceCategory({ categoryKey, darkMode, query }) {
   const q = query.trim().toLowerCase();
   const filtered = q ? entries.filter((e) => [e.name, e.link, e.notes].filter(Boolean).some((v) => v.toLowerCase().includes(q))) : entries;
 
-  const addEntry = () => {
+  const addEntry = async () => {
     if (!addingName.trim()) return;
-    ResourcesRepository.addEntry(categoryKey, { name: addingName });
+    await ResourcesRepository.addEntry(categoryKey, { name: addingName });
     setAddingName("");
     refresh();
   };
@@ -1019,6 +1021,13 @@ function ResourcesScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   const [query, setQuery] = useState("");
+  // ADDED — real groundwork for encryption at rest: hasAnyResourceMatch()
+  // is now async (see resourcesRepository.js's own comment), so this
+  // can no longer be called straight in the render body below — a
+  // Promise is always truthy, so `!hasAnyResourceMatch(query)` would
+  // never show the "no results" state once it went async. Same reactivity
+  // as before (only recomputes when `query` changes) via useLoadedMemo.
+  const hasMatch = useLoadedMemo(() => hasAnyResourceMatch(query), [query], true);
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
@@ -1038,7 +1047,7 @@ function ResourcesScreen({ onClose }) {
           <ResourceCategory key={key} categoryKey={key} darkMode={darkMode} query={query} />
         ))}
         {!query.trim() && <ClinicalJustificationsCategory darkMode={darkMode} />}
-        {query.trim() && !hasAnyResourceMatch(query) && (
+        {query.trim() && !hasMatch && (
           <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>No resources match your search.</div>
         )}
       </div>

@@ -277,7 +277,7 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     privacySettings: redactSecrets
       ? sanitizePrivacySettingsForPlainExport(PrivacySettingsRepository.getSettings())
       : PrivacySettingsRepository.getSettings(),
-    resources: ResourcesRepository.getAllForBackup(),
+    resources: await ResourcesRepository.getAllForBackup(),
     partnerNotifications: PartnerNotificationRepository.getAll(),
   };
   const keySet = includeKeys ? new Set(includeKeys) : null;
@@ -394,7 +394,7 @@ export async function restoreBackup(parsedBackup) {
   if (customGroups && typeof customGroups === "object") await CustomGroupsRepository.replaceAll(customGroups);
   if (customOptionLists && typeof customOptionLists === "object") CustomOptionListsRepository.replaceAll(customOptionLists);
   if (privacySettings && typeof privacySettings === "object") PrivacySettingsRepository.update(privacySettings);
-  if (resources && typeof resources === "object") ResourcesRepository.replaceAll(resources);
+  if (resources && typeof resources === "object") await ResourcesRepository.replaceAll(resources);
   if (Array.isArray(partnerNotifications)) PartnerNotificationRepository.replaceAll(partnerNotifications);
   // Not Array.isArray — MyProfile is a singleton object, not a list.
   // Older backup files (from before 18 Aug 2026) simply won't have a
@@ -425,7 +425,7 @@ export async function restoreBackup(parsedBackup) {
 // those in from a backup. customOptionLists (plain string lists, not
 // id-based records) are unioned per category instead, since simple
 // duplicate labels would be actively unhelpful.
-export function mergeBackup(parsedBackup) {
+export async function mergeBackup(parsedBackup) {
   const { data } = parsedBackup;
   const append = (repo, incoming) => {
     if (!Array.isArray(incoming) || incoming.length === 0) return;
@@ -466,12 +466,12 @@ export function mergeBackup(parsedBackup) {
   // clutter, not a real data-integrity problem, same as any other
   // simple list this merge doesn't try to reconcile by content.
   if (data.resources && typeof data.resources === "object") {
-    const current = ResourcesRepository.getAllForBackup();
+    const current = await ResourcesRepository.getAllForBackup();
     const merged = {};
     for (const key of new Set([...Object.keys(current), ...Object.keys(data.resources)])) {
       merged[key] = [...(current[key] || []), ...(data.resources[key] || [])];
     }
-    ResourcesRepository.replaceAll(merged);
+    await ResourcesRepository.replaceAll(merged);
   }
 }
 
@@ -785,5 +785,5 @@ export async function inspectBackupFile(file) {
 // there's exactly one place that decides what "replace" vs "merge"
 // actually does.
 export async function restoreFromParsedBackup(parsed, mode = "replace") {
-  if (mode === "merge") mergeBackup(parsed); else await restoreBackup(parsed);
+  if (mode === "merge") await mergeBackup(parsed); else await restoreBackup(parsed);
 }
