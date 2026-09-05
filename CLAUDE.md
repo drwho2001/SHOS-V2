@@ -978,6 +978,75 @@ this date; summarized here for durability.
   script itself, not a real bug — confirmed by reading
   `shos_resources` directly). No page errors. Full smoke-test suite
   passes.
+  `locationsRepository.js` converted next — the most complex of the
+  `ensureLoaded()` conversions so far, touching Encounters, Settings,
+  `contactRepository.js`, `orphanReferenceCheck.js`, and
+  `backupService.js`. Real findings along the way, each smaller than
+  the last but genuinely different in kind:
+  (1) `contactRepository.js`'s `delete()`/`bulkDelete()` — a much
+  bigger, still-fully-synchronous core repository in the same 22-file
+  bucket — call `LocationsRepository.unlinkContact()` fire-and-forget.
+  Deliberately left unawaited rather than cascading `delete()` itself
+  into `async` (which would ripple into every one of ITS OWN callers
+  across the app) — safe since nothing in that caller depends on the
+  unlink's completion timing, same reasoning as App.jsx's notification-
+  history `record()` call.
+  (2) `orphanReferenceCheck.js`'s `findOrphanReferences()` calls ~15
+  still-synchronous repositories plus the now-async `LocationsRepository`
+  — made the whole function `async`, but only actually `await`s the
+  Locations-specific calls. Real, subtle correctness risk caught before
+  shipping: its own `checkSingle(results, exists, id, ctx)` helper is
+  shared across EVERY repository's check (`if (id && !exists(id))
+  flag(...)`) — an unawaited async `exists` call, combined with several
+  of the loops it's used inside being iterated via `.forEach()` (which
+  doesn't wait for anything), could let `findOrphanReferences()`'s own
+  `return results` fire before a locations-related flag ever got pushed
+  — a real, silent "this genuinely-dangling reference gets missed"
+  bug, not just a cosmetic one. Fixed two ways together: made
+  `checkSingle` itself `async` (await on a plain boolean from a
+  still-synchronous `exists` is a no-op, so this needed no changes at
+  any of its ~10 other, still-synchronous call sites) and converted
+  every loop that calls `checkSingle` from `.forEach()` to `for...of`
+  with a real `await` on each call — loops using only the (never-async)
+  `checkArray`/`checkKinkSelections` helpers were left as `.forEach()`,
+  since nothing about MERGING correctness required more of them.
+  (3) Settings' `DeveloperToolsScreen` had `LocationsRepository.getAll().length`
+  inline in a `counts` array literal alongside a dozen other
+  (still-synchronous) repositories' own inline counts — pulled just
+  that one into its own `useLoadedMemo`, leaving every other line
+  in the array untouched.
+  (4) `RegistrySinglePicker` (Encounters) — flagged back when the
+  original `src/modules/` sweep called this exact kind of render-body
+  direct-repository-call component safe to leave alone "since it
+  re-runs every render" — that reasoning assumed the call stayed
+  synchronous forever. Once `LocationsRepository` (its one and only
+  real caller) went async, the same "leave it alone" component would
+  have silently shown blank/wrong location names instead of crashing —
+  a real regression the original sweep couldn't have anticipated.
+  Converted `allEntries`/`currentName` to `useLoadedMemo`, and found
+  the same "`useState(current)` reads a value that's now async" race
+  already fixed elsewhere this session (Measurements' form initializer)
+  — `draft`'s initial state is the loaded value's pre-resolution
+  fallback (`""`) for one render; fixed with the same "resync-if-
+  untouched" `useEffect` + a `draftTouchedRef` flipped the moment the
+  user actually types or picks a suggestion, so a real in-progress edit
+  is never clobbered by the async resync. `commit()`/`tapContactSuggestion()`
+  (both call `registry.findOrCreate()`/`.update()` and use the result
+  immediately) converted to `async`/`await`.
+  Verified live end-to-end: editing an existing Encounter's Location
+  field, typing a brand-new name, and blurring to commit produced a
+  real new `location_006` entry in `localStorage` with the correct
+  sequential ID and timestamp; the contact-derived suggestion chips
+  ("Jordan's place", "Sam's place") rendered correctly with no errors;
+  Settings' Locations registry-management screen (shared
+  `RegistryManagementScreen` + `LocationExtraFields`) rendered real
+  seed entries and usage counts correctly, and tapping a Type chip
+  correctly wrote the real `type`/`updatedAt` fields to `localStorage`;
+  Developer Tools showed the correct real Locations count (5) and
+  "Broken references: None found" from the fully-converted orphan
+  checker. No page errors anywhere. Full smoke-test suite passes,
+  including its own Locations-extra-fields flow, which directly
+  exercises this batch's own conversion.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

@@ -258,7 +258,7 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     chems: ChemsRegistry.getAll(),
     protection: ProtectionRegistry.getAll(),
     symptoms: SymptomsRegistry.getAll(),
-    locations: LocationsRepository.getAll(),
+    locations: await LocationsRepository.getAll(),
     myProfile: MyProfileRepository.getProfile(),
     tests: TestingRepository.getAll(),
     organisms: OrganismRegistry.getAll(),
@@ -376,7 +376,7 @@ export async function restoreBackup(parsedBackup) {
   if (Array.isArray(chems)) ChemsRegistry.replaceAll(chems);
   if (Array.isArray(protection)) ProtectionRegistry.replaceAll(protection);
   if (Array.isArray(symptoms)) SymptomsRegistry.replaceAll(symptoms);
-  if (Array.isArray(locations)) LocationsRepository.replaceAll(locations);
+  if (Array.isArray(locations)) await LocationsRepository.replaceAll(locations);
   // ADDED 19 Aug 2026 — old backups (before this fix) simply won't have
   // these keys, same graceful no-op pattern as myProfile below.
   if (Array.isArray(tests)) TestingRepository.replaceAll(tests);

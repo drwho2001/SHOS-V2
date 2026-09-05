@@ -573,6 +573,12 @@ function DeveloperToolsScreen({ onClose }) {
   // always truthy, so `{hasUnbackedChanges() && (...)}` would render
   // the warning permanently, regardless of the real answer.
   const unbackedChanges = useLoadedMemo(() => hasUnbackedChanges(), [], false);
+  // ADDED — real groundwork for encryption at rest: LocationsRepository
+  // is now async (see its own comment), so its count can no longer be
+  // read straight inline in the `counts` array below like every other
+  // (still-synchronous) repository here — loaded separately via
+  // useLoadedMemo and substituted in.
+  const locationsCount = useLoadedMemo(() => LocationsRepository.getAll().then((l) => l.length), [], 0);
   const counts = [
     { label: "Contacts", value: ContactRepository.getAll().length },
     { label: "Encounters", value: EncounterRepository.getAll().length },
@@ -587,7 +593,7 @@ function DeveloperToolsScreen({ onClose }) {
     { label: "Chems Registry entries", value: ChemsRegistry.getAll().length },
     { label: "Protection Registry entries", value: ProtectionRegistry.getAll().length },
     { label: "Symptoms Registry entries", value: SymptomsRegistry.getAll().length },
-    { label: "Locations", value: LocationsRepository.getAll().length },
+    { label: "Locations", value: locationsCount },
     { label: "Organism Registry entries", value: OrganismRegistry.getAll().length },
     { label: "Results Registry entries", value: ResultsRegistry.getAll().length },
   ];
@@ -733,10 +739,10 @@ function LocationExtraFields({ entry, refresh, T, color }) {
   const [address, setAddress] = useState(entry.address || "");
   const [notes, setNotes] = useState(entry.notes || "");
   const contacts = useLoadedMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived), [], []);
-  const setType = (type) => { LocationsRepository.update(entry.id, { type: entry.type === type ? "" : type }); refresh(); };
-  const commitAddress = () => { LocationsRepository.update(entry.id, { address: address.trim() }); refresh(); };
-  const commitNotes = () => { LocationsRepository.update(entry.id, { notes: notes.trim() }); refresh(); };
-  const setRelatedContact = (id) => { LocationsRepository.update(entry.id, { relatedContactId: id }); refresh(); };
+  const setType = async (type) => { await LocationsRepository.update(entry.id, { type: entry.type === type ? "" : type }); refresh(); };
+  const commitAddress = async () => { await LocationsRepository.update(entry.id, { address: address.trim() }); refresh(); };
+  const commitNotes = async () => { await LocationsRepository.update(entry.id, { notes: notes.trim() }); refresh(); };
+  const setRelatedContact = async (id) => { await LocationsRepository.update(entry.id, { relatedContactId: id }); refresh(); };
   const inputStyle = { width: "100%", padding: "6px 8px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box", marginBottom: 8 };
   return (
     <div style={{ paddingTop: 4 }}>

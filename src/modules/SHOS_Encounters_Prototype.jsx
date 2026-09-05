@@ -491,10 +491,34 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
 // `contacts`/`attendeeIds` are optional — only Location's own call
 // site passes them (see below) — so this stays a plain registry
 // picker for any future non-Location caller.
+// CHANGED — real groundwork for encryption at rest: `registry` here is
+// always LocationsRepository (this component's one real caller, per
+// the comment below) — now async (see locationsRepository.js's own
+// comment), so this component's several direct render-body/fire-and-
+// forget calls all needed converting.
 function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder, showLocateButton = false, contacts = null, attendeeIds = [] }) {
-  const allEntries = registry.getAll().filter((e) => !e.isArchived);
-  const current = value ? (allEntries.find((e) => e.id === value)?.name || registry.getById(value)?.name || "") : "";
-  const [draft, setDraft] = useState(current);
+  const allEntries = useLoadedMemo(() => registry.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  // Falls back to a real getById() only for a referenced entry that's
+  // since been archived (so it's missing from `allEntries` above) —
+  // same shape as the original synchronous version's own fallback.
+  const currentName = useLoadedMemo(async () => {
+    if (!value) return "";
+    const found = allEntries.find((e) => e.id === value);
+    if (found) return found.name;
+    const entry = await registry.getById(value);
+    return entry?.name || "";
+  }, [value, allEntries], "");
+  const [draft, setDraft] = useState(currentName);
+  // `currentName` starts at its "" fallback for one render before the
+  // real value resolves — resync once it does, but only if the user
+  // hasn't already started typing (draftTouchedRef flips true the
+  // moment they do, in the input's own onChange below), same "only
+  // correct if still untouched" pattern as every other loaded-value
+  // race fixed this session.
+  const draftTouchedRef = useRef(false);
+  useEffect(() => {
+    if (!draftTouchedRef.current) setDraft(currentName);
+  }, [currentName]);
   // ADDED — real ask: "use current location... tag current place for
   // example" (the user's own cruising-context example). Reuses the
   // same findOrCreate() commit() already uses below, so a located place
@@ -507,8 +531,8 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
     try {
       const place = await getCurrentLocationPlace();
       const name = summarizePlaceName(place);
-      const entry = registry.findOrCreate(name);
-      if (entry) { onChange(entry.id); setDraft(entry.name); }
+      const entry = await registry.findOrCreate(name);
+      if (entry) { onChange(entry.id); draftTouchedRef.current = true; setDraft(entry.name); }
     } catch (err) {
       setLocateError(err.message);
     } finally {
@@ -598,10 +622,10 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
       .slice(0, 5);
   }, [contacts, attendeeIds, draftLower, allEntries]);
 
-  const commit = () => {
+  const commit = async () => {
     const trimmed = draft.trim();
     if (!trimmed) { onChange(""); return; }
-    const entry = registry.findOrCreate(trimmed);
+    const entry = await registry.findOrCreate(trimmed);
     // CHANGED 18 Aug 2026 — real bug: draft never synced back to the
     // entry's canonical stored name after commit, so typing "sauna"
     // when "Sauna" already existed would match the existing entry
@@ -609,11 +633,12 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
     // lowercase "sauna" — visually inconsistent with what's actually
     // saved. This is very likely what "doesn't feel right after
     // clicking out" was describing.
-    if (entry) { onChange(entry.id); setDraft(entry.name); }
+    if (entry) { onChange(entry.id); draftTouchedRef.current = true; setDraft(entry.name); }
   };
 
   const tapSuggestion = (entry) => {
     onChange(entry.id);
+    draftTouchedRef.current = true;
     setDraft(entry.name);
   };
 
@@ -622,15 +647,16 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
   // — just pre-filled with that contact's real address/link instead of
   // starting blank, so it behaves like any other location from here on
   // (editable, archivable, reusable next time without contacts at all).
-  const tapContactSuggestion = (contact) => {
+  const tapContactSuggestion = async (contact) => {
     const contactLabel = contact.nickname || contact.name;
-    const entry = registry.findOrCreate(`${contactLabel}’s place`);
+    const entry = await registry.findOrCreate(`${contactLabel}’s place`);
     if (!entry) return;
     const changes = {};
     if (!entry.relatedContactId) changes.relatedContactId = contact.id;
     if (!entry.address && (contact.address || contact.city)) changes.address = contact.address || contact.city;
-    const finalEntry = Object.keys(changes).length ? registry.update(entry.id, changes) : entry;
+    const finalEntry = Object.keys(changes).length ? await registry.update(entry.id, changes) : entry;
     onChange(finalEntry.id);
+    draftTouchedRef.current = true;
     setDraft(finalEntry.name);
   };
 
@@ -674,7 +700,7 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
           visible suggestion chips above already cover "pick existing"
           — same fix applied to every other picker in the app using
           this pattern, not just this one. */}
-      <input value={draft} onChange={(e) => setDraft(e.target.value)}
+      <input value={draft} onChange={(e) => { draftTouchedRef.current = true; setDraft(e.target.value); }}
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
         placeholder={placeholder || "Pick existing or type a new one"}
@@ -761,7 +787,17 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
   const attendeeNames = encounter.attendeeIds.map((id) => contactName(contacts, id));
   const shown = attendeeNames.slice(0, 3);
   const extra = attendeeNames.length - shown.length;
-  const locationName = encounter.locationId ? (LocationsRepository.getById(encounter.locationId)?.name || "") : "";
+  // CHANGED — real groundwork for encryption at rest: LocationsRepository
+  // is now async (see its own comment), so this can no longer be a
+  // plain render-body call — useLoadedMemo instead, same as everywhere
+  // else this session. Each card in a list loads its own independently;
+  // cheap regardless of list size since ensureLoaded() memoizes the
+  // one real underlying read.
+  const locationName = useLoadedMemo(async () => {
+    if (!encounter.locationId) return "";
+    const loc = await LocationsRepository.getById(encounter.locationId);
+    return loc?.name || "";
+  }, [encounter.locationId], "");
   // Local copy — ActivityDetails has its own further down; this card
   // renders in a different component/scope (the encounter list), so it
   // needs its own rather than reaching across function boundaries.
@@ -1053,6 +1089,15 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven across every other module this session.
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // CHANGED — real groundwork for encryption at rest: LocationsRepository
+  // is now async (see its own comment) — moved above the `!encounter`
+  // guard below (same "hooks before guard" rule this whole session has
+  // followed) since it's now a real hook, not a plain const.
+  const locationName = useLoadedMemo(async () => {
+    if (!encounter?.locationId) return "";
+    const loc = await LocationsRepository.getById(encounter.locationId);
+    return loc?.name || "";
+  }, [encounter?.locationId], "");
   if (!encounter) return null;
 
   // Resolves an array of registry IDs to their display names — used
@@ -1066,7 +1111,6 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
     const name = KinkRegistry.getById(sel.kinkId)?.name;
     return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
   }).filter(Boolean);
-  const locationName = encounter.locationId ? (LocationsRepository.getById(encounter.locationId)?.name || "") : "";
 
   const archive = () => {
     EncounterRepository.archive(encounter.id);

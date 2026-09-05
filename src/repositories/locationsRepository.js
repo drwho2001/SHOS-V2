@@ -62,10 +62,28 @@ let seedLocations = [
   { ...DEFAULT_LOCATION, id: "location_005", name: "Car", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
 ];
 
-let locations = storage.load(STORAGE_KEY, seedLocations);
+// CHANGED — real groundwork for encryption at rest (see CLAUDE.md's
+// Known Issues / the Notion Development log for the full plan). Same
+// `ensureLoaded()`/memoized-`loadPromise` pattern as
+// notificationHistoryRepository.js/resourcesRepository.js —
+// `locations` starts `null`, every exported method awaits
+// `ensureLoaded()` first. `nextLocationNumber` (derived from
+// `locations`) moves inside `ensureLoaded()` too, computed the one
+// time `locations` actually resolves, not before.
+let locations = null;
+let nextLocationNumber = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (locations === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedLocations);
+    locations = await loadPromise;
+    nextLocationNumber = computeNextLocationNumber(locations);
+  }
+  return locations;
+}
 
-function persist() {
-  storage.save(STORAGE_KEY, locations);
+async function persist() {
+  await storage.save(STORAGE_KEY, locations);
 }
 
 function computeNextLocationNumber(existing) {
@@ -75,7 +93,6 @@ function computeNextLocationNumber(existing) {
   });
   return (numbers.length ? Math.max(...numbers) : 0) + 1;
 }
-let nextLocationNumber = computeNextLocationNumber(locations);
 
 function generateLocationId() {
   const id = `location_${String(nextLocationNumber).padStart(3, "0")}`;
@@ -86,21 +103,25 @@ function generateLocationId() {
 export const LocationsRepository = {
   // CHANGED 18 Aug 2026 — same defensive-merge fix as every other
   // repository this session.
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(locations.map((l) => ({ ...DEFAULT_LOCATION, ...l })));
   },
 
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = locations.find((l) => l.id === id);
     return found ? structuredClone({ ...DEFAULT_LOCATION, ...found }) : null;
   },
 
-  getByName(name) {
+  async getByName(name) {
+    await ensureLoaded();
     const found = locations.find((l) => l.name.toLowerCase() === name.toLowerCase());
     return found ? structuredClone({ ...DEFAULT_LOCATION, ...found }) : null;
   },
 
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     const newLocation = {
       ...DEFAULT_LOCATION,
       ...data,
@@ -109,19 +130,20 @@ export const LocationsRepository = {
       isArchived: false,
     };
     locations = [...locations, newLocation];
-    persist();
+    await persist();
     return newLocation;
   },
 
-  findOrCreate(name) {
+  async findOrCreate(name) {
     const trimmed = name.trim();
     if (!trimmed) return null;
-    const existing = this.getByName(trimmed);
+    const existing = await this.getByName(trimmed);
     if (existing) return existing;
     return this.create({ name: trimmed });
   },
 
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updated = null;
     locations = locations.map((l) => {
       if (l.id !== id) return l;
@@ -132,15 +154,15 @@ export const LocationsRepository = {
       updated = { ...l, ...changes, updatedAt: new Date().toISOString() };
       return updated;
     });
-    persist();
+    await persist();
     return updated;
   },
 
-  archive(id) {
+  async archive(id) {
     return this.update(id, { isArchived: true });
   },
 
-  unarchive(id) {
+  async unarchive(id) {
     return this.update(id, { isArchived: false });
   },
 
@@ -150,15 +172,21 @@ export const LocationsRepository = {
   // the CONTACT it points at is hard-deleted elsewhere — same "only
   // clears the link" role as measurementRepository.js's own
   // unlinkClinicVisit()/unlinkTest(), called by contactRepository.js's
-  // own delete().
-  unlinkContact(contactId) {
+  // own delete(). CHANGED — contactRepository.js's own delete()/
+  // bulkDelete() call this WITHOUT awaiting it (deliberately — they're
+  // still fully synchronous themselves, part of this same 22-file hard
+  // bucket, not yet converted) — safe as fire-and-forget since nothing
+  // in those callers depends on this write's completion timing, same
+  // reasoning already used for App.jsx's notification-history record().
+  async unlinkContact(contactId) {
+    await ensureLoaded();
     locations = locations.map((l) => (l.relatedContactId === contactId ? { ...l, relatedContactId: "" } : l));
-    persist();
+    await persist();
   },
 
-  replaceAll(newLocations) {
+  async replaceAll(newLocations) {
     locations = newLocations;
     nextLocationNumber = computeNextLocationNumber(locations);
-    persist();
+    await persist();
   },
 };
