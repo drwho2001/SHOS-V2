@@ -2365,15 +2365,49 @@ this date; summarized here for durability.
   design, but should not be waved through as automatically fine
   either.
 
-  *Two real decisions still open, not yet made:* (1) the non-extractable
-  IndexedDB-stored Web Crypto key (simpler, one code path, weaker
-  ceiling on Android) vs. investing in a real native Keystore plugin
-  (stronger on Android, real new dependency + native work + device
-  testing this session's tooling can't do); (2) lazy/organic migration
-  (safer by construction, slower and less clean) vs. eager verified
-  migration with an automatic pre-migration backup (deterministic,
-  bigger one-shot implementation and testing surface). Neither decided
-  yet — both go to the owner directly rather than being assumed.
+  *Both real open decisions now made by the owner, same session.*
+  Migration: eager, verified one-time migration, the owner's own
+  explicit pick — automatic pre-migration backup, encrypt-then-verify
+  each key before moving to the next, idempotent/resumable, only marks
+  complete once every key round-trips clean.
+  Key storage: deferred to this session's own judgment, with one real
+  constraint stated plainly by the owner first — "ease of use for the
+  user, with privacy from someone who steals the phone or hacks the
+  device; a password gates opening the app if one's set, and pulled-
+  from-device data should always need that same password to decrypt;
+  accepted as less secure if no PIN was ever set, since there's no
+  password to require in that case." That's exactly the envelope
+  design already scoped above (device-bound key as the always-on
+  baseline; PIN-derived wrapping on top only when App Lock is on) —
+  the owner's framing confirms the architecture, not a new one. What
+  was genuinely open was only the storage MECHANISM for the device-
+  bound key itself: given no Keystore plugin exists today, adding one
+  is real new native-dependency + native-code + device-only-testing
+  scope, and this app's own established pattern is real scrutiny
+  before adding a new native dependency (see the scoped-storage
+  plugin's own disclosed "single maintainer, no visible test suite"
+  elsewhere in this file) — the IndexedDB-stored non-extractable Web
+  Crypto key is the one chosen, same code path on both platforms, no
+  new dependency. The honest weaker-than-hardware-Keystore trade-off
+  stated above still stands and hasn't changed; it was accepted, not
+  resolved away.
+  Real, separate ask from the owner alongside this: "consider password
+  recovery or alternate access later if needed, but be mindful" — not
+  a request to build recovery now, a constraint on how THIS
+  implementation stores the wrapped key so a future recovery mechanism
+  doesn't require re-encrypting everything to retrofit. Real design
+  answer: store the data-encryption key's own wrapping as a small,
+  named collection of "slots" from day one (e.g. `{ pin: {salt, iv,
+  wrappedKey}, device: {iv, wrappedKey} }`) rather than a single
+  wrapped blob — Phase 4 only ever populates the `pin` slot (when App
+  Lock is on) and an always-present `device` slot (the device-bound
+  key wrapping itself, or just the raw key when App Lock is off), but
+  a genuinely future recovery-code feature could add its own
+  independent `recovery` slot wrapping the SAME underlying data key,
+  without touching or re-encrypting a single byte of the app's actual
+  data — the exact same principle real disk-encryption tools (BitLocker,
+  FileVault) already use for "unlock with a password OR a recovery
+  key OR a TPM," not a novel design.
 
   *Three smaller judgment calls, recommended but not yet confirmed:*
   (1) the PIN-derived envelope layer's own KDF iteration count —
