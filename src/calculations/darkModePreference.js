@@ -72,13 +72,27 @@ function systemPrefersDark() {
 let currentValue = systemPrefersDark();
 const listeners = new Set();
 
-(async () => {
+// CHANGED — Phase 4 (Sep 2026): this used to be a self-invoking IIFE
+// right here at module load. Real, pre-existing bug that only became
+// visible once storage.load() started needing an unlocked vault to
+// decrypt anything: module evaluation always happens before React (and
+// therefore App.jsx's own bootReady gate) ever runs, so for anyone with
+// App Lock on, this correction would ALWAYS fire before the vault
+// unlocked — not occasionally, every single cold boot — silently
+// failing to decrypt (storage.load()'s own try/catch swallows that and
+// returns the `currentValue` fallback unchanged) and never trying
+// again. A real saved dark-mode preference would silently never apply
+// for anyone using App Lock. Fixed the same way as the module-load-time
+// registry migrations found alongside this one: exported as a real
+// function instead, called once from App.jsx's own finishBootAfterUnlock()
+// — after a real unlock, whichever path got there.
+export async function syncDarkModePreferenceFromStorage() {
   const stored = await storage.load(STORAGE_KEY, currentValue);
   if (stored !== currentValue) {
     currentValue = stored;
     listeners.forEach((listener) => listener());
   }
-})();
+}
 
 function setDarkModeValue(updater) {
   const next = typeof updater === "function" ? updater(currentValue) : updater;

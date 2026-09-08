@@ -44,6 +44,7 @@
 // kinks-involved. My Profile and other modules remain untouched — no
 // real ask for those yet.
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
+import { getDuressPin, setDuressPinMirror, getGraceMinutesPref, setGraceMinutesPref } from "../storage/cryptoService.js";
 
 const STORAGE_KEY = "shos_privacy_settings";
 
@@ -100,6 +101,13 @@ export const DEFAULT_PRIVACY_SETTINGS = {
   // its own separate PIN, NOT reusing anonymisePin the way App Lock
   // does — the whole mechanism only works if the real PIN and the
   // decoy PIN are two different codes.
+  // CHANGED — Phase 4 (Sep 2026): the REAL value now lives in
+  // cryptoService.js's own unencrypted vault metadata, not here — see
+  // that file's own header for why (it has to be checkable before the
+  // vault unlocks, and this repository's own data is what the vault
+  // protects). This default stays purely for shape consistency;
+  // getSettings()/update() below always resolve the real value through
+  // cryptoService, never from whatever's actually stored under this key.
   duressPin: "",
 };
 
@@ -119,15 +127,34 @@ export const PrivacySettingsRepository = {
   // converting this repository without a real app-loading gate would
   // have reopened that exact problem. See App.jsx's new `bootReady`
   // gate, built alongside this conversion, for the fix.
+  // CHANGED — Phase 4 (Sep 2026): `duressPin` is now resolved from
+  // cryptoService's own unencrypted vault metadata, never from this
+  // repository's own (encrypted) storage — see cryptoService.js's own
+  // header and DEFAULT_PRIVACY_SETTINGS' comment above for why. The
+  // self-heal below handles a profile that had already set a real
+  // duress PIN or grace period BEFORE this mirror existed: the very
+  // first time this runs after unlock, if cryptoService's own mirror
+  // is still empty but the (now-decrypted) stored value isn't, it
+  // adopts it — a one-time, idempotent recovery, not an ongoing sync.
+  // Safe against ever resurrecting a value the user deliberately
+  // cleared afterward: update() below always writes both copies
+  // together from that point on, so once cleared, `stored.duressPin`
+  // is "" too and this condition never fires again for it.
   async getSettings() {
     const stored = await storage.load(STORAGE_KEY, DEFAULT_PRIVACY_SETTINGS);
-    return { ...DEFAULT_PRIVACY_SETTINGS, ...stored };
+    const merged = { ...DEFAULT_PRIVACY_SETTINGS, ...stored };
+    if (!getDuressPin() && merged.duressPin) setDuressPinMirror(merged.duressPin);
+    if (!getGraceMinutesPref() && merged.appLockGraceMinutes) setGraceMinutesPref(merged.appLockGraceMinutes);
+    return { ...merged, duressPin: getDuressPin() };
   },
 
   async update(changes) {
-    const updated = { ...(await this.getSettings()), ...changes };
+    if (changes.duressPin !== undefined) setDuressPinMirror(changes.duressPin);
+    if (changes.appLockGraceMinutes !== undefined) setGraceMinutesPref(changes.appLockGraceMinutes);
+    const stored = await storage.load(STORAGE_KEY, DEFAULT_PRIVACY_SETTINGS);
+    const updated = { ...DEFAULT_PRIVACY_SETTINGS, ...stored, ...changes };
     await storage.save(STORAGE_KEY, updated);
-    return updated;
+    return { ...updated, duressPin: getDuressPin() };
   },
 
   // Called the moment App Lock is actually passed (PIN or biometric) —
@@ -168,34 +195,24 @@ export const PrivacySettingsRepository = {
     return { ok: true };
   },
 
-  // ADDED 19 Aug 2026 — App Lock's own unlock check, same shared PIN.
-  // If no PIN has ever been set, App Lock genuinely can't be turned on
-  // in the first place (see the Settings UI) — so this only ever runs
-  // once a real PIN exists.
-  async checkAppLockPin(enteredPin) {
-    const settings = await this.getSettings();
-    return enteredPin === settings.anonymisePin;
-  },
-
-  // ADDED 1 Sep 2026 — real ask: the duress PIN. Distinguishes "real
-  // PIN" from "duress PIN" from "wrong" so the lock screen can route
-  // each case differently (real → the actual app; duress → DecoyHome;
-  // wrong → the existing error). An empty enteredPin never matches
-  // either, even if one of the stored PINs is itself somehow blank.
-  async classifyAppLockPin(enteredPin) {
-    if (!enteredPin) return "wrong";
-    const settings = await this.getSettings();
-    if (enteredPin === settings.anonymisePin) return "real";
-    if (settings.duressPin && enteredPin === settings.duressPin) return "duress";
-    return "wrong";
-  },
+  // REMOVED — Phase 4 (Sep 2026): checkAppLockPin()/classifyAppLockPin()
+  // used to be App Lock's own real/duress/wrong PIN check. Both are
+  // gone now that nothing can call them before the vault is unlocked
+  // (they read this repository's own encrypted data) — App.jsx's
+  // AppLockScreen now checks the duress PIN via
+  // cryptoService.getDuressPin() directly (pre-unlock-safe, see that
+  // file's header) and treats a successful cryptoService.unlockWithPin()
+  // call itself as "the real PIN" — a wrong PIN fails AES-GCM's own
+  // authentication rather than a separate string comparison. See
+  // cryptoService.js's own header for the full reasoning.
 
   // Real validation, not just "non-empty": a duress PIN identical to
   // the real one would make the whole feature a no-op (every unlock
-  // would classify as "real"), and an empty string would mean
-  // classifyAppLockPin's `settings.duressPin &&` guard never matches
-  // it at all — effectively silently not-set even if this were allowed
-  // to save. Returns { ok, error } rather than throwing, matching
+  // would be treated as the real PIN), and an empty string would mean
+  // cryptoService.getDuressPin()'s own `if (pin && ...)` guard (see
+  // App.jsx's AppLockScreen) never matches it at all — effectively
+  // silently not-set even if this were allowed to save. Returns
+  // { ok, error } rather than throwing, matching
   // deactivate()'s own pattern above, so the Settings UI can show
   // exactly why a save was rejected.
   async setDuressPin(newPin) {

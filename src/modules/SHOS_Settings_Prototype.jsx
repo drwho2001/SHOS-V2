@@ -69,6 +69,13 @@ import { TrashRepository, MODULE_LABELS as TRASH_MODULE_LABELS } from "../reposi
 import { getCalendarEvents, groupEventsByDay } from "../calculations/calendarCalculations";
 import { LocationsRepository } from "../repositories/locationsRepository";
 import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../repositories/privacySettingsRepository";
+// ADDED — Phase 4 (Sep 2026): App Lock's own PIN (anonymisePin, reused
+// per privacySettingsRepository.js's own header) now also gates real
+// vault decryption once it's on — see cryptoService.js's own header
+// for the full envelope design. Every toggle/PIN-change handler below
+// that touches App Lock/biometric now has to keep the real vault in
+// sync, not just the stored settings flags.
+import { enablePinProtection, disablePinProtectionWithPin, changePin, enableBiometricSlot, disableBiometricSlot } from "../storage/cryptoService";
 import { NotificationPreferencesRepository, DEFAULT_NOTIFICATION_PREFERENCES, isPaused } from "../repositories/notificationPreferencesRepository";
 import { NotificationHistoryRepository } from "../repositories/notificationHistoryRepository";
 import { getDeferredInstallPrompt, onInstallPromptAvailable, triggerInstallPrompt } from "../storage/installPromptService";
@@ -1139,14 +1146,31 @@ function PrivacyScreen({ onClose }) {
     if (result.ok) { setPinEntry(""); setPinError(""); refresh(); }
     else setPinError(result.error);
   };
+  // CHANGED — Phase 4 (Sep 2026): if App Lock is already on, this PIN
+  // isn't just a stored string anymore — it's the real key material
+  // wrapping the vault's Data Key. Real re-wrap via cryptoService's own
+  // verify-before-commit changePin() (see that file's header) using
+  // `settings.anonymisePin` as the OLD PIN — already known here without
+  // asking the user to retype it, same "already inside Settings, which
+  // the lock screen itself already gated" trust model as turning App
+  // Lock off below. If App Lock is OFF, there's no vault PIN slot to
+  // re-wrap yet (first-ever PIN, or a PIN changed while unused) — just
+  // the stored string, exactly as before this change.
   const savePin = async () => {
     const trimmed = newPin.trim();
     if (trimmed.length < 4) { setPinError("PIN should be at least 4 digits."); return; }
     // CHANGED — real ask: force reconfirmation before accepting.
     if (trimmed !== confirmPin.trim()) { setPinError("PINs don't match — check both and try again."); return; }
-    await PrivacySettingsRepository.update({ anonymisePin: trimmed });
-    setNewPin(""); setConfirmPin(""); setSettingPin(false); setPinError("");
-    refresh();
+    try {
+      if (settings.appLockEnabled) {
+        await changePin(settings.anonymisePin, trimmed, settings.appLockGraceMinutes);
+      }
+      await PrivacySettingsRepository.update({ anonymisePin: trimmed });
+      setNewPin(""); setConfirmPin(""); setSettingPin(false); setPinError("");
+      refresh();
+    } catch (err) {
+      setPinError(err.message || "Couldn't change the PIN — nothing was changed.");
+    }
   };
 
   // ADDED 1 Sep 2026 — real ask: "dummy pin good idea." Same
@@ -1174,27 +1198,61 @@ function PrivacyScreen({ onClose }) {
   // trivially bypasses — confusing, not actually locked. Turning OFF
   // never needs the PIN re-entered here; you're already inside
   // Settings, which the lock screen itself already gated.
+  // CHANGED — Phase 4 (Sep 2026): this used to just flip a stored flag.
+  // Turning App Lock ON now really does establish the vault's `pin`
+  // slot (cryptoService.enablePinProtection) — the real thing that
+  // makes "pulled-from-device data always needs the PIN" true. Turning
+  // it OFF really does re-wrap the vault back onto the always-works
+  // device slot (disablePinProtectionWithPin) — both use `settings.
+  // anonymisePin` as the real PIN, already known here (see savePin's
+  // own comment on why re-asking for it isn't needed). Either call can
+  // throw on a genuine verification failure (see cryptoService.js's
+  // own "verify before commit" design) — caught here so a failure
+  // leaves both the vault AND the stored flag exactly as they were,
+  // never a mismatched pair.
   const toggleAppLock = async () => {
     if (!settings.appLockEnabled && !settings.anonymisePin) {
       setPinError("Set a PIN below first, then App Lock can use it.");
       return;
     }
-    // CHANGED — real ask: turning App Lock back OFF should also turn
-    // off biometric unlock with it — biometric is only ever meaningful
-    // as an add-on to App Lock, leaving it silently "on" underneath
-    // would just be stale, unreachable state.
-    await PrivacySettingsRepository.update({ appLockEnabled: !settings.appLockEnabled, ...(settings.appLockEnabled ? { biometricUnlockEnabled: false } : {}) });
-    refresh();
+    try {
+      if (settings.appLockEnabled) {
+        await disablePinProtectionWithPin(settings.anonymisePin);
+        // CHANGED — real ask: turning App Lock back OFF should also
+        // turn off biometric unlock with it — biometric is only ever
+        // meaningful as an add-on to App Lock, leaving it silently "on"
+        // underneath would just be stale, unreachable state.
+        await PrivacySettingsRepository.update({ appLockEnabled: false, biometricUnlockEnabled: false });
+      } else {
+        await enablePinProtection(settings.anonymisePin, settings.appLockGraceMinutes);
+        await PrivacySettingsRepository.update({ appLockEnabled: true });
+      }
+      refresh();
+    } catch (err) {
+      setPinError(err.message || "Couldn't change App Lock — nothing was changed.");
+    }
   };
 
   // ADDED — real ask: biometric unlock, layered on top of App Lock's
   // own PIN. Real device/enrollment check happens here at toggle-on
   // time — never just flips the flag and hopes, since the device
   // might have no biometric hardware or nothing enrolled.
+  // CHANGED — Phase 4 (Sep 2026): turning this on now really does
+  // establish the vault's own `biometric` slot (a device-protected copy
+  // of the Data Key — see cryptoService.js's own section on it for the
+  // honest trade-off this accepts) via cryptoService.enableBiometricSlot(),
+  // using the already-known real PIN to unwrap the DEK first. Without
+  // this, App.jsx's own AppLockScreen would gate on a real biometric
+  // prompt that succeeds but then has no way to actually recover the
+  // Data Key — exactly the bug found and fixed live while wiring the
+  // boot gate. Turning it off just removes the slot — no PIN needed,
+  // same "no re-entry once already in Settings" pattern as everywhere
+  // else on this screen.
   const [biometricError, setBiometricError] = useState("");
   const toggleBiometric = async () => {
     setBiometricError("");
     if (settings.biometricUnlockEnabled) {
+      disableBiometricSlot();
       await PrivacySettingsRepository.update({ biometricUnlockEnabled: false });
       refresh();
       return;
@@ -1202,6 +1260,12 @@ function PrivacyScreen({ onClose }) {
     const result = await checkBiometryAvailable();
     if (!result.available) {
       setBiometricError(result.reason || "Biometrics aren't available on this device.");
+      return;
+    }
+    try {
+      await enableBiometricSlot(settings.anonymisePin);
+    } catch (err) {
+      setBiometricError(err.message || "Couldn't enable biometric unlock — nothing was changed.");
       return;
     }
     await PrivacySettingsRepository.update({ biometricUnlockEnabled: true });

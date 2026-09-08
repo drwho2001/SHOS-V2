@@ -415,10 +415,18 @@ export const CustomOptionListsRepository = {
 // in an IIFE since a module-load-time side effect can't itself be
 // async. Idempotent either way (add() checks for an existing value
 // first), so this being fire-and-forget at import time is safe.
-const SAMPLE_TYPE_MIGRATION_FLAG = "shos_sampletype_vaginal_added_v1";
-(async () => {
+// CHANGED — Phase 4 (Sep 2026): a real, pre-existing bug the self-
+// invoking IIFE version of this had, only surfaced once storage.save()
+// started needing an unlocked vault — module evaluation always happens
+// before App.jsx's own bootReady gate resolves, so this would ALWAYS
+// fail to save (not just occasionally) for anyone with App Lock on,
+// forever leaving the sample type un-added and silently retrying every
+// cold boot. Exported as a real function instead, called once from
+// App.jsx's own finishBootAfterUnlock() after a real unlock.
+export const SAMPLE_TYPE_MIGRATION_FLAG = "shos_sampletype_vaginal_added_v1";
+export async function runSampleTypeMigration() {
   if (!(await storage.load(SAMPLE_TYPE_MIGRATION_FLAG, false))) {
     await CustomOptionListsRepository.add("sampleType", "Vaginal/front hole swab");
     await storage.save(SAMPLE_TYPE_MIGRATION_FLAG, true);
   }
-})();
+}

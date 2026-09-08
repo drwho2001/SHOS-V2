@@ -11,20 +11,27 @@
 // needs to change. No repository code has to be touched.
 //
 // CHANGED — Phase 3 (Sep 2026): load()/save() are genuinely `async`
-// now, the actual point of this whole multi-session encryption
-// groundwork effort — every one of the ~34 repository/registry files
-// already `await`s these calls (a no-op until now, since this file was
-// still 100% synchronous underneath), so this conversion needed zero
-// changes at any of those call sites. The two real remaining exceptions
-// (`ModuleColorRepository`'s old `getOverridesSync()` bypass and
-// `main.jsx`'s `ErrorBoundary`) are handled separately — see their own
-// files. STILL BACKED BY THE SAME SYNCHRONOUS localStorage CALLS
-// internally — this is a type-level/API-shape change, not a new
-// storage mechanism, so there's no new latency or behavior change
-// today. What this actually unlocks: `crypto.subtle` (Phase 4's real
-// encryption) is async-only, so `load`/`save` had to already be
-// async-shaped before any real encrypt/decrypt call could be dropped
-// into their bodies — that's the next, and last, real step.
+// now — every one of the ~34 repository/registry files already
+// `await`s these calls (a no-op until now, since this file was still
+// 100% synchronous underneath), so that conversion needed zero
+// changes at any of those call sites.
+//
+// CHANGED — Phase 4 (Sep 2026): load()/save() now do real encryption,
+// the actual point of this entire multi-session effort — see
+// cryptoService.js for the real Data Key / envelope design and
+// CLAUDE.md's own Known Issues entry for the full scoping writeup.
+// `save()` always encrypts going forward; `load()` checks the stored
+// shape and only decrypts real `{iv, ciphertext}` values, returning
+// anything else (legacy plaintext not yet migrated) as-is — a lazy
+// fallback safety net that costs nothing, kept alongside the real
+// eager migration `App.jsx`'s own boot sequence runs once, in case a
+// key is ever somehow missed by that pass. The two real remaining
+// exceptions (`main.jsx`'s `ErrorBoundary`, and `cryptoService.js`'s
+// own `shos_vault_key_slots` metadata key, which structurally can't
+// be encrypted by the very key it exists to protect) are handled
+// separately — see their own files.
+import { encryptForStorage, decryptFromStorage, isEncryptedShape } from "./cryptoService.js";
+
 export const localStorageAdapter = {
   // Reads a value back out of storage. Returns `fallback` if nothing's
   // been saved yet (first run) or if reading/parsing fails for any
@@ -33,7 +40,10 @@ export const localStorageAdapter = {
   async load(key, fallback) {
     try {
       const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
+      if (!raw) return fallback;
+      const parsed = JSON.parse(raw);
+      if (isEncryptedShape(parsed)) return JSON.parse(await decryptFromStorage(parsed));
+      return parsed;
     } catch (err) {
       console.error(`Storage load failed for "${key}":`, err);
       return fallback;
@@ -45,7 +55,8 @@ export const localStorageAdapter = {
   // assuming data is safe when it isn't.
   async save(key, value) {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      const encrypted = await encryptForStorage(JSON.stringify(value));
+      localStorage.setItem(key, JSON.stringify(encrypted));
       return true;
     } catch (err) {
       console.error(`Storage save failed for "${key}":`, err);

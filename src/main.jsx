@@ -73,14 +73,43 @@ class ErrorBoundary extends React.Component {
   // reloading — a real, targeted recovery step for the reported crash,
   // not just a blind reload that would hit the identical crash again if
   // the bad state persists in storage.
-  handleResetAndReload = () => {
+  // CHANGED — Phase 4 (Sep 2026): `shos_app_preferences` is real
+  // ciphertext now (once Phase 4's migration has run), not plain JSON —
+  // this used to assume the latter unconditionally. Checks the stored
+  // shape first (same `{iv, ciphertext}`-with-exactly-those-two-keys
+  // check cryptoService.js's own isEncryptedShape() uses, duplicated
+  // rather than statically imported — see this class's own header on
+  // why it stays import-free) and only reaches for cryptoService at all
+  // if the value is actually encrypted; a genuinely un-migrated/legacy
+  // profile still gets the plain, original edit-in-place behaviour. The
+  // cryptoService import itself is a DYNAMIC import(), used only inside
+  // this button's own click handler, not a static import at module top
+  // — this component still can't fail to RENDER even if cryptoService
+  // itself is broken, only this one best-effort recovery step could. A
+  // decrypt failure (including "vault not unlocked," a real possibility
+  // if the crash happened before or during the lock screen) is caught
+  // by the exact same try/catch as before and is no worse than the
+  // plain JSON.parse failure this code could already hit pre-Phase 4 —
+  // either way, the reload below still happens unconditionally.
+  handleResetAndReload = async () => {
     try {
       const raw = window.localStorage.getItem("shos_app_preferences");
       if (raw) {
         const parsed = JSON.parse(raw);
-        delete parsed.lastActiveTab;
-        delete parsed.lastActiveAt;
-        window.localStorage.setItem("shos_app_preferences", JSON.stringify(parsed));
+        const isEncrypted = parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          && typeof parsed.iv === "string" && typeof parsed.ciphertext === "string" && Object.keys(parsed).length === 2;
+        if (isEncrypted) {
+          const { encryptForStorage, decryptFromStorage } = await import("./storage/cryptoService.js");
+          const plain = JSON.parse(await decryptFromStorage(parsed));
+          delete plain.lastActiveTab;
+          delete plain.lastActiveAt;
+          const reEncrypted = await encryptForStorage(JSON.stringify(plain));
+          window.localStorage.setItem("shos_app_preferences", JSON.stringify(reEncrypted));
+        } else {
+          delete parsed.lastActiveTab;
+          delete parsed.lastActiveAt;
+          window.localStorage.setItem("shos_app_preferences", JSON.stringify(parsed));
+        }
       }
     } catch (e) {
       console.error("[ErrorBoundary] Couldn't clear navigation state:", e);

@@ -183,10 +183,12 @@ oversight.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
-- **No encryption at rest.** Live app data is plain `localStorage`.
-  Backup export *can* be encrypted (AES-256-GCM, PBKDF2 250k rounds —
-  solid where it's used) but day-to-day data isn't. This is the one
-  Critical finding deliberately not yet fixed. Real scoping done 4 Sep
+- **Encryption at rest — RESOLVED 8 Sep 2026, see the full Phase 4
+  implementation entry at the end of this same bullet.** Originally:
+  live app data was plain `localStorage`. Backup export *can* be
+  encrypted (AES-256-GCM, PBKDF2 250k rounds — solid where it's used)
+  but day-to-day data isn't. This was the one Critical finding
+  deliberately not yet fixed. Real scoping done 4 Sep
   (audit + design, no code changed — see Notion for the full write-up):
   the storage layer isn't one clean chokepoint — 32 files touch it, in
   three distinct patterns with different fixes (module-load-time
@@ -2457,6 +2459,196 @@ this date; summarized here for durability.
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
   trigger the Smoke Test CI workflow for verification are fine — `main`
   itself, which triggers the real APK/web builds, is not touched).
+
+  **Phase 4 fully implemented and landed the same session (8 Sep 2026,
+  continued) — encryption at rest is real now, not just scoped.** Built
+  with the owner's own explicit "thoroughness over efficiency" mandate
+  for this specific phase, given the permanent-loss stakes of a
+  migration bug against his own real device data — every real design
+  decision below was checked directly against the running app via
+  Playwright, not assumed correct from the design doc above.
+
+  `src/storage/cryptoService.js` (new file) is the real implementation
+  of the envelope design already scoped above, with one real change
+  made while writing it: `SubtleCrypto.wrapKey()`/`unwrapKey()` (the
+  "obvious" API for wrapping a key with another key) turned out to
+  require the wrapped key be `extractable: true` — verified via direct
+  research before writing any code, not assumed — which would have
+  meant the Data Key could always be exported to raw bytes by any
+  in-page JS, a real regression from "always non-extractable." Sidestepped
+  by never making the Data Key (DK) a permanent `CryptoKey` object at
+  all — it's generated once as raw random bytes, and every "slot"
+  simply AES-GCM-*encrypts* those raw bytes as ordinary data using its
+  own protector key. Four real slots exist, stored in a single,
+  deliberately NEVER-encrypted `shos_vault_key_slots` localStorage key
+  (the one necessary exception — the app has to know how to get the DK
+  before it can decrypt anything else, including whether App Lock is
+  even on): `device` (DK wrapped by a non-extractable, IndexedDB-
+  persisted AES-GCM key — the always-works baseline, no PIN needed,
+  active whenever App Lock is off), `pin` (DK wrapped by a PBKDF2-derived
+  key from the real App Lock PIN, 100,000 rounds — deliberately lower
+  than backup export's own 250,000, since a PIN is entered far more
+  often and starts from much lower entropy, so very high iteration
+  counts buy little extra real protection here while adding felt unlock
+  latency), `tempGrace` (a temporary, time-limited, device-protected
+  copy of the DK — see below), and `biometric` (a permanent, device-
+  protected copy, added only once the owner's own biometric-unlock
+  toggle is on — see below). Exactly one of `device`/`pin` is ever
+  active, enforced by deleting the other on every real toggle — this is
+  the real, cryptographic version of "pulled-from-device data always
+  needs the PIN once App Lock is on," not just a UI door. Every slot-
+  changing operation (`enablePinProtection`/`disablePinProtectionWithPin`/
+  `changePin`/`enableBiometricSlot`) follows the same verify-before-
+  commit rule the owner explicitly chose over the alternatives offered:
+  unwrap with the OLD protector, wrap with the NEW one, immediately
+  re-unwrap the new wrapping to confirm a byte-for-byte match BEFORE
+  committing — any failure leaves the vault in its previous, fully-
+  working state and throws, never a partial commit.
+
+  Migration is the owner's own explicit pick, eager and verified: on
+  first Phase 4 boot, every `shos_`-prefixed key still in plain JSON is
+  encrypted and immediately read back + decrypted to verify before
+  moving to the next; any failure restores the original plaintext bytes
+  for that one key and aborts the whole pass without marking completion,
+  so an interrupted boot retries cleanly next time; idempotent by
+  construction, so nothing is ever double-encrypted. A genuinely fresh
+  install (nothing real to migrate) is distinguished from an existing
+  install's first Phase-4 boot (real plaintext waiting) by scanning for
+  any other pre-existing `shos_`-prefixed key before the vault ever
+  exists — both look identical from "no vault yet" alone.
+  `storageAdapter.js`'s `load()`/`save()` now call into this file
+  directly: `save()` always encrypts going forward, `load()` only
+  decrypts a real `{iv, ciphertext}` shape and returns anything else
+  (legacy, not-yet-migrated plaintext) as-is — a lazy fallback safety
+  net alongside the eager migration, costing nothing.
+
+  A real, genuine circular dependency was found and resolved while
+  wiring this into `App.jsx`, not anticipated in the original scoping:
+  the App Lock screen used to ask `PrivacySettingsRepository.
+  classifyAppLockPin()` whether a typed PIN was real, duress, or wrong
+  — but that repository's own data (the duress PIN included) is
+  encrypted by the very vault this screen exists to unlock, so it
+  structurally cannot be read before a real unlock succeeds. Resolved
+  by making `cryptoService.unlockWithPin()` itself the real check (a
+  wrong PIN fails AES-GCM's own authentication tag, not a separate
+  string comparison) and by mirroring the two facts that genuinely have
+  to be checkable pre-unlock — the duress PIN itself, and the grace-
+  period length in minutes — into the vault's own unencrypted metadata,
+  self-healing from a profile that had already set either value before
+  this mirror existed (`PrivacySettingsRepository.getSettings()` adopts
+  the old encrypted value into the mirror the first time it's read
+  post-unlock, an idempotent one-time recovery that can never resurrect
+  a value the owner deliberately clears afterward, since `update()`
+  always writes both copies together from that point on).
+  `classifyAppLockPin()`/`checkAppLockPin()` were removed outright once
+  nothing called them anymore. A second, related gap found the same
+  way: biometric unlock used to jump straight to `onUnlock()` the
+  moment the native prompt succeeded, without ever actually recovering
+  the Data Key — the vault would have stayed locked, and the very next
+  repository read would have thrown. Fixed with the real `biometric`
+  slot described above (a device-protected DK copy, same honest
+  weaker-than-hardware-Keystore trade-off already accepted for the
+  device slot, extended here — stated plainly, not glossed over: once
+  biometric unlock is on, someone able to extract the device key
+  directly could recover data without the PIN, for as long as it stays
+  on; the PIN slot itself is untouched either way).
+
+  A third class of gap, found only by live-testing the actual boot
+  sequence rather than reasoning about it on paper: several pieces of
+  code ran BEFORE `App.jsx`'s own `bootReady` gate could ever resolve,
+  racing the vault's own unlock on every cold boot for an existing,
+  already-migrated install — invisible until this exact moment, since
+  none of it mattered while `storageAdapter` was still synchronous.
+  Three module-load-time migration side effects
+  (`kinkRegistry.js`'s expansion flag, `protectionRegistry.js`'s PEP-
+  added flag, `customOptionListsRepository.js`'s sample-type flag) used
+  to be self-invoking IIFEs that ran the instant their module was
+  imported — always before `bootReady`, not occasionally, so they would
+  have failed to save every single cold boot for anyone with App Lock
+  on, forever leaving those one-time additions un-added. Converted to
+  plain exported functions, called explicitly from `App.jsx`'s own
+  post-unlock boot-finishing step instead. `darkModePreference.js`'s
+  own self-correcting IIFE had the identical shape (a `storage.load()`
+  call at module-load time) — its own try/catch swallowed the failure
+  silently and never retried, meaning a real saved dark-mode preference
+  would never actually apply for an App-Lock user; same fix, exported
+  and called from the same place. Three MORE top-level hooks inside
+  `App.jsx` itself (`appLockEnabled`, `showOnboarding`,
+  `showAppLockPrompt`) were still independent `useLoadedState` calls
+  from the earlier Phase 2 batch, each firing its own encrypted read
+  the moment `App()` mounted, unguarded by `bootReady` — genuinely
+  invisible on a fresh install (nothing to decrypt yet) but a real,
+  flaky race for any existing install, since these three vs.
+  `cryptoService`'s own unlock had no ordering guarantee at all.
+  Converted to plain `useState`, resolved for real in the same shared
+  post-unlock step as everything else. Finally, three ongoing listeners
+  (`checkDueMeds` and its 4 repository reads; `recordBackgrounded`/
+  `checkRelock`, the appStateChange/visibilitychange handlers;
+  `active`'s own write-back effect) could all fire during a genuine
+  real-world backgrounding that happens to land on the boot or lock
+  screen — each now bails out via a plain `isVaultUnlocked()` check
+  before touching anything, with `checkDueMeds` also called explicitly
+  right after a real unlock so a genuinely due medication doesn't wait
+  up to 60 seconds for the next scheduled poll to show up.
+
+  Settings' own Privacy screen (`toggleAppLock`/`savePin`/
+  `toggleBiometric`) now calls the real vault operations, not just the
+  stored flags: turning App Lock on/off really does establish/remove
+  the vault's `pin` slot; changing the PIN while App Lock is on really
+  does re-wrap the vault via `changePin()`, using the already-known
+  current PIN (no re-entry needed — same "already inside Settings,
+  which the lock screen itself already gated" trust model the app
+  already used for turning App Lock off); turning biometric unlock on
+  really does establish the `biometric` slot. Every one of these can
+  throw on a genuine verification failure and is caught, so a failure
+  leaves the vault and the stored flags exactly as they were, never a
+  mismatched pair. `main.jsx`'s `ErrorBoundary` — deliberately kept
+  import-free at the top of the file so it can never itself fail to
+  render — now reaches for `cryptoService` via a DYNAMIC `import()`
+  only inside its own recovery button's click handler, checking the
+  stored shape first and only decrypting if it's actually `{iv,
+  ciphertext}`; a genuinely un-migrated profile still gets the original
+  plain edit-in-place behaviour, and a decrypt failure (including "the
+  vault isn't unlocked yet," a real possibility if the crash happened
+  on the lock screen itself) is no worse than the `JSON.parse` failure
+  this exact code could already hit before Phase 4.
+
+  Verified live end-to-end via Playwright, covering every flow flagged
+  as needing it in the original scoping plus every gap found along the
+  way: a fresh install boots straight to real content with zero lock-
+  screen flash; an existing install's real legacy plaintext data
+  migrates correctly through the full, real boot sequence (not just
+  `cryptoService` in isolation) and stays visible/correct in the actual
+  UI afterward; setting a PIN and enabling App Lock via the real
+  Settings screen genuinely gates the vault (a wrong PIN is rejected, a
+  duress PIN routes to the decoy session without ever touching the real
+  vault, the real PIN unlocks); changing the PIN while App Lock is on
+  genuinely re-wraps the vault (the old PIN is rejected afterward, only
+  the new one works); a real grace period survives a simulated process
+  restart via the `tempGrace` slot and correctly falls back to asking
+  for the PIN again once that slot's own expiry passes; turning App
+  Lock back off genuinely reverts the vault to the always-works device
+  slot; backup export still produces genuine plaintext JSON (repositories
+  decrypt transparently before `backupService.js` ever sees the data —
+  no crypto-awareness needed there at all) and backup restore correctly
+  re-encrypts on the way back in; the `ErrorBoundary`'s own decrypt-
+  recovery logic round-trips a real encrypted `shos_app_preferences`
+  value correctly, with the app still booting fine from the result
+  afterward. The new positive check this phase's own scoping flagged as
+  necessary — confirming raw `localStorage` is genuinely NOT plaintext-
+  parseable, not just that the app's own reads still work — passed for
+  every one of these flows; the app's own encryption is real, not a
+  silent no-op. The full `scripts/smoke-test.cjs` suite passes
+  unmodified throughout. No console errors anywhere in any of these
+  flows, including every one of the pre-unlock races found and fixed
+  above — each was confirmed both broken (a real, reproducible
+  `console.error`) before its own fix and silent afterward, not just
+  assumed fixed from reading the diff.
+
+  `draftStorage.js`'s `sessionStorage` drafts remain deliberately out
+  of Phase 4's scope, per the reasoning already recorded above (ephemeral,
+  gated behind an already-unlocked, already-open app) — not revisited,
+  not forgotten.
 - **Still near-zero real test coverage, though the one existing script
   is now CI-gated.** `scripts/smoke-test.cjs` (3 flows) got wired into
   a new `.github/workflows/smoke-test.yml` (4 Sep) — runs the exact

@@ -124,15 +124,23 @@ export const KinkRegistry = createSimpleRegistry({
 // awaiting each call in turn (rather than firing all 37 at once) keeps
 // this consistent with the for...of conversions used everywhere else
 // this session for bulk-create loops.
-const EXPANSION_FLAG_KEY = "shos_kink_registry_expanded_v1";
-(async () => {
+// CHANGED — Phase 4 (Sep 2026): a real, pre-existing bug the self-
+// invoking IIFE version of this had, only surfaced once storage.save()
+// started needing an unlocked vault — module evaluation always happens
+// before App.jsx's own bootReady gate resolves, so this would ALWAYS
+// fail to save (not just occasionally) for anyone with App Lock on,
+// forever leaving the expanded list un-added and silently retrying
+// every cold boot. Exported as a real function instead, called once
+// from App.jsx's own finishBootAfterUnlock() after a real unlock.
+export const EXPANSION_FLAG_KEY = "shos_kink_registry_expanded_v1";
+export async function runKinkExpansionMigration() {
   if (!(await storage.load(EXPANSION_FLAG_KEY, false))) {
     for (const name of SEED_NAMES) {
       await KinkRegistry.findOrCreate(name);
     }
     await storage.save(EXPANSION_FLAG_KEY, true);
   }
-})();
+}
 
 // ADDED 18 Aug 2026 — real feedback: typing a common synonym (e.g.
 // "watersports") should resolve to the existing canonical entry

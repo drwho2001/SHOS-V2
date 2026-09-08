@@ -30,10 +30,18 @@ export const ProtectionRegistry = createSimpleRegistry({
 // async — wrapped in an async IIFE, same pattern as kinkRegistry.js's
 // own expansion flag (a module-load-time side effect can't itself be
 // async).
-const PEP_ADDED_FLAG = "shos_protection_pep_added_v1";
-(async () => {
+// CHANGED — Phase 4 (Sep 2026): a real, pre-existing bug the self-
+// invoking IIFE version of this had, only surfaced once storage.save()
+// started needing an unlocked vault — module evaluation always happens
+// before App.jsx's own bootReady gate resolves, so this would ALWAYS
+// fail to save (not just occasionally) for anyone with App Lock on,
+// forever leaving PEP unadded and silently retrying every cold boot.
+// Exported as a real function instead, called once from App.jsx's own
+// finishBootAfterUnlock() after a real unlock.
+export const PEP_ADDED_FLAG = "shos_protection_pep_added_v1";
+export async function runProtectionPepMigration() {
   if (!(await storage.load(PEP_ADDED_FLAG, false))) {
     await ProtectionRegistry.findOrCreate("PEP");
     await storage.save(PEP_ADDED_FLAG, true);
   }
-})();
+}
