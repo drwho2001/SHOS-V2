@@ -587,6 +587,7 @@ function DeveloperToolsScreen({ onClose }) {
   // locationsCount/contactsCount above.
   const logsCount = useLoadedMemo(() => LogRepository.getAll().then((l) => l.length), [], 0);
   const episodesCount = useLoadedMemo(() => EpisodeRepository.getAll().then((l) => l.length), [], 0);
+  const symptomLogCount = useLoadedMemo(() => SymptomLogRepository.getAll().then((l) => l.length), [], 0);
   const counts = [
     { label: "Contacts", value: contactsCount },
     { label: "Encounters", value: EncounterRepository.getAll().length },
@@ -594,7 +595,7 @@ function DeveloperToolsScreen({ onClose }) {
     { label: "Medication log entries", value: logsCount },
     { label: "Tests", value: TestingRepository.getAll().length },
     { label: "Clinic visits", value: ClinicVisitsRepository.getAll().length },
-    { label: "Symptom Log entries", value: SymptomLogRepository.getAll().length },
+    { label: "Symptom Log entries", value: symptomLogCount },
     { label: "Vaccinations", value: VaccinationRepository.getAll().length },
     { label: "Timeline episodes", value: episodesCount },
     { label: "Kink Registry entries", value: KinkRegistry.getAll().length },
@@ -3124,12 +3125,12 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   const [activeModules, setActiveModules] = useState(ALL_MODULE_KEYS);
   const toggleModule = (key) => setActiveModules((cur) => cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]);
 
-  const allEvents = useLoadedMemo(() => getCalendarEvents({
+  const allEvents = useLoadedMemo(async () => getCalendarEvents({
     encounters: EncounterRepository.getAll(),
     tests: TestingRepository.getAll(),
     clinicVisits: ClinicVisitsRepository.getAll(),
     vaccinations: VaccinationRepository.getAll(),
-    symptomEntries: SymptomLogRepository.getAll(),
+    symptomEntries: await SymptomLogRepository.getAll(),
     medications: MedicationRepository.getAll(),
   }), [], []);
   const events = useMemo(() => allEvents.filter((e) => activeModules.includes(e.moduleKey)), [allEvents, activeModules]);

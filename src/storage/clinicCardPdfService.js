@@ -64,7 +64,7 @@ async function assembleClinicCardData() {
   const encounters = sortByDateDesc(EncounterRepository.getAll());
   const vaccinations = sortByDateDesc(VaccinationRepository.getAll().filter((v) => !v.isArchived));
   const overdueVaccinations = VaccinationRepository.getOverdue();
-  const activeSymptoms = SymptomLogRepository.getActive();
+  const activeSymptoms = await SymptomLogRepository.getActive();
 
   const recentTests = tests.slice(0, 5).map((t) => {
     const resultNames = (t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id));

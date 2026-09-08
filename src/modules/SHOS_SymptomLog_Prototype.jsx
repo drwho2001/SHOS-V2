@@ -570,14 +570,14 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
             </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
                 record, enabled only when exactly one is selected. */}
-            <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("symptomLog", SymptomLogRepository.getById(selectedIds[0])); }}
+            <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("symptomLog", await SymptomLogRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span onClick={() => { if (selectedIds.length > 0) { SymptomLogRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            <span onClick={async () => { if (selectedIds.length > 0) { await SymptomLogRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span onClick={async () => {
               if (selectedIds.length === 0) return;
               if (window.confirm(`Delete ${selectedIds.length} entr${selectedIds.length > 1 ? "ies" : "y"}? You'll have a few seconds to undo.`)) {
-                const toRestore = SymptomLogRepository.getAll().filter((e) => selectedIds.includes(e.id));
+                const toRestore = (await SymptomLogRepository.getAll()).filter((e) => selectedIds.includes(e.id));
                 await triggerDelete(toRestore);
                 refresh();
                 exitSelectMode();
@@ -636,19 +636,24 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
   const [screen, setScreen] = useState({ name: "list" });
+  // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository went
+  // async, and EntrySheet's own `entry` prop is a direct render-body
+  // read (its own `form` initializer reads the prop, not a repository
+  // call itself, so it's out of scope) — resolved here instead.
+  const editingEntry = useLoadedMemo(() => (screen.name === "edit" ? SymptomLogRepository.getById(screen.id) : null), [screen], null);
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // SymptomLogLanding — entries/deletedRecent/undoDelete/triggerDelete
   // now live at the real module level, shared with EntryDetail.
-  const [entries, setEntries] = useLoadedState(() => SymptomLogRepository.getAll().filter((e) => !e.isArchived), [], []);
-  const refresh = () => setEntries(SymptomLogRepository.getAll().filter((e) => !e.isArchived));
+  const [entries, setEntries] = useLoadedState(() => SymptomLogRepository.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  const refresh = () => { SymptomLogRepository.getAll().then((all) => setEntries(all.filter((e) => !e.isArchived))); };
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
   // implementation.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
   const undoTimerRef = useRef(null);
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => SymptomLogRepository.restore(record));
+    for (const record of deleteToast.records) await SymptomLogRepository.restore(record);
     refresh();
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
@@ -657,14 +662,14 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
   const redoDelete = async () => {
     if (!deleteToast) return;
     await TrashRepository.add("symptomLog", deleteToast.records);
-    deleteToast.records.forEach((r) => SymptomLogRepository.delete(r.id));
+    for (const r of deleteToast.records) await SymptomLogRepository.delete(r.id);
     refresh();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
   const triggerDelete = async (records) => {
     await TrashRepository.add("symptomLog", records);
-    records.forEach((r) => SymptomLogRepository.delete(r.id));
+    for (const r of records) await SymptomLogRepository.delete(r.id);
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -708,14 +713,13 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
   // adding a new one) here didn't update it until you left and
   // re-entered Healthcare. onDataChanged notifies the parent to
   // recompute immediately instead.
-  const createEntry = (data) => { SymptomLogRepository.create(data); onDataChanged?.(); backToList(); };
+  const createEntry = async (data) => { await SymptomLogRepository.create(data); onDataChanged?.(); backToList(); };
   const saveEntry = async (data) => {
     // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited are
-    // now async — awaited here even though SymptomLogRepository itself
-    // is still synchronous, same reasoning as every other module's
-    // save() this batch.
+    // now async, and SymptomLogRepository itself is now async too
+    // (Phase 2 encryption groundwork) — every step here awaited.
     await editUndo.captureBeforeEdit(screen.id);
-    SymptomLogRepository.update(screen.id, data);
+    await SymptomLogRepository.update(screen.id, data);
     await editUndo.notifyEdited(screen.id);
     onDataChanged?.();
     setScreen({ name: "detail", id: screen.id });
@@ -742,7 +746,16 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
       )}
       {content}
       {screen.name === "add" && <EntrySheet T={T} entry={null} onSave={createEntry} onClose={backToList} />}
-      {screen.name === "edit" && <EntrySheet T={T} entry={SymptomLogRepository.getById(screen.id)} onSave={saveEntry} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
+      {/* CHANGED — Phase 2 encryption groundwork: editingEntry loads
+          asynchronously now, and EntrySheet's own `form` reads its
+          `entry` prop only once, at mount, via a lazy useState
+          initializer — never resyncing later. Gating the mount on
+          editingEntry being resolved (rather than passing it through
+          possibly-null) avoids mounting the sheet with a blank form for
+          one tick and having it silently stick that way — same shape
+          as the original fully-synchronous behavior, just delayed by
+          a tick rather than corrupted. */}
+      {screen.name === "edit" && editingEntry && <EntrySheet T={T} entry={editingEntry} onSave={saveEntry} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
     </div>
   );
 }

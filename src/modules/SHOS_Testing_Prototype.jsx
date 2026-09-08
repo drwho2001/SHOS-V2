@@ -538,24 +538,24 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   // field), this just adds a second EDITABLE entry point into it,
   // exactly like Clinic Visits' linkedTestIds already has.
   const [symptomLinkVersion, setSymptomLinkVersion] = useState(0);
-  const linkedSymptoms = useLoadedMemo(() => (testId ? SymptomLogRepository.getAll().filter((s) => (s.relatedTestIds || []).includes(testId)) : []), [testId, symptomLinkVersion], []);
-  const unlinkedSymptoms = useLoadedMemo(() => {
+  const linkedSymptoms = useLoadedMemo(async () => (testId ? (await SymptomLogRepository.getAll()).filter((s) => (s.relatedTestIds || []).includes(testId)) : []), [testId, symptomLinkVersion], []);
+  const unlinkedSymptoms = useLoadedMemo(async () => {
     if (!testId) return [];
-    return SymptomLogRepository.getAll()
+    return (await SymptomLogRepository.getAll())
       .filter((s) => !(s.relatedTestIds || []).includes(testId))
       .sort((a, b) => new Date(b.dateStarted || 0) - new Date(a.dateStarted || 0))
       .map((s) => ({ id: s.id, name: `${s.title || "Symptom entry"} · ${formatDate(s.dateStarted)}`, searchText: "" }));
   }, [testId, symptomLinkVersion], []);
-  const linkSymptom = (symptomId) => {
-    const entry = SymptomLogRepository.getById(symptomId);
+  const linkSymptom = async (symptomId) => {
+    const entry = await SymptomLogRepository.getById(symptomId);
     if (!entry) return;
-    SymptomLogRepository.update(symptomId, { relatedTestIds: [...(entry.relatedTestIds || []), testId] });
+    await SymptomLogRepository.update(symptomId, { relatedTestIds: [...(entry.relatedTestIds || []), testId] });
     setSymptomLinkVersion((v) => v + 1);
   };
-  const unlinkSymptom = (symptomId) => {
-    const entry = SymptomLogRepository.getById(symptomId);
+  const unlinkSymptom = async (symptomId) => {
+    const entry = await SymptomLogRepository.getById(symptomId);
     if (!entry) return;
-    SymptomLogRepository.update(symptomId, { relatedTestIds: (entry.relatedTestIds || []).filter((id) => id !== testId) });
+    await SymptomLogRepository.update(symptomId, { relatedTestIds: (entry.relatedTestIds || []).filter((id) => id !== testId) });
     setSymptomLinkVersion((v) => v + 1);
   };
   // ADDED 19 Aug 2026 — real in-app editable option list.
@@ -811,6 +811,10 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   const [showAddMeasurement, setShowAddMeasurement] = useState(false);
   const [measurements, setMeasurements] = useLoadedState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedTestId === testId), [testId], []);
   const refreshMeasurements = () => setMeasurements(MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedTestId === testId));
+  // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository went
+  // async — hoisted above the `!test` guard, same reasoning as
+  // partnerNotifyList above (hooks-before-guard rule).
+  const relatedSymptoms = useLoadedMemo(() => SymptomLogRepository.getAll().then((all) => all.filter((s) => (s.relatedTestIds || []).includes(testId))), [testId], []);
   if (!test) return null;
 
   const organismNames = test.organismIds.map((id) => OrganismRegistry.getById(id)?.name).filter(Boolean);
@@ -820,9 +824,6 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   // ADDED 19 Aug 2026 — real data, previously built but never
   // displayed. See the import comment above for the full reasoning.
   const linkedVisits = ClinicVisitsRepository.getByLinkedTest(testId);
-  // ADDED — reverse lookup into Symptom Log's own relatedTestIds, see
-  // the SymptomLogRepository import comment above.
-  const relatedSymptoms = SymptomLogRepository.getAll().filter((s) => (s.relatedTestIds || []).includes(testId));
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>

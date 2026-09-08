@@ -56,11 +56,11 @@ export function computeProtectionUsage(id) {
   return count;
 }
 
-export function computeSymptomsUsage(id) {
+export async function computeSymptomsUsage(id) {
   let count = 0;
   EncounterRepository.getAll().forEach((e) => { if ((e.symptomsNoted || []).includes(id)) count += 1; });
   ClinicVisitsRepository.getAll().forEach((v) => { if ((v.symptomTypeIds || []).includes(id)) count += 1; });
-  SymptomLogRepository.getAll().forEach((s) => { if (s.symptomId === id) count += 1; });
+  (await SymptomLogRepository.getAll()).forEach((s) => { if (s.symptomId === id) count += 1; });
   return count;
 }
 

@@ -85,8 +85,20 @@ let seedEntries = [
   },
 ];
 
-let entries = storage.load(STORAGE_KEY, seedEntries);
-let nextEntryNumber = computeNextEntryNumber(entries);
+// CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
+// loadPromise pattern, same as every other module-load-cached
+// repository converted this session (see CLAUDE.md).
+let entries = null;
+let nextEntryNumber = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (entries === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedEntries);
+    entries = await loadPromise;
+    nextEntryNumber = computeNextEntryNumber(entries);
+  }
+  return entries;
+}
 
 function computeNextEntryNumber(existing) {
   const numbers = existing.map((e) => {
@@ -102,8 +114,8 @@ function generateEntryId() {
   return id;
 }
 
-function persist() {
-  storage.save(STORAGE_KEY, entries);
+async function persist() {
+  await storage.save(STORAGE_KEY, entries);
 }
 
 // ADDED 26 Aug 2026 — real migration: an old entry may have only the
@@ -119,11 +131,13 @@ function normalizeSymptomIds(entry) {
 }
 
 export const SymptomLogRepository = {
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(entries.map((e) => normalizeSymptomIds({ ...DEFAULT_SYMPTOM_ENTRY, ...e })));
   },
 
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = entries.find((e) => e.id === id);
     return found ? structuredClone(normalizeSymptomIds({ ...DEFAULT_SYMPTOM_ENTRY, ...found })) : null;
   },
@@ -132,11 +146,12 @@ export const SymptomLogRepository = {
   // real Notion field this maps to. Used by Clinic Card and the
   // module's own landing screen so the "what counts as active" logic
   // lives in exactly one place.
-  getActive() {
-    return this.getAll().filter((e) => !e.isArchived && !e.dateResolved);
+  async getActive() {
+    return (await this.getAll()).filter((e) => !e.isArchived && !e.dateResolved);
   },
 
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     const newEntry = {
       ...DEFAULT_SYMPTOM_ENTRY,
       ...data,
@@ -145,11 +160,12 @@ export const SymptomLogRepository = {
       isArchived: false,
     };
     entries = [...entries, newEntry];
-    persist();
+    await persist();
     return newEntry;
   },
 
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updated = null;
     entries = entries.map((e) => {
       if (e.id !== id) return e;
@@ -158,20 +174,21 @@ export const SymptomLogRepository = {
       updated = { ...e, ...changes, updatedAt: new Date().toISOString() };
       return updated;
     });
-    persist();
+    await persist();
     return updated ? structuredClone({ ...DEFAULT_SYMPTOM_ENTRY, ...updated }) : null;
   },
 
-  archive(id) {
+  async archive(id) {
     return this.update(id, { isArchived: true });
   },
 
   // ADDED — real ask: "no delete option" — same reasoning as Testing's
   // own delete(): archive stays correct for anything real that's just
   // outdated, this is specifically for a genuinely wrong entry.
-  delete(id) {
+  async delete(id) {
+    await ensureLoaded();
     entries = entries.filter((e) => e.id !== id);
-    persist();
+    await persist();
     // ADDED — real gap found via the new orphan-reference checker
     // (orphanReferenceCheck.js): Clinic Visit/Episode both reference a
     // Symptom Log entry by id too — only clears the link, same role as
@@ -186,41 +203,46 @@ export const SymptomLogRepository = {
   // elsewhere — called by encounterRepository.js's/testingRepository.js's
   // own delete(). Only clears the link, same role as
   // measurementRepository.js's own unlink methods.
-  unlinkEncounter(encounterId) {
+  async unlinkEncounter(encounterId) {
+    await ensureLoaded();
     entries = entries.map((e) => ({ ...e, relatedEncounterIds: (e.relatedEncounterIds || []).filter((id) => id !== encounterId) }));
-    persist();
+    await persist();
   },
 
-  unlinkTest(testId) {
+  async unlinkTest(testId) {
+    await ensureLoaded();
     entries = entries.map((e) => ({ ...e, relatedTestIds: (e.relatedTestIds || []).filter((id) => id !== testId) }));
-    persist();
+    await persist();
   },
 
-  unarchive(id) {
+  async unarchive(id) {
     return this.update(id, { isArchived: false });
   },
 
   // ADDED 26 Aug 2026 — real ask: long-press multi-select rolled out
   // to every module.
-  bulkArchive(ids) {
-    ids.forEach((id) => this.archive(id));
+  async bulkArchive(ids) {
+    for (const id of ids) await this.archive(id);
   },
 
-  bulkDelete(ids) {
+  async bulkDelete(ids) {
+    await ensureLoaded();
     entries = entries.filter((e) => !ids.includes(e.id));
-    persist();
-    ids.forEach((id) => { ClinicVisitsRepository.unlinkSymptomLog(id); EpisodeRepository.unlinkSymptomLog(id); });
+    await persist();
+    for (const id of ids) { ClinicVisitsRepository.unlinkSymptomLog(id); EpisodeRepository.unlinkSymptomLog(id); }
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.
-  restore(record) {
+  async restore(record) {
+    await ensureLoaded();
     if (entries.some((e) => e.id === record.id)) return;
     entries = [...entries, record];
-    persist();
+    await persist();
   },
 
-  replaceAll(newEntries) {
+  async replaceAll(newEntries) {
     entries = newEntries;
-    persist();
+    nextEntryNumber = computeNextEntryNumber(entries);
+    await persist();
   },
 };

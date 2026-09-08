@@ -1267,6 +1267,69 @@ this date; summarized here for durability.
   Tools' "Medication log entries"/"Timeline episodes" counts rendered
   the correct real numbers (15 and 1) via their new `useLoadedMemo`
   reads. No page errors. Full smoke-test suite passes.
+  `symptomLogRepository.js` converted next (8 Sep, `ensureLoaded()`
+  pattern) — a wide caller footprint (13 files) spanning
+  `registryUsage.js`/`orphanReferenceCheck.js`/`backupService.js`/
+  `clinicCardPdfService.js`, Global Search's `buildIndex()`, Healthcare's
+  summary effect (wrapped in its own async IIFE, same isolate-the-
+  gated-block approach used throughout this session), Settings (a new
+  `symptomLogCount` alongside the existing `logsCount`/`episodesCount`,
+  plus the Calendar screen's `getCalendarEvents()` call), ClinicCard
+  (`activeSymptoms` moved from a bare render-body call to
+  `useLoadedMemo`), and three real hooks-before-guard hoists — Testing's
+  `TestDetail`'s `relatedSymptoms` (mirroring `partnerNotifyList`'s
+  existing pattern above its own `!test` guard) and Clinic Visits'
+  `VisitDetail`'s `symptomLogEntries` (same shape, `visit?.` guarded).
+  Timeline's `EpisodeDetail` needed two real additions, not just a
+  hoist: `symptomCandidates` (the "link a new entry" picker list) and a
+  new `linkedSymptomLabelById` map — the existing `nameFor={(id) =>
+  symptomLogLabel(SymptomLogRepository.getById(id))}` callback is a
+  synchronous per-id render callback (`LinkedItemsSection` calls it
+  directly while rendering, it can't itself await), so the currently-
+  linked entries' labels needed pre-resolving into a lookup object
+  instead of fetched one at a time on demand. `SymptomLogModule` itself
+  (the largest single file this batch) needed real handler-level
+  fixes throughout: `undoDelete`/`redoDelete`/`triggerDelete`'s
+  `.forEach()` calls converted to `for...of` + `await`; the bulk-select
+  toolbar's Export/Archive/Delete `onClick`s made async; `createEntry`/
+  `saveEntry` awaited. One genuinely new pattern needed for
+  `EntrySheet`'s own `entry` prop (which its own `form` reads only
+  once, at mount, via a lazy `useState` initializer with no resync
+  effect — unlike every other converted edit-sheet this session, this
+  one is never remounted via a screen-name key/guard on the parent side
+  in a way that already covered this): rather than adding a resync
+  effect, gated the sheet's own mount on the newly-async `editingEntry`
+  having actually resolved (`screen.name === "edit" && editingEntry &&
+  <EntrySheet ... />`), so it only ever mounts once real data is
+  already in hand — a one-tick-later open instead of a stuck-blank
+  form, same tradeoff Testing/ClinicVisits/Vaccinations' own
+  `existing`-const edit sheets already accept.
+  Live verification caught a real, separate regression along the way,
+  not introduced by this batch but exposed by it: `SHOS_Timeline_Prototype.jsx`'s
+  `TimelineLanding`'s own `episodes = useLoadedMemo(() =>
+  EpisodeRepository.getAll().filter(...), ...)` — flagged in this
+  file's own earlier conversion as "already on useLoadedMemo," but its
+  loader chained `.filter()` directly onto `getAll()`'s return, which
+  broke the moment `EpisodeRepository` itself went async this session
+  (a live reproduction threw `EpisodeRepository.getAll(...).filter is
+  not a function` on the real Episodes list) — exactly the class of
+  "17 sites chaining `.filter()`/`.map()`/`.sort()` directly onto
+  `Repo.getAll()`" gap the audit flagged as deferred, now real since
+  this specific repository crossed from synchronous to async. Fixed
+  with the same `.then()` pattern used everywhere else. A full sweep
+  for the same shape across all three of this batch's repositories
+  (`LogRepository`/`EpisodeRepository`/`SymptomLogRepository`) found no
+  other instances — this was the one real leftover. Verified live:
+  Symptom Log's list (real seed data, Active/Resolved sections), an
+  existing entry's detail (including its real cross-repo Encounter/Test
+  related-records section), its Edit sheet opening with real data (not
+  blank), and — after the fix above — the real seed Episode's own
+  detail view correctly showing "Discharge + discomfort · Aug 28, 2026"
+  in its Symptom Log entries section (not a "?" fallback, proving
+  `linkedSymptomLabelById` resolves correctly). No page errors anywhere
+  in either pass. Full smoke-test suite passes, including the
+  Testing↔Symptom Log link flow, which directly exercises this batch's
+  own conversion.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

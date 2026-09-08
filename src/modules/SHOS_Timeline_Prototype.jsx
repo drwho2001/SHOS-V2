@@ -293,6 +293,30 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
   // synchronously off useMemo. Guarded with episode?. accordingly.
   const [resolveDateDraft, setResolveDateDraft] = useState(() => (episode?.resolvedDate || new Date().toISOString()).slice(0, 10));
   useEffect(() => { setResolveDateDraft((episode?.resolvedDate || new Date().toISOString()).slice(0, 10)); }, [episodeId]);
+  // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository went
+  // async — same "must stay ABOVE the guard" reasoning as
+  // resolveDateDraft above, since this needs a hook. Re-derives its own
+  // start date from `episode` directly (guarded with `episode?.`)
+  // rather than reusing the `startDate` const below, since that const
+  // isn't in scope yet this early.
+  const symptomCandidates = useLoadedMemo(async () => {
+    const start = EncounterRepository.getById(episode?.startEncounterId)?.date;
+    if (!episode || !start) return [];
+    return (await SymptomLogRepository.getAll())
+      .filter((s) => !s.isArchived && s.dateStarted >= start && !episode.symptomLogIds.includes(s.id))
+      .sort((a, b) => new Date(a.dateStarted) - new Date(b.dateStarted))
+      .map((s) => ({ id: s.id, name: symptomLogLabel(s) }));
+  }, [episode], []);
+  // ADDED — same reason as symptomCandidates above: `nameFor` below is
+  // a synchronous per-id render callback (LinkedItemsSection calls it
+  // directly while rendering, it can't itself await), so the currently-
+  // linked symptom entries' labels need to be resolved ahead of time
+  // into a lookup map, not fetched one at a time on demand.
+  const linkedSymptomLabelById = useLoadedMemo(async () => {
+    if (!episode?.symptomLogIds?.length) return {};
+    const entries = await Promise.all(episode.symptomLogIds.map((id) => SymptomLogRepository.getById(id)));
+    return Object.fromEntries(episode.symptomLogIds.map((id, i) => [id, symptomLogLabel(entries[i])]));
+  }, [episode], {});
   if (!episode) return null;
 
   const startEncounter = EncounterRepository.getById(episode.startEncounterId);
@@ -322,11 +346,6 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
     ? ClinicVisitsRepository.getAll().filter((v) => !v.isArchived && v.date >= startDate && !episode.clinicVisitIds.includes(v.id))
       .sort((a, b) => new Date(a.date) - new Date(b.date)).map((v) => ({ id: v.id, name: visitLabel(v) }))
     : [];
-  const symptomCandidates = startDate
-    ? SymptomLogRepository.getAll().filter((s) => !s.isArchived && s.dateStarted >= startDate && !episode.symptomLogIds.includes(s.id))
-      .sort((a, b) => new Date(a.dateStarted) - new Date(b.dateStarted)).map((s) => ({ id: s.id, name: symptomLogLabel(s) }))
-    : [];
-
   const toggleNotified = (encounterId) => {
     const already = episode.notifiedEncounterIds.includes(encounterId);
     update({ notifiedEncounterIds: already ? episode.notifiedEncounterIds.filter((id) => id !== encounterId) : [...episode.notifiedEncounterIds, encounterId] });
@@ -466,7 +485,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
         </SectionCard>
 
         <SectionCard title="Symptoms" T={T}>
-          <LinkedItemsSection label="Symptom Log entries" linkedIds={episode.symptomLogIds} onChange={(v) => update({ symptomLogIds: v })} candidates={symptomCandidates} nameFor={(id) => symptomLogLabel(SymptomLogRepository.getById(id))} T={T} />
+          <LinkedItemsSection label="Symptom Log entries" linkedIds={episode.symptomLogIds} onChange={(v) => update({ symptomLogIds: v })} candidates={symptomCandidates} nameFor={(id) => linkedSymptomLabelById[id] || "—"} T={T} />
         </SectionCard>
 
         <SectionCard title="Notes" T={T}>
@@ -530,7 +549,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
 }
 
 function TimelineLanding({ onOpen, onAdd, onClose, T }) {
-  const episodes = useLoadedMemo(() => EpisodeRepository.getAll().filter((e) => !e.isArchived), [], []);
+  const episodes = useLoadedMemo(() => EpisodeRepository.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
   const sorted = useMemo(() => {
     const withDate = episodes.map((e) => ({ ...e, _date: EncounterRepository.getById(e.startEncounterId)?.date || e.createdAt }));
     return withDate.sort((a, b) => (a.resolvedDate ? 1 : 0) - (b.resolvedDate ? 1 : 0) || new Date(b._date) - new Date(a._date));

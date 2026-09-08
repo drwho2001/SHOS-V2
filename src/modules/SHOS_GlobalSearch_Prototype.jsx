@@ -172,7 +172,7 @@ async function buildIndex() {
   // ADDED 19 Aug 2026 — Symptom Log, added the same session it was
   // built, immediately (not after a session-long gap the way Testing's
   // own backup omission was caught once already this project).
-  SymptomLogRepository.getAll().filter((e) => !e.isArchived).forEach((e) => {
+  (await SymptomLogRepository.getAll()).filter((e) => !e.isArchived).forEach((e) => {
     const searchText = [e.title, e.notes].join(" ");
     results.push({
       type: "symptomLog", id: e.id,

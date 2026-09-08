@@ -263,7 +263,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // Log's own real Date Resolved field being empty, not a guessed time
   // window. Severe entries flagged red, same Action State pattern as
   // the rest of this screen.
-  const activeSymptoms = SymptomLogRepository.getActive();
+  const activeSymptoms = useLoadedMemo(() => SymptomLogRepository.getActive(), [], []);
 
   // ADDED 2 Sep 2026 — real ask: "clinic cards may want some
   // information about contraception and/or pregnancy and/or

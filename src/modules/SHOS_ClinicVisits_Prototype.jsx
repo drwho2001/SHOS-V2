@@ -581,7 +581,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
   // symptoms means suggesting real Symptom Log occurrences, not just
   // the vocabulary. Recent-first ordering.
   const allSymptomLogEntries = useLoadedMemo(
-    () => SymptomLogRepository.getAll().filter((s) => !s.isArchived).sort((a, b) => new Date(b.dateStarted || 0) - new Date(a.dateStarted || 0))
+    async () => (await SymptomLogRepository.getAll()).filter((s) => !s.isArchived).sort((a, b) => new Date(b.dateStarted || 0) - new Date(a.dateStarted || 0))
       .map((s) => ({ id: s.id, name: `${s.title || "Symptom entry"} · ${formatDate(s.dateStarted)}` })),
     [],
     []
@@ -722,12 +722,18 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
               <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 4 }}>Which one is why you're here? (optional)</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                 {form.symptomsDiscussedIds.map((id) => {
-                  const s = SymptomLogRepository.getById(id);
+                  // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository
+                  // went async, and this is a synchronous per-id render
+                  // callback that can't itself await — resolved against
+                  // allSymptomLogEntries (already loaded above) instead
+                  // of a fresh repository call, same data source
+                  // RelationPicker's own item list already uses.
+                  const s = allSymptomLogEntries.find((e) => e.id === id);
                   const isPrimary = form.primaryReasonSymptomLogId === id;
                   return (
                     <div key={id} onClick={() => set("primaryReasonSymptomLogId")(isPrimary ? "" : id)}
                       style={{ padding: "4px 9px", borderRadius: radius.full, fontSize: 11, fontWeight: isPrimary ? 700 : 400, cursor: "pointer", border: `1px solid ${isPrimary ? T.actionRed : T.border}`, color: isPrimary ? T.actionRed : T.textSecondary, background: isPrimary ? `${T.actionRed}12` : "transparent" }}>
-                      {s?.title || "Entry"}{isPrimary ? " ★" : ""}
+                      {s?.name || "Entry"}{isPrimary ? " ★" : ""}
                     </div>
                   );
                 })}
@@ -770,12 +776,19 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
   const [showAddMeasurement, setShowAddMeasurement] = useState(false);
   const [measurements, setMeasurements] = useLoadedState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedClinicVisitId === visitId), [visitId], []);
   const refreshMeasurements = () => setMeasurements(MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedClinicVisitId === visitId));
+  // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository went
+  // async — hoisted above the `!visit` guard (hooks-before-guard rule),
+  // guarded with `visit?.` since it's genuinely null for the one render
+  // before the load effect above resolves.
+  const symptomLogEntries = useLoadedMemo(async () => {
+    if (!visit?.symptomsDiscussedIds?.length) return [];
+    return (await Promise.all(visit.symptomsDiscussedIds.map((id) => SymptomLogRepository.getById(id)))).filter(Boolean);
+  }, [visit], []);
   if (!visit) return null;
 
   const testEntries = visit.linkedTestIds.map((id) => TestingRepository.getById(id)).filter(Boolean);
   const medNames = visit.medicationsGivenIds.map((id) => MedicationRepository.getById(id)?.name).filter(Boolean);
   const symptomNames = visit.symptomTypeIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean);
-  const symptomLogEntries = visit.symptomsDiscussedIds.map((id) => SymptomLogRepository.getById(id)).filter(Boolean);
   const vaccinationEntries = visit.vaccinationsGivenIds.map((id) => VaccinationRepository.getById(id)).filter(Boolean);
 
   return (

@@ -109,12 +109,18 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // extra plumbing this pass.
   const [dataVersion, setDataVersion] = useState(0);
   useEffect(() => {
-    const symptoms = SymptomLogRepository.getAll().filter((s) => !s.dateResolved).length;
-    const today = new Date().toISOString().slice(0, 10);
-    const overdue = VaccinationRepository.getAll().filter((v) => v.nextDue && v.nextDue < today).length;
-    const thisYear = new Date().getFullYear();
-    const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date).getFullYear() === thisYear).length;
-    setSummary({ activeSymptoms: symptoms, overdueVaccinations: overdue, testsThisYear: tests });
+    // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository
+    // went async — wrapped in an async IIFE, same "isolate just the
+    // async read" approach used elsewhere this session, since the
+    // other two counts here are still fully synchronous.
+    (async () => {
+      const symptoms = (await SymptomLogRepository.getAll()).filter((s) => !s.dateResolved).length;
+      const today = new Date().toISOString().slice(0, 10);
+      const overdue = VaccinationRepository.getAll().filter((v) => v.nextDue && v.nextDue < today).length;
+      const thisYear = new Date().getFullYear();
+      const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date).getFullYear() === thisYear).length;
+      setSummary({ activeSymptoms: symptoms, overdueVaccinations: overdue, testsThisYear: tests });
+    })();
   }, [dataVersion]);
 
   const SummaryStat = ({ label, value, alert }) => (
