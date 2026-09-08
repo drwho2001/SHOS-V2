@@ -285,7 +285,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // Same "skip entirely when off" gating Home's own dashboard already
   // uses — nothing real to show, and no reason to read three
   // repositories, when the user doesn't use this feature at all.
-  const menstrualTrackingEnabled = AppPreferencesRepository.getPreferences().menstrualTrackingEnabled;
+  const menstrualTrackingEnabled = useLoadedMemo(() => AppPreferencesRepository.getPreferences().then((p) => p.menstrualTrackingEnabled), [], false);
   // Respects the same sensitive/masked flag the Menstrual & Contraception
   // module itself already offers per-entry — a pregnancy the user has
   // deliberately masked there doesn't surface on a screen built to be

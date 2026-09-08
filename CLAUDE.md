@@ -1942,6 +1942,132 @@ this date; summarized here for durability.
   scopes Phase 3: "the file-level tally is complete" should be
   re-verified with a fresh grep immediately before starting, not
   assumed from a prior session's own count.
+  That exact re-verification, done immediately while scoping Phase 3
+  (8 Sep, same session), found two more genuinely unconverted
+  repositories — `AppPreferencesRepository` and
+  `PrivacySettingsRepository` — missed by every prior inventory for
+  the same structural reason `MeasurementRepository` was: both read
+  fresh per call with no module-load caching, so they never matched
+  any of the grep patterns used to find the original 22-file hard
+  bucket, and nothing forced a by-hand read of every repository file
+  until this pass. This pair turned out to be a genuinely different,
+  higher-stakes problem than a normal missed batch, not just a third
+  repeat of the MeasurementRepository story: `PrivacySettingsRepository.
+  shouldRelock()` is what `App.jsx`'s own `locked` bootstrap state reads,
+  and `AppPreferencesRepository`'s `lastActiveTab`/`lastActiveAt` are
+  what `active` reads — both already investigated and deliberately kept
+  as plain synchronous `useState` earlier this session (see `active`'s
+  own history above: a real StrictMode double-invoke data-corruption
+  bug, not just a flash risk) specifically because a one-tick
+  fallback window was unacceptable for either. Converting the
+  repositories underneath them without fixing that would have silently
+  reopened both problems — an App-Lock user would see a lock-screen
+  flash (or worse, a content flash) on every launch, and a fast-enough
+  re-render could clobber `lastActiveTab` again. This is exactly the
+  "real loading-gate" work Phase 3 was already known to need for
+  `locked`/`designTokens.js` — done now, ahead of `storageAdapter.js`
+  itself, because these two repositories couldn't wait for it.
+  Both repositories converted with a direct `async`/`await` swap
+  (no `ensureLoaded()` needed — same no-caching shape as
+  `TrashRepository`/`CustomGroupsRepository`). The real work was the
+  new boot-time gate in `App.jsx`: a single `bootReady` state
+  (`false` until a new mount-time effect resolves), with `locked` and
+  `active` both starting at plain neutral placeholders (`false`/
+  "home") that the SAME effect corrects via `Promise.all([
+  PrivacySettingsRepository.shouldRelock(), AppPreferencesRepository.
+  getPreferences()])` before `bootReady` flips true. Nothing in the
+  render tree — not the real app, not `AppLockScreen`, not
+  `OnboardingScreen` — is allowed to render until `bootReady` is true;
+  a new `AppBootScreen` (a bare, neutral dark screen with the app's
+  own pulse-icon motif, no text) is the only thing shown in that
+  window, checked before even the `decoyActive` gate. The design
+  reason a neutral screen is the only correct choice, not a detail:
+  it can't yet know whether App Lock is on, so it has to look equally
+  right whether the very next screen is the lock screen or the real
+  dashboard — a fail-open OR fail-closed guess would get one of those
+  two cases wrong. In practice this resolves in a few milliseconds
+  (storageAdapter itself is still 100% synchronous — this is a
+  microtask-scale gate proving the pattern, not a real disk wait), so
+  it reads as instant on-device; verified live that a reload with App
+  Lock on never showed real dashboard text at any point, including a
+  ~50ms-post-reload sample.
+  The `active` write-back effect (`AppPreferencesRepository.update({
+  lastActiveTab: active, ... })`, `[active]`-keyed) got one more line
+  — `if (!bootReady) return;` — closing the exact StrictMode race that
+  got `active` reverted to synchronous state in the first place: on
+  the very first mount, this effect already fires once (React runs
+  every effect at least once regardless of "did the dependency really
+  change"), and without this guard it would persist the "home"
+  placeholder before the real value ever loads. `bootReady` is set in
+  the same batched update as the real `active` value (when a valid
+  resume exists), so the effect still correctly re-fires and persists
+  once real data lands — verified live: seeding a distinctive
+  `lastActiveTab: "medication"` before reload correctly resumed on
+  Medication, and the stored value was still `"medication"` (not
+  clobbered back to "home") after boot settled.
+  Two real Promise-truthiness/timing bugs caught and fixed inside
+  `AppLockScreen` itself while tracing PrivacySettingsRepository's own
+  callers, same bug class found repeatedly elsewhere this session but
+  novel here for how quietly dangerous they'd have been: (1) `attempt()`
+  (the actual PIN-check handler) called `classifyAppLockPin()`
+  synchronously — trivial to miss since a wrong answer here doesn't
+  crash, it just silently misclassifies every real PIN as "wrong"
+  forever, a real user-facing lockout. (2) the auto-biometric-prompt
+  effect's own guard, `if (!getSettings().biometricUnlockEnabled)
+  return;`, would have been permanently `false` once `getSettings()`
+  returned a Promise (a Promise is always truthy) — meaning the native
+  biometric prompt would fire on EVERY app lock screen regardless of
+  the real stored setting, including for users who never turned it on.
+  Fixed by awaiting inside an IIFE with the timer/cleanup refs hoisted
+  outside it so the existing unmount-cleanup behavior is preserved
+  exactly. Caller cascade beyond `App.jsx` reached 6 more files:
+  Settings' own Privacy screen (~16 call sites — `refresh()` and every
+  `activate`/`deactivate`/`update()` handler got the same
+  "await-the-write-before-refresh" fix as RegistryManagement/
+  DesignScreen earlier this session, since `refresh()` re-reading
+  `getSettings()` before the write lands would show stale state) and
+  its Preferences/AutomaticBackups/DataNetwork/CalendarSync/
+  InactiveThresholdCard/MenstrualTrackingToggleCard screens (~16 sites,
+  same `setX(await Repo.update(...))` fix repeated); two direct
+  render-body reads with no memoization at all, safe only while
+  `getPreferences()` was synchronous (Settings' own Calendar screen —
+  `syncEnabled` keyed on `showSyncSheet`, `weekStartsOn` read once per
+  mount, both `useLoadedMemo` now) — the same "read fresh every
+  render" pattern already flagged once this session for
+  `ContraceptionTab`/`PregnancyTab`, just newly broken here because
+  the repository underneath it finally went async; Home's own
+  `doxyPermanentlyDismissed` (same direct-read shape, fixed the same
+  way, keyed on the existing `doxyTempDismissed` force-recompute flag);
+  `calendarSyncService.js`/`clinicCardPdfService.js`/
+  `updateCheckService.js`/`backupService.js` (already-async functions,
+  just needed `await` added); `locationService.js`'s
+  `addressLookupAllowed()` (a plain sync helper promoted to `async`,
+  both its Nominatim-gating callers already async); and
+  `SHOS_ClinicCard_Prototype.jsx`/`SHOS_MenstrualHealth_Prototype.jsx`'s
+  own top-level `menstrualTrackingEnabled`/`pregnancyTrackingHidden`
+  reads (plain `useLoadedMemo` swaps).
+  Verified live end-to-end, this batch's own real security surface
+  getting the most scrutiny of any batch this session: default boot
+  (App Lock off) shows zero lock-screen flash; setting a real PIN and
+  enabling App Lock via Settings persisted correctly
+  (`shos_privacy_settings` confirmed by direct read at each step);
+  reloading with App Lock on never showed real content at any sampled
+  point; a wrong PIN correctly shows "Incorrect PIN"; the real PIN
+  correctly unlocks (`lastUnlockedAt` persisted) and correctly falls
+  through to the onboarding gate for a fresh profile, matching the
+  documented lock-then-onboarding gate order; the duress PIN correctly
+  routes to `DecoyHome` showing fabricated data, not real seed data;
+  tab-resume correctly resumes a distinctive stored tab with no
+  StrictMode clobbering. No page errors anywhere. Full smoke-test
+  suite passes.
+  What's left in the deferred, harder-bucket tier, now that this pair
+  is done: `storageAdapter.js` itself (Phase 3 proper — the adapter's
+  own `load`/`save` going async, which is a smaller step now that
+  every repository already expects it), and real `crypto.subtle`
+  encryption (Phase 4). The `AppBootScreen`/`bootReady` gate built here
+  is very likely reusable as-is for Phase 3's own needs, rather than
+  needing a second loading-gate design — worth confirming, not
+  assuming, once that phase actually starts.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

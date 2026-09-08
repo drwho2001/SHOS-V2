@@ -1131,20 +1131,20 @@ function PrivacyScreen({ onClose }) {
   // field on this screen.
   const [showPins, setShowPins] = useState(false);
 
-  const refresh = () => setSettings(PrivacySettingsRepository.getSettings());
+  const refresh = async () => setSettings(await PrivacySettingsRepository.getSettings());
 
-  const activate = () => { PrivacySettingsRepository.activate(); refresh(); };
-  const attemptDeactivate = () => {
-    const result = PrivacySettingsRepository.deactivate(pinEntry);
+  const activate = async () => { await PrivacySettingsRepository.activate(); refresh(); };
+  const attemptDeactivate = async () => {
+    const result = await PrivacySettingsRepository.deactivate(pinEntry);
     if (result.ok) { setPinEntry(""); setPinError(""); refresh(); }
     else setPinError(result.error);
   };
-  const savePin = () => {
+  const savePin = async () => {
     const trimmed = newPin.trim();
     if (trimmed.length < 4) { setPinError("PIN should be at least 4 digits."); return; }
     // CHANGED — real ask: force reconfirmation before accepting.
     if (trimmed !== confirmPin.trim()) { setPinError("PINs don't match — check both and try again."); return; }
-    PrivacySettingsRepository.update({ anonymisePin: trimmed });
+    await PrivacySettingsRepository.update({ anonymisePin: trimmed });
     setNewPin(""); setConfirmPin(""); setSettingPin(false); setPinError("");
     refresh();
   };
@@ -1157,16 +1157,16 @@ function PrivacyScreen({ onClose }) {
   const [newDuressPin, setNewDuressPin] = useState("");
   const [confirmDuressPin, setConfirmDuressPin] = useState("");
   const [duressPinError, setDuressPinError] = useState("");
-  const saveDuressPin = () => {
+  const saveDuressPin = async () => {
     const trimmed = newDuressPin.trim();
     if (trimmed.length < 4) { setDuressPinError("PIN should be at least 4 digits."); return; }
     if (trimmed !== confirmDuressPin.trim()) { setDuressPinError("PINs don't match — check both and try again."); return; }
-    const result = PrivacySettingsRepository.setDuressPin(trimmed);
+    const result = await PrivacySettingsRepository.setDuressPin(trimmed);
     if (!result.ok) { setDuressPinError(result.error); return; }
     setNewDuressPin(""); setConfirmDuressPin(""); setSettingDuressPin(false); setDuressPinError("");
     refresh();
   };
-  const clearDuressPin = () => { PrivacySettingsRepository.clearDuressPin(); refresh(); };
+  const clearDuressPin = async () => { await PrivacySettingsRepository.clearDuressPin(); refresh(); };
 
   // ADDED 19 Aug 2026 — App Lock toggle, real ask. Guarded: can't turn
   // on without a PIN already set, since App Lock with no PIN would
@@ -1174,7 +1174,7 @@ function PrivacyScreen({ onClose }) {
   // trivially bypasses — confusing, not actually locked. Turning OFF
   // never needs the PIN re-entered here; you're already inside
   // Settings, which the lock screen itself already gated.
-  const toggleAppLock = () => {
+  const toggleAppLock = async () => {
     if (!settings.appLockEnabled && !settings.anonymisePin) {
       setPinError("Set a PIN below first, then App Lock can use it.");
       return;
@@ -1183,7 +1183,7 @@ function PrivacyScreen({ onClose }) {
     // off biometric unlock with it — biometric is only ever meaningful
     // as an add-on to App Lock, leaving it silently "on" underneath
     // would just be stale, unreachable state.
-    PrivacySettingsRepository.update({ appLockEnabled: !settings.appLockEnabled, ...(settings.appLockEnabled ? { biometricUnlockEnabled: false } : {}) });
+    await PrivacySettingsRepository.update({ appLockEnabled: !settings.appLockEnabled, ...(settings.appLockEnabled ? { biometricUnlockEnabled: false } : {}) });
     refresh();
   };
 
@@ -1195,7 +1195,7 @@ function PrivacyScreen({ onClose }) {
   const toggleBiometric = async () => {
     setBiometricError("");
     if (settings.biometricUnlockEnabled) {
-      PrivacySettingsRepository.update({ biometricUnlockEnabled: false });
+      await PrivacySettingsRepository.update({ biometricUnlockEnabled: false });
       refresh();
       return;
     }
@@ -1204,7 +1204,7 @@ function PrivacyScreen({ onClose }) {
       setBiometricError(result.reason || "Biometrics aren't available on this device.");
       return;
     }
-    PrivacySettingsRepository.update({ biometricUnlockEnabled: true });
+    await PrivacySettingsRepository.update({ biometricUnlockEnabled: true });
     refresh();
   };
 
@@ -1280,9 +1280,9 @@ function PrivacyScreen({ onClose }) {
             hiding when the base tier isn't even active never made
             sense — there'd be nothing for it to add on top of. */}
         <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16, marginBottom: 16, opacity: settings.anonymiseModeActive ? 1 : 0.5 }}>
-          <div onClick={settings.anonymiseModeActive ? () => { PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } : undefined}
+          <div onClick={settings.anonymiseModeActive ? async () => { await PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } : undefined}
             role="switch" tabIndex={settings.anonymiseModeActive ? 0 : -1} aria-checked={settings.hideFurtherEnabled} aria-label="Also hide kinks & physical attributes"
-            onKeyDown={settings.anonymiseModeActive ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } } : undefined}
+            onKeyDown={settings.anonymiseModeActive ? async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); await PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } } : undefined}
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: settings.anonymiseModeActive ? "pointer" : "default" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Also hide kinks & physical attributes</div>
@@ -1359,9 +1359,9 @@ function PrivacyScreen({ onClose }) {
               opt-in convenience layered on top. */}
           {settings.appLockEnabled && (
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-              <div onClick={() => { PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); }}
+              <div onClick={async () => { await PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); }}
                 role="switch" tabIndex={0} aria-checked={settings.appLockGraceMinutes > 0} aria-label="Skip re-verification briefly"
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); } }}
+                onKeyDown={async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); await PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); } }}
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
                 <div style={{ flex: 1, paddingRight: 12 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Skip re-verification briefly</div>
@@ -1375,7 +1375,7 @@ function PrivacyScreen({ onClose }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
                   <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Grace period:</span>
                   <input type="number" min={1} max={120} value={settings.appLockGraceMinutes}
-                    onChange={(e) => { const v = Math.max(1, Math.min(120, Number(e.target.value) || 1)); PrivacySettingsRepository.update({ appLockGraceMinutes: v }); refresh(); }}
+                    onChange={async (e) => { const v = Math.max(1, Math.min(120, Number(e.target.value) || 1)); await PrivacySettingsRepository.update({ appLockGraceMinutes: v }); refresh(); }}
                     style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 13, textAlign: "center" }} />
                   <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>minutes</span>
                 </div>
@@ -2052,7 +2052,7 @@ function UnitsScreen({ onClose }) {
   // "how things display" home rather than a new near-empty screen —
   // same reasoning as InactiveThresholdCard folding into DesignScreen.
   const [appPrefs, setAppPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
-  const setWeekStartsOn = (value) => setAppPrefs(AppPreferencesRepository.update({ weekStartsOn: value }));
+  const setWeekStartsOn = async (value) => setAppPrefs(await AppPreferencesRepository.update({ weekStartsOn: value }));
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -2155,11 +2155,11 @@ function AutomaticBackupsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
 
-  const toggleAutoExport = () => {
-    setPrefs(AppPreferencesRepository.update({ autoExportEnabled: !prefs.autoExportEnabled }));
+  const toggleAutoExport = async () => {
+    setPrefs(await AppPreferencesRepository.update({ autoExportEnabled: !prefs.autoExportEnabled }));
   };
-  const setAutoExportInterval = (days) => {
-    setPrefs(AppPreferencesRepository.update({ autoExportIntervalDays: days }));
+  const setAutoExportInterval = async (days) => {
+    setPrefs(await AppPreferencesRepository.update({ autoExportIntervalDays: days }));
   };
 
   return (
@@ -2216,11 +2216,11 @@ function DataNetworkScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
 
-  const toggleAddressLookup = () => {
-    setPrefs(AppPreferencesRepository.update({ addressLookupEnabled: !prefs.addressLookupEnabled }));
+  const toggleAddressLookup = async () => {
+    setPrefs(await AppPreferencesRepository.update({ addressLookupEnabled: !prefs.addressLookupEnabled }));
   };
-  const toggleUpdateCheck = () => {
-    setPrefs(AppPreferencesRepository.update({ updateCheckEnabled: !prefs.updateCheckEnabled }));
+  const toggleUpdateCheck = async () => {
+    setPrefs(await AppPreferencesRepository.update({ updateCheckEnabled: !prefs.updateCheckEnabled }));
   };
 
   const row = (label, enabled, onToggle, description) => (
@@ -2973,8 +2973,8 @@ function CalendarSyncSheet({ onClose }) {
     if (appPrefs.calendarSyncEnabled) {
       setCalendarSyncing(true);
       await removeAllSyncedEvents();
-      AppPreferencesRepository.update({ calendarSyncEnabled: false, calendarSyncTargetName: null });
-      setAppPrefs(AppPreferencesRepository.getPreferences());
+      await AppPreferencesRepository.update({ calendarSyncEnabled: false, calendarSyncTargetName: null });
+      setAppPrefs(await AppPreferencesRepository.getPreferences());
       setShowCalendarPicker(false);
       setCalendarSyncing(false);
       return;
@@ -2986,8 +2986,8 @@ function CalendarSyncSheet({ onClose }) {
       setCalendarSyncing(false);
       return;
     }
-    AppPreferencesRepository.update({ calendarSyncEnabled: true });
-    setAppPrefs(AppPreferencesRepository.getPreferences());
+    await AppPreferencesRepository.update({ calendarSyncEnabled: true });
+    setAppPrefs(await AppPreferencesRepository.getPreferences());
     await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
     setCalendarSyncing(false);
   };
@@ -3007,8 +3007,8 @@ function CalendarSyncSheet({ onClose }) {
     setCalendarSyncing(true);
     const previousName = appPrefs.calendarSyncTargetName || SHOS_CALENDAR_NAME;
     await removeSyncedEventsFrom(previousName);
-    AppPreferencesRepository.update({ calendarSyncTargetName: name });
-    setAppPrefs(AppPreferencesRepository.getPreferences());
+    await AppPreferencesRepository.update({ calendarSyncTargetName: name });
+    setAppPrefs(await AppPreferencesRepository.getPreferences());
     await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
     setShowCalendarPicker(false);
     setCalendarSyncing(false);
@@ -3026,8 +3026,8 @@ function CalendarSyncSheet({ onClose }) {
   // the way switching calendars does.
   const toggleGenericTitle = async () => {
     setCalendarSyncing(true);
-    AppPreferencesRepository.update({ calendarSyncGenericTitle: !appPrefs.calendarSyncGenericTitle });
-    setAppPrefs(AppPreferencesRepository.getPreferences());
+    await AppPreferencesRepository.update({ calendarSyncGenericTitle: !appPrefs.calendarSyncGenericTitle });
+    setAppPrefs(await AppPreferencesRepository.getPreferences());
     await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
     setCalendarSyncing(false);
   };
@@ -3147,7 +3147,13 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   // entry. Re-read fresh each render (not memoized) so the icon's own
   // on/off look stays honest immediately after the sheet changes it.
   const [showSyncSheet, setShowSyncSheet] = useState(false);
-  const syncEnabled = AppPreferencesRepository.getPreferences().calendarSyncEnabled;
+  // CHANGED — Phase 2 encryption groundwork: AppPreferencesRepository
+  // went async, so the old plain "re-read fresh every render" call
+  // (safe only while getPreferences() was synchronous) needed a real
+  // dependency instead — showSyncSheet is what actually changes when
+  // this value could have, since CalendarSyncSheet is the only place
+  // that writes calendarSyncEnabled.
+  const syncEnabled = useLoadedMemo(() => AppPreferencesRepository.getPreferences().then((p) => p.calendarSyncEnabled), [showSyncSheet], false);
   // ADDED 26 Aug 2026 — real ask: filters, standard on every other
   // module's list this session — shouldn't have been skipped here.
   const ALL_MODULE_KEYS = ["encounters", "testing", "clinicVisits", "vaccinations", "symptomLog", "medications"];
@@ -3170,7 +3176,13 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   // default Monday). getDay() is always 0=Sun..6=Sat regardless of
   // preference — when the week starts Monday, shift it so Monday
   // lands in column 0 instead.
-  const weekStartsOn = AppPreferencesRepository.getPreferences().weekStartsOn;
+  // CHANGED — Phase 2 encryption groundwork: this screen is opened
+  // fresh each time from Settings and nothing inside it changes
+  // weekStartsOn itself (set from the Units screen instead), so a
+  // once-per-mount load matches the old plain-call-every-render
+  // behavior closely enough — same reasoning as DesignScreen's own
+  // mostly-read-once sites.
+  const weekStartsOn = useLoadedMemo(() => AppPreferencesRepository.getPreferences().then((p) => p.weekStartsOn), [], "monday");
   const weekStartsMonday = weekStartsOn !== "sunday";
   const WEEKDAY_LABELS = weekStartsMonday
     ? ["M", "T", "W", "T", "F", "S", "S"]
@@ -3607,10 +3619,10 @@ function InactiveThresholdCard({ T }) {
   // value they just saved is a no-op, not a clobber.
   useEffect(() => { setDraftValue(String(prefs.inactiveThresholdDays)); }, [prefs]);
 
-  const save = () => {
+  const save = async () => {
     const parsed = parseInt(draftValue, 10);
     if (!Number.isFinite(parsed) || parsed < 1) return;
-    setPrefs(AppPreferencesRepository.update({ inactiveThresholdDays: parsed }));
+    setPrefs(await AppPreferencesRepository.update({ inactiveThresholdDays: parsed }));
   };
 
   return (
@@ -3639,7 +3651,7 @@ function InactiveThresholdCard({ T }) {
 // pattern as calendar sync above.
 function MenstrualTrackingToggleCard({ T }) {
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
-  const toggle = () => setPrefs(AppPreferencesRepository.update({ menstrualTrackingEnabled: !prefs.menstrualTrackingEnabled }));
+  const toggle = async () => setPrefs(await AppPreferencesRepository.update({ menstrualTrackingEnabled: !prefs.menstrualTrackingEnabled }));
   return (
     <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
       <div onClick={toggle} role="switch" tabIndex={0} aria-checked={prefs.menstrualTrackingEnabled} aria-label="Menstrual & contraception tracking"
@@ -3662,9 +3674,9 @@ function MenstrualTrackingToggleCard({ T }) {
           in Privacy) until it is.
       */}
       {prefs.menstrualTrackingEnabled && (
-        <div onClick={() => setPrefs(AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden }))}
+        <div onClick={async () => setPrefs(await AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden }))}
           role="switch" tabIndex={0} aria-checked={prefs.pregnancyTrackingHidden} aria-label="Hide Pregnancy tab"
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPrefs(AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden })); } }}
+          onKeyDown={async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPrefs(await AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden })); } }}
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", marginTop: 14, paddingTop: 14, borderTop: `1px solid ${T.border}` }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Hide Pregnancy tab</div>

@@ -83,7 +83,7 @@ import { syncClinicVisitsToCalendar } from "../storage/calendarSyncService";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
-import { useLoadedState } from "../calculations/loadedRepositoryState";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 // ADDED 3 Sep 2026 — real ask: fix the Safari/iOS gesture-gated
 // permission bug (see this file's own comment on notifPermStatus
@@ -246,14 +246,20 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     const interval = setInterval(recompute, 60000);
     return () => clearInterval(interval);
   }, []);
-  const doxyPermanentlyDismissed = doxyStatus.active && doxyStatus.overdue &&
-    AppPreferencesRepository.getPreferences().doxyPepOverdueDismissedWindowStart === doxyStatus.windowStart;
-  const dismissDoxyForever = () => {
-    AppPreferencesRepository.update({ doxyPepOverdueDismissedWindowStart: doxyStatus.windowStart });
-    // Persisted read above is fresh on every render already (same
-    // pattern as CalendarScreen's own syncEnabled) — this just forces
-    // that re-render to actually happen right now, same role
-    // doxyTempDismissed already plays for the temporary case.
+  // CHANGED — Phase 2 encryption groundwork: AppPreferencesRepository
+  // went async, so the old plain "re-read fresh every render" call
+  // (safe only while getPreferences() was synchronous) needed a real
+  // dependency array instead — keyed on the same doxyTempDismissed
+  // bump dismissDoxyForever already uses to force a recompute, plus
+  // windowStart so a new exposure window is never mistaken for the
+  // dismissed one.
+  const dismissedWindowStart = useLoadedMemo(() => AppPreferencesRepository.getPreferences().then((p) => p.doxyPepOverdueDismissedWindowStart), [doxyTempDismissed], null);
+  const doxyPermanentlyDismissed = doxyStatus.active && doxyStatus.overdue && dismissedWindowStart === doxyStatus.windowStart;
+  const dismissDoxyForever = async () => {
+    await AppPreferencesRepository.update({ doxyPepOverdueDismissedWindowStart: doxyStatus.windowStart });
+    // Forces the useLoadedMemo above to recompute now that the write
+    // has actually landed — same role this flag already plays for the
+    // temporary-dismiss case.
     setDoxyTempDismissed(true);
   };
   const doxyBannerVisible = doxyStatus.active && !doxyTempDismissed && !doxyPermanentlyDismissed;

@@ -88,7 +88,7 @@ async function assembleClinicCardData() {
   // ADDED 2 Sep 2026 — mirrors SHOS_ClinicCard_Prototype.jsx's own
   // "Menstrual & contraception" section exactly, sensitive-flag mask
   // included — see that file's comment for the full reasoning.
-  const menstrualTrackingEnabled = AppPreferencesRepository.getPreferences().menstrualTrackingEnabled;
+  const menstrualTrackingEnabled = (await AppPreferencesRepository.getPreferences()).menstrualTrackingEnabled;
   const activePregnancyRaw = menstrualTrackingEnabled ? await PregnancyRepository.getActive() : null;
   const activePregnancy = activePregnancyRaw && !activePregnancyRaw.sensitive ? activePregnancyRaw : null;
   const lastPeriod = menstrualTrackingEnabled

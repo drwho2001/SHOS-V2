@@ -156,6 +156,27 @@ function resolveTabAccent(tab, darkMode) {
 // modules/SHOS_Settings_Prototype.jsx. Real extraction, not deleted;
 // see that file's own header for the reasoning.)
 
+// ADDED — Phase 2 encryption groundwork, real loading-gate batch
+// (Sep 2026). Shown for the brief window between mount and
+// PrivacySettingsRepository.shouldRelock()/AppPreferencesRepository.
+// getPreferences() actually resolving — see `bootReady` in App()
+// itself for why this has to exist at all now that both repositories
+// are async. Deliberately says nothing and asks nothing: it can't yet
+// know whether App Lock is on, so it must look equally correct to
+// someone about to see the lock screen and someone about to see their
+// real dashboard. In practice this resolves in well under a video
+// frame on-device (storageAdapter itself is still fully synchronous —
+// this is a microtask-scale delay, not a real disk/network wait), so
+// this is much more a correctness guarantee than a visible splash.
+function AppBootScreen() {
+  const [darkMode] = useDarkModePreference();
+  return (
+    <div style={{ position: "fixed", inset: 0, background: darkMode ? DARK.bg : "#1B1B1F", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
+      <Activity size={32} color="#FFFFFF" style={{ opacity: 0.5 }} />
+    </div>
+  );
+}
+
 // ADDED 19 Aug 2026 — App Lock's own lock screen, real ask. Shown
 // instead of the normal app whenever appLockEnabled is on — gates
 // opening the app itself, distinct from Anonymise mode (which stays
@@ -177,8 +198,8 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
   // whichever of the two real PINs was entered — see
   // classifyAppLockPin's own comment for why they have to be different
   // codes for this to work at all.
-  const attempt = () => {
-    const result = PrivacySettingsRepository.classifyAppLockPin(pin);
+  const attempt = async () => {
+    const result = await PrivacySettingsRepository.classifyAppLockPin(pin);
     if (result === "real") {
       onUnlock();
     } else if (result === "duress") {
@@ -215,16 +236,26 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
   // workaround for this exact class of bug in Capacitor biometric
   // plugins) gives the window time to settle first.
   useEffect(() => {
-    if (!PrivacySettingsRepository.getSettings().biometricUnlockEnabled) return;
     let cancelled = false;
-    const timer = setTimeout(() => {
-      checkBiometryAvailable().then((result) => {
-        if (cancelled) return;
-        setBiometricAvailable(result.available);
-        if (result.available) tryBiometric();
-      });
-    }, 350);
-    return () => { cancelled = true; clearTimeout(timer); };
+    let timer = null;
+    // CHANGED — Phase 2 encryption groundwork: PrivacySettingsRepository
+    // went async. The old guard (`if (!getSettings().biometricUnlockEnabled)
+    // return;`) would have silently broken once getSettings() started
+    // returning a Promise — a Promise is always truthy, so the guard
+    // would never fire and biometric would prompt on every lock screen
+    // regardless of the real setting. Awaited inside an IIFE instead.
+    (async () => {
+      const settings = await PrivacySettingsRepository.getSettings();
+      if (cancelled || !settings.biometricUnlockEnabled) return;
+      timer = setTimeout(() => {
+        checkBiometryAvailable().then((result) => {
+          if (cancelled) return;
+          setBiometricAvailable(result.available);
+          if (result.available) tryBiometric();
+        });
+      }, 350);
+    })();
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -550,7 +581,14 @@ export default function App() {
   // grace window) instead of the raw appLockEnabled flag, so someone
   // who set a grace period and reopened within it isn't made to
   // re-verify on this very first mount either.
-  const [locked, setLocked] = useState(() => PrivacySettingsRepository.shouldRelock());
+  // CHANGED — Phase 2 encryption groundwork (Sep 2026): PrivacySettingsRepository
+  // went async, so `shouldRelock()` can no longer resolve synchronously
+  // at the moment this lazy initializer runs. `locked` now starts at a
+  // neutral `false` and is corrected by the `bootReady` gate's own
+  // effect below, BEFORE anything renders based on it — see that
+  // effect's comment for why a naive fail-open/fail-closed default
+  // here isn't good enough on its own.
+  const [locked, setLocked] = useState(false);
   // ADDED 1 Sep 2026 — real ask: duress PIN. Session-only (not
   // persisted anywhere) — a decoy session never survives a real app
   // restart, by design; see DecoyHome's own comment on why there's
@@ -562,16 +600,16 @@ export default function App() {
   // live when App Lock is actually on, so it can never trap someone
   // with no PIN to unlock with. Read once, same lazy-useState pattern
   // used for the identical check on Home's own header icon.
-  const [appLockEnabled] = useLoadedState(() => PrivacySettingsRepository.getSettings().appLockEnabled, [], false);
+  const [appLockEnabled] = useLoadedState(async () => (await PrivacySettingsRepository.getSettings()).appLockEnabled, [], false);
   // ADDED 26 Aug 2026 — real ask: onboarding, real single-user
   // personal app — checked once on load, same pattern as `locked`
   // above.
-  const [showOnboarding, setShowOnboarding] = useLoadedState(() => !AppPreferencesRepository.getPreferences().hasCompletedOnboarding, [], false);
+  const [showOnboarding, setShowOnboarding] = useLoadedState(async () => !(await AppPreferencesRepository.getPreferences()).hasCompletedOnboarding, [], false);
   // ADDED 19 Aug 2026 — real ask: the setup prompt itself. Read once
   // on load, same pattern as `locked` above — shows whenever App Lock
   // isn't on AND the prompt hasn't been permanently dismissed.
-  const [showAppLockPrompt, setShowAppLockPrompt] = useLoadedState(() => {
-    const settings = PrivacySettingsRepository.getSettings();
+  const [showAppLockPrompt, setShowAppLockPrompt] = useLoadedState(async () => {
+    const settings = await PrivacySettingsRepository.getSettings();
     return !settings.appLockEnabled && !settings.appLockPromptDismissed;
   }, [], false);
   // ADDED — real ask: "opening back to last page" — reopening within a
@@ -581,35 +619,64 @@ export default function App() {
   // than a new mechanism. Past the window (or on a genuinely fresh
   // install/first launch, where lastActiveTab is still null), falls
   // back to Home — the 19 Aug default this replaces, not removes.
-  // NOT converted to useLoadedState (Phase 2 encryption groundwork,
-  // Sep 2026) — deliberately, unlike appLockEnabled/showOnboarding/
-  // showAppLockPrompt just above. `active` feeds a write-back effect
-  // just below (the "keeps lastActiveTab in sync" one) that persists
-  // `active`'s CURRENT value on every change. Tried the async
-  // conversion and caught a real bug live: under StrictMode's mount
-  // double-invoke, that write-back effect fires with the pre-load
-  // fallback ("home") BEFORE this loader's own effect (declared
-  // earlier, so it runs first, but its setActive() doesn't take
-  // effect until the next render) has applied the real stored value —
-  // the fallback write clobbers the genuine lastActiveTab in storage
-  // before it's ever read back, so a distinctive stored value
-  // ("medication") got silently overwritten and the app always
-  // resumed to Home. That's real stored-data corruption, not just a
-  // one-tick flash — same bootstrap-critical category as `locked`
-  // above, so left synchronous rather than adding more machinery to
-  // work around the race.
-  const [active, setActive] = useState(() => {
-    const prefs = AppPreferencesRepository.getPreferences();
-    // CHANGED — critical fix: validate lastActiveTab is still a real
-    // TABS key before trusting it — a stale/corrupt stored value here
-    // was the likely trigger for a real device crash (see the
-    // activeTab/.find() fix below for the full explanation).
-    if (prefs.lastActiveTab && prefs.lastActiveAt && TABS.some((t) => t.key === prefs.lastActiveTab)) {
-      const elapsedMs = Date.now() - new Date(prefs.lastActiveAt).getTime();
-      if (elapsedMs <= RESUME_GRACE_MINUTES * 60000) return prefs.lastActiveTab;
-    }
-    return "home";
-  });
+  // CHANGED — Phase 2 encryption groundwork, real loading-gate batch
+  // (Sep 2026): `active` now starts at a plain "home" placeholder and
+  // is corrected by the `bootReady` effect below, same as `locked`.
+  // The EARLIER attempt at converting this (this session, before the
+  // bootReady gate existed) tried a bare useLoadedState-style swap and
+  // caught real stored-data corruption live: under StrictMode's mount
+  // double-invoke, the write-back effect a few lines below fired with
+  // the pre-load "home" fallback BEFORE the loader's own setActive()
+  // had taken effect, clobbering a real distinctive stored value
+  // ("medication") back to "home" before it was ever read. That's why
+  // `active` was reverted to plain synchronous state at the time. The
+  // real fix isn't a per-value workaround, it's the same one `locked`
+  // needed: nothing that WRITES `active` back to storage should run
+  // until the bootstrap load has actually resolved — see `bootReady`
+  // and the guarded write-back effect below for how this is now
+  // prevented structurally instead of by timing luck.
+  const [active, setActive] = useState("home");
+  // ADDED — Phase 2 encryption groundwork, real loading-gate batch
+  // (Sep 2026): PrivacySettingsRepository/AppPreferencesRepository
+  // both went async, which broke `locked`'s and `active`'s own lazy
+  // useState initializers above (a Promise can't resolve synchronously
+  // at the moment those run) — and both are load-bearing enough
+  // (App Lock's own security gate; a real risk of clobbering stored
+  // data, per `active`'s own history above) that neither could be
+  // fixed with the ordinary "wrap in useLoadedState" swap used for
+  // ~100 other sites earlier this session. This is the real fix: a
+  // single boot-time gate. Nothing that depends on `locked` or
+  // `active` — including the render logic below and the write-back
+  // effect that persists `active` — is allowed to act until this
+  // resolves to `true`. Until then, `AppBootScreen` (see its own
+  // render branch further down) is the ONLY thing shown: not the real
+  // app (would flash real content at an App-Lock user before locking
+  // them out), and not the lock screen either (would flash a lock
+  // screen at the ~majority of users who don't have App Lock on at
+  // all). A blank/neutral screen is the only choice that's correct for
+  // both cases at once.
+  const [bootReady, setBootReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [shouldLock, prefs] = await Promise.all([
+        PrivacySettingsRepository.shouldRelock(),
+        AppPreferencesRepository.getPreferences(),
+      ]);
+      if (cancelled) return;
+      setLocked(shouldLock);
+      // CHANGED — critical fix: validate lastActiveTab is still a real
+      // TABS key before trusting it — a stale/corrupt stored value here
+      // was the likely trigger for a real device crash (see the
+      // activeTab/.find() fix below for the full explanation).
+      if (prefs.lastActiveTab && prefs.lastActiveAt && TABS.some((t) => t.key === prefs.lastActiveTab)) {
+        const elapsedMs = Date.now() - new Date(prefs.lastActiveAt).getTime();
+        if (elapsedMs <= RESUME_GRACE_MINUTES * 60000) setActive(prefs.lastActiveTab);
+      }
+      setBootReady(true);
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const [status, setStatus] = useState(null);
   // ADDED 19 Aug 2026 — Dashboard quick-add: set alongside switching
   // `active`, consumed (reset to false) by whichever module actually
@@ -943,8 +1010,8 @@ export default function App() {
   // grace-period toggle actually work — reopening within the window
   // just doesn't trip `locked` back to true.
   useEffect(() => {
-    const checkRelock = () => {
-      if (PrivacySettingsRepository.shouldRelock()) setLocked(true);
+    const checkRelock = async () => {
+      if (await PrivacySettingsRepository.shouldRelock()) setLocked(true);
     };
     // ADDED — real ask: "opening back to last page" — refreshes
     // lastActiveAt at the actual moment of backgrounding, not just
@@ -980,6 +1047,15 @@ export default function App() {
   // single source of truth (`active`) instead of touching every call
   // site individually.
   useEffect(() => {
+    // ADDED — Phase 2 loading-gate batch: must not persist `active`
+    // before the boot effect has resolved it to a real value — a
+    // pre-boot write here is exactly the "home" placeholder clobbering
+    // a real stored lastActiveTab that got `active` reverted to plain
+    // sync state in the first place (see `active`'s own comment
+    // above). `bootReady` and `active` are set together in the same
+    // batched update, so this effect still fires (and persists
+    // correctly) the moment the real value lands.
+    if (!bootReady) return;
     AppPreferencesRepository.update({ lastActiveTab: active, lastActiveAt: new Date().toISOString() });
   }, [active]);
 
@@ -1228,6 +1304,15 @@ export default function App() {
     }
   };
 
+  // ADDED — Phase 2 encryption groundwork, real loading-gate batch
+  // (Sep 2026): checked before EVERY other gate below, including
+  // decoyActive/locked — see `bootReady`'s own declaration above for
+  // why. Nothing else in this render path is allowed to run off
+  // `locked`/`active` until this resolves.
+  if (!bootReady) {
+    return <AppBootScreen />;
+  }
+
   // ADDED 1 Sep 2026 — decoy session gate: checked before the App Lock
   // gate below (once decoyActive, there's no lock screen to show or
   // bypass — this is the entire rest of the session).
@@ -1239,7 +1324,7 @@ export default function App() {
   // else while locked, real ask.
   if (locked) {
     return <AppLockScreen
-      onUnlock={() => { PrivacySettingsRepository.recordUnlock(); setLocked(false); }}
+      onUnlock={async () => { await PrivacySettingsRepository.recordUnlock(); setLocked(false); }}
       onUnlockDecoy={() => setDecoyActive(true)}
     />;
   }
@@ -1249,8 +1334,8 @@ export default function App() {
   // onboarding content, not after), shown instead of everything else
   // until finished or skipped.
   if (showOnboarding) {
-    return <OnboardingScreen onFinish={() => {
-      AppPreferencesRepository.update({ hasCompletedOnboarding: true });
+    return <OnboardingScreen onFinish={async () => {
+      await AppPreferencesRepository.update({ hasCompletedOnboarding: true });
       setShowOnboarding(false);
     }} />;
   }
@@ -1542,7 +1627,7 @@ export default function App() {
       {showAppLockPrompt && (
         <AppLockPrompt
           onDismiss={() => setShowAppLockPrompt(false)}
-          onDismissForever={() => { PrivacySettingsRepository.update({ appLockPromptDismissed: true }); setShowAppLockPrompt(false); }}
+          onDismissForever={async () => { await PrivacySettingsRepository.update({ appLockPromptDismissed: true }); setShowAppLockPrompt(false); }}
           onOpenSettings={() => { setShowAppLockPrompt(false); setShowSettings(true); }}
         />
       )}

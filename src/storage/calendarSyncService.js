@@ -116,7 +116,7 @@ async function ensureShosCalendar(plugin) {
 // later disappears (e.g. its account was removed from the phone)
 // falls safely back to private rather than silently failing.
 async function resolveTargetCalendar(plugin) {
-  const targetName = AppPreferencesRepository.getPreferences().calendarSyncTargetName;
+  const targetName = (await AppPreferencesRepository.getPreferences()).calendarSyncTargetName;
   if (targetName) {
     const { calendars } = await plugin.listCalendars();
     const found = calendars.find((c) => c.name === targetName);
@@ -144,7 +144,7 @@ async function syncOneVisit(plugin, calendar, visit) {
   // with anyone — a risk the existing calendar-sharing warning doesn't
   // cover. Opt-in generic title, off by default (unchanged behavior
   // unless explicitly turned on).
-  const useGenericTitle = AppPreferencesRepository.getPreferences().calendarSyncGenericTitle;
+  const useGenericTitle = (await AppPreferencesRepository.getPreferences()).calendarSyncGenericTitle;
   const eventOptions = {
     title: useGenericTitle ? "Clinic appointment" : (visit.title || "Clinic appointment"),
     location: visit.location || "",
@@ -182,7 +182,7 @@ export async function syncClinicVisitsToCalendar(visits) {
   // Self-gated on the preference so every call site (Home's mount,
   // Clinic Visits' own save) doesn't need to separately remember to
   // check it — one place decides whether this feature is actually on.
-  if (!AppPreferencesRepository.getPreferences().calendarSyncEnabled) return { synced: false };
+  if (!(await AppPreferencesRepository.getPreferences()).calendarSyncEnabled) return { synced: false };
   const { plugin } = await getPlugin();
   if (!plugin) return { synced: false };
   const calendar = await resolveTargetCalendar(plugin);
@@ -231,6 +231,6 @@ export async function removeSyncedEventsFrom(calendarName) {
 // cleans up whichever calendar was actually in use (private or a
 // picked external one), not just the private default.
 export async function removeAllSyncedEvents() {
-  const targetName = AppPreferencesRepository.getPreferences().calendarSyncTargetName || SHOS_CALENDAR_NAME;
+  const targetName = (await AppPreferencesRepository.getPreferences()).calendarSyncTargetName || SHOS_CALENDAR_NAME;
   await removeSyncedEventsFrom(targetName);
 }

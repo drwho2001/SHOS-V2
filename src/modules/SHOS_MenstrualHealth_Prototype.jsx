@@ -917,7 +917,7 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
   // opt-out, independent of gender. Wins over the gender default AND
   // the ephemeral "show anyway" link below, but never over a direct
   // deep-link to a record that already exists.
-  const pregnancyTrackingHidden = AppPreferencesRepository.getPreferences().pregnancyTrackingHidden;
+  const pregnancyTrackingHidden = useLoadedMemo(() => AppPreferencesRepository.getPreferences().then((p) => p.pregnancyTrackingHidden), [], false);
   const showsPregnancyByDefault = couldBePregnant(gender);
   const deepLinkTab = tabForRecordId(openRecordId);
   const [subTab, setSubTab] = useState(deepLinkTab || (wantsContraceptionQuickAdd ? "contraception" : "cycle"));

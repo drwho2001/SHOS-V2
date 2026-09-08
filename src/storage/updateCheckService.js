@@ -53,7 +53,7 @@ export async function checkForUpdate() {
   // API was previously undisclosed and un-gateable — see Settings' own
   // disclosure copy and AppPreferencesRepository's updateCheckEnabled.
   const { AppPreferencesRepository } = await import("../repositories/appPreferencesRepository.js");
-  if (!AppPreferencesRepository.getPreferences().updateCheckEnabled) return { updateAvailable: false };
+  if (!(await AppPreferencesRepository.getPreferences()).updateCheckEnabled) return { updateAvailable: false };
   if (typeof __BUILD_SHA__ === "undefined" || __BUILD_SHA__ === "dev") {
     // A local/dev build has nothing real to compare against — checking
     // would either always claim "update available" (comparing against

@@ -275,8 +275,8 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     customGroups: await CustomGroupsRepository.getAllForBackup(),
     customOptionLists: await CustomOptionListsRepository.getAllForBackup(),
     privacySettings: redactSecrets
-      ? sanitizePrivacySettingsForPlainExport(PrivacySettingsRepository.getSettings())
-      : PrivacySettingsRepository.getSettings(),
+      ? sanitizePrivacySettingsForPlainExport(await PrivacySettingsRepository.getSettings())
+      : await PrivacySettingsRepository.getSettings(),
     resources: await ResourcesRepository.getAllForBackup(),
     partnerNotifications: await PartnerNotificationRepository.getAll(),
   };
@@ -393,7 +393,7 @@ export async function restoreBackup(parsedBackup) {
   if (measurementPreferences && typeof measurementPreferences === "object") await MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
   if (customGroups && typeof customGroups === "object") await CustomGroupsRepository.replaceAll(customGroups);
   if (customOptionLists && typeof customOptionLists === "object") await CustomOptionListsRepository.replaceAll(customOptionLists);
-  if (privacySettings && typeof privacySettings === "object") PrivacySettingsRepository.update(privacySettings);
+  if (privacySettings && typeof privacySettings === "object") await PrivacySettingsRepository.update(privacySettings);
   if (resources && typeof resources === "object") await ResourcesRepository.replaceAll(resources);
   if (Array.isArray(partnerNotifications)) await PartnerNotificationRepository.replaceAll(partnerNotifications);
   // Not Array.isArray — MyProfile is a singleton object, not a list.
@@ -616,7 +616,7 @@ export async function exportBackupToChosenFolder(includeKeys = null, dateRange =
 // no point silently writing an identical file with nothing new in it
 // every time the interval ticks over.
 export async function isAutoExportDue() {
-  const prefs = AppPreferencesRepository.getPreferences();
+  const prefs = await AppPreferencesRepository.getPreferences();
   if (!prefs.autoExportEnabled) return false;
   const { lastAt, daysSince } = await getLastBackupInfo();
   if (!lastAt) return true; // never backed up at all — due immediately
