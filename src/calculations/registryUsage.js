@@ -32,7 +32,7 @@ export async function computeKinkUsage(id) {
     if (hasKinkSelection(c.statedKinks, id)) count += 1;
     if (hasKinkSelection(c.limits, id)) count += 1;
   });
-  EncounterRepository.getAll().forEach((e) => {
+  (await EncounterRepository.getAll()).forEach((e) => {
     if (hasKinkSelection(e.kinksInvolved, id)) count += 1;
   });
   const profile = MyProfileRepository.getProfile();
@@ -44,21 +44,21 @@ export async function computeKinkUsage(id) {
 export async function computeChemsUsage(id) {
   let count = 0;
   (await ContactRepository.getAll()).forEach((c) => { if ((c.knownChems || []).includes(id)) count += 1; });
-  EncounterRepository.getAll().forEach((e) => { if ((e.chemsAlcoholUsed || []).includes(id)) count += 1; });
+  (await EncounterRepository.getAll()).forEach((e) => { if ((e.chemsAlcoholUsed || []).includes(id)) count += 1; });
   const profile = MyProfileRepository.getProfile();
   if ((profile.knownChems || []).includes(id)) count += 1;
   return count;
 }
 
-export function computeProtectionUsage(id) {
+export async function computeProtectionUsage(id) {
   let count = 0;
-  EncounterRepository.getAll().forEach((e) => { if ((e.protectionUsed || []).includes(id)) count += 1; });
+  (await EncounterRepository.getAll()).forEach((e) => { if ((e.protectionUsed || []).includes(id)) count += 1; });
   return count;
 }
 
 export async function computeSymptomsUsage(id) {
   let count = 0;
-  EncounterRepository.getAll().forEach((e) => { if ((e.symptomsNoted || []).includes(id)) count += 1; });
+  (await EncounterRepository.getAll()).forEach((e) => { if ((e.symptomsNoted || []).includes(id)) count += 1; });
   ClinicVisitsRepository.getAll().forEach((v) => { if ((v.symptomTypeIds || []).includes(id)) count += 1; });
   (await SymptomLogRepository.getAll()).forEach((s) => { if (s.symptomId === id) count += 1; });
   return count;
@@ -83,8 +83,8 @@ export function computeResultsUsage(id) {
 // references a location (confirmed via grep — Symptom Log's own
 // header comment mentions Location by name but never stores a real
 // locationId field).
-export function computeLocationsUsage(id) {
+export async function computeLocationsUsage(id) {
   let count = 0;
-  EncounterRepository.getAll().forEach((e) => { if (e.locationId === id) count += 1; });
+  (await EncounterRepository.getAll()).forEach((e) => { if (e.locationId === id) count += 1; });
   return count;
 }

@@ -141,7 +141,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   const T = darkMode ? DARK : LIGHT;
   const meds = useLoadedMemo(() => loadMedicationsWithLogs(), [], []);
   const tests = useLoadedMemo(() => sortByDateDesc(TestingRepository.getAll().filter((t) => !t.isArchived)), [], []);
-  const encounters = useLoadedMemo(() => sortByDateDesc(EncounterRepository.getAll()), [], []);
+  const encounters = useLoadedMemo(async () => sortByDateDesc(await EncounterRepository.getAll()), [], []);
   const [profile, setProfile] = useLoadedState(() => MyProfileRepository.getProfile(), [], DEFAULT_PROFILE);
 
   // ADDED — real ask: "Recent partners should have filterable

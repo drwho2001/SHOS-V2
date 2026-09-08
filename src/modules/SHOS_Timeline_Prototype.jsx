@@ -245,7 +245,7 @@ function StartSheet({ onSave, onClose, T }) {
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
   const triggerReasonOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("episodeTriggerReason"), [], []);
-  const encounters = useLoadedMemo(() => EncounterRepository.getAll().sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => ({ id: e.id, name: encounterLabel(e) })), [], []);
+  const encounters = useLoadedMemo(async () => (await EncounterRepository.getAll()).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => ({ id: e.id, name: encounterLabel(e) })), [], []);
   const canSave = title.trim().length > 0 && startEncounterId;
 
   return (
@@ -299,14 +299,21 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
   // start date from `episode` directly (guarded with `episode?.`)
   // rather than reusing the `startDate` const below, since that const
   // isn't in scope yet this early.
+  // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
+  // async too — hoisted above the guard for the same reason as
+  // symptomCandidates below, reused by symptomCandidates/
+  // encounterCandidates instead of each re-deriving it separately.
+  // Also feeds the "Exposure Encounter" read-only row further down,
+  // which previously read a plain post-guard `startEncounter` const.
+  const startEncounter = useLoadedMemo(() => EncounterRepository.getById(episode?.startEncounterId), [episode], null);
+  const startDate = startEncounter?.date;
   const symptomCandidates = useLoadedMemo(async () => {
-    const start = EncounterRepository.getById(episode?.startEncounterId)?.date;
-    if (!episode || !start) return [];
+    if (!episode || !startDate) return [];
     return (await SymptomLogRepository.getAll())
-      .filter((s) => !s.isArchived && s.dateStarted >= start && !episode.symptomLogIds.includes(s.id))
+      .filter((s) => !s.isArchived && s.dateStarted >= startDate && !episode.symptomLogIds.includes(s.id))
       .sort((a, b) => new Date(a.dateStarted) - new Date(b.dateStarted))
       .map((s) => ({ id: s.id, name: symptomLogLabel(s) }));
-  }, [episode], []);
+  }, [episode, startDate], []);
   // ADDED — same reason as symptomCandidates above: `nameFor` below is
   // a synchronous per-id render callback (LinkedItemsSection calls it
   // directly while rendering, it can't itself await), so the currently-
@@ -317,10 +324,27 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
     const entries = await Promise.all(episode.symptomLogIds.map((id) => SymptomLogRepository.getById(id)));
     return Object.fromEntries(episode.symptomLogIds.map((id, i) => [id, symptomLogLabel(entries[i])]));
   }, [episode], {});
+  // ADDED — same reason: encounterCandidates below used to call
+  // EncounterRepository.getAll() straight in the render body.
+  const encounterCandidates = useLoadedMemo(async () => {
+    if (!episode || !startDate) return [];
+    return (await EncounterRepository.getAll())
+      .filter((e) => e.id !== episode.startEncounterId && e.date >= startDate && !episode.atRiskEncounterIds.includes(e.id))
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map((e) => ({ id: e.id, name: encounterLabel(e) }));
+  }, [episode, startDate], []);
+  // ADDED — same reason as linkedSymptomLabelById: atRiskEncounterIds'
+  // own nameFor callback below is also a synchronous per-id render
+  // callback — and its own exposure-window coverage check needs the
+  // full encounter object (enc.date), not just a label, so this
+  // resolves full objects rather than pre-formatted strings.
+  const linkedEncounterById = useLoadedMemo(async () => {
+    if (!episode?.atRiskEncounterIds?.length) return {};
+    const entries = await Promise.all(episode.atRiskEncounterIds.map((id) => EncounterRepository.getById(id)));
+    return Object.fromEntries(episode.atRiskEncounterIds.map((id, i) => [id, entries[i]]));
+  }, [episode], {});
   if (!episode) return null;
 
-  const startEncounter = EncounterRepository.getById(episode.startEncounterId);
-  const startDate = startEncounter?.date;
   const isOpen = !episode.resolvedDate;
 
   const linkedTests = episode.testIds.map((id) => TestingRepository.getById(id)).filter(Boolean);
@@ -334,10 +358,6 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
 
   const update = async (changes) => { await EpisodeRepository.update(episodeId, changes); setRefreshKey((k) => k + 1); };
 
-  const encounterCandidates = startDate
-    ? EncounterRepository.getAll().filter((e) => e.id !== episode.startEncounterId && e.date >= startDate && !episode.atRiskEncounterIds.includes(e.id))
-      .sort((a, b) => new Date(a.date) - new Date(b.date)).map((e) => ({ id: e.id, name: encounterLabel(e) }))
-    : [];
   const testCandidates = startDate
     ? TestingRepository.getAll().filter((t) => !t.isArchived && t.date >= startDate && !episode.testIds.includes(t.id))
       .sort((a, b) => new Date(a.date) - new Date(b.date)).map((t) => ({ id: t.id, name: testLabel(t) }))
@@ -426,7 +446,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
           <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 6 }}>
             Anyone logged after the start date, while this stayed open. {hasPositive && "Tap a name once you've notified them — it'll show marked below."}
           </div>
-          <LinkedItemsSection linkedIds={episode.atRiskEncounterIds} onChange={(v) => update({ atRiskEncounterIds: v })} candidates={encounterCandidates} nameFor={(id) => encounterLabel(EncounterRepository.getById(id))} T={T} />
+          <LinkedItemsSection linkedIds={episode.atRiskEncounterIds} onChange={(v) => update({ atRiskEncounterIds: v })} candidates={encounterCandidates} nameFor={(id) => encounterLabel(linkedEncounterById[id])} T={T} />
           {/* ADDED 19 Aug 2026 — real exposure-window flagging, per
               the user's ask (BASHH/UK-guidance window periods — see
               exposureWindows.js for full sourcing/caveats). Each
@@ -440,7 +460,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
           {episode.atRiskEncounterIds.length > 0 && (
             <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
               {episode.atRiskEncounterIds.map((id) => {
-                const enc = EncounterRepository.getById(id);
+                const enc = linkedEncounterById[id];
                 const coverage = getEncounterCoverage(enc?.date, linkedTests);
                 return (
                   <div key={id} style={{ fontSize: 11, display: "flex", alignItems: "flex-start", gap: 6 }}>
@@ -467,7 +487,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
                     <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${notified ? T.actionGreen : T.textDisabled}`, background: notified ? T.actionGreen : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {notified && <Check size={12} color="#FFFFFF" weight="bold" />}
                     </div>
-                    <span style={{ fontSize: 13, color: T.textPrimary }}>{encounterLabel(EncounterRepository.getById(id))}</span>
+                    <span style={{ fontSize: 13, color: T.textPrimary }}>{encounterLabel(linkedEncounterById[id])}</span>
                   </div>
                 );
               })}
@@ -550,10 +570,13 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
 
 function TimelineLanding({ onOpen, onAdd, onClose, T }) {
   const episodes = useLoadedMemo(() => EpisodeRepository.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
-  const sorted = useMemo(() => {
-    const withDate = episodes.map((e) => ({ ...e, _date: EncounterRepository.getById(e.startEncounterId)?.date || e.createdAt }));
+  // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
+  // async — was a plain useMemo directly calling
+  // EncounterRepository.getById() per episode, now needs useLoadedMemo.
+  const sorted = useLoadedMemo(async () => {
+    const withDate = await Promise.all(episodes.map(async (e) => ({ ...e, _date: (await EncounterRepository.getById(e.startEncounterId))?.date || e.createdAt })));
     return withDate.sort((a, b) => (a.resolvedDate ? 1 : 0) - (b.resolvedDate ? 1 : 0) || new Date(b._date) - new Date(a._date));
-  }, [episodes]);
+  }, [episodes], []);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>

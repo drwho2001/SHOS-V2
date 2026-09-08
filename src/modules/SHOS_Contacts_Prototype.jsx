@@ -1844,6 +1844,12 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
     () => ContactRepository.getAll().then((all) => all.filter((c) => (contact?.linkedContactIds || []).includes(c.id))),
     [contact], []
   );
+  // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
+  // async — the Timeline section below used to call
+  // EncounterRepository.getAll() straight in the render body (inside
+  // an IIFE). Hoisted above this guard for the same reason as
+  // linkedContactProfiles above.
+  const allEncounters = useLoadedMemo(() => EncounterRepository.getAll(), [], []);
   if (!contact) return null;
   const myProfile = MyProfileRepository.getProfile();
   const isLinkedToMe = myProfile.relationshipContactIds.includes(contact.id);
@@ -1961,7 +1967,6 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
             // (Encounter Count, Average/Highest Enjoyment, Last
             // Interaction) that motivated this section in the first
             // place.
-            const allEncounters = EncounterRepository.getAll();
             const summary = contactEncounterSummary(allEncounters, contact.id);
             const history = sortByDateDesc(
               allEncounters.filter((e) => e.attendeeIds.includes(contact.id) && !e.isArchived)

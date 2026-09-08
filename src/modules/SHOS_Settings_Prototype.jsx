@@ -589,9 +589,10 @@ function DeveloperToolsScreen({ onClose }) {
   const episodesCount = useLoadedMemo(() => EpisodeRepository.getAll().then((l) => l.length), [], 0);
   const symptomLogCount = useLoadedMemo(() => SymptomLogRepository.getAll().then((l) => l.length), [], 0);
   const vaccinationsCount = useLoadedMemo(() => VaccinationRepository.getAll().then((l) => l.length), [], 0);
+  const encountersCount = useLoadedMemo(() => EncounterRepository.getAll().then((l) => l.length), [], 0);
   const counts = [
     { label: "Contacts", value: contactsCount },
-    { label: "Encounters", value: EncounterRepository.getAll().length },
+    { label: "Encounters", value: encountersCount },
     { label: "Medications", value: MedicationRepository.getAll().length },
     { label: "Medication log entries", value: logsCount },
     { label: "Tests", value: TestingRepository.getAll().length },
@@ -3135,7 +3136,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   const toggleModule = (key) => setActiveModules((cur) => cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]);
 
   const allEvents = useLoadedMemo(async () => getCalendarEvents({
-    encounters: EncounterRepository.getAll(),
+    encounters: await EncounterRepository.getAll(),
     tests: TestingRepository.getAll(),
     clinicVisits: ClinicVisitsRepository.getAll(),
     symptomEntries: await SymptomLogRepository.getAll(),

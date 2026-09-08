@@ -1397,6 +1397,61 @@ this date; summarized here for durability.
   (`shos_custom_option_lists`) — the strongest possible proof the
   `ensureLoaded()`/`add()`/`useLoadedMemo`-refresh chain works
   end-to-end. No page errors. Full smoke-test suite passes.
+  `encounterRepository.js` converted next (8 Sep, `ensureLoaded()`
+  pattern) — the first of the large/high-blast-radius tier (Encounter/
+  Testing/Medication/ClinicVisits/MyProfile), 16 files/50 call sites.
+  Caller cascade mostly familiar shapes by now: `registryUsage.js` (5
+  sites — `computeProtectionUsage`/`computeLocationsUsage` made async
+  for the first time, `computeKinkUsage`/`computeChemsUsage`/
+  `computeSymptomsUsage` already were), `doxyPepSync.js`/
+  `orphanReferenceCheck.js`/`backupService.js`/`clinicCardPdfService.js`,
+  Global Search, Settings (new `encountersCount`), ClinicCard,
+  PartnerNotification (`lastEncounterAt`), Home (wrapped in its own
+  async IIFE). `SHOS_Encounters_Prototype.jsx` itself needed the same
+  bare-function-reference fix as `logRepository.js`'s own caller batch
+  earlier this session — `loadEncounters` is a plain function
+  reference, not an inline arrow, so `refresh()`'s
+  `setEncounters(loadEncounters())` was silently setting state to a
+  raw Promise; fixed with `.then(setEncounters)`. Its own edit sheet
+  had a genuinely async-sensitive load effect (`EncounterRepository.
+  getById()` inside a `useEffect`, itself now wrapped in an async IIFE
+  since an effect body can't be `async` directly) plus the usual
+  undo/redo/bulk-handler `for...of` conversions.
+  `SHOS_Contacts_Prototype.jsx`'s `ContactProfile` needed its Timeline
+  section's `EncounterRepository.getAll()` (previously a plain
+  render-body IIFE call, "safe" only while Encounters stayed
+  synchronous — the same trap this exact pattern hit twice already this
+  session for other repositories) hoisted into `allEncounters` above
+  the `!contact` guard.
+  `SHOS_Timeline_Prototype.jsx`'s `EpisodeDetail` needed the most real
+  restructuring of any single component this session: `startDate` (now
+  derived from a hoisted `startEncounter` hook, itself needed when a
+  leftover JSX reference to the old post-guard `startEncounter` const
+  surfaced as a real `ReferenceError` live — caught and fixed, see
+  below), `encounterCandidates` (the "link a new at-risk encounter"
+  picker), and a new `linkedEncounterById` lookup object (replacing a
+  synchronous per-id `nameFor` callback AND a coverage-check loop that
+  both used to call `EncounterRepository.getById()` directly — the
+  coverage check needed the full object, not just a label, so this
+  resolves full objects rather than pre-formatted strings the way
+  `linkedSymptomLabelById` did last batch). `TimelineLanding`'s own
+  `sorted` — a plain `useMemo` directly calling `EncounterRepository.
+  getById()` per episode inside `.map()` — converted to `useLoadedMemo`
+  with `Promise.all`.
+  Real bug caught live, not by inspection: after the first pass, the
+  Episode Detail screen crashed with `startEncounter is not defined` —
+  the JSX's own "Exposure Encounter" read-only row still referenced the
+  plain const removed during hoisting, missed because nothing in the
+  earlier grep-based sweep checks for a removed declaration's own
+  leftover uses. Fixed by keeping a `startEncounter` hook (not just its
+  derived `.date`) precisely because this row needed the full object.
+  Verified live end-to-end after the fix: Encounters list/detail with
+  real seed data, and — the real proof of the whole restructuring —
+  Episode Detail's "Exposure Encounter" row, "AT-RISK ENCOUNTERS"
+  section (real linked labels, real candidates, and the exposure-window
+  coverage check's own "too soon to confirm" text), all rendering
+  correctly against real seed data. No page errors. Full smoke-test
+  suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

@@ -35,7 +35,7 @@ export async function syncDoxyPepAlert() {
     return { active: false };
   }
 
-  const encounters = EncounterRepository.getAll();
+  const encounters = await EncounterRepository.getAll();
   const doxyLogs = await LogRepository.getForMedication(doxyMed.id);
   const status = getDoxyPepStatus(encounters, doxyLogs);
   // ADDED — real ask: the in-app banner needs to navigate to (and,

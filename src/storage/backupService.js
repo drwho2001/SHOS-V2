@@ -253,7 +253,7 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     contacts: await ContactRepository.getAll(),
     medications: MedicationRepository.getAll(),
     logs: await LogRepository.getAll(),
-    encounters: EncounterRepository.getAll(),
+    encounters: await EncounterRepository.getAll(),
     kinks: KinkRegistry.getAll(),
     chems: ChemsRegistry.getAll(),
     protection: ProtectionRegistry.getAll(),
@@ -371,7 +371,7 @@ export async function restoreBackup(parsedBackup) {
   if (Array.isArray(contacts)) await ContactRepository.replaceAll(contacts);
   if (Array.isArray(medications)) MedicationRepository.replaceAll(medications);
   if (Array.isArray(logs)) await LogRepository.replaceAll(logs);
-  if (Array.isArray(encounters)) EncounterRepository.replaceAll(encounters);
+  if (Array.isArray(encounters)) await EncounterRepository.replaceAll(encounters);
   if (Array.isArray(kinks)) KinkRegistry.replaceAll(kinks);
   if (Array.isArray(chems)) ChemsRegistry.replaceAll(chems);
   if (Array.isArray(protection)) ProtectionRegistry.replaceAll(protection);

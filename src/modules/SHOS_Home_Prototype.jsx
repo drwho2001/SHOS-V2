@@ -332,9 +332,14 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       setLastContact(sortedContacts[0] || null);
     })();
 
-    const encounters = EncounterRepository.getAll();
-    const sortedEncounters = [...encounters].sort((a, b) => new Date(b.date) - new Date(a.date));
-    setLastEncounter(sortedEncounters[0] || null);
+    // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
+    // async — same "wrap just this one gated/isolated block" approach
+    // as the contacts block above.
+    (async () => {
+      const encounters = await EncounterRepository.getAll();
+      const sortedEncounters = [...encounters].sort((a, b) => new Date(b.date) - new Date(a.date));
+      setLastEncounter(sortedEncounters[0] || null);
+    })();
 
     const meds = MedicationRepository.getAll();
     // CHANGED — Phase 2 encryption groundwork: LogRepository went

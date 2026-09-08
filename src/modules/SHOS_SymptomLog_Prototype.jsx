@@ -333,7 +333,7 @@ function EntrySheet({ entry, onSave, onClose, T }) {
   // encounter's attendee names now ride along as searchText, so typing
   // a contact's name finds it even though it isn't in the visible label.
   const contacts = useLoadedMemo(() => ContactRepository.getAll(), [], []);
-  const encounters = useLoadedMemo(() => [...EncounterRepository.getAll()].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => {
+  const encounters = useLoadedMemo(async () => [...(await EncounterRepository.getAll())].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => {
     const attendeeNames = (e.attendeeIds || []).map((id) => contacts.find((c) => c.id === id)?.nickname || contacts.find((c) => c.id === id)?.name).filter(Boolean);
     return { id: e.id, name: `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}`, searchText: attendeeNames.join(" ").toLowerCase() };
   }), [contacts], []);
@@ -385,12 +385,16 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven for Testing/Vaccinations.
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
+  // async — hoisted above the guard (hooks-before-guard rule), guarded
+  // with `entry?.` since it's genuinely null for one render.
+  const encounterNames = useLoadedMemo(async () => {
+    if (!entry?.relatedEncounterIds?.length) return [];
+    const resolved = await Promise.all(entry.relatedEncounterIds.map((id) => EncounterRepository.getById(id)));
+    return resolved.map((e) => (e ? `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}` : null)).filter(Boolean);
+  }, [entry], []);
   if (!entry) return null;
   const symptomNames = entry.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean).join(", ");
-  const encounterNames = entry.relatedEncounterIds.map((id) => {
-    const e = EncounterRepository.getById(id);
-    return e ? `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}` : null;
-  }).filter(Boolean);
   const testNames = entry.relatedTestIds.map((id) => {
     const t = TestingRepository.getById(id);
     return t ? `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` : null;

@@ -570,9 +570,9 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
   // EncounterRepository directly (this component only has one real
   // caller, Location, so the coupling is honest rather than forcing a
   // generic prop-callback for a single consumer).
-  const locationLastUsed = useLoadedMemo(() => {
+  const locationLastUsed = useLoadedMemo(async () => {
     const map = new Map();
-    for (const enc of EncounterRepository.getAll()) {
+    for (const enc of await EncounterRepository.getAll()) {
       if (!enc.locationId || !enc.date) continue;
       const existing = map.get(enc.locationId);
       if (!existing || enc.date > existing) map.set(enc.locationId, enc.date);
@@ -1005,14 +1005,14 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
               </span>
               {/* ADDED 26 Aug 2026 — real ask: export/print a single
                   record, enabled only when exactly one is selected. */}
-              <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("encounters", EncounterRepository.getById(selectedIds[0])); }}
+              <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("encounters", await EncounterRepository.getById(selectedIds[0])); }}
                 style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-              <span onClick={() => { if (selectedIds.length > 0) { EncounterRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+              <span onClick={async () => { if (selectedIds.length > 0) { await EncounterRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
               <span onClick={async () => {
                 if (selectedIds.length === 0) return;
                 if (window.confirm(`Delete ${selectedIds.length} activit${selectedIds.length > 1 ? "ies" : "y"}? You'll have a few seconds to undo.`)) {
-                  const toRestore = EncounterRepository.getAll().filter((e) => selectedIds.includes(e.id));
+                  const toRestore = (await EncounterRepository.getAll()).filter((e) => selectedIds.includes(e.id));
                   await triggerDelete(toRestore);
                   refresh();
                   exitSelectMode();
@@ -1133,9 +1133,9 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
     return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
   }).filter(Boolean);
 
-  const archive = () => {
-    EncounterRepository.archive(encounter.id);
-    setEncounter(EncounterRepository.getById(encounter.id));
+  const archive = async () => {
+    await EncounterRepository.archive(encounter.id);
+    setEncounter(await EncounterRepository.getById(encounter.id));
     setMenuOpen(false);
   };
 
@@ -1339,8 +1339,12 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   const isDirty = useRef(false);
   useEffect(() => {
     if (isNew || loadDraft(draftKey)) return;
-    const real = EncounterRepository.getById(encounterId);
-    if (real) setForm(real);
+    // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
+    // async — an effect body can't itself be async, wrapped in an IIFE.
+    (async () => {
+      const real = await EncounterRepository.getById(encounterId);
+      if (real) setForm(real);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [encounterId]);
   useEffect(() => {
@@ -1353,17 +1357,16 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   const save = async () => {
     clearDraft(draftKey);
     if (isNew) {
-      EncounterRepository.create(form);
+      await EncounterRepository.create(form);
     } else {
       // ADDED 19 Aug 2026 — real undo/redo: snapshot taken right
       // before the update actually happens, so undo has the genuine
       // pre-edit state to restore, not a guess.
-      // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited
-      // are now async — awaited here even though EncounterRepository
-      // itself is still synchronous, same reasoning as every other
-      // module's save() this batch.
+      // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited,
+      // and now EncounterRepository itself (Phase 2 encryption
+      // groundwork), are all async — every step here awaited.
       await onBeforeEdit?.(encounterId);
-      EncounterRepository.update(encounterId, form);
+      await EncounterRepository.update(encounterId, form);
       await onAfterEdit?.(encounterId);
     }
     // ADDED 26 Aug 2026 — real ask: DoxyPEP 72h notification. A new or
@@ -1398,7 +1401,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           <span>Restored unsaved changes from earlier.</span>
           {/* ADDED 19 Aug 2026 — same "discard and start clean" option
               Contacts got, same reasoning. */}
-          <span onClick={() => { clearDraft(draftKey); setForm(isNew ? { ...DEFAULT_ENCOUNTER } : EncounterRepository.getById(encounterId)); }}
+          <span onClick={async () => { clearDraft(draftKey); setForm(isNew ? { ...DEFAULT_ENCOUNTER } : await EncounterRepository.getById(encounterId)); }}
             style={{ fontWeight: 700, cursor: "pointer", textDecoration: "underline", flexShrink: 0 }}>
             Clear & start fresh
           </span>
@@ -1507,16 +1510,16 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
   // live at the real module level, shared by both ActivityLanding and
   // ActivityDetails.
   const [encounters, setEncounters] = useLoadedState(loadEncounters, [], []);
-  const refresh = () => setEncounters(loadEncounters());
+  const refresh = () => { loadEncounters().then(setEncounters); };
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, not just undo — same {mode, records}
   // shape already proven in Contacts (this session's reference
   // implementation) and editUndoHelpers.js's own undo/redo for edits.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
   const undoTimerRef = useRef(null);
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => EncounterRepository.restore(record));
+    for (const record of deleteToast.records) await EncounterRepository.restore(record);
     refresh();
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
@@ -1525,14 +1528,14 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
   const redoDelete = async () => {
     if (!deleteToast) return;
     await TrashRepository.add("encounters", deleteToast.records);
-    deleteToast.records.forEach((r) => EncounterRepository.delete(r.id));
+    for (const r of deleteToast.records) await EncounterRepository.delete(r.id);
     refresh();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
   const triggerDelete = async (records) => {
     await TrashRepository.add("encounters", records);
-    records.forEach((r) => EncounterRepository.delete(r.id));
+    for (const r of records) await EncounterRepository.delete(r.id);
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);

@@ -66,9 +66,9 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
   // reasoning as every other suggestion list this session, real value
   // here specifically since partner notification is inherently about
   // recent activity.
-  const lastEncounterAt = useLoadedMemo(() => {
+  const lastEncounterAt = useLoadedMemo(async () => {
     const map = new Map();
-    EncounterRepository.getAll().forEach((e) => {
+    (await EncounterRepository.getAll()).forEach((e) => {
       (e.attendeeIds || []).forEach((id) => {
         const existing = map.get(id);
         if (!existing || new Date(e.date || 0) > new Date(existing)) map.set(id, e.date);

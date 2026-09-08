@@ -124,7 +124,7 @@ async function buildIndex() {
     });
   });
 
-  for (const e of EncounterRepository.getAll().filter((e) => !e.isArchived)) {
+  for (const e of (await EncounterRepository.getAll()).filter((e) => !e.isArchived)) {
     // CHANGED 4 Sep 2026 — same real fix as Contacts above: narrowed
     // to attendee names + kink tags actually recorded on the
     // encounter, dropped title/encounterType/notes as searchable

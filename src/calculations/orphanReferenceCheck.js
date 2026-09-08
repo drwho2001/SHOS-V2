@@ -106,7 +106,7 @@ export async function findOrphanReferences() {
   const testExists = (id) => !!TestingRepository.getById(id);
   const clinicVisitExists = (id) => !!ClinicVisitsRepository.getById(id);
   const symptomLogExists = async (id) => !!(await SymptomLogRepository.getById(id));
-  const encounterExists = (id) => !!EncounterRepository.getById(id);
+  const encounterExists = async (id) => !!(await EncounterRepository.getById(id));
   const vaccinationExists = async (id) => !!(await VaccinationRepository.getById(id));
   const kinkExists = (id) => !!KinkRegistry.getById(id);
   const chemExists = (id) => !!ChemsRegistry.getById(id);
@@ -134,7 +134,7 @@ export async function findOrphanReferences() {
   // `results` before this function returns it — a fire-and-forget call
   // here would let `return results` at the bottom run before its flag
   // (if any) was ever pushed.
-  for (const e of EncounterRepository.getAll()) {
+  for (const e of await EncounterRepository.getAll()) {
     const ctx = { recordType: "Encounter", recordLabel: e.title || e.encounterType, recordId: e.id };
     await checkArray(results, contactExists, e.attendeeIds, { ...ctx, field: "attendeeIds", targetType: "Contact" });
     await checkSingle(results, locationExists, e.locationId, { ...ctx, field: "locationId", targetType: "Location" });
