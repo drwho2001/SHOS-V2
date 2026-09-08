@@ -210,8 +210,20 @@ let seedTests = [
   },
 ];
 
-let tests = storage.load(STORAGE_KEY, seedTests);
-let nextTestNumber = computeNextTestNumber(tests);
+// CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
+// loadPromise pattern, same as every other module-load-cached
+// repository converted this session (see CLAUDE.md).
+let tests = null;
+let nextTestNumber = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (tests === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedTests);
+    tests = await loadPromise;
+    nextTestNumber = computeNextTestNumber(tests);
+  }
+  return tests;
+}
 
 function computeNextTestNumber(existing) {
   const numbers = existing.map((t) => {
@@ -227,16 +239,18 @@ function generateTestId() {
   return id;
 }
 
-function persist() {
-  storage.save(STORAGE_KEY, tests);
+async function persist() {
+  await storage.save(STORAGE_KEY, tests);
 }
 
 export const TestingRepository = {
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(tests.map((t) => ({ ...DEFAULT_TEST, ...t })));
   },
 
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = tests.find((t) => t.id === id);
     return found ? structuredClone({ ...DEFAULT_TEST, ...found }) : null;
   },
@@ -265,7 +279,8 @@ export const TestingRepository = {
     });
   },
 
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     // CHANGED — real ask: "future tests are not recent" — a test
     // dated in the future can never be marked most recent, regardless
     // of what was passed in.
@@ -280,11 +295,12 @@ export const TestingRepository = {
     };
     tests = [...tests, newTest];
     this._supersedeOlderMostRecent(newTest);
-    persist();
+    await persist();
     return newTest;
   },
 
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updated = null;
     tests = tests.map((t) => {
       if (t.id !== id) return t;
@@ -301,11 +317,11 @@ export const TestingRepository = {
       return updated;
     });
     if (updated) this._supersedeOlderMostRecent(updated);
-    persist();
+    await persist();
     return updated ? structuredClone({ ...DEFAULT_TEST, ...updated }) : null;
   },
 
-  archive(id) {
+  async archive(id) {
     return this.update(id, { isArchived: true });
   },
 
@@ -313,7 +329,7 @@ export const TestingRepository = {
   // audit: every sibling repository with archive() also has the
   // reverse — this one didn't, so an archived test had no way back
   // short of manually editing storage.
-  unarchive(id) {
+  async unarchive(id) {
     return this.update(id, { isArchived: false });
   },
 
@@ -322,9 +338,10 @@ export const TestingRepository = {
   // the Clinic Visit it points at is hard-deleted elsewhere — called
   // by clinicVisitsRepository.js's own delete(). Only clears the link,
   // same role as measurementRepository.js's own unlink methods.
-  unlinkClinicVisit(visitId) {
+  async unlinkClinicVisit(visitId) {
+    await ensureLoaded();
     tests = tests.map((t) => ({ ...t, clinicVisitIds: (t.clinicVisitIds || []).filter((id) => id !== visitId) }));
-    persist();
+    await persist();
   },
 
   // ADDED — real ask: "no option to delete erroneous tests." Archive
@@ -335,9 +352,10 @@ export const TestingRepository = {
   // just unwanted. Real removal, not soft-hide — the UI gates this
   // behind its own explicit confirmation step, this function itself
   // doesn't ask twice.
-  delete(id) {
+  async delete(id) {
+    await ensureLoaded();
     tests = tests.filter((t) => t.id !== id);
-    persist();
+    await persist();
     MeasurementRepository.unlinkTest(id);
     // ADDED — real gap found via the new orphan-reference checker
     // (orphanReferenceCheck.js): Clinic Visit/Symptom Log/Episode all
@@ -353,27 +371,29 @@ export const TestingRepository = {
 
   // ADDED 26 Aug 2026 — real ask: long-press multi-select rolled out
   // to every module.
-  bulkArchive(ids) {
-    ids.forEach((id) => this.archive(id));
+  async bulkArchive(ids) {
+    for (const id of ids) await this.archive(id);
   },
 
-  bulkDelete(ids) {
+  async bulkDelete(ids) {
+    await ensureLoaded();
     tests = tests.filter((t) => !ids.includes(t.id));
-    persist();
-    ids.forEach((id) => {
+    await persist();
+    for (const id of ids) {
       MeasurementRepository.unlinkTest(id);
       ClinicVisitsRepository.unlinkTest(id);
       SymptomLogRepository.unlinkTest(id);
       EpisodeRepository.unlinkTest(id);
       PartnerNotificationRepository.deleteForTest(id);
-    });
+    }
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.
-  restore(record) {
+  async restore(record) {
+    await ensureLoaded();
     if (tests.some((t) => t.id === record.id)) return;
     tests = [...tests, record];
-    persist();
+    await persist();
   },
 
   // Attachment helpers — kept here rather than a separate repository
@@ -382,7 +402,7 @@ export const TestingRepository = {
   // Attachments database which can link to multiple record types) —
   // matches the user's "not actually used to date" framing: this is the
   // minimal real version, not the fuller cross-linked one.
-  addAttachment(testId, { title, type, fileDataUrl, linkedItem }) {
+  async addAttachment(testId, { title, type, fileDataUrl, linkedItem }) {
     const attachment = {
       id: generateAttachmentId(),
       title: title || "Untitled",
@@ -392,20 +412,21 @@ export const TestingRepository = {
       linkedItem: linkedItem || "",
     };
     return this.update(testId, {
-      attachments: [...(this.getById(testId)?.attachments || []), attachment],
+      attachments: [...((await this.getById(testId))?.attachments || []), attachment],
     });
   },
 
-  removeAttachment(testId, attachmentId) {
-    const test = this.getById(testId);
+  async removeAttachment(testId, attachmentId) {
+    const test = await this.getById(testId);
     if (!test) return null;
     return this.update(testId, {
       attachments: test.attachments.filter((a) => a.id !== attachmentId),
     });
   },
 
-  replaceAll(newTests) {
+  async replaceAll(newTests) {
     tests = newTests;
-    persist();
+    nextTestNumber = computeNextTestNumber(tests);
+    await persist();
   },
 };

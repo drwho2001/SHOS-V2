@@ -60,7 +60,7 @@ function nameFrom(registry, id) {
 async function assembleClinicCardData() {
   const profile = MyProfileRepository.getProfile();
   const meds = await Promise.all(MedicationRepository.getAll().filter((m) => !m.isArchived).map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) })));
-  const tests = sortByDateDesc(TestingRepository.getAll().filter((t) => !t.isArchived));
+  const tests = sortByDateDesc((await TestingRepository.getAll()).filter((t) => !t.isArchived));
   const encounters = sortByDateDesc(await EncounterRepository.getAll());
   const vaccinations = sortByDateDesc((await VaccinationRepository.getAll()).filter((v) => !v.isArchived));
   const overdueVaccinations = await VaccinationRepository.getOverdue();

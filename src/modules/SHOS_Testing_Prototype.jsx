@@ -394,16 +394,16 @@ function AttachmentManager({ testId, attachments, onChanged, T }) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      TestingRepository.addAttachment(testId, { title: file.name, type: pendingType, fileDataUrl: reader.result });
+    reader.onload = async () => {
+      await TestingRepository.addAttachment(testId, { title: file.name, type: pendingType, fileDataUrl: reader.result });
       onChanged();
     };
     reader.readAsDataURL(file);
     e.target.value = "";
   };
 
-  const remove = (attachmentId) => {
-    TestingRepository.removeAttachment(testId, attachmentId);
+  const remove = async (attachmentId) => {
+    await TestingRepository.removeAttachment(testId, attachmentId);
     onChanged();
   };
 
@@ -480,7 +480,6 @@ function LinkPicker({ items, onPick, T, placeholder = "Search by name…" }) {
 // ── Add/Edit sheet ──
 function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord, T }) {
   const isNew = !testId;
-  const existing = testId ? TestingRepository.getById(testId) : null;
   // ADDED 26 Aug 2026 — real ask: "Date of treatment should have a
   // clinic visit link... open the linked clinic visit when physically
   // there, and fill in remaining details." IMPORTANT: this deliberately
@@ -570,38 +569,48 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
     // ADDED — real ask: Clinic Card's "TOC 2 week" shortcut — a real
     // new record starting with real values (a 2-weeks-out date,
     // testing for C&S), not always a totally blank form.
-    return existing || { ...DEFAULT_TEST, ...prefillData };
+    return { ...DEFAULT_TEST, ...prefillData };
   });
   const [draftRestored] = useState(() => !!loadDraft(draftKey));
-  // CHANGED — real bug fix, same as Encounters: fired on the very
-  // first render too, immediately autosaving the pristine, untouched
-  // default form the instant this sheet opened — so just opening and
-  // closing it with zero real edits left a draft behind, later shown
-  // as a false "Restored unsaved changes" prompt. Skips the initial
-  // mount with a ref, only saves once the form has genuinely changed.
-  const isFirstRender = useRef(true);
+  // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+  // async — `existing` used to be read synchronously above, straight
+  // into the `form` lazy initializer. Moved into a real load effect,
+  // same shape as Encounters' own EncounterEditSheet fix (see that
+  // file's own comment for the full StrictMode reasoning): an
+  // `isDirty` ref that only `set()` — the one path a genuine user edit
+  // takes — is allowed to flip, so the autosave effect never has to
+  // infer "was this the load or a real edit" from render order/timing,
+  // which is what a naive "skip the next autosave" ref got wrong under
+  // StrictMode's mount double-invoke.
+  const isDirty = useRef(false);
   useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (isNew || loadDraft(draftKey)) return;
+    (async () => {
+      const real = await TestingRepository.getById(testId);
+      if (real) setForm(real);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testId]);
+  useEffect(() => {
+    if (!isDirty.current) return;
     saveDraft(draftKey, form);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
-  const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
+  const set = (key) => (v) => { isDirty.current = true; setForm((f) => ({ ...f, [key]: v })); };
   const canSave = form.title.trim().length > 0 || form.testingFor.length > 0;
 
   const save = async () => {
     clearDraft(draftKey);
     if (isNew) {
-      const created = TestingRepository.create(form);
+      const created = await TestingRepository.create(form);
       onSaved(created.id);
     } else {
       // ADDED 19 Aug 2026 — real undo/redo extension.
-      // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited
-      // are now async (see that file's own comment) — awaited here
-      // even though TestingRepository itself is still synchronous,
-      // since an unawaited async function still defers its body by a
-      // microtask, which would let the update() below run first.
+      // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited,
+      // and now TestingRepository itself (Phase 2 encryption
+      // groundwork), are all async — every step here awaited.
       await onBeforeEdit?.(testId);
-      TestingRepository.update(testId, form);
+      await TestingRepository.update(testId, form);
       await onAfterEdit?.(testId);
       onSaved(testId);
     }
@@ -764,7 +773,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
 
         {!isNew && (
           <SectionCard title="Attachments" T={T}>
-            <AttachmentManager testId={testId} attachments={TestingRepository.getById(testId)?.attachments || []} onChanged={() => setForm(TestingRepository.getById(testId))} T={T} />
+            <AttachmentManager testId={testId} attachments={form.attachments || []} onChanged={async () => setForm(await TestingRepository.getById(testId))} T={T} />
           </SectionCard>
         )}
         {isNew && (
@@ -1088,14 +1097,14 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
             </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
                 record, enabled only when exactly one is selected. */}
-            <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("testing", TestingRepository.getById(selectedIds[0])); }}
+            <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("testing", await TestingRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span onClick={() => { if (selectedIds.length > 0) { TestingRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            <span onClick={async () => { if (selectedIds.length > 0) { await TestingRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span onClick={async () => {
               if (selectedIds.length === 0) return;
               if (window.confirm(`Delete ${selectedIds.length} test${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
-                const toRestore = TestingRepository.getAll().filter((t) => selectedIds.includes(t.id));
+                const toRestore = (await TestingRepository.getAll()).filter((t) => selectedIds.includes(t.id));
                 await triggerDelete(toRestore);
                 refresh();
                 exitSelectMode();
@@ -1205,16 +1214,16 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
   // TestingLanding (see that component's own comment) — tests/
   // deletedRecent/undoDelete/triggerDelete now live at the real module
   // level, shared by both TestingLanding and TestDetail.
-  const [tests, setTests] = useLoadedState(() => TestingRepository.getAll().filter((t) => !t.isArchived), [], []);
-  const refresh = () => setTests(TestingRepository.getAll().filter((t) => !t.isArchived));
+  const [tests, setTests] = useLoadedState(() => TestingRepository.getAll().then((all) => all.filter((t) => !t.isArchived)), [], []);
+  const refresh = () => { TestingRepository.getAll().then((all) => setTests(all.filter((t) => !t.isArchived))); };
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
   // implementation.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
   const undoTimerRef = useRef(null);
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => TestingRepository.restore(record));
+    for (const record of deleteToast.records) await TestingRepository.restore(record);
     refresh();
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
@@ -1223,14 +1232,14 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
   const redoDelete = async () => {
     if (!deleteToast) return;
     await TrashRepository.add("testing", deleteToast.records);
-    deleteToast.records.forEach((r) => TestingRepository.delete(r.id));
+    for (const r of deleteToast.records) await TestingRepository.delete(r.id);
     refresh();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
   const triggerDelete = async (records) => {
     await TrashRepository.add("testing", records);
-    records.forEach((r) => TestingRepository.delete(r.id));
+    for (const r of records) await TestingRepository.delete(r.id);
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);

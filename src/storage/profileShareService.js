@@ -37,8 +37,8 @@ const SHARE_TYPE = "shos_profile_share";
 // field. Same logic as SHOS_MyProfile_Prototype.jsx's own version
 // (duplicated per this app's self-contained-module convention, not
 // imported cross-module).
-function getAutoLastTestedDate() {
-  const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
+async function getAutoLastTestedDate() {
+  const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
   const sorted = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date));
   return sorted[0]?.date || null;
 }
@@ -56,7 +56,7 @@ function getAutoLastTestedDate() {
 // any receiving-side logic even ran. Now uses an explicit allowlist
 // matching exactly what mapShareToContactData expects to receive —
 // the sensitive fields never leave the device in the first place.
-export function buildProfileShare(options = {}) {
+export async function buildProfileShare(options = {}) {
   const { includeLastTestedDate = false } = options;
   const profile = MyProfileRepository.getProfile();
   const shareableData = {
@@ -102,7 +102,7 @@ export function buildProfileShare(options = {}) {
     // maintained. Still just a raw date string here, same as before —
     // the underlying Test record itself is never referenced or
     // shared, only its date value.
-    ...(includeLastTestedDate ? { lastTestedDate: getAutoLastTestedDate() } : {}),
+    ...(includeLastTestedDate ? { lastTestedDate: await getAutoLastTestedDate() } : {}),
     profilePicture: profile.profilePicture,
     // Deliberately NOT included, ever — no toggle, no option, not
     // just "excluded by default": aboutMeNotes, allergies,
@@ -246,7 +246,7 @@ export async function importProfileAsContact(parsedShare) {
 // Filesystem-write + native Share sheet path, falling back to the
 // original browser download wherever those plugins aren't present.
 export async function exportProfileShare(options = {}) {
-  const share = buildProfileShare(options);
+  const share = await buildProfileShare(options);
   const json = JSON.stringify(share, null, 2);
   const dateStamp = new Date().toISOString().slice(0, 10);
   await exportTextFile(`shos-shared-profile-${dateStamp}.json`, json, "application/json");

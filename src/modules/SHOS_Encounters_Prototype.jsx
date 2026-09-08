@@ -944,8 +944,8 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // this search box needs. Same "split slow-loading data from fast pure
   // computation" split already used for ClinicCard's cutoffDate and
   // RegistryManagement's duplicatePairs/usageMap earlier in this audit.
-  const lastTestDate = useLoadedMemo(() => {
-    const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+  const lastTestDate = useLoadedMemo(async () => {
+    const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
     const lastTest = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
     return lastTest?.date || null;
   }, [], null);

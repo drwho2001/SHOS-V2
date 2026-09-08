@@ -337,7 +337,7 @@ function EntrySheet({ entry, onSave, onClose, T }) {
     const attendeeNames = (e.attendeeIds || []).map((id) => contacts.find((c) => c.id === id)?.nickname || contacts.find((c) => c.id === id)?.name).filter(Boolean);
     return { id: e.id, name: `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}`, searchText: attendeeNames.join(" ").toLowerCase() };
   }), [contacts], []);
-  const tests = useLoadedMemo(() => [...TestingRepository.getAll()].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` })), [], []);
+  const tests = useLoadedMemo(async () => [...(await TestingRepository.getAll())].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` })), [], []);
 
   const doSave = () => {
     clearDraft(draftKey);
@@ -393,12 +393,15 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
     const resolved = await Promise.all(entry.relatedEncounterIds.map((id) => EncounterRepository.getById(id)));
     return resolved.map((e) => (e ? `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}` : null)).filter(Boolean);
   }, [entry], []);
+  // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+  // async — same hoisted-above-the-guard treatment as encounterNames.
+  const testNames = useLoadedMemo(async () => {
+    if (!entry?.relatedTestIds?.length) return [];
+    const resolved = await Promise.all(entry.relatedTestIds.map((id) => TestingRepository.getById(id)));
+    return resolved.map((t) => (t ? `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` : null)).filter(Boolean);
+  }, [entry], []);
   if (!entry) return null;
   const symptomNames = entry.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean).join(", ");
-  const testNames = entry.relatedTestIds.map((id) => {
-    const t = TestingRepository.getById(id);
-    return t ? `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` : null;
-  }).filter(Boolean);
   const isActive = !entry.dateResolved;
 
   return (

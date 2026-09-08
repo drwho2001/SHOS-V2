@@ -152,8 +152,8 @@ function PhotoPicker({ value, onChange, T }) {
 // uses (a scheduled-but-not-yet-happened test shouldn't count).
 // "Store facts, derive state" — this was a fact stored in the wrong
 // place; the real fact already lives in Testing's own records.
-function getAutoLastTestedDate() {
-  const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
+async function getAutoLastTestedDate() {
+  const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
   const sorted = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date));
   return sorted[0]?.date || null;
 }
@@ -823,6 +823,10 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   // profile while this screen is open (refresh() only runs from
   // saveEdit, which immediately closes this screen right after).
   useEffect(() => { setForm(profile); }, [profile]);
+  // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+  // async — getAutoLastTestedDate() was called straight in the render
+  // body below.
+  const lastTestedDate = useLoadedMemo(() => getAutoLastTestedDate(), [], null);
   const set = (field) => (value) => setForm((f) => ({ ...f, [field]: value }));
   // FIXED — real ask: "think my profile kinks and limits haven't
   // actually saved/disappear after a while." Root cause: RegistryTagPicker's
@@ -991,7 +995,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
           <div style={{ padding: "8px 0" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Last tested date</div>
             <div style={{ fontSize: 14, color: T.textPrimary }}>
-              {getAutoLastTestedDate() ? new Date(getAutoLastTestedDate()).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "No tests logged yet"}
+              {lastTestedDate ? new Date(lastTestedDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "No tests logged yet"}
             </div>
           </div>
         </SectionCard>
@@ -1054,6 +1058,10 @@ function ProfileDataView({ profile, T }) {
   // CHANGED — Phase 2 encryption groundwork: ContraceptionRepository
   // went async — was a plain render-body call.
   const activeContraception = useLoadedMemo(() => ContraceptionRepository.getActive().then((all) => all.map((e) => e.method)), [], []);
+  // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+  // async — getAutoLastTestedDate() was called straight in the render
+  // body below.
+  const lastTestedDate = useLoadedMemo(() => getAutoLastTestedDate(), [], null);
   const kinkNames = profile.statedKinks.map((sel) => {
     const name = KinkRegistry.getById(sel.kinkId)?.name;
     return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
@@ -1147,7 +1155,7 @@ function ProfileDataView({ profile, T }) {
             Not currently on PrEP or DoxyPEP
           </div>
         )}
-        <ReadRow label="Last tested date" value={getAutoLastTestedDate() ? new Date(getAutoLastTestedDate()).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""} T={T} />
+        <ReadRow label="Last tested date" value={lastTestedDate ? new Date(lastTestedDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""} T={T} />
       </SectionCard>
       <SectionCard title="About me" T={T}>
         <ReadRow label="Note" value={profile.aboutMeNotes} T={T} />
@@ -1207,7 +1215,7 @@ function ShareProfilePanel({ T }) {
   };
 
   const doCopyText = async () => {
-    const json = JSON.stringify(buildProfileShare({ includeLastTestedDate }), null, 2);
+    const json = JSON.stringify(await buildProfileShare({ includeLastTestedDate }), null, 2);
     try {
       await navigator.clipboard.writeText(json);
       setStatus({ ok: true, msg: "Copied — paste it into a message to share." });

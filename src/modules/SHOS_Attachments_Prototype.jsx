@@ -34,8 +34,8 @@ const TYPE_OPTIONS = ["Test result", "Prescription", "ID", "Photo", "Other"];
 // addAttachment/removeAttachment methods Testing/Clinic Visits' own
 // screens already use — no new deletion logic, no duplicate source of
 // truth.
-function loadAllAttachments() {
-  const fromTests = TestingRepository.getAll().filter((t) => !t.isArchived).flatMap((t) =>
+async function loadAllAttachments() {
+  const fromTests = (await TestingRepository.getAll()).filter((t) => !t.isArchived).flatMap((t) =>
     (t.attachments || []).map((a) => ({ ...a, sourceType: "test", sourceId: t.id, sourceTitle: t.title || (t.testingFor || []).join("/") || "Test" }))
   );
   const fromVisits = ClinicVisitsRepository.getAll().filter((v) => !v.isArchived).flatMap((v) =>
@@ -70,8 +70,8 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
   const all = useLoadedMemo(() => loadAllAttachments(), [refreshKey], []);
   const filtered = filterType ? all.filter((a) => a.type === filterType) : all;
 
-  const handleDelete = (a) => {
-    if (a.sourceType === "test") TestingRepository.removeAttachment(a.sourceId, a.id);
+  const handleDelete = async (a) => {
+    if (a.sourceType === "test") await TestingRepository.removeAttachment(a.sourceId, a.id);
     else ClinicVisitsRepository.removeAttachment(a.sourceId, a.id);
     setRefreshKey((k) => k + 1);
   };

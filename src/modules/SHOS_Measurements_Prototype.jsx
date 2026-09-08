@@ -372,7 +372,9 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
   };
 
   const linkedVisit = form.linkedClinicVisitId ? ClinicVisitsRepository.getById(form.linkedClinicVisitId) : null;
-  const linkedTest = form.linkedTestId ? TestingRepository.getById(form.linkedTestId) : null;
+  // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+  // async — was a plain render-body const.
+  const linkedTest = useLoadedMemo(() => (form.linkedTestId ? TestingRepository.getById(form.linkedTestId) : null), [form.linkedTestId], null);
 
   const doSave = () => {
     clearDraft(draftKey);
@@ -487,10 +489,13 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
   const m = useLoadedMemo(() => MeasurementRepository.getById(measurementId), [measurementId], null);
   const prefs = useLoadedMemo(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+  // async — hoisted above the guard (hooks-before-guard rule), guarded
+  // with `m?.` since it's genuinely null for one render.
+  const linkedTest = useLoadedMemo(() => (m?.linkedTestId ? TestingRepository.getById(m.linkedTestId) : null), [m], null);
   if (!m) return null;
   const isBP = m.type === BLOOD_PRESSURE_TYPE;
   const linkedVisit = m.linkedClinicVisitId ? ClinicVisitsRepository.getById(m.linkedClinicVisitId) : null;
-  const linkedTest = m.linkedTestId ? TestingRepository.getById(m.linkedTestId) : null;
   // Real transparency: if the entered unit differs from the stored
   // (converted) unit, show both — nothing is silently rewritten
   // without the user being able to see what they actually typed.

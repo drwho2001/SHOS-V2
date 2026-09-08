@@ -64,15 +64,15 @@ export async function computeSymptomsUsage(id) {
   return count;
 }
 
-export function computeOrganismUsage(id) {
+export async function computeOrganismUsage(id) {
   let count = 0;
-  TestingRepository.getAll().forEach((t) => { if ((t.organismIds || []).includes(id)) count += 1; });
+  (await TestingRepository.getAll()).forEach((t) => { if ((t.organismIds || []).includes(id)) count += 1; });
   return count;
 }
 
-export function computeResultsUsage(id) {
+export async function computeResultsUsage(id) {
   let count = 0;
-  TestingRepository.getAll().forEach((t) => { if ((t.resultIds || []).includes(id)) count += 1; });
+  (await TestingRepository.getAll()).forEach((t) => { if ((t.resultIds || []).includes(id)) count += 1; });
   ClinicVisitsRepository.getAll().forEach((v) => { if ((v.resultIds || []).includes(id)) count += 1; });
   return count;
 }

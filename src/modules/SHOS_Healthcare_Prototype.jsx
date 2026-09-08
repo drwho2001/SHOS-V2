@@ -118,7 +118,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       const today = new Date().toISOString().slice(0, 10);
       const overdue = (await VaccinationRepository.getAll()).filter((v) => v.nextDue && v.nextDue < today).length;
       const thisYear = new Date().getFullYear();
-      const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date).getFullYear() === thisYear).length;
+      const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && new Date(t.date).getFullYear() === thisYear).length;
       setSummary({ activeSymptoms: symptoms, overdueVaccinations: overdue, testsThisYear: tests });
     })();
   }, [dataVersion]);

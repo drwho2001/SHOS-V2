@@ -386,10 +386,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     // anything dated after today, same principle as nextVisit's own
     // upcoming-only filter just below (mirrored, not duplicated logic
     // — one excludes future, the other excludes past).
-    const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
-    const sortedTests = [...tests].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-    setLastTest(sortedTests[0] || null);
-    setTestingStats(getTestingFrequencyStats(tests));
+    // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+    // async — same "wrap just this one gated/isolated block" approach
+    // used throughout this effect.
+    (async () => {
+      const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
+      const sortedTests = [...tests].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      setLastTest(sortedTests[0] || null);
+      setTestingStats(getTestingFrequencyStats(tests));
+    })();
 
     // CHANGED — real bug from the user's own testing ("Next clinic visit
     // is displaying incorrect or incomplete data"): this used to filter

@@ -343,11 +343,27 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
     const entries = await Promise.all(episode.atRiskEncounterIds.map((id) => EncounterRepository.getById(id)));
     return Object.fromEntries(episode.atRiskEncounterIds.map((id, i) => [id, entries[i]]));
   }, [episode], {});
+  // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+  // async too — hoisted above the guard for the same reason as
+  // linkedEncounterById above (this one used to be a plain post-guard
+  // render-body call, feeding hasPositive/infectionNames below it).
+  const linkedTests = useLoadedMemo(async () => {
+    if (!episode?.testIds?.length) return [];
+    return (await Promise.all(episode.testIds.map((id) => TestingRepository.getById(id)))).filter(Boolean);
+  }, [episode], []);
+  // ADDED — same reason: testCandidates below used to call
+  // TestingRepository.getAll() straight in the render body.
+  const testCandidates = useLoadedMemo(async () => {
+    if (!episode || !startDate) return [];
+    return (await TestingRepository.getAll())
+      .filter((t) => !t.isArchived && t.date >= startDate && !episode.testIds.includes(t.id))
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map((t) => ({ id: t.id, name: testLabel(t) }));
+  }, [episode, startDate], []);
   if (!episode) return null;
 
   const isOpen = !episode.resolvedDate;
 
-  const linkedTests = episode.testIds.map((id) => TestingRepository.getById(id)).filter(Boolean);
   const hasPositive = linkedTests.some(testIsPositive);
   // ADDED 2 Sep 2026 — real ask: partner-notification message helper.
   // Pulled from the positive test(s)' own linked organism(s), same
@@ -358,10 +374,6 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
 
   const update = async (changes) => { await EpisodeRepository.update(episodeId, changes); setRefreshKey((k) => k + 1); };
 
-  const testCandidates = startDate
-    ? TestingRepository.getAll().filter((t) => !t.isArchived && t.date >= startDate && !episode.testIds.includes(t.id))
-      .sort((a, b) => new Date(a.date) - new Date(b.date)).map((t) => ({ id: t.id, name: testLabel(t) }))
-    : [];
   const visitCandidates = startDate
     ? ClinicVisitsRepository.getAll().filter((v) => !v.isArchived && v.date >= startDate && !episode.clinicVisitIds.includes(v.id))
       .sort((a, b) => new Date(a.date) - new Date(b.date)).map((v) => ({ id: v.id, name: visitLabel(v) }))
@@ -497,7 +509,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
         </SectionCard>
 
         <SectionCard title="Testing" T={T}>
-          <LinkedItemsSection label="Linked tests — initial, cultures, TOC (order tells the story)" linkedIds={episode.testIds} onChange={(v) => update({ testIds: v })} candidates={testCandidates} nameFor={(id) => testLabel(TestingRepository.getById(id))} T={T} alertIds={linkedTests.filter(testIsPositive).map((t) => t.id)} />
+          <LinkedItemsSection label="Linked tests — initial, cultures, TOC (order tells the story)" linkedIds={episode.testIds} onChange={(v) => update({ testIds: v })} candidates={testCandidates} nameFor={(id) => testLabel(linkedTests.find((t) => t.id === id))} T={T} alertIds={linkedTests.filter(testIsPositive).map((t) => t.id)} />
         </SectionCard>
 
         <SectionCard title="Treatment" T={T}>
@@ -577,6 +589,16 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
     const withDate = await Promise.all(episodes.map(async (e) => ({ ...e, _date: (await EncounterRepository.getById(e.startEncounterId))?.date || e.createdAt })));
     return withDate.sort((a, b) => (a.resolvedDate ? 1 : 0) - (b.resolvedDate ? 1 : 0) || new Date(b._date) - new Date(a._date));
   }, [episodes], []);
+  // ADDED — same reason: each row below used to call
+  // TestingRepository.getById() straight in a synchronous render-body
+  // .map() to derive its own hasPositive flag.
+  const hasPositiveByEpisodeId = useLoadedMemo(async () => {
+    const entries = await Promise.all(episodes.map(async (e) => {
+      const linked = (await Promise.all(e.testIds.map((id) => TestingRepository.getById(id)))).filter(Boolean);
+      return [e.id, linked.some(testIsPositive)];
+    }));
+    return Object.fromEntries(entries);
+  }, [episodes], {});
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -599,8 +621,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
           </div>
         )}
         {sorted.map((e) => {
-          const linkedTests = e.testIds.map((id) => TestingRepository.getById(id)).filter(Boolean);
-          const hasPositive = linkedTests.some(testIsPositive);
+          const hasPositive = hasPositiveByEpisodeId[e.id] || false;
           const isOpen = !e.resolvedDate;
           return (
             <div key={e.id} onClick={() => onOpen(e.id)}

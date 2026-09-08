@@ -1452,6 +1452,73 @@ this date; summarized here for durability.
   coverage check's own "too soon to confirm" text), all rendering
   correctly against real seed data. No page errors. Full smoke-test
   suite passes.
+  `testingRepository.js` converted next (8 Sep, `ensureLoaded()`
+  pattern) — 20 files/51 call sites, the widest caller footprint of the
+  large tier so far. Caller cascade: `registryUsage.js`
+  (`computeOrganismUsage`/`computeResultsUsage` made async),
+  `testingReminderSync.js`, `orphanReferenceCheck.js`/`backupService.js`/
+  `clinicCardPdfService.js`, Global Search, Settings, ClinicVisits
+  (`StartTestInline`'s inline create, `allTests`, and two hoisted
+  lookups — `linkedTestById` for the inline result-preview list,
+  `testEntries` for `VisitDetail`), Measurements (`linkedTest` in both
+  the edit sheet and detail view), Healthcare/Home (wrapped in their
+  existing async IIFEs), Attachments (`loadAllAttachments` made async,
+  `handleDelete` awaited), SymptomLog (`tests` suggestion list,
+  `testNames` hoisted above `EntryDetail`'s guard next to
+  `encounterNames`), Encounters (`lastTestDate`, already
+  `useLoadedMemo`).
+  `profileShareService.js`'s own `getAutoLastTestedDate()`/
+  `buildProfileShare()` made async, with the same duplicated logic in
+  `SHOS_MyProfile_Prototype.jsx` (a deliberate per-file copy, not a
+  shared import — see that file's own comment) converted independently
+  in both of its own call sites (`MyProfileEditScreen`'s edit form and
+  `ProfileDataView`'s read-only summary), each via its own
+  `useLoadedMemo`.
+  `SHOS_Timeline_Prototype.jsx`'s `EpisodeDetail` needed the same
+  hoisting treatment as its own Encounter-side fix last batch:
+  `linkedTests`/`testCandidates` hoisted above the guard, and
+  `nameFor`'s per-id lookup resolved against the already-loaded
+  `linkedTests` array directly (`.find()`) rather than a fresh fetch,
+  since `episode.testIds` is a subset of what `linkedTests` already
+  resolves. `TimelineLanding`'s own per-row `hasPositive` flag (derived
+  from each episode's own linked tests) needed a new
+  `hasPositiveByEpisodeId` lookup object, the same "resolve a per-row
+  synchronous computation into a lookup ahead of time" shape used
+  throughout this session.
+  The real, structurally significant fix this batch: `SHOS_Testing_Prototype.jsx`'s
+  own `TestEditSheet` had the exact same "form's lazy useState
+  initializer reads a repository call synchronously" shape Encounters'
+  edit sheet had — `existing = testId ? TestingRepository.getById(testId)
+  : null` fed straight into `form`'s initializer, with only a simple
+  `isFirstRender`-ref skip protecting the autosave effect. Once
+  `existing` became a real load effect instead, that ref-based
+  protection would have broken exactly the way Encounters' original
+  attempt did: the load effect's own `setForm(real)` call, arriving a
+  tick after mount, would still trigger the autosave `[form]` effect,
+  and by then `isFirstRender.current` would already be `false` —
+  autosaving the just-loaded real record as a phantom "unsaved draft"
+  the moment ANY existing test was opened for editing, never touched.
+  Fixed by porting Encounters' own proven solution directly: an
+  `isDirty` ref that only `set()` (the one path a genuine user edit
+  takes) is allowed to flip, replacing the timing-dependent
+  `isFirstRender` approach entirely. `AttachmentManager`'s own
+  `attachments`/`onChanged` props (previously fresh
+  `TestingRepository.getById()` calls on every reference) simplified to
+  read `form.attachments` directly and `await` the refetch, avoiding a
+  redundant fetch now that `form` already holds the loaded record.
+  Verified live end-to-end, including the exact regression class this
+  fix targets: opened Testing's real "Test of cure — Gonorrhoea" entry
+  for editing, confirmed via real `<input>` `.value` reads (not
+  `innerText`, which never reflects input content — a trap already
+  documented earlier this session) that the form loaded the genuine
+  record (title, date, result date all correct), confirmed
+  `sessionStorage` held zero `shos_draft_testEdit_*` keys both
+  immediately after opening AND after closing again with zero edits —
+  the exact phantom-draft bug this fix prevents. Also verified My
+  Profile's own "Last tested date" row shows the correct real date. No
+  page errors. Full smoke-test suite passes, including the Testing↔
+  Symptom Log link flow, which directly exercises this batch's own
+  edit-sheet conversion.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

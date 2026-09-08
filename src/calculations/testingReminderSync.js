@@ -31,7 +31,7 @@ import { ACCENTS } from "./designTokens";
 // Same suggestedRoutineRetestDate() source of truth as the schedule
 // path below — no separate concept to drift out of sync.
 export async function getTestingDueState() {
-  const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+  const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
   if (tests.length === 0) return { due: false };
   const mostRecent = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
   const suggested = suggestedRoutineRetestDate(mostRecent);
@@ -53,7 +53,7 @@ export async function syncTestingReminder() {
   }
   // Same "real tests only, not scheduled-but-not-yet-happened ones"
   // filter used elsewhere in this app (e.g. getTestingFrequencyStats).
-  const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+  const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
   if (tests.length === 0) {
     await cancelNotification(NOTIFICATION_IDS.testingReminder);
     return { scheduled: false };

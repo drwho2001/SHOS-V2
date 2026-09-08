@@ -103,7 +103,7 @@ export async function findOrphanReferences() {
   const contactExists = async (id) => !!(await ContactRepository.getById(id));
   const locationExists = async (id) => !!(await LocationsRepository.getById(id));
   const medicationExists = (id) => !!MedicationRepository.getById(id);
-  const testExists = (id) => !!TestingRepository.getById(id);
+  const testExists = async (id) => !!(await TestingRepository.getById(id));
   const clinicVisitExists = (id) => !!ClinicVisitsRepository.getById(id);
   const symptomLogExists = async (id) => !!(await SymptomLogRepository.getById(id));
   const encounterExists = async (id) => !!(await EncounterRepository.getById(id));
@@ -144,7 +144,7 @@ export async function findOrphanReferences() {
     await checkArray(results, symptomExists, e.symptomsNoted, { ...ctx, field: "symptomsNoted", targetType: "Symptoms Registry" });
   }
 
-  for (const t of TestingRepository.getAll()) {
+  for (const t of await TestingRepository.getAll()) {
     const ctx = { recordType: "Test", recordLabel: t.title, recordId: t.id };
     await checkArray(results, organismExists, t.organismIds, { ...ctx, field: "organismIds", targetType: "Organism Registry" });
     await checkArray(results, resultExists, t.resultIds, { ...ctx, field: "resultIds", targetType: "Results Registry" });

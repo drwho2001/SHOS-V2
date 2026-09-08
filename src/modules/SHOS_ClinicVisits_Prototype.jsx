@@ -466,10 +466,10 @@ function AdHocMedicationsManager({ value, onChange, T }) {
 function StartTestInline({ visitDate, onCreated, T }) {
   const [name, setName] = useState("");
   const [showInput, setShowInput] = useState(false);
-  const create = () => {
+  const create = async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const test = TestingRepository.create({ title: trimmed, date: visitDate || new Date().toISOString() });
+    const test = await TestingRepository.create({ title: trimmed, date: visitDate || new Date().toISOString() });
     onCreated(test.id);
     setName(""); setShowInput(false);
   };
@@ -574,7 +574,17 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
   // CHANGED — real ask: "suggestions shown oldest to newest, wrong way
   // round... same with latest tests" — getAll() returns storage order
   // (oldest first), never sorted for display before.
-  const allTests = useLoadedMemo(() => [...TestingRepository.getAll()].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: t.title || "Untitled test" })), [refreshKey], []);
+  const allTests = useLoadedMemo(async () => [...(await TestingRepository.getAll())].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: t.title || "Untitled test" })), [refreshKey], []);
+  // ADDED — Phase 2 encryption groundwork: TestingRepository went
+  // async — the inline result-preview list below used to call
+  // TestingRepository.getById() straight in a synchronous render-body
+  // .map(), and needs the full test object (resultIds), not just the
+  // {id, name} shape allTests carries.
+  const linkedTestById = useLoadedMemo(async () => {
+    if (!form.linkedTestIds?.length) return {};
+    const entries = await Promise.all(form.linkedTestIds.map((id) => TestingRepository.getById(id)));
+    return Object.fromEntries(form.linkedTestIds.map((id, i) => [id, entries[i]]));
+  }, [form.linkedTestIds], {});
   const allMeds = useLoadedMemo(() => MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => ({ id: m.id, name: m.name })), [], []);
   const allSymptoms = useLoadedMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), [], []);
   // ADDED 19 Aug 2026 — real feedback batch: "pulling from recent"
@@ -690,7 +700,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
           {form.linkedTestIds.length > 0 && (
             <div style={{ marginTop: 4, marginBottom: 8 }}>
               {form.linkedTestIds.map((id) => {
-                const t = TestingRepository.getById(id);
+                const t = linkedTestById[id];
                 if (!t) return null;
                 const resultNames = (t.resultIds || []).map((rid) => ResultsRegistry.getById(rid)?.name).filter(Boolean);
                 if (resultNames.length === 0) return null;
@@ -790,9 +800,15 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
     if (!visit?.vaccinationsGivenIds?.length) return [];
     return (await Promise.all(visit.vaccinationsGivenIds.map((id) => VaccinationRepository.getById(id)))).filter(Boolean);
   }, [visit], []);
+  // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+  // async — same hoisted-above-the-guard treatment as symptomLogEntries/
+  // vaccinationEntries above.
+  const testEntries = useLoadedMemo(async () => {
+    if (!visit?.linkedTestIds?.length) return [];
+    return (await Promise.all(visit.linkedTestIds.map((id) => TestingRepository.getById(id)))).filter(Boolean);
+  }, [visit], []);
   if (!visit) return null;
 
-  const testEntries = visit.linkedTestIds.map((id) => TestingRepository.getById(id)).filter(Boolean);
   const medNames = visit.medicationsGivenIds.map((id) => MedicationRepository.getById(id)?.name).filter(Boolean);
   const symptomNames = visit.symptomTypeIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean);
 
