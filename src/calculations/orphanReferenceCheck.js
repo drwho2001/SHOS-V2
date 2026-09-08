@@ -122,7 +122,7 @@ export async function findOrphanReferences() {
     await checkArray(results, chemExists, c.knownChems, { ...ctx, field: "knownChems", targetType: "Chems Registry" });
   }
 
-  const profile = MyProfileRepository.getProfile();
+  const profile = await MyProfileRepository.getProfile();
   const profileCtx = { recordType: "My Profile", recordLabel: "My Profile", recordId: "profile" };
   checkKinkSelections(results, kinkExists, profile.statedKinks, { ...profileCtx, field: "statedKinks", targetType: "Kink Registry" });
   checkKinkSelections(results, kinkExists, profile.limits, { ...profileCtx, field: "limits", targetType: "Kink Registry" });

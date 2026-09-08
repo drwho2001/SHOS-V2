@@ -1332,10 +1332,10 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
     return () => registerModuleBackHandler(null);
   }, [showShare, editing, registerModuleBackHandler, onClose]);
 
-  const refresh = () => setProfile(MyProfileRepository.getProfile());
+  const refresh = async () => setProfile(await MyProfileRepository.getProfile());
 
-  const saveEdit = (form) => {
-    MyProfileRepository.update(form);
+  const saveEdit = async (form) => {
+    await MyProfileRepository.update(form);
     refresh();
     setEditing(false);
   };

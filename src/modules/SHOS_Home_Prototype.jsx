@@ -153,7 +153,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // bare "Home". My Profile only has `nickname`, no separate name
   // field — falls back to a generic label if it's never been filled
   // in, rather than showing "'s dashboard" with a blank in front.
-  const [profileName] = useLoadedState(() => MyProfileRepository.getProfile().nickname, [], "");
+  const [profileName] = useLoadedState(async () => (await MyProfileRepository.getProfile()).nickname, [], "");
   // CHANGED 1 Sep 2026 — real fix, found during a smoothness/efficiency
   // review: unlike every other repository read on this screen (all
   // read once via a lazy useState initializer or a mount-only

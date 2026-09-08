@@ -58,7 +58,7 @@ async function getAutoLastTestedDate() {
 // the sensitive fields never leave the device in the first place.
 export async function buildProfileShare(options = {}) {
   const { includeLastTestedDate = false } = options;
-  const profile = MyProfileRepository.getProfile();
+  const profile = await MyProfileRepository.getProfile();
   const shareableData = {
     displayName: profile.displayName,
     nickname: profile.nickname,

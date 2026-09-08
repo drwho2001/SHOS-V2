@@ -259,7 +259,7 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     protection: ProtectionRegistry.getAll(),
     symptoms: SymptomsRegistry.getAll(),
     locations: await LocationsRepository.getAll(),
-    myProfile: MyProfileRepository.getProfile(),
+    myProfile: await MyProfileRepository.getProfile(),
     tests: await TestingRepository.getAll(),
     organisms: OrganismRegistry.getAll(),
     results: ResultsRegistry.getAll(),
@@ -402,7 +402,7 @@ export async function restoreBackup(parsedBackup) {
   // erroring — restoring an old backup still works, it just leaves
   // whatever profile is already there untouched.
   if (myProfile && typeof myProfile === "object" && !Array.isArray(myProfile)) {
-    MyProfileRepository.replaceAll(myProfile);
+    await MyProfileRepository.replaceAll(myProfile);
   }
 }
 

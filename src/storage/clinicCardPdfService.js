@@ -58,8 +58,12 @@ function nameFrom(registry, id) {
 // symptoms" derivation, same recency sort — so the PDF is never a
 // second, drifting copy of that logic.
 async function assembleClinicCardData() {
-  const profile = MyProfileRepository.getProfile();
-  const meds = await Promise.all(MedicationRepository.getAll().filter((m) => !m.isArchived).map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) })));
+  const profile = await MyProfileRepository.getProfile();
+  // FIXED — real pre-existing bug found while wiring MyProfileRepository:
+  // MedicationRepository went async in an earlier batch this session,
+  // but this chained .filter() straight onto .getAll() was missed then
+  // — would throw "getAll(...).filter is not a function" at runtime.
+  const meds = await Promise.all((await MedicationRepository.getAll()).filter((m) => !m.isArchived).map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) })));
   const tests = sortByDateDesc((await TestingRepository.getAll()).filter((t) => !t.isArchived));
   const encounters = sortByDateDesc(await EncounterRepository.getAll());
   const vaccinations = sortByDateDesc((await VaccinationRepository.getAll()).filter((v) => !v.isArchived));
@@ -271,7 +275,7 @@ export async function exportClinicCardPdf(visibility) {
   const doc = await generateClinicCardPdf(visibility);
   const bytes = await doc.save();
   const base64 = uint8ArrayToBase64(bytes);
-  const profile = MyProfileRepository.getProfile();
+  const profile = await MyProfileRepository.getProfile();
   const namePart = (profile.nickname || "clinic-card").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
   const filename = `${namePart || "clinic-card"}-${new Date().toISOString().slice(0, 10)}.pdf`;
   await exportBinaryFile(filename, base64, "application/pdf");

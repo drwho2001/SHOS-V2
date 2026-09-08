@@ -1372,7 +1372,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // module's read-only cross-repository reference (e.g. Contacts'
   // Timeline reading EncounterRepository). Allergies is edited on My
   // Profile, not here.
-  const allergies = useLoadedMemo(() => MyProfileRepository.getProfile().allergies, [], []);
+  const allergies = useLoadedMemo(async () => (await MyProfileRepository.getProfile()).allergies, [], []);
   // Called after every write to either repository — re-reads both and
   // rebuilds the merged view so the screen reflects what's now actually
   // stored, the same way setMeds always used to trigger a re-render.

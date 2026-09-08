@@ -140,7 +140,10 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
   const meds = useLoadedMemo(() => loadMedicationsWithLogs(), [], []);
-  const tests = useLoadedMemo(() => sortByDateDesc(TestingRepository.getAll().filter((t) => !t.isArchived)), [], []);
+  // FIXED — real pre-existing bug found while wiring MyProfileRepository:
+  // TestingRepository went async in an earlier batch this session, but
+  // this chained .filter() straight onto .getAll() was missed then.
+  const tests = useLoadedMemo(async () => sortByDateDesc((await TestingRepository.getAll()).filter((t) => !t.isArchived)), [], []);
   const encounters = useLoadedMemo(async () => sortByDateDesc(await EncounterRepository.getAll()), [], []);
   const [profile, setProfile] = useLoadedState(() => MyProfileRepository.getProfile(), [], DEFAULT_PROFILE);
 
@@ -232,8 +235,8 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
     setIdentityDraft({ dateOfBirth: profile.dateOfBirth, clinicNumber: profile.clinicNumber, address: profile.address, nhsNumber: profile.nhsNumber });
     setEditingIdentity(true);
   };
-  const saveIdentity = () => {
-    setProfile(MyProfileRepository.update(identityDraft));
+  const saveIdentity = async () => {
+    setProfile(await MyProfileRepository.update(identityDraft));
     setEditingIdentity(false);
   };
 

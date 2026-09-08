@@ -897,7 +897,9 @@ function tabForRecordId(id) {
 export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen } = {}) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
-  const gender = MyProfileRepository.getProfile().gender;
+  // CHANGED — Phase 2 encryption groundwork: MyProfileRepository went
+  // async — was a plain render-body call.
+  const [gender] = useLoadedState(async () => (await MyProfileRepository.getProfile()).gender, [], "");
   const [showPregnancyAnyway, setShowPregnancyAnyway] = useState(false);
   // ADDED — real ask: Home's own "Log contraception" shortcut (distinct
   // from "Log period") needs to land on THIS module's Contraception

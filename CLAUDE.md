@@ -1627,6 +1627,76 @@ this date; summarized here for durability.
   row correctly showing "Treatment — Gonorrhoea · Sep 1, 2026" (not a
   "?" fallback) against real seed data. No page errors anywhere. Full
   smoke-test suite passes.
+  `myProfileRepository.js` converted next (8 Sep, `ensureLoaded()`
+  pattern) — the fifth and last of the originally-scoped large/high-
+  blast-radius tier (Encounter/Testing/Medication/ClinicVisits/
+  MyProfile), so that tier is now fully converted. A genuinely simpler
+  shape than its four predecessors — a true singleton (one record, no
+  `nextXNumber` ID counter to maintain), 12 caller files. Caller
+  cascade: `registryUsage.js` (2 sites)/`orphanReferenceCheck.js`/
+  `backupService.js` (build + restore, `mergeBackup()` deliberately
+  excludes singletons like this one — confirmed, not a gap) all got the
+  same `await` fixes as every prior batch. `SHOS_Home_Prototype.jsx`'s
+  `profileName` and `SHOS_Medication_Dashboard_Prototype.jsx`'s
+  `allergies` both chained a property straight onto `getProfile()` —
+  fixed by awaiting inside the loader, same class of bug as Home's own
+  permission-nudge fix in an earlier batch. `SHOS_MenstrualHealth_Prototype.jsx`'s
+  top-level `gender` (a plain render-body call with no hook at all)
+  converted to `useLoadedState`. `SHOS_ClinicCard_Prototype.jsx`'s/
+  `SHOS_MyProfile_Prototype.jsx`'s own `refresh`/`saveIdentity`/
+  `saveEdit` handlers awaited. `profileShareService.js`'s
+  `buildProfileShare()` (already async) fixed directly.
+  Two real PRE-EXISTING bugs found and fixed along the way, both
+  unrelated to MyProfileRepository itself but exposed by reading
+  through these files for its own caller cascade: (1)
+  `clinicCardPdfService.js`'s `assembleClinicCardData()` chained
+  `.filter()` straight onto `MedicationRepository.getAll()` — missed
+  when that repository converted earlier this session, would throw
+  "getAll(...).filter is not a function" the next time the Clinic Card
+  PDF export ran. (2) `SHOS_ClinicCard_Prototype.jsx`'s own `tests`
+  `useLoadedMemo` had the identical chained-`.filter()`-onto-`getAll()`
+  bug against `TestingRepository`, missed in that repository's own
+  earlier batch. Both fixed the same way as every other instance of
+  this bug class this session. A third, more subtle finding:
+  `SHOS_Contacts_Prototype.jsx`'s `ContactProfile` hoisted `myProfile`
+  into a `useLoadedMemo` above its `!contact` guard (hooks-before-guard
+  rule, same as every prior hoist) — but its FIRST version used empty
+  `[]` deps, which would have silently frozen the "linked to me" toggle
+  forever after one click, since `toggleLinkedToMe`'s own
+  `forceRelink((v) => v + 1)` re-render trigger had nothing to actually
+  reload from. Caught before shipping (not live) by tracing why the
+  existing `[, forceRelink] = useState(0)` counter existed in the first
+  place — the original synchronous code relied on `MyProfileRepository.getProfile()`
+  re-running fresh on every render, a guarantee `useLoadedMemo` with
+  static deps doesn't provide. Fixed by naming the counter's own value
+  (`relinkVersion`) and adding it to the memo's dependency array — the
+  same "does this hoist need to depend on anything besides its own
+  obvious inputs" question worth asking on every future hoist, not just
+  ones with an existing state variable calling it out directly.
+  A final broad sweep for the same chained-call bug class across every
+  repository converted this session (`getAll().filter/map/forEach/
+  .../getById(...).`) confirmed no other stragglers anywhere in `src/`.
+  Verified live end-to-end: My Profile screen renders real seed data
+  (Chastity status, Known chems, and — proving the cross-repository
+  read still works — a real auto-derived "Last tested date" pulled
+  live from TestingRepository); the Edit form opens correctly with
+  real chip options; a real edit (typing a distinctive nickname) and
+  Save correctly persisted `{"nickname":"VerifyProfileXYZ",...,
+  "updatedAt":"<real timestamp>"}` to `localStorage`, confirmed by
+  direct read, not just the on-screen text. No page errors. Full
+  smoke-test suite passes.
+  With this, the originally-scoped 5-repository large/high-blast-radius
+  tier (Encounter/Testing/Medication/ClinicVisits/MyProfile) is fully
+  converted. What's left in the deferred, harder-bucket tier: the
+  `simpleRegistry.js`-based registries (Kink/Protection/Chems/Symptoms/
+  Organism/Results — Kink/Protection also carry their own module-load-
+  time migration-flag side effects, a third pattern beyond plain
+  `ensureLoaded()`), `ModuleColorRepository` (via `designTokens.js`'s
+  own module-load-time cache of it), `storageAdapter.js` itself
+  (Phase 3 — making the actual adapter async), and real `crypto.subtle`
+  encryption (Phase 4). None of these started yet — each was flagged
+  from the start as needing its own dedicated scoping pass rather than
+  folding into this same sweep, same as the original tier boundary.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

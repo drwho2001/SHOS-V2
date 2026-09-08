@@ -1834,7 +1834,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
   // ADDED — real ask: toggle to reveal blank fields, so it's obvious
   // what's actually missing rather than silently absent.
   const [showBlankFields, setShowBlankFields] = useState(false);
-  const [, forceRelink] = useState(0);
+  const [relinkVersion, forceRelink] = useState(0);
   // CHANGED — Phase 2 encryption groundwork: ContactRepository went
   // async — the "Linked contacts" section below used to filter/map
   // ContactRepository.getAll() straight in the render body. Hoisted
@@ -1850,12 +1850,15 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
   // an IIFE). Hoisted above this guard for the same reason as
   // linkedContactProfiles above.
   const allEncounters = useLoadedMemo(() => EncounterRepository.getAll(), [], []);
+  // CHANGED — Phase 2 encryption groundwork: MyProfileRepository went
+  // async — hoisted above the guard (hooks-before-guard rule), same
+  // reasoning as linkedContactProfiles/allEncounters above.
+  const myProfile = useLoadedMemo(() => MyProfileRepository.getProfile(), [relinkVersion], { relationshipContactIds: [] });
   if (!contact) return null;
-  const myProfile = MyProfileRepository.getProfile();
   const isLinkedToMe = myProfile.relationshipContactIds.includes(contact.id);
-  const toggleLinkedToMe = () => {
-    if (isLinkedToMe) MyProfileRepository.unlinkRelationshipContact(contact.id);
-    else MyProfileRepository.linkRelationshipContact(contact.id);
+  const toggleLinkedToMe = async () => {
+    if (isLinkedToMe) await MyProfileRepository.unlinkRelationshipContact(contact.id);
+    else await MyProfileRepository.linkRelationshipContact(contact.id);
     forceRelink((v) => v + 1);
   };
 
