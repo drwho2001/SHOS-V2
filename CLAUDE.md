@@ -2237,6 +2237,187 @@ this date; summarized here for durability.
   repository/adapter layer this multi-session effort set out to
   convert is now genuinely async, top to bottom — Phase 4 is the last
   real step.
+
+  **Phase 4 fully scoped the same session (8 Sep 2026), before any
+  code was written** — the owner's own explicit ask this round was
+  thoroughness and certainty over speed, given this is the first phase
+  that touches real, already-existing personal data on the owner's own
+  device with genuine permanent-loss risk if a migration bug ships;
+  every fact below was checked directly against the actual codebase,
+  not assumed from the original 4 Sep design sketch.
+
+  *Full inventory of what changes.* `storageAdapter.js`'s `load()`/
+  `save()` are the ONLY real chokepoint — confirmed by a fresh,
+  exhaustive grep: every one of the ~34 repository/registry files
+  reads and writes exclusively through them, and the only two
+  bypasses left anywhere in `src/` are already known and already
+  narrow: `main.jsx`'s `ErrorBoundary` (raw `localStorage`, a
+  deliberately import-free class component — see its own real design
+  tension below) and `draftStorage.js` (deliberately `sessionStorage`,
+  not `localStorage` — in-progress form edits, cleared on save, never
+  meant to survive a real app close; see the open scope question
+  below on whether that's still the right call once "at rest" means
+  something stronger). `clearAllAppData()`/`getStorageUsage()` in
+  `storageAdapter.js` itself need no change — they iterate raw
+  `localStorage` keys directly (never through `load`/`save`), so
+  deletion is unaffected by ciphertext and byte-size measurement stays
+  accurate (AES-GCM's own overhead is a fixed ~28 bytes of IV+tag per
+  value before base64 inflation — real, but not worth a special case).
+
+  *Existing crypto to reuse, not reinvent.* `backupService.js`'s own
+  `buildEncryptedBackup()`/`decryptBackupEnvelope()` already implement
+  proven, working Web-Crypto-only AES-256-GCM keyed via PBKDF2-SHA256
+  (250,000 rounds) with a fresh salt/IV per operation, zero external
+  dependencies — the exact primitives Phase 4 should reuse for its own
+  encrypt/decrypt calls and, for the optional PIN-derived envelope
+  layer specifically, its own KDF approach (see the iteration-count
+  question below). No new crypto library needed anywhere in this app.
+
+  *Device-bound key: real finding, changes the original design.* The
+  4 Sep sketch assumed two different mechanisms — real Android
+  Keystore natively, a non-extractable Web Crypto key for web —
+  because that's the stronger, hardware-backed option on Android.
+  Checked directly: `package.json` has no Keystore/secure-storage
+  Capacitor plugin installed today (only
+  `@aparajita/capacitor-biometric-auth`, which is a pure yes/no
+  authentication GATE with no key-derivation or Keystore-integration
+  capability at all — confirmed by reading `biometricAuthService.js`
+  in full, not assumed from its name). Adding a real Keystore-backed
+  plugin is a genuinely separate, bigger scope: new native
+  dependency to vet (this project already treats third-party native
+  plugins with real scrutiny — see the scoped-storage plugin's own
+  "single maintainer, no visible test suite" disclosure elsewhere in
+  this file), real Java/Kotlin work, and device-only testing this
+  session's own tooling can't do. The lighter alternative — a
+  non-extractable `crypto.subtle.generateKey()` AES-256-GCM key,
+  persisted via `IndexedDB` (a browser-native structured-clone feature
+  for storing `CryptoKey` objects directly, well-supported in every
+  modern browser and in Android's own WebView, which is genuinely just
+  Chromium under Capacitor — confirmed no iOS target exists in this
+  repo at all, so Safari's own support story is irrelevant) — works
+  IDENTICALLY on both the web/PWA build and the installed Android app,
+  no platform-specific code path needed. Real trade-off, stated
+  plainly rather than glossed over: this is weaker than true
+  hardware-backed Keystore (a WebView-stored key's underlying bytes
+  ultimately do land on disk, non-extractable to JS but not immune to
+  a sufficiently privileged attacker with root/physical access the way
+  a TEE/StrongBox-backed key is) — genuinely the same category of
+  honest limitation this app already states elsewhere (the Anonymise
+  PIN's own "accepted, correctly-scoped limitation" framing). This is
+  the first of two real decisions that need the owner's own call, not
+  an assumption — see below.
+
+  *Migration: the real data-safety question.* The owner's own real
+  personal data already exists, today, as plaintext in his device's
+  actual `localStorage` — not seed data, not something recoverable
+  from a repo. Two structurally different approaches, real trade-offs
+  on both sides: **(a) Lazy/organic** — `save()` always encrypts going
+  forward; `load()` checks the stored shape and transparently treats
+  anything that isn't the new `{iv, ciphertext}` shape as legacy
+  plaintext, returning it as-is. Existing data becomes encrypted
+  gradually, the next time each specific key is naturally re-saved by
+  ordinary use — genuinely zero bulk-migration risk (there's no
+  multi-key operation to fail partway through), trivial to implement
+  and reason about, but a key that's rarely touched again could stay
+  plaintext indefinitely, and there's no clean moment to tell the user
+  "encryption is now fully on." **(b) Eager, verified one-time
+  migration** — on first Phase 4 boot, automatically export a real
+  full backup first (reusing the existing `exportBackup()` — a genuine
+  safety net, not a new mechanism), then walk every `shos_`-prefixed
+  key, encrypt and rewrite it, immediately reading back and decrypting
+  each one to confirm success before moving to the next, and only set
+  a `shos_encryption_migrated` completion flag once every key has
+  verified clean. Idempotent by construction (a key already in the
+  new shape is a no-op skip), so a boot interrupted mid-migration just
+  finishes the job on the next real launch — no partial, inconsistent
+  state possible since nothing is deleted until its own encrypted
+  replacement is confirmed readable. Real, deterministic "encryption
+  is now on" moment, but a genuinely bigger implementation and testing
+  surface, run once against real stakes. This is the second real
+  decision that needs the owner's own call — see below.
+
+  *What does NOT need special-case Phase 4 handling — checked
+  directly, not assumed.* Backup restore needs zero new code: every
+  repository's `replaceAll()` already funnels through the same
+  `storage.save()` chokepoint, so restoring ANY backup file — including
+  one exported years before Phase 4 ever existed — automatically
+  lands encrypted the moment it's written back in, for free. Fresh
+  installs need zero migration story at all: seed data is written via
+  the same `create()`/`persist()` path every real record uses, so it's
+  encrypted from its very first write. The `bootReady` gate built
+  earlier this Phase (originally for `locked`/`active`/colour
+  overrides) is already exactly the right piece of infrastructure to
+  absorb Phase 4's boot-time work — no new gate needed, just real
+  re-verification once it's wired up (see below).
+
+  *A genuine timing change worth flagging now, not discovering
+  mid-implementation.* Every "resolves same-tick, no visible flash"
+  argument made earlier this Phase (`AppBootScreen`,
+  `darkModePreference.js`'s self-correction) relied on
+  `storageAdapter.js`'s own body still being pure synchronous
+  `localStorage` calls wrapped in an `async` function — a real
+  microtask, not real wall-clock work. `crypto.subtle.decrypt()` is
+  genuine asynchronous work, typically single-digit milliseconds for
+  a payload this app's own data volumes ever produce, but no longer
+  "same tick." `AppBootScreen` already exists specifically to absorb
+  exactly this kind of gap correctly (nothing else renders during it)
+  — this needs real re-verification once Phase 4 lands, not a new
+  design, but should not be waved through as automatically fine
+  either.
+
+  *Two real decisions still open, not yet made:* (1) the non-extractable
+  IndexedDB-stored Web Crypto key (simpler, one code path, weaker
+  ceiling on Android) vs. investing in a real native Keystore plugin
+  (stronger on Android, real new dependency + native work + device
+  testing this session's tooling can't do); (2) lazy/organic migration
+  (safer by construction, slower and less clean) vs. eager verified
+  migration with an automatic pre-migration backup (deterministic,
+  bigger one-shot implementation and testing surface). Neither decided
+  yet — both go to the owner directly rather than being assumed.
+
+  *Three smaller judgment calls, recommended but not yet confirmed:*
+  (1) the PIN-derived envelope layer's own KDF iteration count —
+  reusing backup export's proven 250,000 rounds is consistent but adds
+  real per-unlock delay on a screen the owner may open dozens of times
+  a day, while a numeric PIN's own low entropy means very high
+  iteration counts buy less real protection here than they do for a
+  genuine password — a lower, unlock-tuned count is the likely right
+  call, stated honestly as "raises the bar against a casual attempt,
+  not a determined offline one," matching this app's own existing PIN
+  security framing rather than overselling it. (2) `main.jsx`'s
+  `ErrorBoundary` — its own targeted recovery action (clearing just
+  `lastActiveTab`/`lastActiveAt` before reload) needs to `JSON.parse`
+  real data, which will be ciphertext once Phase 4 ships; it's
+  deliberately import-free today specifically so it can never itself
+  fail. Likely fix: a small, narrowly-scoped decrypt-only helper,
+  still wrapped in the same existing `try/catch` this component
+  already has — a decrypt failure there is no worse than the
+  `JSON.parse` failure it can already hit today, so this doesn't
+  actually weaken the "never itself fails" guarantee, just needs
+  deliberate confirmation before assuming it's safe to import
+  anything here at all. (3) `draftStorage.js`'s `sessionStorage`
+  drafts — genuinely the same sensitive data types as saved records,
+  just not yet saved; likely fine to leave out of Phase 4's scope
+  given they're ephemeral (cleared on save, gone the moment the tab/
+  app session ends, already gated behind actually having the device
+  unlocked and the app open) rather than a true "data at rest"
+  concern, but worth a real, explicit "yes, out of scope, here's why"
+  rather than being silently forgotten.
+
+  *Testing-methodology change this session's own tooling needs to
+  make, not discovered mid-batch.* Nearly every live-verification
+  script this whole multi-session effort has used confirms a write
+  landed by reading `localStorage` directly via
+  `page.evaluate(() => localStorage.getItem(...))` — that exact
+  technique will show ciphertext, not real JSON, the moment Phase 4
+  ships. Future verification needs two distinct checks, not one: (a)
+  the app's own repository functions read back correct data (already
+  proven possible via a dynamic `import()` inside `page.evaluate`,
+  used this same session for the storageAdapter race-condition test)
+  and (b) a genuinely NEW positive check that raw `localStorage` is
+  NOT plaintext-parseable — without (b), a silently broken or
+  accidentally-no-op encryption implementation could pass every
+  existing functional test while never actually encrypting anything.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
