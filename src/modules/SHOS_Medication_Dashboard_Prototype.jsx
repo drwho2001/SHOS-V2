@@ -157,11 +157,11 @@ function daysFromNow(dateStr) {
 // (`isArchived` from the repository is mapped back to `archived` here,
 // purely so none of the existing UI code below needs renaming.)
 function loadMedications() {
-  return MedicationRepository.getAll().map((med) => ({
+  return Promise.all(MedicationRepository.getAll().map(async (med) => ({
     ...med,
     archived: med.isArchived,
-    logs: LogRepository.getForMedication(med.id),
-  }));
+    logs: await LogRepository.getForMedication(med.id),
+  })));
 }
 
 function HoldButton({ onStep, dir, children, style }) {
@@ -1376,7 +1376,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // Called after every write to either repository — re-reads both and
   // rebuilds the merged view so the screen reflects what's now actually
   // stored, the same way setMeds always used to trigger a re-render.
-  const refreshMeds = () => setMeds(loadMedications());
+  const refreshMeds = () => { loadMedications().then(setMeds); };
   const [sheet, setSheet] = useState(null);
   const [correction, setCorrection] = useState(null);
   const [editingMed, setEditingMed] = useState(null);
@@ -1522,23 +1522,23 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // happens to that entry, so Redo never targets something stale).
   const [lastLoggedEntry, setLastLoggedEntry] = useState(null);
   const [redoAvailable, setRedoAvailable] = useState(null);
-  const undoLastLog = () => {
+  const undoLastLog = async () => {
     if (!lastLoggedEntry) return;
-    LogRepository.void(lastLoggedEntry.id);
+    await LogRepository.void(lastLoggedEntry.id);
     setRedoAvailable(lastLoggedEntry.id);
     setLastLoggedEntry(null);
     refreshMeds();
   };
-  const redoLastUndo = () => {
+  const redoLastUndo = async () => {
     if (!redoAvailable) return;
-    LogRepository.unvoid(redoAvailable);
+    await LogRepository.unvoid(redoAvailable);
     setRedoAvailable(null);
     refreshMeds();
   };
-  const logDose = (id) => {
+  const logDose = async (id) => {
     const med = MedicationRepository.getById(id);
     if (!med) return;
-    const entry = LogRepository.create({ medicationId: id, type: "dose", delta: -med.unitsPerDose, date: nowAsStoredDateTime() });
+    const entry = await LogRepository.create({ medicationId: id, type: "dose", delta: -med.unitsPerDose, date: nowAsStoredDateTime() });
     setLastLoggedEntry(entry);
     setRedoAvailable(null);
     setTimeout(() => setLastLoggedEntry((current) => (current?.id === entry.id ? null : current)), 8000);
@@ -1554,14 +1554,14 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
 
   // Bulk-log — all Daily-pattern medications at once, sharing one timestamp so they group
   // together in the Log tab automatically.
-  const logAllDaily = () => {
+  const logAllDaily = async () => {
     if (dueDailyMeds.length === 0) {
       setBulkLockFlash(true);
       setTimeout(() => setBulkLockFlash(false), 1800);
       return;
     }
     const timestamp = nowAsStoredDateTime();
-    dueDailyMeds.forEach((m) => LogRepository.create({ medicationId: m.id, type: "dose", delta: -m.unitsPerDose, date: timestamp }));
+    for (const m of dueDailyMeds) await LogRepository.create({ medicationId: m.id, type: "dose", delta: -m.unitsPerDose, date: timestamp });
     syncDoxyPepAlert();
     syncMedicationReminders();
     syncRefillReminder();
@@ -1570,11 +1570,11 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     setTimeout(() => setBulkFlash(false), 2000);
   };
 
-  const logQuantity = (units) => {
+  const logQuantity = async (units) => {
     const isRefill = sheet.mode === "refill";
     const delta = isRefill ? units : -units;
     const type = isRefill ? "refill" : "waste";
-    LogRepository.create({ medicationId: sheet.med.id, type, delta, date: nowAsStoredDateTime() });
+    await LogRepository.create({ medicationId: sheet.med.id, type, delta, date: nowAsStoredDateTime() });
     // Logging a real refill clears any pending "requested" flag — matches
     // the original behavior, which only cleared it on the refill branch.
     if (isRefill) MedicationRepository.update(sheet.med.id, { refillRequestedAt: null });
@@ -1583,18 +1583,18 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     flashComplete(sheet.med.id);
     setSheet(null);
   };
-  const correctStock = (delta) => {
-    LogRepository.create({ medicationId: sheet.med.id, type: delta > 0 ? "refill" : "waste", delta, date: nowAsStoredDateTime(), notes: "Manual stock correction" });
+  const correctStock = async (delta) => {
+    await LogRepository.create({ medicationId: sheet.med.id, type: delta > 0 ? "refill" : "waste", delta, date: nowAsStoredDateTime(), notes: "Manual stock correction" });
     syncRefillReminder();
     refreshMeds();
     flashComplete(sheet.med.id);
     setSheet(null);
   };
   // ADDED 26 Aug 2026 — real ask: dose change as its own real action.
-  const confirmDoseUpdate = ({ doseStrengthValue, doseStrengthUnit, unitsPerDose, note, stockDelta }) => {
+  const confirmDoseUpdate = async ({ doseStrengthValue, doseStrengthUnit, unitsPerDose, note, stockDelta }) => {
     MedicationRepository.updateDose(updatingDose.id, { doseStrengthValue, doseStrengthUnit, unitsPerDose, note });
     if (stockDelta !== null && stockDelta !== 0) {
-      LogRepository.create({ medicationId: updatingDose.id, type: stockDelta > 0 ? "refill" : "waste", delta: stockDelta, date: nowAsStoredDateTime(), notes: `Stock update alongside dose change${note ? `: ${note}` : ""}` });
+      await LogRepository.create({ medicationId: updatingDose.id, type: stockDelta > 0 ? "refill" : "waste", delta: stockDelta, date: nowAsStoredDateTime(), notes: `Stock update alongside dose change${note ? `: ${note}` : ""}` });
     }
     syncRefillReminder();
     refreshMeds();
@@ -1607,14 +1607,14 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     refreshMeds();
     flashComplete(id, "requested");
   };
-  const saveCorrection = (newAmount, newDate, reason, sideEffects) => {
+  const saveCorrection = async (newAmount, newDate, reason, sideEffects) => {
     const sign = correction.entry.delta < 0 ? -1 : 1;
-    LogRepository.update(correction.entry.id, { delta: sign * newAmount, date: newDate, reason, sideEffects });
+    await LogRepository.update(correction.entry.id, { delta: sign * newAmount, date: newDate, reason, sideEffects });
     refreshMeds();
     setCorrection(null);
   };
-  const voidCorrection = () => {
-    LogRepository.void(correction.entry.id);
+  const voidCorrection = async () => {
+    await LogRepository.void(correction.entry.id);
     refreshMeds();
     setCorrection(null);
   };
@@ -1634,7 +1634,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     refreshMeds();
     setEditingMed(null);
   };
-  const createMedication = (form) => {
+  const createMedication = async (form) => {
     // MedicationRepository.create assigns the real id (med_006, med_007, ...)
     // — no more `med_${Date.now()}`, matching the project's standing rule
     // that ids are opaque and sequential, never timestamp- or name-derived.
@@ -1647,7 +1647,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     // Initial stock is just the first Refill-type log entry (Doc 5 §5) —
     // no separate Opening Stock field, same rule as everywhere else.
     if (form.inventoryTracked) {
-      LogRepository.create({ medicationId: newMed.id, type: "refill", delta: form.defaultRefillQuantity || 0, date: nowAsStoredDateTime() });
+      await LogRepository.create({ medicationId: newMed.id, type: "refill", delta: form.defaultRefillQuantity || 0, date: nowAsStoredDateTime() });
     }
     refreshMeds();
     setAddingMed(false);

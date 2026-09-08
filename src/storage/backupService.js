@@ -252,7 +252,7 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
   const allData = {
     contacts: await ContactRepository.getAll(),
     medications: MedicationRepository.getAll(),
-    logs: LogRepository.getAll(),
+    logs: await LogRepository.getAll(),
     encounters: EncounterRepository.getAll(),
     kinks: KinkRegistry.getAll(),
     chems: ChemsRegistry.getAll(),
@@ -266,7 +266,7 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     clinicVisits: ClinicVisitsRepository.getAll(),
     symptomLog: SymptomLogRepository.getAll(),
     vaccinations: VaccinationRepository.getAll(),
-    episodes: EpisodeRepository.getAll(),
+    episodes: await EpisodeRepository.getAll(),
     measurements: MeasurementRepository.getAll(),
     menstrualCycles: await MenstrualCycleRepository.getAll(),
     contraception: await ContraceptionRepository.getAll(),
@@ -370,7 +370,7 @@ export async function restoreBackup(parsedBackup) {
   const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies } = parsedBackup.data;
   if (Array.isArray(contacts)) await ContactRepository.replaceAll(contacts);
   if (Array.isArray(medications)) MedicationRepository.replaceAll(medications);
-  if (Array.isArray(logs)) LogRepository.replaceAll(logs);
+  if (Array.isArray(logs)) await LogRepository.replaceAll(logs);
   if (Array.isArray(encounters)) EncounterRepository.replaceAll(encounters);
   if (Array.isArray(kinks)) KinkRegistry.replaceAll(kinks);
   if (Array.isArray(chems)) ChemsRegistry.replaceAll(chems);
@@ -385,7 +385,7 @@ export async function restoreBackup(parsedBackup) {
   if (Array.isArray(clinicVisits)) ClinicVisitsRepository.replaceAll(clinicVisits);
   if (Array.isArray(symptomLog)) SymptomLogRepository.replaceAll(symptomLog);
   if (Array.isArray(vaccinations)) VaccinationRepository.replaceAll(vaccinations);
-  if (Array.isArray(episodes)) EpisodeRepository.replaceAll(episodes);
+  if (Array.isArray(episodes)) await EpisodeRepository.replaceAll(episodes);
   if (Array.isArray(measurements)) MeasurementRepository.replaceAll(measurements);
   if (Array.isArray(menstrualCycles)) await MenstrualCycleRepository.replaceAll(menstrualCycles);
   if (Array.isArray(contraception)) await ContraceptionRepository.replaceAll(contraception);

@@ -36,7 +36,7 @@ export async function syncDoxyPepAlert() {
   }
 
   const encounters = EncounterRepository.getAll();
-  const doxyLogs = LogRepository.getForMedication(doxyMed.id);
+  const doxyLogs = await LogRepository.getForMedication(doxyMed.id);
   const status = getDoxyPepStatus(encounters, doxyLogs);
   // ADDED — real ask: the in-app banner needs to navigate to (and,
   // for the "permanent" dismiss below, key off) this specific
@@ -112,10 +112,10 @@ export async function syncDoxyPepAlert() {
 // getDoxyPepStatus()'s own realTimestampFromStored() call
 // (doxyPepCalculations.js), which assumes every stored dose date
 // follows the fake-UTC convention.
-export function handleTakeDoxyDose() {
+export async function handleTakeDoxyDose() {
   const doxyMed = findDoxyPepMedication(MedicationRepository.getAll());
   if (!doxyMed) return { medications: [] };
-  LogRepository.create({ medicationId: doxyMed.id, type: "dose", delta: -doxyMed.unitsPerDose, date: nowAsStoredDateTime() });
+  await LogRepository.create({ medicationId: doxyMed.id, type: "dose", delta: -doxyMed.unitsPerDose, date: nowAsStoredDateTime() });
   syncDoxyPepAlert();
   return { medications: [doxyMed.name] };
 }

@@ -62,10 +62,12 @@ const DARK = {
 // repositories. Identity is the one deliberate exception, editable
 // directly on this screen (DOB, clinic number, address, NHS number)
 // since there's genuinely nowhere else these fields belong.
-function loadMedicationsWithLogs() {
-  return MedicationRepository.getAll()
-    .filter((m) => !m.isArchived)
-    .map((m) => ({ ...m, logs: LogRepository.getForMedication(m.id) }));
+async function loadMedicationsWithLogs() {
+  return Promise.all(
+    MedicationRepository.getAll()
+      .filter((m) => !m.isArchived)
+      .map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) }))
+  );
 }
 
 // CHANGED — real ask: "Ensure clicking title takes you to that module,

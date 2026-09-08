@@ -1008,12 +1008,12 @@ export default function App() {
       // onDueMedsTake/Skip/Snooze above), so acting from the
       // notification and acting from inside the app both give the same
       // real, visible acknowledgment.
-      listenerHandle = await addNotificationActionListener((action) => {
+      listenerHandle = await addNotificationActionListener(async (action) => {
         if (action.actionId === MEDICATION_ACTIONS.takeAll) onDueMedsTake();
         else if (action.actionId === MEDICATION_ACTIONS.skipToday) onDueMedsSkip();
         else if (action.actionId === MEDICATION_ACTIONS.snooze) onDueMedsSnooze();
         else if (action.actionId === DOXYPEP_ACTIONS.takeDose) {
-          const result = handleTakeDoxyDose();
+          const result = await handleTakeDoxyDose();
           showNotifToast(result.medications.length ? `${result.medications.join(", ")} logged` : "Logged");
         } else if (action.actionId === DOXYPEP_ACTIONS.snooze) {
           const result = handleSnoozeDoxy();

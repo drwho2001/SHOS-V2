@@ -59,7 +59,7 @@ function nameFrom(registry, id) {
 // second, drifting copy of that logic.
 async function assembleClinicCardData() {
   const profile = MyProfileRepository.getProfile();
-  const meds = MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => ({ ...m, logs: LogRepository.getForMedication(m.id) }));
+  const meds = await Promise.all(MedicationRepository.getAll().filter((m) => !m.isArchived).map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) })));
   const tests = sortByDateDesc(TestingRepository.getAll().filter((t) => !t.isArchived));
   const encounters = sortByDateDesc(EncounterRepository.getAll());
   const vaccinations = sortByDateDesc(VaccinationRepository.getAll().filter((v) => !v.isArchived));

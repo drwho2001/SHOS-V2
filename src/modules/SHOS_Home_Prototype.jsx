@@ -337,31 +337,37 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     setLastEncounter(sortedEncounters[0] || null);
 
     const meds = MedicationRepository.getAll();
-    // FIXED — real bug caught in testing: computeAdherence() reads
-    // med.logs directly (confirmed by reading SHOS_Medication_Dashboard_
-    // Prototype.jsx's own loadMedications(), the only other caller) —
-    // MedicationRepository.getAll() alone doesn't include it, logs live
-    // in their own repository keyed by medicationId. Same enrichment
-    // step that file already does before calling computeAdherence,
-    // reused here rather than assumed.
-    const medsWithLogs = meds.map((med) => ({ ...med, logs: LogRepository.getForMedication(med.id) }));
-    setAdherence(getOverallAdherence(medsWithLogs, computeAdherence));
-    const doseLogs = LogRepository.getAll().filter((l) => l.type === "dose" && !l.voided);
-    const sortedLogs = [...doseLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
-    const lastLog = sortedLogs[0];
-    if (lastLog) {
-      // CHANGED 26 Aug 2026 — real ask: was only ever showing the
-      // single last log entry, so logging several meds together (e.g.
-      // "Log all daily meds", or PrEP + something else close together)
-      // only ever displayed one of them. Now groups every dose logged
-      // within 10 minutes of the most recent one and shows all the
-      // names together, same underlying data, no schema change.
-      const TEN_MIN_MS = 10 * 60000;
-      const lastLogTime = new Date(lastLog.date).getTime();
-      const grouped = sortedLogs.filter((l) => lastLogTime - new Date(l.date).getTime() <= TEN_MIN_MS);
-      const names = [...new Set(grouped.map((l) => meds.find((m) => m.id === l.medicationId)?.name).filter(Boolean))];
-      setLastDose(names.length > 0 ? { name: names.join(", "), date: lastLog.date } : null);
-    }
+    // CHANGED — Phase 2 encryption groundwork: LogRepository went
+    // async — same "wrap just this one gated/isolated block" approach
+    // as the contacts block above, since nothing else here depends on
+    // adherence/lastDose.
+    (async () => {
+      // FIXED — real bug caught in testing: computeAdherence() reads
+      // med.logs directly (confirmed by reading SHOS_Medication_Dashboard_
+      // Prototype.jsx's own loadMedications(), the only other caller) —
+      // MedicationRepository.getAll() alone doesn't include it, logs live
+      // in their own repository keyed by medicationId. Same enrichment
+      // step that file already does before calling computeAdherence,
+      // reused here rather than assumed.
+      const medsWithLogs = await Promise.all(meds.map(async (med) => ({ ...med, logs: await LogRepository.getForMedication(med.id) })));
+      setAdherence(getOverallAdherence(medsWithLogs, computeAdherence));
+      const doseLogs = (await LogRepository.getAll()).filter((l) => l.type === "dose" && !l.voided);
+      const sortedLogs = [...doseLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const lastLog = sortedLogs[0];
+      if (lastLog) {
+        // CHANGED 26 Aug 2026 — real ask: was only ever showing the
+        // single last log entry, so logging several meds together (e.g.
+        // "Log all daily meds", or PrEP + something else close together)
+        // only ever displayed one of them. Now groups every dose logged
+        // within 10 minutes of the most recent one and shows all the
+        // names together, same underlying data, no schema change.
+        const TEN_MIN_MS = 10 * 60000;
+        const lastLogTime = new Date(lastLog.date).getTime();
+        const grouped = sortedLogs.filter((l) => lastLogTime - new Date(l.date).getTime() <= TEN_MIN_MS);
+        const names = [...new Set(grouped.map((l) => meds.find((m) => m.id === l.medicationId)?.name).filter(Boolean))];
+        setLastDose(names.length > 0 ? { name: names.join(", "), date: lastLog.date } : null);
+      }
+    })();
 
     // ADDED 19 Aug 2026 — Testing and Home are both fully built now, so
     // this is a real, appropriate interconnection (same "recent

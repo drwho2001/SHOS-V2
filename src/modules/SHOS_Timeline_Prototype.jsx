@@ -308,7 +308,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
     linkedTests.filter(testIsPositive).flatMap((t) => t.organismIds || []).map((id) => OrganismRegistry.getById(id)?.name).filter(Boolean)
   )];
 
-  const update = (changes) => { EpisodeRepository.update(episodeId, changes); setRefreshKey((k) => k + 1); };
+  const update = async (changes) => { await EpisodeRepository.update(episodeId, changes); setRefreshKey((k) => k + 1); };
 
   const encounterCandidates = startDate
     ? EncounterRepository.getAll().filter((e) => e.id !== episode.startEncounterId && e.date >= startDate && !episode.atRiskEncounterIds.includes(e.id))
@@ -599,31 +599,31 @@ export default function TimelineModule({ onClose, registerModuleBackHandler } = 
   const [screen, setScreen] = useState({ name: "list" });
   const [refreshKey, setRefreshKey] = useState(0);
   const backToList = () => setScreen({ name: "list" });
-  const startEpisode = (data) => { EpisodeRepository.create(data); backToList(); };
+  const startEpisode = async (data) => { await EpisodeRepository.create(data); backToList(); };
 
   // ADDED 2 Sep 2026 — real undo/redo for Episode's new genuine
   // permanent delete, same {mode, record} shape/timing as Encounters'
   // own deleteToast (8s window, tap to undo, tap again to redo).
   const [deleteToast, setDeleteToast] = useState(null);
   const undoTimerRef = useRef(null);
-  const handleDelete = (record) => {
-    EpisodeRepository.delete(record.id);
+  const handleDelete = async (record) => {
+    await EpisodeRepository.delete(record.id);
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "undo", record });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
     setRefreshKey((k) => k + 1);
   };
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    EpisodeRepository.restore(deleteToast.record);
+    await EpisodeRepository.restore(deleteToast.record);
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", record: deleteToast.record });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
     setRefreshKey((k) => k + 1);
   };
-  const redoDelete = () => {
+  const redoDelete = async () => {
     if (!deleteToast) return;
-    EpisodeRepository.delete(deleteToast.record.id);
+    await EpisodeRepository.delete(deleteToast.record.id);
     clearTimeout(undoTimerRef.current);
     setDeleteToast(null);
     setRefreshKey((k) => k + 1);

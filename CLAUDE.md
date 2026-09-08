@@ -1220,6 +1220,53 @@ this date; summarized here for durability.
   re-verified end-to-end this batch — the fix is at the shared hook
   level, proven correct here, and structurally identical for those
   three. Full smoke-test suite passes.
+  `episodeRepository.js` and `logRepository.js` converted next (8 Sep,
+  same `ensureLoaded()` pattern) — `logRepository.js` had the widest
+  caller footprint of any repository converted this session (7
+  calculations/storage files, 5 module files). Caller cascade fixed
+  throughout: `doxyPepSync.js`/`medicationReminderSync.js`/
+  `refillReminderSync.js` (their own `getForMedication`/`create` calls
+  awaited; `App.jsx`'s notification-action listener made async so
+  `handleTakeDoxyDose()` — itself newly async — is properly awaited
+  rather than returning a Promise where a real `{medications}` result
+  was expected); `orphanReferenceCheck.js`/`backupService.js` (both
+  already async from earlier batches, just needed `await` added on the
+  Log/Episode-specific calls); `clinicCardPdfService.js`'s/
+  `SHOS_ClinicCard_Prototype.jsx`'s `.map()` chains onto
+  `LogRepository.getForMedication()` converted to `Promise.all`.
+  `SHOS_Home_Prototype.jsx`'s adherence/last-dose block wrapped in its
+  own async IIFE (same "isolate just the gated block" approach as its
+  earlier Contacts/Pregnancy conversions), since nothing else in that
+  effect depends on it. `SHOS_Medication_Dashboard_Prototype.jsx` (the
+  single largest caller — every dose/refill/waste/correction handler)
+  had every `LogRepository` call site awaited; `refreshMeds()` itself
+  kept callable synchronously from ~20 existing call sites by having it
+  internally `loadMedications().then(setMeds)` rather than forcing all
+  20 callers to become async — the same trade-off as `useLoadedState`'s
+  own design, applied by hand here since this file predates that hook.
+  `SHOS_Settings_Prototype.jsx`'s Developer Tools counts got
+  `logsCount`/`episodesCount` via `useLoadedMemo`, matching the existing
+  `locationsCount`/`contactsCount` pattern; its Stats screen's
+  `doxyCompliance` (previously a plain `useMemo` calling
+  `LogRepository.getForMedication()` directly) converted to
+  `useLoadedMemo`. `SHOS_Timeline_Prototype.jsx`'s `EpisodeDetail`/
+  `TimelineLanding` were already on `useLoadedMemo` from an earlier
+  batch — only their own `update`/`startEpisode`/`handleDelete`/
+  `undoDelete`/`redoDelete` handlers needed `await` added. Cross-
+  repository cleanup calls (`ContactRepository`/`EncounterRepository`/
+  etc. calling `EpisodeRepository.unlinkX()`/`LogRepository.
+  deleteForMedication()` from their own still-synchronous `delete()`)
+  needed no code change at all — calling an async function without
+  awaiting it is valid JS and matches this session's established
+  fire-and-forget precedent for cross-repository cleanup, since none of
+  those callers depend on completion timing. Verified live end-to-end:
+  a real "Log dose" tap correctly persisted seed data + the new entry
+  (`shos_logs` 0 → 15, confirming `create()`'s first-write-triggers-
+  persist behavior is unchanged), the in-app Undo toast correctly
+  voided it (15 → 14 non-voided, confirming `void()`), and Developer
+  Tools' "Medication log entries"/"Timeline episodes" counts rendered
+  the correct real numbers (15 and 1) via their new `useLoadedMemo`
+  reads. No page errors. Full smoke-test suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

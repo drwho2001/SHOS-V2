@@ -29,9 +29,11 @@ import { ACCENTS } from "./designTokens";
 // (same live check, no separate concept to drift out of sync).
 export async function getRefillDueMedications() {
   const prefs = await MedicationPreferencesRepository.getPreferences();
-  const meds = MedicationRepository.getAll()
-    .filter((m) => !m.isArchived && m.inventoryTracked)
-    .map((m) => ({ ...m, logs: LogRepository.getForMedication(m.id) }));
+  const meds = await Promise.all(
+    MedicationRepository.getAll()
+      .filter((m) => !m.isArchived && m.inventoryTracked)
+      .map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) }))
+  );
   // Already flagged "requested" — the user's already acted on it (see
   // Medication's own markRequested()), a repeat notification for the
   // same low stock would just be noise until it's actually refilled.

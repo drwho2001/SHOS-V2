@@ -42,7 +42,7 @@ export async function getDailyMedsState() {
     // re-showed the exact same medication as due a moment later. Same
     // check as isSkippedToday above, just a shorter horizon.
     if (isDoseSnoozed(prefs, med.id)) continue;
-    const logs = LogRepository.getForMedication(med.id);
+    const logs = await LogRepository.getForMedication(med.id);
     const lastDose = [...logs].filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
     if (!lastDose || !isDoseLockedOut(med, lastDose.date)) {
       due.push(med);
@@ -125,7 +125,7 @@ export async function handleTakeAll() {
   // realTimestampFromStored() call (medicationCalculations.js), which
   // assumes every stored dose date follows the fake-UTC convention.
   const timestamp = nowAsStoredDateTime();
-  due.forEach((m) => LogRepository.create({ medicationId: m.id, type: "dose", delta: -m.unitsPerDose, date: timestamp }));
+  for (const m of due) await LogRepository.create({ medicationId: m.id, type: "dose", delta: -m.unitsPerDose, date: timestamp });
   syncMedicationReminders();
   return { medications: names };
 }

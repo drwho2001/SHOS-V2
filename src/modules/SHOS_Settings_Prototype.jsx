@@ -582,16 +582,21 @@ function DeveloperToolsScreen({ onClose }) {
   // CHANGED — Phase 2 encryption groundwork: ContactRepository went
   // async too — same treatment as locationsCount above.
   const contactsCount = useLoadedMemo(() => ContactRepository.getAll().then((l) => l.length), [], 0);
+  // CHANGED — Phase 2 encryption groundwork: LogRepository/
+  // EpisodeRepository went async too — same treatment as
+  // locationsCount/contactsCount above.
+  const logsCount = useLoadedMemo(() => LogRepository.getAll().then((l) => l.length), [], 0);
+  const episodesCount = useLoadedMemo(() => EpisodeRepository.getAll().then((l) => l.length), [], 0);
   const counts = [
     { label: "Contacts", value: contactsCount },
     { label: "Encounters", value: EncounterRepository.getAll().length },
     { label: "Medications", value: MedicationRepository.getAll().length },
-    { label: "Medication log entries", value: LogRepository.getAll().length },
+    { label: "Medication log entries", value: logsCount },
     { label: "Tests", value: TestingRepository.getAll().length },
     { label: "Clinic visits", value: ClinicVisitsRepository.getAll().length },
     { label: "Symptom Log entries", value: SymptomLogRepository.getAll().length },
     { label: "Vaccinations", value: VaccinationRepository.getAll().length },
-    { label: "Timeline episodes", value: EpisodeRepository.getAll().length },
+    { label: "Timeline episodes", value: episodesCount },
     { label: "Kink Registry entries", value: KinkRegistry.getAll().length },
     { label: "Chems Registry entries", value: ChemsRegistry.getAll().length },
     { label: "Protection Registry entries", value: ProtectionRegistry.getAll().length },
@@ -2316,7 +2321,7 @@ function StatsScreen({ onClose }) {
   // computeAdherence() reads med.logs directly — not part of the raw
   // repository record, so it has to be stitched on here too (same as
   // SHOS_Medication_Dashboard_Prototype.jsx's loadMedications()).
-  const medications = useLoadedMemo(() => MedicationRepository.getAll().map((med) => ({ ...med, logs: LogRepository.getForMedication(med.id) })), [], []);
+  const medications = useLoadedMemo(() => Promise.all(MedicationRepository.getAll().map(async (med) => ({ ...med, logs: await LogRepository.getForMedication(med.id) }))), [], []);
   // ADDED — real ask: "expand stats".
   const symptomEntries = useLoadedMemo(() => SymptomLogRepository.getAll(), [], []);
   const clinicVisits = useLoadedMemo(() => ClinicVisitsRepository.getAll(), [], []);
@@ -2330,11 +2335,15 @@ function StatsScreen({ onClose }) {
   // the two distinct comparisons this covers.
   const testingTrend = useMemo(() => getTestingIntervalTrend(tests), [tests]);
   const adherence = useMemo(() => getOverallAdherence(medications, computeAdherence), [medications]);
-  const doxyCompliance = useMemo(() => {
+  // CHANGED — Phase 2 encryption groundwork: LogRepository went async
+  // — this used to be a plain useMemo directly calling
+  // LogRepository.getForMedication(), now needs useLoadedMemo since it
+  // awaits.
+  const doxyCompliance = useLoadedMemo(async () => {
     const doxyMed = findDoxyPepMedication(medications);
     if (!doxyMed) return null;
-    return getDoxyPepComplianceRate(encounters, LogRepository.getForMedication(doxyMed.id), isQualifyingEncounter, DOXYPEP_WINDOW_HOURS);
-  }, [encounters, medications]);
+    return getDoxyPepComplianceRate(encounters, await LogRepository.getForMedication(doxyMed.id), isQualifyingEncounter, DOXYPEP_WINDOW_HOURS);
+  }, [encounters, medications], null);
   const contactMonths = useMemo(() => getContactsAddedPerMonth(contacts, 6), [contacts]);
   // ADDED — real ask: "expand stats". See getAdherenceTrend's own
   // comment for why this is deliberately a simpler, self-contained

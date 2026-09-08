@@ -174,7 +174,7 @@ export async function findOrphanReferences() {
     await checkArray(results, clinicVisitExists, v.clinicVisitIds, { ...ctx, field: "clinicVisitIds", targetType: "Clinic Visit" });
   }
 
-  for (const ep of EpisodeRepository.getAll()) {
+  for (const ep of await EpisodeRepository.getAll()) {
     const ctx = { recordType: "Episode", recordLabel: ep.title, recordId: ep.id };
     await checkSingle(results, encounterExists, ep.startEncounterId, { ...ctx, field: "startEncounterId", targetType: "Encounter" });
     await checkArray(results, encounterExists, ep.atRiskEncounterIds, { ...ctx, field: "atRiskEncounterIds", targetType: "Encounter" });
@@ -192,7 +192,7 @@ export async function findOrphanReferences() {
     await checkSingle(results, contactExists, loc.relatedContactId, { recordType: "Location", recordLabel: loc.name, recordId: loc.id, field: "relatedContactId", targetType: "Contact" });
   }
 
-  for (const log of LogRepository.getAll()) {
+  for (const log of await LogRepository.getAll()) {
     await checkSingle(results, medicationExists, log.medicationId, { recordType: "Medication log entry", recordLabel: `${log.type || "entry"} · ${log.date || ""}`, recordId: log.id, field: "medicationId", targetType: "Medication" });
   }
 
