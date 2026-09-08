@@ -42,6 +42,14 @@ import { ChemsRegistry, resolveChemSynonym } from "../registries/chemsRegistry";
 import { ProtectionRegistry } from "../registries/protectionRegistry";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { LocationsRepository } from "../repositories/locationsRepository";
+// ADDED — real bug report: Anonymise mode (see privacySettingsRepository.js)
+// masked Contacts' own name/address/etc. but Encounters still showed the
+// real linked-attendee name on cards and in the detail view — the same
+// identity the mode exists to hide, just reachable from a different
+// module. Scoped narrowly to attendee names, matching exactly what was
+// reported (not location/kinks — those weren't part of the report and
+// privacySettingsRepository.js's own base tier is Contact-field-specific).
+import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -88,6 +96,10 @@ function contactName(contacts, id) {
   const c = contacts.find((c) => c.id === id);
   return c ? (c.nickname || c.name) : "Unknown";
 }
+// Same placeholder string Contacts' own Anonymise mode uses (see
+// SHOS_Contacts_Prototype.jsx's MASKED) — not exported from there, so
+// duplicated here rather than reaching across module boundaries.
+const MASKED = "•••• hidden";
 
 // ── Shared primitives (same shapes as Contacts/Medication files) ──
 
@@ -756,7 +768,7 @@ function ReadRow({ label, value, T }) {
 }
 
 // ── Encounter Card (Doc 3 B2) — used in the Activity Landing timeline ──
-function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, selected = false, onToggleSelected, onLongPress }) {
+function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, selected = false, onToggleSelected, onLongPress, anonymise = false }) {
   const attendeeNames = encounter.attendeeIds.map((id) => contactName(contacts, id));
   const shown = attendeeNames.slice(0, 3);
   const extra = attendeeNames.length - shown.length;
@@ -825,7 +837,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
         {shown.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: T.textSecondary }}>
             <Users size={13} />
-            {shown.join(", ")}{extra > 0 ? ` +${extra}` : ""}
+            {anonymise ? MASKED : `${shown.join(", ")}${extra > 0 ? ` +${extra}` : ""}`}
           </div>
         )}
         {locationName && (
@@ -845,6 +857,10 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
 // ── 3a. Activity Landing ──
 function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
   const [contacts] = useState(loadContacts);
+  // ADDED — real bug report: Anonymise mode masked Contacts but not
+  // Encounters' own attendee display. Same read pattern Contacts uses.
+  const [privacy] = useState(() => PrivacySettingsRepository.getSettings());
+  const anonymise = privacy.anonymiseModeActive;
   const [showArchived, setShowArchived] = useState(false);
   // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
   // to every module.
@@ -995,7 +1011,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         )}
         {visible.map((e) => (
           <EncounterCard key={e.id} encounter={e} contacts={contacts} T={T} onClick={() => onOpenEncounter(e.id)}
-            selectMode={selectMode} selected={selectedIds.includes(e.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }} />
+            selectMode={selectMode} selected={selectedIds.includes(e.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }} anonymise={anonymise} />
         ))}
       </div>
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
@@ -1034,6 +1050,10 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
 function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, triggerDelete, refresh }) {
   const [encounter, setEncounter] = useState(() => EncounterRepository.getById(encounterId));
   const [contacts] = useState(loadContacts);
+  // ADDED — real bug report: Anonymise mode masked Contacts but not
+  // an encounter's own linked-attendee names shown here.
+  const [privacy] = useState(() => PrivacySettingsRepository.getSettings());
+  const anonymise = privacy.anonymiseModeActive;
   const [menuOpen, setMenuOpen] = useState(false);
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven across every other module this session.
@@ -1147,7 +1167,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
               // navigation now exists (see App.jsx's navigateToRecord).
               <div key={id} onClick={() => onNavigateToRecord?.("contacts", id)}
                 style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, color: T.encountersPink, fontWeight: 600, cursor: onNavigateToRecord ? "pointer" : "default" }}>
-                {contactName(contacts, id)}
+                {anonymise ? MASKED : contactName(contacts, id)}
               </div>
             ))}
         </SectionCard>

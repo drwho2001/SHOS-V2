@@ -874,6 +874,19 @@ function hasAnyResourceMatch(query) {
 // resourcesRepository.js's own header for why every entry seeds with a
 // real org name but a deliberately blank link/notes field — this
 // screen is where the user fills those in themselves.
+// ADDED — real ask: resource links (and phone numbers, same field —
+// see the input's own "Link or phone number" placeholder below) used
+// to render as plain text, not clickable. Builds a real tappable href
+// for whichever shape the saved value actually is, rather than
+// assuming it's always a URL.
+function resourceLinkHref(link) {
+  const trimmed = link.trim();
+  if (/^(https?:|tel:|mailto:)/i.test(trimmed)) return trimmed;
+  if (/^[\w.-]+@[\w.-]+\.\w+$/.test(trimmed)) return `mailto:${trimmed}`;
+  if (/^[+(]?[\d\s()-]{6,}$/.test(trimmed)) return `tel:${trimmed.replace(/[()\s-]/g, "")}`;
+  return `https://${trimmed}`;
+}
+
 function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
   const T = darkMode ? DARK : NEUTRAL;
   const [expanded, setExpanded] = useState(false);
@@ -894,7 +907,10 @@ function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
       <div onClick={() => setExpanded((e) => !e)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
         <div>
           <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{entry.name}</div>
-          {!expanded && entry.link && <div style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 2 }}>{entry.link}</div>}
+          {!expanded && entry.link && (
+            <a href={resourceLinkHref(entry.link)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+              style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 2, display: "inline-block", textDecoration: "underline" }}>{entry.link}</a>
+          )}
           {!expanded && !entry.link && <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginTop: 2 }}>No link saved yet — tap to add one</div>}
         </div>
         <ChevronRight size={14} color={T.textDisabled} style={{ transform: expanded ? "rotate(90deg)" : "none" }} />

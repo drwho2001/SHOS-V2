@@ -245,6 +245,95 @@ this date; summarized here for durability.
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
 
+## Recently shipped (8 Sep 2026 — see Notion for full detail)
+
+Three real bug/feedback reports from actual app use, investigated and
+fixed in the same session as PregnancyRepository's Phase 2 conversion
+above (unrelated work, done back-to-back per the owner's own report).
+
+**Anonymise mode didn't apply globally** — real report: "contacts
+anonymised, but not encounters (still shows linked contact on card/in
+file)." Confirmed via grep that `SHOS_Encounters_Prototype.jsx` had
+zero references to `PrivacySettingsRepository` at all — Anonymise mode
+was Contacts-only, exactly as reported. `privacySettingsRepository.js`'s
+own header comment previously said this was deliberate ("scoped to
+Contacts... not applied to... Encounters, etc. — no real ask to do
+so") — true when written, superseded now by this explicit report, so
+that comment needs updating too (not yet done — flagged here rather
+than silently left stale). Fixed narrowly, matching exactly what was
+reported: `EncounterCard` (the list/card view) and `ActivityDetails`'s
+Attendees section (the "file"/detail view) both now read
+`PrivacySettingsRepository.getSettings().anonymiseModeActive` (same
+`useLoadedState` read pattern Contacts already uses — the repository
+itself is still fully synchronous, deliberately deferred from Phase 2
+per its own App Lock security sensitivity) and mask the resolved
+attendee name(s) behind the same `"•••• hidden"` placeholder Contacts
+uses (duplicated locally rather than exported, to avoid a cross-module
+reach for one string). Deliberately NOT touched: Encounter location
+names, kinks-involved tags, or Global Search's own attendee-name
+resolution — none of those were part of the actual report, and
+guessing past what was asked is exactly what this repository's own
+scoping comment already warned against once before. Verified live:
+before Anonymise mode, real attendee names show on cards and in
+detail; after enabling it (`shos_privacy_settings.anonymiseModeActive`),
+every card and the detail view's Attendees section correctly show
+`"•••• hidden"` instead, with Contacts' own existing masking unaffected
+(regression-checked in the same run). No page errors.
+
+**Resources links weren't clickable** — real report: "show as
+hyperlink/click to open." `ResourceEntryRow` in
+`SHOS_Settings_Prototype.jsx` rendered `entry.link` as plain text in
+its collapsed row; a working pattern already existed elsewhere in the
+same file (`ClinicalJustificationsSection`'s `item.link`, a plain
+`<a href target="_blank">`) but Resources' own field can hold a phone
+number as well as a URL (its edit input's own placeholder already says
+"Link or phone number"), so a bare `href={entry.link}` would silently
+break on a saved phone number. Added `resourceLinkHref()` — detects an
+already-schemed value (`http(s):`/`tel:`/`mailto:`) and passes it
+through, detects an email shape and prefixes `mailto:`, detects a
+phone-number shape (mostly digits/spaces/parens/dashes, 6+ chars) and
+prefixes `tel:` after stripping the formatting characters, and
+otherwise assumes a bare domain and prefixes `https://`. The link now
+renders as a real underlined `<a>` with `stopPropagation()` on click so
+tapping it opens the link instead of toggling the row's own
+expand/collapse. Verified live: a real seeded URL
+(`https://refuge.org.uk/`) renders as an actual anchor tag with the
+correct `href` and `target="_blank"`.
+
+**No visibility into when the next medication reminder will actually
+fire** — real report: no way to see the next alarm's clock time, plus
+a suspicion the reminder fires on a fixed schedule rather than shifting
+with a late dose. The second half turned out to already be correct,
+not a bug: `medicationCalculations.js`'s `lockoutEndsAt()`/
+`nextDoseEstimate()` both compute forward from the real last-logged
+dose's own timestamp (`realTimestampFromStored(lastDoseDate) +
+intervalHours * ...`), not from a fixed clock time, and
+`syncMedicationReminders()` (which schedules the real native
+notification from exactly `lockoutEndsAt()`) is re-run after every
+dose log/skip/snooze/take action — so a late dose already shifts the
+next reminder forward by the same lateness automatically. The real gap
+was visibility, not logic: the Medication Dashboard's existing "Next
+dose" display (`nextDoseEstimate`) only ever showed a relative string
+("~5h"), never an actual clock time, and — a second real finding along
+the way — that relative estimate isn't even the same moment the
+reminder notification fires at: the notification schedules from
+`lockoutEndsAt()` (80% of the dosing interval, when the dose actually
+unlocks), while the displayed "~5h" was `nextDoseEstimate()` (100% of
+the interval, when it's fully due) — two different times shown as if
+they were one. Fixed by adding a real `nextReminderClock` (formatted
+from `lockoutEndsAt()`, hidden once it's already in the past) shown
+alongside the existing relative text on both Medication Dashboard card
+layouts (inventory-tracked and not), e.g. "Next dose ~6h (reminder
+~3:42 AM)" — giving a real answer to "when will my alarm fire" using
+the exact value the notification is actually scheduled from, and
+incidentally making the existing shift-with-late-dose behavior visibly
+provable rather than just true in code. Verified live against real
+seed data across two different daily medications (AM- and PM-anchored
+doses) — both showed internally consistent, correctly-computed clock
+times (e.g. an 8:30 PM last dose correctly producing a 3:42 PM
+next-day reminder time, matching the 80%-of-24h math by hand). No page
+errors. Full smoke-test suite passes for all three fixes.
+
 ## Recently shipped (4 Sep 2026, real-device follow-up — see Notion for full detail)
 
 Owner reports the "export backup to a folder" write ("I believe" —
