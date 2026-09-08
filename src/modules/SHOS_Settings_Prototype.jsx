@@ -3449,18 +3449,22 @@ function DesignScreen({ onClose }) {
   // location of the control changed, not the preference itself.
   const [darkMode, setDarkMode] = useDarkModePreference();
 
-  const setColor = (key, hex) => {
-    ModuleColorRepository.setOverride(key, hex);
-    setOverrides(ModuleColorRepository.getOverrides());
+  // CHANGED — Phase 2 encryption groundwork: ModuleColorRepository is
+  // now async — every handler below awaits its write, then awaits a
+  // fresh getOverrides() before updating local state, same "write then
+  // reread" shape as everywhere else this session.
+  const setColor = async (key, hex) => {
+    await ModuleColorRepository.setOverride(key, hex);
+    setOverrides(await ModuleColorRepository.getOverrides());
     setChanged(true);
   };
-  const reset = (key) => {
-    ModuleColorRepository.resetOverride(key);
-    setOverrides(ModuleColorRepository.getOverrides());
+  const reset = async (key) => {
+    await ModuleColorRepository.resetOverride(key);
+    setOverrides(await ModuleColorRepository.getOverrides());
     setChanged(true);
   };
-  const resetAll = () => {
-    ModuleColorRepository.resetAll();
+  const resetAll = async () => {
+    await ModuleColorRepository.resetAll();
     setOverrides({});
     setChanged(true);
   };
@@ -3470,11 +3474,17 @@ function DesignScreen({ onClose }) {
   // that constant's own comment in moduleColorRepository.js for the
   // research behind the exact hues. "On" is derived from the actual
   // stored overrides each render, not a separate flag.
-  const cvdActive = ModuleColorRepository.isCvdPaletteActive();
-  const toggleCvdPalette = () => {
-    if (cvdActive) ModuleColorRepository.removeCvdPalette();
-    else ModuleColorRepository.applyCvdPalette();
-    setOverrides(ModuleColorRepository.getOverrides());
+  // CHANGED — Phase 2 encryption groundwork: isCvdPaletteActive() is
+  // now async — was a plain render-body call ("safe" only while the
+  // repository stayed synchronous, the same trap this exact pattern
+  // has hit for other repositories earlier this session), now resolved
+  // via useLoadedMemo, re-evaluated whenever the loaded overrides
+  // change so a manual colour edit still correctly flips it back off.
+  const cvdActive = useLoadedMemo(() => ModuleColorRepository.isCvdPaletteActive(), [overrides], false);
+  const toggleCvdPalette = async () => {
+    if (cvdActive) await ModuleColorRepository.removeCvdPalette();
+    else await ModuleColorRepository.applyCvdPalette();
+    setOverrides(await ModuleColorRepository.getOverrides());
     setChanged(true);
   };
 

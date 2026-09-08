@@ -1803,11 +1803,66 @@ this date; summarized here for durability.
   role: null}]` to `shos_contacts` — confirmed via direct localStorage
   reads at every step, not on-screen text alone. No page errors
   anywhere. Full smoke-test suite passes.
-  What's left in the deferred, harder-bucket tier: `ModuleColorRepository`
-  (via `designTokens.js`'s own module-load-time cache of it),
-  `storageAdapter.js` itself (Phase 3), and real `crypto.subtle`
-  encryption (Phase 4) — none of these started yet, each still needing
-  its own dedicated scoping pass before touching it.
+  `ModuleColorRepository` converted next (8 Sep) — genuinely different
+  from every prior conversion, not because the repository itself was
+  hard (it never cached at module load, same "read fresh per call, no
+  redesign needed" shape as `TrashRepository`/`CustomGroupsRepository`
+  — a direct `async`/`await` conversion of `getOverrides`/`setOverride`/
+  `resetOverride`/`resetAll`/`isCvdPaletteActive`/`applyCvdPalette`/
+  `removeCvdPalette`), but because of its one real caller flagged when
+  this tier was first scoped: `designTokens.js` builds its own
+  `ACCENTS`/`ACTION` exports from this repository's stored overrides at
+  MODULE LOAD TIME — a plain synchronous object literal imported
+  directly by every other module file in the app before React ever
+  renders, not through a hook, not behind any guard that could `await`
+  anything. That call site genuinely cannot use the new async
+  `getOverrides()` — a Promise has no enumerable own properties, so
+  `{...DEFAULT_ACCENTS, ...aPromise}` would have silently discarded
+  every real customisation on every single load, forever, not a
+  cosmetic bug. Making that bootstrap path genuinely async would mean
+  gating the WHOLE app's first render behind a real loading/splash
+  screen until `ACCENTS` resolves — legitimate future work, but
+  Phase 3 work (the same class of decision already made for `App.jsx`'s
+  own `locked` bootstrap state earlier this session), not a mechanical
+  Phase 2 swap. Real fix: a new `getOverridesSync()` method, deliberately
+  synchronous, reading `storageAdapter`'s own still-100%-synchronous
+  `load()` directly and bypassing this repository's async public API —
+  the same category of documented, narrow exception as `main.jsx`'s
+  `ErrorBoundary` reading `shos_app_preferences` via raw `localStorage`
+  directly. Safe today specifically because `storageAdapter.js` itself
+  hasn't gone async yet (Phase 3); flagged explicitly, in both files,
+  to be revisited — not just reconnected — once it does, at which point
+  `designTokens.js`'s whole bootstrap needs the same real
+  app-loading-gate treatment `locked` will need.
+  `SHOS_Settings_Prototype.jsx`'s `DesignScreen` (the one other real
+  caller) needed `setColor`/`reset`/`resetAll`/`toggleCvdPalette`
+  awaited, plus one real instance of a pattern already proven broken
+  twice this session for other repositories: `cvdActive` was a plain
+  render-body call to `isCvdPaletteActive()` ("safe" only while the
+  repository stayed synchronous) — converted to `useLoadedMemo`, keyed
+  on `overrides` so a manual single-colour edit still correctly flips
+  the toggle back off, matching its own documented "derived from the
+  actual stored overrides, not a separate flag" behavior.
+  Verified live end-to-end via Playwright: the CVD-safe-palette toggle
+  correctly writes all 8 real preset colours to
+  `shos_module_color_overrides` on, correctly removes all 8 on off,
+  with the toggle's own `aria-checked` state correctly reflecting each
+  (proving the async `isCvdPaletteActive()`/`useLoadedMemo` conversion);
+  a manual single-colour edit via Customise → Hex/RGB correctly wrote
+  just that one key, and its own Reset icon correctly removed just that
+  key; and — the real proof of the `designTokens.js` bootstrap fix —
+  writing a distinctive real override (`{"contacts":"#00FF00"}`)
+  directly to `localStorage` and reloading produced 12 real rendered
+  elements on the live Contacts screen using that exact colour (fill,
+  text, and border), confirming `getOverridesSync()` still reaches
+  `ACCENTS` correctly. No page errors anywhere. Full smoke-test suite
+  passes.
+  What's left in the deferred, harder-bucket tier: `storageAdapter.js`
+  itself (Phase 3 — making the actual adapter async, at which point
+  `App.jsx`'s `locked` state and `designTokens.js`'s own bootstrap read
+  both need their real app-loading-gate treatment, not a moment
+  before), and real `crypto.subtle` encryption (Phase 4) — neither
+  started yet, each still needing its own dedicated scoping pass.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

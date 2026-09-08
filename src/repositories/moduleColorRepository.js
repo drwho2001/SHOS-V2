@@ -146,25 +146,71 @@ export const CVD_SAFE_PALETTE = {
   menstrual: "#6D172E",
 };
 
+// CHANGED — Phase 2 encryption groundwork: every method below is now
+// async, matching the "every repository expects async" prep work done
+// across the rest of the app this session (a harmless `await` on
+// `storageAdapter`'s own still-fully-synchronous `load`/`save` today —
+// see storageAdapter.js's own comment — is what lets this repository's
+// real callers already be written correctly for when that adapter
+// itself goes async in Phase 3, with zero further change needed at
+// this file's own call sites). This repository never cached at
+// module-load time (reads fresh per call already), so this is a
+// direct conversion, not an `ensureLoaded()` redesign — same "easy
+// bucket" shape as TrashRepository/CustomGroupsRepository.
+//
+// HONEST EXCEPTION, load-bearing — read before touching this file
+// again: `designTokens.js` builds its own `ACCENTS`/`ACTION` exports
+// from this repository's stored overrides at MODULE LOAD TIME, a plain
+// synchronous object literal imported directly by every other module
+// file in the app before React ever renders — not through a hook,
+// not behind any guard that could `await` something. That call site
+// cannot use the async `getOverrides()` below (a Promise has no
+// enumerable own properties, so `{...DEFAULT_ACCENTS, ...aPromise}`
+// would silently discard every real customisation on every load,
+// forever — a real, serious regression, not a cosmetic one). Making
+// that bootstrap path genuinely async would mean gating the WHOLE
+// app's first render behind a real loading/splash screen until
+// `ACCENTS` resolves — legitimate future work, but it's Phase 3 work
+// (the same class of decision already made for `App.jsx`'s own
+// `locked` bootstrap state — see this file's own Known Issues entry),
+// not a mechanical Phase 2 swap. `getOverridesSync()` below is the
+// deliberate, narrow exception that keeps `designTokens.js` working
+// exactly as it does today — reading `storageAdapter`'s own still-100%-
+// synchronous `load()` directly, bypassing this repository's async
+// public API — same category of documented exception as
+// `main.jsx`'s `ErrorBoundary` reading `shos_app_preferences` via raw
+// `localStorage` directly. This has to be revisited (not just
+// reconnected) once `storageAdapter.js` itself actually goes async in
+// Phase 3 — at that point `designTokens.js`'s whole bootstrap needs
+// the same real app-loading-gate treatment `locked` will need, not
+// another synchronous workaround layered on top.
 export const ModuleColorRepository = {
   // Returns only the overrides actually set — {} if none.
-  getOverrides() {
+  async getOverrides() {
+    return await storage.load(STORAGE_KEY, {});
+  },
+
+  // Deliberately synchronous — see the file-level comment above.
+  // `designTokens.js` is this function's one and only real caller;
+  // nothing else should reach for this over the real async
+  // `getOverrides()` above.
+  getOverridesSync() {
     return storage.load(STORAGE_KEY, {});
   },
 
-  setOverride(moduleKey, hexColor) {
-    const current = this.getOverrides();
-    storage.save(STORAGE_KEY, { ...current, [moduleKey]: hexColor });
+  async setOverride(moduleKey, hexColor) {
+    const current = await this.getOverrides();
+    await storage.save(STORAGE_KEY, { ...current, [moduleKey]: hexColor });
   },
 
-  resetOverride(moduleKey) {
-    const current = this.getOverrides();
+  async resetOverride(moduleKey) {
+    const current = await this.getOverrides();
     const { [moduleKey]: _removed, ...rest } = current;
-    storage.save(STORAGE_KEY, rest);
+    await storage.save(STORAGE_KEY, rest);
   },
 
-  resetAll() {
-    storage.save(STORAGE_KEY, {});
+  async resetAll() {
+    await storage.save(STORAGE_KEY, {});
   },
 
   // ADDED — the toggle's on/off state is derived, not a separate stored
@@ -173,24 +219,24 @@ export const ModuleColorRepository = {
   // those 7 colours (via the same ColorInputRow rows just below the
   // toggle) naturally reads back as "off" without needing to keep a
   // flag in sync with it.
-  isCvdPaletteActive() {
-    const current = this.getOverrides();
+  async isCvdPaletteActive() {
+    const current = await this.getOverrides();
     return Object.entries(CVD_SAFE_PALETTE).every(([key, hex]) => current[key] === hex);
   },
 
-  applyCvdPalette() {
-    const current = this.getOverrides();
-    storage.save(STORAGE_KEY, { ...current, ...CVD_SAFE_PALETTE });
+  async applyCvdPalette() {
+    const current = await this.getOverrides();
+    await storage.save(STORAGE_KEY, { ...current, ...CVD_SAFE_PALETTE });
   },
 
   // Removes exactly the 7 preset keys, not a blanket resetAll() — a
   // manual customisation to some OTHER key the user set beforehand
   // (there are none today beyond these 7, but the repository doesn't
   // assume that stays true) is left untouched.
-  removeCvdPalette() {
-    const current = this.getOverrides();
+  async removeCvdPalette() {
+    const current = await this.getOverrides();
     const rest = { ...current };
     for (const key of Object.keys(CVD_SAFE_PALETTE)) delete rest[key];
-    storage.save(STORAGE_KEY, rest);
+    await storage.save(STORAGE_KEY, rest);
   },
 };

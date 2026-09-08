@@ -163,9 +163,19 @@ const DEFAULT_ACCENTS = {
 // somehow unavailable — falls back to defaults, exactly the same
 // resilience every other repository already has via storageAdapter's
 // own fallback handling.
+// CHANGED — Phase 2 encryption groundwork: ModuleColorRepository's real
+// public API (getOverrides()) is now async, since every repository is
+// expected to be by this point in the migration — but THIS read can't
+// await anything (a plain module-load-time object build, imported
+// synchronously by every other module before React renders). Reads via
+// getOverridesSync() instead — a deliberate, narrow exception
+// documented in moduleColorRepository.js itself, safe today because
+// storageAdapter.js's own load() is still fully synchronous. Revisit
+// this call site (not just reconnect it) once storageAdapter.js
+// actually goes async in Phase 3.
 let overrides = {};
 try {
-  overrides = ModuleColorRepository.getOverrides();
+  overrides = ModuleColorRepository.getOverridesSync();
 } catch {
   overrides = {};
 }
