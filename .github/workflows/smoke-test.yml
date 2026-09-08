@@ -25,7 +25,13 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v5
         with:
-          node-version: 20
+          # CHANGED — real inconsistency flagged in a relayed AI review:
+          # build-apk.yml already runs Node 22 (a hard requirement there —
+          # @capacitor/cli 8.x refuses to run on anything older). This job
+          # doesn't touch Capacitor and had been passing fine on 20, but
+          # there's no reason to run CI on two different Node versions for
+          # the same repo when nothing depends on staying on 20.
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
