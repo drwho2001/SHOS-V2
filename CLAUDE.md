@@ -1047,6 +1047,53 @@ this date; summarized here for durability.
   checker. No page errors anywhere. Full smoke-test suite passes,
   including its own Locations-extra-fields flow, which directly
   exercises this batch's own conversion.
+  `PregnancyRepository` converted next (fourth `ensureLoaded()` proof) —
+  its caller cascade reached `SHOS_MenstrualHealth_Prototype.jsx`'s
+  `PregnancyTab` (the exact "deliberately-left-synchronous, direct
+  render-body `Repository.getAll()`/`getById()` call" pattern CLAUDE.md
+  itself once documented as a correct, intentional exception — valid
+  only while this repository stayed synchronous forever, same trap
+  `RegistrySinglePicker` hit for Locations), `MenstrualHealthModule`'s
+  own top-level "Currently pregnant" banner (`getActive()`, reloaded on
+  `[subTab]` since nothing else in that component was already tracking
+  a refresh signal), `clinicCardPdfService.js`/`SHOS_ClinicCard_Prototype.jsx`'s
+  own `getActive()` calls for the Clinic Card PDF/screen's pregnancy
+  section, and 3 sites in `backupService.js`. All converted the same
+  way as prior batches: `PregnancyTab`'s list (`all`) and by-id lookup
+  (`byId`, shared between the detail view and the edit sheet — both
+  read the same record by the same `screen.id`) moved to
+  `useLoadedMemo`; `create`/`save` made `async`/`await`.
+  Real pre-existing bug found and fixed while wiring `backupService.js`'s
+  3rd `PregnancyRepository` site: `mergeBackup()`'s own `append()` helper
+  was still fully synchronous even though it's already called with
+  `LocationsRepository` (converted the batch before this one) —
+  `[...repo.getAll(), ...incoming]` spreads a Promise once `getAll()`
+  returns one, which throws at runtime rather than failing silently.
+  Missed when Locations converted because nothing in that batch's own
+  verification exercised the Merge-backup import path specifically (only
+  Replace-All was checked). Fixed by making `append()` itself
+  `async`/await-aware — a no-op for every repository in this helper
+  still synchronous — and awaiting all 20 of its call sites, not just
+  the Locations/Pregnancy ones, so the same latent bug can't recur as
+  more repositories convert under it. Verified live end-to-end: list
+  view (real seed data — one plain Negative entry, one masked
+  Miscarriage entry showing "Tap to reveal"), tapping the masked row in
+  the LIST correctly reveals it in place rather than navigating away
+  (confirms `isMasked`/`revealedIds` still work against the new
+  `useLoadedMemo`-backed `all`), opening the revealed entry's detail
+  shows the real underlying data (Positive/Miscarriage/Feb 22 2027 due
+  date/Jul 14 2026 outcome date/the real notes text), editing correctly
+  opens the real `PregnancySheet` pre-filled with that data (proving
+  `byId` serves both the detail view and the edit sheet correctly), and
+  saving a changed note round-trips through the async `update()` call
+  and is confirmed via a direct `localStorage` read afterward, not just
+  the on-screen text. Creating a brand-new entry through the real Add
+  sheet also verified end-to-end (`shos_pregnancies` count went from 2
+  to 3 with the correct new id), and setting that new entry's status to
+  Ongoing and reloading correctly showed the top-level "Currently
+  pregnant" banner on the Cycle tab, confirming `MenstrualHealthModule`'s
+  own `getActive()` conversion. No page errors anywhere across any of
+  these flows. Full smoke-test suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

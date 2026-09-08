@@ -270,7 +270,7 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     measurements: MeasurementRepository.getAll(),
     menstrualCycles: MenstrualCycleRepository.getAll(),
     contraception: ContraceptionRepository.getAll(),
-    pregnancies: PregnancyRepository.getAll(),
+    pregnancies: await PregnancyRepository.getAll(),
     measurementPreferences: await MeasurementPreferencesRepository.getPreferences(),
     customGroups: await CustomGroupsRepository.getAllForBackup(),
     customOptionLists: CustomOptionListsRepository.getAllForBackup(),
@@ -389,7 +389,7 @@ export async function restoreBackup(parsedBackup) {
   if (Array.isArray(measurements)) MeasurementRepository.replaceAll(measurements);
   if (Array.isArray(menstrualCycles)) MenstrualCycleRepository.replaceAll(menstrualCycles);
   if (Array.isArray(contraception)) ContraceptionRepository.replaceAll(contraception);
-  if (Array.isArray(pregnancies)) PregnancyRepository.replaceAll(pregnancies);
+  if (Array.isArray(pregnancies)) await PregnancyRepository.replaceAll(pregnancies);
   if (measurementPreferences && typeof measurementPreferences === "object") await MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
   if (customGroups && typeof customGroups === "object") await CustomGroupsRepository.replaceAll(customGroups);
   if (customOptionLists && typeof customOptionLists === "object") CustomOptionListsRepository.replaceAll(customOptionLists);
@@ -427,30 +427,35 @@ export async function restoreBackup(parsedBackup) {
 // duplicate labels would be actively unhelpful.
 export async function mergeBackup(parsedBackup) {
   const { data } = parsedBackup;
-  const append = (repo, incoming) => {
+  // CHANGED — real pre-existing bug found while wiring PregnancyRepository
+  // in: this helper was still plain-synchronous even though it's called
+  // with LocationsRepository (converted to async last batch) — spreading
+  // a Promise via `[...repo.getAll(), ...incoming]` throws at runtime.
+  // Made async/await-aware here; a no-op for every repo still synchronous.
+  const append = async (repo, incoming) => {
     if (!Array.isArray(incoming) || incoming.length === 0) return;
-    repo.replaceAll([...repo.getAll(), ...incoming]);
+    await repo.replaceAll([...(await repo.getAll()), ...incoming]);
   };
-  append(ContactRepository, data.contacts);
-  append(MedicationRepository, data.medications);
-  append(LogRepository, data.logs);
-  append(EncounterRepository, data.encounters);
-  append(KinkRegistry, data.kinks);
-  append(ChemsRegistry, data.chems);
-  append(ProtectionRegistry, data.protection);
-  append(SymptomsRegistry, data.symptoms);
-  append(LocationsRepository, data.locations);
-  append(TestingRepository, data.tests);
-  append(OrganismRegistry, data.organisms);
-  append(ResultsRegistry, data.results);
-  append(ClinicVisitsRepository, data.clinicVisits);
-  append(SymptomLogRepository, data.symptomLog);
-  append(VaccinationRepository, data.vaccinations);
-  append(MeasurementRepository, data.measurements);
-  append(MenstrualCycleRepository, data.menstrualCycles);
-  append(ContraceptionRepository, data.contraception);
-  append(PregnancyRepository, data.pregnancies);
-  append(EpisodeRepository, data.episodes);
+  await append(ContactRepository, data.contacts);
+  await append(MedicationRepository, data.medications);
+  await append(LogRepository, data.logs);
+  await append(EncounterRepository, data.encounters);
+  await append(KinkRegistry, data.kinks);
+  await append(ChemsRegistry, data.chems);
+  await append(ProtectionRegistry, data.protection);
+  await append(SymptomsRegistry, data.symptoms);
+  await append(LocationsRepository, data.locations);
+  await append(TestingRepository, data.tests);
+  await append(OrganismRegistry, data.organisms);
+  await append(ResultsRegistry, data.results);
+  await append(ClinicVisitsRepository, data.clinicVisits);
+  await append(SymptomLogRepository, data.symptomLog);
+  await append(VaccinationRepository, data.vaccinations);
+  await append(MeasurementRepository, data.measurements);
+  await append(MenstrualCycleRepository, data.menstrualCycles);
+  await append(ContraceptionRepository, data.contraception);
+  await append(PregnancyRepository, data.pregnancies);
+  await append(EpisodeRepository, data.episodes);
   if (data.customOptionLists && typeof data.customOptionLists === "object") {
     const current = CustomOptionListsRepository.getAllForBackup();
     const merged = {};

@@ -745,17 +745,30 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
   // masking a sensitive entry should never depend on how you got
   // there, only on a deliberate "tap to reveal" each time.
   const [revealedIds, setRevealedIds] = useState([]);
-  const all = PregnancyRepository.getAll().filter((p) => !p.isArchived).sort((a, b) => new Date(b.testDate || 0) - new Date(a.testDate || 0));
+  const [, force] = useState(0);
+  const refresh = () => force((v) => v + 1);
+  // CHANGED — PregnancyRepository went async (ensureLoaded()); this used
+  // to be a plain direct call re-run every render (safe only while the
+  // repository stayed synchronous — see CLAUDE.md). Loaded via
+  // useLoadedMemo instead, keyed on `force` so the existing refresh()
+  // mechanism still triggers a reload the same way it always did.
+  const all = useLoadedMemo(
+    () => PregnancyRepository.getAll().then((list) => list.filter((p) => !p.isArchived).sort((a, b) => new Date(b.testDate || 0) - new Date(a.testDate || 0))),
+    [force],
+    []
+  );
+  // Same fix for the by-id lookup used by both the detail view and the
+  // edit sheet below — one loader, keyed on screen.id, reused for both
+  // since they always read the same record.
+  const byId = useLoadedMemo(() => (screen.id ? PregnancyRepository.getById(screen.id) : null), [screen.id, force], null);
   const deleteUndo = useDeleteUndo(PregnancyRepository, "pregnancies");
   const editUndo = useEditUndo(PregnancyRepository);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [, force] = useState(0);
-  const refresh = () => force((v) => v + 1);
 
-  const create = (data) => { PregnancyRepository.create(data); refresh(); setScreen({ name: "list" }); };
-  const save = (data) => {
+  const create = async (data) => { await PregnancyRepository.create(data); refresh(); setScreen({ name: "list" }); };
+  const save = async (data) => {
     editUndo.captureBeforeEdit(screen.id);
-    PregnancyRepository.update(screen.id, data);
+    await PregnancyRepository.update(screen.id, data);
     editUndo.notifyEdited(screen.id);
     refresh();
     setScreen({ name: "detail", id: screen.id });
@@ -770,7 +783,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
   };
 
   if (screen.name === "detail") {
-    const p = PregnancyRepository.getById(screen.id);
+    const p = byId;
     if (!p) return null;
     const masked = isMasked(p);
     return (
@@ -833,7 +846,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
       </div>
       <DeleteToast toast={deleteUndo.toast} onUndo={deleteUndo.undo} onRedo={deleteUndo.redo} T={T} noun="entry" />
       {screen.name === "add" && <PregnancySheet pregnancy={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} />}
-      {screen.name === "edit" && <PregnancySheet pregnancy={PregnancyRepository.getById(screen.id)} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
+      {screen.name === "edit" && <PregnancySheet pregnancy={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
     </div>
   );
 }
@@ -878,8 +891,11 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
   const showsPregnancyByDefault = couldBePregnant(gender);
   const deepLinkTab = tabForRecordId(openRecordId);
   const [subTab, setSubTab] = useState(deepLinkTab || (wantsContraceptionQuickAdd ? "contraception" : "cycle"));
-  const [, force] = useState(0);
-  const activePregnancy = PregnancyRepository.getActive();
+  // CHANGED — PregnancyRepository went async; reload keyed on subTab so
+  // switching back to/away from the Pregnancy tab (the only place a
+  // pregnancy record's status actually changes) picks up a fresh value,
+  // same practical effect as the old plain-call-every-render approach.
+  const activePregnancy = useLoadedMemo(() => PregnancyRepository.getActive(), [subTab], null);
   // A deep-linked Pregnancy record must be reachable even for a
   // gender that hides the tab by default — same "never a hard block"
   // rule as the "Show pregnancy tracking anyway" link itself.

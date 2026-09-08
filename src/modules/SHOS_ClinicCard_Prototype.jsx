@@ -276,7 +276,9 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // module itself already offers per-entry — a pregnancy the user has
   // deliberately masked there doesn't surface on a screen built to be
   // shown to someone else.
-  const activePregnancyRaw = menstrualTrackingEnabled ? PregnancyRepository.getActive() : null;
+  // CHANGED — PregnancyRepository went async; matches meds/tests/
+  // encounters above (useLoadedMemo, same as those).
+  const activePregnancyRaw = useLoadedMemo(() => (menstrualTrackingEnabled ? PregnancyRepository.getActive() : null), [menstrualTrackingEnabled], null);
   const activePregnancy = activePregnancyRaw && !activePregnancyRaw.sensitive ? activePregnancyRaw : null;
   const lastPeriod = menstrualTrackingEnabled
     ? [...MenstrualCycleRepository.getAll().filter((c) => !c.isArchived)].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0] || null

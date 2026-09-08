@@ -57,7 +57,7 @@ function nameFrom(registry, id) {
 // its own render — same filters, same "current treatment"/"active
 // symptoms" derivation, same recency sort — so the PDF is never a
 // second, drifting copy of that logic.
-function assembleClinicCardData() {
+async function assembleClinicCardData() {
   const profile = MyProfileRepository.getProfile();
   const meds = MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => ({ ...m, logs: LogRepository.getForMedication(m.id) }));
   const tests = sortByDateDesc(TestingRepository.getAll().filter((t) => !t.isArchived));
@@ -81,7 +81,7 @@ function assembleClinicCardData() {
   // "Menstrual & contraception" section exactly, sensitive-flag mask
   // included — see that file's comment for the full reasoning.
   const menstrualTrackingEnabled = AppPreferencesRepository.getPreferences().menstrualTrackingEnabled;
-  const activePregnancyRaw = menstrualTrackingEnabled ? PregnancyRepository.getActive() : null;
+  const activePregnancyRaw = menstrualTrackingEnabled ? await PregnancyRepository.getActive() : null;
   const activePregnancy = activePregnancyRaw && !activePregnancyRaw.sensitive ? activePregnancyRaw : null;
   const lastPeriod = menstrualTrackingEnabled
     ? [...MenstrualCycleRepository.getAll().filter((c) => !c.isArchived)].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0] || null
@@ -206,7 +206,7 @@ class PageCursor {
 // sections to show) never appears in the exported PDF either, so
 // exporting can never show someone more than the screen itself does.
 export async function generateClinicCardPdf(visibility) {
-  const data = assembleClinicCardData();
+  const data = await assembleClinicCardData();
   const doc = await PDFDocument.create();
   const fonts = {
     regular: await doc.embedFont(StandardFonts.Helvetica),
