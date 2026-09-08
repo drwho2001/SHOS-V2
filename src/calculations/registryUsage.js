@@ -59,7 +59,7 @@ export async function computeProtectionUsage(id) {
 export async function computeSymptomsUsage(id) {
   let count = 0;
   (await EncounterRepository.getAll()).forEach((e) => { if ((e.symptomsNoted || []).includes(id)) count += 1; });
-  ClinicVisitsRepository.getAll().forEach((v) => { if ((v.symptomTypeIds || []).includes(id)) count += 1; });
+  (await ClinicVisitsRepository.getAll()).forEach((v) => { if ((v.symptomTypeIds || []).includes(id)) count += 1; });
   (await SymptomLogRepository.getAll()).forEach((s) => { if (s.symptomId === id) count += 1; });
   return count;
 }
@@ -73,7 +73,7 @@ export async function computeOrganismUsage(id) {
 export async function computeResultsUsage(id) {
   let count = 0;
   (await TestingRepository.getAll()).forEach((t) => { if ((t.resultIds || []).includes(id)) count += 1; });
-  ClinicVisitsRepository.getAll().forEach((v) => { if ((v.resultIds || []).includes(id)) count += 1; });
+  (await ClinicVisitsRepository.getAll()).forEach((v) => { if ((v.resultIds || []).includes(id)) count += 1; });
   return count;
 }
 

@@ -318,7 +318,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // other sync above. Also re-synced right after Clinic Visits' own
   // save.
   useEffect(() => {
-    syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+    (async () => syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll()))();
   }, []);
 
   useEffect(() => {
@@ -406,10 +406,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     // "store facts, derive state" principle already used for Contacts'
     // own inactive-flag logic, just not consistently applied here
     // before now.
-    const today = new Date().toISOString().slice(0, 10);
-    const visits = ClinicVisitsRepository.getAll().filter((v) => !v.isArchived && v.date && v.date.slice(0, 10) >= today);
-    const sortedUpcoming = [...visits].sort((a, b) => new Date(a.date) - new Date(b.date));
-    setNextVisit(sortedUpcoming[0] || null);
+    // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
+    // went async — same "wrap just this one gated/isolated block"
+    // approach used throughout this effect.
+    (async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const visits = (await ClinicVisitsRepository.getAll()).filter((v) => !v.isArchived && v.date && v.date.slice(0, 10) >= today);
+      const sortedUpcoming = [...visits].sort((a, b) => new Date(a.date) - new Date(b.date));
+      setNextVisit(sortedUpcoming[0] || null);
+    })();
 
     // ADDED — real ask: Menstrual/Contraception real results on the
     // dashboard. Skipped entirely when the feature is off — no reason

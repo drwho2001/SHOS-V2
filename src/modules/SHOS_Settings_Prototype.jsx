@@ -592,13 +592,14 @@ function DeveloperToolsScreen({ onClose }) {
   const encountersCount = useLoadedMemo(() => EncounterRepository.getAll().then((l) => l.length), [], 0);
   const testsCount = useLoadedMemo(() => TestingRepository.getAll().then((l) => l.length), [], 0);
   const medicationsCount = useLoadedMemo(() => MedicationRepository.getAll().then((l) => l.length), [], 0);
+  const clinicVisitsCount = useLoadedMemo(() => ClinicVisitsRepository.getAll().then((l) => l.length), [], 0);
   const counts = [
     { label: "Contacts", value: contactsCount },
     { label: "Encounters", value: encountersCount },
     { label: "Medications", value: medicationsCount },
     { label: "Medication log entries", value: logsCount },
     { label: "Tests", value: testsCount },
-    { label: "Clinic visits", value: ClinicVisitsRepository.getAll().length },
+    { label: "Clinic visits", value: clinicVisitsCount },
     { label: "Symptom Log entries", value: symptomLogCount },
     { label: "Vaccinations", value: vaccinationsCount },
     { label: "Timeline episodes", value: episodesCount },
@@ -2970,7 +2971,7 @@ function CalendarSyncSheet({ onClose }) {
     }
     AppPreferencesRepository.update({ calendarSyncEnabled: true });
     setAppPrefs(AppPreferencesRepository.getPreferences());
-    await syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+    await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
     setCalendarSyncing(false);
   };
 
@@ -2991,7 +2992,7 @@ function CalendarSyncSheet({ onClose }) {
     await removeSyncedEventsFrom(previousName);
     AppPreferencesRepository.update({ calendarSyncTargetName: name });
     setAppPrefs(AppPreferencesRepository.getPreferences());
-    await syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+    await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
     setShowCalendarPicker(false);
     setCalendarSyncing(false);
   };
@@ -3010,7 +3011,7 @@ function CalendarSyncSheet({ onClose }) {
     setCalendarSyncing(true);
     AppPreferencesRepository.update({ calendarSyncGenericTitle: !appPrefs.calendarSyncGenericTitle });
     setAppPrefs(AppPreferencesRepository.getPreferences());
-    await syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+    await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
     setCalendarSyncing(false);
   };
 
@@ -3140,7 +3141,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   const allEvents = useLoadedMemo(async () => getCalendarEvents({
     encounters: await EncounterRepository.getAll(),
     tests: await TestingRepository.getAll(),
-    clinicVisits: ClinicVisitsRepository.getAll(),
+    clinicVisits: await ClinicVisitsRepository.getAll(),
     symptomEntries: await SymptomLogRepository.getAll(),
     medications: await MedicationRepository.getAll(),
     vaccinations: await VaccinationRepository.getAll(),
@@ -3314,7 +3315,7 @@ function TrashScreen({ onClose }) {
   const restoreEntries = async (entries) => {
     for (const entry of entries) {
       const repo = TRASH_REPOSITORIES[entry.moduleKey];
-      if (repo) repo.restore(entry.record);
+      if (repo) await repo.restore(entry.record);
       await TrashRepository.removeEntry(entry.trashId);
     }
     refresh();

@@ -26,9 +26,9 @@ import { NotificationPreferencesRepository, isClinicVisitSnoozed } from "../repo
 import { ACCENTS } from "./designTokens";
 import { realTimestampFromStored } from "./dateInputHelpers";
 
-export function getSoonestBookedVisit() {
+export async function getSoonestBookedVisit() {
   const nowMs = Date.now();
-  const booked = ClinicVisitsRepository.getAll()
+  const booked = (await ClinicVisitsRepository.getAll())
     .filter((v) => !v.isArchived && v.isFutureAppointment && v.date && realTimestampFromStored(v.date) > nowMs);
   if (booked.length === 0) return null;
   return booked.reduce((a, b) => (realTimestampFromStored(a.date) < realTimestampFromStored(b.date) ? a : b));
@@ -65,7 +65,7 @@ async function syncOneSlot({ visit, enabled, hoursBefore, notificationId, label 
 
 export async function syncClinicVisitReminders() {
   const prefs = await NotificationPreferencesRepository.getPreferences();
-  const visit = getSoonestBookedVisit();
+  const visit = await getSoonestBookedVisit();
 
   const resultA = await syncOneSlot({
     visit,
@@ -92,7 +92,7 @@ export async function syncClinicVisitReminders() {
 // booking with neither slot's window reached yet is not "due".
 export async function getClinicVisitDueState() {
   const prefs = await NotificationPreferencesRepository.getPreferences();
-  const visit = getSoonestBookedVisit();
+  const visit = await getSoonestBookedVisit();
   if (!visit) return { due: false };
   const nowMs = Date.now();
   const slots = [
@@ -117,7 +117,7 @@ export async function getClinicVisitDueState() {
 // booked visit, so snoozing re-arms both 30 minutes out with the same
 // "reminder snoozed" body, no orphaned slot either way.
 export async function handleSnoozeClinicVisit() {
-  const visit = getSoonestBookedVisit();
+  const visit = await getSoonestBookedVisit();
   const body = visit ? `${visit.title || "Appointment"} — reminder snoozed` : "Reminder snoozed";
   const at = new Date(Date.now() + 30 * 60000);
   // FIXED — real bug: this used to only reschedule the native

@@ -502,9 +502,9 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   // RelationPicker instance. Sorted newest-first now; searchText adds
   // clinician name(s) as a second match field, same "search by name or
   // [this module's nearest equivalent field]" spec used elsewhere.
-  const unlinkedVisits = useLoadedMemo(() => {
+  const unlinkedVisits = useLoadedMemo(async () => {
     if (!testId) return [];
-    return ClinicVisitsRepository.getAll()
+    return (await ClinicVisitsRepository.getAll())
       .filter((v) => !v.isArchived && !(v.linkedTestIds || []).includes(testId))
       .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
       .map((v) => ({
@@ -513,10 +513,10 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
         searchText: (v.clinician || []).join(" ").toLowerCase(),
       }));
   }, [testId, linkVersion], []);
-  const linkVisit = (visitId) => {
-    const visit = ClinicVisitsRepository.getById(visitId);
+  const linkVisit = async (visitId) => {
+    const visit = await ClinicVisitsRepository.getById(visitId);
     if (!visit) return;
-    ClinicVisitsRepository.update(visitId, { linkedTestIds: [...(visit.linkedTestIds || []), testId] });
+    await ClinicVisitsRepository.update(visitId, { linkedTestIds: [...(visit.linkedTestIds || []), testId] });
     setLinkVersion((v) => v + 1);
   };
   // ADDED — real ask: there was no way to remove a linked clinic visit,
@@ -524,10 +524,10 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   // small dedicated unlink control alongside each row, rather than a
   // long-press gesture (no touch-timing logic needed, and it's
   // actually more discoverable).
-  const unlinkVisit = (visitId) => {
-    const visit = ClinicVisitsRepository.getById(visitId);
+  const unlinkVisit = async (visitId) => {
+    const visit = await ClinicVisitsRepository.getById(visitId);
     if (!visit) return;
-    ClinicVisitsRepository.update(visitId, { linkedTestIds: (visit.linkedTestIds || []).filter((id) => id !== testId) });
+    await ClinicVisitsRepository.update(visitId, { linkedTestIds: (visit.linkedTestIds || []).filter((id) => id !== testId) });
     setLinkVersion((v) => v + 1);
   };
   // CHANGED — real ask, after shipping this as read-only: link/unlink
@@ -824,15 +824,18 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   // async — hoisted above the `!test` guard, same reasoning as
   // partnerNotifyList above (hooks-before-guard rule).
   const relatedSymptoms = useLoadedMemo(() => SymptomLogRepository.getAll().then((all) => all.filter((s) => (s.relatedTestIds || []).includes(testId))), [testId], []);
+  // ADDED 19 Aug 2026 — real data, previously built but never
+  // displayed. See the import comment above for the full reasoning.
+  // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
+  // went async — hoisted above the `!test` guard, same reasoning as
+  // relatedSymptoms/partnerNotifyList above.
+  const linkedVisits = useLoadedMemo(() => ClinicVisitsRepository.getByLinkedTest(testId), [testId], []);
   if (!test) return null;
 
   const organismNames = test.organismIds.map((id) => OrganismRegistry.getById(id)?.name).filter(Boolean);
   const resultNames = test.resultIds.map((id) => ResultsRegistry.getById(id)?.name).filter(Boolean);
   const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
   const resultPending = test.resultDate && new Date(test.resultDate) > new Date() && !revealEarly;
-  // ADDED 19 Aug 2026 — real data, previously built but never
-  // displayed. See the import comment above for the full reasoning.
-  const linkedVisits = ClinicVisitsRepository.getByLinkedTest(testId);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>

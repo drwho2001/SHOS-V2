@@ -104,7 +104,7 @@ export async function findOrphanReferences() {
   const locationExists = async (id) => !!(await LocationsRepository.getById(id));
   const medicationExists = async (id) => !!(await MedicationRepository.getById(id));
   const testExists = async (id) => !!(await TestingRepository.getById(id));
-  const clinicVisitExists = (id) => !!ClinicVisitsRepository.getById(id);
+  const clinicVisitExists = async (id) => !!(await ClinicVisitsRepository.getById(id));
   const symptomLogExists = async (id) => !!(await SymptomLogRepository.getById(id));
   const encounterExists = async (id) => !!(await EncounterRepository.getById(id));
   const vaccinationExists = async (id) => !!(await VaccinationRepository.getById(id));
@@ -158,7 +158,7 @@ export async function findOrphanReferences() {
     await checkArray(results, testExists, s.relatedTestIds, { ...ctx, field: "relatedTestIds", targetType: "Test" });
   }
 
-  for (const v of ClinicVisitsRepository.getAll()) {
+  for (const v of await ClinicVisitsRepository.getAll()) {
     const ctx = { recordType: "Clinic Visit", recordLabel: v.title, recordId: v.id };
     await checkArray(results, testExists, v.linkedTestIds, { ...ctx, field: "linkedTestIds", targetType: "Test" });
     await checkArray(results, medicationExists, v.medicationsGivenIds, { ...ctx, field: "medicationsGivenIds", targetType: "Medication" });

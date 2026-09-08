@@ -1553,6 +1553,80 @@ this date; summarized here for durability.
   Async Med XYZ" in `localStorage` (`shos_medications` 0 → 6,
   confirming the seed-medications + new-entry persist path). No page
   errors. Full smoke-test suite passes.
+  `clinicVisitsRepository.js` converted next (8 Sep, `ensureLoaded()`
+  pattern) — the fifth of the large/high-blast-radius tier and the
+  widest caller footprint yet, 15 files. Four sibling repositories
+  (`medicationRepository.js`/`testingRepository.js`/
+  `vaccinationRepository.js`/`symptomLogRepository.js`) already call
+  this repository's own `unlinkX()` cleanup methods fire-and-forget
+  from inside their own `delete()` — confirmed all four needed no
+  change, matching the established cross-repository-cleanup precedent.
+  `clinicVisitReminderSync.js`'s own `getSoonestBookedVisit()` (a plain
+  synchronous helper calling `.getAll().filter()` directly) made async,
+  with all 3 internal callers (`syncClinicVisitReminders`/
+  `getClinicVisitDueState`/`handleSnoozeClinicVisit`) awaited — every
+  external caller (`App.jsx`, Home, Settings) already only touched
+  those already-async wrapper functions fire-and-forget, so none
+  needed further change. `orphanReferenceCheck.js`/`registryUsage.js`/
+  `backupService.js` got the same chained-call/await fixes as every
+  prior batch. Settings needed the widest spread: a new
+  `clinicVisitsCount` (matching the established `locationsCount`
+  pattern), 3 `syncClinicVisitsToCalendar(await ...)` call sites, the
+  Calendar screen's `getCalendarEvents()` argument, and one real
+  pre-existing bug unrelated to this repository's own conversion but
+  exposed by it: `TrashScreen`'s generic `restoreEntries()` loop called
+  `repo.restore(entry.record)` without `await` for ANY module's
+  repository, not just Clinic Visits — already silently broken for
+  every other already-async repository in `TRASH_REPOSITORIES`
+  (Medications/Testing/SymptomLog/Vaccinations/Measurements) since
+  their own conversions, just never caught because Trash-restore was
+  never re-exercised end-to-end after those batches. Fixed once at the
+  shared loop, closing the gap for all of them, not just Clinic Visits.
+  `SHOS_ClinicVisits_Prototype.jsx` itself (the largest single-file
+  caller) needed the same `isDirty`-ref edit-sheet fix as Testing/
+  Encounters before it — `VisitEditSheet`'s `form` initializer used to
+  read `existing = ClinicVisitsRepository.getById(visitId)`
+  synchronously; ported the proven fix directly (load effect +
+  `isDirty` ref, only `set()` flips it) rather than re-deriving it.
+  `SHOS_Timeline_Prototype.jsx`'s `EpisodeDetail` needed the same
+  hoisting treatment its Encounter/Test-side fixes already established
+  earlier this session: a new `linkedVisitById` lookup (resolving full
+  objects for the `nameFor` callback, mirroring `linkedEncounterById`)
+  and `visitCandidates` hoisted above the `!episode` guard.
+  `SHOS_Testing_Prototype.jsx` — the two-way Testing↔Clinic Visits
+  link — needed `TestEditSheet`'s `unlinkedVisits`/`linkVisit`/
+  `unlinkVisit` awaited, and `TestDetail`'s own separate `linkedVisits`
+  (a different render-body call from the edit sheet's) hoisted above
+  its own `!test` guard — caught and fixed a real copy-paste slip in
+  the same edit, where the hoisted version briefly referenced
+  `TestEditSheet`'s own `linkVersion` state variable, which doesn't
+  exist in `TestDetail`'s scope (a different component); fixed by
+  dropping it from the dependency array, matching this call's original
+  every-mount-recompute behavior. `SHOS_MenstrualHealth_Prototype.jsx`'s
+  `ContraceptionTab` needed its own variant: `linkedVisit` used to be a
+  plain render-body call inside the `screen.name === "detail"`
+  conditional branch — hooks can't be called conditionally, so it was
+  hoisted to the component's top level instead, keyed off the
+  already-loaded `byId`. `SHOS_Measurements_Prototype.jsx` needed the
+  same hoisted-above-the-guard treatment already proven for its own
+  `linkedTest` in `MeasurementSheet`/`MeasurementDetail`, applied
+  identically to `linkedVisit`. `SHOS_Vaccinations_Prototype.jsx`'s
+  `VaccinationDetail` needed the same hooks-before-guard hoist for its
+  `visitNames` resolution. `SHOS_Attachments_Prototype.jsx`/
+  `SHOS_GlobalSearch_Prototype.jsx`/`SHOS_Home_Prototype.jsx` got the
+  same chained-call/fire-and-forget-`useEffect`-IIFE fixes as every
+  prior batch. Verified live end-to-end: Clinic Visits landing (real
+  seed visits, correct clinician/location/dates), the real
+  "Treatment — Gonorrhoea" seed visit's detail view (linked tests with
+  correct positive/negative results, ad-hoc medications, symptom types
+  and specific entries all resolving correctly), its Edit sheet loading
+  the genuine record (confirmed via real `<input>.value`, not
+  `innerText`) with zero phantom `sessionStorage` drafts on an
+  untouched open-and-close; and — the real proof of the Timeline
+  restructuring — Episode Detail's own "Clinic visits" linked-records
+  row correctly showing "Treatment — Gonorrhoea · Sep 1, 2026" (not a
+  "?" fallback) against real seed data. No page errors anywhere. Full
+  smoke-test suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

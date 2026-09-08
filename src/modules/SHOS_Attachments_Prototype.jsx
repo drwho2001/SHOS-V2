@@ -38,7 +38,7 @@ async function loadAllAttachments() {
   const fromTests = (await TestingRepository.getAll()).filter((t) => !t.isArchived).flatMap((t) =>
     (t.attachments || []).map((a) => ({ ...a, sourceType: "test", sourceId: t.id, sourceTitle: t.title || (t.testingFor || []).join("/") || "Test" }))
   );
-  const fromVisits = ClinicVisitsRepository.getAll().filter((v) => !v.isArchived).flatMap((v) =>
+  const fromVisits = (await ClinicVisitsRepository.getAll()).filter((v) => !v.isArchived).flatMap((v) =>
     (v.attachments || []).map((a) => ({ ...a, sourceType: "clinicVisit", sourceId: v.id, sourceTitle: v.title || (v.reasonForVisit || []).join("/") || "Clinic visit" }))
   );
   return [...fromTests, ...fromVisits].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
@@ -72,7 +72,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
 
   const handleDelete = async (a) => {
     if (a.sourceType === "test") await TestingRepository.removeAttachment(a.sourceId, a.id);
-    else ClinicVisitsRepository.removeAttachment(a.sourceId, a.id);
+    else await ClinicVisitsRepository.removeAttachment(a.sourceId, a.id);
     setRefreshKey((k) => k + 1);
   };
 

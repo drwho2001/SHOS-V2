@@ -505,7 +505,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
   // already has — same "suggest, never overwrite" rule already used
   // elsewhere in this app (e.g. Measurements' preferred-unit default).
   const setMethod = (v) => setForm((f) => ({ ...f, method: v, formulation: f.formulation || guessFormulation(v) }));
-  const visits = useLoadedMemo(() => ClinicVisitsRepository.getAll().filter((v) => !v.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), [], []);
+  const visits = useLoadedMemo(async () => (await ClinicVisitsRepository.getAll()).filter((v) => !v.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), [], []);
   const canSave = !!form.method && !!form.startDate;
   const [intervalUnit, setIntervalUnit] = useState("Days");
   // Real display value in whichever unit is currently selected — kept
@@ -617,6 +617,12 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
   const active = all.filter((e) => !e.endDate);
   const past = all.filter((e) => e.endDate);
   const byId = useLoadedMemo(() => (screen.id ? ContraceptionRepository.getById(screen.id) : null), [screen.id, force], null);
+  // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
+  // went async — hoisted above the detail-screen branch below (this
+  // used to be a plain render-body call inside that conditional, but a
+  // hook can't be called conditionally, so it's resolved here instead,
+  // keyed off byId's own linkedClinicVisitId).
+  const linkedVisit = useLoadedMemo(() => (byId?.linkedClinicVisitId ? ClinicVisitsRepository.getById(byId.linkedClinicVisitId) : null), [byId], null);
   const deleteUndo = useDeleteUndo(ContraceptionRepository, "contraception");
   const editUndo = useEditUndo(ContraceptionRepository);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -634,7 +640,6 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
   if (screen.name === "detail") {
     const e = byId;
     if (!e) return null;
-    const linkedVisit = e.linkedClinicVisitId ? ClinicVisitsRepository.getById(e.linkedClinicVisitId) : null;
     const overdue = e.nextDueDate && e.nextDueDate < today && !e.endDate;
     return (
       <div>

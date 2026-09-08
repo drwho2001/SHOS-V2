@@ -247,8 +247,8 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
 // CHANGED — real ask: "allow for more than one." Was single free-text,
 // now a real multi-select tag picker — same underlying suggestion-chip
 // mechanism, just adds to an array instead of replacing one value.
-function getKnownClinicians() {
-  const typed = ClinicVisitsRepository.getAll().flatMap((v) => v.clinician || []).filter(Boolean);
+async function getKnownClinicians() {
+  const typed = (await ClinicVisitsRepository.getAll()).flatMap((v) => v.clinician || []).filter(Boolean);
   return Array.from(new Set([...CLINICIAN_OPTIONS, ...typed]));
 }
 function ClinicianField({ value, onChange, T }) {
@@ -327,8 +327,8 @@ function ClinicianField({ value, onChange, T }) {
 // Locations Repository relation (Encounters' own, heavier system) —
 // this is just naming which clinic, not a place with its own address/
 // notes/related-contact concept.
-function getKnownClinicVisitLocations() {
-  const typed = ClinicVisitsRepository.getAll().map((v) => v.location).filter(Boolean);
+async function getKnownClinicVisitLocations() {
+  const typed = (await ClinicVisitsRepository.getAll()).map((v) => v.location).filter(Boolean);
   return Array.from(new Set(typed));
 }
 function ClinicVisitLocationField({ value, onChange, T }) {
@@ -497,14 +497,14 @@ function AttachmentManager({ visitId, attachments, onChanged, T }) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      ClinicVisitsRepository.addAttachment(visitId, { title: file.name, type: pendingType, fileDataUrl: reader.result });
+    reader.onload = async () => {
+      await ClinicVisitsRepository.addAttachment(visitId, { title: file.name, type: pendingType, fileDataUrl: reader.result });
       onChanged();
     };
     reader.readAsDataURL(file);
     e.target.value = "";
   };
-  const remove = (id) => { ClinicVisitsRepository.removeAttachment(visitId, id); onChanged(); };
+  const remove = async (id) => { await ClinicVisitsRepository.removeAttachment(visitId, id); onChanged(); };
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>Attachments</div>
@@ -538,7 +538,6 @@ function AttachmentManager({ visitId, attachments, onChanged, T }) {
 // ── Add/Edit sheet ──
 function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, onAfterEdit, T }) {
   const isNew = !visitId;
-  const existing = visitId ? ClinicVisitsRepository.getById(visitId) : null;
   // ADDED 19 Aug 2026 — real in-app editable option lists.
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026) — see
@@ -552,23 +551,33 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
     if (draft) return draft.data;
     // ADDED — real ask: Clinic Card's "Book appointment"/"Treatment
     // given" shortcuts — a real new record starting with real values.
-    return existing || { ...DEFAULT_CLINIC_VISIT, ...prefillData };
+    return { ...DEFAULT_CLINIC_VISIT, ...prefillData };
   });
   const [draftRestored] = useState(() => !!loadDraft(draftKey));
   const [refreshKey, setRefreshKey] = useState(0);
-  // CHANGED — real bug fix, same as Encounters: fired on the very
-  // first render too, immediately autosaving the pristine, untouched
-  // default form the instant this sheet opened — so just opening and
-  // closing it with zero real edits left a draft behind, later shown
-  // as a false "Restored unsaved changes" prompt. Skips the initial
-  // mount with a ref, only saves once the form has genuinely changed.
-  const isFirstRender = useRef(true);
+  // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
+  // went async — `existing` used to be read synchronously above,
+  // straight into the `form` lazy initializer. Moved into a real load
+  // effect, same shape as Testing's own TestEditSheet fix (see that
+  // file's own comment for the full StrictMode reasoning): an
+  // `isDirty` ref that only `set()` — the one path a genuine user edit
+  // takes — is allowed to flip, so the autosave effect never has to
+  // infer "was this the load or a real edit" from render order/timing.
+  const isDirty = useRef(false);
   useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (isNew || loadDraft(draftKey)) return;
+    (async () => {
+      const real = await ClinicVisitsRepository.getById(visitId);
+      if (real) setForm(real);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visitId]);
+  useEffect(() => {
+    if (!isDirty.current) return;
     saveDraft(draftKey, form);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
-  const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
+  const set = (key) => (v) => { isDirty.current = true; setForm((f) => ({ ...f, [key]: v })); };
   const canSave = form.title.trim().length > 0;
 
   // CHANGED — real ask: "suggestions shown oldest to newest, wrong way
@@ -605,7 +614,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
   const save = async () => {
     clearDraft(draftKey);
     if (isNew) {
-      const created = ClinicVisitsRepository.create(form);
+      const created = await ClinicVisitsRepository.create(form);
       // ADDED — real ask: reminders for an actual booked appointment.
       // A brand-new visit could itself be the soonest one now, or
       // could displace/cancel-out a stale prior schedule — either way
@@ -614,20 +623,18 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
       syncClinicVisitReminders();
       // ADDED — real ask: calendar sync, self-gated inside on whether
       // the feature is actually turned on.
-      syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+      syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
       onSaved(created.id);
     } else {
       // ADDED 19 Aug 2026 — real undo/redo extension, same shared
       // mechanism as every other module.
-      // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited
-      // are now async — awaited here even though ClinicVisitsRepository
-      // itself is still synchronous, same reasoning as Testing's own
-      // save() this batch.
+      // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
+      // itself is now async too, same reasoning as Testing's own save().
       await onBeforeEdit?.(visitId);
-      ClinicVisitsRepository.update(visitId, form);
+      await ClinicVisitsRepository.update(visitId, form);
       await onAfterEdit?.(visitId);
       syncClinicVisitReminders();
-      syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+      syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
       onSaved(visitId);
     }
   };
@@ -763,7 +770,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
 
         {!isNew && (
           <SectionCard title="Attachments" T={T}>
-            <AttachmentManager visitId={visitId} attachments={ClinicVisitsRepository.getById(visitId)?.attachments || []} onChanged={() => setForm(ClinicVisitsRepository.getById(visitId))} T={T} />
+            <AttachmentManager visitId={visitId} attachments={form.attachments || []} onChanged={async () => setForm(await ClinicVisitsRepository.getById(visitId))} T={T} />
           </SectionCard>
         )}
         {isNew && (
@@ -1016,14 +1023,14 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
             </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
                 record, enabled only when exactly one is selected. */}
-            <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("clinicVisits", ClinicVisitsRepository.getById(selectedIds[0])); }}
+            <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("clinicVisits", await ClinicVisitsRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span onClick={() => { if (selectedIds.length > 0) { ClinicVisitsRepository.bulkArchive(selectedIds); syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll()); refresh(); exitSelectMode(); } }}
+            <span onClick={async () => { if (selectedIds.length > 0) { await ClinicVisitsRepository.bulkArchive(selectedIds); syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll()); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span onClick={async () => {
               if (selectedIds.length === 0) return;
               if (window.confirm(`Delete ${selectedIds.length} visit${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
-                const toRestore = ClinicVisitsRepository.getAll().filter((v) => selectedIds.includes(v.id));
+                const toRestore = (await ClinicVisitsRepository.getAll()).filter((v) => selectedIds.includes(v.id));
                 await triggerDelete(toRestore);
                 refresh();
                 exitSelectMode();
@@ -1113,8 +1120,8 @@ export default function ClinicVisitsModule({ openAddOnMount = false, onConsumedQ
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // VisitsLanding — visits/deletedRecent/undoDelete/triggerDelete now
   // live at the real module level, shared with VisitDetail.
-  const [visits, setVisits] = useLoadedState(() => ClinicVisitsRepository.getAll().filter((v) => !v.isArchived), [], []);
-  const refresh = () => setVisits(ClinicVisitsRepository.getAll().filter((v) => !v.isArchived));
+  const [visits, setVisits] = useLoadedState(async () => (await ClinicVisitsRepository.getAll()).filter((v) => !v.isArchived), [], []);
+  const refresh = async () => setVisits((await ClinicVisitsRepository.getAll()).filter((v) => !v.isArchived));
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
   // implementation.
@@ -1126,10 +1133,10 @@ export default function ClinicVisitsModule({ openAddOnMount = false, onConsumedQ
   // saved. syncClinicVisitsToCalendar() re-derives the whole list
   // every time, so any of these naturally clean up or restore the
   // matching calendar event.
-  const syncCalendar = () => syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
-  const undoDelete = () => {
+  const syncCalendar = async () => syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => ClinicVisitsRepository.restore(record));
+    for (const record of deleteToast.records) await ClinicVisitsRepository.restore(record);
     refresh();
     syncCalendar();
     clearTimeout(undoTimerRef.current);
@@ -1139,7 +1146,7 @@ export default function ClinicVisitsModule({ openAddOnMount = false, onConsumedQ
   const redoDelete = async () => {
     if (!deleteToast) return;
     await TrashRepository.add("clinicVisits", deleteToast.records);
-    deleteToast.records.forEach((r) => ClinicVisitsRepository.delete(r.id));
+    for (const r of deleteToast.records) await ClinicVisitsRepository.delete(r.id);
     refresh();
     syncCalendar();
     setDeleteToast(null);
@@ -1147,7 +1154,7 @@ export default function ClinicVisitsModule({ openAddOnMount = false, onConsumedQ
   };
   const triggerDelete = async (records) => {
     await TrashRepository.add("clinicVisits", records);
-    records.forEach((r) => ClinicVisitsRepository.delete(r.id));
+    for (const r of records) await ClinicVisitsRepository.delete(r.id);
     syncCalendar();
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);

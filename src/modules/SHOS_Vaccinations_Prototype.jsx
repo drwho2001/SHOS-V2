@@ -241,7 +241,7 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   // field, same "search by name or [relevant field]" pattern used
   // elsewhere (Encounters searches by attendee, this searches by
   // clinician — Vaccinations' nearest equivalent).
-  const visits = useLoadedMemo(() => [...ClinicVisitsRepository.getAll()].filter((v) => !v.isArchived)
+  const visits = useLoadedMemo(async () => [...(await ClinicVisitsRepository.getAll())].filter((v) => !v.isArchived)
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
     .map((v) => ({
       id: v.id,
@@ -309,12 +309,16 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven for Testing.
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
+  // went async — hoisted above the guard (hooks-before-guard rule),
+  // guarded with `v?.` since it's genuinely null for one render.
+  const visitNames = useLoadedMemo(async () => {
+    if (!v?.clinicVisitIds?.length) return [];
+    const visits = await Promise.all(v.clinicVisitIds.map((id) => ClinicVisitsRepository.getById(id)));
+    return visits.filter(Boolean).map((visit) => `${visit.title || (visit.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(visit.date)}`);
+  }, [v], []);
   if (!v) return null;
   const overdue = isOverdue(v.nextDue);
-  const visitNames = v.clinicVisitIds.map((id) => {
-    const visit = ClinicVisitsRepository.getById(id);
-    return visit ? `${visit.title || (visit.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(visit.date)}` : null;
-  }).filter(Boolean);
   // FIXED 1 Sep 2026 — same real bug as the edit form's own picker:
   // symptomIds holds real SymptomsRegistry ids now, so displaying it
   // raw needs resolving to names first, same as visitNames just above

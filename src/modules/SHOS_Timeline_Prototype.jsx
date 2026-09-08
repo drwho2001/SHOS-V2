@@ -360,6 +360,26 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
       .sort((a, b) => new Date(a.date) - new Date(b.date))
       .map((t) => ({ id: t.id, name: testLabel(t) }));
   }, [episode, startDate], []);
+  // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
+  // went async — hoisted above the guard for the same reason as
+  // linkedEncounterById/linkedTests above. visitCandidates used to be
+  // a plain post-guard render-body call, and clinicVisitIds' own
+  // nameFor callback below is a synchronous per-id render callback
+  // (LinkedItemsSection calls it directly while rendering, it can't
+  // itself await), so the currently-linked visits' labels need
+  // pre-resolving into a lookup object instead of fetched on demand.
+  const linkedVisitById = useLoadedMemo(async () => {
+    if (!episode?.clinicVisitIds?.length) return {};
+    const entries = await Promise.all(episode.clinicVisitIds.map((id) => ClinicVisitsRepository.getById(id)));
+    return Object.fromEntries(episode.clinicVisitIds.map((id, i) => [id, entries[i]]));
+  }, [episode], {});
+  const visitCandidates = useLoadedMemo(async () => {
+    if (!episode || !startDate) return [];
+    return (await ClinicVisitsRepository.getAll())
+      .filter((v) => !v.isArchived && v.date >= startDate && !episode.clinicVisitIds.includes(v.id))
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map((v) => ({ id: v.id, name: visitLabel(v) }));
+  }, [episode, startDate], []);
   if (!episode) return null;
 
   const isOpen = !episode.resolvedDate;
@@ -374,10 +394,6 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
 
   const update = async (changes) => { await EpisodeRepository.update(episodeId, changes); setRefreshKey((k) => k + 1); };
 
-  const visitCandidates = startDate
-    ? ClinicVisitsRepository.getAll().filter((v) => !v.isArchived && v.date >= startDate && !episode.clinicVisitIds.includes(v.id))
-      .sort((a, b) => new Date(a.date) - new Date(b.date)).map((v) => ({ id: v.id, name: visitLabel(v) }))
-    : [];
   const toggleNotified = (encounterId) => {
     const already = episode.notifiedEncounterIds.includes(encounterId);
     update({ notifiedEncounterIds: already ? episode.notifiedEncounterIds.filter((id) => id !== encounterId) : [...episode.notifiedEncounterIds, encounterId] });
@@ -513,7 +529,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
         </SectionCard>
 
         <SectionCard title="Treatment" T={T}>
-          <LinkedItemsSection label="Clinic visits" linkedIds={episode.clinicVisitIds} onChange={(v) => update({ clinicVisitIds: v })} candidates={visitCandidates} nameFor={(id) => visitLabel(ClinicVisitsRepository.getById(id))} T={T} />
+          <LinkedItemsSection label="Clinic visits" linkedIds={episode.clinicVisitIds} onChange={(v) => update({ clinicVisitIds: v })} candidates={visitCandidates} nameFor={(id) => visitLabel(linkedVisitById[id])} T={T} />
         </SectionCard>
 
         <SectionCard title="Symptoms" T={T}>

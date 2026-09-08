@@ -158,7 +158,7 @@ async function buildIndex() {
     });
   });
 
-  ClinicVisitsRepository.getAll().filter((v) => !v.isArchived).forEach((v) => {
+  (await ClinicVisitsRepository.getAll()).filter((v) => !v.isArchived).forEach((v) => {
     const searchText = [v.title, v.clinician, ...(v.reasonForVisit || []), v.clinicalNotes].join(" ");
     results.push({
       type: "clinicVisit", id: v.id,
