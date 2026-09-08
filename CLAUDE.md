@@ -245,6 +245,54 @@ this date; summarized here for durability.
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
 
+## Recently shipped (8 Sep 2026, later still — see Notion for full detail)
+
+Real ask: "ensure user's PWA is auto-updated to current version." The
+service worker (`public/sw.js`) already called `self.skipWaiting()`/
+`self.clients.claim()` unconditionally on every install/activate, so a
+new SW version was already taking over immediately once installed —
+but that alone didn't help a tab that was already open: its React app
+was still running the OLD JS bundle in memory, and swapping the SW
+underneath it doesn't retroactively change that. Fixed in
+`src/main.jsx`'s SW-registration block: a `controllerchange` listener
+now reloads the page exactly once when a genuinely new SW takes
+control — the same pattern Vite's own PWA plugin's
+`registerType: 'autoUpdate'` uses internally — guarded against firing
+on a brand-new install (`hadController`, captured before registration
+even starts, so a first-ever visit with nothing stale to swap in for
+doesn't force a pointless reload) and against firing more than once
+(`reloaded`). Second, smaller gap closed at the same time: a browser
+only checks for a new `sw.js` on its own schedule (roughly every 24h,
+or on a fresh navigation) — an installed PWA opened once and left
+running in the background for days could sit on a stale version far
+longer than that. Added a `registration.update()` call (a cheap
+conditional fetch, a no-op if `sw.js` is unchanged) on
+`visibilitychange` back to visible, closing that gap without polling
+while the tab is backgrounded and can't act on anything anyway.
+Verified live against a real `vite preview` production build with
+Playwright: confirmed a genuine first-ever install does NOT force a
+reload (nav count stayed at 1), then simulated a real new deploy
+(bumped `sw.js`'s own `CACHE_NAME`, called the same `update()` the
+visibility handler calls) and confirmed exactly one real reload
+fired — not zero, not a loop. No page errors. Full smoke-test suite
+passes against the same preview build.
+Native app is unaffected by design — `Capacitor.isNativePlatform()`
+already skips service-worker registration entirely inside the
+installed Android app (see that guard's own existing comment); APK
+updates go through the existing GitHub Release + in-app update-check
+flow (`updateCheckService.js`), a genuinely different mechanism since
+Android doesn't allow a sideloaded app to silently swap its own code
+underneath itself the way a service worker can on the web. Spot-
+checked the broader "does every APK feature also reach the PWA" ask
+this same request raised: every `Capacitor.isNativePlatform()` guard
+in the codebase (5 files: this SW registration, `updateCheckService.js`,
+`notificationService.js`, `fileExportHelper.js`) already has its own
+documented, genuine platform-capability reason (native file-system
+access, a native update-download flow, etc.) rather than an
+accidental omission — the app is one shared codebase building both
+targets by construction, so a feature reaches both by default unless
+explicitly, deliberately guarded otherwise.
+
 ## Recently shipped (8 Sep 2026 — see Notion for full detail)
 
 Three real bug/feedback reports from actual app use, investigated and

@@ -128,8 +128,45 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 // worker running inside Capacitor's own WebView would be an
 // unnecessary extra moving part there, not a real benefit.
 if ("serviceWorker" in navigator) {
+  // ADDED 8 Sep 2026 — real ask: "ensure PWA is auto-updated to current
+  // version." sw.js's install/activate handlers already call
+  // self.skipWaiting()/self.clients.claim() unconditionally, so a new
+  // service worker takes over immediately once installed — but that
+  // alone doesn't help a tab that's ALREADY open: its React app is
+  // already running the old JS bundle in memory, and swapping the SW
+  // underneath it doesn't change that. `controllerchange` fires exactly
+  // once, the moment a new SW actually takes control — reloading then
+  // is the standard "auto-update" pattern (the same thing Vite's own
+  // PWA plugin's `registerType: 'autoUpdate'` does under the hood).
+  // Guarded two ways: `hadController`, captured BEFORE registration
+  // even starts, so a brand-new install (first-ever visit — no
+  // previous controller, nothing stale to swap in for) doesn't reload
+  // a page that was never running an old version in the first place;
+  // `reloaded`, so a real, uncontrolled edge case (this firing more
+  // than once) can never loop.
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloaded || !hadController) return;
+    reloaded = true;
+    window.location.reload();
+  });
+
   const registerServiceWorker = () => {
-    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch((err) => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).then((registration) => {
+      // ADDED 8 Sep 2026 — real ask, other half of the fix above: a
+      // browser only checks for a new sw.js on its own schedule
+      // (roughly once every 24h, or on a fresh navigation) — an
+      // installed PWA that's opened once and left running in the
+      // background for days could sit on a stale version far longer
+      // than that. A real, cheap re-check (registration.update() is
+      // just a conditional HTTP fetch of sw.js, a no-op if unchanged)
+      // whenever the tab becomes visible again closes that gap without
+      // polling while it's backgrounded and can't do anything anyway.
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") registration.update().catch(() => {});
+      });
+    }).catch((err) => {
       console.warn("[main] Service worker registration failed:", err);
     });
   };
