@@ -225,7 +225,7 @@ export async function findOrphanReferences() {
   // at is deleted (see measurementRepository.js's own "one room, three
   // doors" comment) — included anyway as a cheap safety net in case a
   // future delete path ever bypasses that.
-  for (const m of MeasurementRepository.getAll()) {
+  for (const m of await MeasurementRepository.getAll()) {
     const ctx = { recordType: "Measurement", recordLabel: `${m.type || "measurement"} · ${m.date || ""}`, recordId: m.id };
     await checkSingle(results, clinicVisitExists, m.linkedClinicVisitId, { ...ctx, field: "linkedClinicVisitId", targetType: "Clinic Visit" });
     await checkSingle(results, testExists, m.linkedTestId, { ...ctx, field: "linkedTestId", targetType: "Test" });

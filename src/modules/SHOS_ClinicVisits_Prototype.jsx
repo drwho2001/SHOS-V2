@@ -796,8 +796,12 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
   const [confirmDelete, setConfirmDelete] = useState(false);
   // ADDED — Measurements inline entry point (see import comment above).
   const [showAddMeasurement, setShowAddMeasurement] = useState(false);
-  const [measurements, setMeasurements] = useLoadedState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedClinicVisitId === visitId), [visitId], []);
-  const refreshMeasurements = () => setMeasurements(MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedClinicVisitId === visitId));
+  // CHANGED — Phase 2 encryption groundwork: MeasurementRepository is
+  // now async — this used to chain .filter() straight onto getAll(),
+  // the same bug class fixed repeatedly this session for other
+  // repositories.
+  const [measurements, setMeasurements] = useLoadedState(async () => (await MeasurementRepository.getAll()).filter((m) => !m.isArchived && m.linkedClinicVisitId === visitId), [visitId], []);
+  const refreshMeasurements = async () => setMeasurements((await MeasurementRepository.getAll()).filter((m) => !m.isArchived && m.linkedClinicVisitId === visitId));
   // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository went
   // async — hoisted above the `!visit` guard (hooks-before-guard rule),
   // guarded with `visit?.` since it's genuinely null for the one render

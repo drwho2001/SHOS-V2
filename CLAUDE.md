@@ -1857,12 +1857,91 @@ this date; summarized here for durability.
   text, and border), confirming `getOverridesSync()` still reaches
   `ACCENTS` correctly. No page errors anywhere. Full smoke-test suite
   passes.
+  `MeasurementRepository` converted next (8 Sep) — a genuine gap this
+  session's own audit had missed, not something originally scoped into
+  either the easy-bucket or hard-bucket tiers above. Found via a fresh
+  `grep -rn "^let .* = storage\.load("` sweep across `src/repositories/`
+  and `src/registries/` run specifically because the owner asked "no
+  real issues with phase 2?" rather than trusting the prior tally —
+  this file's sibling `measurementPreferencesRepository.js` (a
+  different repository, for Settings > Units preferences) had already
+  been converted, creating a false impression that "Measurements is
+  done" when the actual record-storage repository never was. Same
+  `ensureLoaded()`/memoized-`loadPromise` pattern as every other
+  hard-bucket conversion; caller cascade reached 7 files
+  (`SHOS_Measurements_Prototype.jsx` itself, `SHOS_Testing_Prototype.jsx`/
+  `SHOS_ClinicVisits_Prototype.jsx`'s own linked-measurements lists,
+  `backupService.js`, `orphanReferenceCheck.js`, and
+  `testingRepository.js`/`clinicVisitsRepository.js`'s existing
+  fire-and-forget `unlinkTest()`/`unlinkClinicVisit()` cleanup calls,
+  left unawaited per the same cross-repository-cleanup precedent used
+  throughout this session).
+  The real structural work was in `MeasurementSheet`'s own quick-add
+  flow. Its form's lazy `useState` initializer used to call
+  `MeasurementRepository.getLastEntry(presetType)` synchronously — a
+  "remember the unit I last used for this measurement type" feature —
+  and a separate prefs-resync effect guarded on that exact same
+  synchronous call. Both broke the instant `getLastEntry()` went async
+  (a Promise is always truthy, so the guard would have fired
+  permanently, and the initializer would have set `form.unit` to a
+  Promise object). Fixed by hoisting a single
+  `lastEntryForPresetType = useLoadedMemo(() => (isNew && presetType ?
+  MeasurementRepository.getLastEntry(presetType) : null), [isNew,
+  presetType], null)` and referencing that one resolved value
+  everywhere instead of re-deriving it — the initializer now always
+  starts from the canonical `getDefaultUnit()` fallback, with a new
+  resync effect correcting `form.unit` to the real last-used unit once
+  it resolves, ONLY if the form still exactly matches that fallback
+  (the same "only correct if still untouched" pattern used for
+  `MeasurementPreferencesRepository`'s own resync fix earlier this
+  session, so a user who's already changed the unit before the
+  async load resolves never gets overwritten). `setType(newType)`
+  (fired when a user manually changes type mid-add) needed the same
+  `await MeasurementRepository.getLastEntry(newType)` treatment, made
+  `async`.
+  Caught a real pre-existing bug — not introduced by this conversion,
+  faithfully carried over from the original synchronous code — while
+  wiring both of those sites: they read `last.unit` (the CANONICAL
+  stored unit, e.g. "kg") to prefill the "memory" chip, instead of
+  `last.enteredUnit` (what the user actually typed, e.g. "lb") —
+  silently defeating the whole point of the feature every time a
+  user's preferred entry unit differed from the canonical one. Found
+  live, not by inspection: created a new Weight entry after the real
+  seed Weight entry (logged as "150 lb"), and the new entry incorrectly
+  defaulted to kg. Fixed both call sites to read `.enteredUnit`;
+  re-verified against the same scenario — a new entry now correctly
+  defaults to lb, with `enteredValue: 165, enteredUnit: "lb"` converting
+  to the correct canonical `value: 74.84, unit: "kg"` (165 × 0.453592).
+  `MeasurementsModule`'s own edit-sheet mount had the same "gate on
+  resolved data" fix already proven for `SymptomLog`'s `EntrySheet`
+  earlier this session: `MeasurementRepository.getById(screen.id)` was
+  previously passed directly as a prop into `MeasurementSheet` (a
+  Promise, once async) — fixed by hoisting it into an `editingMeasurement`
+  `useLoadedMemo` and gating the sheet's render on it being non-null.
+  `MeasurementDetail`'s "Delete permanently" button had a real
+  write-then-refresh race (`await refresh()` was missing after
+  `triggerDelete`) fixed in the same pass. Every bulk-select toolbar
+  handler (Export/Archive/Delete) and the top-level module's
+  create/save/undo/redo/delete handlers converted to `async`/`await`,
+  same shape as every other module this session. Verified live via
+  Playwright against real seed data: Measurements landing (Weight/
+  Blood pressure/CD4 count groups, correct real values), a real
+  quick-add-Weight flow producing the correctly-converted new entry
+  described above, and a full grep sweep afterward confirming every
+  remaining `MeasurementRepository.` call site is either properly
+  awaited, one of the two established fire-and-forget cross-repository
+  cleanup calls, or gated behind `ensureLoaded()`/`persist()`. No page
+  errors. Full smoke-test suite passes.
   What's left in the deferred, harder-bucket tier: `storageAdapter.js`
   itself (Phase 3 — making the actual adapter async, at which point
   `App.jsx`'s `locked` state and `designTokens.js`'s own bootstrap read
   both need their real app-loading-gate treatment, not a moment
   before), and real `crypto.subtle` encryption (Phase 4) — neither
-  started yet, each still needing its own dedicated scoping pass.
+  started yet, each still needing its own dedicated scoping pass. This
+  `MeasurementRepository` gap is also a standing reminder for whoever
+  scopes Phase 3: "the file-level tally is complete" should be
+  re-verified with a fresh grep immediately before starting, not
+  assumed from a prior session's own count.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

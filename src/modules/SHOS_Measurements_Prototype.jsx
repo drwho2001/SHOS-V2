@@ -294,6 +294,16 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
   // below tell "still the fallback" apart from "genuinely loaded" by
   // reference, without a separate loaded-flag.
   const initialPrefsRef = useRef(prefs);
+  // CHANGED — Phase 2 encryption groundwork: MeasurementRepository is
+  // now async — getLastEntry(presetType) used to be read directly,
+  // synchronously, both inside this form's own lazy useState
+  // initializer below and inside the prefs-resync effect's own guard.
+  // Loaded here once instead; the initializer falls straight through
+  // to the preference-based default, and a new resync effect below
+  // applies the real "last entry" unit once it resolves, IF the form
+  // is still showing that plain default — same "only correct if still
+  // untouched" pattern already used for the prefs resync effect below.
+  const lastEntryForPresetType = useLoadedMemo(() => (isNew && presetType ? MeasurementRepository.getLastEntry(presetType) : null), [isNew, presetType], null);
   // "Blood pressure" excluded from what's offered when editing an
   // existing non-BP entry — can't switch INTO it (see file comment).
   const editableOptions = !isNew && measurement.type !== BLOOD_PRESSURE_TYPE
@@ -314,17 +324,15 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
     // real logging bug, not a convenience.
     const base = { ...DEFAULT_MEASUREMENT, date: new Date().toISOString().slice(0, 10), type: presetType || "", ...presetLink };
     if (presetType) {
-      const last = MeasurementRepository.getLastEntry(presetType);
-      if (last) return { ...base, unit: last.unit, enteredUnit: last.enteredUnit };
-      // Same fix as setType() below — a preset type with real
-      // conversion units still needs a real default unit written into
-      // state up front (now preference-aware via getDefaultUnit, see
-      // "add settings for default unit preferences"), not just shown
-      // as the select's visual default. `prefs` is still its fallback
-      // value on this very first render (real preferences resolve a
-      // tick later) — the effect below corrects this once they load,
-      // same as everywhere else this session handles a value that's
-      // briefly a fallback before a real async load resolves.
+      // Real "last entry" unit memory (if one exists) is no longer
+      // readable synchronously here — applied via the resync effect
+      // below once lastEntryForPresetType resolves, same as the
+      // preference-based default's own resync fix just below it.
+      // `prefs` is still its fallback value on this very first render
+      // (real preferences resolve a tick later) — the effect below
+      // corrects this once they load, same as everywhere else this
+      // session handles a value that's briefly a fallback before a
+      // real async load resolves.
       return { ...base, unit: getDefaultUnit(presetType, prefs) };
     }
     return base;
@@ -334,6 +342,29 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
     if (isFirstRender.current) { isFirstRender.current = false; return; }
     saveDraft(draftKey, form);
   }, [form]);
+  // ADDED — applies the real "last entry" unit (if one exists) once
+  // MeasurementRepository.getLastEntry() resolves, IF the form is
+  // still showing the plain preference-based default it started with —
+  // same "only correct if still untouched" guard shape as the prefs
+  // resync effect just below.
+  // FIXED — real pre-existing bug found while live-verifying this
+  // conversion, faithfully carried over from the original synchronous
+  // code rather than introduced by it: used `last.unit` — the
+  // CANONICAL stored unit (e.g. "kg", since shapeForCreate() always
+  // converts to canonical on save) — instead of `last.enteredUnit`,
+  // the unit the person actually typed their last real entry in (e.g.
+  // "lb"). The whole point of this "memory" is remembering what unit
+  // someone habitually enters a type in, so silently defaulting the
+  // form's own unit chip to canonical defeated it — verified live: a
+  // real seed Weight entry logged as 150 lb produced a "new Weight
+  // entry" form that silently pre-selected kg, not lb. Both the form's
+  // `unit` (which unit chip is selected) and `enteredUnit` should be
+  // the same real entered unit here.
+  useEffect(() => {
+    if (!lastEntryForPresetType) return;
+    const fallbackDefault = getDefaultUnit(presetType, initialPrefsRef.current);
+    setForm((f) => (f.type === presetType && f.unit === fallbackDefault ? { ...f, unit: lastEntryForPresetType.enteredUnit, enteredUnit: lastEntryForPresetType.enteredUnit } : f));
+  }, [lastEntryForPresetType]);
   // ADDED — corrects the new-presetType-entry's initial `unit` (set
   // above from `prefs`' fallback value) once real preferences load, IF
   // the user hasn't already changed it — same "only correct if still
@@ -341,15 +372,18 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
   // App.jsx's InactiveThresholdCard/MyProfile's `form` for the same
   // pattern). Reference-checks against the captured fallback rather
   // than a separate loaded-flag, since useLoadedState doesn't expose
-  // one.
+  // one. Skips entirely once a real last-entry unit exists (that one
+  // wins — see the effect above) instead of the old synchronous
+  // `MeasurementRepository.getLastEntry(presetType)` guard, which can
+  // no longer be called directly here.
   useEffect(() => {
     if (prefs === initialPrefsRef.current) return; // still the fallback
-    if (!isNew || !presetType || MeasurementRepository.getLastEntry(presetType)) return;
+    if (!isNew || !presetType || lastEntryForPresetType) return;
     const fallbackDefault = getDefaultUnit(presetType, initialPrefsRef.current);
     const realDefault = getDefaultUnit(presetType, prefs);
     if (realDefault === fallbackDefault) return;
     setForm((f) => (f.type === presetType && f.unit === fallbackDefault ? { ...f, unit: realDefault } : f));
-  }, [prefs]);
+  }, [prefs, lastEntryForPresetType]);
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const isBP = form.type === BLOOD_PRESSURE_TYPE;
   const canSave = form.type.trim().length > 0 && (isBP ? (form.systolic != null && form.diastolic != null) : form.value != null);
@@ -361,10 +395,14 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
   // Real "memory": switching type on a NEW entry prefills that type's
   // last-used unit, else its preference-aware default, same reasoning
   // as the presetType path above.
-  const setType = (newType) => {
+  const setType = async (newType) => {
     if (isNew && newType && newType !== BLOOD_PRESSURE_TYPE) {
-      const last = MeasurementRepository.getLastEntry(newType);
-      const defaultUnit = last ? last.unit : getDefaultUnit(newType, prefs);
+      // FIXED — same real pre-existing bug as the presetType resync
+      // effect above: `last.unit` is the canonical stored unit, not
+      // what was actually typed — `last.enteredUnit` is the real
+      // "memory" this feature is meant to offer.
+      const last = await MeasurementRepository.getLastEntry(newType);
+      const defaultUnit = last ? last.enteredUnit : getDefaultUnit(newType, prefs);
       setForm((f) => ({ ...f, type: newType, unit: defaultUnit, value: null }));
     } else {
       setForm((f) => ({ ...f, type: newType }));
@@ -521,7 +559,7 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-            <button onClick={async () => { await triggerDelete([m]); refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
+            <button onClick={async () => { await triggerDelete([m]); await refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
           </div>
         </div>
       )}
@@ -647,16 +685,16 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
               style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>
               {selectedIds.length === allVisibleIds.length ? "Deselect all" : "Select all"}
             </span>
-            <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("measurements", MeasurementRepository.getById(selectedIds[0])); }}
+            <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("measurements", await MeasurementRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span onClick={() => { if (selectedIds.length > 0) { MeasurementRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            <span onClick={async () => { if (selectedIds.length > 0) { await MeasurementRepository.bulkArchive(selectedIds); await refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span onClick={async () => {
               if (selectedIds.length === 0) return;
               if (window.confirm(`Delete ${selectedIds.length} measurement${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
-                const toRestore = MeasurementRepository.getAll().filter((m) => selectedIds.includes(m.id));
+                const toRestore = (await MeasurementRepository.getAll()).filter((m) => selectedIds.includes(m.id));
                 await triggerDelete(toRestore);
-                refresh();
+                await refresh();
                 exitSelectMode();
               }
             }} style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
@@ -866,14 +904,19 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
   const [screen, setScreen] = useState({ name: "list" });
-  const [measurements, setMeasurements] = useLoadedState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived), [], []);
-  const refresh = () => { setMeasurements(MeasurementRepository.getAll().filter((m) => !m.isArchived)); onDataChanged?.(); };
+  // CHANGED — Phase 2 encryption groundwork: MeasurementRepository is
+  // now async — chained .filter() onto getAll() fixed, and every
+  // .forEach() over an awaited call converted to for...of + await,
+  // same bug classes fixed repeatedly this session for other
+  // repositories.
+  const [measurements, setMeasurements] = useLoadedState(async () => (await MeasurementRepository.getAll()).filter((m) => !m.isArchived), [], []);
+  const refresh = async () => { setMeasurements((await MeasurementRepository.getAll()).filter((m) => !m.isArchived)); onDataChanged?.(); };
   const [deleteToast, setDeleteToast] = useState(null);
   const undoTimerRef = useRef(null);
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => MeasurementRepository.restore(record));
-    refresh();
+    for (const record of deleteToast.records) await MeasurementRepository.restore(record);
+    await refresh();
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -881,14 +924,14 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
   const redoDelete = async () => {
     if (!deleteToast) return;
     await TrashRepository.add("measurements", deleteToast.records);
-    deleteToast.records.forEach((r) => MeasurementRepository.delete(r.id));
-    refresh();
+    for (const r of deleteToast.records) await MeasurementRepository.delete(r.id);
+    await refresh();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
   const triggerDelete = async (records) => {
     await TrashRepository.add("measurements", records);
-    records.forEach((r) => MeasurementRepository.delete(r.id));
+    for (const r of records) await MeasurementRepository.delete(r.id);
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -926,18 +969,24 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
     return () => registerModuleBackHandler(null);
   }, [screen, registerModuleBackHandler]);
 
-  const createMeasurement = (data) => { MeasurementRepository.create(data); refresh(); backToList(); };
+  const createMeasurement = async (data) => { await MeasurementRepository.create(data); await refresh(); backToList(); };
   const saveMeasurement = async (data) => {
-    // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited are
-    // now async — awaited here even though MeasurementRepository itself
-    // is still synchronous, same reasoning as every other module's
-    // save() this batch.
+    // CHANGED — MeasurementRepository is now async — awaited below.
     await editUndo.captureBeforeEdit(screen.id);
-    MeasurementRepository.update(screen.id, data);
+    await MeasurementRepository.update(screen.id, data);
     await editUndo.notifyEdited(screen.id);
-    refresh();
+    await refresh();
     setScreen({ name: "detail", id: screen.id });
   };
+  // CHANGED — Phase 2 encryption groundwork: MeasurementRepository is
+  // now async — getById(screen.id) used to be passed straight into
+  // MeasurementSheet's `measurement` prop below, which would now
+  // receive a Promise instead of the real record. Loaded via
+  // useLoadedMemo instead; the edit sheet's own render is gated on it
+  // having actually resolved (same "gate the mount on resolved data"
+  // tradeoff already accepted for Testing/ClinicVisits/Vaccinations'
+  // own `existing`-const edit sheets this session).
+  const editingMeasurement = useLoadedMemo(() => (screen.name === "edit" ? MeasurementRepository.getById(screen.id) : null), [screen.name, screen.id], null);
 
   let content;
   if (screen.name === "list") content = <MeasurementsLanding T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} onAddType={(type) => setScreen({ name: "add", presetType: type })} onOpenPreferences={() => setShowPreferences(true)} groupsVersion={groupsVersion} measurements={measurements} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />;
@@ -954,7 +1003,7 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
       )}
       {content}
       {screen.name === "add" && <MeasurementSheet T={T} measurement={null} presetType={screen.presetType} onSave={createMeasurement} onClose={backToList} />}
-      {screen.name === "edit" && <MeasurementSheet T={T} measurement={MeasurementRepository.getById(screen.id)} onSave={saveMeasurement} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
+      {screen.name === "edit" && editingMeasurement && <MeasurementSheet T={T} measurement={editingMeasurement} onSave={saveMeasurement} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
       {showPreferences && (
         <MeasurementPreferencesSheet T={T} onClose={() => setShowPreferences(false)} onManageGroups={() => { setShowPreferences(false); setShowManageGroups(true); }} />
       )}
@@ -970,6 +1019,6 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
 // directly with a preset link rather than through this module's own
 // list/add/edit screen flow, per the "one room, three doors" design.
 export function InlineMeasurementSheet({ presetLink, onClose, onSaved, T }) {
-  const save = (data) => { MeasurementRepository.create(data); onSaved?.(); onClose(); };
+  const save = async (data) => { await MeasurementRepository.create(data); onSaved?.(); onClose(); };
   return <MeasurementSheet T={T} measurement={null} presetLink={presetLink} onSave={save} onClose={onClose} />;
 }

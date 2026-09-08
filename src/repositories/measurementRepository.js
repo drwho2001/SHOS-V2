@@ -281,8 +281,17 @@ let seedMeasurements = [
   },
 ];
 
-let measurements = storage.load(STORAGE_KEY, seedMeasurements);
-let nextNumber = computeNextNumber(measurements);
+// CHANGED — Phase 2 encryption groundwork: module-load-time synchronous
+// cache replaced with the same ensureLoaded()/memoized-loadPromise
+// pattern used for every other repository converted this session — a
+// real gap this file had slipped through with, missed at the time
+// because the sibling measurementPreferencesRepository.js (a different
+// file — Settings > Units preferences, not the measurement records
+// themselves) WAS converted, which made it easy to mistake this one
+// for already-done.
+let measurements = null;
+let nextNumber = 1;
+let loadPromise = null;
 
 function computeNextNumber(existing) {
   const numbers = existing.map((m) => {
@@ -292,14 +301,23 @@ function computeNextNumber(existing) {
   return (numbers.length ? Math.max(...numbers) : 0) + 1;
 }
 
+async function ensureLoaded() {
+  if (measurements === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedMeasurements);
+    measurements = await loadPromise;
+    nextNumber = computeNextNumber(measurements);
+  }
+  return measurements;
+}
+
 function generateId() {
   const id = `measurement_${String(nextNumber).padStart(3, "0")}`;
   nextNumber += 1;
   return id;
 }
 
-function persist() {
-  storage.save(STORAGE_KEY, measurements);
+async function persist() {
+  await storage.save(STORAGE_KEY, measurements);
 }
 
 function shapeForCreate(data) {
@@ -327,37 +345,40 @@ function shapeForCreate(data) {
 }
 
 export const MeasurementRepository = {
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(measurements.map((m) => ({ ...DEFAULT_MEASUREMENT, ...m })));
   },
 
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = measurements.find((m) => m.id === id);
     return found ? structuredClone({ ...DEFAULT_MEASUREMENT, ...found }) : null;
   },
 
-  getByType(type) {
-    return this.getAll().filter((m) => !m.isArchived && m.type === type).sort((a, b) => new Date(b.date) - new Date(a.date));
+  async getByType(type) {
+    return (await this.getAll()).filter((m) => !m.isArchived && m.type === type).sort((a, b) => new Date(b.date) - new Date(a.date));
   },
 
   // Real suggestion source for the clinic name field — derived from
   // what's already been typed rather than a separate persisted option
   // list, same "just look at existing data" reasoning already used for
   // Clinic Visits' own free-text `location` field.
-  getKnownClinicNames() {
-    return [...new Set(this.getAll().map((m) => m.clinicName).filter(Boolean))];
+  async getKnownClinicNames() {
+    return [...new Set((await this.getAll()).map((m) => m.clinicName).filter(Boolean))];
   },
 
   // Real convenience for the "memory" — a new entry's type/unit is
   // prefilled from whichever entry of that type was logged last, never
   // its value (a stale reading silently carried forward would be an
   // actual logging bug, not a convenience).
-  getLastEntry(type) {
-    const matches = this.getByType(type);
+  async getLastEntry(type) {
+    const matches = await this.getByType(type);
     return matches.length ? matches[0] : null;
   },
 
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     const newMeasurement = {
       ...shapeForCreate(data),
       id: generateId(),
@@ -365,11 +386,12 @@ export const MeasurementRepository = {
       isArchived: false,
     };
     measurements = [...measurements, newMeasurement];
-    persist();
+    await persist();
     return newMeasurement;
   },
 
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updated = null;
     measurements = measurements.map((m) => {
       if (m.id !== id) return m;
@@ -377,55 +399,60 @@ export const MeasurementRepository = {
       updated = { ...shapeForCreate(merged), id: m.id, createdAt: m.createdAt, isArchived: m.isArchived, updatedAt: new Date().toISOString() };
       return updated;
     });
-    persist();
+    await persist();
     return updated ? structuredClone(updated) : null;
   },
 
-  archive(id) {
+  async archive(id) {
     return this.update(id, { isArchived: true });
   },
 
-  delete(id) {
+  async delete(id) {
+    await ensureLoaded();
     measurements = measurements.filter((m) => m.id !== id);
-    persist();
+    await persist();
   },
 
-  unarchive(id) {
+  async unarchive(id) {
     return this.update(id, { isArchived: false });
   },
 
-  bulkArchive(ids) {
-    ids.forEach((id) => this.archive(id));
+  async bulkArchive(ids) {
+    for (const id of ids) await this.archive(id);
   },
 
-  bulkDelete(ids) {
+  async bulkDelete(ids) {
+    await ensureLoaded();
     measurements = measurements.filter((m) => !ids.includes(m.id));
-    persist();
+    await persist();
   },
 
-  restore(record) {
+  async restore(record) {
+    await ensureLoaded();
     if (measurements.some((m) => m.id === record.id)) return;
     measurements = [...measurements, record];
-    persist();
+    await persist();
   },
 
   // Called by clinicVisitsRepository.js's own delete — clears the link
   // rather than removing the Measurement, per the explicit "deleting a
   // visit shouldn't destroy trend history" decision above.
-  unlinkClinicVisit(visitId) {
+  async unlinkClinicVisit(visitId) {
+    await ensureLoaded();
     measurements = measurements.map((m) => (m.linkedClinicVisitId === visitId ? { ...m, linkedClinicVisitId: null } : m));
-    persist();
+    await persist();
   },
 
   // Called by testingRepository.js's own delete — same reasoning.
-  unlinkTest(testId) {
+  async unlinkTest(testId) {
+    await ensureLoaded();
     measurements = measurements.map((m) => (m.linkedTestId === testId ? { ...m, linkedTestId: null } : m));
-    persist();
+    await persist();
   },
 
-  replaceAll(newMeasurements) {
+  async replaceAll(newMeasurements) {
     measurements = newMeasurements;
     nextNumber = computeNextNumber(measurements);
-    persist();
+    await persist();
   },
 };

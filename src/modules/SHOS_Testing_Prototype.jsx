@@ -859,8 +859,12 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   }, [testId, test, partnerNotifyVersion, resultNameById], null);
   // ADDED — Measurements inline entry point (see import comment above).
   const [showAddMeasurement, setShowAddMeasurement] = useState(false);
-  const [measurements, setMeasurements] = useLoadedState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedTestId === testId), [testId], []);
-  const refreshMeasurements = () => setMeasurements(MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedTestId === testId));
+  // CHANGED — Phase 2 encryption groundwork: MeasurementRepository is
+  // now async — this used to chain .filter() straight onto getAll(),
+  // the same bug class fixed repeatedly this session for other
+  // repositories.
+  const [measurements, setMeasurements] = useLoadedState(async () => (await MeasurementRepository.getAll()).filter((m) => !m.isArchived && m.linkedTestId === testId), [testId], []);
+  const refreshMeasurements = async () => setMeasurements((await MeasurementRepository.getAll()).filter((m) => !m.isArchived && m.linkedTestId === testId));
   // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository went
   // async — hoisted above the `!test` guard, same reasoning as
   // partnerNotifyList above (hooks-before-guard rule).
