@@ -757,9 +757,9 @@ export default function App() {
     // than four separate near-identical effects.
     const refill = await getRefillDueMedications();
     setRefillDue(refill);
-    const testing = getTestingDueState();
+    const testing = await getTestingDueState();
     setTestingDue(testing.due ? testing : null);
-    const clinicVisit = getClinicVisitDueState();
+    const clinicVisit = await getClinicVisitDueState();
     setClinicVisitDue(clinicVisit.due ? clinicVisit : null);
     const totalDue = due.length + refill.length + (testing.due ? 1 : 0) + (clinicVisit.due ? 1 : 0);
     import("./storage/notificationService").then(({ updateAppBadge }) => updateAppBadge(totalDue));

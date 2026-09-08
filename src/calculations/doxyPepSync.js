@@ -26,7 +26,7 @@ import { nowAsStoredDateTime } from "./dateInputHelpers";
 // unconditionally either way, since turning off the notification was
 // never a request to hide the in-app warning too.
 export async function syncDoxyPepAlert() {
-  const notifsEnabled = NotificationPreferencesRepository.getPreferences().doxyPepAlertEnabled;
+  const notifsEnabled = (await NotificationPreferencesRepository.getPreferences()).doxyPepAlertEnabled;
   const doxyMed = findDoxyPepMedication(MedicationRepository.getAll());
   // No DoxyPEP medication set up at all — nothing to track, and
   // nothing should be left scheduled from a stale earlier state.

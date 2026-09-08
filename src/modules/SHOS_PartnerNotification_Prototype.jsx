@@ -166,8 +166,8 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
   const refresh = () => forceRefresh((n) => n + 1);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const toggleNotified = (contactId) => { PartnerNotificationRepository.toggleNotified(list.id, contactId); refresh(); };
-  const editField = (contactId, field, value) => { PartnerNotificationRepository.updateItem(list.id, contactId, { [field]: value }); refresh(); };
+  const toggleNotified = async (contactId) => { await PartnerNotificationRepository.toggleNotified(list.id, contactId); refresh(); };
+  const editField = async (contactId, field, value) => { await PartnerNotificationRepository.updateItem(list.id, contactId, { [field]: value }); refresh(); };
 
   const notifiedCount = list.items.filter((i) => i.notified).length;
 
@@ -272,23 +272,28 @@ export default function PartnerNotificationSheet({ testId, onClose }) {
   const [list, setList] = useState(null);
   const [editing, setEditing] = useState(true);
   useEffect(() => {
-    const loaded = PartnerNotificationRepository.getByTestId(testId);
-    setList(loaded);
-    setEditing(!loaded);
+    let cancelled = false;
+    (async () => {
+      const loaded = await PartnerNotificationRepository.getByTestId(testId);
+      if (cancelled) return;
+      setList(loaded);
+      setEditing(!loaded);
+    })();
+    return () => { cancelled = true; };
   }, [testId]);
 
-  const handleGenerate = (chosenContacts, clinical) => {
+  const handleGenerate = async (chosenContacts, clinical) => {
     // Preserves notified/edited fields for a contact that's still on
     // the list after an edit; a newly-added contact gets a fresh item.
     const existingByContact = new Map((list?.items || []).map((i) => [i.contactId, i]));
     const items = chosenContacts.map((c) => existingByContact.get(c.id) || itemFromContact(c));
-    const saved = PartnerNotificationRepository.save({ testId, clinical, items });
+    const saved = await PartnerNotificationRepository.save({ testId, clinical, items });
     setList(saved);
     setEditing(false);
   };
 
-  const handleDelete = () => {
-    PartnerNotificationRepository.remove(list.id);
+  const handleDelete = async () => {
+    await PartnerNotificationRepository.remove(list.id);
     onClose();
   };
 

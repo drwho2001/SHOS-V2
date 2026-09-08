@@ -1048,7 +1048,9 @@ function ProfileDataView({ profile, T }) {
   const linkedContactNames = profile.relationshipContactIds
     .map((id) => ContactRepository.getById(id)?.name)
     .filter(Boolean);
-  const activeContraception = ContraceptionRepository.getActive().map((e) => e.method);
+  // CHANGED — Phase 2 encryption groundwork: ContraceptionRepository
+  // went async — was a plain render-body call.
+  const activeContraception = useLoadedMemo(() => ContraceptionRepository.getActive().then((all) => all.map((e) => e.method)), [], []);
   const kinkNames = profile.statedKinks.map((sel) => {
     const name = KinkRegistry.getById(sel.kinkId)?.name;
     return name ? (sel.role ? `${name} (${sel.role})` : name) : null;

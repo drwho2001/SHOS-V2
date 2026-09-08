@@ -97,18 +97,22 @@ import { useLoadedState } from "../calculations/loadedRepositoryState";
 // own requirement, unlike the old auto-request on mount.
 function NotificationPermissionNudge({ status, onStatusChange }) {
   const [darkMode] = useDarkModePreference();
-  const [dismissed, setDismissed] = useLoadedState(() => NotificationPreferencesRepository.getPreferences().permissionNudgeDismissed, [], false);
+  // CHANGED — Phase 2 encryption groundwork: NotificationPreferencesRepository
+  // went async — the old loader chained `.permissionNudgeDismissed`
+  // straight onto the (now-Promise) getPreferences() call, which would
+  // silently resolve to undefined. Awaited properly instead.
+  const [dismissed, setDismissed] = useLoadedState(async () => (await NotificationPreferencesRepository.getPreferences()).permissionNudgeDismissed, [], false);
   if (status !== "prompt" || dismissed) return null;
 
-  const notNow = () => {
-    NotificationPreferencesRepository.update({ permissionNudgeDismissed: true });
+  const notNow = async () => {
+    await NotificationPreferencesRepository.update({ permissionNudgeDismissed: true });
     setDismissed(true);
   };
   const enable = async () => {
     const r = await requestNotificationPermission();
     onStatusChange(r.status);
     if (r.status !== "prompt") {
-      NotificationPreferencesRepository.update({ permissionNudgeDismissed: true });
+      await NotificationPreferencesRepository.update({ permissionNudgeDismissed: true });
       setDismissed(true);
     }
   };
@@ -388,17 +392,24 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     // ADDED — real ask: Menstrual/Contraception real results on the
     // dashboard. Skipped entirely when the feature is off — no reason
     // to read either repository for a screen that won't show them.
+    // CHANGED — Phase 2 encryption groundwork: MenstrualCycleRepository/
+    // ContraceptionRepository went async. This effect is otherwise fully
+    // synchronous (every setState above already ran by the time this
+    // fires) so an async IIFE just for this last, gated block is
+    // simplest — doesn't hold up anything that already completed.
     if (menstrualTrackingEnabled) {
-      const cycles = MenstrualCycleRepository.getAll().filter((c) => !c.isArchived);
-      const sortedCycles = [...cycles].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
-      setLastPeriod(sortedCycles[0] || null);
+      (async () => {
+        const cycles = (await MenstrualCycleRepository.getAll()).filter((c) => !c.isArchived);
+        const sortedCycles = [...cycles].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
+        setLastPeriod(sortedCycles[0] || null);
 
-      // "Contraception due" mirrors "Next clinic visit" exactly — the
-      // soonest upcoming date across currently-active methods, not
-      // just the most recently started one.
-      const active = ContraceptionRepository.getActive().filter((e) => e.nextDueDate);
-      const sortedDue = [...active].sort((a, b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
-      setContraceptionDue(sortedDue[0] || null);
+        // "Contraception due" mirrors "Next clinic visit" exactly — the
+        // soonest upcoming date across currently-active methods, not
+        // just the most recently started one.
+        const active = (await ContraceptionRepository.getActive()).filter((e) => e.nextDueDate);
+        const sortedDue = [...active].sort((a, b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
+        setContraceptionDue(sortedDue[0] || null);
+      })();
     }
   }, []);
 

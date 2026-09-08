@@ -70,8 +70,20 @@ let seedEntries = [
   { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_002", method: "Depot", formulation: "Injection", startDate: seedDepotStart, intervalDays: 84, nextDueDate: addDays(seedDepotStart, 84), notes: "Started after the miscarriage — wanted something more reliable than the pill." },
 ];
 
-let entries = storage.load(STORAGE_KEY, seedEntries);
-let nextNumber = computeNextNumber(entries);
+// CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
+// loadPromise pattern, same as every other module-load-cached
+// repository converted this session (see CLAUDE.md).
+let entries = null;
+let nextNumber = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (entries === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedEntries);
+    entries = await loadPromise;
+    nextNumber = computeNextNumber(entries);
+  }
+  return entries;
+}
 
 function computeNextNumber(existing) {
   const numbers = existing.map((e) => {
@@ -87,83 +99,92 @@ function generateId() {
   return id;
 }
 
-function persist() {
-  storage.save(STORAGE_KEY, entries);
+async function persist() {
+  await storage.save(STORAGE_KEY, entries);
 }
 
 export const ContraceptionRepository = {
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(entries.map((e) => ({ ...DEFAULT_CONTRACEPTION_ENTRY, ...e })));
   },
 
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = entries.find((e) => e.id === id);
     return found ? structuredClone({ ...DEFAULT_CONTRACEPTION_ENTRY, ...found }) : null;
   },
 
   // The real "what am I currently on" read — My Profile's own display
   // pulls from this, not the other way round.
-  getActive() {
-    return this.getAll().filter((e) => !e.isArchived && !e.endDate);
+  async getActive() {
+    return (await this.getAll()).filter((e) => !e.isArchived && !e.endDate);
   },
 
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     const newEntry = { ...DEFAULT_CONTRACEPTION_ENTRY, ...data, id: generateId(), createdAt: new Date().toISOString(), isArchived: false };
     entries = [...entries, newEntry];
-    persist();
+    await persist();
     return newEntry;
   },
 
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updated = null;
     entries = entries.map((e) => {
       if (e.id !== id) return e;
       updated = { ...e, ...changes, updatedAt: new Date().toISOString() };
       return updated;
     });
-    persist();
+    await persist();
     return updated ? structuredClone({ ...DEFAULT_CONTRACEPTION_ENTRY, ...updated }) : null;
   },
 
-  archive(id) {
+  async archive(id) {
     return this.update(id, { isArchived: true });
   },
 
-  delete(id) {
+  async delete(id) {
+    await ensureLoaded();
     entries = entries.filter((e) => e.id !== id);
-    persist();
+    await persist();
   },
 
-  unarchive(id) {
+  async unarchive(id) {
     return this.update(id, { isArchived: false });
   },
 
-  bulkArchive(ids) {
-    ids.forEach((id) => this.archive(id));
+  async bulkArchive(ids) {
+    for (const id of ids) await this.archive(id);
   },
 
-  bulkDelete(ids) {
+  async bulkDelete(ids) {
+    await ensureLoaded();
     entries = entries.filter((e) => !ids.includes(e.id));
-    persist();
+    await persist();
   },
 
-  restore(record) {
+  async restore(record) {
+    await ensureLoaded();
     if (entries.some((e) => e.id === record.id)) return;
     entries = [...entries, record];
-    persist();
+    await persist();
   },
 
   // Called by clinicVisitsRepository.js's own delete — same "unlink,
   // never cascade-delete" reasoning as measurementRepository.js's own
-  // unlinkClinicVisit().
-  unlinkClinicVisit(visitId) {
+  // unlinkClinicVisit(). Left fire-and-forget from that still-
+  // synchronous caller, same precedent as LocationsRepository.unlinkContact.
+  async unlinkClinicVisit(visitId) {
+    await ensureLoaded();
     entries = entries.map((e) => (e.linkedClinicVisitId === visitId ? { ...e, linkedClinicVisitId: null } : e));
-    persist();
+    await persist();
   },
 
-  replaceAll(newEntries) {
+  async replaceAll(newEntries) {
     entries = newEntries;
     nextNumber = computeNextNumber(entries);
-    persist();
+    await persist();
   },
 };

@@ -69,7 +69,7 @@ import { TrashRepository, MODULE_LABELS as TRASH_MODULE_LABELS } from "../reposi
 import { getCalendarEvents, groupEventsByDay } from "../calculations/calendarCalculations";
 import { LocationsRepository } from "../repositories/locationsRepository";
 import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../repositories/privacySettingsRepository";
-import { NotificationPreferencesRepository, isPaused } from "../repositories/notificationPreferencesRepository";
+import { NotificationPreferencesRepository, DEFAULT_NOTIFICATION_PREFERENCES, isPaused } from "../repositories/notificationPreferencesRepository";
 import { NotificationHistoryRepository } from "../repositories/notificationHistoryRepository";
 import { getDeferredInstallPrompt, onInstallPromptAvailable, triggerInstallPrompt } from "../storage/installPromptService";
 import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../repositories/medicationPreferencesRepository";
@@ -1781,20 +1781,17 @@ function NotificationsScreen({ onClose }) {
   const [refreshKey, forceRefresh] = useState(0);
   const refresh = () => forceRefresh((n) => n + 1);
   const [showHistory, setShowHistory] = useState(false);
-  const notifPrefs = NotificationPreferencesRepository.getPreferences();
-  // CHANGED — real groundwork for encryption at rest: MedicationPreferencesRepository
-  // is now async, so this can no longer be a plain render-body call —
-  // reloads on `refreshKey`, same as this screen's own re-render trigger
-  // for notifPrefs above (still safe there since NotificationPreferencesRepository
-  // is a different, still-synchronous repository).
+  // CHANGED — Phase 2 encryption groundwork: NotificationPreferencesRepository
+  // is now async too — same useLoadedMemo/refreshKey pattern as medPrefs.
+  const notifPrefs = useLoadedMemo(() => NotificationPreferencesRepository.getPreferences(), [refreshKey], DEFAULT_NOTIFICATION_PREFERENCES);
   const medPrefs = useLoadedMemo(() => MedicationPreferencesRepository.getPreferences(), [refreshKey], DEFAULT_MEDICATION_PREFERENCES);
 
   // Re-syncs immediately on toggle rather than waiting for the next
   // Home mount or relevant save — turning a reminder off should cancel
   // whatever's already pending right away, not leave a stale native
   // notification scheduled until the app happens to reopen.
-  const toggleNotif = (key) => {
-    NotificationPreferencesRepository.update({ [key]: !notifPrefs[key] });
+  const toggleNotif = async (key) => {
+    await NotificationPreferencesRepository.update({ [key]: !notifPrefs[key] });
     if (key === "doxyPepAlertEnabled") syncDoxyPepAlert();
     else if (key === "testingReminderEnabled") syncTestingReminder();
     else if (key === "refillReminderEnabled") syncRefillReminder();
@@ -1814,19 +1811,19 @@ function NotificationsScreen({ onClose }) {
     syncClinicVisitReminders();
   };
 
-  const toggleMaster = () => { NotificationPreferencesRepository.update({ masterEnabled: !notifPrefs.masterEnabled }); resyncAll(); refresh(); };
+  const toggleMaster = async () => { await NotificationPreferencesRepository.update({ masterEnabled: !notifPrefs.masterEnabled }); resyncAll(); refresh(); };
 
   // ADDED 3 Sep 2026 — real ask: quiet hours + vacation pause.
-  const setQuietHours = (changes) => { NotificationPreferencesRepository.update(changes); resyncAll(); refresh(); };
+  const setQuietHours = async (changes) => { await NotificationPreferencesRepository.update(changes); resyncAll(); refresh(); };
   const pausedActive = isPaused(notifPrefs);
-  const startPause = (days) => {
+  const startPause = async (days) => {
     const until = new Date();
     until.setDate(until.getDate() + days);
-    NotificationPreferencesRepository.update({ pausedUntil: until.toISOString() });
+    await NotificationPreferencesRepository.update({ pausedUntil: until.toISOString() });
     resyncAll();
     refresh();
   };
-  const resumeNow = () => { NotificationPreferencesRepository.update({ pausedUntil: null }); resyncAll(); refresh(); };
+  const resumeNow = async () => { await NotificationPreferencesRepository.update({ pausedUntil: null }); resyncAll(); refresh(); };
 
   const hoursInput = (value, onChange) => (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
@@ -1913,11 +1910,11 @@ function NotificationsScreen({ onClose }) {
           description="Reminder around your suggested routine retest date (3 months after a negative test)." />
         <NotificationToggleRow darkMode={darkMode} label="Clinic appointment reminder A" enabled={notifPrefs.clinicVisitReminderAEnabled} onToggle={() => toggleNotif("clinicVisitReminderAEnabled")}
           description="First reminder before a booked clinic appointment. Defaults to 24 hours.">
-          {hoursInput(notifPrefs.clinicVisitReminderAHours, (v) => { NotificationPreferencesRepository.update({ clinicVisitReminderAHours: v }); syncClinicVisitReminders(); refresh(); })}
+          {hoursInput(notifPrefs.clinicVisitReminderAHours, async (v) => { await NotificationPreferencesRepository.update({ clinicVisitReminderAHours: v }); syncClinicVisitReminders(); refresh(); })}
         </NotificationToggleRow>
         <NotificationToggleRow darkMode={darkMode} label="Clinic appointment reminder B" enabled={notifPrefs.clinicVisitReminderBEnabled} onToggle={() => toggleNotif("clinicVisitReminderBEnabled")}
           description="Second, closer reminder before a booked clinic appointment. Defaults to 2 hours.">
-          {hoursInput(notifPrefs.clinicVisitReminderBHours, (v) => { NotificationPreferencesRepository.update({ clinicVisitReminderBHours: v }); syncClinicVisitReminders(); refresh(); })}
+          {hoursInput(notifPrefs.clinicVisitReminderBHours, async (v) => { await NotificationPreferencesRepository.update({ clinicVisitReminderBHours: v }); syncClinicVisitReminders(); refresh(); })}
         </NotificationToggleRow>
 
         {/* ADDED 3 Sep 2026 — real ask: a notification history log —

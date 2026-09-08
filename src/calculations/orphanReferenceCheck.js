@@ -196,7 +196,7 @@ export async function findOrphanReferences() {
   // shape: testId lives on the list, contactId lives on each of its
   // own items[]) — a silent no-op, not a crash, since checkSingle just
   // skips a falsy id. Corrected to the real shape.
-  for (const n of PartnerNotificationRepository.getAll()) {
+  for (const n of await PartnerNotificationRepository.getAll()) {
     const ctx = { recordType: "Partner Notification", recordLabel: `Notification list for test ${n.testId}`, recordId: n.id };
     await checkSingle(results, testExists, n.testId, { ...ctx, field: "testId", targetType: "Test" });
     const items = n.items || [];
@@ -205,7 +205,7 @@ export async function findOrphanReferences() {
     }
   }
 
-  MenstrualCycleRepository.getAll().forEach((cycle) => {
+  (await MenstrualCycleRepository.getAll()).forEach((cycle) => {
     checkArray(results, symptomExists, cycle.symptomIds, { recordType: "Menstrual cycle entry", recordLabel: cycle.startDate, recordId: cycle.id, field: "symptomIds", targetType: "Symptoms Registry" });
   });
 
@@ -220,7 +220,7 @@ export async function findOrphanReferences() {
     await checkSingle(results, testExists, m.linkedTestId, { ...ctx, field: "linkedTestId", targetType: "Test" });
   }
 
-  for (const c of ContraceptionRepository.getAll()) {
+  for (const c of await ContraceptionRepository.getAll()) {
     await checkSingle(results, clinicVisitExists, c.linkedClinicVisitId, { recordType: "Contraception entry", recordLabel: c.method || c.id, recordId: c.id, field: "linkedClinicVisitId", targetType: "Clinic Visit" });
   }
 

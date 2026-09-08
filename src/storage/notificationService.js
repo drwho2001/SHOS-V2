@@ -682,7 +682,7 @@ export async function scheduleNotification({ id, title, body, at, actionTypeId, 
   let effectiveAt = new Date(at);
   if (!bypassGlobalGates) {
     const { NotificationPreferencesRepository, notificationsGloballyEnabled, isWithinQuietHours, quietHoursEndAfter } = await import("../repositories/notificationPreferencesRepository");
-    const notifPrefs = NotificationPreferencesRepository.getPreferences();
+    const notifPrefs = await NotificationPreferencesRepository.getPreferences();
     if (!notificationsGloballyEnabled(notifPrefs)) {
       await cancelNotification(id);
       return false;

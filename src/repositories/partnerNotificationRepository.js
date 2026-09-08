@@ -63,22 +63,36 @@ function generateListId() {
   return `partnernotify_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-let lists = storage.load(STORAGE_KEY, []);
-function persist() {
-  storage.save(STORAGE_KEY, lists);
+// CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
+// loadPromise pattern, same as every other module-load-cached
+// repository converted this session (see CLAUDE.md).
+let lists = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (lists === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, []);
+    lists = await loadPromise;
+  }
+  return lists;
+}
+async function persist() {
+  await storage.save(STORAGE_KEY, lists);
 }
 
 export const PartnerNotificationRepository = {
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(lists.map((l) => ({ ...DEFAULT_NOTIFICATION_LIST, ...l })));
   },
 
-  getByTestId(testId) {
+  async getByTestId(testId) {
+    await ensureLoaded();
     const found = lists.find((l) => l.testId === testId);
     return found ? structuredClone({ ...DEFAULT_NOTIFICATION_LIST, ...found }) : null;
   },
 
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = lists.find((l) => l.id === id);
     return found ? structuredClone({ ...DEFAULT_NOTIFICATION_LIST, ...found }) : null;
   },
@@ -90,39 +104,43 @@ export const PartnerNotificationRepository = {
   // shows up as items are handed in fresh by the caller (the UI's own
   // "Edit contacts" flow does that merge, not this function — this
   // just persists whatever item array it's given).
-  save({ testId, clinical, items }) {
+  async save({ testId, clinical, items }) {
+    await ensureLoaded();
     const existing = lists.find((l) => l.testId === testId);
     const now = new Date().toISOString();
     if (existing) {
       lists = lists.map((l) => (l.testId === testId ? { ...l, clinical, items, updatedAt: now } : l));
-      persist();
+      await persist();
       return structuredClone({ ...DEFAULT_NOTIFICATION_LIST, ...lists.find((l) => l.testId === testId) });
     }
     const newList = { ...DEFAULT_NOTIFICATION_LIST, id: generateListId(), testId, clinical, items, createdAt: now, updatedAt: now };
     lists = [...lists, newList];
-    persist();
+    await persist();
     return structuredClone(newList);
   },
 
-  updateItem(listId, contactId, changes) {
+  async updateItem(listId, contactId, changes) {
+    await ensureLoaded();
     lists = lists.map((l) => {
       if (l.id !== listId) return l;
       return { ...l, items: l.items.map((i) => (i.contactId === contactId ? { ...i, ...changes } : i)), updatedAt: new Date().toISOString() };
     });
-    persist();
+    await persist();
     return this.getById(listId);
   },
 
-  toggleNotified(listId, contactId) {
+  async toggleNotified(listId, contactId) {
+    await ensureLoaded();
     const list = lists.find((l) => l.id === listId);
     const item = list?.items.find((i) => i.contactId === contactId);
     if (!item) return this.getById(listId);
     return this.updateItem(listId, contactId, { notified: !item.notified });
   },
 
-  remove(listId) {
+  async remove(listId) {
+    await ensureLoaded();
     lists = lists.filter((l) => l.id !== listId);
-    persist();
+    await persist();
   },
 
   // ADDED — real gap found via the new orphan-reference checker
@@ -130,32 +148,24 @@ export const PartnerNotificationRepository = {
   // clearing when that CONTACT is hard-deleted elsewhere — called by
   // contactRepository.js's own delete(). Only clears the link, same
   // "only clears the link" role as measurementRepository.js's own
-  // unlink methods; the item itself stays (name/methods/dob/age/
-  // address were captured as an independent snapshot at generation
-  // time per this file's own header comment, so nothing displayed is
-  // lost — it just stops pointing at a live Contact record).
-  unlinkContact(contactId) {
+  // unlink methods. Left fire-and-forget from that still-synchronous
+  // caller, same precedent as LocationsRepository.unlinkContact.
+  async unlinkContact(contactId) {
+    await ensureLoaded();
     lists = lists.map((l) => ({ ...l, items: l.items.map((i) => (i.contactId === contactId ? { ...i, contactId: "" } : i)) }));
-    persist();
+    await persist();
   },
 
-  // ADDED — same reasoning, called by testingRepository.js's own
-  // delete(). Unlike unlinkContact above, this is a real delete, not a
-  // field clear — "ONE LIST PER TEST" (see this file's own header) means
-  // a list has no meaning once its Test is gone, same as
-  // logRepository.js's own deleteForMedication().
-  deleteForTest(testId) {
+  // Same reasoning, called by testingRepository.js's own delete() —
+  // also left fire-and-forget there.
+  async deleteForTest(testId) {
+    await ensureLoaded();
     lists = lists.filter((l) => l.testId !== testId);
-    persist();
+    await persist();
   },
 
-  // For backupService.js — same replaceAll(array) shape as every other
-  // id-based repository, so this doesn't get left out of backup/
-  // restore/merge the way this project's own history shows already
-  // happened more than once (Testing, Privacy Settings — see that
-  // file's own comments) when a new repository skipped this step.
-  replaceAll(newLists) {
+  async replaceAll(newLists) {
     lists = Array.isArray(newLists) ? newLists : [];
-    persist();
+    await persist();
   },
 };

@@ -791,7 +791,17 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   // re-reads from the repository — PartnerNotificationRepository isn't
   // itself reactive state, so nothing else here would trigger a
   // re-render after the sheet creates/edits/deletes a list.
-  const [, setPartnerNotifyVersion] = useState(0);
+  const [partnerNotifyVersion, setPartnerNotifyVersion] = useState(0);
+  // CHANGED — PartnerNotificationRepository went async; hoisted above
+  // the `!test` guard below (hooks-before-guard rule) since this used
+  // to be a plain render-body call. Recomputes positivity from `test`
+  // itself (optional-chained — safe on the one render before `test`
+  // has loaded) rather than reusing `isPositive`, which is declared
+  // after the guard and can't be referenced here.
+  const partnerNotifyList = useLoadedMemo(() => {
+    const positive = (test?.resultIds || []).map((id) => ResultsRegistry.getById(id)?.name).some((r) => r?.toLowerCase() === "positive");
+    return positive ? PartnerNotificationRepository.getByTestId(testId) : null;
+  }, [testId, test, partnerNotifyVersion], null);
   // ADDED — Measurements inline entry point (see import comment above).
   const [showAddMeasurement, setShowAddMeasurement] = useState(false);
   const [measurements, setMeasurements] = useLoadedState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedTestId === testId), [testId], []);
@@ -801,7 +811,6 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   const organismNames = test.organismIds.map((id) => OrganismRegistry.getById(id)?.name).filter(Boolean);
   const resultNames = test.resultIds.map((id) => ResultsRegistry.getById(id)?.name).filter(Boolean);
   const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
-  const partnerNotifyList = isPositive ? PartnerNotificationRepository.getByTestId(testId) : null;
   const resultPending = test.resultDate && new Date(test.resultDate) > new Date() && !revealEarly;
   // ADDED 19 Aug 2026 — real data, previously built but never
   // displayed. See the import comment above for the full reasoning.

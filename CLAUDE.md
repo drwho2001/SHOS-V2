@@ -1094,6 +1094,54 @@ this date; summarized here for durability.
   pregnant" banner on the Cycle tab, confirming `MenstrualHealthModule`'s
   own `getActive()` conversion. No page errors anywhere across any of
   these flows. Full smoke-test suite passes.
+  Four repositories converted together in one batch (8 Sep) —
+  `MenstrualCycleRepository`/`ContraceptionRepository`/
+  `PartnerNotificationRepository` via `ensureLoaded()`,
+  `NotificationPreferencesRepository` via direct conversion (no
+  module-load cache, same "easy bucket" shape as the four converted
+  earlier). Grouped into one build/verify/commit/push cycle instead of
+  one per repository, to cut down on redundant CI round-trips now that
+  the pattern itself is well-proven. Caller cascade: `CycleTab`/
+  `ContraceptionTab` (Menstrual Health module) both converted off the
+  same "direct render-body call + `[, force]` counter" pattern
+  `PregnancyTab` hit — `all`/`byId` via `useLoadedMemo`, `create`/`save`
+  async. `orphanReferenceCheck.js` (3 sites), `backupService.js` (6
+  sites), `clinicCardPdfService.js`/`SHOS_ClinicCard_Prototype.jsx`
+  (contraception/last-period reads), `SHOS_MyProfile_Prototype.jsx`,
+  `SHOS_Home_Prototype.jsx` (cycle/contraception dashboard reads, an
+  async IIFE inside an otherwise-synchronous effect since only the
+  last, gated block needed it), and every `NotificationPreferencesRepository`
+  caller across the 5 reminder-sync files
+  (`testingReminderSync.js`/`clinicVisitReminderSync.js`/
+  `refillReminderSync.js`/`doxyPepSync.js`/`notificationService.js`'s
+  own `scheduleNotification()` chokepoint) plus Settings' Notifications
+  screen and Home's permission-nudge card. Two real findings: (1)
+  `SHOS_Testing_Prototype.jsx`'s `partnerNotifyList` was a direct
+  render-body call sitting AFTER the `!test` early-return guard —
+  hoisted above it into a `useLoadedMemo` keyed on `[testId, test,
+  partnerNotifyVersion]`, recomputing positivity from `test` itself
+  with optional chaining since `isPositive` (declared after the guard)
+  couldn't be referenced there; this also required actually reading
+  `partnerNotifyVersion` from its own `useState` (previously
+  write-only, `const [, setPartnerNotifyVersion]`, with no way to use
+  it as a dependency). (2) Home's own permission-nudge
+  `useLoadedState(() => NotificationPreferencesRepository.getPreferences().permissionNudgeDismissed, ...)`
+  chained a property access straight onto the (now-Promise)
+  `getPreferences()` call — silently resolving to `undefined` forever
+  rather than throwing — same class of bug as the earlier
+  `.filter()`/`.map()` chained-onto-`getAll()` sites the original audit
+  flagged, just property access instead of an array method; fixed by
+  awaiting inside the loader. Verified live end-to-end in one grouped
+  pass: Cycle tab's real average-length calculation and detail view;
+  Contraception's Currently-active/History split, detail view (incl.
+  its cross-repo `linkedVisit` read), and edit sheet, all against real
+  seed data; the Notifications screen rendering correctly with real
+  preferences; a full Partner Notification round-trip — generating a
+  real checklist from a positive test (confirmed via a direct
+  `shos_partner_notification_lists` read, correct shape, correct
+  contact snapshot) and toggling an item's notified state, both
+  persisting correctly. No page errors anywhere. Full smoke-test suite
+  passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

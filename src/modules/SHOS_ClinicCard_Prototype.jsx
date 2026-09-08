@@ -280,10 +280,13 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // encounters above (useLoadedMemo, same as those).
   const activePregnancyRaw = useLoadedMemo(() => (menstrualTrackingEnabled ? PregnancyRepository.getActive() : null), [menstrualTrackingEnabled], null);
   const activePregnancy = activePregnancyRaw && !activePregnancyRaw.sensitive ? activePregnancyRaw : null;
-  const lastPeriod = menstrualTrackingEnabled
-    ? [...MenstrualCycleRepository.getAll().filter((c) => !c.isArchived)].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0] || null
-    : null;
-  const activeContraception = menstrualTrackingEnabled ? ContraceptionRepository.getActive() : [];
+  const lastPeriod = useLoadedMemo(
+    () => menstrualTrackingEnabled
+      ? MenstrualCycleRepository.getAll().then((all) => [...all.filter((c) => !c.isArchived)].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0] || null)
+      : null,
+    [menstrualTrackingEnabled], null
+  );
+  const activeContraception = useLoadedMemo(() => (menstrualTrackingEnabled ? ContraceptionRepository.getActive() : []), [menstrualTrackingEnabled], []);
 
   // CHANGED 19 Aug 2026 — real data, Vaccination Record now exists.
   // Shows recent vaccinations plus any overdue boosters/next-dues in

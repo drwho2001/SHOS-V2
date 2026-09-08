@@ -380,24 +380,35 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
     else if (openAddOnMount) { setScreen({ name: "add" }); onConsumedQuickAdd?.(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openRecordId, openAddOnMount]);
-  const [cycles, setCycles] = useLoadedState(() => MenstrualCycleRepository.getAll().filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)), [], []);
-  const refresh = () => setCycles(MenstrualCycleRepository.getAll().filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)));
+  // CHANGED — Phase 2 encryption groundwork: MenstrualCycleRepository
+  // went async — the old loader/refresh() chained .filter()/.sort()
+  // straight onto getAll() (one of the flagged sites from the original
+  // audit). Split via .then(); refresh() bumps a counter instead of
+  // recomputing the array itself, same "let the loader reload" shape
+  // as PregnancyTab's own conversion.
+  const [, force] = useState(0);
+  const refresh = () => force((v) => v + 1);
+  const cycles = useLoadedMemo(
+    () => MenstrualCycleRepository.getAll().then((all) => all.filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))),
+    [force], []
+  );
+  const byId = useLoadedMemo(() => (screen.id ? MenstrualCycleRepository.getById(screen.id) : null), [screen.id, force], null);
   const deleteUndo = useDeleteUndo(MenstrualCycleRepository, "menstrualCycles");
   const editUndo = useEditUndo(MenstrualCycleRepository);
   const avgLength = useLoadedMemo(() => MenstrualCycleRepository.getAverageCycleLengthDays(), [cycles], null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const create = (data) => { MenstrualCycleRepository.create(data); refresh(); setScreen({ name: "list" }); };
-  const save = (data) => {
+  const create = async (data) => { await MenstrualCycleRepository.create(data); refresh(); setScreen({ name: "list" }); };
+  const save = async (data) => {
     editUndo.captureBeforeEdit(screen.id);
-    MenstrualCycleRepository.update(screen.id, data);
+    await MenstrualCycleRepository.update(screen.id, data);
     editUndo.notifyEdited(screen.id);
     refresh();
     setScreen({ name: "detail", id: screen.id });
   };
 
   if (screen.name === "detail") {
-    const c = MenstrualCycleRepository.getById(screen.id);
+    const c = byId;
     if (!c) return null;
     const symptomNames = c.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean);
     return (
@@ -452,7 +463,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
       </div>
       <DeleteToast toast={deleteUndo.toast} onUndo={deleteUndo.undo} onRedo={deleteUndo.redo} T={T} noun="period" />
       {screen.name === "add" && <CycleSheet cycle={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} />}
-      {screen.name === "edit" && <CycleSheet cycle={MenstrualCycleRepository.getById(screen.id)} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
+      {screen.name === "edit" && <CycleSheet cycle={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
     </div>
   );
 }
@@ -596,25 +607,32 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
   }, [openRecordId, openAddOnMount]);
   const [, force] = useState(0);
   const refresh = () => force((v) => v + 1);
-  const all = ContraceptionRepository.getAll().filter((e) => !e.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
+  // CHANGED — Phase 2 encryption groundwork: ContraceptionRepository
+  // went async — was a plain render-body call, kept working alongside
+  // this component's own [, force] refresh mechanism via useLoadedMemo.
+  const all = useLoadedMemo(
+    () => ContraceptionRepository.getAll().then((list) => list.filter((e) => !e.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))),
+    [force], []
+  );
   const active = all.filter((e) => !e.endDate);
   const past = all.filter((e) => e.endDate);
+  const byId = useLoadedMemo(() => (screen.id ? ContraceptionRepository.getById(screen.id) : null), [screen.id, force], null);
   const deleteUndo = useDeleteUndo(ContraceptionRepository, "contraception");
   const editUndo = useEditUndo(ContraceptionRepository);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
 
-  const create = (data) => { ContraceptionRepository.create(data); refresh(); setScreen({ name: "list" }); };
-  const save = (data) => {
+  const create = async (data) => { await ContraceptionRepository.create(data); refresh(); setScreen({ name: "list" }); };
+  const save = async (data) => {
     editUndo.captureBeforeEdit(screen.id);
-    ContraceptionRepository.update(screen.id, data);
+    await ContraceptionRepository.update(screen.id, data);
     editUndo.notifyEdited(screen.id);
     refresh();
     setScreen({ name: "detail", id: screen.id });
   };
 
   if (screen.name === "detail") {
-    const e = ContraceptionRepository.getById(screen.id);
+    const e = byId;
     if (!e) return null;
     const linkedVisit = e.linkedClinicVisitId ? ClinicVisitsRepository.getById(e.linkedClinicVisitId) : null;
     const overdue = e.nextDueDate && e.nextDueDate < today && !e.endDate;
@@ -694,7 +712,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
       </div>
       <DeleteToast toast={deleteUndo.toast} onUndo={deleteUndo.undo} onRedo={deleteUndo.redo} T={T} noun="entry" />
       {screen.name === "add" && <ContraceptionSheet entry={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} />}
-      {screen.name === "edit" && <ContraceptionSheet entry={ContraceptionRepository.getById(screen.id)} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
+      {screen.name === "edit" && <ContraceptionSheet entry={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
     </div>
   );
 }

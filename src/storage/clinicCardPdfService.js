@@ -84,9 +84,9 @@ async function assembleClinicCardData() {
   const activePregnancyRaw = menstrualTrackingEnabled ? await PregnancyRepository.getActive() : null;
   const activePregnancy = activePregnancyRaw && !activePregnancyRaw.sensitive ? activePregnancyRaw : null;
   const lastPeriod = menstrualTrackingEnabled
-    ? [...MenstrualCycleRepository.getAll().filter((c) => !c.isArchived)].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0] || null
+    ? [...(await MenstrualCycleRepository.getAll()).filter((c) => !c.isArchived)].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0] || null
     : null;
-  const activeContraception = menstrualTrackingEnabled ? ContraceptionRepository.getActive() : [];
+  const activeContraception = menstrualTrackingEnabled ? await ContraceptionRepository.getActive() : [];
   const menstrualContraception = [
     ...(activePregnancy ? [{ title: "Currently pregnant", subtitle: activePregnancy.estimatedDueDate ? `Due ${formatRelativeDate(activePregnancy.estimatedDueDate)}` : "Ongoing", alert: true }] : []),
     ...activeContraception.map((c) => {

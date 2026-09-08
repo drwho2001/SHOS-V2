@@ -43,7 +43,7 @@ export async function getRefillDueMedications() {
 }
 
 export async function syncRefillReminder() {
-  if (!NotificationPreferencesRepository.getPreferences().refillReminderEnabled) {
+  if (!(await NotificationPreferencesRepository.getPreferences()).refillReminderEnabled) {
     await cancelNotification(NOTIFICATION_IDS.refillReminder);
     return { scheduled: false };
   }

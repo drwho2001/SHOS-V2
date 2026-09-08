@@ -56,8 +56,20 @@ let seedCycles = [
   { ...DEFAULT_CYCLE, id: "cycle_003", startDate: seedStart3, endDate: null, flow: "Light", symptomIds: [], notes: "Ongoing." },
 ];
 
-let cycles = storage.load(STORAGE_KEY, seedCycles);
-let nextNumber = computeNextNumber(cycles);
+// CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
+// loadPromise pattern, same as every other module-load-cached
+// repository converted this session (see CLAUDE.md).
+let cycles = null;
+let nextNumber = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (cycles === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedCycles);
+    cycles = await loadPromise;
+    nextNumber = computeNextNumber(cycles);
+  }
+  return cycles;
+}
 
 function computeNextNumber(existing) {
   const numbers = existing.map((c) => {
@@ -73,16 +85,18 @@ function generateId() {
   return id;
 }
 
-function persist() {
-  storage.save(STORAGE_KEY, cycles);
+async function persist() {
+  await storage.save(STORAGE_KEY, cycles);
 }
 
 export const MenstrualCycleRepository = {
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(cycles.map((c) => ({ ...DEFAULT_CYCLE, ...c })));
   },
 
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = cycles.find((c) => c.id === id);
     return found ? structuredClone({ ...DEFAULT_CYCLE, ...found }) : null;
   },
@@ -91,8 +105,8 @@ export const MenstrualCycleRepository = {
   // on read like Vaccinations' own "Overdue" stat — not fertility
   // prediction, not ovulation tracking, just "here's roughly your
   // pattern" from whatever's actually been logged.
-  getAverageCycleLengthDays() {
-    const sorted = this.getAll().filter((c) => !c.isArchived && c.startDate).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+  async getAverageCycleLengthDays() {
+    const sorted = (await this.getAll()).filter((c) => !c.isArchived && c.startDate).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
     if (sorted.length < 2) return null;
     const gaps = [];
     for (let i = 1; i < sorted.length; i++) {
@@ -103,55 +117,60 @@ export const MenstrualCycleRepository = {
     return Math.round(gaps.reduce((sum, d) => sum + d, 0) / gaps.length);
   },
 
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     const newCycle = { ...DEFAULT_CYCLE, ...data, id: generateId(), createdAt: new Date().toISOString(), isArchived: false };
     cycles = [...cycles, newCycle];
-    persist();
+    await persist();
     return newCycle;
   },
 
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updated = null;
     cycles = cycles.map((c) => {
       if (c.id !== id) return c;
       updated = { ...c, ...changes, updatedAt: new Date().toISOString() };
       return updated;
     });
-    persist();
+    await persist();
     return updated ? structuredClone({ ...DEFAULT_CYCLE, ...updated }) : null;
   },
 
-  archive(id) {
+  async archive(id) {
     return this.update(id, { isArchived: true });
   },
 
-  delete(id) {
+  async delete(id) {
+    await ensureLoaded();
     cycles = cycles.filter((c) => c.id !== id);
-    persist();
+    await persist();
   },
 
-  unarchive(id) {
+  async unarchive(id) {
     return this.update(id, { isArchived: false });
   },
 
-  bulkArchive(ids) {
-    ids.forEach((id) => this.archive(id));
+  async bulkArchive(ids) {
+    for (const id of ids) await this.archive(id);
   },
 
-  bulkDelete(ids) {
+  async bulkDelete(ids) {
+    await ensureLoaded();
     cycles = cycles.filter((c) => !ids.includes(c.id));
-    persist();
+    await persist();
   },
 
-  restore(record) {
+  async restore(record) {
+    await ensureLoaded();
     if (cycles.some((c) => c.id === record.id)) return;
     cycles = [...cycles, record];
-    persist();
+    await persist();
   },
 
-  replaceAll(newCycles) {
+  async replaceAll(newCycles) {
     cycles = newCycles;
     nextNumber = computeNextNumber(cycles);
-    persist();
+    await persist();
   },
 };

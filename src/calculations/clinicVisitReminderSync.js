@@ -64,7 +64,7 @@ async function syncOneSlot({ visit, enabled, hoursBefore, notificationId, label 
 }
 
 export async function syncClinicVisitReminders() {
-  const prefs = NotificationPreferencesRepository.getPreferences();
+  const prefs = await NotificationPreferencesRepository.getPreferences();
   const visit = getSoonestBookedVisit();
 
   const resultA = await syncOneSlot({
@@ -90,8 +90,8 @@ export async function syncClinicVisitReminders() {
 // slot's own window (reminderAt has passed) for the soonest booked
 // visit, and the visit itself hasn't happened yet — a plain future
 // booking with neither slot's window reached yet is not "due".
-export function getClinicVisitDueState() {
-  const prefs = NotificationPreferencesRepository.getPreferences();
+export async function getClinicVisitDueState() {
+  const prefs = await NotificationPreferencesRepository.getPreferences();
   const visit = getSoonestBookedVisit();
   if (!visit) return { due: false };
   const nowMs = Date.now();
@@ -122,7 +122,7 @@ export async function handleSnoozeClinicVisit() {
   const at = new Date(Date.now() + 30 * 60000);
   // FIXED — real bug: this used to only reschedule the native
   // notification — see this file's own getClinicVisitDueState() comment.
-  NotificationPreferencesRepository.update({ clinicVisitSnoozedUntil: at.toISOString() });
+  await NotificationPreferencesRepository.update({ clinicVisitSnoozedUntil: at.toISOString() });
   await scheduleNotification({
     id: NOTIFICATION_IDS.clinicVisitReminderA,
     title: "Upcoming clinic appointment",

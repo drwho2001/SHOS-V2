@@ -268,8 +268,8 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     vaccinations: VaccinationRepository.getAll(),
     episodes: EpisodeRepository.getAll(),
     measurements: MeasurementRepository.getAll(),
-    menstrualCycles: MenstrualCycleRepository.getAll(),
-    contraception: ContraceptionRepository.getAll(),
+    menstrualCycles: await MenstrualCycleRepository.getAll(),
+    contraception: await ContraceptionRepository.getAll(),
     pregnancies: await PregnancyRepository.getAll(),
     measurementPreferences: await MeasurementPreferencesRepository.getPreferences(),
     customGroups: await CustomGroupsRepository.getAllForBackup(),
@@ -278,7 +278,7 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
       ? sanitizePrivacySettingsForPlainExport(PrivacySettingsRepository.getSettings())
       : PrivacySettingsRepository.getSettings(),
     resources: await ResourcesRepository.getAllForBackup(),
-    partnerNotifications: PartnerNotificationRepository.getAll(),
+    partnerNotifications: await PartnerNotificationRepository.getAll(),
   };
   const keySet = includeKeys ? new Set(includeKeys) : null;
   let data = keySet
@@ -387,15 +387,15 @@ export async function restoreBackup(parsedBackup) {
   if (Array.isArray(vaccinations)) VaccinationRepository.replaceAll(vaccinations);
   if (Array.isArray(episodes)) EpisodeRepository.replaceAll(episodes);
   if (Array.isArray(measurements)) MeasurementRepository.replaceAll(measurements);
-  if (Array.isArray(menstrualCycles)) MenstrualCycleRepository.replaceAll(menstrualCycles);
-  if (Array.isArray(contraception)) ContraceptionRepository.replaceAll(contraception);
+  if (Array.isArray(menstrualCycles)) await MenstrualCycleRepository.replaceAll(menstrualCycles);
+  if (Array.isArray(contraception)) await ContraceptionRepository.replaceAll(contraception);
   if (Array.isArray(pregnancies)) await PregnancyRepository.replaceAll(pregnancies);
   if (measurementPreferences && typeof measurementPreferences === "object") await MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
   if (customGroups && typeof customGroups === "object") await CustomGroupsRepository.replaceAll(customGroups);
   if (customOptionLists && typeof customOptionLists === "object") CustomOptionListsRepository.replaceAll(customOptionLists);
   if (privacySettings && typeof privacySettings === "object") PrivacySettingsRepository.update(privacySettings);
   if (resources && typeof resources === "object") await ResourcesRepository.replaceAll(resources);
-  if (Array.isArray(partnerNotifications)) PartnerNotificationRepository.replaceAll(partnerNotifications);
+  if (Array.isArray(partnerNotifications)) await PartnerNotificationRepository.replaceAll(partnerNotifications);
   // Not Array.isArray — MyProfile is a singleton object, not a list.
   // Older backup files (from before 18 Aug 2026) simply won't have a
   // myProfile key at all, so this quietly no-ops on those rather than
