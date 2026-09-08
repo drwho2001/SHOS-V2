@@ -559,7 +559,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
   return (
     <BottomSheet title={isNew ? "Add contraception" : "Edit contraception"} onClose={onClose} T={T} footer={<SaveButton label={isNew ? "Add" : "Save changes"} onClick={() => onSave(form)} canSave={canSave} T={T} />}>
       <FreeTextSuggestField label="Method" value={form.method} onChange={setMethod} options={methodOptions}
-        onAddNew={(v) => setMethodOptions(CustomOptionListsRepository.add("contraception", v))} T={T} placeholder="e.g. Depot, IUD, Combined pill" />
+        onAddNew={(v) => { CustomOptionListsRepository.add("contraception", v).then(setMethodOptions); }} T={T} placeholder="e.g. Depot, IUD, Combined pill" />
       <SelectField label="Formulation" value={form.formulation} onChange={set("formulation")} options={formulationOptions} listName="medicationType" T={T} hint="sets the icon shown for this entry" />
       <TextField label="Start date" value={form.startDate} onChange={setStartDate} T={T} type="date" />
       <TextField label="End date (leave blank if currently active)" value={form.endDate} onChange={set("endDate")} T={T} type="date" />

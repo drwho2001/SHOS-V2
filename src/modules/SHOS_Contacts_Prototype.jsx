@@ -1574,7 +1574,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           {/* ADDED — real ask: trans-inclusive, non-judgemental — free
               text, not a fixed dropdown of "approved" options. */}
           <SuggestField T={T} label="Gender" value={form.gender} onChange={set("gender")} options={genderOptions}
-            onAddNew={(v) => setGenderOptions(CustomOptionListsRepository.add("gender", v))} placeholder="e.g. Male, Female, Non-binary" />
+            onAddNew={(v) => { CustomOptionListsRepository.add("gender", v).then(setGenderOptions); }} placeholder="e.g. Male, Female, Non-binary" />
           {/* CHANGED — real ask, from a competitive-research finding:
               plain free text with no suggestions at all, the one field
               on this form that hadn't gotten the same SuggestField
@@ -1582,7 +1582,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
               anything, it just works" flexibility — this only adds
               suggestion chips, nothing is locked down. */}
           <SuggestField T={T} label="Pronouns" value={form.pronouns} onChange={set("pronouns")} options={pronounsOptions}
-            onAddNew={(v) => setPronounsOptions(CustomOptionListsRepository.add("pronouns", v))} placeholder="e.g. he/him, she/her, they/them" />
+            onAddNew={(v) => { CustomOptionListsRepository.add("pronouns", v).then(setPronounsOptions); }} placeholder="e.g. he/him, she/her, they/them" />
           <AgeField T={T} age={form.age} ageIsApprox={form.ageIsApprox} onChangeAge={set("age")} onChangeApprox={set("ageIsApprox")} />
           {/* ADDED 26 Aug 2026 — real ask: moved to the top of the form
               rather than buried in Location & logistics — the override
@@ -1620,7 +1620,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
         <SectionCard T={T} title="Relationship">
           <SelectField T={T} label="Rating" value={form.rating} onChange={set("rating")} options={RATING_OPTIONS} />
           <MultiSelectChips T={T} label="Relationship type" value={form.relationshipType} onChange={set("relationshipType")} options={relationshipTypeOptions} listName="relationshipType"
-            onAddNew={(v) => setRelationshipTypeOptions(CustomOptionListsRepository.add("relationshipType", v))} />
+            onAddNew={(v) => { CustomOptionListsRepository.add("relationshipType", v).then(setRelationshipTypeOptions); }} />
           <TagInput T={T} label="How did we meet?" value={form.howDidWeMeet} onChange={set("howDidWeMeet")} suggestions={howMetOptions} />
           <SelectField T={T} label="Meet again?" value={form.meetAgain} onChange={set("meetAgain")} options={MEET_AGAIN_OPTIONS} />
           {form.meetAgain === "No" && (
@@ -1758,7 +1758,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
               onAddNew for a value not in the option list yet. */}
           {["female", "trans-male"].includes((form.gender || "").trim().toLowerCase()) && (
             <MultiSelectChips T={T} label="Contraception" value={form.contraception} onChange={set("contraception")} options={contraceptionOptions} listName="contraception"
-              onAddNew={(v) => setContraceptionOptions(CustomOptionListsRepository.add("contraception", v))} />
+              onAddNew={(v) => { CustomOptionListsRepository.add("contraception", v).then(setContraceptionOptions); }} />
           )}
           <MultiSelectChips T={T} label="Known to be on" value={form.knownPrepDoxy} onChange={set("knownPrepDoxy")} options={PREP_DOXY_OPTIONS} />
           <TextField T={T} label="Last tested date (if known)" value={form.lastTestedDate} onChange={set("lastTestedDate")} type="date" helper="Often unknown — leave blank, no pressure." />

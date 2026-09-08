@@ -273,7 +273,7 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     pregnancies: await PregnancyRepository.getAll(),
     measurementPreferences: await MeasurementPreferencesRepository.getPreferences(),
     customGroups: await CustomGroupsRepository.getAllForBackup(),
-    customOptionLists: CustomOptionListsRepository.getAllForBackup(),
+    customOptionLists: await CustomOptionListsRepository.getAllForBackup(),
     privacySettings: redactSecrets
       ? sanitizePrivacySettingsForPlainExport(PrivacySettingsRepository.getSettings())
       : PrivacySettingsRepository.getSettings(),
@@ -392,7 +392,7 @@ export async function restoreBackup(parsedBackup) {
   if (Array.isArray(pregnancies)) await PregnancyRepository.replaceAll(pregnancies);
   if (measurementPreferences && typeof measurementPreferences === "object") await MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
   if (customGroups && typeof customGroups === "object") await CustomGroupsRepository.replaceAll(customGroups);
-  if (customOptionLists && typeof customOptionLists === "object") CustomOptionListsRepository.replaceAll(customOptionLists);
+  if (customOptionLists && typeof customOptionLists === "object") await CustomOptionListsRepository.replaceAll(customOptionLists);
   if (privacySettings && typeof privacySettings === "object") PrivacySettingsRepository.update(privacySettings);
   if (resources && typeof resources === "object") await ResourcesRepository.replaceAll(resources);
   if (Array.isArray(partnerNotifications)) await PartnerNotificationRepository.replaceAll(partnerNotifications);
@@ -457,14 +457,20 @@ export async function mergeBackup(parsedBackup) {
   await append(PregnancyRepository, data.pregnancies);
   await append(EpisodeRepository, data.episodes);
   if (data.customOptionLists && typeof data.customOptionLists === "object") {
-    const current = CustomOptionListsRepository.getAllForBackup();
+    const current = await CustomOptionListsRepository.getAllForBackup();
     const merged = {};
     for (const key of new Set([...Object.keys(current), ...Object.keys(data.customOptionLists)])) {
       merged[key] = Array.from(new Set([...(current[key] || []), ...(data.customOptionLists[key] || [])]));
     }
-    CustomOptionListsRepository.replaceAll(merged);
+    await CustomOptionListsRepository.replaceAll(merged);
   }
-  append(PartnerNotificationRepository, data.partnerNotifications);
+  // FIXED — real gap found while converting CustomOptionListsRepository:
+  // this was missing an await even though append() and
+  // PartnerNotificationRepository are both already async from an
+  // earlier batch this session — a genuine pre-existing race (this
+  // merge branch's own final "return" could run before the partner-
+  // notification append actually landed).
+  await append(PartnerNotificationRepository, data.partnerNotifications);
   // Resources entries are {id, name, link, notes} objects, not plain
   // strings — concatenated per category rather than de-duplicated like
   // customOptionLists above; a re-added "Refuge" showing twice is mild

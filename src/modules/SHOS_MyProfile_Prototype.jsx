@@ -873,18 +873,18 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
           <TextField label="Full name" value={form.displayName} onChange={set("displayName")} T={T} placeholder="Your full name" />
           <TextField label="Nickname" value={form.nickname} onChange={set("nickname")} T={T} placeholder="e.g. Alex" />
           <SuggestField label="Gender" value={form.gender} onChange={set("gender")} options={genderOptions}
-            onAddNew={(v) => setGenderOptions(CustomOptionListsRepository.add("gender", v))} T={T} placeholder="e.g. Male, Female, Non-binary" />
+            onAddNew={(v) => { CustomOptionListsRepository.add("gender", v).then(setGenderOptions); }} T={T} placeholder="e.g. Male, Female, Non-binary" />
           {/* CHANGED — real ask, from a competitive-research finding:
               plain free text with no suggestions, unlike Gender right
               above it. Same "type anything, it just works" flexibility
               — this only adds suggestion chips, nothing is locked down. */}
           <SuggestField label="Pronouns" value={form.pronouns} onChange={set("pronouns")} options={pronounsOptions}
-            onAddNew={(v) => setPronounsOptions(CustomOptionListsRepository.add("pronouns", v))} T={T} placeholder="e.g. he/him, she/her, they/them" />
+            onAddNew={(v) => { CustomOptionListsRepository.add("pronouns", v).then(setPronounsOptions); }} T={T} placeholder="e.g. he/him, she/her, they/them" />
           {/* ADDED — real ask: relationship status, a different axis
               from Contacts' own relationshipType — describes your
               overall situation, not your connection to one person. */}
           <SuggestField label="Relationship status" value={form.relationshipStatus} onChange={set("relationshipStatus")} options={relationshipStatusOptions}
-            onAddNew={(v) => setRelationshipStatusOptions(CustomOptionListsRepository.add("relationshipStatus", v))} T={T} placeholder="e.g. Single, Married, Poly" />
+            onAddNew={(v) => { CustomOptionListsRepository.add("relationshipStatus", v).then(setRelationshipStatusOptions); }} T={T} placeholder="e.g. Single, Married, Poly" />
           {form.relationshipStatus && (
             <RelationPicker label="Linked to" value={form.relationshipContactIds} onChange={set("relationshipContactIds")}
               T={T} items={allContacts} placeholder="No contacts yet — add one under Contacts first" />

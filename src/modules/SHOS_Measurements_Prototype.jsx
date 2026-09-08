@@ -388,7 +388,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
         </div>
         <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <MeasurementTypeField value={form.type} onChange={setType} options={editableOptions} rankedOptions={rankedEditableOptions} listName="measurementType"
-            onAddNew={(v) => { setTypeOptions(CustomOptionListsRepository.add("measurementType", v)); setRankedTypeOptions(CustomOptionListsRepository.getRanked("measurementType")); }}
+            onAddNew={(v) => { CustomOptionListsRepository.add("measurementType", v).then((updated) => { setTypeOptions(updated); CustomOptionListsRepository.getRanked("measurementType").then(setRankedTypeOptions); }); }}
             onNewTypeCreated={(v) => v !== BLOOD_PRESSURE_TYPE && setNewTypeNeedingKind(v)} T={T} locked={!isNew && measurement.type === BLOOD_PRESSURE_TYPE} />
           {newTypeNeedingKind && (
             <TypeKindPrompt typeName={newTypeNeedingKind} T={T}

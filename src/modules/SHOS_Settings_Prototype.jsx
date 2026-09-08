@@ -806,6 +806,14 @@ function ManageListsScreen({ onClose }) {
   const [openRegistry, setOpenRegistry] = useState(null);
   const [openOptionList, setOpenOptionList] = useState(null);
   const optionListNames = CustomOptionListsRepository.getAllListNames();
+  // CHANGED — Phase 2 encryption groundwork: CustomOptionListsRepository
+  // went async — `.get(name).length` used to be a synchronous per-row
+  // render call inside the JSX .map() below, which can't itself await;
+  // resolved into a lookup object ahead of time instead.
+  const listCounts = useLoadedMemo(async () => {
+    const entries = await Promise.all(optionListNames.map(async (name) => [name, (await CustomOptionListsRepository.get(name)).length]));
+    return Object.fromEntries(entries);
+  }, [], {});
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -861,7 +869,7 @@ function ManageListsScreen({ onClose }) {
                     )}
                     <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{OPTION_LIST_LABELS[name] || name}</span>
                   </div>
-                  <span style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568" }}>{CustomOptionListsRepository.get(name).length} options ›</span>
+                  <span style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568" }}>{listCounts[name] ?? 0} options ›</span>
                 </div>
               );
             })}

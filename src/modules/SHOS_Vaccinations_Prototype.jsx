@@ -267,7 +267,7 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
         <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder="e.g. Hep B booster" />
           <VaccineField value={form.vaccine} onChange={set("vaccine")} options={vaccineOptions}
-            onAddNew={(v) => setVaccineOptions(CustomOptionListsRepository.add("vaccine", v))} T={T} />
+            onAddNew={(v) => { CustomOptionListsRepository.add("vaccine", v).then(setVaccineOptions); }} T={T} />
           <MultiSelectChips label="Reason" value={form.reason} onChange={set("reason")} options={vaccinationReasonOptions} listName="vaccinationReason" T={T} />
           <TextField label="Dose number" value={form.doseNumber ?? ""} onChange={(v) => set("doseNumber")(v === "" ? null : Number(v))} T={T} type="number" />
           <TextField label="Date" value={form.date} onChange={set("date")} T={T} type="date" />

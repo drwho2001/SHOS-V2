@@ -1057,7 +1057,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
             identity facts before dosing mechanics. */}
         <SelectRow T={T} label="Medication type" value={form.medicationType} onChange={set("medicationType")} options={medicationTypeOptions} listName="medicationType" />
         <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions} listName="medicationCategory"
-          onAddNew={(v) => setCategoryOptions(CustomOptionListsRepository.add("medicationCategory", v))} />
+          onAddNew={(v) => { CustomOptionListsRepository.add("medicationCategory", v).then(setCategoryOptions); }} />
         <DoseStrengthField T={T} value={form.doseStrengthValue} unit={form.doseStrengthUnit} onChangeValue={set("doseStrengthValue")} onChangeUnit={set("doseStrengthUnit")} />
         <SelectRow T={T} label="Route" value={form.route} onChange={set("route")} options={routeOptions} listName="route" />
 
@@ -1226,7 +1226,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
             pattern/inventory mechanics below. */}
         <SelectRow T={T} label="Medication type" value={form.medicationType} onChange={set("medicationType")} options={medicationTypeOptions} listName="medicationType" />
         <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions} listName="medicationCategory"
-          onAddNew={(v) => setCategoryOptions(CustomOptionListsRepository.add("medicationCategory", v))} />
+          onAddNew={(v) => { CustomOptionListsRepository.add("medicationCategory", v).then(setCategoryOptions); }} />
         <DoseStrengthField T={T} value={form.doseStrengthValue} unit={form.doseStrengthUnit} onChangeValue={set("doseStrengthValue")} onChangeUnit={set("doseStrengthUnit")} />
         <SelectRow T={T} label="Route" value={form.route} onChange={set("route")} options={routeOptions} listName="route" />
 

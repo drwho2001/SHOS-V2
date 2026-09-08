@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, XIcon as X, PillIcon as Pill, ArrowCircleRightIcon as ArrowRightCircle, ClipboardTextIcon as ClipboardList, CalendarIcon as CalendarClock, TestTubeIcon as TestTube, SyringeIcon as Syringe, CalendarCheckIcon as CalendarCheck, MapPinIcon as MapPin, PlayCircleIcon as PlayCircle, TagIcon as Tag, HeartIcon as Heart, UserIcon as User } from "@phosphor-icons/react";
 import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } from "../repositories/customOptionListsRepository";
+import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
@@ -42,38 +43,38 @@ export function OptionListDetail({ listName, onClose }) {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingValue, setEditingValue] = useState("");
 
-  const options = CustomOptionListsRepository.get(listName);
+  const options = useLoadedMemo(() => CustomOptionListsRepository.get(listName), [listName, refreshKey], []);
   const refresh = () => setRefreshKey((k) => k + 1);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     const trimmed = addingValue.trim();
     if (!trimmed) return;
-    CustomOptionListsRepository.add(listName, trimmed);
+    await CustomOptionListsRepository.add(listName, trimmed);
     setAddingValue("");
     refresh();
   };
 
   const startEdit = (i) => { setEditingIndex(i); setEditingValue(options[i]); };
-  const commitEdit = () => {
+  const commitEdit = async () => {
     const trimmed = editingValue.trim();
     if (trimmed && trimmed !== options[editingIndex]) {
-      CustomOptionListsRepository.rename(listName, options[editingIndex], trimmed);
+      await CustomOptionListsRepository.rename(listName, options[editingIndex], trimmed);
     }
     setEditingIndex(null);
     refresh();
   };
 
-  const remove = (value) => {
-    CustomOptionListsRepository.remove(listName, value);
+  const remove = async (value) => {
+    await CustomOptionListsRepository.remove(listName, value);
     refresh();
   };
 
-  const move = (i, direction) => {
+  const move = async (i, direction) => {
     const next = [...options];
     const target = i + direction;
     if (target < 0 || target >= next.length) return;
     [next[i], next[target]] = [next[target], next[i]];
-    CustomOptionListsRepository.reorder(listName, next);
+    await CustomOptionListsRepository.reorder(listName, next);
     refresh();
   };
 
@@ -128,6 +129,13 @@ export default function OptionListsScreen({ onClose }) {
 
   const [open, setOpen] = useState(null);
   const listNames = CustomOptionListsRepository.getAllListNames();
+  // CHANGED — Phase 2 encryption groundwork: CustomOptionListsRepository
+  // went async — same lookup-map treatment as Settings' own
+  // ManageListsScreen for its equivalent list of counts.
+  const listCounts = useLoadedMemo(async () => {
+    const entries = await Promise.all(listNames.map(async (name) => [name, (await CustomOptionListsRepository.get(name)).length]));
+    return Object.fromEntries(entries);
+  }, [], {});
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -155,7 +163,7 @@ export default function OptionListsScreen({ onClose }) {
                 )}
                 <span style={{ fontSize: 14, color: T.textPrimary, fontWeight: 500 }}>{OPTION_LIST_LABELS[name] || name}</span>
               </div>
-              <span style={{ fontSize: 12, color: T.textDisabled }}>{CustomOptionListsRepository.get(name).length} options ›</span>
+              <span style={{ fontSize: 12, color: T.textDisabled }}>{listCounts[name] ?? 0} options ›</span>
             </div>
           );
         })}

@@ -1358,6 +1358,45 @@ this date; summarized here for durability.
   list and an existing entry's detail (real Gonorrhoea/Meningitis B
   seed data), its Edit sheet opening with real data already populated.
   No page errors. Full smoke-test suite passes.
+  `customOptionListsRepository.js` converted next (8 Sep,
+  `ensureLoaded()` pattern) — structurally the hardest of the four
+  repositories converted this session, not because any single fix was
+  novel but because of its shape: two independent module-load-cached
+  values (`lists`/`usageMeta`, each with its own `ensureLoaded()`
+  rather than merged into one, since most callers only need one of
+  them) and its own module-load-time migration side effect (the
+  `SAMPLE_TYPE_MIGRATION_FLAG` check, wrapped in an async IIFE — a
+  module-load-time effect can't itself be `async`). Widest caller
+  footprint by file count this session (14 files, 68 call sites) since
+  every "add a new option" chip picker across nearly the whole app
+  routes through this one repository's `add()`. Most sites were one of
+  three already-proven shapes: `recordUsage()` fire-and-forget calls
+  (no change needed), `getRanked()`/`get()` inside `useLoadedMemo`/
+  `useLoadedState` (no change needed, the hook already awaits), and a
+  new fourth shape specific to this repository — `onAddNew={(v) =>
+  setXOptions(CustomOptionListsRepository.add(...))}`, appearing 12
+  times across Vaccinations/Medication Dashboard/Measurements/
+  MenstrualHealth/MyProfile/Contacts — fixed with `.then(setXOptions)`
+  at every site. `SHOS_OptionListEditor_Prototype.jsx` (the dedicated
+  "Manage lists" editor, previously with no `useLoadedMemo`/
+  `useLoadedState` import at all) needed real conversion: `options`
+  hoisted into `useLoadedMemo`, and `handleAdd`/`commitEdit`/`remove`/
+  `move` all awaited. Two render-body `.get(name).length` sites
+  (Settings' own `ManageListsScreen` and this same editor's top-level
+  list) both resolved into a pre-computed lookup object via
+  `useLoadedMemo`, same shape as Timeline's `linkedSymptomLabelById`
+  from an earlier batch. Caught a real pre-existing bug unrelated to
+  this repository while wiring `backupService.js`'s merge branch: its
+  final `append(PartnerNotificationRepository, data.partnerNotifications)`
+  call was missing an `await` even though both `append()` and
+  `PartnerNotificationRepository` were already async from an earlier
+  batch — a genuine latent race, fixed in the same change. Verified
+  live: Settings > Manage lists > Option lists tab, opening the
+  Vaccine list, adding a real new option ("Verify Test Vaccine XYZ")
+  and confirming it appears in the UI AND lands in real `localStorage`
+  (`shos_custom_option_lists`) — the strongest possible proof the
+  `ensureLoaded()`/`add()`/`useLoadedMemo`-refresh chain works
+  end-to-end. No page errors. Full smoke-test suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
