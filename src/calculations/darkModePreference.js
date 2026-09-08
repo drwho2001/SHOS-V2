@@ -47,8 +47,38 @@ function systemPrefersDark() {
   }
 }
 
-let currentValue = storage.load(STORAGE_KEY, systemPrefersDark());
+// CHANGED — Phase 2 encryption groundwork (Sep 2026): this is the one
+// remaining module-load-time storage read left in the whole codebase
+// after this session's repository sweep — found only because it's a
+// calculations file, not a repository/registry, so it was invisible
+// to every earlier grep-based inventory. Genuinely a different shape
+// from every other Phase 2 fix: useSyncExternalStore's own getSnapshot
+// must return a value SYNCHRONOUSLY — it has no async form at all, so
+// this can't be wrapped in ensureLoaded()/useLoadedState the way a
+// repository can. `currentValue` starts at the same safe fallback the
+// old code used (systemPrefersDark()), then a one-shot async correction
+// below awaits the real stored value and notifies listeners only if it
+// actually differs — a no-op for the common case (no explicit
+// preference saved yet, or it already matches the system default).
+// This resolves before any component's effects run (React's own
+// initial render, which registers this module's listeners via
+// subscribe(), happens synchronously before the microtask queue
+// this await schedules ever gets a turn) — so today, while
+// storageAdapter itself is still 100% synchronous, this is a same-tick
+// self-correction with no visible flash, not a real race. Worth
+// re-checking once storageAdapter goes fully async (Phase 3) — a
+// slower real load could then make that correction visible for anyone
+// whose saved preference differs from their system default.
+let currentValue = systemPrefersDark();
 const listeners = new Set();
+
+(async () => {
+  const stored = await storage.load(STORAGE_KEY, currentValue);
+  if (stored !== currentValue) {
+    currentValue = stored;
+    listeners.forEach((listener) => listener());
+  }
+})();
 
 function setDarkModeValue(updater) {
   const next = typeof updater === "function" ? updater(currentValue) : updater;

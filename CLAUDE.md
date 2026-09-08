@@ -2068,6 +2068,55 @@ this date; summarized here for durability.
   is very likely reusable as-is for Phase 3's own needs, rather than
   needing a second loading-gate design — worth confirming, not
   assuming, once that phase actually starts.
+  `darkModePreference.js` fixed next (8 Sep, same session) — the one
+  remaining module-load-time storage read anywhere in the codebase
+  after a fresh full sweep (`grep -rn "^let .* = storage\.load("`
+  across `src/`, plus a check for any other `useSyncExternalStore`
+  usage — confirmed this file is the only one). Invisible to every
+  earlier repository-focused inventory precisely because it's a
+  calculations file, not a repository/registry. Genuinely a different
+  shape from every other Phase 2 fix so far: `useSyncExternalStore`'s
+  own `getSnapshot` has no async form at all — it must return a value
+  synchronously, so this can't be wrapped in `ensureLoaded()`/
+  `useLoadedState` the way a repository can. Fixed with a "safe
+  fallback now, self-correct via the existing listener-notify
+  mechanism once the real value resolves" pattern instead:
+  `currentValue` now starts at `systemPrefersDark()` (the same
+  fallback the old synchronous code used) rather than the direct
+  `storage.load()` call, with a one-shot async IIFE awaiting the real
+  stored value and only notifying listeners if it actually differs —
+  a no-op for the common case (no explicit preference saved, or it
+  already matches the system default). Real reasoning for why this
+  needs no loading-gate treatment the way `locked`/`active` did: React's
+  own initial render (which registers this module's listeners via
+  `subscribe()`) runs synchronously, fully draining before the
+  microtask this `await` schedules ever gets a turn — so the
+  correction lands within the same tick as the initial paint today,
+  while `storageAdapter` itself is still 100% synchronous. Verified
+  live: a fresh profile with the browser's own colour scheme set to
+  dark and no saved preference correctly renders the dark theme
+  immediately (`rgb(18, 18, 20)` background, matching `NEUTRAL_DARK.bg`);
+  the harder case — colour scheme set to LIGHT with an explicit
+  `shos_dark_mode_preference: "true"` already stored — correctly
+  renders dark anyway with no visible flash and no clobbering of the
+  stored value on reload. No page errors. Full smoke-test suite
+  passes. Flagged explicitly, same as the other documented Phase 3
+  exceptions: this same-tick self-correction is only invisible because
+  `storageAdapter.js` is still synchronous — worth re-checking, not
+  assuming, once Phase 3 makes that a real async wait.
+  With this, a fresh full-codebase sweep for every pattern known to
+  have hidden a repository or calculations file from earlier inventories
+  (module-load-time `storage.load()`, `useSyncExternalStore`, any
+  repository file with zero `async` methods) comes back clean —
+  Phase 2's repository/calculations layer is, as far as this session's
+  tooling can verify, complete. The honest caveat: this exact
+  "complete" claim has already been wrong three times this session
+  (`MeasurementRepository`, `AppPreferencesRepository`,
+  `PrivacySettingsRepository`, `darkModePreference.js` — four real
+  gaps across three separate re-audits), each found by re-running the
+  sweep rather than trusting the prior tally. Treat any future "Phase 2
+  is done" claim, including this one, as provisional until a fresh
+  sweep is actually re-run immediately before Phase 3 work begins.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
