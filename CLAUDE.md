@@ -1330,6 +1330,34 @@ this date; summarized here for durability.
   in either pass. Full smoke-test suite passes, including the
   Testing↔Symptom Log link flow, which directly exercises this batch's
   own conversion.
+  `vaccinationRepository.js` converted next (8 Sep, `ensureLoaded()`
+  pattern) — a clean batch, every real finding this time a variant of
+  patterns already proven across the prior two repositories rather than
+  a new class of bug. Caller cascade: `orphanReferenceCheck.js`/
+  `backupService.js`/`clinicCardPdfService.js`, Global Search, Healthcare's
+  summary effect, Settings (a new `vaccinationsCount`, plus a genuine
+  duplicate-object-key bug caught before it shipped — the Calendar
+  screen's `getCalendarEvents()` call already had a `vaccinations:`
+  entry using the old synchronous call; adding the new awaited one
+  alongside it without removing the old line would have silently kept
+  the STALE synchronous value, since the later duplicate key in a JS
+  object literal wins — caught by re-reading the edit immediately
+  after applying it, not by a live test). `SHOS_ClinicVisits_Prototype.jsx`'s
+  `VisitDetail`'s `vaccinationEntries` got the same hooks-before-guard
+  hoist as `symptomLogEntries` picked up in the previous batch.
+  `SHOS_ClinicCard_Prototype.jsx`'s `vaccinations`/`overdueVaccinations`
+  (plain render-body calls, no guard in this component) converted to
+  `useLoadedMemo` directly, same treatment as this same file's
+  `activeSymptoms` in the prior batch. `SHOS_Vaccinations_Prototype.jsx`
+  (the largest file) got the exact same shape of fixes as Symptom Log's
+  own module the batch before: bulk-select toolbar handlers, undo/redo/
+  triggerDelete's `.forEach()`→`for...of`, create/save awaited, and the
+  same "gate the edit sheet's mount on the resolved record" fix for
+  `VaccinationSheet`'s own lazy-`useState`-initialized `form` (no
+  resync effect existed there either). Verified live: the Vaccinations
+  list and an existing entry's detail (real Gonorrhoea/Meningitis B
+  seed data), its Edit sheet opening with real data already populated.
+  No page errors. Full smoke-test suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

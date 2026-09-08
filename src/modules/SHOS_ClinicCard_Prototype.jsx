@@ -293,8 +293,9 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // CHANGED 19 Aug 2026 — real data, Vaccination Record now exists.
   // Shows recent vaccinations plus any overdue boosters/next-dues in
   // red — same Action State convention as the rest of this screen.
-  const vaccinations = sortByDateDesc(VaccinationRepository.getAll().filter((v) => !v.isArchived && withinTimeframe(v.date)));
-  const overdueVaccinations = VaccinationRepository.getOverdue();
+  const vaccinationsRaw = useLoadedMemo(() => VaccinationRepository.getAll(), [], []);
+  const vaccinations = sortByDateDesc(vaccinationsRaw.filter((v) => !v.isArchived && withinTimeframe(v.date)));
+  const overdueVaccinations = useLoadedMemo(() => VaccinationRepository.getOverdue(), [], []);
 
   const recentPartners = encounters.filter((e) => withinTimeframe(e.date)).slice(0, 8).map((e) => ({
     id: e.id,

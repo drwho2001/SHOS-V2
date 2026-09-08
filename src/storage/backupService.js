@@ -265,7 +265,7 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     results: ResultsRegistry.getAll(),
     clinicVisits: ClinicVisitsRepository.getAll(),
     symptomLog: await SymptomLogRepository.getAll(),
-    vaccinations: VaccinationRepository.getAll(),
+    vaccinations: await VaccinationRepository.getAll(),
     episodes: await EpisodeRepository.getAll(),
     measurements: MeasurementRepository.getAll(),
     menstrualCycles: await MenstrualCycleRepository.getAll(),
@@ -384,7 +384,7 @@ export async function restoreBackup(parsedBackup) {
   if (Array.isArray(results)) ResultsRegistry.replaceAll(results);
   if (Array.isArray(clinicVisits)) ClinicVisitsRepository.replaceAll(clinicVisits);
   if (Array.isArray(symptomLog)) await SymptomLogRepository.replaceAll(symptomLog);
-  if (Array.isArray(vaccinations)) VaccinationRepository.replaceAll(vaccinations);
+  if (Array.isArray(vaccinations)) await VaccinationRepository.replaceAll(vaccinations);
   if (Array.isArray(episodes)) await EpisodeRepository.replaceAll(episodes);
   if (Array.isArray(measurements)) MeasurementRepository.replaceAll(measurements);
   if (Array.isArray(menstrualCycles)) await MenstrualCycleRepository.replaceAll(menstrualCycles);

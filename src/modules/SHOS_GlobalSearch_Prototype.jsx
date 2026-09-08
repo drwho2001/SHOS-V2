@@ -183,7 +183,7 @@ async function buildIndex() {
     });
   });
 
-  VaccinationRepository.getAll().filter((v) => !v.isArchived).forEach((v) => {
+  (await VaccinationRepository.getAll()).filter((v) => !v.isArchived).forEach((v) => {
     const searchText = [v.title, v.vaccine, v.provider, v.notes].join(" ");
     results.push({
       type: "vaccination", id: v.id,

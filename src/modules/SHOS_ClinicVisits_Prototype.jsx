@@ -587,7 +587,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
     []
   );
   const allVaccinations = useLoadedMemo(
-    () => VaccinationRepository.getAll().filter((v) => !v.isArchived).map((v) => ({ id: v.id, name: `${v.title || v.vaccine || "Vaccination"} · ${formatDate(v.date)}` })),
+    async () => (await VaccinationRepository.getAll()).filter((v) => !v.isArchived).map((v) => ({ id: v.id, name: `${v.title || v.vaccine || "Vaccination"} · ${formatDate(v.date)}` })),
     [],
     []
   );
@@ -784,12 +784,17 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
     if (!visit?.symptomsDiscussedIds?.length) return [];
     return (await Promise.all(visit.symptomsDiscussedIds.map((id) => SymptomLogRepository.getById(id)))).filter(Boolean);
   }, [visit], []);
+  // CHANGED — Phase 2 encryption groundwork: VaccinationRepository went
+  // async — same hoisted-above-the-guard treatment as symptomLogEntries.
+  const vaccinationEntries = useLoadedMemo(async () => {
+    if (!visit?.vaccinationsGivenIds?.length) return [];
+    return (await Promise.all(visit.vaccinationsGivenIds.map((id) => VaccinationRepository.getById(id)))).filter(Boolean);
+  }, [visit], []);
   if (!visit) return null;
 
   const testEntries = visit.linkedTestIds.map((id) => TestingRepository.getById(id)).filter(Boolean);
   const medNames = visit.medicationsGivenIds.map((id) => MedicationRepository.getById(id)?.name).filter(Boolean);
   const symptomNames = visit.symptomTypeIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean);
-  const vaccinationEntries = visit.vaccinationsGivenIds.map((id) => VaccinationRepository.getById(id)).filter(Boolean);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>

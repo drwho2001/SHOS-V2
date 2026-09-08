@@ -456,14 +456,14 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
             </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
                 record, enabled only when exactly one is selected. */}
-            <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("vaccinations", VaccinationRepository.getById(selectedIds[0])); }}
+            <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("vaccinations", await VaccinationRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span onClick={() => { if (selectedIds.length > 0) { VaccinationRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            <span onClick={async () => { if (selectedIds.length > 0) { await VaccinationRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span onClick={async () => {
               if (selectedIds.length === 0) return;
               if (window.confirm(`Delete ${selectedIds.length} vaccination${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
-                const toRestore = VaccinationRepository.getAll().filter((v) => selectedIds.includes(v.id));
+                const toRestore = (await VaccinationRepository.getAll()).filter((v) => selectedIds.includes(v.id));
                 await triggerDelete(toRestore);
                 refresh();
                 exitSelectMode();
@@ -549,20 +549,26 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
   const [screen, setScreen] = useState({ name: "list" });
+  // CHANGED — Phase 2 encryption groundwork: VaccinationRepository went
+  // async, and VaccinationSheet's own `vaccination` prop is read only
+  // once, at mount, via a lazy useState initializer with no resync
+  // effect — resolved here instead, same "gate the mount on the real
+  // value being ready" fix as Symptom Log's own EntrySheet.
+  const editingVaccination = useLoadedMemo(() => (screen.name === "edit" ? VaccinationRepository.getById(screen.id) : null), [screen], null);
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // VaccinationsLanding — vaccinations/deletedRecent/undoDelete/
   // triggerDelete now live at the real module level, shared with
   // VaccinationDetail.
-  const [vaccinations, setVaccinations] = useLoadedState(() => VaccinationRepository.getAll().filter((v) => !v.isArchived), [], []);
-  const refresh = () => setVaccinations(VaccinationRepository.getAll().filter((v) => !v.isArchived));
+  const [vaccinations, setVaccinations] = useLoadedState(() => VaccinationRepository.getAll().then((all) => all.filter((v) => !v.isArchived)), [], []);
+  const refresh = () => { VaccinationRepository.getAll().then((all) => setVaccinations(all.filter((v) => !v.isArchived))); };
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
   // implementation.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
   const undoTimerRef = useRef(null);
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => VaccinationRepository.restore(record));
+    for (const record of deleteToast.records) await VaccinationRepository.restore(record);
     refresh();
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
@@ -571,14 +577,14 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   const redoDelete = async () => {
     if (!deleteToast) return;
     await TrashRepository.add("vaccinations", deleteToast.records);
-    deleteToast.records.forEach((r) => VaccinationRepository.delete(r.id));
+    for (const r of deleteToast.records) await VaccinationRepository.delete(r.id);
     refresh();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
   const triggerDelete = async (records) => {
     await TrashRepository.add("vaccinations", records);
-    records.forEach((r) => VaccinationRepository.delete(r.id));
+    for (const r of records) await VaccinationRepository.delete(r.id);
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -615,17 +621,13 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
     return () => registerModuleBackHandler(null);
   }, [screen, registerModuleBackHandler]);
 
-  const createVaccination = (data) => { VaccinationRepository.create(data); onDataChanged?.(); backToList(); };
+  const createVaccination = async (data) => { await VaccinationRepository.create(data); onDataChanged?.(); backToList(); };
   const saveVaccination = async (data) => {
-    // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited are
-    // now async (needed for the repositories in this session's batch
-    // that went async) — awaited here even though VaccinationRepository
-    // itself is still synchronous, since an unawaited async function
-    // still defers its body by a microtask, which would let this
-    // update() run and mutate the record BEFORE captureBeforeEdit ever
-    // reads the real pre-edit snapshot.
+    // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited, and
+    // now VaccinationRepository itself (Phase 2 encryption groundwork),
+    // are all async — every step here awaited.
     await editUndo.captureBeforeEdit(screen.id);
-    VaccinationRepository.update(screen.id, data);
+    await VaccinationRepository.update(screen.id, data);
     await editUndo.notifyEdited(screen.id);
     onDataChanged?.();
     setScreen({ name: "detail", id: screen.id });
@@ -654,7 +656,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
       )}
       {content}
       {screen.name === "add" && <VaccinationSheet T={T} vaccination={null} onSave={createVaccination} onClose={backToList} />}
-      {screen.name === "edit" && <VaccinationSheet T={T} vaccination={VaccinationRepository.getById(screen.id)} onSave={saveVaccination} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
+      {screen.name === "edit" && editingVaccination && <VaccinationSheet T={T} vaccination={editingVaccination} onSave={saveVaccination} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
     </div>
   );
 }

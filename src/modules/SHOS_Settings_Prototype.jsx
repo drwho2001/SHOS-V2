@@ -588,6 +588,7 @@ function DeveloperToolsScreen({ onClose }) {
   const logsCount = useLoadedMemo(() => LogRepository.getAll().then((l) => l.length), [], 0);
   const episodesCount = useLoadedMemo(() => EpisodeRepository.getAll().then((l) => l.length), [], 0);
   const symptomLogCount = useLoadedMemo(() => SymptomLogRepository.getAll().then((l) => l.length), [], 0);
+  const vaccinationsCount = useLoadedMemo(() => VaccinationRepository.getAll().then((l) => l.length), [], 0);
   const counts = [
     { label: "Contacts", value: contactsCount },
     { label: "Encounters", value: EncounterRepository.getAll().length },
@@ -596,7 +597,7 @@ function DeveloperToolsScreen({ onClose }) {
     { label: "Tests", value: TestingRepository.getAll().length },
     { label: "Clinic visits", value: ClinicVisitsRepository.getAll().length },
     { label: "Symptom Log entries", value: symptomLogCount },
-    { label: "Vaccinations", value: VaccinationRepository.getAll().length },
+    { label: "Vaccinations", value: vaccinationsCount },
     { label: "Timeline episodes", value: episodesCount },
     { label: "Kink Registry entries", value: KinkRegistry.getAll().length },
     { label: "Chems Registry entries", value: ChemsRegistry.getAll().length },
@@ -3129,9 +3130,9 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
     encounters: EncounterRepository.getAll(),
     tests: TestingRepository.getAll(),
     clinicVisits: ClinicVisitsRepository.getAll(),
-    vaccinations: VaccinationRepository.getAll(),
     symptomEntries: await SymptomLogRepository.getAll(),
     medications: MedicationRepository.getAll(),
+    vaccinations: await VaccinationRepository.getAll(),
   }), [], []);
   const events = useMemo(() => allEvents.filter((e) => activeModules.includes(e.moduleKey)), [allEvents, activeModules]);
   const grouped = useMemo(() => groupEventsByDay(events), [events]);
