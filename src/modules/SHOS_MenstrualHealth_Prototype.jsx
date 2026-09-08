@@ -53,8 +53,13 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 // confirms, the overdue-contraception flag, ReadRow's alert prop) is
 // a real semantic alert/destructive-action meaning, unrelated to
 // module colour, and stays on actionRed unchanged.
-const LIGHT = { ...NEUTRAL, healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, menstrualPurple: ACCENTS.menstrual };
-const DARK = { ...NEUTRAL_DARK, healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), menstrualPurple: resolveDarkAccent("menstrual", ACCENTS.menstrual) };
+// CHANGED — Phase 3 (Sep 2026): see the identical fix's own comment in
+// SHOS_Measurements_Prototype.jsx — these baked ACCENTS/ACTION values
+// in at import time, which can't reflect a real override resolved
+// later once that resolution genuinely has to be async. Converted to
+// functions, called fresh per-render.
+const buildLight = () => ({ ...NEUTRAL, healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, menstrualPurple: ACCENTS.menstrual });
+const buildDark = () => ({ ...NEUTRAL_DARK, healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), menstrualPurple: resolveDarkAccent("menstrual", ACCENTS.menstrual) });
 const radius = RADIUS;
 
 function formatDate(iso) {
@@ -901,7 +906,7 @@ function tabForRecordId(id) {
 
 export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen } = {}) {
   const [darkMode] = useDarkModePreference();
-  const T = darkMode ? DARK : LIGHT;
+  const T = darkMode ? buildDark() : buildLight();
   // CHANGED — Phase 2 encryption groundwork: MyProfileRepository went
   // async — was a plain render-body call.
   const [gender] = useLoadedState(async () => (await MyProfileRepository.getProfile()).gender, [], "");

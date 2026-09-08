@@ -30,8 +30,6 @@
 // top-level folder — matches the established project convention for
 // "shared logic/data usable cross-module" instead of inventing a new
 // one.
-import { ModuleColorRepository } from "../repositories/moduleColorRepository.js";
-
 // Neutral palette — shared across every module regardless of domain.
 export const NEUTRAL = {
   bg: "#F0F0F3",
@@ -163,22 +161,24 @@ const DEFAULT_ACCENTS = {
 // somehow unavailable — falls back to defaults, exactly the same
 // resilience every other repository already has via storageAdapter's
 // own fallback handling.
-// CHANGED — Phase 2 encryption groundwork: ModuleColorRepository's real
-// public API (getOverrides()) is now async, since every repository is
-// expected to be by this point in the migration — but THIS read can't
-// await anything (a plain module-load-time object build, imported
-// synchronously by every other module before React renders). Reads via
-// getOverridesSync() instead — a deliberate, narrow exception
-// documented in moduleColorRepository.js itself, safe today because
-// storageAdapter.js's own load() is still fully synchronous. Revisit
-// this call site (not just reconnect it) once storageAdapter.js
-// actually goes async in Phase 3.
+// CHANGED — Phase 3 (Sep 2026): ModuleColorRepository.getOverridesSync()
+// — the module-load-time synchronous bypass this file used through
+// Phase 2 — is gone now that storageAdapter.js itself is genuinely
+// async (it called storage.load() directly, which would otherwise
+// return a Promise here). `overrides` starts empty (DEFAULT_ACCENTS/
+// DEFAULT_ACTION_COLORS only) at module load, then gets the real
+// stored values via applyRealAccentOverrides() below — called once
+// from App.jsx's own `bootReady` gate, before that gate ever lets a
+// real screen render. This matches this file's own long-standing,
+// already-documented contract exactly ("an override applies on next
+// app reload/reopen, not instantly across already-open screens") —
+// nothing needs to re-render mid-session for this to be correct, it
+// only needs to be resolved once before the FIRST real render, which
+// is precisely what the boot gate already guarantees. The one-tick
+// window where `overrides` is still empty is invisible for the same
+// reason `locked`/`active` are: `AppBootScreen` is the only thing
+// that ever renders during it.
 let overrides = {};
-try {
-  overrides = ModuleColorRepository.getOverridesSync();
-} catch {
-  overrides = {};
-}
 export const ACCENTS = { ...DEFAULT_ACCENTS, ...overrides };
 
 // Universal action/status colors — same meaning everywhere (red always
@@ -212,6 +212,26 @@ export const ACTION = {
   amber: "#F59E0B",
   gold: "#B45309",
 };
+
+// ADDED — Phase 3 (Sep 2026): the real replacement for the old
+// getOverridesSync() bypass — see ACCENTS' own comment above for the
+// full reasoning. Called exactly once, from App.jsx's `bootReady`
+// gate, with the real result of `ModuleColorRepository.getOverrides()`.
+// Mutates ACCENTS/ACTION's own properties in place (not a new object —
+// every consumer reads `ACCENTS.xxx`/`ACTION.xxx` live at render time,
+// never a destructured/cached copy, confirmed by grep before relying
+// on this) rather than reassigning the exported binding, since a
+// reassignment wouldn't reach any module that already imported the
+// original object reference.
+export function applyRealAccentOverrides(realOverrides) {
+  Object.assign(ACCENTS, DEFAULT_ACCENTS, realOverrides);
+  Object.assign(ACTION, DEFAULT_ACTION_COLORS, {
+    red: realOverrides.actionRed || DEFAULT_ACTION_COLORS.red,
+    green: realOverrides.actionGreen || DEFAULT_ACTION_COLORS.green,
+    amber: "#F59E0B",
+    gold: "#B45309",
+  });
+}
 
 // ---------------------------------------------------------------------
 // ADDED — real architecture fix. The user's own question, verbatim in

@@ -158,44 +158,24 @@ export const CVD_SAFE_PALETTE = {
 // direct conversion, not an `ensureLoaded()` redesign — same "easy
 // bucket" shape as TrashRepository/CustomGroupsRepository.
 //
-// HONEST EXCEPTION, load-bearing — read before touching this file
-// again: `designTokens.js` builds its own `ACCENTS`/`ACTION` exports
-// from this repository's stored overrides at MODULE LOAD TIME, a plain
-// synchronous object literal imported directly by every other module
-// file in the app before React ever renders — not through a hook,
-// not behind any guard that could `await` something. That call site
-// cannot use the async `getOverrides()` below (a Promise has no
-// enumerable own properties, so `{...DEFAULT_ACCENTS, ...aPromise}`
-// would silently discard every real customisation on every load,
-// forever — a real, serious regression, not a cosmetic one). Making
-// that bootstrap path genuinely async would mean gating the WHOLE
-// app's first render behind a real loading/splash screen until
-// `ACCENTS` resolves — legitimate future work, but it's Phase 3 work
-// (the same class of decision already made for `App.jsx`'s own
-// `locked` bootstrap state — see this file's own Known Issues entry),
-// not a mechanical Phase 2 swap. `getOverridesSync()` below is the
-// deliberate, narrow exception that keeps `designTokens.js` working
-// exactly as it does today — reading `storageAdapter`'s own still-100%-
-// synchronous `load()` directly, bypassing this repository's async
-// public API — same category of documented exception as
-// `main.jsx`'s `ErrorBoundary` reading `shos_app_preferences` via raw
-// `localStorage` directly. This has to be revisited (not just
-// reconnected) once `storageAdapter.js` itself actually goes async in
-// Phase 3 — at that point `designTokens.js`'s whole bootstrap needs
-// the same real app-loading-gate treatment `locked` will need, not
-// another synchronous workaround layered on top.
+// RESOLVED — Phase 3 (Sep 2026): `designTokens.js` used to bypass this
+// repository's async `getOverrides()` with a synchronous
+// `getOverridesSync()` exception, because it builds `ACCENTS`/`ACTION`
+// at MODULE LOAD TIME — before React ever renders, not behind any
+// hook. That bypass is gone now: `App.jsx`'s own `bootReady` gate
+// (built earlier this same Phase, originally for `locked`/`active`)
+// now also awaits the real `getOverrides()` below and applies it via
+// `designTokens.js`'s `applyRealAccentOverrides()`, before that gate
+// ever lets a real screen render — see both files' own comments for
+// the full reasoning. `designTokens.js`'s own bootstrap-time build
+// still starts from empty overrides (defaults only), corrected once
+// boot resolves — safe specifically because `ACCENTS`/`ACTION` never
+// needed to update again mid-session even before this change (a
+// colour customisation always applied "on next reload," never live).
 export const ModuleColorRepository = {
   // Returns only the overrides actually set — {} if none.
   async getOverrides() {
     return await storage.load(STORAGE_KEY, {});
-  },
-
-  // Deliberately synchronous — see the file-level comment above.
-  // `designTokens.js` is this function's one and only real caller;
-  // nothing else should reach for this over the real async
-  // `getOverrides()` above.
-  getOverridesSync() {
-    return storage.load(STORAGE_KEY, {});
   },
 
   async setOverride(moduleKey, hexColor) {

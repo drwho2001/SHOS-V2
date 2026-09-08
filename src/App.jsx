@@ -34,7 +34,8 @@ import { getClinicVisitDueState, handleSnoozeClinicVisit } from "./calculations/
 // ADDED — real ask: "standardise UI/appearance." Shared design tokens,
 // the actual foundation — see designTokens.js for full reasoning and
 // honest scope (this is a start, not a finished migration).
-import { NEUTRAL, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent } from "./calculations/designTokens";
+import { NEUTRAL, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent, applyRealAccentOverrides } from "./calculations/designTokens";
+import { ModuleColorRepository } from "./repositories/moduleColorRepository";
 // ADDED — real ask: Home's title should read "[Name]'s dashboard".
 import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HeartbeatIcon as HeartPulse, HospitalIcon as Hospital, DownloadSimpleIcon as Download, UploadSimpleIcon as Upload, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon, CaretLeftIcon as ChevronLeft, UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database, TrashIcon as Trash2, WarningIcon as AlertTriangle, CheckIcon as Check, ClipboardTextIcon as ClipboardList, TreeStructureIcon as ListTree, PaperclipIcon as Paperclip, ClockCounterClockwiseIcon as History, EyeSlashIcon as EyeOff, EyeIcon as Eye, TestTubeIcon as TestTube, FireIcon as Flame, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MicroscopeIcon as Microscope, ListChecksIcon as ClipboardCheck, SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CreditCardIcon as CreditCard, FingerprintIcon as Fingerprint, LockIcon as Lock, XIcon as X } from "@phosphor-icons/react";
 // CHANGED — real Tier 1 decision: Phosphor, replacing lucide-react.
@@ -659,11 +660,19 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [shouldLock, prefs] = await Promise.all([
+      // ADDED — Phase 3 (Sep 2026): real colour-override resolution,
+      // replacing designTokens.js's old getOverridesSync() bypass —
+      // see ACCENTS' own comment there for the full reasoning. Folded
+      // into this same Promise.all rather than a separate effect,
+      // since it's the exact same "resolve before anything real
+      // renders" requirement as `locked`/`active`.
+      const [shouldLock, prefs, colorOverrides] = await Promise.all([
         PrivacySettingsRepository.shouldRelock(),
         AppPreferencesRepository.getPreferences(),
+        ModuleColorRepository.getOverrides(),
       ]);
       if (cancelled) return;
+      applyRealAccentOverrides(colorOverrides);
       setLocked(shouldLock);
       // CHANGED — critical fix: validate lastActiveTab is still a real
       // TABS key before trusting it — a stale/corrupt stored value here

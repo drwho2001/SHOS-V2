@@ -35,8 +35,18 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 // module's own namespace within it (see customGroupsRepository.js).
 const GROUP_DOMAIN = "measurementType";
 
-const LIGHT = { ...NEUTRAL, healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red };
-const DARK = { ...NEUTRAL_DARK, healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") };
+// CHANGED — Phase 3 (Sep 2026): these were plain module-level consts
+// baking in ACCENTS.healthcare/ACTION.red at IMPORT time — the one
+// real exception to "every module reads ACCENTS live at render time"
+// found while moving colour-override resolution into App.jsx's async
+// boot gate (see designTokens.js's own ACCENTS comment). A value
+// captured at import time can never reflect a real override resolved
+// later, once that resolution genuinely has to be async — converted
+// to functions, called fresh per-render (matching how T itself is
+// already recomputed on every render below) so they always read the
+// current, real ACCENTS/ACTION values.
+const buildLight = () => ({ ...NEUTRAL, healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red });
+const buildDark = () => ({ ...NEUTRAL_DARK, healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") });
 const radius = RADIUS;
 
 // Grey placeholder hints — real ask: suggest the variety of values/
@@ -697,7 +707,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
                 await refresh();
                 exitSelectMode();
               }
-            }} style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+            }} style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>
@@ -902,7 +912,7 @@ function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
 
 export default function MeasurementsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler } = {}) {
   const [darkMode] = useDarkModePreference();
-  const T = darkMode ? DARK : LIGHT;
+  const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "list" });
   // CHANGED — Phase 2 encryption groundwork: MeasurementRepository is
   // now async — chained .filter() onto getAll() fixed, and every
@@ -996,7 +1006,7 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
     <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh" }}>
       {editUndo.toast && (
         <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
-          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : LIGHT.healthcareBlue, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : ACCENTS.healthcare, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
           {editUndo.toast.mode === "undo" ? "Measurement updated — tap to undo" : "Undone — tap to redo"}
         </div>

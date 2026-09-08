@@ -2146,6 +2146,97 @@ this date; summarized here for durability.
   correctly persists `shos_last_backup_at` as a real ISO timestamp,
   confirmed by direct `localStorage` read; Clinic Card still opens
   correctly with no page errors. Full smoke-test suite passes.
+  **Phase 3 landed the same session** — `storageAdapter.js` itself is
+  now genuinely async, the actual point of this entire multi-session
+  effort. One real dependency had to be resolved first:
+  `ModuleColorRepository`'s old `getOverridesSync()` bypass (documented
+  above as needing to be "revisited, not just reconnected" once this
+  moment came) — `designTokens.js` builds its own `ACCENTS`/`ACTION`
+  exports at MODULE LOAD TIME, and that bypass called `storage.load()`
+  directly, which would return a Promise the instant `storageAdapter.js`
+  went async, silently discarding every real colour customisation
+  forever. Fixed by moving the real resolution into App.jsx's own
+  `bootReady` gate (built earlier this session for `locked`/`active`):
+  the same bootstrap effect now also awaits
+  `ModuleColorRepository.getOverrides()` and applies it via a new
+  `applyRealAccentOverrides()` export, mutating `ACCENTS`/`ACTION`'s
+  own properties in place before `bootReady` ever lets a real screen
+  render. This didn't need any new subscription/live-update machinery
+  — `designTokens.js`'s own header comment already documents a colour
+  change as applying "on next app reload/reopen, not instantly," so
+  resolving it once before the FIRST real render is the same contract,
+  not a new one. `getOverridesSync()` itself, and the exception
+  comment describing it, were removed outright — dead code once
+  nothing calls it.
+  Real, structurally significant finding while verifying the "every
+  consumer reads ACCENTS live" assumption this design depends on
+  (checked by grep before relying on it, not assumed): TWO files —
+  `SHOS_Measurements_Prototype.jsx` and
+  `SHOS_MenstrualHealth_Prototype.jsx` — baked `ACCENTS.healthcare`/
+  `ACTION.red`/`ACCENTS.menstrual` into their own module-level `LIGHT`/
+  `DARK` theme constants at IMPORT time, unlike every other module
+  file's own plain `ACCENTS.xxx` inline render-body reads. This worked
+  correctly before today only because the whole resolution chain was
+  synchronous end-to-end at module-evaluation time (`getOverridesSync()`
+  finished before ANY importing file's own top-level code ran, per ES
+  module evaluation order) — moving resolution into an async `useEffect`
+  necessarily happens after all module evaluation completes, so these
+  two files' own constants would have been permanently stuck on
+  default colours, forever, the moment this landed, with no error to
+  reveal it. Fixed by converting `LIGHT`/`DARK` into `buildLight()`/
+  `buildDark()` functions called fresh per-render (matching how `T`
+  itself was already recomputed every render) — a small, contained fix
+  once found, but a real regression that would have shipped silently
+  without the direct verification. Two further direct references
+  (`DARK.actionRed`, `LIGHT.healthcareBlue`) inside Measurements' own
+  JSX needed the same treatment. A follow-up multi-line-aware sweep for
+  the same "module-level const bakes in ACCENTS/ACTION" shape anywhere
+  else in `src/modules/`/`src/calculations/`/`src/storage/` found no
+  other instances.
+  `storageAdapter.js`'s own `load()`/`save()` conversion itself was
+  genuinely mechanical once this dependency was cleared — every one of
+  the ~34 repository/registry files already `await`s these calls (a
+  no-op until this moment, since the adapter was still 100%
+  synchronous underneath), so the conversion needed zero changes at
+  any repository call site. Still backed by the exact same synchronous
+  `localStorage.getItem`/`setItem` calls internally — this is a
+  type-level/API-shape change, not a new storage mechanism, so there's
+  no new latency or behavior change today; what it actually unlocks is
+  that `crypto.subtle` (Phase 4's real encryption) is async-only, so
+  `load`/`save` had to already be async-shaped before any real
+  encrypt/decrypt call could be dropped into their bodies. A stale
+  header comment in `contactRepository.js` claiming this repository
+  was "kept synchronous on purpose" — true when originally written,
+  long false after that repository's own Phase 2 conversion earlier
+  this session, just never caught until this file was touched again —
+  corrected in the same change.
+  Verified live end-to-end against the real, now-fully-async storage
+  layer: the full smoke-test suite passes unmodified; the App Lock
+  boot gate still shows zero flash at any sampled point (checked as
+  early as ~30ms post-reload) and correctly unlocks/resumes the right
+  tab; a real colour override still applies correctly through the new
+  boot-gate path, including inside the two just-fixed Measurements/
+  MenstrualHealth files specifically; a concurrent-call stress test
+  (5 simultaneous `ContactRepository.getAll()` calls right after page
+  load, then a real create-then-read race) came back fully consistent,
+  confirming the `ensureLoaded()`/memoized-`loadPromise` pattern used
+  by every hard-bucket repository holds correctly now that
+  `storage.load()` is a genuine Promise for the first time, not just
+  an awaited plain value. No page errors anywhere.
+  What's left: `main.jsx`'s `ErrorBoundary` (still reads/writes
+  `shos_app_preferences` via raw `localStorage` directly, bypassing
+  `storageAdapter` entirely — unaffected by this change since it never
+  went through the adapter, but its own plaintext-JSON assumption will
+  need revisiting once Phase 4's real encryption changes what's
+  actually stored under that key), and Phase 4 itself — real
+  `crypto.subtle` encryption dropped into `storageAdapter.js`'s now-
+  properly-async `load`/`save` bodies, per the key-design already
+  written up earlier in this section (device-bound key always active,
+  optional PIN/biometric-derived envelope layer on top when App Lock
+  is on). Neither started yet. With Phase 3 done, the entire
+  repository/adapter layer this multi-session effort set out to
+  convert is now genuinely async, top to bottom — Phase 4 is the last
+  real step.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

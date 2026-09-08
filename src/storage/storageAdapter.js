@@ -10,16 +10,27 @@
 // changes later (IndexedDB, an encrypted cloud backend), only THIS file
 // needs to change. No repository code has to be touched.
 //
-// Kept deliberately synchronous for now, matching localStorage's own
-// nature — see the note in contactRepository.js on why this doesn't need
-// to be async yet.
-
+// CHANGED — Phase 3 (Sep 2026): load()/save() are genuinely `async`
+// now, the actual point of this whole multi-session encryption
+// groundwork effort — every one of the ~34 repository/registry files
+// already `await`s these calls (a no-op until now, since this file was
+// still 100% synchronous underneath), so this conversion needed zero
+// changes at any of those call sites. The two real remaining exceptions
+// (`ModuleColorRepository`'s old `getOverridesSync()` bypass and
+// `main.jsx`'s `ErrorBoundary`) are handled separately — see their own
+// files. STILL BACKED BY THE SAME SYNCHRONOUS localStorage CALLS
+// internally — this is a type-level/API-shape change, not a new
+// storage mechanism, so there's no new latency or behavior change
+// today. What this actually unlocks: `crypto.subtle` (Phase 4's real
+// encryption) is async-only, so `load`/`save` had to already be
+// async-shaped before any real encrypt/decrypt call could be dropped
+// into their bodies — that's the next, and last, real step.
 export const localStorageAdapter = {
   // Reads a value back out of storage. Returns `fallback` if nothing's
   // been saved yet (first run) or if reading/parsing fails for any
   // reason — a corrupted or missing entry should never crash the app,
   // it should just behave like a fresh start.
-  load(key, fallback) {
+  async load(key, fallback) {
     try {
       const raw = localStorage.getItem(key);
       return raw ? JSON.parse(raw) : fallback;
@@ -32,7 +43,7 @@ export const localStorageAdapter = {
   // Saves a value. Returns true/false so a repository can notice if a
   // save silently failed (e.g. storage quota exceeded) rather than
   // assuming data is safe when it isn't.
-  save(key, value) {
+  async save(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
       return true;

@@ -23,8 +23,9 @@
 // localStorage underneath — it only knows the load(key, fallback) /
 // save(key, value) shape. Swapping in a different adapter later (e.g.
 // an encrypted cloud backend) means editing storageAdapter.js, not this
-// file. Kept synchronous on purpose — see the note further down on why
-// this doesn't need to be async yet.
+// file. STALE NOTE UPDATED — Phase 2/3 (Sep 2026): this repository and
+// storageAdapter.js itself are both genuinely async now — see
+// ensureLoaded()'s own comment further down for the real conversion.
 
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 // ADDED — My Profile's own relationshipContactIds: a hard delete here
