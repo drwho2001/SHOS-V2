@@ -224,7 +224,7 @@ export function mapShareToContactData(parsedShare) {
 
 // Creates a real new Contact from a parsed share. This is the one
 // function with a repository side-effect in this file.
-export function importProfileAsContact(parsedShare) {
+export async function importProfileAsContact(parsedShare) {
   const contactData = mapShareToContactData(parsedShare);
   return ContactRepository.create(contactData);
 }
@@ -257,10 +257,10 @@ export async function exportProfileShare(options = {}) {
 // calling UI show a result without this file needing to know React.
 export function importProfileShareFromFile(file, onDone, onError) {
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
       const parsed = parseProfileShare(reader.result);
-      const newContact = importProfileAsContact(parsed);
+      const newContact = await importProfileAsContact(parsed);
       onDone?.(newContact);
     } catch (err) {
       onError?.(err);
@@ -274,10 +274,10 @@ export function importProfileShareFromFile(file, onDone, onError) {
 // brief called out "some form of exportable file/blob", and a pasted
 // JSON blob (from a message/AirDrop-opened text) is a valid form of
 // that without requiring a file picker flow on every platform.
-export function importProfileShareFromText(jsonText, onDone, onError) {
+export async function importProfileShareFromText(jsonText, onDone, onError) {
   try {
     const parsed = parseProfileShare(jsonText);
-    const newContact = importProfileAsContact(parsed);
+    const newContact = await importProfileAsContact(parsed);
     onDone?.(newContact);
     return newContact;
   } catch (err) {

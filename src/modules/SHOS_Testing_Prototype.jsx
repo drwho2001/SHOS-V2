@@ -588,16 +588,21 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const canSave = form.title.trim().length > 0 || form.testingFor.length > 0;
 
-  const save = () => {
+  const save = async () => {
     clearDraft(draftKey);
     if (isNew) {
       const created = TestingRepository.create(form);
       onSaved(created.id);
     } else {
       // ADDED 19 Aug 2026 — real undo/redo extension.
-      onBeforeEdit?.(testId);
+      // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited
+      // are now async (see that file's own comment) — awaited here
+      // even though TestingRepository itself is still synchronous,
+      // since an unawaited async function still defers its body by a
+      // microtask, which would let the update() below run first.
+      await onBeforeEdit?.(testId);
       TestingRepository.update(testId, form);
-      onAfterEdit?.(testId);
+      await onAfterEdit?.(testId);
       onSaved(testId);
     }
   };

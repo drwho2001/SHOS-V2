@@ -850,7 +850,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   const [genderOptions, setGenderOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("gender"), [], []);
   const [pronounsOptions, setPronounsOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("pronouns"), [], []);
   const [relationshipStatusOptions, setRelationshipStatusOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("relationshipStatus"), [], []);
-  const allContacts = useLoadedMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived).map((c) => ({ id: c.id, name: c.name })), [], []);
+  const allContacts = useLoadedMemo(() => ContactRepository.getAll().then((all) => all.filter((c) => !c.isArchived).map((c) => ({ id: c.id, name: c.name }))), [], []);
   const [contraceptionOptions, setContraceptionOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
   // ADDED — real ask: contraception relevant when Gender is Female or
   // Trans-male. Exact match against these two only — not e.g. Non-
@@ -1045,9 +1045,12 @@ function ProfileDataView({ profile, T }) {
   // Real read-only summaries, single owner elsewhere — see each
   // repository's own comment for why this screen no longer edits
   // either of these directly.
-  const linkedContactNames = profile.relationshipContactIds
-    .map((id) => ContactRepository.getById(id)?.name)
-    .filter(Boolean);
+  // CHANGED — Phase 2 encryption groundwork: ContactRepository went
+  // async — was a plain render-body call.
+  const linkedContactNames = useLoadedMemo(
+    () => Promise.all(profile.relationshipContactIds.map(async (id) => (await ContactRepository.getById(id))?.name)).then((names) => names.filter(Boolean)),
+    [profile.relationshipContactIds], []
+  );
   // CHANGED — Phase 2 encryption groundwork: ContraceptionRepository
   // went async — was a plain render-body call.
   const activeContraception = useLoadedMemo(() => ContraceptionRepository.getActive().then((all) => all.map((e) => e.method)), [], []);

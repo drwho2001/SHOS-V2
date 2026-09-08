@@ -592,7 +592,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
     []
   );
 
-  const save = () => {
+  const save = async () => {
     clearDraft(draftKey);
     if (isNew) {
       const created = ClinicVisitsRepository.create(form);
@@ -609,9 +609,13 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
     } else {
       // ADDED 19 Aug 2026 — real undo/redo extension, same shared
       // mechanism as every other module.
-      onBeforeEdit?.(visitId);
+      // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited
+      // are now async — awaited here even though ClinicVisitsRepository
+      // itself is still synchronous, same reasoning as Testing's own
+      // save() this batch.
+      await onBeforeEdit?.(visitId);
       ClinicVisitsRepository.update(visitId, form);
-      onAfterEdit?.(visitId);
+      await onAfterEdit?.(visitId);
       syncClinicVisitReminders();
       syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
       onSaved(visitId);

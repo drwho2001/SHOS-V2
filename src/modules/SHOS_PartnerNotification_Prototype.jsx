@@ -61,7 +61,7 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
   // CHANGED 4 Sep 2026 — encryption-at-rest groundwork (see CLAUDE.md's
   // Known Issues / the Notion Development log): useLoadedMemo instead
   // of a plain useMemo, one of the ~100 real sites the audit found.
-  const contacts = useLoadedMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived), [], []);
+  const contacts = useLoadedMemo(() => ContactRepository.getAll().then((all) => all.filter((c) => !c.isArchived)), [], []);
   // Most-recently-encountered first — same "recent is most relevant"
   // reasoning as every other suggestion list this session, real value
   // here specifically since partner notification is inherently about

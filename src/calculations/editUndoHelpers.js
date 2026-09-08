@@ -45,11 +45,24 @@ export function useEditUndo(repository, onChanged) {
   const postEditSnapshot = useRef(null);     // { id, data } — state right after the edit
   const timeoutRef = useRef(null);
 
+  // CHANGED — Phase 2 encryption groundwork: several repositories this
+  // hook is used with (Pregnancy/MenstrualCycle/Contraception/Contact,
+  // so far) are now async. `await` on a still-synchronous
+  // repository.getById()/update() is a no-op, so this is safe for
+  // every repository regardless of its own conversion status — but
+  // WITHOUT it, `current`/`after` below would silently be the Promise
+  // object itself (always truthy), and undo()/redo() would call
+  // repository.update(id, <a Promise>) — a real, silent data-corruption
+  // bug, not just a missed feature. Found by inspection, not a live
+  // report — this hook's own undo/redo path was never actually
+  // exercised in this session's live verification of the repositories
+  // that first made it reachable.
+
   // Call this right before applying the edit (before repository.update()
   // runs), passing the record's id — captures what it looked like
   // BEFORE the change so undo has something real to restore.
-  function captureBeforeEdit(id) {
-    const current = repository.getById(id);
+  async function captureBeforeEdit(id) {
+    const current = await repository.getById(id);
     preEditSnapshot.current = current ? { id, data: current } : null;
   }
 
@@ -57,8 +70,8 @@ export function useEditUndo(repository, onChanged) {
   // undo" toast for 8 seconds — same window Medication's own undo
   // toast already uses, kept consistent rather than picking a new
   // number.
-  function notifyEdited(id) {
-    const after = repository.getById(id);
+  async function notifyEdited(id) {
+    const after = await repository.getById(id);
     postEditSnapshot.current = after ? { id, data: after } : null;
     setToast({ mode: "undo", recordId: id });
     clearTimeout(timeoutRef.current);
@@ -67,19 +80,19 @@ export function useEditUndo(repository, onChanged) {
     }, 8000);
   }
 
-  function undo() {
+  async function undo() {
     if (!preEditSnapshot.current) return;
     const { id, data } = preEditSnapshot.current;
-    repository.update(id, data);
+    await repository.update(id, data);
     onChanged?.();
     clearTimeout(timeoutRef.current);
     setToast({ mode: "redo", recordId: id });
   }
 
-  function redo() {
+  async function redo() {
     if (!postEditSnapshot.current) return;
     const { id, data } = postEditSnapshot.current;
-    repository.update(id, data);
+    await repository.update(id, data);
     onChanged?.();
     setToast(null);
   }

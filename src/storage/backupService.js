@@ -250,7 +250,7 @@ function sanitizePrivacySettingsForPlainExport(settings) {
 // no `await` needed until that specific repository converts too.
 export async function buildBackup(includeKeys = null, dateRange = null, { redactSecrets = true } = {}) {
   const allData = {
-    contacts: ContactRepository.getAll(),
+    contacts: await ContactRepository.getAll(),
     medications: MedicationRepository.getAll(),
     logs: LogRepository.getAll(),
     encounters: EncounterRepository.getAll(),
@@ -368,7 +368,7 @@ export function verifyBackupJson(backup, json) {
 // separate from merge existing at all.
 export async function restoreBackup(parsedBackup) {
   const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies } = parsedBackup.data;
-  if (Array.isArray(contacts)) ContactRepository.replaceAll(contacts);
+  if (Array.isArray(contacts)) await ContactRepository.replaceAll(contacts);
   if (Array.isArray(medications)) MedicationRepository.replaceAll(medications);
   if (Array.isArray(logs)) LogRepository.replaceAll(logs);
   if (Array.isArray(encounters)) EncounterRepository.replaceAll(encounters);

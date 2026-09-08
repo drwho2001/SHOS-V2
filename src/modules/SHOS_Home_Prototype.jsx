@@ -322,9 +322,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   }, []);
 
   useEffect(() => {
-    const contacts = ContactRepository.getAll().filter((c) => !c.isArchived);
-    const sortedContacts = [...contacts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    setLastContact(sortedContacts[0] || null);
+    // CHANGED — Phase 2 encryption groundwork: ContactRepository went
+    // async — same "wrap just this one gated/isolated block" approach
+    // as the menstrual/contraception block further down this same
+    // effect, since nothing else here depends on `contacts`.
+    (async () => {
+      const contacts = (await ContactRepository.getAll()).filter((c) => !c.isArchived);
+      const sortedContacts = [...contacts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setLastContact(sortedContacts[0] || null);
+    })();
 
     const encounters = EncounterRepository.getAll();
     const sortedEncounters = [...encounters].sort((a, b) => new Date(b.date) - new Date(a.date));

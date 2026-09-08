@@ -108,7 +108,15 @@ export default function RegistryManagementScreen({ registry, label, color, compu
   // recomputed on every render, including every keystroke while typing
   // a new entry name or renaming one (both drive re-renders here). Now
   // computed once per allEntries change into a lookup map.
-  const usageMap = useMemo(() => new Map(allEntries.map((e) => [e.id, computeUsage(e.id)])), [allEntries, computeUsage]);
+  // CHANGED — Phase 2 encryption groundwork: computeKinkUsage/
+  // computeChemsUsage now go through the now-async ContactRepository,
+  // so computeUsage(id) can return either a number or a Promise
+  // depending on which registry this screen is for — useLoadedMemo
+  // handles both uniformly (awaiting a plain number is a no-op).
+  const usageMap = useLoadedMemo(
+    async () => new Map(await Promise.all(allEntries.map(async (e) => [e.id, await computeUsage(e.id)]))),
+    [allEntries, computeUsage], new Map()
+  );
 
   const handleAdd = () => {
     const trimmed = addingName.trim();

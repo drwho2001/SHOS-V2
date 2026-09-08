@@ -79,10 +79,10 @@ function norm(v) {
 // same "don't over-engineer for a single-user app" judgment already
 // applied elsewhere in this project (e.g. the ID scheme staying
 // human-readable rather than moving to UUIDs).
-function buildIndex() {
+async function buildIndex() {
   const results = [];
 
-  ContactRepository.getAll().filter((c) => !c.isArchived).forEach((c) => {
+  (await ContactRepository.getAll()).filter((c) => !c.isArchived).forEach((c) => {
     // CHANGED 4 Sep 2026 — real ask, from a real device report: a
     // kink-term search (e.g. "piss") was pulling records that never
     // actually mention it — the free-text grab-bag below (phone/
@@ -124,7 +124,7 @@ function buildIndex() {
     });
   });
 
-  EncounterRepository.getAll().filter((e) => !e.isArchived).forEach((e) => {
+  for (const e of EncounterRepository.getAll().filter((e) => !e.isArchived)) {
     // CHANGED 4 Sep 2026 — same real fix as Contacts above: narrowed
     // to attendee names + kink tags actually recorded on the
     // encounter, dropped title/encounterType/notes as searchable
@@ -132,10 +132,10 @@ function buildIndex() {
     // search ("piss") pulling records that never mention it.
     // Attendee names are a genuinely new match field here (Global
     // Search never resolved attendeeIds to names before this).
-    const attendeeNames = (e.attendeeIds || []).map((id) => {
-      const contact = ContactRepository.getById(id);
+    const attendeeNames = (await Promise.all((e.attendeeIds || []).map(async (id) => {
+      const contact = await ContactRepository.getById(id);
       return contact?.nickname || contact?.name;
-    }).filter(Boolean);
+    }))).filter(Boolean);
     const kinkNames = (e.kinksInvolved || []).map((sel) => KinkRegistry.getById(sel.kinkId)?.name).filter(Boolean);
     const searchText = [...attendeeNames, ...kinkNames].join(" ");
     results.push({
@@ -145,7 +145,7 @@ function buildIndex() {
       searchText,
       date: e.date || null,
     });
-  });
+  }
 
   TestingRepository.getAll().filter((t) => !t.isArchived).forEach((t) => {
     const searchText = [t.title, ...(t.testingFor || []), t.trackingInfo, t.kitCodePk, t.kitCodeSk, t.kitAccessKey].join(" ");

@@ -616,10 +616,17 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   }, [screen, registerModuleBackHandler]);
 
   const createVaccination = (data) => { VaccinationRepository.create(data); onDataChanged?.(); backToList(); };
-  const saveVaccination = (data) => {
-    editUndo.captureBeforeEdit(screen.id);
+  const saveVaccination = async (data) => {
+    // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited are
+    // now async (needed for the repositories in this session's batch
+    // that went async) — awaited here even though VaccinationRepository
+    // itself is still synchronous, since an unawaited async function
+    // still defers its body by a microtask, which would let this
+    // update() run and mutate the record BEFORE captureBeforeEdit ever
+    // reads the real pre-edit snapshot.
+    await editUndo.captureBeforeEdit(screen.id);
     VaccinationRepository.update(screen.id, data);
-    editUndo.notifyEdited(screen.id);
+    await editUndo.notifyEdited(screen.id);
     onDataChanged?.();
     setScreen({ name: "detail", id: screen.id });
   };

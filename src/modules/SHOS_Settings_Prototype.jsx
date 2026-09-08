@@ -579,8 +579,11 @@ function DeveloperToolsScreen({ onClose }) {
   // (still-synchronous) repository here — loaded separately via
   // useLoadedMemo and substituted in.
   const locationsCount = useLoadedMemo(() => LocationsRepository.getAll().then((l) => l.length), [], 0);
+  // CHANGED — Phase 2 encryption groundwork: ContactRepository went
+  // async too — same treatment as locationsCount above.
+  const contactsCount = useLoadedMemo(() => ContactRepository.getAll().then((l) => l.length), [], 0);
   const counts = [
-    { label: "Contacts", value: ContactRepository.getAll().length },
+    { label: "Contacts", value: contactsCount },
     { label: "Encounters", value: EncounterRepository.getAll().length },
     { label: "Medications", value: MedicationRepository.getAll().length },
     { label: "Medication log entries", value: LogRepository.getAll().length },
@@ -738,7 +741,7 @@ function DeveloperToolsScreen({ onClose }) {
 function LocationExtraFields({ entry, refresh, T, color }) {
   const [address, setAddress] = useState(entry.address || "");
   const [notes, setNotes] = useState(entry.notes || "");
-  const contacts = useLoadedMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived), [], []);
+  const contacts = useLoadedMemo(() => ContactRepository.getAll().then((all) => all.filter((c) => !c.isArchived)), [], []);
   const setType = async (type) => { await LocationsRepository.update(entry.id, { type: entry.type === type ? "" : type }); refresh(); };
   const commitAddress = async () => { await LocationsRepository.update(entry.id, { address: address.trim() }); refresh(); };
   const commitNotes = async () => { await LocationsRepository.update(entry.id, { notes: notes.trim() }); refresh(); };

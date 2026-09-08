@@ -1142,6 +1142,84 @@ this date; summarized here for durability.
   contact snapshot) and toggling an item's notified state, both
   persisting correctly. No page errors anywhere. Full smoke-test suite
   passes.
+  `ContactRepository` converted next (8 Sep) — the biggest single file
+  converted so far (669 lines) and a true core repository, chosen
+  deliberately ("biggest first") once the pattern itself was well-proven
+  across 8 prior repositories. `ensureLoaded()`/memoized-`loadPromise`,
+  same shape as every other hard-bucket conversion. Caller cascade
+  reached 15 files: `orphanReferenceCheck.js` (made `checkArray()`
+  itself async — mirroring the existing `checkSingle()` fix — since
+  `contactExists` can now be async too, then converted every `.forEach()`
+  loop calling it to `for...of` + `await`, the same silent-miss risk
+  already fixed once this session for `checkSingle`), `registryUsage.js`
+  (`computeKinkUsage`/`computeChemsUsage`, which needed
+  `RegistryManagementScreen`'s own `usageMap` to go through
+  `useLoadedMemo` since `computeUsage(id)` can now return either a
+  number or a Promise depending on which registry screen it's for),
+  `backupService.js`, `profileShareService.js` (`importProfileAsContact`
+  and its two callback-style wrappers), Global Search's `buildIndex()`,
+  Settings (3 sites), MyProfile (2 sites), PartnerNotification, Home,
+  SymptomLog, Encounters (a `createPlaceholderContact` flow), and
+  Contacts' own module (11 sites — the largest single-file caller
+  count, including `ContactProfile`'s own `contact` const, previously
+  flagged safe to leave as a plain render-body call "since it re-runs
+  every render" — the same reasoning that already broke twice this
+  session once ITS ONE real repository went async).
+  Real, more serious finding along the way: `editUndoHelpers.js` (the
+  shared `useEditUndo()` hook — Vaccinations/Testing/ClinicVisits/
+  Measurements/Medication/SymptomLog/Encounters/MenstrualHealth's own
+  Cycle+Contraception+Pregnancy tabs/Contacts, 12 call sites across 9
+  files) had `captureBeforeEdit`/`notifyEdited`/`undo`/`redo` reading
+  `repository.getById()`/calling `repository.update()` with no
+  `await` at all. Once ANY repository passed to this hook goes async,
+  `captureBeforeEdit`'s `current ? {...} : null` check is always
+  truthy (a Promise is truthy) — silently storing `{id, data:
+  <Promise>}` as the "pre-edit snapshot", and `undo()` would call
+  `repository.update(id, <a Promise>)` on tap, corrupting the record
+  rather than restoring it. Found by inspection, not a live report —
+  this session's own earlier live verification of Pregnancy/
+  MenstrualCycle/Contraception never actually exercised the undo
+  button itself, only plain save, so the bug was real but silently
+  unexercised until this file's own audit caught it. Fixed at the
+  source (`editUndoHelpers.js`'s 4 functions all made properly async,
+  `await`ing `repository.getById()`/`.update()`) — genuinely a no-op
+  for a still-synchronous repository, AWAIT ON A PLAIN VALUE resolves
+  immediately, same established precedent as every other conversion
+  this session. BUT: making these 4 functions `async` themselves also
+  meant every one of their 12 call sites (previously calling them as
+  plain synchronous functions, several with a still-fully-synchronous
+  repository like Vaccinations/Testing/ClinicVisits/Measurements/
+  Medication/SymptomLog/Encounters) now had the SAME "unawaited async
+  call lets the next synchronous line run first" race this whole
+  session has fixed repeatedly for `checkSingle`/`checkArray` — an
+  unawaited `captureBeforeEdit(id)` defers its real snapshot-read by
+  one microtask, during which the very next line's `Repository.update()`
+  call (still fully synchronous, runs immediately) had already mutated
+  the record — meaning the "before" snapshot captured would actually be
+  the POST-edit state, corrupting undo for every one of these 9 modules,
+  not just the newly-async ones. All 12 call sites across
+  `SHOS_Vaccinations_Prototype.jsx`, `SHOS_Testing_Prototype.jsx`,
+  `SHOS_ClinicVisits_Prototype.jsx`, `SHOS_Measurements_Prototype.jsx`,
+  `SHOS_Medication_Dashboard_Prototype.jsx`, `SHOS_SymptomLog_Prototype.jsx`,
+  `SHOS_Encounters_Prototype.jsx`, `SHOS_MenstrualHealth_Prototype.jsx`
+  (×3), and `SHOS_Contacts_Prototype.jsx` fixed with `await` added,
+  their own enclosing `save`/handler functions made `async` where they
+  weren't already. This is the clearest example yet this session of why
+  "the underlying repository hasn't converted yet" doesn't mean a
+  caller is safe to skip — the hook itself going async was enough to
+  introduce the bug everywhere it's used.
+  Verified live: Contacts list, Grace's profile, opening the edit sheet
+  via the real 3-dot menu, editing and saving (confirmed via the real
+  "Contact updated — tap to undo" toast, itself proof `notifyEdited`
+  resolved real post-edit data rather than a corrupted Promise), and
+  tapping the undo toast itself — all against real seed data, no page
+  errors, no `[object Object]`/`[object Promise]` corruption anywhere
+  in `localStorage`. Contraception/Cycle/Pregnancy's own undo path
+  (retroactively at risk from the same bug once those repositories
+  converted, now fixed by this same file-level change) was not
+  re-verified end-to-end this batch — the fix is at the shared hook
+  level, proven correct here, and structurally identical for those
+  three. Full smoke-test suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

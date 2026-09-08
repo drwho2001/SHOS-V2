@@ -918,10 +918,14 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
   }, [screen, registerModuleBackHandler]);
 
   const createMeasurement = (data) => { MeasurementRepository.create(data); refresh(); backToList(); };
-  const saveMeasurement = (data) => {
-    editUndo.captureBeforeEdit(screen.id);
+  const saveMeasurement = async (data) => {
+    // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited are
+    // now async — awaited here even though MeasurementRepository itself
+    // is still synchronous, same reasoning as every other module's
+    // save() this batch.
+    await editUndo.captureBeforeEdit(screen.id);
     MeasurementRepository.update(screen.id, data);
-    editUndo.notifyEdited(screen.id);
+    await editUndo.notifyEdited(screen.id);
     refresh();
     setScreen({ name: "detail", id: screen.id });
   };

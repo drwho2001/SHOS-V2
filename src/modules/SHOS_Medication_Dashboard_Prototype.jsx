@@ -1618,15 +1618,19 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     refreshMeds();
     setCorrection(null);
   };
-  const saveMedication = (form) => {
+  const saveMedication = async (form) => {
     // ADDED 19 Aug 2026 — real undo/redo extension: Medication's dose-
     // LOG undo/redo already existed (LogRepository.unvoid), this is
     // the separate, previously-missing piece — undo/redo for editing
     // the medication RECORD itself (renaming it, changing its dose),
     // same shared mechanism as Encounters/Contacts.
-    editUndo.captureBeforeEdit(editingMed.id);
+    // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited are
+    // now async — awaited here even though MedicationRepository itself
+    // is still synchronous, same reasoning as every other module's
+    // save() this batch.
+    await editUndo.captureBeforeEdit(editingMed.id);
     MedicationRepository.update(editingMed.id, form);
-    editUndo.notifyEdited(editingMed.id);
+    await editUndo.notifyEdited(editingMed.id);
     refreshMeds();
     setEditingMed(null);
   };

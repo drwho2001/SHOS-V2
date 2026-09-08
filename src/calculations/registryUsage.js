@@ -26,9 +26,9 @@ function hasKinkSelection(list, id) {
   return (list || []).some((sel) => sel?.kinkId === id);
 }
 
-export function computeKinkUsage(id) {
+export async function computeKinkUsage(id) {
   let count = 0;
-  ContactRepository.getAll().forEach((c) => {
+  (await ContactRepository.getAll()).forEach((c) => {
     if (hasKinkSelection(c.statedKinks, id)) count += 1;
     if (hasKinkSelection(c.limits, id)) count += 1;
   });
@@ -41,9 +41,9 @@ export function computeKinkUsage(id) {
   return count;
 }
 
-export function computeChemsUsage(id) {
+export async function computeChemsUsage(id) {
   let count = 0;
-  ContactRepository.getAll().forEach((c) => { if ((c.knownChems || []).includes(id)) count += 1; });
+  (await ContactRepository.getAll()).forEach((c) => { if ((c.knownChems || []).includes(id)) count += 1; });
   EncounterRepository.getAll().forEach((e) => { if ((e.chemsAlcoholUsed || []).includes(id)) count += 1; });
   const profile = MyProfileRepository.getProfile();
   if ((profile.knownChems || []).includes(id)) count += 1;

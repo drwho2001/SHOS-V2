@@ -77,8 +77,14 @@ async function checkSingle(results, exists, id, ctx) {
   if (id && !(await exists(id))) flag(results, { ...ctx, danglingId: id });
 }
 
-function checkArray(results, exists, ids, ctx) {
-  (ids || []).forEach((id) => { if (id && !exists(id)) flag(results, { ...ctx, danglingId: id }); });
+// CHANGED — same fix as checkSingle above: contactExists can now be
+// async (ContactRepository went async), and an unawaited async call
+// inside the OLD .forEach() here would let a genuinely dangling
+// reference go unflagged before this function's own caller's `return
+// results` ran. Made async/for...of — a no-op for every other,
+// still-synchronous `exists` callback this is called with.
+async function checkArray(results, exists, ids, ctx) {
+  for (const id of ids || []) { if (id && !(await exists(id))) flag(results, { ...ctx, danglingId: id }); }
 }
 
 function checkKinkSelections(results, exists, selections, ctx) {
@@ -94,7 +100,7 @@ function checkKinkSelections(results, exists, selections, ctx) {
 // calling a synchronous function inside an async one needs no await.
 export async function findOrphanReferences() {
   const results = [];
-  const contactExists = (id) => !!ContactRepository.getById(id);
+  const contactExists = async (id) => !!(await ContactRepository.getById(id));
   const locationExists = async (id) => !!(await LocationsRepository.getById(id));
   const medicationExists = (id) => !!MedicationRepository.getById(id);
   const testExists = (id) => !!TestingRepository.getById(id);
@@ -109,73 +115,73 @@ export async function findOrphanReferences() {
   const organismExists = (id) => !!OrganismRegistry.getById(id);
   const resultExists = (id) => !!ResultsRegistry.getById(id);
 
-  ContactRepository.getAll().forEach((c) => {
+  for (const c of await ContactRepository.getAll()) {
     const ctx = { recordType: "Contact", recordLabel: c.nickname || c.name, recordId: c.id };
     checkKinkSelections(results, kinkExists, c.statedKinks, { ...ctx, field: "statedKinks", targetType: "Kink Registry" });
     checkKinkSelections(results, kinkExists, c.limits, { ...ctx, field: "limits", targetType: "Kink Registry" });
-    checkArray(results, chemExists, c.knownChems, { ...ctx, field: "knownChems", targetType: "Chems Registry" });
-  });
+    await checkArray(results, chemExists, c.knownChems, { ...ctx, field: "knownChems", targetType: "Chems Registry" });
+  }
 
   const profile = MyProfileRepository.getProfile();
   const profileCtx = { recordType: "My Profile", recordLabel: "My Profile", recordId: "profile" };
   checkKinkSelections(results, kinkExists, profile.statedKinks, { ...profileCtx, field: "statedKinks", targetType: "Kink Registry" });
   checkKinkSelections(results, kinkExists, profile.limits, { ...profileCtx, field: "limits", targetType: "Kink Registry" });
-  checkArray(results, chemExists, profile.knownChems, { ...profileCtx, field: "knownChems", targetType: "Chems Registry" });
+  await checkArray(results, chemExists, profile.knownChems, { ...profileCtx, field: "knownChems", targetType: "Chems Registry" });
 
-  // CHANGED — checkSingle() is now async (locationExists below can be),
-  // so this loop is a for...of + await instead of a forEach, ensuring
-  // every flag() actually lands in `results` before this function
-  // returns it — a fire-and-forget checkSingle() call here would let
-  // `return results` at the bottom run before its flag (if any) was
-  // ever pushed.
+  // CHANGED — checkSingle()/checkArray() are now async (contactExists/
+  // locationExists can be), so every loop here is a for...of + await
+  // instead of a forEach, ensuring every flag() actually lands in
+  // `results` before this function returns it — a fire-and-forget call
+  // here would let `return results` at the bottom run before its flag
+  // (if any) was ever pushed.
   for (const e of EncounterRepository.getAll()) {
     const ctx = { recordType: "Encounter", recordLabel: e.title || e.encounterType, recordId: e.id };
-    checkArray(results, contactExists, e.attendeeIds, { ...ctx, field: "attendeeIds", targetType: "Contact" });
+    await checkArray(results, contactExists, e.attendeeIds, { ...ctx, field: "attendeeIds", targetType: "Contact" });
     await checkSingle(results, locationExists, e.locationId, { ...ctx, field: "locationId", targetType: "Location" });
     checkKinkSelections(results, kinkExists, e.kinksInvolved, { ...ctx, field: "kinksInvolved", targetType: "Kink Registry" });
-    checkArray(results, protectionExists, e.protectionUsed, { ...ctx, field: "protectionUsed", targetType: "Protection Registry" });
-    checkArray(results, chemExists, e.chemsAlcoholUsed, { ...ctx, field: "chemsAlcoholUsed", targetType: "Chems Registry" });
-    checkArray(results, symptomExists, e.symptomsNoted, { ...ctx, field: "symptomsNoted", targetType: "Symptoms Registry" });
+    await checkArray(results, protectionExists, e.protectionUsed, { ...ctx, field: "protectionUsed", targetType: "Protection Registry" });
+    await checkArray(results, chemExists, e.chemsAlcoholUsed, { ...ctx, field: "chemsAlcoholUsed", targetType: "Chems Registry" });
+    await checkArray(results, symptomExists, e.symptomsNoted, { ...ctx, field: "symptomsNoted", targetType: "Symptoms Registry" });
   }
 
-  TestingRepository.getAll().forEach((t) => {
+  for (const t of TestingRepository.getAll()) {
     const ctx = { recordType: "Test", recordLabel: t.title, recordId: t.id };
-    checkArray(results, organismExists, t.organismIds, { ...ctx, field: "organismIds", targetType: "Organism Registry" });
-    checkArray(results, resultExists, t.resultIds, { ...ctx, field: "resultIds", targetType: "Results Registry" });
-    checkArray(results, clinicVisitExists, t.clinicVisitIds, { ...ctx, field: "clinicVisitIds", targetType: "Clinic Visit" });
-  });
+    await checkArray(results, organismExists, t.organismIds, { ...ctx, field: "organismIds", targetType: "Organism Registry" });
+    await checkArray(results, resultExists, t.resultIds, { ...ctx, field: "resultIds", targetType: "Results Registry" });
+    await checkArray(results, clinicVisitExists, t.clinicVisitIds, { ...ctx, field: "clinicVisitIds", targetType: "Clinic Visit" });
+  }
 
-  SymptomLogRepository.getAll().forEach((s) => {
+  for (const s of SymptomLogRepository.getAll()) {
     const ctx = { recordType: "Symptom Log entry", recordLabel: s.title, recordId: s.id };
-    checkArray(results, symptomExists, s.symptomIds, { ...ctx, field: "symptomIds", targetType: "Symptoms Registry" });
-    checkArray(results, encounterExists, s.relatedEncounterIds, { ...ctx, field: "relatedEncounterIds", targetType: "Encounter" });
-    checkArray(results, testExists, s.relatedTestIds, { ...ctx, field: "relatedTestIds", targetType: "Test" });
-  });
+    await checkArray(results, symptomExists, s.symptomIds, { ...ctx, field: "symptomIds", targetType: "Symptoms Registry" });
+    await checkArray(results, encounterExists, s.relatedEncounterIds, { ...ctx, field: "relatedEncounterIds", targetType: "Encounter" });
+    await checkArray(results, testExists, s.relatedTestIds, { ...ctx, field: "relatedTestIds", targetType: "Test" });
+  }
 
   for (const v of ClinicVisitsRepository.getAll()) {
     const ctx = { recordType: "Clinic Visit", recordLabel: v.title, recordId: v.id };
-    checkArray(results, testExists, v.linkedTestIds, { ...ctx, field: "linkedTestIds", targetType: "Test" });
-    checkArray(results, medicationExists, v.medicationsGivenIds, { ...ctx, field: "medicationsGivenIds", targetType: "Medication" });
-    checkArray(results, symptomExists, v.symptomTypeIds, { ...ctx, field: "symptomTypeIds", targetType: "Symptoms Registry" });
-    checkArray(results, symptomLogExists, v.symptomsDiscussedIds, { ...ctx, field: "symptomsDiscussedIds", targetType: "Symptom Log entry" });
+    await checkArray(results, testExists, v.linkedTestIds, { ...ctx, field: "linkedTestIds", targetType: "Test" });
+    await checkArray(results, medicationExists, v.medicationsGivenIds, { ...ctx, field: "medicationsGivenIds", targetType: "Medication" });
+    await checkArray(results, symptomExists, v.symptomTypeIds, { ...ctx, field: "symptomTypeIds", targetType: "Symptoms Registry" });
+    await checkArray(results, symptomLogExists, v.symptomsDiscussedIds, { ...ctx, field: "symptomsDiscussedIds", targetType: "Symptom Log entry" });
     await checkSingle(results, symptomLogExists, v.primaryReasonSymptomLogId, { ...ctx, field: "primaryReasonSymptomLogId", targetType: "Symptom Log entry" });
-    checkArray(results, vaccinationExists, v.vaccinationsGivenIds, { ...ctx, field: "vaccinationsGivenIds", targetType: "Vaccination" });
+    await checkArray(results, vaccinationExists, v.vaccinationsGivenIds, { ...ctx, field: "vaccinationsGivenIds", targetType: "Vaccination" });
   }
 
-  VaccinationRepository.getAll().forEach((v) => {
+  for (const v of VaccinationRepository.getAll()) {
     const ctx = { recordType: "Vaccination", recordLabel: v.title || v.vaccine, recordId: v.id };
-    checkArray(results, symptomExists, v.symptomIds, { ...ctx, field: "symptomIds", targetType: "Symptoms Registry" });
-    checkArray(results, clinicVisitExists, v.clinicVisitIds, { ...ctx, field: "clinicVisitIds", targetType: "Clinic Visit" });
-  });
+    await checkArray(results, symptomExists, v.symptomIds, { ...ctx, field: "symptomIds", targetType: "Symptoms Registry" });
+    await checkArray(results, clinicVisitExists, v.clinicVisitIds, { ...ctx, field: "clinicVisitIds", targetType: "Clinic Visit" });
+  }
 
   for (const ep of EpisodeRepository.getAll()) {
     const ctx = { recordType: "Episode", recordLabel: ep.title, recordId: ep.id };
     await checkSingle(results, encounterExists, ep.startEncounterId, { ...ctx, field: "startEncounterId", targetType: "Encounter" });
-    checkArray(results, encounterExists, ep.atRiskEncounterIds, { ...ctx, field: "atRiskEncounterIds", targetType: "Encounter" });
-    checkArray(results, encounterExists, ep.notifiedEncounterIds, { ...ctx, field: "notifiedEncounterIds", targetType: "Encounter" });
-    checkArray(results, testExists, ep.testIds, { ...ctx, field: "testIds", targetType: "Test" });
-    checkArray(results, clinicVisitExists, ep.clinicVisitIds, { ...ctx, field: "clinicVisitIds", targetType: "Clinic Visit" });
-    checkArray(results, symptomLogExists, ep.symptomLogIds, { ...ctx, field: "symptomLogIds", targetType: "Symptom Log entry" });
+    await checkArray(results, encounterExists, ep.atRiskEncounterIds, { ...ctx, field: "atRiskEncounterIds", targetType: "Encounter" });
+    await checkArray(results, encounterExists, ep.notifiedEncounterIds, { ...ctx, field: "notifiedEncounterIds", targetType: "Encounter" });
+    await checkArray(results, testExists, ep.testIds, { ...ctx, field: "testIds", targetType: "Test" });
+    await checkArray(results, clinicVisitExists, ep.clinicVisitIds, { ...ctx, field: "clinicVisitIds", targetType: "Clinic Visit" });
+    await checkArray(results, symptomLogExists, ep.symptomLogIds, { ...ctx, field: "symptomLogIds", targetType: "Symptom Log entry" });
   }
 
   // CHANGED — LocationsRepository is now async (see its own comment),
@@ -205,9 +211,9 @@ export async function findOrphanReferences() {
     }
   }
 
-  (await MenstrualCycleRepository.getAll()).forEach((cycle) => {
-    checkArray(results, symptomExists, cycle.symptomIds, { recordType: "Menstrual cycle entry", recordLabel: cycle.startDate, recordId: cycle.id, field: "symptomIds", targetType: "Symptoms Registry" });
-  });
+  for (const cycle of await MenstrualCycleRepository.getAll()) {
+    await checkArray(results, symptomExists, cycle.symptomIds, { recordType: "Menstrual cycle entry", recordLabel: cycle.startDate, recordId: cycle.id, field: "symptomIds", targetType: "Symptoms Registry" });
+  }
 
   // Measurement/Contraception's own linked-visit and linked-test fields
   // are already actively cleared to null when the visit/test they point

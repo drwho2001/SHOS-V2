@@ -709,10 +709,14 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
   // re-entered Healthcare. onDataChanged notifies the parent to
   // recompute immediately instead.
   const createEntry = (data) => { SymptomLogRepository.create(data); onDataChanged?.(); backToList(); };
-  const saveEntry = (data) => {
-    editUndo.captureBeforeEdit(screen.id);
+  const saveEntry = async (data) => {
+    // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited are
+    // now async — awaited here even though SymptomLogRepository itself
+    // is still synchronous, same reasoning as every other module's
+    // save() this batch.
+    await editUndo.captureBeforeEdit(screen.id);
     SymptomLogRepository.update(screen.id, data);
-    editUndo.notifyEdited(screen.id);
+    await editUndo.notifyEdited(screen.id);
     onDataChanged?.();
     setScreen({ name: "detail", id: screen.id });
   };

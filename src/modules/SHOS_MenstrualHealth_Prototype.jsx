@@ -400,9 +400,9 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
 
   const create = async (data) => { await MenstrualCycleRepository.create(data); refresh(); setScreen({ name: "list" }); };
   const save = async (data) => {
-    editUndo.captureBeforeEdit(screen.id);
+    await editUndo.captureBeforeEdit(screen.id);
     await MenstrualCycleRepository.update(screen.id, data);
-    editUndo.notifyEdited(screen.id);
+    await editUndo.notifyEdited(screen.id);
     refresh();
     setScreen({ name: "detail", id: screen.id });
   };
@@ -624,9 +624,9 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
 
   const create = async (data) => { await ContraceptionRepository.create(data); refresh(); setScreen({ name: "list" }); };
   const save = async (data) => {
-    editUndo.captureBeforeEdit(screen.id);
+    await editUndo.captureBeforeEdit(screen.id);
     await ContraceptionRepository.update(screen.id, data);
-    editUndo.notifyEdited(screen.id);
+    await editUndo.notifyEdited(screen.id);
     refresh();
     setScreen({ name: "detail", id: screen.id });
   };
@@ -785,9 +785,9 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
 
   const create = async (data) => { await PregnancyRepository.create(data); refresh(); setScreen({ name: "list" }); };
   const save = async (data) => {
-    editUndo.captureBeforeEdit(screen.id);
+    await editUndo.captureBeforeEdit(screen.id);
     await PregnancyRepository.update(screen.id, data);
-    editUndo.notifyEdited(screen.id);
+    await editUndo.notifyEdited(screen.id);
     refresh();
     setScreen({ name: "detail", id: screen.id });
   };

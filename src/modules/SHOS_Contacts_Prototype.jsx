@@ -1182,8 +1182,12 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
 function LinkedContactsField({ contactId, allContacts, T, refresh }) {
   const [pickerValue, setPickerValue] = useState("");
   const [pendingLabel, setPendingLabel] = useState("");
-  const [linkedIds, setLinkedIds] = useLoadedState(() => ContactRepository.getById(contactId)?.linkedContactIds || [], [contactId], []);
-  const [labels, setLabels] = useLoadedState(() => ContactRepository.getById(contactId)?.linkedContactLabels || {}, [contactId], {});
+  // CHANGED — Phase 2 encryption groundwork: ContactRepository went
+  // async — these used to chain a property access straight onto the
+  // (now-Promise) getById() call, same class of bug as Home's own
+  // permission-nudge loader found earlier this session.
+  const [linkedIds, setLinkedIds] = useLoadedState(async () => (await ContactRepository.getById(contactId))?.linkedContactIds || [], [contactId], []);
+  const [labels, setLabels] = useLoadedState(async () => (await ContactRepository.getById(contactId))?.linkedContactLabels || {}, [contactId], {});
   const linked = allContacts.filter((c) => linkedIds.includes(c.id));
   const linkable = allContacts.filter((c) => c.id !== contactId && !linkedIds.includes(c.id));
 
@@ -1192,18 +1196,18 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
     return Array.from(new Set(all)).sort((a, b) => a.localeCompare(b));
   }, [allContacts]);
 
-  const confirmLink = () => {
+  const confirmLink = async () => {
     if (!pickerValue) return;
     const label = pendingLabel.trim();
-    ContactRepository.linkContacts(contactId, pickerValue, label);
+    await ContactRepository.linkContacts(contactId, pickerValue, label);
     setLinkedIds((prev) => [...prev, pickerValue]);
     if (label) setLabels((prev) => ({ ...prev, [pickerValue]: label }));
     refresh();
     setPickerValue("");
     setPendingLabel("");
   };
-  const removeLink = (id) => {
-    ContactRepository.unlinkContacts(contactId, id);
+  const removeLink = async (id) => {
+    await ContactRepository.unlinkContacts(contactId, id);
     setLinkedIds((prev) => prev.filter((x) => x !== id));
     setLabels((prev) => { const { [id]: _removed, ...rest } = prev; return rest; });
     refresh();
@@ -1810,7 +1814,14 @@ function describeAvailabilityRule(r) {
 // Location & logistics as the edit sheet, plus the don't-meet-again
 // warning banner. ──
 function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, onNavigateToRecord, triggerDelete }) {
-  const contact = ContactRepository.getById(contactId);
+  // CHANGED — Phase 2 encryption groundwork: ContactRepository went
+  // async — this used to be a plain render-body const, previously
+  // flagged safe to leave alone "since it re-runs every render", the
+  // same reasoning that broke for RegistrySinglePicker/PregnancyTab
+  // once THEIR one real repository went async. Converted to a proper
+  // hook, kept at the very top (no hooks-before-guard issue — it
+  // already was above the `!contact` guard below).
+  const contact = useLoadedMemo(() => ContactRepository.getById(contactId), [contactId], null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
   // ADDED — real ask: "not just edit or archive contact but also
@@ -1824,6 +1835,15 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
   // what's actually missing rather than silently absent.
   const [showBlankFields, setShowBlankFields] = useState(false);
   const [, forceRelink] = useState(0);
+  // CHANGED — Phase 2 encryption groundwork: ContactRepository went
+  // async — the "Linked contacts" section below used to filter/map
+  // ContactRepository.getAll() straight in the render body. Hoisted
+  // above this guard (hooks-before-guard), optional-chained since
+  // `contact` can still be null on the one render before it loads.
+  const linkedContactProfiles = useLoadedMemo(
+    () => ContactRepository.getAll().then((all) => all.filter((c) => (contact?.linkedContactIds || []).includes(c.id))),
+    [contact], []
+  );
   if (!contact) return null;
   const myProfile = MyProfileRepository.getProfile();
   const isLinkedToMe = myProfile.relationshipContactIds.includes(contact.id);
@@ -1833,7 +1853,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
     forceRelink((v) => v + 1);
   };
 
-  const archive = () => { ContactRepository.archive(contact.id); refresh(); onBack(); };
+  const archive = async () => { await ContactRepository.archive(contact.id); refresh(); onBack(); };
   const flaggedDontMeetAgain = contact.meetAgain === "No";
   const methods = getContactableVia(contact);
 
@@ -2106,8 +2126,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
 
         {contact.linkedContactIds.length > 0 && (
           <SectionCard T={T} title="Linked contacts">
-            {ContactRepository.getAll()
-              .filter((c) => contact.linkedContactIds.includes(c.id))
+            {linkedContactProfiles
               .map((c) => (
                 <div key={c.id} onClick={() => onOpenContact(c.id)}
                   style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, color: T.contactsTeal, fontWeight: 600, cursor: "pointer" }}>
@@ -2319,7 +2338,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                         {(entry.city || entry.phone) && <span style={{ fontSize: 11, fontWeight: 400, color: T.textDisabled }}> · {[entry.city, entry.phone].filter(Boolean).join(" · ")}</span>}
                       </span>
                       {!entry.isArchived && (
-                        <span onClick={() => { ContactRepository.archive(entry.id); refresh(); }} style={{ fontSize: 11, fontWeight: 700, color: T.actionRed, cursor: "pointer" }}>Archive this one</span>
+                        <span onClick={async () => { await ContactRepository.archive(entry.id); refresh(); }} style={{ fontSize: 11, fontWeight: 700, color: T.actionRed, cursor: "pointer" }}>Archive this one</span>
                       )}
                     </div>
                   ))}
@@ -2348,9 +2367,9 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 record, enabled only when exactly one is selected —
                 exporting several at once as one file doesn't map to
                 "a single record to hand to a provider". */}
-            <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("contacts", ContactRepository.getById(selectedIds[0])); }}
+            <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("contacts", await ContactRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span onClick={() => { if (selectedIds.length > 0) { ContactRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            <span onClick={async () => { if (selectedIds.length > 0) { await ContactRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span onClick={async () => {
               if (selectedIds.length === 0) return;
@@ -2361,7 +2380,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 // behavior, not just bulk. Still captures full records
                 // BEFORE deleting via getAll(), not the possibly-stale
                 // `contacts` prop.
-                const toRestore = ContactRepository.getAll().filter((c) => selectedIds.includes(c.id));
+                const toRestore = (await ContactRepository.getAll()).filter((c) => selectedIds.includes(c.id));
                 await triggerDelete(toRestore);
                 refresh();
                 exitSelectMode();
@@ -2469,7 +2488,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           {filtered.map((c) => <ContactCard key={c.id} contact={c} onOpen={onOpen} T={T} summary={encounterSummaries.get(c.id) || EMPTY_ENCOUNTER_SUMMARY} anonymise={anonymise} inactiveThresholdDays={inactiveThresholdDays}
             activeFilters={activeFilterCount > 0 ? { roles: filterRoles, positions: filterPositions, hosts: filterHosts, drives: filterDrives } : null}
             selectMode={selectMode} selected={selectedIds.includes(c.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }}
-            onToggleFavourite={(id) => { ContactRepository.update(id, { favourited: !c.favourited }); refresh(); }} />)}
+            onToggleFavourite={async (id) => { await ContactRepository.update(id, { favourited: !c.favourited }); refresh(); }} />)}
         </div>
       )}
 
@@ -2555,9 +2574,9 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
   // two mechanisms consistent rather than inventing a second pattern.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
   const undoTimerRef = useRef(null);
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => ContactRepository.restore(record));
+    for (const record of deleteToast.records) await ContactRepository.restore(record);
     refresh();
     clearTimeout(undoTimerRef.current);
     // Records are back — offer a brief "redo" (re-delete) in case the
@@ -2568,7 +2587,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
   const redoDelete = async () => {
     if (!deleteToast) return;
     await TrashRepository.add("contacts", deleteToast.records);
-    deleteToast.records.forEach((r) => ContactRepository.delete(r.id));
+    for (const r of deleteToast.records) await ContactRepository.delete(r.id);
     refresh();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
@@ -2578,7 +2597,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
   // bulk-select toolbar or a single record's own Profile screen.
   const triggerDelete = async (records) => {
     await TrashRepository.add("contacts", records);
-    records.forEach((r) => ContactRepository.delete(r.id));
+    for (const r of records) await ContactRepository.delete(r.id);
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -2630,16 +2649,16 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
     return () => registerModuleBackHandler(null);
   }, [editingContact, showMyProfile, showImportProfile, screen, registerModuleBackHandler]);
 
-  const saveEdit = (form) => {
+  const saveEdit = async (form) => {
     if (editingContact && editingContact.id) {
       // ADDED 19 Aug 2026 — real undo/redo: snapshot right before the
       // real update happens, so undo restores the genuine pre-edit
       // state.
-      editUndo.captureBeforeEdit(editingContact.id);
-      ContactRepository.update(editingContact.id, form);
-      editUndo.notifyEdited(editingContact.id);
+      await editUndo.captureBeforeEdit(editingContact.id);
+      await ContactRepository.update(editingContact.id, form);
+      await editUndo.notifyEdited(editingContact.id);
     } else {
-      ContactRepository.create(form);
+      await ContactRepository.create(form);
     }
     refresh();
     setEditingContact(null);
@@ -2672,7 +2691,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
             onOpenMyProfile={() => setShowMyProfile(true)} onOpenImportProfile={() => setShowImportProfile(true)} refresh={refresh}
             deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />
         ) : (
-          <ContactProfile contactId={activeContactId} T={T} onBack={backToList} onEdit={(id) => setEditingContact(ContactRepository.getById(id))} onOpenContact={openProfile} refresh={refresh} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} />
+          <ContactProfile contactId={activeContactId} T={T} onBack={backToList} onEdit={async (id) => setEditingContact(await ContactRepository.getById(id))} onOpenContact={openProfile} refresh={refresh} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} />
         )}
 
         {editingContact !== null && (

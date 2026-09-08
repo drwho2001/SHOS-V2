@@ -742,8 +742,8 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
   // ADDED 26 Aug 2026 — real ask, decided: allow adding someone not
   // yet in Contacts, right from here, instead of blocking the whole
   // Activity on a separate trip to Contacts first.
-  const handleCreate = () => {
-    const created = onCreatePlaceholder(query.trim());
+  const handleCreate = async () => {
+    const created = await onCreatePlaceholder(query.trim());
     onChange([...value, created.id]);
     setQuery("");
   };
@@ -1288,9 +1288,9 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   // itself — a contact with just a name is already self-evidently
   // incomplete, no schema change needed to detect that later).
   const [placeholderContactIds, setPlaceholderContactIds] = useState([]);
-  const createPlaceholderContact = (name) => {
-    const created = ContactRepository.create({ name });
-    setContacts(loadContacts());
+  const createPlaceholderContact = async (name) => {
+    const created = await ContactRepository.create({ name });
+    setContacts(await loadContacts());
     setPlaceholderContactIds((ids) => [...ids, created.id]);
     return created;
   };
@@ -1350,7 +1350,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   }, [form]);
   const set = (key) => (val) => { isDirty.current = true; setForm((f) => ({ ...f, [key]: val })); };
 
-  const save = () => {
+  const save = async () => {
     clearDraft(draftKey);
     if (isNew) {
       EncounterRepository.create(form);
@@ -1358,9 +1358,13 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
       // ADDED 19 Aug 2026 — real undo/redo: snapshot taken right
       // before the update actually happens, so undo has the genuine
       // pre-edit state to restore, not a guess.
-      onBeforeEdit?.(encounterId);
+      // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited
+      // are now async — awaited here even though EncounterRepository
+      // itself is still synchronous, same reasoning as every other
+      // module's save() this batch.
+      await onBeforeEdit?.(encounterId);
       EncounterRepository.update(encounterId, form);
-      onAfterEdit?.(encounterId);
+      await onAfterEdit?.(encounterId);
     }
     // ADDED 26 Aug 2026 — real ask: DoxyPEP 72h notification. A new or
     // edited Activity is exactly what can start (or, if myPosition was
