@@ -519,12 +519,19 @@ export const BACKUP_REMINDER_DAYS = 90;
 // timestamp through this one shared helper instead of calling each
 // other, breaking the cycle completely while keeping the exact same
 // behaviour otherwise.
-function getLastBackupTimestamp() {
-  return storage.load(LAST_BACKUP_KEY, null);
+// CHANGED — Phase 3 prep (8 Sep 2026): made async and awaited at both
+// call sites. Harmless no-op today (storage.load() is still 100%
+// synchronous), but this was a real latent bug waiting for
+// storageAdapter.js itself to go async — an unawaited call here would
+// have returned a Promise, and `!aPromise` is always false, so
+// `hasUnbackedChanges()`'s own "never backed up at all" branch would
+// have silently stopped firing for every genuinely fresh profile.
+async function getLastBackupTimestamp() {
+  return await storage.load(LAST_BACKUP_KEY, null);
 }
 
 export async function getLastBackupInfo() {
-  const lastAt = getLastBackupTimestamp();
+  const lastAt = await getLastBackupTimestamp();
   if (!lastAt) return { lastAt: null, daysSince: null, dueForReminder: await hasUnbackedChanges() };
   const daysSince = Math.floor((Date.now() - new Date(lastAt).getTime()) / 86400000);
   return { lastAt, daysSince, dueForReminder: daysSince >= BACKUP_REMINDER_DAYS && (await hasUnbackedChanges()) };
@@ -543,7 +550,7 @@ export async function getLastBackupInfo() {
 // repository — if a new data type is ever added to backups, this
 // check picks it up automatically too.
 export async function hasUnbackedChanges() {
-  const lastAt = getLastBackupTimestamp();
+  const lastAt = await getLastBackupTimestamp();
   if (!lastAt) return true; // never backed up at all
   const lastBackupTime = new Date(lastAt).getTime();
   const { data } = await buildBackup(null);
@@ -580,7 +587,7 @@ export async function exportBackup(includeKeys = null, dateRange = null) {
   // purposes — a selective export deliberately leaves things out, so
   // it shouldn't reset the clock on a reminder meant to catch "you
   // have no real safety net right now".
-  if (!includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  if (!includeKeys) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
   return verification;
 }
 
@@ -601,7 +608,7 @@ export async function exportBackupToChosenFolder(includeKeys = null, dateRange =
   const dateStamp = new Date().toISOString().slice(0, 10);
   const suffix = includeKeys ? "-selective" : "";
   const result = await exportTextFileToChosenFolder(`shos-backup-${dateStamp}${suffix}.json`, json, "application/json");
-  if (result.ok && !includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  if (result.ok && !includeKeys) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
   return { ...result, totalRecords: verification.totalRecords };
 }
 
@@ -639,7 +646,7 @@ export async function runAutoExportIfDue() {
   const json = JSON.stringify(backup, null, 2);
   const dateStamp = new Date().toISOString().slice(0, 10);
   const ok = await writeTextFileSilently(`shos-backup-${dateStamp}-auto.json`, json, "application/json");
-  if (ok) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  if (ok) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
   return { ran: ok };
 }
 
@@ -743,7 +750,7 @@ export async function exportEncryptedBackup(password, includeKeys = null, dateRa
   const dateStamp = new Date().toISOString().slice(0, 10);
   const suffix = includeKeys ? "-selective" : "";
   await exportTextFile(`shos-backup-encrypted-${dateStamp}${suffix}.json`, json, "application/json");
-  if (!includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  if (!includeKeys) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
 }
 
 // Same "choose exactly where this goes" option as exportBackupToChosenFolder
@@ -754,7 +761,7 @@ export async function exportEncryptedBackupToChosenFolder(password, includeKeys 
   const dateStamp = new Date().toISOString().slice(0, 10);
   const suffix = includeKeys ? "-selective" : "";
   const result = await exportTextFileToChosenFolder(`shos-backup-encrypted-${dateStamp}${suffix}.json`, json, "application/json");
-  if (result.ok && !includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  if (result.ok && !includeKeys) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
   return result;
 }
 

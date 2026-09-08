@@ -47,8 +47,15 @@ export function useClinicCardVisibility() {
   // the ~100 other real call sites the audit found with this same
   // structural conflict. Same behavior: starts from DEFAULT_VISIBILITY
   // for the one render before the real value loads.
+  // CHANGED — Phase 3 prep (8 Sep 2026): this loader spread
+  // storage.load()'s return value directly (`...storage.load(...)`)
+  // in a non-async function — a real latent bug for when
+  // storageAdapter.js itself goes async, since spreading a Promise
+  // gives you nothing (no enumerable own properties), silently
+  // discarding every saved visibility choice on every load. Harmless
+  // today only because storage.load() is still fully synchronous.
   const [visibility, setVisibilityState] = useLoadedState(
-    () => ({ ...DEFAULT_VISIBILITY, ...storage.load(STORAGE_KEY, {}) }),
+    async () => ({ ...DEFAULT_VISIBILITY, ...(await storage.load(STORAGE_KEY, {})) }),
     [],
     DEFAULT_VISIBILITY
   );

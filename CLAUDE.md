@@ -2117,6 +2117,35 @@ this date; summarized here for durability.
   sweep rather than trusting the prior tally. Treat any future "Phase 2
   is done" claim, including this one, as provisional until a fresh
   sweep is actually re-run immediately before Phase 3 work begins.
+  Two more real, cheap fixes made the same session while grepping
+  every `storage.load(`/`storage.save(` call site directly (not just
+  repository methods) ahead of Phase 3 proper — both genuine latent
+  bugs that only mattered once `storageAdapter.js` itself goes async,
+  fixed now while they're easy rather than left for that riskier step
+  to trip over: (1) `backupService.js`'s `getLastBackupTimestamp()`
+  called `storage.load()` directly with no `await`, and 5 of its own
+  callers (`exportBackup`/`exportBackupToChosenFolder`/
+  `runAutoExportIfDue`/`exportEncryptedBackup`/
+  `exportEncryptedBackupToChosenFolder`) fired their own
+  `storage.save(LAST_BACKUP_KEY, ...)` unawaited as the last line
+  before `return` — a real write-then-return race once async, on top
+  of `getLastBackupTimestamp()` itself returning a Promise that
+  `!lastAt` would always treat as truthy, silently breaking the
+  "never backed up at all" fresh-install case. Both fixed with
+  `async`/`await`. (2) `clinicCardVisibilityPreference.js`'s own
+  `useLoadedState` loader spread `storage.load()`'s return directly
+  (`...storage.load(STORAGE_KEY, {})`) inside a plain, non-`async`
+  function — the exact "spreading a Promise gives you nothing" bug
+  class already found and fixed twice for repository callers earlier
+  this session (`designTokens.js`'s original `getOverrides()` call,
+  `MeasurementSheet`'s `getDefaultUnit` chain), just never checked for
+  outside repository call sites until this direct grep. A full sweep
+  for the same `...storage.load(` shape anywhere else in `src/` found
+  no other instances. Verified live: a fresh profile's "never exported
+  a backup" nudge still shows correctly; a real Export backup tap
+  correctly persists `shos_last_backup_at` as a real ISO timestamp,
+  confirmed by direct `localStorage` read; Clinic Card still opens
+  correctly with no page errors. Full smoke-test suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to
