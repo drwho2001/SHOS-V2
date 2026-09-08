@@ -585,7 +585,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
     const entries = await Promise.all(form.linkedTestIds.map((id) => TestingRepository.getById(id)));
     return Object.fromEntries(form.linkedTestIds.map((id, i) => [id, entries[i]]));
   }, [form.linkedTestIds], {});
-  const allMeds = useLoadedMemo(() => MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => ({ id: m.id, name: m.name })), [], []);
+  const allMeds = useLoadedMemo(async () => (await MedicationRepository.getAll()).filter((m) => !m.isArchived).map((m) => ({ id: m.id, name: m.name })), [], []);
   const allSymptoms = useLoadedMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), [], []);
   // ADDED 19 Aug 2026 — real feedback batch: "pulling from recent"
   // symptoms means suggesting real Symptom Log occurrences, not just
@@ -807,9 +807,15 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
     if (!visit?.linkedTestIds?.length) return [];
     return (await Promise.all(visit.linkedTestIds.map((id) => TestingRepository.getById(id)))).filter(Boolean);
   }, [visit], []);
+  // CHANGED — Phase 2 encryption groundwork: MedicationRepository went
+  // async — same hoisted-above-the-guard treatment as testEntries above.
+  const medNames = useLoadedMemo(async () => {
+    if (!visit?.medicationsGivenIds?.length) return [];
+    const resolved = await Promise.all(visit.medicationsGivenIds.map((id) => MedicationRepository.getById(id)));
+    return resolved.map((m) => m?.name).filter(Boolean);
+  }, [visit], []);
   if (!visit) return null;
 
-  const medNames = visit.medicationsGivenIds.map((id) => MedicationRepository.getById(id)?.name).filter(Boolean);
   const symptomNames = visit.symptomTypeIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean);
 
   return (

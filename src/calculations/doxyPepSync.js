@@ -27,7 +27,7 @@ import { nowAsStoredDateTime } from "./dateInputHelpers";
 // never a request to hide the in-app warning too.
 export async function syncDoxyPepAlert() {
   const notifsEnabled = (await NotificationPreferencesRepository.getPreferences()).doxyPepAlertEnabled;
-  const doxyMed = findDoxyPepMedication(MedicationRepository.getAll());
+  const doxyMed = findDoxyPepMedication(await MedicationRepository.getAll());
   // No DoxyPEP medication set up at all — nothing to track, and
   // nothing should be left scheduled from a stale earlier state.
   if (!doxyMed) {
@@ -113,7 +113,7 @@ export async function syncDoxyPepAlert() {
 // (doxyPepCalculations.js), which assumes every stored dose date
 // follows the fake-UTC convention.
 export async function handleTakeDoxyDose() {
-  const doxyMed = findDoxyPepMedication(MedicationRepository.getAll());
+  const doxyMed = findDoxyPepMedication(await MedicationRepository.getAll());
   if (!doxyMed) return { medications: [] };
   await LogRepository.create({ medicationId: doxyMed.id, type: "dose", delta: -doxyMed.unitsPerDose, date: nowAsStoredDateTime() });
   syncDoxyPepAlert();

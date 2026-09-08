@@ -102,7 +102,7 @@ export async function findOrphanReferences() {
   const results = [];
   const contactExists = async (id) => !!(await ContactRepository.getById(id));
   const locationExists = async (id) => !!(await LocationsRepository.getById(id));
-  const medicationExists = (id) => !!MedicationRepository.getById(id);
+  const medicationExists = async (id) => !!(await MedicationRepository.getById(id));
   const testExists = async (id) => !!(await TestingRepository.getById(id));
   const clinicVisitExists = (id) => !!ClinicVisitsRepository.getById(id);
   const symptomLogExists = async (id) => !!(await SymptomLogRepository.getById(id));

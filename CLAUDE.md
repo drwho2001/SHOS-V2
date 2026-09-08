@@ -1519,6 +1519,40 @@ this date; summarized here for durability.
   page errors. Full smoke-test suite passes, including the Testing↔
   Symptom Log link flow, which directly exercises this batch's own
   edit-sheet conversion.
+  `medicationRepository.js` converted next (8 Sep, `ensureLoaded()`
+  pattern) — the fourth of the large/high-blast-radius tier, 14 files/41
+  call sites, a clean batch with no new bug class (every finding a
+  variant of shapes already proven across the prior three: chained
+  `.filter()`/`.map()` onto `getAll()` fixed in
+  `refillReminderSync.js`/`medicationReminderSync.js`/Global Search/
+  Settings' Stats screen; `.forEach()` on an awaited call converted to
+  `for...of` in `refillReminderSync.js`'s `handleMarkRefillRequested()`
+  and the Dashboard's own undo/redo/bulk-toolbar handlers; a hooks-
+  before-guard hoist for Clinic Visits' `VisitDetail` — a new
+  `medNames` `useLoadedMemo` resolving `medicationsGivenIds` to names,
+  same shape as that file's own `symptomLogEntries`/`vaccinationEntries`
+  hoists in earlier batches; cross-repository cleanup calls
+  (`ClinicVisitsRepository.unlinkMedication()`/
+  `LogRepository.deleteForMedication()` inside `delete()`) kept
+  fire-and-forget per established precedent). Also fixed a pre-existing
+  `replaceAll()` bug matching the same class found in earlier
+  repositories this session: it reassigned the array but never
+  recomputed `nextMedicationNumber`, unlike every sibling repository's
+  own `replaceAll()`. `SHOS_Medication_Dashboard_Prototype.jsx` (the
+  largest caller, ~20 sites) needed the most real handler-level
+  `async`/`await` additions — dose logging, quantity correction, refill
+  marking, save/create/archive/delete/reorder — but no structural
+  surprises. Verified live end-to-end: dashboard loads with correct
+  real data across all three seed medications (PrEP/Vitamin D3/DoxyPEP,
+  correct stock/streak/adherence numbers); a real "Log dose" tap
+  correctly persisted seed data + the new entry (`shos_logs` 0 → 15,
+  same first-write-triggers-persist behavior already confirmed for
+  `LogRepository`'s own conversion) and the dashboard re-rendered with
+  the updated stock count and "Next dose" time; a real Add Medication
+  flow (FAB → real form → save) correctly created `med_006` "Verify
+  Async Med XYZ" in `localStorage` (`shos_medications` 0 → 6,
+  confirming the seed-medications + new-entry persist path). No page
+  errors. Full smoke-test suite passes.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

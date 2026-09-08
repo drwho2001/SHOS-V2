@@ -30,7 +30,7 @@ import { nowAsStoredDateTime } from "./dateInputHelpers";
 // reminder notifications are scheduled from, so the two can never
 // disagree with each other.
 export async function getDailyMedsState() {
-  const meds = MedicationRepository.getAll().filter((m) => !m.isArchived && m.usagePattern === "daily");
+  const meds = (await MedicationRepository.getAll()).filter((m) => !m.isArchived && m.usagePattern === "daily");
   const prefs = await MedicationPreferencesRepository.getPreferences();
 
   const due = [];

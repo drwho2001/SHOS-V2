@@ -591,10 +591,11 @@ function DeveloperToolsScreen({ onClose }) {
   const vaccinationsCount = useLoadedMemo(() => VaccinationRepository.getAll().then((l) => l.length), [], 0);
   const encountersCount = useLoadedMemo(() => EncounterRepository.getAll().then((l) => l.length), [], 0);
   const testsCount = useLoadedMemo(() => TestingRepository.getAll().then((l) => l.length), [], 0);
+  const medicationsCount = useLoadedMemo(() => MedicationRepository.getAll().then((l) => l.length), [], 0);
   const counts = [
     { label: "Contacts", value: contactsCount },
     { label: "Encounters", value: encountersCount },
-    { label: "Medications", value: MedicationRepository.getAll().length },
+    { label: "Medications", value: medicationsCount },
     { label: "Medication log entries", value: logsCount },
     { label: "Tests", value: testsCount },
     { label: "Clinic visits", value: ClinicVisitsRepository.getAll().length },
@@ -2333,7 +2334,7 @@ function StatsScreen({ onClose }) {
   // computeAdherence() reads med.logs directly — not part of the raw
   // repository record, so it has to be stitched on here too (same as
   // SHOS_Medication_Dashboard_Prototype.jsx's loadMedications()).
-  const medications = useLoadedMemo(() => Promise.all(MedicationRepository.getAll().map(async (med) => ({ ...med, logs: await LogRepository.getForMedication(med.id) }))), [], []);
+  const medications = useLoadedMemo(async () => Promise.all((await MedicationRepository.getAll()).map(async (med) => ({ ...med, logs: await LogRepository.getForMedication(med.id) }))), [], []);
   // ADDED — real ask: "expand stats".
   const symptomEntries = useLoadedMemo(() => SymptomLogRepository.getAll(), [], []);
   const clinicVisits = useLoadedMemo(() => ClinicVisitsRepository.getAll(), [], []);
@@ -3141,7 +3142,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
     tests: await TestingRepository.getAll(),
     clinicVisits: ClinicVisitsRepository.getAll(),
     symptomEntries: await SymptomLogRepository.getAll(),
-    medications: MedicationRepository.getAll(),
+    medications: await MedicationRepository.getAll(),
     vaccinations: await VaccinationRepository.getAll(),
   }), [], []);
   const events = useMemo(() => allEvents.filter((e) => activeModules.includes(e.moduleKey)), [allEvents, activeModules]);

@@ -341,12 +341,12 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       setLastEncounter(sortedEncounters[0] || null);
     })();
 
-    const meds = MedicationRepository.getAll();
-    // CHANGED — Phase 2 encryption groundwork: LogRepository went
-    // async — same "wrap just this one gated/isolated block" approach
-    // as the contacts block above, since nothing else here depends on
-    // adherence/lastDose.
+    // CHANGED — Phase 2 encryption groundwork: MedicationRepository/
+    // LogRepository went async — same "wrap just this one gated/
+    // isolated block" approach as the contacts block above, since
+    // nothing else here depends on adherence/lastDose.
     (async () => {
+      const meds = await MedicationRepository.getAll();
       // FIXED — real bug caught in testing: computeAdherence() reads
       // med.logs directly (confirmed by reading SHOS_Medication_Dashboard_
       // Prototype.jsx's own loadMedications(), the only other caller) —

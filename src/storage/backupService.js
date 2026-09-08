@@ -251,7 +251,7 @@ function sanitizePrivacySettingsForPlainExport(settings) {
 export async function buildBackup(includeKeys = null, dateRange = null, { redactSecrets = true } = {}) {
   const allData = {
     contacts: await ContactRepository.getAll(),
-    medications: MedicationRepository.getAll(),
+    medications: await MedicationRepository.getAll(),
     logs: await LogRepository.getAll(),
     encounters: await EncounterRepository.getAll(),
     kinks: KinkRegistry.getAll(),
@@ -369,7 +369,7 @@ export function verifyBackupJson(backup, json) {
 export async function restoreBackup(parsedBackup) {
   const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies } = parsedBackup.data;
   if (Array.isArray(contacts)) await ContactRepository.replaceAll(contacts);
-  if (Array.isArray(medications)) MedicationRepository.replaceAll(medications);
+  if (Array.isArray(medications)) await MedicationRepository.replaceAll(medications);
   if (Array.isArray(logs)) await LogRepository.replaceAll(logs);
   if (Array.isArray(encounters)) await EncounterRepository.replaceAll(encounters);
   if (Array.isArray(kinks)) KinkRegistry.replaceAll(kinks);

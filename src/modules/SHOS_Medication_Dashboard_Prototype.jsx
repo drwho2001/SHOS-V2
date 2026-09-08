@@ -156,8 +156,8 @@ function daysFromNow(dateStr) {
 //
 // (`isArchived` from the repository is mapped back to `archived` here,
 // purely so none of the existing UI code below needs renaming.)
-function loadMedications() {
-  return Promise.all(MedicationRepository.getAll().map(async (med) => ({
+async function loadMedications() {
+  return Promise.all((await MedicationRepository.getAll()).map(async (med) => ({
     ...med,
     archived: med.isArchived,
     logs: await LogRepository.getForMedication(med.id),
@@ -1179,7 +1179,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
   // capable as before, just with a heads-up when it's worth a second
   // look. Checked only against ACTIVE medications — a re-add of a
   // long-archived one is a deliberate restart, not a live duplicate.
-  const existingNames = useLoadedMemo(() => MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => m.name), [], []);
+  const existingNames = useLoadedMemo(async () => (await MedicationRepository.getAll()).filter((m) => !m.isArchived).map((m) => m.name), [], []);
   const trimmedName = form.name.trim();
   // CHANGED — real perf fix: findClosestMatch runs Levenshtein against
   // every active medication name — was recomputing on every render,
@@ -1421,9 +1421,9 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // implementation.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
   const undoTimerRef = useRef(null);
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => MedicationRepository.restore(record));
+    for (const record of deleteToast.records) await MedicationRepository.restore(record);
     refreshMeds();
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
@@ -1432,14 +1432,14 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   const redoDelete = async () => {
     if (!deleteToast) return;
     await TrashRepository.add("medications", deleteToast.records);
-    deleteToast.records.forEach((r) => MedicationRepository.delete(r.id));
+    for (const r of deleteToast.records) await MedicationRepository.delete(r.id);
     refreshMeds();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
   const triggerDelete = async (records) => {
     await TrashRepository.add("medications", records);
-    records.forEach((r) => MedicationRepository.delete(r.id));
+    for (const r of records) await MedicationRepository.delete(r.id);
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -1536,7 +1536,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     refreshMeds();
   };
   const logDose = async (id) => {
-    const med = MedicationRepository.getById(id);
+    const med = await MedicationRepository.getById(id);
     if (!med) return;
     const entry = await LogRepository.create({ medicationId: id, type: "dose", delta: -med.unitsPerDose, date: nowAsStoredDateTime() });
     setLastLoggedEntry(entry);
@@ -1577,7 +1577,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     await LogRepository.create({ medicationId: sheet.med.id, type, delta, date: nowAsStoredDateTime() });
     // Logging a real refill clears any pending "requested" flag — matches
     // the original behavior, which only cleared it on the refill branch.
-    if (isRefill) MedicationRepository.update(sheet.med.id, { refillRequestedAt: null });
+    if (isRefill) await MedicationRepository.update(sheet.med.id, { refillRequestedAt: null });
     syncRefillReminder();
     refreshMeds();
     flashComplete(sheet.med.id);
@@ -1592,7 +1592,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   };
   // ADDED 26 Aug 2026 — real ask: dose change as its own real action.
   const confirmDoseUpdate = async ({ doseStrengthValue, doseStrengthUnit, unitsPerDose, note, stockDelta }) => {
-    MedicationRepository.updateDose(updatingDose.id, { doseStrengthValue, doseStrengthUnit, unitsPerDose, note });
+    await MedicationRepository.updateDose(updatingDose.id, { doseStrengthValue, doseStrengthUnit, unitsPerDose, note });
     if (stockDelta !== null && stockDelta !== 0) {
       await LogRepository.create({ medicationId: updatingDose.id, type: stockDelta > 0 ? "refill" : "waste", delta: stockDelta, date: nowAsStoredDateTime(), notes: `Stock update alongside dose change${note ? `: ${note}` : ""}` });
     }
@@ -1601,8 +1601,8 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     flashComplete(updatingDose.id);
     setUpdatingDose(null);
   };
-  const markRequested = (id) => {
-    MedicationRepository.update(id, { refillRequestedAt: new Date().toISOString() });
+  const markRequested = async (id) => {
+    await MedicationRepository.update(id, { refillRequestedAt: new Date().toISOString() });
     syncRefillReminder();
     refreshMeds();
     flashComplete(id, "requested");
@@ -1624,12 +1624,11 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     // the separate, previously-missing piece — undo/redo for editing
     // the medication RECORD itself (renaming it, changing its dose),
     // same shared mechanism as Encounters/Contacts.
-    // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited are
-    // now async — awaited here even though MedicationRepository itself
-    // is still synchronous, same reasoning as every other module's
-    // save() this batch.
+    // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited, and
+    // now MedicationRepository itself (Phase 2 encryption groundwork),
+    // are all async — every step here awaited.
     await editUndo.captureBeforeEdit(editingMed.id);
-    MedicationRepository.update(editingMed.id, form);
+    await MedicationRepository.update(editingMed.id, form);
     await editUndo.notifyEdited(editingMed.id);
     refreshMeds();
     setEditingMed(null);
@@ -1638,7 +1637,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     // MedicationRepository.create assigns the real id (med_006, med_007, ...)
     // — no more `med_${Date.now()}`, matching the project's standing rule
     // that ids are opaque and sequential, never timestamp- or name-derived.
-    const newMed = MedicationRepository.create({
+    const newMed = await MedicationRepository.create({
       name: form.name.trim(), unit: "unit",
       usagePattern: form.usagePattern, unitsPerDose: form.unitsPerDose, dosesPerDay: form.dosesPerDay,
       unitsPerContainer: form.unitsPerContainer, refillThreshold: form.refillThreshold, defaultRefillQuantity: form.defaultRefillQuantity,
@@ -1658,18 +1657,18 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // The active-only, archived-meds-don't-count logic now lives inside
   // MedicationRepository.reorder itself (it owns sortOrder), so this is
   // just a thin translation from the UI's -1/+1 direction to "up"/"down".
-  const moveMedication = (id, dir) => {
-    MedicationRepository.reorder(id, dir < 0 ? "up" : "down");
+  const moveMedication = async (id, dir) => {
+    await MedicationRepository.reorder(id, dir < 0 ? "up" : "down");
     refreshMeds();
   };
 
   // Archive/retire — for a finished acute course you might need again (the user's example), not a
   // permanent delete. History (Log tab) stays visible regardless; only Registry/Inventory hide it.
-  const archiveMedication = (id) => { MedicationRepository.archive(id); refreshMeds(); };
-  const unarchiveMedication = (id) => { MedicationRepository.unarchive(id); refreshMeds(); };
+  const archiveMedication = async (id) => { await MedicationRepository.archive(id); refreshMeds(); };
+  const unarchiveMedication = async (id) => { await MedicationRepository.unarchive(id); refreshMeds(); };
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven across every other module this session.
-  const deleteMedication = async (id) => { const med = MedicationRepository.getById(id); if (med) { await triggerDelete([med]); refreshMeds(); } };
+  const deleteMedication = async (id) => { const med = await MedicationRepository.getById(id); if (med) { await triggerDelete([med]); refreshMeds(); } };
 
   const takeReminder = () => { logDose(dueReminder.id); flashComplete(dueReminder.id, "logged"); setDueReminder(null); };
   const snoozeReminder = () => { setSnoozedUntil((prev) => ({ ...prev, [dueReminder.id]: new Date(Date.now() + 30 * 60000).toISOString() })); setDueReminder(null); };
@@ -1802,14 +1801,14 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
               </span>
               {/* ADDED 26 Aug 2026 — real ask: export/print a single
                   record, enabled only when exactly one is selected. */}
-              <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("medications", MedicationRepository.getById(selectedIds[0])); }}
+              <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("medications", await MedicationRepository.getById(selectedIds[0])); }}
                 style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-              <span onClick={() => { if (selectedIds.length > 0) { MedicationRepository.bulkArchive(selectedIds); refreshMeds(); exitSelectMode(); } }}
+              <span onClick={async () => { if (selectedIds.length > 0) { await MedicationRepository.bulkArchive(selectedIds); refreshMeds(); exitSelectMode(); } }}
                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
               <span onClick={async () => {
                 if (selectedIds.length === 0) return;
                 if (window.confirm(`Delete ${selectedIds.length} medication${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
-                  const toRestore = MedicationRepository.getAll().filter((m) => selectedIds.includes(m.id));
+                  const toRestore = (await MedicationRepository.getAll()).filter((m) => selectedIds.includes(m.id));
                   await triggerDelete(toRestore);
                   refreshMeds();
                   exitSelectMode();

@@ -30,7 +30,7 @@ import { ACCENTS } from "./designTokens";
 export async function getRefillDueMedications() {
   const prefs = await MedicationPreferencesRepository.getPreferences();
   const meds = await Promise.all(
-    MedicationRepository.getAll()
+    (await MedicationRepository.getAll())
       .filter((m) => !m.isArchived && m.inventoryTracked)
       .map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) }))
   );
@@ -83,7 +83,7 @@ export async function syncRefillReminder() {
 export async function handleMarkRefillRequested() {
   const needsRefill = await getRefillDueMedications();
   const names = needsRefill.map((m) => m.name);
-  needsRefill.forEach((m) => MedicationRepository.update(m.id, { refillRequestedAt: new Date().toISOString() }));
+  for (const m of needsRefill) await MedicationRepository.update(m.id, { refillRequestedAt: new Date().toISOString() });
   return { medications: names };
 }
 

@@ -64,7 +64,7 @@ const DARK = {
 // since there's genuinely nowhere else these fields belong.
 async function loadMedicationsWithLogs() {
   return Promise.all(
-    MedicationRepository.getAll()
+    (await MedicationRepository.getAll())
       .filter((m) => !m.isArchived)
       .map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) }))
   );

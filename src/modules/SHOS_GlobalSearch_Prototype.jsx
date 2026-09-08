@@ -111,7 +111,7 @@ async function buildIndex() {
     });
   });
 
-  MedicationRepository.getAll().filter((m) => !m.isArchived).forEach((m) => {
+  (await MedicationRepository.getAll()).filter((m) => !m.isArchived).forEach((m) => {
     const searchText = [m.name, m.medicationType, m.usualSupplier, m.route].join(" ");
     results.push({
       type: "medication", id: m.id,
