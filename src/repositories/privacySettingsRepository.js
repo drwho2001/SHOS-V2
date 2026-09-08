@@ -29,12 +29,20 @@
 // - "Hide further" tier (masked ADDITIONALLY when hideFurtherEnabled
 //   is also on): kinks (Stated Kinks/Limits) and physical attributes
 //   (Cummer stats, Length/Girth).
-// Both tiers are scoped to Contacts — those are the fields the user
-// actually named, and they're all Contact-specific (this app's own
-// Notion-confirmed schema has no address/car-registration field
-// anywhere else). Not applied to My Profile, Encounters, etc. — no
-// real ask to do so, and extending it there would be guessing past
-// what was actually requested.
+// Both tiers were originally scoped to Contacts only — those are the
+// fields the user actually named, and they're all Contact-specific
+// (this app's own Notion-confirmed schema has no address/car-
+// registration field anywhere else).
+//
+// UPDATED 8 Sep 2026 — real report: Contacts masked, but Encounters
+// still showed the same linked contact's real name on cards and in
+// the detail view — the same identity this mode exists to hide, just
+// reachable from a different module. Encounters now also reads
+// anonymiseModeActive and masks resolved attendee names (see
+// SHOS_Encounters_Prototype.jsx's EncounterCard/ActivityDetails) —
+// narrowly, matching only what was reported (name), not location or
+// kinks-involved. My Profile and other modules remain untouched — no
+// real ask for those yet.
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 
 const STORAGE_KEY = "shos_privacy_settings";

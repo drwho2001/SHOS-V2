@@ -20,7 +20,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../repositories/medicationPreferencesRepository";
 import { LogRepository, REASON_OPTIONS, SIDE_EFFECT_OPTIONS } from "../repositories/logRepository";
-import { computeStock, computeAdherence, nextDoseEstimate, isDoseLockedOut, lockoutEndsEstimate, effectiveDoseIntervalHours } from "../calculations/medicationCalculations";
+import { computeStock, computeAdherence, nextDoseEstimate, isDoseLockedOut, lockoutEndsEstimate, lockoutEndsAt, effectiveDoseIntervalHours } from "../calculations/medicationCalculations";
 // ADDED — real ask: Correction Sheet needs to change WHEN a dose was
 // logged, not just how much, for the "forgot to log at the time, adding
 // it after" case. Same shared "Now" helper and plain-string-slicing
@@ -217,6 +217,19 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
   const lastDose = [...med.logs].filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
   const requested = !!med.refillRequestedAt;
   const nextDose = lastDose ? nextDoseEstimate(med, lastDose.date) : null;
+  // ADDED — real ask: "no where to see what time next alarm will
+  // fire." nextDoseEstimate above only ever gives a relative string
+  // ("~5h") — this is the actual clock time the reminder notification
+  // is scheduled for (see medicationReminderSync.js's syncMedicationReminders,
+  // which schedules from this exact lockoutEndsAt() value, not from
+  // nextDoseEstimate's own 100%-of-interval mark). Computed fresh from
+  // the real last-logged dose every render, same as nextDose itself —
+  // so a late dose visibly shifts this forward by the same lateness,
+  // it isn't pinned to a fixed clock time.
+  const nextReminderAt = lastDose ? lockoutEndsAt(med, lastDose.date) : null;
+  const nextReminderClock = nextReminderAt && nextReminderAt > new Date()
+    ? nextReminderAt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+    : null;
   const doseLocked = lastDose ? isDoseLockedOut(med, lastDose.date) : false;
   // ADDED 18 Aug 2026 — real feedback: a native `disabled` button blocks
   // the click entirely, so the `title` tooltip explaining the lockout
@@ -364,7 +377,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
 
           <div onClick={() => lastDose && onOpenCorrection(med.id, lastDose)} style={{ fontSize: 12, color: T.textSecondary, marginTop: 6, cursor: lastDose ? "pointer" : "default", width: "fit-content" }}>
             <span style={{ textDecoration: lastDose ? "underline dotted" : "none", textUnderlineOffset: 3 }}>Last dose: {formatLastDose(lastDose?.date)}</span>
-            {nextDose && <span> · Next dose {nextDose}</span>}
+            {nextDose && <span> · Next dose {nextDose}{nextReminderClock ? ` (reminder ~${nextReminderClock})` : ""}</span>}
           </div>
           {snoozedUntil && new Date(snoozedUntil) > new Date() && (
             <div style={{ fontSize: 11, color: T.medsBlue, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}><Clock size={11} /> Snoozed until {new Date(snoozedUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</div>
@@ -422,7 +435,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
           <span onClick={() => lastDose && onOpenCorrection(med.id, lastDose)} style={{ cursor: lastDose ? "pointer" : "default", textDecoration: lastDose ? "underline dotted" : "none", textUnderlineOffset: 3 }}>
             Last dose: {formatLastDose(lastDose?.date)}
           </span>
-          {nextDose && <span> · Next dose {nextDose}</span>}
+          {nextDose && <span> · Next dose {nextDose}{nextReminderClock ? ` (reminder ~${nextReminderClock})` : ""}</span>}
           <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginTop: 2 }}>Not inventory-tracked</div>
         </div>
       )}
