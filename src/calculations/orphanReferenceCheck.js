@@ -87,8 +87,13 @@ async function checkArray(results, exists, ids, ctx) {
   for (const id of ids || []) { if (id && !(await exists(id))) flag(results, { ...ctx, danglingId: id }); }
 }
 
-function checkKinkSelections(results, exists, selections, ctx) {
-  (selections || []).forEach((sel) => { if (sel?.kinkId && !exists(sel.kinkId)) flag(results, { ...ctx, danglingId: sel.kinkId }); });
+// CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async,
+// so `exists` (kinkExists) can now be async too — same fix as
+// checkSingle/checkArray above, for the same reason (an unawaited call
+// here would let `return results` at the bottom of findOrphanReferences
+// run before a genuinely dangling reference was ever flagged).
+async function checkKinkSelections(results, exists, selections, ctx) {
+  for (const sel of selections || []) { if (sel?.kinkId && !(await exists(sel.kinkId))) flag(results, { ...ctx, danglingId: sel.kinkId }); }
 }
 
 // CHANGED — real groundwork for encryption at rest: LocationsRepository
@@ -108,24 +113,24 @@ export async function findOrphanReferences() {
   const symptomLogExists = async (id) => !!(await SymptomLogRepository.getById(id));
   const encounterExists = async (id) => !!(await EncounterRepository.getById(id));
   const vaccinationExists = async (id) => !!(await VaccinationRepository.getById(id));
-  const kinkExists = (id) => !!KinkRegistry.getById(id);
-  const chemExists = (id) => !!ChemsRegistry.getById(id);
-  const protectionExists = (id) => !!ProtectionRegistry.getById(id);
-  const symptomExists = (id) => !!SymptomsRegistry.getById(id);
-  const organismExists = (id) => !!OrganismRegistry.getById(id);
-  const resultExists = (id) => !!ResultsRegistry.getById(id);
+  const kinkExists = async (id) => !!(await KinkRegistry.getById(id));
+  const chemExists = async (id) => !!(await ChemsRegistry.getById(id));
+  const protectionExists = async (id) => !!(await ProtectionRegistry.getById(id));
+  const symptomExists = async (id) => !!(await SymptomsRegistry.getById(id));
+  const organismExists = async (id) => !!(await OrganismRegistry.getById(id));
+  const resultExists = async (id) => !!(await ResultsRegistry.getById(id));
 
   for (const c of await ContactRepository.getAll()) {
     const ctx = { recordType: "Contact", recordLabel: c.nickname || c.name, recordId: c.id };
-    checkKinkSelections(results, kinkExists, c.statedKinks, { ...ctx, field: "statedKinks", targetType: "Kink Registry" });
-    checkKinkSelections(results, kinkExists, c.limits, { ...ctx, field: "limits", targetType: "Kink Registry" });
+    await checkKinkSelections(results, kinkExists, c.statedKinks, { ...ctx, field: "statedKinks", targetType: "Kink Registry" });
+    await checkKinkSelections(results, kinkExists, c.limits, { ...ctx, field: "limits", targetType: "Kink Registry" });
     await checkArray(results, chemExists, c.knownChems, { ...ctx, field: "knownChems", targetType: "Chems Registry" });
   }
 
   const profile = await MyProfileRepository.getProfile();
   const profileCtx = { recordType: "My Profile", recordLabel: "My Profile", recordId: "profile" };
-  checkKinkSelections(results, kinkExists, profile.statedKinks, { ...profileCtx, field: "statedKinks", targetType: "Kink Registry" });
-  checkKinkSelections(results, kinkExists, profile.limits, { ...profileCtx, field: "limits", targetType: "Kink Registry" });
+  await checkKinkSelections(results, kinkExists, profile.statedKinks, { ...profileCtx, field: "statedKinks", targetType: "Kink Registry" });
+  await checkKinkSelections(results, kinkExists, profile.limits, { ...profileCtx, field: "limits", targetType: "Kink Registry" });
   await checkArray(results, chemExists, profile.knownChems, { ...profileCtx, field: "knownChems", targetType: "Chems Registry" });
 
   // CHANGED — checkSingle()/checkArray() are now async (contactExists/
@@ -138,7 +143,7 @@ export async function findOrphanReferences() {
     const ctx = { recordType: "Encounter", recordLabel: e.title || e.encounterType, recordId: e.id };
     await checkArray(results, contactExists, e.attendeeIds, { ...ctx, field: "attendeeIds", targetType: "Contact" });
     await checkSingle(results, locationExists, e.locationId, { ...ctx, field: "locationId", targetType: "Location" });
-    checkKinkSelections(results, kinkExists, e.kinksInvolved, { ...ctx, field: "kinksInvolved", targetType: "Kink Registry" });
+    await checkKinkSelections(results, kinkExists, e.kinksInvolved, { ...ctx, field: "kinksInvolved", targetType: "Kink Registry" });
     await checkArray(results, protectionExists, e.protectionUsed, { ...ctx, field: "protectionUsed", targetType: "Protection Registry" });
     await checkArray(results, chemExists, e.chemsAlcoholUsed, { ...ctx, field: "chemsAlcoholUsed", targetType: "Chems Registry" });
     await checkArray(results, symptomExists, e.symptomsNoted, { ...ctx, field: "symptomsNoted", targetType: "Symptoms Registry" });

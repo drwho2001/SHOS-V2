@@ -595,7 +595,12 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
     return Object.fromEntries(form.linkedTestIds.map((id, i) => [id, entries[i]]));
   }, [form.linkedTestIds], {});
   const allMeds = useLoadedMemo(async () => (await MedicationRepository.getAll()).filter((m) => !m.isArchived).map((m) => ({ id: m.id, name: m.name })), [], []);
-  const allSymptoms = useLoadedMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), [], []);
+  const allSymptoms = useLoadedMemo(async () => (await SymptomsRegistry.getAll()).filter((s) => !s.isArchived), [], []);
+  // CHANGED — Phase 2 encryption groundwork: ResultsRegistry is now
+  // async — resolved once here for the inline linked-test result
+  // preview below (previously a direct ResultsRegistry.getById() call
+  // per row).
+  const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
   // ADDED 19 Aug 2026 — real feedback batch: "pulling from recent"
   // symptoms means suggesting real Symptom Log occurrences, not just
   // the vocabulary. Recent-first ordering.
@@ -709,7 +714,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
               {form.linkedTestIds.map((id) => {
                 const t = linkedTestById[id];
                 if (!t) return null;
-                const resultNames = (t.resultIds || []).map((rid) => ResultsRegistry.getById(rid)?.name).filter(Boolean);
+                const resultNames = (t.resultIds || []).map((rid) => resultNameById.get(rid)).filter(Boolean);
                 if (resultNames.length === 0) return null;
                 const isPositive = resultNames.some((n) => n.toLowerCase() === "positive");
                 return (
@@ -821,9 +826,16 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
     const resolved = await Promise.all(visit.medicationsGivenIds.map((id) => MedicationRepository.getById(id)));
     return resolved.map((m) => m?.name).filter(Boolean);
   }, [visit], []);
+  // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry/
+  // ResultsRegistry are now async — same hoisted-above-the-guard
+  // treatment as everything else above. resultNameById is also reused
+  // by the linked-tests result preview below.
+  const symptomNames = useLoadedMemo(async () => {
+    if (!visit?.symptomTypeIds?.length) return [];
+    return (await Promise.all(visit.symptomTypeIds.map((id) => SymptomsRegistry.getById(id)))).filter(Boolean).map((s) => s.name);
+  }, [visit], []);
+  const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
   if (!visit) return null;
-
-  const symptomNames = visit.symptomTypeIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -867,7 +879,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
             <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Linked tests</div>
               {testEntries.map((t) => {
-                const resultNames = (t.resultIds || []).map((rid) => ResultsRegistry.getById(rid)?.name).filter(Boolean);
+                const resultNames = (t.resultIds || []).map((rid) => resultNameById.get(rid)).filter(Boolean);
                 const isPositive = resultNames.some((n) => n.toLowerCase() === "positive");
                 return (
                   <div key={t.id} onClick={() => onOpenTest?.(t.id)} style={{ cursor: onOpenTest ? "pointer" : "default", marginBottom: 4 }}>

@@ -356,7 +356,7 @@ function CycleSheet({ cycle, onSave, onClose, T }) {
   const [flowOptions, setFlowOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("menstrualFlow"), [], []);
   const [form, setForm] = useState(() => cycle ? { ...cycle } : { ...DEFAULT_CYCLE, startDate: new Date().toISOString().slice(0, 10) });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
-  const symptoms = useLoadedMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), [], []);
+  const symptoms = useLoadedMemo(async () => (await SymptomsRegistry.getAll()).filter((s) => !s.isArchived), [], []);
   const canSave = !!form.startDate;
   return (
     <BottomSheet title={isNew ? "Log period" : "Edit period"} onClose={onClose} T={T} footer={<SaveButton label={isNew ? "Add" : "Save changes"} onClick={() => onSave(form)} canSave={canSave} T={T} />}>
@@ -397,6 +397,11 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
   const editUndo = useEditUndo(MenstrualCycleRepository);
   const avgLength = useLoadedMemo(() => MenstrualCycleRepository.getAverageCycleLengthDays(), [cycles], null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
+  // async — resolved once here (component-level, since a hook can't be
+  // called conditionally inside the screen-name branches below), used
+  // by the detail view's symptomNames.
+  const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
 
   const create = async (data) => { await MenstrualCycleRepository.create(data); refresh(); setScreen({ name: "list" }); };
   const save = async (data) => {
@@ -410,7 +415,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
   if (screen.name === "detail") {
     const c = byId;
     if (!c) return null;
-    const symptomNames = c.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean);
+    const symptomNames = c.symptomIds.map((id) => symptomNameById.get(id)).filter(Boolean);
     return (
       <div>
         <DetailHeader onBack={() => setScreen({ name: "list" })} onEdit={() => setScreen({ name: "edit", id: c.id })} onDelete={() => setConfirmDelete(true)} T={T} />

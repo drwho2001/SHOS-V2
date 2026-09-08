@@ -26,8 +26,14 @@ export const ProtectionRegistry = createSimpleRegistry({
 // in this app already uses, so this one-time flag ends up under the
 // same encryption boundary once that lands, rather than sitting
 // outside it as a real gap.
+// CHANGED — Phase 2 encryption groundwork: ProtectionRegistry is now
+// async — wrapped in an async IIFE, same pattern as kinkRegistry.js's
+// own expansion flag (a module-load-time side effect can't itself be
+// async).
 const PEP_ADDED_FLAG = "shos_protection_pep_added_v1";
-if (!storage.load(PEP_ADDED_FLAG, false)) {
-  ProtectionRegistry.findOrCreate("PEP");
-  storage.save(PEP_ADDED_FLAG, true);
-}
+(async () => {
+  if (!(await storage.load(PEP_ADDED_FLAG, false))) {
+    await ProtectionRegistry.findOrCreate("PEP");
+    await storage.save(PEP_ADDED_FLAG, true);
+  }
+})();

@@ -124,11 +124,23 @@ function SelectField({ label, value, onChange, options, T }) {
 // creating a genuinely new entry — catches a likely typo before it
 // becomes a near-duplicate registry entry instead of matching the one
 // that already exists.
+// CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
+// async — allEntries loaded via useLoadedMemo instead of a plain
+// render-body call; selectedNames' archived-entry fallback resolved
+// via a missingNames lookup (same pattern as Testing's RegistryTagPicker)
+// instead of a synchronous getById() call; commit/acceptDidYouMean/
+// dismissDidYouMean now await findOrCreate().
 function SymptomSelect({ value, onChange, T }) {
   const [draft, setDraft] = useState("");
   const [didYouMean, setDidYouMean] = useState(null);
-  const allEntries = SymptomsRegistry.getAll().filter((e) => !e.isArchived);
-  const selectedNames = value.map((id) => ({ id, name: SymptomsRegistry.getById(id)?.name || "?" }));
+  const allEntries = useLoadedMemo(() => SymptomsRegistry.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  const missingNames = useLoadedMemo(async () => {
+    const missingIds = value.filter((id) => !allEntries.some((e) => e.id === id));
+    const map = new Map();
+    await Promise.all(missingIds.map(async (id) => { const e = await SymptomsRegistry.getById(id); if (e) map.set(id, e.name); }));
+    return map;
+  }, [value, allEntries], new Map());
+  const selectedNames = value.map((id) => ({ id, name: allEntries.find((e) => e.id === id)?.name || missingNames.get(id) || "?" }));
   const draftTrimmed = draft.trim();
   const visibleSuggestions = (
     draftTrimmed
@@ -154,7 +166,7 @@ function SymptomSelect({ value, onChange, T }) {
     setDidYouMean(null);
   };
 
-  const commit = () => {
+  const commit = async () => {
     const raw = draft.trim();
     if (!raw || didYouMean) return;
     // ADDED 2 Sep 2026 — real bug: "multi enter at once with commas
@@ -164,11 +176,11 @@ function SymptomSelect({ value, onChange, T }) {
     // became a single garbage registry entry literally named that.
     const parts = raw.split(",").map((t) => t.trim()).filter(Boolean);
     if (parts.length > 1) {
-      parts.forEach((part) => {
+      for (const part of parts) {
         const closest = findClosestMatch(allEntries.filter((e) => !value.includes(e.id)).map((e) => e.name), part);
-        const entry = SymptomsRegistry.findOrCreate(closest || part);
+        const entry = await SymptomsRegistry.findOrCreate(closest || part);
         if (entry) add(entry.id);
-      });
+      }
       setDraft("");
       return;
     }
@@ -179,18 +191,18 @@ function SymptomSelect({ value, onChange, T }) {
     // fixed synonym list.
     const closest = findClosestMatch(allEntries.filter((e) => !value.includes(e.id)).map((e) => e.name), raw);
     if (closest) { setDidYouMean({ raw, closest }); return; }
-    const entry = SymptomsRegistry.findOrCreate(raw);
+    const entry = await SymptomsRegistry.findOrCreate(raw);
     if (entry) add(entry.id);
     setDraft("");
   };
-  const acceptDidYouMean = () => {
-    const entry = SymptomsRegistry.findOrCreate(didYouMean.closest);
+  const acceptDidYouMean = async () => {
+    const entry = await SymptomsRegistry.findOrCreate(didYouMean.closest);
     if (entry) add(entry.id);
     setDraft("");
     setDidYouMean(null);
   };
-  const dismissDidYouMean = () => {
-    const entry = SymptomsRegistry.findOrCreate(didYouMean.raw);
+  const dismissDidYouMean = async () => {
+    const entry = await SymptomsRegistry.findOrCreate(didYouMean.raw);
     if (entry) add(entry.id);
     setDraft("");
     setDidYouMean(null);
@@ -400,8 +412,14 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
     const resolved = await Promise.all(entry.relatedTestIds.map((id) => TestingRepository.getById(id)));
     return resolved.map((t) => (t ? `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` : null)).filter(Boolean);
   }, [entry], []);
+  // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
+  // async — same hoisted-above-the-guard treatment as encounterNames/
+  // testNames above.
+  const symptomNames = useLoadedMemo(async () => {
+    if (!entry?.symptomIds?.length) return "";
+    return (await Promise.all(entry.symptomIds.map((id) => SymptomsRegistry.getById(id)))).filter(Boolean).map((s) => s.name).join(", ");
+  }, [entry], "");
   if (!entry) return null;
-  const symptomNames = entry.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean).join(", ");
   const isActive = !entry.dateResolved;
 
   return (
@@ -462,6 +480,11 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
 }
 
 function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
+  // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
+  // async — resolved once here (via useLoadedMemo, so it stays a
+  // one-time load rather than adding lag to the live search box below),
+  // used by both the search filter and each row's own symptomName.
+  const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
   // ADDED 26 Aug 2026 — real ask: search within module, rolled out to
   // every module that didn't already have it. Applied before the
   // active/resolved split, so both sections respect it.
@@ -470,10 +493,10 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
     const q = query.trim().toLowerCase();
     if (!q) return entries;
     return entries.filter((e) => {
-      const symptomNames = e.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean);
+      const symptomNames = e.symptomIds.map((id) => symptomNameById.get(id)).filter(Boolean);
       return [e.title, e.severity, ...symptomNames].filter(Boolean).some((v) => v.toLowerCase().includes(q));
     });
-  }, [entries, query]);
+  }, [entries, query, symptomNameById]);
   const active = useMemo(() => searched.filter((e) => !e.dateResolved).sort((a, b) => new Date(b.dateStarted || 0) - new Date(a.dateStarted || 0)), [searched]);
   const resolved = useMemo(() => searched.filter((e) => e.dateResolved).sort((a, b) => new Date(b.dateResolved) - new Date(a.dateResolved)), [searched]);
   // CHANGED 26 Aug 2026 — real bug fix: the section header counts
@@ -515,7 +538,7 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
   // shared with EntryDetail.
 
   const Row = (e) => {
-    const symptomName = e.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean).join(", ");
+    const symptomName = e.symptomIds.map((id) => symptomNameById.get(id)).filter(Boolean).join(", ");
     const isActive = !e.dateResolved;
     const isSelected = selectedIds.includes(e.id);
     return (

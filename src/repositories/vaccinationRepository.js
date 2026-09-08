@@ -137,26 +137,29 @@ async function persist() {
 // graceful on-read-repair pattern already used elsewhere in this app
 // (Symptom Log's own normalizeSymptomIds) rather than a one-time
 // destructive migration.
-function normalizeSymptomIds(entry) {
+// CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
+// async — this is now async too, awaited at both call sites below
+// (getAll() needs Promise.all since it applies this per-entry).
+async function normalizeSymptomIds(entry) {
   if (!entry.symptomIds || entry.symptomIds.length === 0) return entry;
-  const fixed = entry.symptomIds.map((value) => {
-    if (SymptomsRegistry.getById(value)) return value;
-    const byName = SymptomsRegistry.getAll().find((s) => s.name === value);
+  const fixed = await Promise.all(entry.symptomIds.map(async (value) => {
+    if (await SymptomsRegistry.getById(value)) return value;
+    const byName = (await SymptomsRegistry.getAll()).find((s) => s.name === value);
     return byName ? byName.id : value;
-  });
+  }));
   return { ...entry, symptomIds: fixed };
 }
 
 export const VaccinationRepository = {
   async getAll() {
     await ensureLoaded();
-    return structuredClone(vaccinations.map((v) => normalizeSymptomIds({ ...DEFAULT_VACCINATION, ...v })));
+    return structuredClone(await Promise.all(vaccinations.map((v) => normalizeSymptomIds({ ...DEFAULT_VACCINATION, ...v }))));
   },
 
   async getById(id) {
     await ensureLoaded();
     const found = vaccinations.find((v) => v.id === id);
-    return found ? structuredClone(normalizeSymptomIds({ ...DEFAULT_VACCINATION, ...found })) : null;
+    return found ? structuredClone(await normalizeSymptomIds({ ...DEFAULT_VACCINATION, ...found })) : null;
   },
 
   // Real convenience read — same "compute the derived state, don't

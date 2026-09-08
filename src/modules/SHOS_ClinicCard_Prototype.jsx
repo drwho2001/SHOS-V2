@@ -168,7 +168,16 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   }, [timeframe, customDate, lastTestDate]);
   const withinTimeframe = (dateStr) => !cutoffDate || !dateStr || dateStr >= cutoffDate;
 
-  const nameFrom = (registry, id) => registry.getById(id)?.name || "—";
+  // CHANGED — Phase 2 encryption groundwork: ResultsRegistry/
+  // SymptomsRegistry are now async — this used to be a plain render-
+  // body helper calling registry.getById(id) directly on every use
+  // (recentTests/currentTreatment/activeSymptoms below), which breaks
+  // once getById returns a Promise. Replaced with two pre-resolved
+  // lookup Maps (same "resolve to a lookup ahead of time" pattern used
+  // throughout this session — see Timeline's linkedSymptomLabelById),
+  // read synchronously via .get() wherever nameFrom used to be called.
+  const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
+  const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
 
   const [editingIdentity, setEditingIdentity] = useState(false);
   // ADDED — real ask: tap-through with a confirmation step for
@@ -241,7 +250,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   };
 
   const recentTests = tests.slice(0, 5).map((t) => {
-    const resultNames = (t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id));
+    const resultNames = (t.resultIds || []).map((id) => resultNameById.get(id) || "—");
     const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
     const testingFor = (t.testingFor || []).join(", ") || t.title || "Test";
     return { id: t.id, title: testingFor, subtitle: `${formatRelativeDate(t.date)} · ${resultNames.join(", ") || "No result logged"}`, alert: isPositive };
@@ -252,7 +261,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // uses (Follow-up Actioned Date empty), not a new concept invented
   // for this screen.
   const currentTreatment = tests.filter((t) => {
-    const resultNames = (t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id));
+    const resultNames = (t.resultIds || []).map((id) => resultNameById.get(id) || "—");
     const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
     return isPositive && !t.followUpActionedDate;
   }).map((t) => ({
@@ -537,7 +546,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         {activeSymptoms.length === 0 ? (
           <EmptyRow T={T}>Nothing active right now.</EmptyRow>
         ) : activeSymptoms.map((s) => (
-          <Row T={T} key={s.id} title={s.title} subtitle={[nameFrom(SymptomsRegistry, s.symptomId), s.severity, formatRelativeDate(s.dateStarted), s.dateResolved ? `resolved ${formatRelativeDate(s.dateResolved)}` : null].filter(Boolean).join(" · ")} alert={s.severity === "Severe"} onTap={() => setPendingNav({ tab: "healthcare", subTab: "symptomLog", recordId: s.id, label: s.title, moduleLabel: "Symptom Log" })} />
+          <Row T={T} key={s.id} title={s.title} subtitle={[symptomNameById.get(s.symptomId) || "—", s.severity, formatRelativeDate(s.dateStarted), s.dateResolved ? `resolved ${formatRelativeDate(s.dateResolved)}` : null].filter(Boolean).join(" · ")} alert={s.severity === "Severe"} onTap={() => setPendingNav({ tab: "healthcare", subTab: "symptomLog", recordId: s.id, label: s.title, moduleLabel: "Symptom Log" })} />
         ))}
       </SectionCard>
 

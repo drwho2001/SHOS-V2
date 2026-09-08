@@ -254,15 +254,15 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     medications: await MedicationRepository.getAll(),
     logs: await LogRepository.getAll(),
     encounters: await EncounterRepository.getAll(),
-    kinks: KinkRegistry.getAll(),
-    chems: ChemsRegistry.getAll(),
-    protection: ProtectionRegistry.getAll(),
-    symptoms: SymptomsRegistry.getAll(),
+    kinks: await KinkRegistry.getAll(),
+    chems: await ChemsRegistry.getAll(),
+    protection: await ProtectionRegistry.getAll(),
+    symptoms: await SymptomsRegistry.getAll(),
     locations: await LocationsRepository.getAll(),
     myProfile: await MyProfileRepository.getProfile(),
     tests: await TestingRepository.getAll(),
-    organisms: OrganismRegistry.getAll(),
-    results: ResultsRegistry.getAll(),
+    organisms: await OrganismRegistry.getAll(),
+    results: await ResultsRegistry.getAll(),
     clinicVisits: await ClinicVisitsRepository.getAll(),
     symptomLog: await SymptomLogRepository.getAll(),
     vaccinations: await VaccinationRepository.getAll(),
@@ -372,16 +372,16 @@ export async function restoreBackup(parsedBackup) {
   if (Array.isArray(medications)) await MedicationRepository.replaceAll(medications);
   if (Array.isArray(logs)) await LogRepository.replaceAll(logs);
   if (Array.isArray(encounters)) await EncounterRepository.replaceAll(encounters);
-  if (Array.isArray(kinks)) KinkRegistry.replaceAll(kinks);
-  if (Array.isArray(chems)) ChemsRegistry.replaceAll(chems);
-  if (Array.isArray(protection)) ProtectionRegistry.replaceAll(protection);
-  if (Array.isArray(symptoms)) SymptomsRegistry.replaceAll(symptoms);
+  if (Array.isArray(kinks)) await KinkRegistry.replaceAll(kinks);
+  if (Array.isArray(chems)) await ChemsRegistry.replaceAll(chems);
+  if (Array.isArray(protection)) await ProtectionRegistry.replaceAll(protection);
+  if (Array.isArray(symptoms)) await SymptomsRegistry.replaceAll(symptoms);
   if (Array.isArray(locations)) await LocationsRepository.replaceAll(locations);
   // ADDED 19 Aug 2026 — old backups (before this fix) simply won't have
   // these keys, same graceful no-op pattern as myProfile below.
   if (Array.isArray(tests)) await TestingRepository.replaceAll(tests);
-  if (Array.isArray(organisms)) OrganismRegistry.replaceAll(organisms);
-  if (Array.isArray(results)) ResultsRegistry.replaceAll(results);
+  if (Array.isArray(organisms)) await OrganismRegistry.replaceAll(organisms);
+  if (Array.isArray(results)) await ResultsRegistry.replaceAll(results);
   if (Array.isArray(clinicVisits)) await ClinicVisitsRepository.replaceAll(clinicVisits);
   if (Array.isArray(symptomLog)) await SymptomLogRepository.replaceAll(symptomLog);
   if (Array.isArray(vaccinations)) await VaccinationRepository.replaceAll(vaccinations);

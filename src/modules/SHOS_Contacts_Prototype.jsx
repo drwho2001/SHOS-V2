@@ -698,6 +698,13 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
 // what actually closes the "Fist vs Fisting" gap TagInput's own comment
 // flagged as unsolved — one canonical registry entry per concept,
 // found case-insensitively or created new via findOrCreate.
+// CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry/
+// ProtectionRegistry/SymptomsRegistry (whichever `registry` is passed
+// here) are now async — allEntries loaded via useLoadedMemo instead of
+// a plain render-body call; nameFor's archived-entry fallback resolved
+// via a missingNames lookup instead of a synchronous getById() call;
+// finalizeEntry/commitDraft now await registry.findOrCreate(), and
+// commitDraft awaits analyzeEntry (analyzeKinkEntry, also now async).
 function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, excludeIds = [], trackRole = false, roleOptions = [], resolveSynonym = (x) => x, analyzeEntry = null, getRoleOptionsForKink = null }) {
   const [draft, setDraft] = useState("");
   // ADDED — real ask: "did you mean...?" for a recognized typo or an
@@ -706,8 +713,15 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // Chems/Protection/Symptoms pickers don't have this analysis
   // available and are completely unaffected.
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
-  const allEntries = registry.getAll().filter((e) => !e.isArchived);
-  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name || "?";
+  const allEntries = useLoadedMemo(() => registry.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  const missingNames = useLoadedMemo(async () => {
+    const selectedIdsForLookup = trackRole ? value.map((v) => v.kinkId) : value;
+    const missingIds = selectedIdsForLookup.filter((id) => !allEntries.some((e) => e.id === id));
+    const map = new Map();
+    await Promise.all(missingIds.map(async (id) => { const e = await registry.getById(id); if (e) map.set(id, e.name); }));
+    return map;
+  }, [value, allEntries], new Map());
+  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || missingNames.get(id) || "?";
 
   // ADDED 18 Aug 2026 — trackRole mode: `value` becomes an array of
   // {kinkId, role} selections instead of plain registry IDs, so an
@@ -804,8 +818,8 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // multi-paste) — that's the real, common case this was actually
   // asked for, and juggling several pending prompts from one paste
   // would be real added complexity for a rare case.
-  const finalizeEntry = (resolvedName, role) => {
-    const entry = registry.findOrCreate(resolvedName);
+  const finalizeEntry = async (resolvedName, role) => {
+    const entry = await registry.findOrCreate(resolvedName);
     if (entry && !hasSelection(entry.id)) {
       if (trackRole) onChange([...value, { kinkId: entry.id, role }]);
       else onChange([...value, entry.id]);
@@ -823,7 +837,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // needs to recognize the WORD at parse time, before that's known.
   const extractionRoleOptions = getRoleOptionsForKink ? ["Top", "bottom", "Vers", "Dom", "sub", "Switch"] : roleOptions;
 
-  const commitDraft = (el) => {
+  const commitDraft = async (el) => {
     const raw = draft.trim();
     if (!raw) {
       if (el) focusNextField(el);
@@ -834,7 +848,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
     if (analyzeEntry && rawParts.length === 1) {
       const { text, role } = trackRole ? extractKinkRoleFromText(rawParts[0], extractionRoleOptions) : { text: rawParts[0], role: null };
       const normalized = normalizeTag(text);
-      const analysis = analyzeEntry(normalized);
+      const analysis = await analyzeEntry(normalized);
       if (analysis.type === "umbrella" || analysis.type === "fuzzy-suggestion") {
         setPendingSuggestion({ ...analysis, role });
         setDraft("");
@@ -843,15 +857,15 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
     }
 
     const newSelections = [];
-    rawParts.forEach((rawPart) => {
+    for (const rawPart of rawParts) {
       const { text, role } = trackRole ? extractKinkRoleFromText(rawPart, extractionRoleOptions) : { text: rawPart, role: null };
       const resolved = resolveSynonym(normalizeTag(text));
-      if (!resolved) return;
-      const entry = registry.findOrCreate(resolved);
+      if (!resolved) continue;
+      const entry = await registry.findOrCreate(resolved);
       if (entry && !hasSelection(entry.id) && !newSelections.some((s) => s.id === entry.id)) {
         newSelections.push({ id: entry.id, role });
       }
-    });
+    }
     if (newSelections.length > 0) {
       if (trackRole) onChange([...value, ...newSelections.map((s) => ({ kinkId: s.id, role: s.role }))]);
       else onChange([...value, ...newSelections.map((s) => s.id)]);
@@ -1467,6 +1481,10 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   const [genderOptions, setGenderOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("gender"), [], []);
   const [pronounsOptions, setPronounsOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("pronouns"), [], []);
   const [contraceptionOptions, setContraceptionOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
+  // — resolved once here for the Stated kinks/Limits overlap-warning
+  // check below.
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);
     if (draft) return draft.data;
@@ -1693,7 +1711,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           <RegistryTagPicker T={T} label="Limits" value={form.limits} onChange={set("limits")} registry={KinkRegistry} excludeIds={form.statedKinks.map((s) => s.kinkId)} trackRole roleOptions={KINK_ROLE_OPTIONS} resolveSynonym={resolveKinkSynonym} analyzeEntry={analyzeKinkEntry} getRoleOptionsForKink={getKinkRoleOptions} />
           {(() => {
             const statedIds = new Set(form.statedKinks.map((s) => s.kinkId));
-            const overlapping = form.limits.filter((l) => statedIds.has(l.kinkId)).map((l) => KinkRegistry.getById(l.kinkId)?.name).filter(Boolean);
+            const overlapping = form.limits.filter((l) => statedIds.has(l.kinkId)).map((l) => kinkNameById.get(l.kinkId)).filter(Boolean);
             return overlapping.length > 0 ? (
               <div style={{ display: "flex", gap: 6, padding: "8px 0", alignItems: "flex-start" }}>
                 <AlertTriangle size={13} color={T.actionRed} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -1854,6 +1872,11 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
   // async — hoisted above the guard (hooks-before-guard rule), same
   // reasoning as linkedContactProfiles/allEncounters above.
   const myProfile = useLoadedMemo(() => MyProfileRepository.getProfile(), [relinkVersion], { relationshipContactIds: [] });
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry
+  // are now async — resolved into lookup Maps here (hoisted above the
+  // guard), used by the Kink/Chems sections below.
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
+  const chemNameById = useLoadedMemo(async () => new Map((await ChemsRegistry.getAll()).map((c) => [c.id, c.name])), [], new Map());
   if (!contact) return null;
   const isLinkedToMe = myProfile.relationshipContactIds.includes(contact.id);
   const toggleLinkedToMe = async () => {
@@ -2068,11 +2091,11 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           ) : (
             <>
               <ReadRow T={T} label="Stated kinks" value={contact.statedKinks.map((sel) => {
-                const name = KinkRegistry.getById(sel.kinkId)?.name;
+                const name = kinkNameById.get(sel.kinkId);
                 return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
               }).filter(Boolean)} />
               <ReadRow T={T} label="Limits" value={contact.limits.map((sel) => {
-                const name = KinkRegistry.getById(sel.kinkId)?.name;
+                const name = kinkNameById.get(sel.kinkId);
                 return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
               }).filter(Boolean)} />
               <ReadRow T={T} label="Role" value={contact.bdsmRole} />
@@ -2086,7 +2109,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               "None known" rather than the row just disappearing —
               ReadRow's default behavior everywhere else (hide empty
               fields entirely) still applies to every other field. */}
-          <ReadRow T={T} label="Known chems" value={contact.knownChems.length > 0 ? contact.knownChems.map((id) => ChemsRegistry.getById(id)?.name).filter(Boolean) : "None known"} />
+          <ReadRow T={T} label="Known chems" value={contact.knownChems.length > 0 ? contact.knownChems.map((id) => chemNameById.get(id)).filter(Boolean) : "None known"} />
         </SectionCard>
 
         <SectionCard T={T} title="Physical & health">
@@ -2213,6 +2236,12 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   const [filterHosts, setFilterHosts] = useState([]);
   const [filterDrives, setFilterDrives] = useState(false);
   const activeFilterCount = filterRoles.length + filterPositions.length + filterHosts.length + (filterDrives ? 1 : 0);
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
+  // — resolved once here (loaded, not per keystroke), read synchronously
+  // via .get() inside the `filtered` useMemo below, same "split slow-
+  // loading data from fast pure computation" split used elsewhere this
+  // session for a live search box.
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const searched = q
@@ -2220,7 +2249,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           [c.name, c.nickname, c.phone, c.snapchat, c.fabguys, c.fabswingers, c.recon, c.notes]
             .some((field) => (field || "").toLowerCase().includes(q))
           || [...c.statedKinks.map((s) => s.kinkId), ...c.limits.map((l) => l.kinkId)]
-              .map((id) => KinkRegistry.getById(id)?.name || "")
+              .map((id) => kinkNameById.get(id) || "")
               .some((name) => name.toLowerCase().includes(q))
         )
       : activeContacts;
@@ -2269,7 +2298,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       return displayName(a).localeCompare(displayName(b));
     });
     return sorted;
-  }, [activeContacts, query, sortBy, encounters, encounterSummaries, filterRoles, filterPositions, filterHosts, filterDrives]);
+  }, [activeContacts, query, sortBy, encounters, encounterSummaries, filterRoles, filterPositions, filterHosts, filterDrives, kinkNameById]);
 
   return (
     <div>

@@ -233,7 +233,7 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   }, [form]);
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const canSave = form.title.trim().length > 0;
-  const symptoms = useLoadedMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), [], []);
+  const symptoms = useLoadedMemo(async () => (await SymptomsRegistry.getAll()).filter((s) => !s.isArchived), [], []);
   // CHANGED 1 Sep 2026 — real omission found in a broader audit: this
   // had no .sort() at all (storage order = oldest first), the same
   // "old options listed first" bug already fixed elsewhere. Sorted
@@ -317,13 +317,20 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
     const visits = await Promise.all(v.clinicVisitIds.map((id) => ClinicVisitsRepository.getById(id)));
     return visits.filter(Boolean).map((visit) => `${visit.title || (visit.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(visit.date)}`);
   }, [v], []);
-  if (!v) return null;
-  const overdue = isOverdue(v.nextDue);
   // FIXED 1 Sep 2026 — same real bug as the edit form's own picker:
   // symptomIds holds real SymptomsRegistry ids now, so displaying it
   // raw needs resolving to names first, same as visitNames just above
   // and ClinicVisits' own symptomTypeIds display.
-  const symptomNames = v.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean);
+  // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
+  // async — hoisted above the `!v` guard (hooks-before-guard rule),
+  // guarded with `v?.` since it's genuinely null for one render, same
+  // treatment as visitNames just above.
+  const symptomNames = useLoadedMemo(async () => {
+    if (!v?.symptomIds?.length) return [];
+    return (await Promise.all(v.symptomIds.map((id) => SymptomsRegistry.getById(id)))).filter(Boolean).map((s) => s.name);
+  }, [v], []);
+  if (!v) return null;
+  const overdue = isOverdue(v.nextDue);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>

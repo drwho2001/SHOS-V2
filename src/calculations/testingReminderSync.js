@@ -22,6 +22,7 @@
 // test due", not two that could quietly drift apart.
 import { TestingRepository } from "../repositories/testingRepository";
 import { suggestedRoutineRetestDate } from "./testingCalculations";
+import { ResultsRegistry } from "../registries/resultsRegistry";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName, TESTING_ACTION_TYPE_ID } from "../storage/notificationService";
 import { NotificationPreferencesRepository, isTestingSnoozed } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
@@ -34,7 +35,8 @@ export async function getTestingDueState() {
   const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
   if (tests.length === 0) return { due: false };
   const mostRecent = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-  const suggested = suggestedRoutineRetestDate(mostRecent);
+  const resultNameById = new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name]));
+  const suggested = suggestedRoutineRetestDate(mostRecent, resultNameById);
   if (!suggested) return { due: false };
   const dueDate = new Date(suggested);
   // FIXED — real bug: "Snooze 30 min" only ever rescheduled the native
@@ -60,7 +62,8 @@ export async function syncTestingReminder() {
   }
 
   const mostRecent = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-  const suggested = suggestedRoutineRetestDate(mostRecent);
+  const resultNameById = new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name]));
+  const suggested = suggestedRoutineRetestDate(mostRecent, resultNameById);
   if (!suggested) {
     // No suggestion for the most recent test — a Positive result
     // (needs treatment/follow-up, not a routine retest reminder) or no

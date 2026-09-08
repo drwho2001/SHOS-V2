@@ -593,6 +593,17 @@ function DeveloperToolsScreen({ onClose }) {
   const testsCount = useLoadedMemo(() => TestingRepository.getAll().then((l) => l.length), [], 0);
   const medicationsCount = useLoadedMemo(() => MedicationRepository.getAll().then((l) => l.length), [], 0);
   const clinicVisitsCount = useLoadedMemo(() => ClinicVisitsRepository.getAll().then((l) => l.length), [], 0);
+  // CHANGED — Phase 2 encryption groundwork: the six simpleRegistry.js-
+  // based registries are now async — same useLoadedMemo treatment as
+  // every other repository count above (previously read inline in the
+  // counts array below, direct render-body calls that broke once these
+  // registries went async).
+  const kinkCount = useLoadedMemo(() => KinkRegistry.getAll().then((l) => l.length), [], 0);
+  const chemsCount = useLoadedMemo(() => ChemsRegistry.getAll().then((l) => l.length), [], 0);
+  const protectionCount = useLoadedMemo(() => ProtectionRegistry.getAll().then((l) => l.length), [], 0);
+  const symptomsRegistryCount = useLoadedMemo(() => SymptomsRegistry.getAll().then((l) => l.length), [], 0);
+  const organismCount = useLoadedMemo(() => OrganismRegistry.getAll().then((l) => l.length), [], 0);
+  const resultsCount = useLoadedMemo(() => ResultsRegistry.getAll().then((l) => l.length), [], 0);
   const counts = [
     { label: "Contacts", value: contactsCount },
     { label: "Encounters", value: encountersCount },
@@ -603,13 +614,13 @@ function DeveloperToolsScreen({ onClose }) {
     { label: "Symptom Log entries", value: symptomLogCount },
     { label: "Vaccinations", value: vaccinationsCount },
     { label: "Timeline episodes", value: episodesCount },
-    { label: "Kink Registry entries", value: KinkRegistry.getAll().length },
-    { label: "Chems Registry entries", value: ChemsRegistry.getAll().length },
-    { label: "Protection Registry entries", value: ProtectionRegistry.getAll().length },
-    { label: "Symptoms Registry entries", value: SymptomsRegistry.getAll().length },
+    { label: "Kink Registry entries", value: kinkCount },
+    { label: "Chems Registry entries", value: chemsCount },
+    { label: "Protection Registry entries", value: protectionCount },
+    { label: "Symptoms Registry entries", value: symptomsRegistryCount },
     { label: "Locations", value: locationsCount },
-    { label: "Organism Registry entries", value: OrganismRegistry.getAll().length },
-    { label: "Results Registry entries", value: ResultsRegistry.getAll().length },
+    { label: "Organism Registry entries", value: organismCount },
+    { label: "Results Registry entries", value: resultsCount },
   ];
 
   const handleReset = () => {
@@ -2339,9 +2350,15 @@ function StatsScreen({ onClose }) {
   // ADDED — real ask: "expand stats".
   const symptomEntries = useLoadedMemo(() => SymptomLogRepository.getAll(), [], []);
   const clinicVisits = useLoadedMemo(() => ClinicVisitsRepository.getAll(), [], []);
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry/SymptomsRegistry
+  // are now async — resolved into lookup Maps here, passed as the
+  // resolver getTopKinks()/getTopSymptoms() expect (both stay plain,
+  // synchronous, I/O-free calculation functions — see statsCalculations.js).
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
+  const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
 
   const activityMonths = useMemo(() => getActivitiesPerMonth(encounters, 6), [encounters]);
-  const topKinks = useMemo(() => getTopKinks(encounters, contacts, (id) => KinkRegistry.getById(id)?.name, 5), [encounters, contacts]);
+  const topKinks = useMemo(() => getTopKinks(encounters, contacts, (id) => kinkNameById.get(id), 5), [encounters, contacts, kinkNameById]);
   const testingStats = useMemo(() => getTestingFrequencyStats(tests), [tests]);
   // ADDED — real ask: "Stats is descriptive, not predictive" — a real
   // nudge against the person's OWN pattern (not just the fixed BASHH
@@ -2364,7 +2381,7 @@ function StatsScreen({ onClose }) {
   // measure rather than reusing computeAdherence() (hardcoded to
   // "today", not safely reusable for a past month).
   const adherenceTrend = useMemo(() => getAdherenceTrend(medications, 6), [medications]);
-  const topSymptoms = useMemo(() => getTopSymptoms(symptomEntries, (id) => SymptomsRegistry.getById(id)?.name, 5), [symptomEntries]);
+  const topSymptoms = useMemo(() => getTopSymptoms(symptomEntries, (id) => symptomNameById.get(id), 5), [symptomEntries, symptomNameById]);
   const clinicVisitStats = useMemo(() => getClinicVisitStats(clinicVisits), [clinicVisits]);
   const clinicVisitMonths = useMemo(() => getClinicVisitsPerMonth(clinicVisits, 6), [clinicVisits]);
 

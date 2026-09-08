@@ -56,8 +56,15 @@ function visitLabel(v) {
 function symptomLogLabel(s) {
   return s ? `${s.title || "Symptom entry"} · ${formatDate(s.dateStarted)}` : "?";
 }
-function testIsPositive(t) {
-  const names = (t.resultIds || []).map((id) => ResultsRegistry.getById(id)?.name).filter(Boolean);
+// CHANGED — Phase 2 encryption groundwork: ResultsRegistry is now
+// async. Rather than making this pure helper async (called
+// synchronously from several places, including a per-row `.some()`/
+// `.filter()` and a synchronous nameFor-style callback), it now takes
+// a pre-resolved `resultNameById` lookup Map as a parameter — same
+// "pure function takes data as a parameter" fix used for
+// testingCalculations.js's suggestedRoutineRetestDate() this session.
+function testIsPositive(t, resultNameById) {
+  const names = (t.resultIds || []).map((id) => resultNameById?.get(id)).filter(Boolean);
   return names.some((n) => n.toLowerCase() === "positive");
 }
 
@@ -380,16 +387,21 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
       .sort((a, b) => new Date(a.date) - new Date(b.date))
       .map((v) => ({ id: v.id, name: visitLabel(v) }));
   }, [episode, startDate], []);
+  // CHANGED — Phase 2 encryption groundwork: ResultsRegistry/
+  // OrganismRegistry are now async — resolved once here, hoisted above
+  // the guard, for testIsPositive/infectionNames below.
+  const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
+  const organismNameById = useLoadedMemo(async () => new Map((await OrganismRegistry.getAll()).map((o) => [o.id, o.name])), [], new Map());
   if (!episode) return null;
 
   const isOpen = !episode.resolvedDate;
 
-  const hasPositive = linkedTests.some(testIsPositive);
+  const hasPositive = linkedTests.some((t) => testIsPositive(t, resultNameById));
   // ADDED 2 Sep 2026 — real ask: partner-notification message helper.
   // Pulled from the positive test(s)' own linked organism(s), same
   // real data the app already tracks — never invented or guessed.
   const infectionNames = [...new Set(
-    linkedTests.filter(testIsPositive).flatMap((t) => t.organismIds || []).map((id) => OrganismRegistry.getById(id)?.name).filter(Boolean)
+    linkedTests.filter((t) => testIsPositive(t, resultNameById)).flatMap((t) => t.organismIds || []).map((id) => organismNameById.get(id)).filter(Boolean)
   )];
 
   const update = async (changes) => { await EpisodeRepository.update(episodeId, changes); setRefreshKey((k) => k + 1); };
@@ -525,7 +537,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
         </SectionCard>
 
         <SectionCard title="Testing" T={T}>
-          <LinkedItemsSection label="Linked tests — initial, cultures, TOC (order tells the story)" linkedIds={episode.testIds} onChange={(v) => update({ testIds: v })} candidates={testCandidates} nameFor={(id) => testLabel(linkedTests.find((t) => t.id === id))} T={T} alertIds={linkedTests.filter(testIsPositive).map((t) => t.id)} />
+          <LinkedItemsSection label="Linked tests — initial, cultures, TOC (order tells the story)" linkedIds={episode.testIds} onChange={(v) => update({ testIds: v })} candidates={testCandidates} nameFor={(id) => testLabel(linkedTests.find((t) => t.id === id))} T={T} alertIds={linkedTests.filter((t) => testIsPositive(t, resultNameById)).map((t) => t.id)} />
         </SectionCard>
 
         <SectionCard title="Treatment" T={T}>
@@ -608,13 +620,16 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
   // ADDED — same reason: each row below used to call
   // TestingRepository.getById() straight in a synchronous render-body
   // .map() to derive its own hasPositive flag.
+  // CHANGED — Phase 2 encryption groundwork: ResultsRegistry is now
+  // async too — resolved once here for testIsPositive below.
+  const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
   const hasPositiveByEpisodeId = useLoadedMemo(async () => {
     const entries = await Promise.all(episodes.map(async (e) => {
       const linked = (await Promise.all(e.testIds.map((id) => TestingRepository.getById(id)))).filter(Boolean);
-      return [e.id, linked.some(testIsPositive)];
+      return [e.id, linked.some((t) => testIsPositive(t, resultNameById))];
     }));
     return Object.fromEntries(entries);
-  }, [episodes], {});
+  }, [episodes, resultNameById], {});
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>

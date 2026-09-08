@@ -506,14 +506,28 @@ function TagInput({ label, value, onChange, T, placeholder }) {
 // Registry-backed picker, same shape/behavior as Contacts' own
 // RegistryTagPicker — resolves stored IDs to display names, creates a
 // new registry entry (case-insensitively deduped) on a fresh typed tag.
+// CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry
+// (whichever `registry` is passed here) are now async — allEntries
+// loaded via useLoadedMemo instead of a plain render-body call;
+// nameFor's archived-entry fallback resolved via a missingNames lookup
+// instead of a synchronous getById() call; finalizeEntry/commitDraft
+// now await registry.findOrCreate(), and commitDraft awaits
+// analyzeEntry (analyzeKinkEntry, also now async).
 function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, excludeIds = [], trackRole = false, roleOptions = [], resolveSynonym = (x) => x, analyzeEntry = null, getRoleOptionsForKink = null }) {
   const [draft, setDraft] = useState("");
   // ADDED — real ask: "did you mean...?" for a recognized typo or an
   // umbrella term, same mechanism now built and proven in Contacts/
   // Encounters.
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
-  const allEntries = registry.getAll().filter((e) => !e.isArchived);
-  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name || "?";
+  const allEntries = useLoadedMemo(() => registry.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  const missingNames = useLoadedMemo(async () => {
+    const selectedIdsForLookup = trackRole ? value.map((v) => v.kinkId) : value;
+    const missingIds = selectedIdsForLookup.filter((id) => !allEntries.some((e) => e.id === id));
+    const map = new Map();
+    await Promise.all(missingIds.map(async (id) => { const e = await registry.getById(id); if (e) map.set(id, e.name); }));
+    return map;
+  }, [value, allEntries], new Map());
+  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || missingNames.get(id) || "?";
 
   // ADDED 18 Aug 2026 — trackRole mode: `value` becomes an array of
   // {kinkId, role} selections — matches Contacts' Stated Kinks/
@@ -599,19 +613,19 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // slightly differently from how it was typed in Contacts silently
   // created a separate, near-duplicate registry entry instead of
   // resolving to the one real one.
-  const finalizeEntry = (resolvedName) => {
-    const entry = registry.findOrCreate(resolvedName);
+  const finalizeEntry = async (resolvedName) => {
+    const entry = await registry.findOrCreate(resolvedName);
     if (entry && !hasSelection(entry.id)) addEntries([entry.id]);
   };
 
-  const commitDraft = () => {
+  const commitDraft = async () => {
     const raw = draft.trim();
     if (!raw) return;
     const parts = raw.split(",").map((t) => t.trim()).filter(Boolean);
 
     if (analyzeEntry && parts.length === 1) {
       const normalized = normalizeTag(parts[0]);
-      const analysis = analyzeEntry(normalized);
+      const analysis = await analyzeEntry(normalized);
       if (analysis.type === "umbrella" || analysis.type === "fuzzy-suggestion") {
         setPendingSuggestion(analysis);
         setDraft("");
@@ -620,12 +634,12 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
     }
 
     const newIds = [];
-    parts.forEach((part) => {
+    for (const part of parts) {
       const resolved = resolveSynonym(normalizeTag(part));
-      if (!resolved) return;
-      const entry = registry.findOrCreate(resolved);
+      if (!resolved) continue;
+      const entry = await registry.findOrCreate(resolved);
       if (entry && !hasSelection(entry.id) && !newIds.includes(entry.id)) newIds.push(entry.id);
-    });
+    }
     addEntries(newIds);
     setDraft("");
   };
@@ -1062,15 +1076,20 @@ function ProfileDataView({ profile, T }) {
   // async — getAutoLastTestedDate() was called straight in the render
   // body below.
   const lastTestedDate = useLoadedMemo(() => getAutoLastTestedDate(), [], null);
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry
+  // are now async — resolved via useLoadedMemo instead of a plain
+  // render-body call.
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
+  const chemNameById = useLoadedMemo(async () => new Map((await ChemsRegistry.getAll()).map((c) => [c.id, c.name])), [], new Map());
   const kinkNames = profile.statedKinks.map((sel) => {
-    const name = KinkRegistry.getById(sel.kinkId)?.name;
+    const name = kinkNameById.get(sel.kinkId);
     return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
   }).filter(Boolean);
   const limitNames = profile.limits.map((sel) => {
-    const name = KinkRegistry.getById(sel.kinkId)?.name;
+    const name = kinkNameById.get(sel.kinkId);
     return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
   }).filter(Boolean);
-  const chemNames = profile.knownChems.map((id) => ChemsRegistry.getById(id)?.name).filter(Boolean);
+  const chemNames = profile.knownChems.map((id) => chemNameById.get(id)).filter(Boolean);
 
   // CHANGED 18 Aug 2026 — real bug caught while verifying: ageIsApprox
   // is a boolean, and `false !== "" && false !== null && false !==

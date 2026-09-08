@@ -1687,16 +1687,127 @@ this date; summarized here for durability.
   smoke-test suite passes.
   With this, the originally-scoped 5-repository large/high-blast-radius
   tier (Encounter/Testing/Medication/ClinicVisits/MyProfile) is fully
-  converted. What's left in the deferred, harder-bucket tier: the
-  `simpleRegistry.js`-based registries (Kink/Protection/Chems/Symptoms/
-  Organism/Results — Kink/Protection also carry their own module-load-
-  time migration-flag side effects, a third pattern beyond plain
-  `ensureLoaded()`), `ModuleColorRepository` (via `designTokens.js`'s
-  own module-load-time cache of it), `storageAdapter.js` itself
-  (Phase 3 — making the actual adapter async), and real `crypto.subtle`
-  encryption (Phase 4). None of these started yet — each was flagged
-  from the start as needing its own dedicated scoping pass rather than
-  folding into this same sweep, same as the original tier boundary.
+  converted. What's left in the deferred, harder-bucket tier at that
+  point: the `simpleRegistry.js`-based registries (Kink/Protection/
+  Chems/Symptoms/Organism/Results — Kink/Protection also carry their
+  own module-load-time migration-flag side effects, a third pattern
+  beyond plain `ensureLoaded()`), `ModuleColorRepository` (via
+  `designTokens.js`'s own module-load-time cache of it),
+  `storageAdapter.js` itself (Phase 3 — making the actual adapter
+  async), and real `crypto.subtle` encryption (Phase 4).
+  All six `simpleRegistry.js`-based registries (Kink/Chems/Protection/
+  Symptoms/Organism/Results) converted together (8 Sep) — scoped first,
+  per the plan: `simpleRegistry.js` itself is the one factory all six
+  are built on (`entries`/`nextNumber` module-load-cached, identical
+  getAll/getById/getByName/create/findOrCreate/update/archive/
+  unarchive/replaceAll contract), converted once via the same
+  `ensureLoaded()`/memoized-`loadPromise` pattern as every other
+  repository — every registry built on it gets the fix automatically,
+  the exact shared-abstraction payoff this factory was extracted for
+  in the first place. `kinkRegistry.js`'s own `EXPANSION_FLAG_KEY`
+  migration (37 real seed names run through `findOrCreate` on first
+  load) and `protectionRegistry.js`'s `PEP_ADDED_FLAG` migration both
+  wrapped in an async IIFE, same proven pattern as
+  `customOptionListsRepository.js`'s own migration flag from an
+  earlier batch. `analyzeKinkEntry()` (the umbrella-term/typo "did you
+  mean?" analysis, called from every `RegistryTagPicker` copy's own
+  commit path) made async too, since it calls `KinkRegistry.getByName/
+  getAll()` internally.
+  Caller cascade reached 20 files — the widest single batch this
+  session, spanning `backupService.js`/`clinicCardPdfService.js`/
+  `orphanReferenceCheck.js`/`testingCalculations.js`/
+  `testingReminderSync.js` and 15 module files. Two real architectural
+  fixes stand out beyond the usual await-adding: (1)
+  `testingCalculations.js`'s `suggestedRoutineRetestDate()` and
+  `SHOS_Timeline_Prototype.jsx`'s module-level `testIsPositive()`
+  helper are both called live, synchronously, from hot paths (a form's
+  per-keystroke preview; a per-row `.some()`/`.filter()` over a test
+  list) where an async round-trip would add real, visible lag or
+  require restructuring callers into hooks they don't need otherwise.
+  Both converted to pure, I/O-free functions that take a pre-resolved
+  `resultNameById`/`organismNameById` lookup Map as a parameter instead
+  of reading the registry themselves — the same "pure function takes
+  data as a parameter" fix already proven for
+  `measurementPreferencesRepository.js`'s `getAvailableUnits()`/
+  `getDefaultUnit()` earlier this session, and it keeps both files
+  genuinely I/O-free, matching CLAUDE.md's own repository/calculation
+  split. (2) The four `RegistryTagPicker`/`RegistryMultiResultPicker`
+  copies (Testing's own Organism/Results-only pair; the richer
+  Kink+role/Chems copy duplicated in MyProfile/Contacts/Encounters)
+  all shared the same broken shape once their `registry` prop went
+  async: `allEntries = registry.getAll().filter(...)` as a bare
+  render-body call, and `nameFor(id)` falling back to a synchronous
+  `registry.getById(id)?.name` for a selected-but-archived entry not in
+  `allEntries`. Both fixed identically across all four copies:
+  `allEntries` via `useLoadedMemo`, and the archived-entry fallback
+  resolved through a `missingNames` lookup Map (built once from
+  whichever selected ids aren't in `allEntries`) instead of a
+  synchronous call — every `findOrCreate()`-calling handler
+  (`commit`/`commitDraft`/`finalizeEntry`/`acceptPendingSuggestion`/
+  `dismissPendingSuggestion`/`addResult`) made `async`/awaited, with
+  comma-separated multi-entry loops converted from `.forEach()` to
+  `for...of` (same silent-race class fixed repeatedly this session).
+  Every other real site was a variant of patterns already proven: a
+  `nameFrom(registry, id)` local helper (in
+  `clinicCardPdfService.js`/`SHOS_ClinicCard_Prototype.jsx`, both
+  called per-row from `recentTests`/`currentTreatment`/
+  `activeSymptoms`) replaced with pre-resolved `resultNameById`/
+  `symptomNameById` lookup Maps rather than made async itself, same
+  "resolve to a lookup ahead of time" shape used throughout this
+  session; several hooks-before-guard hoists
+  (`SHOS_Testing_Prototype.jsx`'s `TestDetail`,
+  `SHOS_Vaccinations_Prototype.jsx`'s `VaccinationDetail`,
+  `SHOS_ClinicVisits_Prototype.jsx`'s `VisitDetail`,
+  `SHOS_Timeline_Prototype.jsx`'s `EpisodeDetail`); chained
+  `.filter()`-onto-`getAll()` fixes in `useLoadedMemo` loaders across
+  Vaccinations/ClinicVisits/MenstrualHealth; a `.forEach()`-can't-await
+  fix in `SHOS_GlobalSearch_Prototype.jsx`'s `buildIndex()` (the
+  Contacts loop, unlike the already-`for...of` Encounters loop right
+  below it); and `SHOS_Settings_Prototype.jsx`'s Developer Tools counts
+  (6 new `useLoadedMemo` reads replacing inline `Registry.getAll().length`
+  calls) and Stats screen (`kinkNameById`/`symptomNameById` lookup Maps
+  passed into `getTopKinks()`/`getTopSymptoms()`'s existing resolver-
+  callback parameter, keeping both calculation functions unchanged).
+  One real pre-existing bug found and fixed along the way, unrelated to
+  which registry triggered it: `SHOS_RegistryManagement_Prototype.jsx`'s
+  `handleAdd`/`commitEdit`/`toggleArchive` (and the duplicate-checker
+  panel's own inline archive action) called `registry.findOrCreate/
+  update/archive/unarchive()` fire-and-forget, then immediately called
+  `refresh()` — a real race once `registry` is async, since `refresh()`
+  triggers the `allEntries` reload before the write has actually
+  landed. This screen is shared by all 6 new registries AND Locations
+  (already async from an earlier batch), so the bug was live for the
+  Locations tab too, silently, since that batch — fixed once at the
+  shared handlers, closing it for all 7 tabs.
+  Verified live end-to-end via Playwright, working around this app's
+  own two-part launch-screen overlay stack (the SW-update banner and
+  the App Lock/notifications prompts sit at different z-indices than
+  the screen beneath them, so a body-text-only check can silently read
+  the WRONG, still-mounted screen's content — confirmed by bounding-box
+  inspection when a `getByText` match returned "— not set" for a field
+  that was actually rendering correctly one scroll position away):
+  Developer Tools showed correct real counts for all 6 registries (65/
+  0/4/1/6/5) with "Broken references: None found" from the fully-
+  converted orphan checker; Settings → Manage lists → Kink Registry's
+  real add-entry flow (`handleAdd`) created a new entry with the
+  correct sequential id, appeared in the UI immediately (proving the
+  `refresh()` timing fix), and was confirmed via a direct
+  `shos_kink_registry` read; Testing's real "Test of cure — Gonorrhoea"
+  entry showed its correct Negative result and correct "Routine retest
+  suggested around Dec 6, 2026" (proving `resultNameById` reaches
+  `suggestedRoutineRetestDate()` correctly); and — the strongest single
+  proof — Contacts' real `RegistryTagPicker` (Grace J.'s Stated Kinks)
+  correctly created a brand-new kink via `findOrCreate()`, showed it as
+  a real chip with suggestion chips rendering below it, and saving the
+  contact correctly persisted `statedKinks: [{kinkId: "kink_066",
+  role: null}]` to `shos_contacts` — confirmed via direct localStorage
+  reads at every step, not on-screen text alone. No page errors
+  anywhere. Full smoke-test suite passes.
+  What's left in the deferred, harder-bucket tier: `ModuleColorRepository`
+  (via `designTokens.js`'s own module-load-time cache of it),
+  `storageAdapter.js` itself (Phase 3), and real `crypto.subtle`
+  encryption (Phase 4) — none of these started yet, each still needing
+  its own dedicated scoping pass before touching it.
   Local commits only as of 4 Sep — owner asked to hold all pushes until the
   full Phase 2 migration is done and reviewed, not push incrementally
   (side-branch pushes to `claude/encryption-phase2-groundwork` purely to

@@ -49,8 +49,11 @@ const INK = rgb(27 / 255, 27 / 255, 31 / 255);
 const GREY = rgb(91 / 255, 91 / 255, 98 / 255);
 const LINE = rgb(220 / 255, 220 / 255, 220 / 255);
 
-function nameFrom(registry, id) {
-  return registry.getById(id)?.name || "—";
+// CHANGED — Phase 2 encryption groundwork: the registries this reads
+// from (Results/Symptoms) are now async — made async itself, awaited
+// at all 3 call sites below (assembleClinicCardData is already async).
+async function nameFrom(registry, id) {
+  return (await registry.getById(id))?.name || "—";
 }
 
 // Assembles the exact same section data ClinicCardScreen computes for
@@ -70,16 +73,17 @@ async function assembleClinicCardData() {
   const overdueVaccinations = await VaccinationRepository.getOverdue();
   const activeSymptoms = await SymptomLogRepository.getActive();
 
-  const recentTests = tests.slice(0, 5).map((t) => {
-    const resultNames = (t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id));
+  const recentTests = await Promise.all(tests.slice(0, 5).map(async (t) => {
+    const resultNames = await Promise.all((t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id)));
     const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
     return { title: (t.testingFor || []).join(", ") || t.title || "Test", subtitle: `${formatRelativeDate(t.date)} · ${resultNames.join(", ") || "No result logged"}`, alert: isPositive };
-  });
+  }));
 
-  const currentTreatment = tests.filter((t) => {
-    const resultNames = (t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id));
-    return resultNames.some((r) => r.toLowerCase() === "positive") && !t.followUpActionedDate;
-  }).map((t) => ({ title: (t.testingFor || []).join(", ") || t.title || "Positive result", subtitle: `${formatRelativeDate(t.date)} · awaiting follow-up` }));
+  const currentTreatment = (await Promise.all(tests.map(async (t) => {
+    const resultNames = await Promise.all((t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id)));
+    const isPositive = resultNames.some((r) => r.toLowerCase() === "positive") && !t.followUpActionedDate;
+    return isPositive ? t : null;
+  }))).filter(Boolean).map((t) => ({ title: (t.testingFor || []).join(", ") || t.title || "Positive result", subtitle: `${formatRelativeDate(t.date)} · awaiting follow-up` }));
 
   // ADDED 2 Sep 2026 — mirrors SHOS_ClinicCard_Prototype.jsx's own
   // "Menstrual & contraception" section exactly, sensitive-flag mask
@@ -126,11 +130,11 @@ async function assembleClinicCardData() {
     currentTreatment,
     menstrualContraception,
     menstrualTrackingEnabled,
-    activeSymptoms: activeSymptoms.map((s) => ({
+    activeSymptoms: await Promise.all(activeSymptoms.map(async (s) => ({
       title: s.title,
-      subtitle: [nameFrom(SymptomsRegistry, s.symptomId), s.severity, formatRelativeDate(s.dateStarted), s.dateResolved ? `resolved ${formatRelativeDate(s.dateResolved)}` : null].filter(Boolean).join(" · "),
+      subtitle: [await nameFrom(SymptomsRegistry, s.symptomId), s.severity, formatRelativeDate(s.dateStarted), s.dateResolved ? `resolved ${formatRelativeDate(s.dateResolved)}` : null].filter(Boolean).join(" · "),
       alert: s.severity === "Severe",
-    })),
+    }))),
     recentEncounters: encounters.slice(0, 8).map((e) => ({ title: e.title || e.encounterType || "Encounter", subtitle: e.date ? formatRelativeDate(e.date) : "" })),
     emergency: [
       (profile.emergencyContactName || profile.emergencyContactPhone) && [profile.emergencyContactName || "Emergency contact", profile.emergencyContactPhone],

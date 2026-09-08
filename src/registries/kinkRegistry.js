@@ -115,11 +115,24 @@ export const KinkRegistry = createSimpleRegistry({
 // in this app already uses (storage.load/save already have their own
 // internal try/catch — see storageAdapter.js — so the extra wrapper
 // here was redundant once routed through it).
+// CHANGED — Phase 2 encryption groundwork: KinkRegistry itself is now
+// async (see simpleRegistry.js), so this module-load-time side effect
+// is wrapped in an async IIFE (a top-level effect can't itself be
+// async) — same pattern already proven for customOptionListsRepository.js's
+// own migration flag. The `.forEach` fire-and-forget became a
+// `for...of` + `await` — findOrCreate() is idempotent either way, but
+// awaiting each call in turn (rather than firing all 37 at once) keeps
+// this consistent with the for...of conversions used everywhere else
+// this session for bulk-create loops.
 const EXPANSION_FLAG_KEY = "shos_kink_registry_expanded_v1";
-if (!storage.load(EXPANSION_FLAG_KEY, false)) {
-  SEED_NAMES.forEach((name) => KinkRegistry.findOrCreate(name));
-  storage.save(EXPANSION_FLAG_KEY, true);
-}
+(async () => {
+  if (!(await storage.load(EXPANSION_FLAG_KEY, false))) {
+    for (const name of SEED_NAMES) {
+      await KinkRegistry.findOrCreate(name);
+    }
+    await storage.save(EXPANSION_FLAG_KEY, true);
+  }
+})();
 
 // ADDED 18 Aug 2026 — real feedback: typing a common synonym (e.g.
 // "watersports") should resolve to the existing canonical entry
@@ -218,16 +231,21 @@ const UMBRELLA_TERMS = {
 // Deliberately returns data, not JSX — this file has no business
 // knowing what a suggestion prompt looks like, that's each module's
 // own UI layer, same separation already used for resolveKinkSynonym.
-export function analyzeKinkEntry(normalizedText) {
+// CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async,
+// so every registry call here needs awaiting and this function itself
+// is now async — every caller (RegistryTagPicker's `analyzeEntry` prop
+// across Contacts/Encounters/My Profile) already awaits or fire-and-
+// forgets the same as any other async commit-time call in those files.
+export async function analyzeKinkEntry(normalizedText) {
   const lower = normalizedText.trim().toLowerCase();
   if (!lower) return { type: "empty" };
 
-  const exact = KinkRegistry.getByName(normalizedText);
+  const exact = await KinkRegistry.getByName(normalizedText);
   if (exact) return { type: "exact", entry: exact };
 
   const umbrellaSpecifics = UMBRELLA_TERMS[lower];
   if (umbrellaSpecifics) {
-    const specificEntries = umbrellaSpecifics.map((name) => KinkRegistry.getByName(name)).filter(Boolean);
+    const specificEntries = (await Promise.all(umbrellaSpecifics.map((name) => KinkRegistry.getByName(name)))).filter(Boolean);
     if (specificEntries.length > 0) {
       return { type: "umbrella", typedAs: normalizedText, specific: specificEntries };
     }
@@ -239,11 +257,11 @@ export function analyzeKinkEntry(normalizedText) {
 
   const synonymMatch = KINK_SYNONYMS[lower];
   if (synonymMatch) {
-    const entry = KinkRegistry.getByName(synonymMatch);
+    const entry = await KinkRegistry.getByName(synonymMatch);
     if (entry) return { type: "synonym", entry };
   }
 
-  const allNames = KinkRegistry.getAll().filter((e) => !e.isArchived).map((e) => e.name);
+  const allNames = (await KinkRegistry.getAll()).filter((e) => !e.isArchived).map((e) => e.name);
   const closest = findClosestMatch(allNames, normalizedText);
   if (closest) {
     return { type: "fuzzy-suggestion", typedAs: normalizedText, suggestion: closest };

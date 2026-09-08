@@ -262,13 +262,27 @@ function GivingReceivingChips({ label, value, onChange, options, T }) {
 // ergonomics the old TagField had, but now backed by a real linked
 // entity instead of a bare string, closing the "Fist vs Fisting never
 // matched" gap flagged back on 18 Aug.
+// CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry
+// (whichever `registry` is passed here) are now async — allEntries
+// loaded via useLoadedMemo instead of a plain render-body call;
+// nameFor's archived-entry fallback resolved via a missingNames lookup
+// instead of a synchronous getById() call; finalizeEntry/commit now
+// await registry.findOrCreate(), and commit awaits analyzeEntry
+// (analyzeKinkEntry, also now async).
 function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, excludeIds = [], trackRole = false, roleOptions = [], resolveSynonym = (x) => x, analyzeEntry = null, getRoleOptionsForKink = null }) {
   const [draft, setDraft] = useState("");
   // ADDED — real ask: "did you mean...?" for a recognized typo or an
   // umbrella term, same mechanism now built and proven in Contacts.
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
-  const allEntries = registry.getAll().filter((e) => !e.isArchived);
-  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name || "?";
+  const allEntries = useLoadedMemo(() => registry.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  const missingNames = useLoadedMemo(async () => {
+    const selectedIdsForLookup = trackRole ? value.map((v) => v.kinkId) : value;
+    const missingIds = selectedIdsForLookup.filter((id) => !allEntries.some((e) => e.id === id));
+    const map = new Map();
+    await Promise.all(missingIds.map(async (id) => { const e = await registry.getById(id); if (e) map.set(id, e.name); }));
+    return map;
+  }, [value, allEntries], new Map());
+  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || missingNames.get(id) || "?";
 
   // ADDED 18 Aug 2026 — trackRole mode: `value` becomes an array of
   // {kinkId, role} selections instead of plain registry IDs — the user's
@@ -341,12 +355,12 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // was silently creating separate, near-duplicate registry entries.
   // The underlying registry was always genuinely shared (confirmed
   // directly); this picker just wasn't feeding it consistently.
-  const finalizeEntry = (resolvedName) => {
-    const entry = registry.findOrCreate(resolvedName);
+  const finalizeEntry = async (resolvedName) => {
+    const entry = await registry.findOrCreate(resolvedName);
     if (entry && !hasSelection(entry.id)) addEntries([entry.id]);
   };
 
-  const commit = () => {
+  const commit = async () => {
     const raw = draft.trim();
     if (!raw) { setDraft(""); return; }
     const parts = raw.split(",").map((t) => t.trim()).filter(Boolean);
@@ -356,7 +370,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
     // to an existing entry, and ask instead of silently deciding.
     if (analyzeEntry && parts.length === 1) {
       const normalized = normalizeTag(parts[0]);
-      const analysis = analyzeEntry(normalized);
+      const analysis = await analyzeEntry(normalized);
       if (analysis.type === "umbrella" || analysis.type === "fuzzy-suggestion") {
         setPendingSuggestion(analysis);
         setDraft("");
@@ -365,12 +379,12 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
     }
 
     const newIds = [];
-    parts.forEach((part) => {
+    for (const part of parts) {
       const resolved = resolveSynonym(normalizeTag(part));
-      if (!resolved) return;
-      const entry = registry.findOrCreate(resolved);
+      if (!resolved) continue;
+      const entry = await registry.findOrCreate(resolved);
       if (entry && !hasSelection(entry.id) && !newIds.includes(entry.id)) newIds.push(entry.id);
-    });
+    }
     addEntries(newIds);
     setDraft("");
   };
@@ -813,10 +827,15 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
   // Local copy — ActivityDetails has its own further down; this card
   // renders in a different component/scope (the encounter list), so it
   // needs its own rather than reaching across function boundaries.
-  const kinkNames = encounter.kinksInvolved.map((sel) => {
-    const name = KinkRegistry.getById(sel.kinkId)?.name;
-    return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
-  }).filter(Boolean);
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
+  // — same useLoadedMemo treatment as locationName above.
+  const kinkNames = useLoadedMemo(async () => {
+    const resolved = await Promise.all(encounter.kinksInvolved.map((sel) => KinkRegistry.getById(sel.kinkId)));
+    return encounter.kinksInvolved.map((sel, i) => {
+      const name = resolved[i]?.name;
+      return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
+    }).filter(Boolean);
+  }, [encounter.kinksInvolved], []);
   // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
   // to every module — same pattern as Contacts' own ContactCard.
   const pressTimer = useRef(null);
@@ -949,6 +968,10 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
     const lastTest = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
     return lastTest?.date || null;
   }, [], null);
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
+  // — same split as lastTestDate above (loaded once, not per keystroke),
+  // read synchronously via .get() inside the `visible` useMemo below.
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
 
   const visible = useMemo(() => {
     const base = encounters.filter((e) => (showArchived ? true : !e.isArchived));
@@ -969,7 +992,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
     if (q) {
       filtered = filtered.filter((e) => {
         const attendeeNames = e.attendeeIds.map((id) => contactName(contacts, id));
-        const kinkNames = (e.kinksInvolved || []).map((sel) => KinkRegistry.getById(sel.kinkId)?.name);
+        const kinkNames = (e.kinksInvolved || []).map((sel) => kinkNameById.get(sel.kinkId));
         return [e.title, e.encounterType, e.notes, ...attendeeNames, ...kinkNames].filter(Boolean).some((v) => v.toLowerCase().includes(q));
       });
     }
@@ -1119,17 +1142,26 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
     const loc = await LocationsRepository.getById(encounter.locationId);
     return loc?.name || "";
   }, [encounter?.locationId], "");
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry/
+  // ProtectionRegistry/SymptomsRegistry are now async — resolved into
+  // lookup Maps here (hoisted above the guard, same hooks-before-guard
+  // rule), read synchronously via .get() by resolveNames/
+  // resolveKinkSelections below.
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
+  const chemNameById = useLoadedMemo(async () => new Map((await ChemsRegistry.getAll()).map((c) => [c.id, c.name])), [], new Map());
+  const protectionNameById = useLoadedMemo(async () => new Map((await ProtectionRegistry.getAll()).map((p) => [p.id, p.name])), [], new Map());
+  const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
   if (!encounter) return null;
 
   // Resolves an array of registry IDs to their display names — used
   // below for Kinks/Chems/Protection/Symptoms, since those are now real
   // registry links, not plain strings.
-  const resolveNames = (registry, ids) => ids.map((id) => registry.getById(id)?.name).filter(Boolean);
+  const resolveNames = (nameById, ids) => ids.map((id) => nameById.get(id)).filter(Boolean);
   // ADDED 18 Aug 2026 — kinksInvolved is now {kinkId, role} selections,
   // not plain IDs (see encounterRepository.js) — this resolves each to
   // its display name, appending the role in parentheses when set.
   const resolveKinkSelections = (selections) => selections.map((sel) => {
-    const name = KinkRegistry.getById(sel.kinkId)?.name;
+    const name = kinkNameById.get(sel.kinkId);
     return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
   }).filter(Boolean);
 
@@ -1241,17 +1273,17 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
 
         <SectionCard title="Kink & chems" T={T}>
           <ReadRow label="Kinks involved" value={resolveKinkSelections(encounter.kinksInvolved)} T={T} />
-          <ReadRow label="Chems/alcohol used" value={resolveNames(ChemsRegistry, encounter.chemsAlcoholUsed)} T={T} />
+          <ReadRow label="Chems/alcohol used" value={resolveNames(chemNameById, encounter.chemsAlcoholUsed)} T={T} />
         </SectionCard>
 
         <SectionCard title="Protection & medication context" T={T}>
-          <ReadRow label="Protection used" value={resolveNames(ProtectionRegistry, encounter.protectionUsed)} T={T} />
+          <ReadRow label="Protection used" value={resolveNames(protectionNameById, encounter.protectionUsed)} T={T} />
           <ReadRow label="My PrEP coverage" value={encounter.myPrepCoverage} T={T} />
           <ReadRow label="My DoxyPEP status" value={encounter.myDoxyPepStatus} T={T} />
         </SectionCard>
 
         <SectionCard title="Health" T={T}>
-          <ReadRow label="Symptoms noted" value={resolveNames(SymptomsRegistry, encounter.symptomsNoted)} T={T} />
+          <ReadRow label="Symptoms noted" value={resolveNames(symptomNameById, encounter.symptomsNoted)} T={T} />
         </SectionCard>
 
         <SectionCard title="Location" T={T}>

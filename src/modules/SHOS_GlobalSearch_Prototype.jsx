@@ -82,7 +82,13 @@ function norm(v) {
 async function buildIndex() {
   const results = [];
 
-  (await ContactRepository.getAll()).filter((c) => !c.isArchived).forEach((c) => {
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
+  // — this loop was a plain .forEach(), which can't await inside it
+  // (an unawaited async call here would let the loop finish, and this
+  // whole function return, before a kink name was ever resolved).
+  // Converted to for...of, same fix already applied to the Encounters
+  // loop below for its own attendeeNames resolution.
+  for (const c of (await ContactRepository.getAll()).filter((c) => !c.isArchived)) {
     // CHANGED 4 Sep 2026 — real ask, from a real device report: a
     // kink-term search (e.g. "piss") was pulling records that never
     // actually mention it — the free-text grab-bag below (phone/
@@ -96,7 +102,7 @@ async function buildIndex() {
     // as if they were into it when the truth on file is the opposite.
     // Limits are deliberately excluded now; only real stated interest
     // makes a Contact findable by that kink.
-    const kinkNames = c.statedKinks.map((sel) => KinkRegistry.getById(sel.kinkId)?.name).filter(Boolean);
+    const kinkNames = (await Promise.all(c.statedKinks.map((sel) => KinkRegistry.getById(sel.kinkId)))).filter(Boolean).map((k) => k.name);
     const searchText = [c.name, c.nickname, ...kinkNames].join(" ");
     results.push({
       type: "contact", id: c.id,
@@ -109,7 +115,7 @@ async function buildIndex() {
       // equivalent, not a record of anything that actually happened.
       date: c.createdAt || null,
     });
-  });
+  }
 
   (await MedicationRepository.getAll()).filter((m) => !m.isArchived).forEach((m) => {
     const searchText = [m.name, m.medicationType, m.usualSupplier, m.route].join(" ");
@@ -136,7 +142,7 @@ async function buildIndex() {
       const contact = await ContactRepository.getById(id);
       return contact?.nickname || contact?.name;
     }))).filter(Boolean);
-    const kinkNames = (e.kinksInvolved || []).map((sel) => KinkRegistry.getById(sel.kinkId)?.name).filter(Boolean);
+    const kinkNames = (await Promise.all((e.kinksInvolved || []).map((sel) => KinkRegistry.getById(sel.kinkId)))).filter(Boolean).map((k) => k.name);
     const searchText = [...attendeeNames, ...kinkNames].join(" ");
     results.push({
       type: "encounter", id: e.id,
