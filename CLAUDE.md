@@ -133,7 +133,7 @@ oversight.
   `scripts/smoke-test.cjs` against a real `vite preview` build on every
   push — the one piece of automated regression coverage this project
   has, now actually gated rather than manual-only.
-- `scripts/smoke-test.cjs` — 3 flows, CI-wired (see above) but also
+- `scripts/smoke-test.cjs` — 5 flows, CI-wired (see above) but also
   still worth running by hand before/after any risky change during a
   session: `npm run dev -- --port 5183` then `node scripts/smoke-test.cjs`.
 
@@ -2650,17 +2650,42 @@ this date; summarized here for durability.
   gated behind an already-unlocked, already-open app) — not revisited,
   not forgotten.
 - **Still near-zero real test coverage, though the one existing script
-  is now CI-gated.** `scripts/smoke-test.cjs` (3 flows) got wired into
-  a new `.github/workflows/smoke-test.yml` (4 Sep) — runs the exact
-  same script, unmodified, against a real `vite preview` production
-  build on every push to `main`, verified locally against that same
-  preview build before shipping. Still only 3 flows, still no
-  linting, no type-checking — this closes "nothing runs automatically"
-  specifically, not "not enough coverage" generally. The absence of
-  any of this is very likely why a real, four-subsystem-breaking bug
-  (a Capacitor plugin-proxy footgun affecting notifications/calendar-
-  sync/geolocation/file-export) shipped silently for weeks before live
+  is now CI-gated and covers more than it used to.** `scripts/smoke-test.cjs`
+  got wired into a new `.github/workflows/smoke-test.yml` (4 Sep) — runs
+  the exact same script, unmodified, against a real `vite preview`
+  production build on every push, verified locally against that same
+  preview build before shipping. Still no linting, no type-checking —
+  this closes "nothing runs automatically" specifically, not "not
+  enough coverage" generally. The absence of any of this is very
+  likely why a real, four-subsystem-breaking bug (a Capacitor
+  plugin-proxy footgun affecting notifications/calendar-sync/
+  geolocation/file-export) shipped silently for weeks before live
   device debugging caught it.
+  Grew from 3 to 5 flows (9 Sep 2026) — the two new ones close the
+  single biggest real gap Phase 4 shipped with: every encryption
+  verification script written while building it was a throwaway,
+  deleted once it passed, so nothing would have caught a future
+  regression to `App.jsx`/`cryptoService.js`/Settings' Privacy screen
+  without this. `testEncryptionPositiveCheck` confirms raw
+  `localStorage` is genuinely `{iv, ciphertext}`-shaped for every real
+  `shos_`-prefixed key (excluding the one deliberate exception,
+  `shos_vault_key_slots`) — the exact "silently-broken encryption could
+  still pass every functional test" risk flagged during Phase 4's own
+  scoping. `testEncryptionAppLockGatesVault` drives the real Settings
+  UI (not `cryptoService` directly) to set a PIN, turn App Lock on,
+  reload into the real lock screen, confirm a wrong PIN is rejected and
+  the real one isn't, then turn App Lock back off — proving the PIN
+  actually gates the vault rather than just a stored flag, the one
+  regression class that would look identical in the UI either way.
+  Real bug caught live writing this, not by inspection: the test's own
+  final cleanup step (reload, then turn App Lock back off) reloaded
+  straight into the real lock screen — App Lock was still ON at that
+  exact point — and then tried clicking Home/Settings coordinates
+  against the WRONG screen, timing out looking for "Privacy" that was
+  never going to render. Fixed by making the shared navigation helper
+  PIN-aware: it now re-enters the PIN first if a reload lands on the
+  lock screen, before proceeding. Verified stable across two
+  consecutive full runs before shipping.
 - **Cold-start notification-action race** — a still-open upstream
   Capacitor limitation (not fixable purely from this app's JS): tapping
   a notification action after the app was fully killed can fail to
