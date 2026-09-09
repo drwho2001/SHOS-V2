@@ -362,7 +362,7 @@ function EntrySheet({ entry, onSave, onClose, T }) {
         {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
             module banner title. */}
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>{isNew ? "Log symptom" : "Edit symptom entry"}</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "Log symptom" : "Edit symptom entry"}</span>
           {/* ADDED 26 Aug 2026 — real gap found while adding the
               banner: this sheet had no visible close control at all,
               only closing via a backdrop tap. */}
@@ -632,14 +632,14 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
         </div>
       </div>
       <div style={{ padding: "12px 16px 100px" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Active ({activeCount})</div>
+        <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 6 }}>Active ({activeCount})</div>
         {active.length === 0 ? (
           <div style={{ textAlign: "center", padding: "24px 20px", color: T.textDisabled, fontSize: 13 }}>Nothing active. Tap + to log a symptom.</div>
         ) : active.map(Row)}
 
         {resolved.length > 0 && (
           <>
-            <div style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, margin: "16px 0 6px" }}>Resolved ({resolvedCount})</div>
+            <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, margin: "16px 0 6px" }}>Resolved ({resolvedCount})</div>
             {resolved.map(Row)}
           </>
         )}

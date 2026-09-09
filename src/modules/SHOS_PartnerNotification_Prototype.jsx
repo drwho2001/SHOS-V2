@@ -20,7 +20,7 @@ import { EncounterRepository } from "../repositories/encounterRepository";
 import { PartnerNotificationRepository } from "../repositories/partnerNotificationRepository";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { exportTextFile } from "../storage/fileExportHelper";
-import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACTION, RADIUS, TYPE } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const radius = RADIUS;
@@ -306,7 +306,7 @@ export default function PartnerNotificationSheet({ testId, onClose }) {
           ) : (
             <X size={20} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
           )}
-          <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>{editing ? (list ? "Edit contacts" : "Contact list") : "Contact list"}</span>
+          <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>{editing ? (list ? "Edit contacts" : "Contact list") : "Contact list"}</span>
         </div>
       </div>
       {editing ? (

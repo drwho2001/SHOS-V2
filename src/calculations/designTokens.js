@@ -355,6 +355,28 @@ export function deriveLightAccent(hex, targetLightness = 42) {
 export const TYPE = {
   screenTitle: { fontSize: 22, fontWeight: 700 },
   recordTitle: { fontSize: 20, fontWeight: 700 },
+  // ADDED — real ask: font/heading-size consistency audit. This exact
+  // pairing (16/700) was already the de-facto standard for every
+  // secondary/drill-down screen's own back-header title — Settings and
+  // its ~20 sub-screens, Timeline, Clinic Card, Attachments, Option
+  // List Editor, Partner Notification, Registry Management — a
+  // deliberate, genuinely consistent second tier below `screenTitle`
+  // (reserved for the 5 primary bottom-nav-reachable modules' own
+  // colored banner), just never named as its own token before this —
+  // every one of those ~28 sites had it hand-typed identically rather
+  // than sharing one source. No visual change, just giving an
+  // already-consistent pattern a real name so it can't silently drift.
+  subScreenTitle: { fontSize: 16, fontWeight: 700 },
+  // ADDED — same audit: a THIRD real, consistent-but-unnamed tier,
+  // one size up from subScreenTitle — the title of a colored,
+  // full-bleed Add/Edit bottom sheet (white text on the module's own
+  // accent, e.g. "Add contact"/"Edit measurement"/"Log vaccination").
+  // 9 of 12 real sites already agreed on 18/700; the 3 that had
+  // drifted to 16/700 (Clinic Visits' "New/Edit visit", Testing's
+  // "New/Edit test", Contacts' "Possible duplicates" panel) are folded
+  // into this same token rather than left as their own smaller
+  // outliers, since all 12 share the identical visual role.
+  sheetTitle: { fontSize: 18, fontWeight: 700 },
   sectionLabel: { fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 },
   body: { fontSize: 14, fontWeight: 400 },
   bodyEmphasis: { fontSize: 14, fontWeight: 600 },

@@ -13,7 +13,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, ACCENTS, ACTION, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE } from "../calculations/designTokens";
 
 // EXPORTED 1 Sep 2026 — real ask: "check settings not unnecessarily
 // over engineered - combine into similar things if better." Registries
@@ -82,7 +82,7 @@ export function OptionListDetail({ listName, onClose }) {
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 230, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>{OPTION_LIST_LABELS[listName] || listName}</span>
+        <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>{OPTION_LIST_LABELS[listName] || listName}</span>
       </div>
 
       <div style={{ padding: "12px 16px 8px" }}>
@@ -141,7 +141,7 @@ export default function OptionListsScreen({ onClose }) {
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>Option lists</span>
+        <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Option lists</span>
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, padding: "10px 16px 0" }}>
         Add, rename, or reorder the simple option lists used across the app — no code, no waiting on a rebuild. Changes here are permanent on this device and survive future app updates.

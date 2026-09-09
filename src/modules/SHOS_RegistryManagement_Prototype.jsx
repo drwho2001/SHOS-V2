@@ -5,7 +5,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 // ADDED — real ask: "add button to check through registries... for
 // duplicates using fuzzy matching... so user doesn't have to dig."
 import { findDuplicatePairs } from "../calculations/fuzzyMatch";
@@ -169,7 +169,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary, flex: 1 }}>{label}</span>
+        <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary, flex: 1 }}>{label}</span>
         {duplicatePairs.length > 0 && (
           <div onClick={() => setShowDuplicates(true)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 999, border: `1px solid ${actionRed}`, color: actionRed, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             <Copy size={13} /> {duplicatePairs.length} possible dupe{duplicatePairs.length > 1 ? "s" : ""}
@@ -181,7 +181,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
         <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 230 }} onClick={() => setShowDuplicates(false)}>
           <div style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 16, borderTopRightRadius: 16 }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", background: color, borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF" }}>Possible duplicates</span>
+              <span style={{ ...TYPE.subScreenTitle, color: "#FFFFFF" }}>Possible duplicates</span>
               <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => setShowDuplicates(false)} aria-label="Close duplicates panel" />
             </div>
             <div style={{ padding: "6px 20px 0", fontSize: 12, color: T.textSecondary }}>

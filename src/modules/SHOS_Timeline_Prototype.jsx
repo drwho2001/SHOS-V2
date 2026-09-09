@@ -505,8 +505,8 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
                 return (
                   <div key={id} style={{ fontSize: 11, display: "flex", alignItems: "flex-start", gap: 6 }}>
                     {coverage.status === "covered" && <Check size={12} color={T.actionGreen} style={{ flexShrink: 0, marginTop: 1 }} />}
-                    {coverage.status !== "covered" && <AlertTriangle size={12} color={coverage.status === "uncovered" ? "#F59E0B" : T.textDisabled} style={{ flexShrink: 0, marginTop: 1 }} />}
-                    <span style={{ color: coverage.status === "covered" ? T.actionGreen : coverage.status === "uncovered" ? "#B45309" : T.textDisabled }}>
+                    {coverage.status !== "covered" && <AlertTriangle size={12} color={coverage.status === "uncovered" ? ACTION.amber : T.textDisabled} style={{ flexShrink: 0, marginTop: 1 }} />}
+                    <span style={{ color: coverage.status === "covered" ? T.actionGreen : coverage.status === "uncovered" ? ACTION.gold : T.textDisabled }}>
                       {encounterLabel(enc)} —{" "}
                       {coverage.status === "covered" && "cleared by a test taken after the relevant window"}
                       {coverage.status === "no_test" && "no test logged since this encounter yet"}
@@ -559,8 +559,8 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
               const startCoverage = getEncounterCoverage(startDate, linkedTests);
               return startCoverage.status === "uncovered" ? (
                 <div style={{ display: "flex", gap: 8, padding: "6px 0 10px", alignItems: "flex-start" }}>
-                  <AlertTriangle size={14} color="#F59E0B" style={{ flexShrink: 0, marginTop: 2 }} />
-                  <span style={{ fontSize: 12, color: "#B45309", lineHeight: 1.4 }}>
+                  <AlertTriangle size={14} color={ACTION.amber} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span style={{ fontSize: 12, color: ACTION.gold, lineHeight: 1.4 }}>
                     It's not yet been long enough since the start Encounter for a test to reliably rule out {startCoverage.uncoveredInfections.join(", ")} — a negative result now may not be conclusive. You can still resolve manually if you're confident (e.g. on clinical advice).
                   </span>
                 </div>
@@ -635,7 +635,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary, flex: 1 }}>Episodes</span>
+        <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary, flex: 1 }}>Episodes</span>
       </div>
       {/* CHANGED — real gap found: every other Healthcare-domain
           module already got the floating, module-colored add button

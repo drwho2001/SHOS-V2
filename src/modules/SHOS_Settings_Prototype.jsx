@@ -193,12 +193,12 @@ function SelectiveExportSheet({ onClose, onExported }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 220 }} onClick={onClose}>
-      <div style={{ background: darkMode ? DARK.bg : "#F0F0F3", width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: darkMode ? DARK.bg : NEUTRAL.bg, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: "20px 20px 4px", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div>
-              <span style={{ fontWeight: 600, fontSize: 16, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Export — choose what to include</span>
-              <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 4 }}>Everything is included by default. Untick anything you'd rather leave out of this particular file.</div>
+              <span style={{ fontWeight: 600, fontSize: 16, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Export — choose what to include</span>
+              <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 4 }}>Everything is included by default. Untick anything you'd rather leave out of this particular file.</div>
             </div>
             {/* ADDED 1 Sep 2026 — real ask: "option to select all... rather
                 than manual 1 by 1" — before this, reselecting everything
@@ -212,40 +212,40 @@ function SelectiveExportSheet({ onClose, onExported }) {
         </div>
         <div style={{ overflowY: "auto", padding: "8px 20px", flex: 1 }}>
           {EXPORT_GROUPS.map((group) => (
-            <div key={group.key} style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, marginBottom: 10, overflow: "hidden" }}>
+            <div key={group.key} style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, marginBottom: 10, overflow: "hidden" }}>
               <div onClick={() => toggleGroup(group)} role="checkbox" tabIndex={0}
                 aria-checked={isGroupFullyChecked(group) ? true : isGroupPartiallyChecked(group) ? "mixed" : false} aria-label={group.label}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleGroup(group); } }}
                 style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", cursor: "pointer", borderBottom: group.items.length > 1 ? "1px solid #DCDCE1" : "none" }}>
                 <Box state={isGroupFullyChecked(group) ? "full" : isGroupPartiallyChecked(group) ? "partial" : "empty"} />
-                <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{group.label}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{group.label}</span>
               </div>
               {group.items.length > 1 && group.items.map((item) => (
                 <div key={item.dataKey} onClick={() => toggleItem(item.dataKey)} role="checkbox" tabIndex={0} aria-checked={checked.has(item.dataKey)} aria-label={item.label}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleItem(item.dataKey); } }}
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px 9px 34px", cursor: "pointer" }}>
                   <Box state={checked.has(item.dataKey) ? "full" : "empty"} />
-                  <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{item.label}</span>
+                  <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{item.label}</span>
                 </div>
               ))}
             </div>
           ))}
           {/* ADDED 1 Sep 2026 — real ask: date-range filter. */}
-          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, marginBottom: 10, padding: "12px 14px" }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Date range (optional)</div>
-            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", marginBottom: 10 }}>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, marginBottom: 10, padding: "12px 14px" }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Date range (optional)</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 10 }}>
               Only narrows dated records (Contacts, Encounters, Medications, Testing, Clinic Visits, Symptom Log, Vaccinations, Timeline). Registries and app settings are always included in full.
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>From</div>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
                 <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>To</div>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
                 <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
             </div>
             {(dateFrom || dateTo) && (
@@ -253,9 +253,9 @@ function SelectiveExportSheet({ onClose, onExported }) {
             )}
           </div>
         </div>
-        <div style={{ padding: "14px 20px", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", flexShrink: 0 }}>
+        <div style={{ padding: "14px 20px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), flexShrink: 0 }}>
           {folderExportStatus && (
-            <div style={{ fontSize: 12, color: folderExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : "#5B5B62"), marginBottom: 8, textAlign: "center" }}>{folderExportStatus.msg}</div>
+            <div style={{ fontSize: 12, color: folderExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), marginBottom: 8, textAlign: "center" }}>{folderExportStatus.msg}</div>
           )}
           <button onClick={doExport} disabled={checked.size === 0}
             style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: checked.size === 0 ? "#656568" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: checked.size === 0 ? "default" : "pointer" }}>
@@ -306,27 +306,27 @@ function CSVExportSheet({ onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 220 }} onClick={onClose}>
-      <div style={{ background: darkMode ? DARK.bg : "#F0F0F3", width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: darkMode ? DARK.bg : NEUTRAL.bg, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: "20px 20px 4px", flexShrink: 0 }}>
-          <span style={{ fontWeight: 600, fontSize: 16, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Export as CSV</span>
-          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 4 }}>Pick one record type — spreadsheet-readable (Excel, Sheets), for reading elsewhere, not for restoring into SHOS itself (use a backup for that).</div>
+          <span style={{ fontWeight: 600, fontSize: 16, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Export as CSV</span>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 4 }}>Pick one record type — spreadsheet-readable (Excel, Sheets), for reading elsewhere, not for restoring into SHOS itself (use a backup for that).</div>
         </div>
         <div style={{ overflowY: "auto", padding: "8px 20px 20px", flex: 1 }}>
-          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, marginBottom: 10, padding: "12px 14px" }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Date range (optional)</div>
-            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", marginBottom: 10 }}>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, marginBottom: 10, padding: "12px 14px" }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Date range (optional)</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 10 }}>
               Only narrows dated records — applies whichever record type you tap below.
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>From</div>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
                 <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>To</div>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
                 <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
             </div>
             {(dateFrom || dateTo) && (
@@ -334,15 +334,15 @@ function CSVExportSheet({ onClose }) {
             )}
           </div>
           {CSV_EXPORT_GROUPS.map((group) => (
-            <div key={group.key} style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, marginBottom: 10, overflow: "hidden" }}>
-              <div style={{ padding: "12px 14px 6px", ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : "#656568" }}>{group.label}</div>
+            <div key={group.key} style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, marginBottom: 10, overflow: "hidden" }}>
+              <div style={{ padding: "12px 14px 6px", ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>{group.label}</div>
               {group.items.map((item) => (
-                <div key={item.dataKey} onClick={() => doExport(item)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 14px", cursor: "pointer", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-                  <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{item.label}</span>
+                <div key={item.dataKey} onClick={() => doExport(item)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 14px", cursor: "pointer", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+                  <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{item.label}</span>
                   {status?.dataKey === item.dataKey ? (
-                    <span style={{ fontSize: 11, color: status.ok === false ? ACTION.red : status.ok ? ACTION.green : (darkMode ? DARK.textDisabled : "#656568") }}>{status.msg}</span>
+                    <span style={{ fontSize: 11, color: status.ok === false ? ACTION.red : status.ok ? ACTION.green : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) }}>{status.msg}</span>
                   ) : (
-                    <FileCsv size={16} color={darkMode ? DARK.textDisabled : "#656568"} />
+                    <FileCsv size={16} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} />
                   )}
                 </div>
               ))}
@@ -448,66 +448,66 @@ function EncryptedExportSheet({ onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 220 }} onClick={onClose}>
-      <div style={{ background: darkMode ? DARK.bg : "#F0F0F3", width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: darkMode ? DARK.bg : NEUTRAL.bg, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 24, borderTopRightRadius: 24, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: "20px 20px 4px", flexShrink: 0 }}>
-          <span style={{ fontWeight: 600, fontSize: 16, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Export encrypted backup</span>
-          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 4 }}>Password-protected — safe to store or send somewhere less trusted than this device. There's no password recovery: forgetting it makes this specific file permanently unreadable.</div>
+          <span style={{ fontWeight: 600, fontSize: 16, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Export encrypted backup</span>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 4 }}>Password-protected — safe to store or send somewhere less trusted than this device. There's no password recovery: forgetting it makes this specific file permanently unreadable.</div>
         </div>
         <div style={{ overflowY: "auto", padding: "8px 20px", flex: 1 }}>
           <div style={{ position: "relative", marginBottom: 8 }}>
             <input value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} type={showPasswords ? "text" : "password"} placeholder="Password (6+ characters)"
-              style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box", background: darkMode ? DARK.surface : "#FFFFFF", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
-            {showPasswords ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(false)} />
-              : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(true)} />}
+              style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box", background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+            {showPasswords ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(false)} />
+              : <Eye size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(true)} />}
           </div>
           <div style={{ position: "relative", marginBottom: 10 }}>
             <input value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }} type={showPasswords ? "text" : "password"} placeholder="Confirm password"
               onKeyDown={(e) => { if (e.key === "Enter") doExport(); }}
-              style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box", background: darkMode ? DARK.surface : "#FFFFFF", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+              style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box", background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
           </div>
           {error && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 10 }}>{error}</div>}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0 6px" }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5 }}>What to include</span>
+            <span style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>What to include</span>
             <span onClick={() => setChecked(checked.size === allKeys.length ? new Set() : new Set(allKeys))}
               style={{ fontSize: 12, fontWeight: 600, color: ACCENTS.healthcare, cursor: "pointer" }}>
               {checked.size === allKeys.length ? "Deselect all" : "Select all"}
             </span>
           </div>
           {EXPORT_GROUPS.map((group) => (
-            <div key={group.key} style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, marginBottom: 10, overflow: "hidden" }}>
+            <div key={group.key} style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, marginBottom: 10, overflow: "hidden" }}>
               <div onClick={() => toggleGroup(group)} role="checkbox" tabIndex={0}
                 aria-checked={isGroupFullyChecked(group) ? true : isGroupPartiallyChecked(group) ? "mixed" : false} aria-label={group.label}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleGroup(group); } }}
                 style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", cursor: "pointer", borderBottom: group.items.length > 1 ? "1px solid #DCDCE1" : "none" }}>
                 <Box state={isGroupFullyChecked(group) ? "full" : isGroupPartiallyChecked(group) ? "partial" : "empty"} />
-                <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{group.label}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{group.label}</span>
               </div>
               {group.items.length > 1 && group.items.map((item) => (
                 <div key={item.dataKey} onClick={() => toggleItem(item.dataKey)} role="checkbox" tabIndex={0} aria-checked={checked.has(item.dataKey)} aria-label={item.label}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleItem(item.dataKey); } }}
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px 9px 34px", cursor: "pointer" }}>
                   <Box state={checked.has(item.dataKey) ? "full" : "empty"} />
-                  <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{item.label}</span>
+                  <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{item.label}</span>
                 </div>
               ))}
             </div>
           ))}
           {/* ADDED 1 Sep 2026 — real ask: date-range filter. */}
-          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, marginBottom: 10, padding: "12px 14px" }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Date range (optional)</div>
-            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", marginBottom: 10 }}>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, marginBottom: 10, padding: "12px 14px" }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Date range (optional)</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 10 }}>
               Only narrows dated records. Registries and app settings are always included in full.
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>From</div>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
                 <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>To</div>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
                 <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F" }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
             </div>
             {(dateFrom || dateTo) && (
@@ -515,9 +515,9 @@ function EncryptedExportSheet({ onClose }) {
             )}
           </div>
         </div>
-        <div style={{ padding: "14px 20px", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", flexShrink: 0 }}>
+        <div style={{ padding: "14px 20px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), flexShrink: 0 }}>
           {folderExportStatus && (
-            <div style={{ fontSize: 12, color: folderExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : "#5B5B62"), marginBottom: 8, textAlign: "center" }}>{folderExportStatus.msg}</div>
+            <div style={{ fontSize: 12, color: folderExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), marginBottom: 8, textAlign: "center" }}>{folderExportStatus.msg}</div>
           )}
           <button onClick={doExport} disabled={checked.size === 0 || exporting}
             style={{ width: "100%", padding: 16, borderRadius: 999, border: "none", background: (checked.size === 0 || exporting) ? "#656568" : ACCENTS.healthcare, color: "#FFFFFF", fontSize: 16, fontWeight: 700, cursor: (checked.size === 0 || exporting) ? "default" : "pointer" }}>
@@ -526,7 +526,7 @@ function EncryptedExportSheet({ onClose }) {
           {/* ADDED — real ask: an explicit choose-a-folder alternative
               to the Share-sheet button above. */}
           {chooseFolderAvailable && (
-            <div onClick={exporting ? undefined : doExportToFolder} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: exporting ? (darkMode ? DARK.textDisabled : "#656568") : ACCENTS.healthcare, cursor: exporting ? "default" : "pointer", padding: "10px 0 0" }}>
+            <div onClick={exporting ? undefined : doExportToFolder} style={{ textAlign: "center", fontSize: 13, fontWeight: 600, color: exporting ? (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) : ACCENTS.healthcare, cursor: exporting ? "default" : "pointer", padding: "10px 0 0" }}>
               Choose a folder instead…
             </div>
           )}
@@ -638,10 +638,10 @@ function DeveloperToolsScreen({ onClose }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Developer tools</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Developer tools</span>
       </div>
 
       {/* ADDED — real ask: this never explained what it was actually
@@ -649,15 +649,15 @@ function DeveloperToolsScreen({ onClose }) {
           live record count) plus a full reset below — not a
           timeframe-based count, that's a separate, still-outstanding
           Activity filter request. */}
-      <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", padding: "10px 16px 0" }}>
+      <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "10px 16px 0" }}>
         Live record counts across every part of the app's local storage, mainly useful for confirming a backup/restore or migration went as expected.
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "16px 16px 6px" }}>Storage overview</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
-        <div onClick={() => setShowStorageBreakdown((s) => !s)} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: "pointer" }}>
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Local storage used{storageUsage.byKey.length > 0 ? (showStorageBreakdown ? " ▲" : " ▼") : ""}</span>
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>{formatBytes(storageUsage.totalBytes)}</span>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "16px 16px 6px" }}>Storage overview</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
+        <div onClick={() => setShowStorageBreakdown((s) => !s)} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }}>
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Local storage used{storageUsage.byKey.length > 0 ? (showStorageBreakdown ? " ▲" : " ▼") : ""}</span>
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>{formatBytes(storageUsage.totalBytes)}</span>
         </div>
         {showStorageBreakdown && (
           <div style={{ padding: "6px 0 9px" }}>
@@ -670,16 +670,16 @@ function DeveloperToolsScreen({ onClose }) {
                 screen. */}
             {storageUsage.byKey.slice(0, 5).map((k) => (
               <div key={k.key} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12 }}>
-                <span style={{ color: darkMode ? DARK.textDisabled : "#656568", fontFamily: "'JetBrains Mono', monospace" }}>{k.key.replace(/^shos_/, "")}</span>
-                <span style={{ color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{formatBytes(k.bytes)}</span>
+                <span style={{ color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: "'JetBrains Mono', monospace" }}>{k.key.replace(/^shos_/, "")}</span>
+                <span style={{ color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{formatBytes(k.bytes)}</span>
               </div>
             ))}
           </div>
         )}
         {counts.map((c) => (
-          <div key={c.label} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{c.label}</span>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>{c.value}</span>
+          <div key={c.label} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{c.label}</span>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>{c.value}</span>
           </div>
         ))}
       </div>
@@ -690,21 +690,21 @@ function DeveloperToolsScreen({ onClose }) {
           currently notices these. Read-only: flags them for a human to
           fix by hand, same "never silently merge/fix" restraint the
           Registry duplicate checker already applies. */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Data integrity</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Data integrity</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
         <div onClick={() => orphans.length > 0 && setShowOrphans((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: orphans.length > 0 ? "pointer" : "default" }}>
-          <LinkBreak size={15} color={orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textDisabled : "#656568")} />
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", flex: 1 }}>Broken references</span>
-          <span style={{ fontSize: 13, color: orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textPrimary : "#1B1B1F"), fontWeight: 700 }}>
+          <LinkBreak size={15} color={orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} />
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>Broken references</span>
+          <span style={{ fontSize: 13, color: orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>
             {orphans.length === 0 ? "None found" : `${orphans.length}${showOrphans ? " ▲" : " ▼"}`}
           </span>
         </div>
         {showOrphans && orphans.length > 0 && (
           <div style={{ padding: "0 0 9px" }}>
             {orphans.map((o, i) => (
-              <div key={i} style={{ padding: "8px 0", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-                <div style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600 }}>{o.recordType}: {o.recordLabel}</div>
-                <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", marginTop: 2 }}>
+              <div key={i} style={{ padding: "8px 0", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+                <div style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600 }}>{o.recordType}: {o.recordLabel}</div>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginTop: 2 }}>
                   its <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{o.field}</span> points at a {o.targetType} that no longer exists (id: {o.danglingId})
                 </div>
               </div>
@@ -713,15 +713,15 @@ function DeveloperToolsScreen({ onClose }) {
         )}
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Danger zone</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: `1px solid ${ACTION.red}`, borderRadius: RADIUS.md, margin: "0 16px 20px", padding: 16 }}>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Danger zone</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: `1px solid ${ACTION.red}`, borderRadius: RADIUS.md, margin: "0 16px 20px", padding: 16 }}>
         {resetStage === "done" ? (
-          <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>All app data cleared. Reload the app to see the fresh-start state.</div>
+          <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>All app data cleared. Reload the app to see the fresh-start state.</div>
         ) : resetStage === "confirming" ? (
           <>
             <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>
               <AlertTriangle size={16} color={ACTION.red} style={{ flexShrink: 0, marginTop: 1 }} />
-              <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>This permanently deletes every contact, encounter, medication, log, test, clinic visit, and registry entry on this device. There's no undo — export a backup first if you're not sure.</div>
+              <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>This permanently deletes every contact, encounter, medication, log, test, clinic visit, and registry entry on this device. There's no undo — export a backup first if you're not sure.</div>
             </div>
             {/* ADDED 26 Aug 2026 — real ask: warn explicitly if there
                 are genuinely unbacked-up changes, not just a generic
@@ -734,7 +734,7 @@ function DeveloperToolsScreen({ onClose }) {
               </div>
             )}
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setResetStage("idle")} style={{ flex: 1, padding: 12, borderRadius: 12, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surface : "#FFFFFF", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => setResetStage("idle")} style={{ flex: 1, padding: 12, borderRadius: 12, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
               <button onClick={handleReset} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: ACTION.red, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Yes, delete everything</button>
             </div>
           </>
@@ -840,60 +840,60 @@ function ManageListsScreen({ onClose }) {
   }, [], {});
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Manage lists</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Manage lists</span>
       </div>
       <div style={{ display: "flex", gap: 8, padding: "12px 16px 0" }}>
         {[["registries", "Registries"], ["options", "Option lists"]].map(([key, label]) => (
           <div key={key} onClick={() => setTab(key)}
-            style={{ flex: 1, textAlign: "center", padding: "8px 0", borderRadius: 999, cursor: "pointer", fontSize: 13, fontWeight: 700, background: tab === key ? ACCENTS.healthcare : (darkMode ? DARK.surfaceVariant : "#E8E8EC"), color: tab === key ? "#FFFFFF" : (darkMode ? DARK.textSecondary : "#5B5B62") }}>
+            style={{ flex: 1, textAlign: "center", padding: "8px 0", borderRadius: 999, cursor: "pointer", fontSize: 13, fontWeight: 700, background: tab === key ? ACCENTS.healthcare : (darkMode ? DARK.surfaceVariant : "#E8E8EC"), color: tab === key ? "#FFFFFF" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary) }}>
             {label}
           </div>
         ))}
       </div>
       {tab === "registries" ? (
         <>
-          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", padding: "10px 16px 0" }}>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "10px 16px 0" }}>
             Shared vocabularies used across Contacts, Encounters, Testing, and Clinic Visits — rename or archive an entry directly, rather than only through whichever picker happens to reference it.
           </div>
-          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "16px 16px 20px", overflow: "hidden" }}>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "16px 16px 20px", overflow: "hidden" }}>
             {REGISTRIES.map((r) => (
               <div key={r.key} onClick={() => setOpenRegistry(r)}
-                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: "pointer" }}>
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ width: 28, height: 28, borderRadius: 999, background: `${r.color}1A`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <r.icon size={14} color={r.color} />
                   </div>
-                  <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{r.label}</span>
+                  <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>{r.label}</span>
                 </div>
-                <ChevronRight size={16} color={darkMode ? DARK.textDisabled : "#656568"} />
+                <ChevronRight size={16} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} />
               </div>
             ))}
           </div>
         </>
       ) : (
         <>
-          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", padding: "10px 16px 0" }}>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "10px 16px 0" }}>
             Add, rename, or reorder the simple option lists used across the app — no code, no waiting on a rebuild. Changes here are permanent on this device and survive future app updates.
           </div>
-          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "16px 16px 20px", overflow: "hidden" }}>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "16px 16px 20px", overflow: "hidden" }}>
             {optionListNames.map((name) => {
               const iconConfig = OPTION_LIST_ICONS[name];
               const IconComponent = iconConfig ? OPTION_LIST_ICON_COMPONENTS[iconConfig.icon] : null;
               return (
                 <div key={name} onClick={() => setOpenOptionList(name)}
-                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: "pointer" }}>
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {IconComponent && (
                       <div style={{ width: 28, height: 28, borderRadius: 999, background: `${iconConfig.color}1A`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <IconComponent size={14} color={iconConfig.color} />
                       </div>
                     )}
-                    <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{OPTION_LIST_LABELS[name] || name}</span>
+                    <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>{OPTION_LIST_LABELS[name] || name}</span>
                   </div>
-                  <span style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568" }}>{listCounts[name] ?? 0} options ›</span>
+                  <span style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>{listCounts[name] ?? 0} options ›</span>
                 </div>
               );
             })}
@@ -1026,7 +1026,7 @@ function ResourceCategory({ categoryKey, darkMode, query }) {
 
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>{RESOURCE_CATEGORY_LABELS[categoryKey]}</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 0 6px" }}>{RESOURCE_CATEGORY_LABELS[categoryKey]}</div>
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
         {filtered.length === 0 ? (
           <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>Nothing added yet.</div>
@@ -1064,7 +1064,7 @@ function ClinicalJustificationsCategory({ darkMode }) {
   ];
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Clinical justifications used</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 0 6px" }}>Clinical justifications used</div>
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
         <div style={{ fontSize: 11, color: T.textSecondary, padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
           What this app's own calculations (exposure windows, DoxyPEP timing, testing-interval stats) are actually based on — informational, not personalised medical advice.
@@ -1093,13 +1093,13 @@ function ResourcesScreen({ onClose }) {
   // as before (only recomputes when `query` changes) via useLoadedMemo.
   const hasMatch = useLoadedMemo(() => hasAnyResourceMatch(query), [query], true);
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Resources</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Resources</span>
       </div>
       <div style={{ padding: 16 }}>
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4 }}>
           Real organisations, most with a real link already filled in. Anything still blank is worth adding yourself with a current, verified one rather than trusting a guess for something this important — and any link here is worth double-checking still works before relying on it.
         </div>
         {/* ADDED 1 Sep 2026 — real ask: search, now that this list runs
@@ -1306,10 +1306,10 @@ function PrivacyScreen({ onClose }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Privacy & Security</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Privacy & Security</span>
       </div>
 
       <div style={{ padding: "16px" }}>
@@ -1325,9 +1325,9 @@ function PrivacyScreen({ onClose }) {
             or citing a specific incident, since that's not something
             this app's own UI copy can responsibly verify or keep
             current. */}
-        <div style={{ display: "flex", gap: 10, padding: 14, borderRadius: RADIUS.md, background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", marginBottom: 16 }}>
-          <Lock size={18} color={darkMode ? DARK.textSecondary : "#5B5B62"} style={{ flexShrink: 0, marginTop: 1 }} />
-          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", lineHeight: 1.5 }}>
+        <div style={{ display: "flex", gap: 10, padding: 14, borderRadius: RADIUS.md, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), marginBottom: 16 }}>
+          <Lock size={18} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} style={{ flexShrink: 0, marginTop: 1 }} />
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5 }}>
             SHOS has no account, no server, and no cloud sync — everything below only ever exists on this device. That's not just a preference you could turn off: there's genuinely nowhere else for it to go. Many comparable apps route usage data through third-party analytics or advertising services; this one structurally can't.
           </div>
         </div>
@@ -1336,14 +1336,14 @@ function PrivacyScreen({ onClose }) {
             per the user's explicit instruction, and always one tap to turn
             ON regardless of any PIN. */}
         <div onClick={settings.anonymiseModeActive ? undefined : activate}
-          style={{ padding: 18, borderRadius: RADIUS.md, background: settings.anonymiseModeActive ? "#1B1B1F" : (darkMode ? DARK.surface : "#FFFFFF"), border: `1px solid ${settings.anonymiseModeActive ? "#1B1B1F" : (darkMode ? DARK.border : "#DCDCE1")}`, cursor: settings.anonymiseModeActive ? "default" : "pointer", marginBottom: 16 }}>
+          style={{ padding: 18, borderRadius: RADIUS.md, background: settings.anonymiseModeActive ? "#1B1B1F" : (darkMode ? DARK.surface : NEUTRAL.surface), border: `1px solid ${settings.anonymiseModeActive ? "#1B1B1F" : (darkMode ? DARK.border : NEUTRAL.border)}`, cursor: settings.anonymiseModeActive ? "default" : "pointer", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {settings.anonymiseModeActive ? <EyeOff size={20} color="#FFFFFF" /> : <Eye size={20} color={darkMode ? DARK.textPrimary : "#1B1B1F"} />}
-            <span style={{ fontSize: 15, fontWeight: 700, color: settings.anonymiseModeActive ? "#FFFFFF" : (darkMode ? DARK.textPrimary : "#1B1B1F") }}>
+            {settings.anonymiseModeActive ? <EyeOff size={20} color="#FFFFFF" /> : <Eye size={20} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} />}
+            <span style={{ fontSize: 15, fontWeight: 700, color: settings.anonymiseModeActive ? "#FFFFFF" : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) }}>
               {settings.anonymiseModeActive ? "Anonymise mode is ON" : "Turn on Anonymise mode"}
             </span>
           </div>
-          <div style={{ fontSize: 12, color: settings.anonymiseModeActive ? "#DCDCE1" : (darkMode ? DARK.textSecondary : "#5B5B62"), marginTop: 6 }}>
+          <div style={{ fontSize: 12, color: settings.anonymiseModeActive ? "#DCDCE1" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), marginTop: 6 }}>
             {settings.anonymiseModeActive
               ? "Names, photos, addresses, and car details are hidden across Contacts."
               : "Tap right before handing your phone over — hides names, photos, addresses, and car registration in Contacts. Never turns on by itself."}
@@ -1351,16 +1351,16 @@ function PrivacyScreen({ onClose }) {
         </div>
 
         {settings.anonymiseModeActive && (
-          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 8 }}>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
               {settings.anonymisePin ? "Enter your PIN to turn it back off" : "Turn it back off"}
             </div>
             {settings.anonymisePin && (
               <div style={{ position: "relative", marginBottom: 8 }}>
                 <input value={pinEntry} onChange={(e) => { setPinEntry(e.target.value); setPinError(""); }} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="PIN"
-                  style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                  : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                  style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box" }} />
+                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                  : <Eye size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
               </div>
             )}
             {pinError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{pinError}</div>}
@@ -1376,20 +1376,20 @@ function PrivacyScreen({ onClose }) {
             unless Anonymise mode is actually on. Toggling "further"
             hiding when the base tier isn't even active never made
             sense — there'd be nothing for it to add on top of. */}
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16, marginBottom: 16, opacity: settings.anonymiseModeActive ? 1 : 0.5 }}>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 16, opacity: settings.anonymiseModeActive ? 1 : 0.5 }}>
           <div onClick={settings.anonymiseModeActive ? async () => { await PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } : undefined}
             role="switch" tabIndex={settings.anonymiseModeActive ? 0 : -1} aria-checked={settings.hideFurtherEnabled} aria-label="Also hide kinks & physical attributes"
             onKeyDown={settings.anonymiseModeActive ? async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); await PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } } : undefined}
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: settings.anonymiseModeActive ? "pointer" : "default" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Also hide kinks & physical attributes</div>
-              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Also hide kinks & physical attributes</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
                 {settings.anonymiseModeActive
                   ? "Stated kinks, limits, length/girth, and Cummer stats — hidden in addition to the base fields above, only while Anonymise mode is on."
                   : "Turn on Anonymise mode above first — this only ever applies on top of it."}
               </div>
             </div>
-            <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.hideFurtherEnabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0 }}>
+            <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.hideFurtherEnabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0 }}>
               {/* CHANGED — same knob-invisible-in-dark-mode bug class
                   as the Colour scheme screen's dark mode toggle: a
                   near-black knob in dark mode could blend into a
@@ -1404,15 +1404,15 @@ function PrivacyScreen({ onClose }) {
         {/* ADDED 19 Aug 2026 — App Lock, real ask, separate from
             Anonymise mode: gates opening the app at all, not just
             masking fields once it's open. */}
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
           <div onClick={toggleAppLock} role="switch" tabIndex={0} aria-checked={settings.appLockEnabled} aria-label="App Lock"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleAppLock(); } }}
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>App Lock</div>
-              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>Require your PIN just to open the app at all. Uses the same PIN as the Revert PIN below.</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>App Lock</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>Require your PIN just to open the app at all. Uses the same PIN as the Revert PIN below.</div>
             </div>
-            <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockEnabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0 }}>
+            <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockEnabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0 }}>
               <div style={{ position: "absolute", top: 2, left: settings.appLockEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
             </div>
           </div>
@@ -1435,15 +1435,15 @@ function PrivacyScreen({ onClose }) {
               checkBiometryAvailable() call) — that's expected, not a
               bug, the native plugin only exists in the installed app. */}
           {settings.appLockEnabled && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 14, borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: "pointer" }} onClick={toggleBiometric}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 14, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }} onClick={toggleBiometric}
               role="switch" tabIndex={0} aria-checked={settings.biometricUnlockEnabled} aria-label="Unlock with biometrics"
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleBiometric(); } }}>
               <div style={{ flex: 1, paddingRight: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Unlock with biometrics</div>
-                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>Fingerprint or face unlock as a shortcut for the PIN above — the PIN still works any time this is on, off, or unavailable.</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Unlock with biometrics</div>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>Fingerprint or face unlock as a shortcut for the PIN above — the PIN still works any time this is on, off, or unavailable.</div>
                 {biometricError && <div style={{ fontSize: 11, color: ACTION.red, marginTop: 4 }}>{biometricError}</div>}
               </div>
-              <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.biometricUnlockEnabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0 }}>
+              <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.biometricUnlockEnabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0 }}>
                 <div style={{ position: "absolute", top: 2, left: settings.biometricUnlockEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
               </div>
             </div>
@@ -1455,26 +1455,26 @@ function PrivacyScreen({ onClose }) {
               existing always-relock behaviour exactly — this is purely
               opt-in convenience layered on top. */}
           {settings.appLockEnabled && (
-            <div style={{ marginTop: 14, paddingTop: 14, borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
               <div onClick={async () => { await PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); }}
                 role="switch" tabIndex={0} aria-checked={settings.appLockGraceMinutes > 0} aria-label="Skip re-verification briefly"
                 onKeyDown={async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); await PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); } }}
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
                 <div style={{ flex: 1, paddingRight: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Skip re-verification briefly</div>
-                  <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>Reopening the app within a few minutes of last unlocking it won't ask again.</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Skip re-verification briefly</div>
+                  <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>Reopening the app within a few minutes of last unlocking it won't ask again.</div>
                 </div>
-                <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockGraceMinutes > 0 ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0 }}>
+                <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockGraceMinutes > 0 ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0 }}>
                   <div style={{ position: "absolute", top: 2, left: settings.appLockGraceMinutes > 0 ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
                 </div>
               </div>
               {settings.appLockGraceMinutes > 0 && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
-                  <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Grace period:</span>
+                  <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Grace period:</span>
                   <input type="number" min={1} max={120} value={settings.appLockGraceMinutes}
                     onChange={async (e) => { const v = Math.max(1, Math.min(120, Number(e.target.value) || 1)); await PrivacySettingsRepository.update({ appLockGraceMinutes: v }); refresh(); }}
-                    style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 13, textAlign: "center" }} />
-                  <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>minutes</span>
+                    style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13, textAlign: "center" }} />
+                  <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>minutes</span>
                 </div>
               )}
             </div>
@@ -1484,30 +1484,30 @@ function PrivacyScreen({ onClose }) {
         {/* CHANGED — real ask: "App Lock and Revert PIN should be
             neighbours" — moved to sit directly below App Lock now,
             since they share the exact same PIN. */}
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Revert PIN</div>
-          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 10 }}>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Revert PIN</div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
             {settings.anonymisePin ? "A PIN is set — used for both Anonymise mode's revert and App Lock above." : "No PIN set yet — anyone can turn Anonymise mode back off right now, and App Lock can't be turned on. Set one so both actually protect you."}
           </div>
           {settingPin ? (
             <>
               <div style={{ position: "relative", marginBottom: 8 }}>
                 <input value={newPin} onChange={(e) => setNewPin(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="New PIN (4+ digits)"
-                  style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                  : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                  style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box" }} />
+                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                  : <Eye size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
               </div>
               {/* ADDED — real ask: force reconfirmation before accepting,
                   to catch typos before they lock the user out later. */}
               <div style={{ position: "relative", marginBottom: 8 }}>
                 <input value={confirmPin} onChange={(e) => setConfirmPin(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="Confirm new PIN"
-                  style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                  : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                  style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box" }} />
+                {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                  : <Eye size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
               </div>
               {pinError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{pinError}</div>}
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => { setSettingPin(false); setNewPin(""); setConfirmPin(""); setPinError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+                <button onClick={() => { setSettingPin(false); setNewPin(""); setConfirmPin(""); setPinError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
                 <button onClick={savePin} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Save PIN</button>
               </div>
             </>
@@ -1523,9 +1523,9 @@ function PrivacyScreen({ onClose }) {
             anything if there's a real lock screen for it to be entered
             on in the first place. */}
         {settings.appLockEnabled && (
-          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Duress PIN (optional)</div>
-            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 10 }}>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Duress PIN (optional)</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
               {settings.duressPin
                 ? "Set. Entering this PIN on the App Lock screen — instead of your real one — opens a convincing but empty, fake version of the app. Your real data stays completely untouched, just not shown. There's no way back to real data from inside a decoy session — close and reopen the app, then enter your REAL PIN."
                 : "A second PIN, different from your real one, for a \"someone is making me unlock my phone\" situation. Entering it opens a fake, empty-looking app instead of your real data — nothing is deleted or changed, it just isn't shown."}
@@ -1534,19 +1534,19 @@ function PrivacyScreen({ onClose }) {
               <>
                 <div style={{ position: "relative", marginBottom: 8 }}>
                   <input value={newDuressPin} onChange={(e) => setNewDuressPin(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="New duress PIN (4+ digits)"
-                    style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                    : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                    style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box" }} />
+                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                    : <Eye size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
                 </div>
                 <div style={{ position: "relative", marginBottom: 8 }}>
                   <input value={confirmDuressPin} onChange={(e) => setConfirmDuressPin(e.target.value)} type={showPins ? "text" : "password"} inputMode="numeric" placeholder="Confirm duress PIN"
-                    style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                    : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                    style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box" }} />
+                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                    : <Eye size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
                 </div>
                 {duressPinError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{duressPinError}</div>}
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setSettingDuressPin(false); setNewDuressPin(""); setConfirmDuressPin(""); setDuressPinError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+                  <button onClick={() => { setSettingDuressPin(false); setNewDuressPin(""); setConfirmDuressPin(""); setDuressPinError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
                   <button onClick={saveDuressPin} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Save PIN</button>
                 </div>
               </>
@@ -1556,7 +1556,7 @@ function PrivacyScreen({ onClose }) {
                   {settings.duressPin ? "Change duress PIN" : "Set a duress PIN"}
                 </button>
                 {settings.duressPin && (
-                  <button onClick={clearDuressPin} style={{ padding: "10px 16px", borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: ACTION.red, fontWeight: 600, cursor: "pointer" }}>
+                  <button onClick={clearDuressPin} style={{ padding: "10px 16px", borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: ACTION.red, fontWeight: 600, cursor: "pointer" }}>
                     Remove
                   </button>
                 )}
@@ -1570,9 +1570,9 @@ function PrivacyScreen({ onClose }) {
             Duress PIN section above — there's no PIN to recover FROM
             otherwise. */}
         {settings.appLockEnabled && (
-          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Recovery string (optional)</div>
-            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 10 }}>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Recovery string (optional)</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
               {hasRecoveryString()
                 ? "Set. If you ever forget your PIN, \"Forgot PIN?\" on the lock screen lets you unlock with this instead and set a new PIN in the same step — your real data stays exactly as it is."
                 : "A real passphrase you pick yourself — not a code to write down — for if you ever forget your PIN. Without one, forgetting your PIN means there's no way back into your real data."}
@@ -1581,19 +1581,19 @@ function PrivacyScreen({ onClose }) {
               <>
                 <div style={{ position: "relative", marginBottom: 8 }}>
                   <input value={recoveryStringInput} onChange={(e) => setRecoveryStringInput(e.target.value)} type={showPins ? "text" : "password"} placeholder="New recovery string (6+ characters)"
-                    style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                    : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                    style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box" }} />
+                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                    : <Eye size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
                 </div>
                 <div style={{ position: "relative", marginBottom: 8 }}>
                   <input value={recoveryStringConfirm} onChange={(e) => setRecoveryStringConfirm(e.target.value)} type={showPins ? "text" : "password"} placeholder="Confirm recovery string"
-                    style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
-                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
-                    : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                    style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box" }} />
+                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                    : <Eye size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
                 </div>
                 {recoveryError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{recoveryError}</div>}
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setSettingRecovery(false); setRecoveryStringInput(""); setRecoveryStringConfirm(""); setRecoveryError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+                  <button onClick={() => { setSettingRecovery(false); setRecoveryStringInput(""); setRecoveryStringConfirm(""); setRecoveryError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
                   <button onClick={saveRecoveryString} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Save</button>
                 </div>
               </>
@@ -1603,7 +1603,7 @@ function PrivacyScreen({ onClose }) {
                   {hasRecoveryString() ? "Change recovery string" : "Set a recovery string"}
                 </button>
                 {hasRecoveryString() && (
-                  <button onClick={clearRecovery} style={{ padding: "10px 16px", borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: ACTION.red, fontWeight: 600, cursor: "pointer" }}>
+                  <button onClick={clearRecovery} style={{ padding: "10px 16px", borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: ACTION.red, fontWeight: 600, cursor: "pointer" }}>
                     Remove
                   </button>
                 )}
@@ -1633,15 +1633,15 @@ function PrivacyScreen({ onClose }) {
 // already-set snooze/skip state) for no real gain.
 function NotificationToggleRow({ label, description, enabled, onToggle, darkMode, children }) {
   return (
-    <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
+    <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
       <div role="switch" aria-checked={enabled} aria-label={label} tabIndex={0}
         onClick={onToggle} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
         <div style={{ flex: 1, paddingRight: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{label}</div>
-          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>{description}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{label}</div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>{description}</div>
         </div>
-        <div style={{ width: 40, height: 24, borderRadius: 999, background: enabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0 }}>
+        <div style={{ width: 40, height: 24, borderRadius: 999, background: enabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0 }}>
           <div style={{ position: "absolute", top: 2, left: enabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
         </div>
       </div>
@@ -1754,12 +1754,12 @@ function NotificationPermissionBanner({ darkMode }) {
   // which would wrongly imply the user blocked something).
   if (!isNative && isIOS() && !isStandalone()) {
     return (
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: `1px solid ${ACTION.red}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: `1px solid ${ACTION.red}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: ACTION.red, flexShrink: 0 }} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Notifications need SHOS added to your Home Screen</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Notifications need SHOS added to your Home Screen</span>
         </div>
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
           iOS Safari can't show notifications from a page opened in a regular browser tab, no matter what's allowed here. Tap the Share icon, choose <strong>Add to Home Screen</strong>, then open SHOS from that new icon instead of Safari — this banner will offer the real permission prompt once you do.
         </div>
       </div>
@@ -1771,8 +1771,8 @@ function NotificationPermissionBanner({ darkMode }) {
     // here (very old browser, or Capacitor itself missing) — rare, and
     // there is truly nothing actionable to offer.
     return (
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: `1px solid ${darkMode ? DARK.border : "#DCDCE1"}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
           Notifications aren't available in this environment (no notification support detected on this browser/device).
         </div>
       </div>
@@ -1789,15 +1789,15 @@ function NotificationPermissionBanner({ darkMode }) {
   // again just re-triggers the same failing call.
   const isError = status === "error";
   return (
-    <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: `1px solid ${isGranted ? ACTION.green : ACTION.red}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
+    <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: `1px solid ${isGranted ? ACTION.green : ACTION.red}`, borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <div style={{ width: 8, height: 8, borderRadius: "50%", background: isGranted ? ACTION.green : ACTION.red, flexShrink: 0 }} />
-        <span style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
           {isGranted ? "Notifications are allowed" : isDenied ? "Notifications are blocked" : isError ? "Couldn't check notification status" : "Notifications not yet allowed"}
         </span>
       </div>
       {isError && (
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>
           The check itself failed rather than returning a real answer — this is worth reporting as a bug.
           {statusDetail && (
             <div style={{ marginTop: 6, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, wordBreak: "break-word", whiteSpace: "pre-line" }}>
@@ -1812,7 +1812,7 @@ function NotificationPermissionBanner({ darkMode }) {
           {bridgeHealth && (
             <div style={{ marginTop: 6, fontSize: 11, color: bridgeHealth.ok ? ACTION.green : ACTION.red }}>
               {bridgeHealth.ok ? "Bridge check: other native calls work fine — this looks specific to notifications." : "Bridge check: a totally unrelated native call also failed — this looks like a broader native bridge issue, not just notifications."}
-              <div style={{ marginTop: 4, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, wordBreak: "break-word", whiteSpace: "pre-line", color: darkMode ? DARK.textSecondary : "#5B5B62" }}>
+              <div style={{ marginTop: 4, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, wordBreak: "break-word", whiteSpace: "pre-line", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
                 {bridgeHealth.detail}
               </div>
             </div>
@@ -1823,7 +1823,7 @@ function NotificationPermissionBanner({ darkMode }) {
         </div>
       )}
       {isGranted && (
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>
           {isNative
             ? "Android has granted this permission. The toggles below control which reminders actually get scheduled."
             : "Permission granted. The toggles below control which reminders actually get scheduled."}
@@ -1834,7 +1834,7 @@ function NotificationPermissionBanner({ darkMode }) {
           above (exact alarms) stays exactly as it was. */}
       {isGranted && !isNative && (
         <div style={{ marginBottom: 8, padding: "8px 10px", borderRadius: 10, background: darkMode ? DARK.surfaceVariant : "#F0F0F3" }}>
-          <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>
+          <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
             Running as a web app: reminders fire while SHOS is open or recently backgrounded, and for anything already due the moment you next open it — but can't reliably wake you up hours later if it's been fully closed. For that, install the Android app instead.
           </span>
         </div>
@@ -1850,7 +1850,7 @@ function NotificationPermissionBanner({ darkMode }) {
         <div style={{ marginBottom: 8, padding: "8px 10px", borderRadius: 10, background: exactAlarmStatus === "granted" ? `${ACTION.green}15` : `${ACTION.red}15` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: exactAlarmStatus === "granted" ? ACTION.green : ACTION.red, flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : "#1B1B1F", flex: 1 }}>
+            <span style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, flex: 1 }}>
               {exactAlarmStatus === "granted"
                 ? "Exact alarms allowed — reminders fire on time."
                 : exactAlarmStatus === "error"
@@ -1871,7 +1871,7 @@ function NotificationPermissionBanner({ darkMode }) {
         </div>
       )}
       {isDenied && (
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
           {isNative
             ? <>Android is blocking notifications for SHOS — none of the toggles below will actually fire until this changes. Android only shows the one-time in-app prompt once per install, so this has to be turned on manually: open your phone's <strong>Settings → Apps → SHOS → Notifications</strong> and allow them.</>
             : <>Your browser is blocking notifications for SHOS — none of the toggles below will actually fire until this changes. This has to be turned on manually in your browser's own site settings for SHOS (usually the padlock/site-info icon next to the address bar → Notifications → Allow).</>}
@@ -1879,7 +1879,7 @@ function NotificationPermissionBanner({ darkMode }) {
       )}
       {!isGranted && !isDenied && !isError && (
         <>
-          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>
             {isNative ? "SHOS hasn't asked yet, or Android hasn't recorded an answer." : "SHOS hasn't asked yet, or your browser hasn't recorded an answer."} Tap below for the real system prompt.
           </div>
           <button onClick={request} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
@@ -1896,7 +1896,7 @@ function NotificationPermissionBanner({ darkMode }) {
               Spelled out here instead of assumed. Web-specific wording
               below since that's a real capability difference, not just
               phrasing — see this component's own header comment. */}
-          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>
             {isNative
               ? <>Tap Send, then close the app (not just switch away — swipe it away or force-close it) before the {Math.round(TEST_NOTIFICATION_DELAY_MS / 1000)}s is up. If it still shows up, real reminders will too.</>
               : <>Tap Send, then switch to another tab or app (or lock your screen) before the {Math.round(TEST_NOTIFICATION_DELAY_MS / 1000)}s is up — it should still appear. Fully closing the tab/app will stop it, which is the real web limitation noted above.</>}
@@ -1937,16 +1937,16 @@ function InstallPwaNudge({ darkMode }) {
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 16, padding: "12px 16px", borderRadius: RADIUS.md, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surface : "#FFFFFF" }}>
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 16, padding: "12px 16px", borderRadius: RADIUS.md, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface }}>
       <Download size={16} color={ACCENTS.healthcare} style={{ flexShrink: 0, marginTop: 2 }} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Install SHOS for more reliable reminders</div>
-        <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2, marginBottom: 10 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Install SHOS for more reliable reminders</div>
+        <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10 }}>
           Installed as its own app (not just a browser tab), SHOS keeps its background notification handling registered more reliably.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <button onClick={install} style={{ padding: "7px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Install</button>
-          <span onClick={() => setDismissed(true)} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : "#5B5B62", cursor: "pointer" }}>Not now</span>
+          <span onClick={() => setDismissed(true)} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>Not now</span>
         </div>
       </div>
     </div>
@@ -2004,18 +2004,18 @@ function NotificationsScreen({ onClose }) {
 
   const hoursInput = (value, onChange) => (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
-      <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Hours before:</span>
+      <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Hours before:</span>
       <input type="number" min={1} max={168} value={value}
         onChange={(e) => onChange(Math.max(1, Math.min(168, Number(e.target.value) || 1)))}
-        style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 13, textAlign: "center" }} />
+        style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13, textAlign: "center" }} />
     </div>
   );
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Notifications</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Notifications</span>
       </div>
 
       <div style={{ padding: 16 }}>
@@ -2034,23 +2034,23 @@ function NotificationsScreen({ onClose }) {
             master switch above (permanent preference) and from a
             single medication's own "skip until tomorrow" (only covers
             one medication, one day). */}
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Pause everything</div>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Pause everything</div>
           {pausedActive ? (
             <>
-              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2, marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10 }}>
                 Paused until {new Date(notifPrefs.pausedUntil).toLocaleDateString([], { day: "numeric", month: "short" })}, {new Date(notifPrefs.pausedUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}.
               </div>
               <button onClick={resumeNow} style={{ padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Resume now</button>
             </>
           ) : (
             <>
-              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2, marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10 }}>
                 Temporarily stop every reminder — travelling, a break, whatever the reason. Resumes on its own, no need to remember to turn it back on.
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {[{ label: "1 day", days: 1 }, { label: "3 days", days: 3 }, { label: "1 week", days: 7 }, { label: "2 weeks", days: 14 }].map((opt) => (
-                  <button key={opt.days} onClick={() => startPause(opt.days)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${darkMode ? DARK.border : "#DCDCE1"}`, background: "transparent", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{opt.label}</button>
+                  <button key={opt.days} onClick={() => startPause(opt.days)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: "transparent", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{opt.label}</button>
                 ))}
               </div>
             </>
@@ -2065,14 +2065,14 @@ function NotificationsScreen({ onClose }) {
           description="Reminders due inside this window wait until it ends, rather than firing overnight.">
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
             <div>
-              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>From</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
               <input type="time" value={notifPrefs.quietHoursStart} onChange={(e) => setQuietHours({ quietHoursStart: e.target.value })}
-                style={{ padding: "6px 8px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 13 }} />
+                style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13 }} />
             </div>
             <div>
-              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>To</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
               <input type="time" value={notifPrefs.quietHoursEnd} onChange={(e) => setQuietHours({ quietHoursEnd: e.target.value })}
-                style={{ padding: "6px 8px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 13 }} />
+                style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13 }} />
             </div>
           </div>
         </NotificationToggleRow>
@@ -2097,9 +2097,9 @@ function NotificationsScreen({ onClose }) {
         {/* ADDED 3 Sep 2026 — real ask: a notification history log —
             nothing anywhere previously recorded that a real
             notification had delivered. */}
-        <div onClick={() => setShowHistory(true)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: RADIUS.md, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surface : "#FFFFFF", cursor: "pointer" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Notification history</span>
-          <ChevronRight size={16} color={darkMode ? DARK.textSecondary : "#5B5B62"} />
+        <div onClick={() => setShowHistory(true)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: RADIUS.md, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Notification history</span>
+          <ChevronRight size={16} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} />
         </div>
       </div>
 
@@ -2117,11 +2117,11 @@ function NotificationHistoryScreen({ darkMode, onClose }) {
   const clear = async () => { await NotificationHistoryRepository.clear(); setEntries([]); };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-          <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Notification history</span>
+          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+          <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Notification history</span>
         </div>
         {entries.length > 0 && (
           <span onClick={clear} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Clear</span>
@@ -2129,18 +2129,18 @@ function NotificationHistoryScreen({ darkMode, onClose }) {
       </div>
       <div style={{ padding: 16 }}>
         {entries.length === 0 ? (
-          <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", textAlign: "center", padding: "40px 16px" }}>
+          <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textAlign: "center", padding: "40px 16px" }}>
             Nothing's fired yet. Real reminders (and the test notification) show up here the moment they actually deliver.
           </div>
         ) : entries.map((e, i) => (
-          <div key={i} style={{ padding: "10px 0", borderBottom: i < entries.length - 1 ? (darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1") : "none" }}>
+          <div key={i} style={{ padding: "10px 0", borderBottom: i < entries.length - 1 ? ("1px solid " + (darkMode ? DARK.border : NEUTRAL.border)) : "none" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{e.title}</span>
-              <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", flexShrink: 0 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{e.title}</span>
+              <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flexShrink: 0 }}>
                 {new Date(e.firedAt).toLocaleDateString([], { day: "numeric", month: "short" })}, {new Date(e.firedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
               </span>
             </div>
-            {e.body && <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>{e.body}</div>}
+            {e.body && <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>{e.body}</div>}
           </div>
         ))}
       </div>
@@ -2199,22 +2199,22 @@ function UnitsScreen({ onClose }) {
   const setWeekStartsOn = async (value) => setAppPrefs(await AppPreferencesRepository.update({ weekStartsOn: value }));
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Units</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Units</span>
       </div>
 
       <div style={{ padding: 16 }}>
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 10 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
           Sets the default unit new entries start on, and how existing readings are displayed. Nothing already saved is rewritten — the value you originally entered is always kept too, alongside the converted one.
         </div>
         <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
           {["metric", "imperial"].map((opt) => (
             <div key={opt} onClick={() => setSystem(opt)}
               style={{ flex: 1, textAlign: "center", padding: "10px 0", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                border: `1px solid ${system === opt ? ACCENTS.healthcare : (darkMode ? DARK.border : "#DCDCE1")}`,
-                color: system === opt ? "#FFFFFF" : (darkMode ? DARK.textPrimary : "#1B1B1F"),
+                border: `1px solid ${system === opt ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`,
+                color: system === opt ? "#FFFFFF" : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary),
                 background: system === opt ? ACCENTS.healthcare : "transparent" }}>
               {opt === "metric" ? "Metric" : "Imperial"}
             </div>
@@ -2225,14 +2225,14 @@ function UnitsScreen({ onClose }) {
           const units = getAvailableUnits(type, prefs.typeKinds[type]);
           const current = prefs.preferredUnitByType[type] || units[0];
           return (
-            <div key={type} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-              <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{type}</span>
+            <div key={type} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+              <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{type}</span>
               <div style={{ display: "flex", gap: 6 }}>
                 {units.map((u) => (
                   <div key={u} onClick={() => setPreferred(type, u)}
                     style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: current === u ? 700 : 400, cursor: "pointer",
-                      border: `1px solid ${current === u ? ACCENTS.healthcare : (darkMode ? DARK.border : "#DCDCE1")}`,
-                      color: current === u ? "#FFFFFF" : (darkMode ? DARK.textSecondary : "#5B5B62"),
+                      border: `1px solid ${current === u ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`,
+                      color: current === u ? "#FFFFFF" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary),
                       background: current === u ? ACCENTS.healthcare : "transparent" }}>
                     {u}
                   </div>
@@ -2242,16 +2242,16 @@ function UnitsScreen({ onClose }) {
           );
         })}
 
-        <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : "#656568", marginTop: 24, marginBottom: 8 }}>Calendar</div>
+        <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginTop: 24, marginBottom: 8 }}>Calendar</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0" }}>
-          <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Week starts on</span>
+          <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Week starts on</span>
           <div role="radiogroup" aria-label="Week starts on" style={{ display: "flex", gap: 6 }}>
             {[{ value: "monday", label: "Monday" }, { value: "sunday", label: "Sunday" }].map((opt) => (
               <div key={opt.value} onClick={() => setWeekStartsOn(opt.value)} role="radio" tabIndex={0} aria-checked={appPrefs.weekStartsOn === opt.value}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setWeekStartsOn(opt.value); } }}
                 style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: appPrefs.weekStartsOn === opt.value ? 700 : 400, cursor: "pointer",
-                  border: `1px solid ${appPrefs.weekStartsOn === opt.value ? ACCENTS.healthcare : (darkMode ? DARK.border : "#DCDCE1")}`,
-                  color: appPrefs.weekStartsOn === opt.value ? "#FFFFFF" : (darkMode ? DARK.textSecondary : "#5B5B62"),
+                  border: `1px solid ${appPrefs.weekStartsOn === opt.value ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`,
+                  color: appPrefs.weekStartsOn === opt.value ? "#FFFFFF" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary),
                   background: appPrefs.weekStartsOn === opt.value ? ACCENTS.healthcare : "transparent" }}>
                 {opt.label}
               </div>
@@ -2307,22 +2307,22 @@ function AutomaticBackupsScreen({ onClose }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Automatic backups</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Automatic backups</span>
       </div>
       <div style={{ padding: 16 }}>
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16 }}>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Automatic backups</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Automatic backups</span>
             <div onClick={toggleAutoExport} role="switch" tabIndex={0} aria-checked={prefs.autoExportEnabled} aria-label="Automatic backups"
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleAutoExport(); } }}
-              style={{ width: 44, height: 26, borderRadius: 999, background: prefs.autoExportEnabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
+              style={{ width: 44, height: 26, borderRadius: 999, background: prefs.autoExportEnabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
               <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: prefs.autoExportEnabled ? 21 : 3, transition: "left 0.15s" }} />
             </div>
           </div>
-          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: prefs.autoExportEnabled ? 12 : 0 }}>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: prefs.autoExportEnabled ? 12 : 0 }}>
             Writes a full backup straight to your phone's Documents folder on its own, on
             whatever schedule you pick below — no need to remember to tap Export. Only
             runs when there's something new since the last backup. Nothing leaves this
@@ -2336,7 +2336,7 @@ function AutomaticBackupsScreen({ onClose }) {
                   style={{
                     padding: "8px 14px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer",
                     background: prefs.autoExportIntervalDays === opt.days ? ACCENTS.healthcare : (darkMode ? DARK.surfaceVariant : "#F0F0F3"),
-                    color: prefs.autoExportIntervalDays === opt.days ? "#FFFFFF" : (darkMode ? DARK.textSecondary : "#5B5B62"),
+                    color: prefs.autoExportIntervalDays === opt.days ? "#FFFFFF" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary),
                   }}>
                   {opt.label}
                 </span>
@@ -2368,27 +2368,27 @@ function DataNetworkScreen({ onClose }) {
   };
 
   const row = (label, enabled, onToggle, description) => (
-    <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
+    <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{label}</span>
         <div onClick={onToggle} role="switch" tabIndex={0} aria-checked={enabled} aria-label={label}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
-          style={{ width: 44, height: 26, borderRadius: 999, background: enabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
+          style={{ width: 44, height: 26, borderRadius: 999, background: enabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
           <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: enabled ? 21 : 3, transition: "left 0.15s" }} />
         </div>
       </div>
-      <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{description}</div>
+      <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{description}</div>
     </div>
   );
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Data & network</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Data & network</span>
       </div>
       <div style={{ padding: 16 }}>
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16 }}>
           SHOS is on-device only — nothing is ever sent to a server SHOS runs. Two features do call a third party directly from your device to do their job. Both are listed here exactly, and can be turned off.
         </div>
         {row(
@@ -2428,7 +2428,7 @@ function InfoIcon({ onClick }) {
   const [darkMode] = useDarkModePreference();
 
   return (
-    <div onClick={onClick} style={{ width: 16, height: 16, borderRadius: 999, border: "1px solid #656568", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", cursor: "pointer", flexShrink: 0 }}>i</div>
+    <div onClick={onClick} style={{ width: 16, height: 16, borderRadius: 999, border: "1px solid #656568", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, cursor: "pointer", flexShrink: 0 }}>i</div>
   );
 }
 
@@ -2437,16 +2437,16 @@ function StatRow({ label, value, explanation, sourceUrl }) {
 
   const [showInfo, setShowInfo] = useState(false);
   return (
-    <div style={{ padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+    <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{label}</span>
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{label}</span>
           <InfoIcon onClick={() => setShowInfo((s) => !s)} />
         </div>
-        <span style={{ fontSize: 15, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 700 }}>{value}</span>
+        <span style={{ fontSize: 15, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 700 }}>{value}</span>
       </div>
       {showInfo && (
-        <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, background: darkMode ? DARK.bg : "#F0F0F3", fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", lineHeight: 1.5 }}>
+        <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, background: darkMode ? DARK.bg : NEUTRAL.bg, fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5 }}>
           {explanation}
           {sourceUrl && (
             <div style={{ marginTop: 4 }}>
@@ -2534,19 +2534,19 @@ function StatsScreen({ onClose }) {
   const maxClinicVisits = Math.max(1, ...clinicVisitMonths.map((b) => b.count));
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Stats</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Stats</span>
       </div>
       <div style={{ padding: 16 }}>
 
         {/* Activity */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.encounters, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Encounter</div>
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
-          <div style={{ padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <div style={{ ...TYPE.sectionLabel, color: ACCENTS.encounters, padding: "0 0 6px" }}>Encounter</div>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Encounters per month</span>
+              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Encounters per month</span>
             </div>
             {/* ADDED — real ask: bars had no visible value, unreadable
                 on mobile touch (no hover). Raw count printed above each
@@ -2555,29 +2555,29 @@ function StatsScreen({ onClose }) {
             <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 78 }}>
               {activityMonths.map((b) => (
                 <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{b.count}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{b.count}</span>
                   <div style={{ width: "100%", height: `${Math.max(4, (b.count / maxActivity) * 44)}px`, background: ACCENTS.encounters, borderRadius: 3 }} />
-                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#656568" }}>{b.label}</span>
+                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>{b.label}</span>
                 </div>
               ))}
             </div>
           </div>
           <div style={{ padding: "12px 16px" }}>
-            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>Top kinks/roles logged</div>
+            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>Top kinks/roles logged</div>
             {topKinks.length === 0 ? (
-              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568", fontStyle: "italic" }}>Nothing logged yet.</div>
+              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>Nothing logged yet.</div>
             ) : topKinks.map((k) => (
               <div key={k.name} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{k.name}</span>
-                <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600 }}>{k.count}</span>
+                <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{k.name}</span>
+                <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{k.count}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Healthcare */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.healthcare, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Healthcare</div>
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ ...TYPE.sectionLabel, color: ACCENTS.healthcare, padding: "0 0 6px" }}>Healthcare</div>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <StatRow label="Tests logged" value={testingStats.testCount}
             explanation="Total non-archived tests with a real (not future-scheduled) date." />
           <StatRow label="Average interval between tests"
@@ -2602,16 +2602,16 @@ function StatsScreen({ onClose }) {
         {/* ADDED — real ask: "expand stats". Symptoms had no stats
             section at all before this — same "Top X" list pattern
             already established for kinks above. */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.healthcare, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Symptoms</div>
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ ...TYPE.sectionLabel, color: ACCENTS.healthcare, padding: "0 0 6px" }}>Symptoms</div>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px" }}>
-            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>Most logged symptoms</div>
+            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>Most logged symptoms</div>
             {topSymptoms.length === 0 ? (
-              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568", fontStyle: "italic" }}>Nothing logged yet.</div>
+              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>Nothing logged yet.</div>
             ) : topSymptoms.map((s) => (
               <div key={s.name} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{s.name}</span>
-                <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600 }}>{s.count}</span>
+                <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{s.name}</span>
+                <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{s.count}</span>
               </div>
             ))}
           </div>
@@ -2620,18 +2620,18 @@ function StatsScreen({ onClose }) {
         {/* ADDED — real ask: "expand stats". Clinic Visits had no stats
             section at all before this — same monthly-bar-chart pattern
             already established for Activity/Contacts below. */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.healthcare, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Clinic visits</div>
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
-          <div style={{ padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <div style={{ ...TYPE.sectionLabel, color: ACCENTS.healthcare, padding: "0 0 6px" }}>Clinic visits</div>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Visits per month</span>
+              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Visits per month</span>
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 78 }}>
               {clinicVisitMonths.map((b) => (
                 <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{b.count}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{b.count}</span>
                   <div style={{ width: "100%", height: `${Math.max(4, (b.count / maxClinicVisits) * 44)}px`, background: ACCENTS.healthcare, borderRadius: 3 }} />
-                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#656568" }}>{b.label}</span>
+                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>{b.label}</span>
                 </div>
               ))}
             </div>
@@ -2641,8 +2641,8 @@ function StatsScreen({ onClose }) {
         </div>
 
         {/* Medication */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.medication, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Medication</div>
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ ...TYPE.sectionLabel, color: ACCENTS.medication, padding: "0 0 6px" }}>Medication</div>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <StatRow label="Overall adherence (7-day)" value={adherence != null ? `${adherence}%` : "Not enough data"}
             explanation="Average of each daily/scheduled medication's own 7-day adherence rate (doses actually logged vs. doses expected). PRN medications aren't included — there's no fixed expected schedule to measure against." />
           <StatRow label="DoxyPEP compliance" value={doxyCompliance != null ? `${doxyCompliance}%` : "No DoxyPEP medication set up"}
@@ -2654,14 +2654,14 @@ function StatsScreen({ onClose }) {
               above (see getAdherenceTrend's own comment) — labelled
               honestly as such, not presented as the same number. */}
           <div style={{ padding: "12px 16px" }}>
-            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>Adherence trend (days with a dose logged, per month)</div>
-            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", marginBottom: 10 }}>A simpler month-by-month measure than the precise 7-day figure above — useful for spotting a trend, not a like-for-like comparison.</div>
+            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>Adherence trend (days with a dose logged, per month)</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 10 }}>A simpler month-by-month measure than the precise 7-day figure above — useful for spotting a trend, not a like-for-like comparison.</div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 78 }}>
               {adherenceTrend.map((b) => (
                 <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: b.pct != null ? (darkMode ? DARK.textSecondary : "#5B5B62") : (darkMode ? DARK.textDisabled : "#656568") }}>{b.pct != null ? `${b.pct}%` : "–"}</span>
-                  <div style={{ width: "100%", height: b.pct != null ? `${Math.max(4, (b.pct / 100) * 44)}px` : "4px", background: b.pct != null ? ACCENTS.medication : (darkMode ? DARK.border : "#DCDCE1"), borderRadius: 3 }} />
-                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#656568" }}>{b.label}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: b.pct != null ? (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary) : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) }}>{b.pct != null ? `${b.pct}%` : "–"}</span>
+                  <div style={{ width: "100%", height: b.pct != null ? `${Math.max(4, (b.pct / 100) * 44)}px` : "4px", background: b.pct != null ? ACCENTS.medication : (darkMode ? DARK.border : NEUTRAL.border), borderRadius: 3 }} />
+                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>{b.label}</span>
                 </div>
               ))}
             </div>
@@ -2669,18 +2669,18 @@ function StatsScreen({ onClose }) {
         </div>
 
         {/* Contacts */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.contacts, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Contacts</div>
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ ...TYPE.sectionLabel, color: ACCENTS.contacts, padding: "0 0 6px" }}>Contacts</div>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Contacts added per month</span>
+              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Contacts added per month</span>
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 78 }}>
               {contactMonths.map((b) => (
                 <div key={b.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>{b.count}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>{b.count}</span>
                   <div style={{ width: "100%", height: `${Math.max(4, (b.count / maxContacts) * 44)}px`, background: ACCENTS.contacts, borderRadius: 3 }} />
-                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : "#656568" }}>{b.label}</span>
+                  <span style={{ fontSize: 9, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>{b.label}</span>
                 </div>
               ))}
             </div>
@@ -2826,7 +2826,7 @@ function ColorWheelPicker({ currentValue, onPick, darkMode }) {
         }} />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}>
-        <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", flexShrink: 0 }}>Brightness</span>
+        <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flexShrink: 0 }}>Brightness</span>
         <input type="range" min="0" max="100" value={Math.round(v)}
           onChange={(e) => onPick(hsvToHex(h, s, Number(e.target.value)))}
           style={{ flex: 1 }} />
@@ -2858,16 +2858,16 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
   };
 
   return (
-    <div style={{ borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+    <div style={{ borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div onClick={() => setExpanded((e) => !e)} style={{ width: 16, height: 16, borderRadius: "50%", background: currentValue, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: "pointer" }} />
-          <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{label}</span>
-          {isOverridden && <span style={{ fontSize: 10, color: darkMode ? DARK.textDisabled : "#656568", fontStyle: "italic" }}>(customised)</span>}
+          <div onClick={() => setExpanded((e) => !e)} style={{ width: 16, height: 16, borderRadius: "50%", background: currentValue, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }} />
+          <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>{label}</span>
+          {isOverridden && <span style={{ fontSize: 10, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>(customised)</span>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {isOverridden && (
-            <ResetIcon size={16} color={darkMode ? DARK.textDisabled : "#656568"} style={{ cursor: "pointer" }} onClick={onReset} title="Reset to default" />
+            <ResetIcon size={16} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ cursor: "pointer" }} onClick={onReset} title="Reset to default" />
           )}
           {/* REMOVED 1 Sep 2026 — real ask: "colour buttons sit on a
               white background... looks visually out of place." That
@@ -2893,7 +2893,7 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
               <span key={mode} onClick={() => setPanelMode(mode)}
                 style={{
                   fontSize: 12, fontWeight: 700, cursor: "pointer", paddingBottom: 4,
-                  color: panelMode === mode ? "#3D63C9" : (darkMode ? DARK.textDisabled : "#656568"),
+                  color: panelMode === mode ? "#3D63C9" : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled),
                   borderBottom: panelMode === mode ? "2px solid #3D63C9" : "2px solid transparent",
                 }}>
                 {tabLabel}
@@ -2905,15 +2905,15 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
               onPick={(hex) => { onSetColor(colorKey, hex); setHexDraft(hex); }} />
           ) : (
             <>
-              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>Hex</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>Hex</div>
               <input value={hexDraft} onChange={(e) => commitHex(e.target.value)} placeholder="#RRGGBB"
-                style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, marginBottom: 10, boxSizing: "border-box" }} />
-              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>RGB</div>
+                style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontFamily: "'JetBrains Mono', monospace", fontSize: 13, marginBottom: 10, boxSizing: "border-box" }} />
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>RGB</div>
               <div style={{ display: "flex", gap: 8 }}>
                 {["r", "g", "b"].map((channel) => (
                   <input key={channel} type="number" min="0" max="255" value={rgb[channel]}
                     onChange={(e) => commitRgbChannel(channel, e.target.value)}
-                    style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 13, boxSizing: "border-box" }} />
+                    style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box" }} />
                 ))}
               </div>
             </>
@@ -3027,13 +3027,13 @@ function GuideScreen({ onClose, onStartTour }) {
   const T = darkMode ? DARK : NEUTRAL;
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Guide</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Guide</span>
       </div>
       <div style={{ padding: 16 }}>
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4 }}>
           Where things live and what the less-obvious features do — not a feature-by-feature walkthrough, just answers to "where do I find X."
         </div>
         {/* ADDED 9 Sep 2026 — real ask: a genuine spotlight-overlay
@@ -3066,13 +3066,13 @@ function GlossaryScreen({ onClose }) {
   const filtered = q ? GLOSSARY_TERMS.filter((t) => t.term.toLowerCase().includes(q) || t.body.toLowerCase().includes(q)) : GLOSSARY_TERMS;
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Glossary</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Glossary</span>
       </div>
       <div style={{ padding: 16 }}>
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4 }}>
           Plain-language explanations of the clinical shorthand used elsewhere in this app — informational, not personalised medical advice.
         </div>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search terms"
@@ -3103,23 +3103,23 @@ function AboutScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>About</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>About</span>
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ textAlign: "center", padding: "24px 0" }}>
-          <div style={{ ...TYPE.recordTitle, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>SHOS</div>
-          <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568" }}>Sexual Health Operating System</div>
+          <div style={{ ...TYPE.recordTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>SHOS</div>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>Sexual Health Operating System</div>
         </div>
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Version</span>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Version</span>
             {/* CHANGED — real ask: was hardcoded placeholder, now reads
                 the actual version from package.json rather than a
                 second, easy-to-forget copy of the same number. */}
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600 }}>{APP_VERSION}</span>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600 }}>{APP_VERSION}</span>
           </div>
           {/* ADDED — real ask: "getting version back to fixes already
               done" — package.json's version had genuinely never been
@@ -3129,15 +3129,15 @@ function AboutScreen({ onClose }) {
               build time via vite.config.js — see its own comment)
               never goes stale the way a manually-remembered version
               bump would. */}
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Build</span>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>{typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev"}</span>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Build</span>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>{typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev"}</span>
           </div>
           {/* CHANGED — real fix: pointed at the old private repo this
               project moved off of — the public repo everyone's actual
               builds/releases now come from is SHOS-V2. */}
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Repository</span>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Repository</span>
             <a href="https://github.com/drwho2001/SHOS-V2" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#3D63C9", fontWeight: 600 }}>
               GitHub →
             </a>
@@ -3146,13 +3146,13 @@ function AboutScreen({ onClose }) {
               the native app's own version/repo info, for anyone on iOS
               or a computer who can't install the APK. */}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px" }}>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Web app (iPhone / computer)</span>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Web app (iPhone / computer)</span>
             <a href="https://drwho2001.github.io/SHOS-V2/" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#3D63C9", fontWeight: 600 }}>
               Open →
             </a>
           </div>
         </div>
-        <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", textAlign: "center", marginTop: 16 }}>
+        <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, textAlign: "center", marginTop: 16 }}>
           Local-first — nothing here leaves this device unless you choose to export or share it.
         </div>
       </div>
@@ -3249,33 +3249,33 @@ function CalendarSyncSheet({ onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 300 }} onClick={() => !calendarSyncing && onClose()}>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: "80vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: "80vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Phone calendar sync</span>
-          <X size={18} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close calendar sync settings" />
+          <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Phone calendar sync</span>
+          <X size={18} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close calendar sync settings" />
         </div>
 
         <div onClick={calendarSyncing ? undefined : toggleCalendarSync} role="switch" tabIndex={0} aria-checked={appPrefs.calendarSyncEnabled} aria-label="Sync clinic appointments to phone calendar"
           onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCalendarSync(); } }}
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer" }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Sync clinic appointments to phone calendar</div>
-            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Sync clinic appointments to phone calendar</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
               Booked appointments appear in your phone's real calendar app. Defaults to its own private "SHOS (private)" calendar — never a synced/shared one, never sent anywhere. Turning this off removes everything this app put there.
             </div>
             {calendarSyncError && <div style={{ fontSize: 11, color: ACTION.red, marginTop: 4 }}>{calendarSyncError}</div>}
           </div>
-          <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncEnabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
+          <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncEnabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
             <div style={{ position: "absolute", top: 2, left: appPrefs.calendarSyncEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
           </div>
         </div>
 
         {appPrefs.calendarSyncEnabled && (
-          <div style={{ marginTop: 14, paddingTop: 14, borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <div onClick={calendarSyncing ? undefined : openCalendarPicker} role="button" tabIndex={0}
               onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openCalendarPicker(); } }}
               style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer" }}>
-              <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Syncing to:</div>
+              <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Syncing to:</div>
               <div style={{ fontSize: 12, fontWeight: 700, color: ACCENTS.healthcare }}>{appPrefs.calendarSyncTargetName || SHOS_CALENDAR_NAME} · Change</div>
             </div>
             {/* ADDED — real ask from a security audit finding: the
@@ -3290,12 +3290,12 @@ function CalendarSyncSheet({ onClose }) {
               onKeyDown={calendarSyncing ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleGenericTitle(); } }}
               style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: calendarSyncing ? "default" : "pointer", marginTop: 14 }}>
               <div style={{ flex: 1, paddingRight: 12 }}>
-                <div style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Use a generic event title</div>
-                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Use a generic event title</div>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
                   "Clinic appointment" instead of this visit's own title — safer if reminders show on your lock screen.
                 </div>
               </div>
-              <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncGenericTitle ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
+              <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncGenericTitle ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
                 <div style={{ position: "absolute", top: 2, left: appPrefs.calendarSyncGenericTitle ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
               </div>
             </div>
@@ -3312,7 +3312,7 @@ function CalendarSyncSheet({ onClose }) {
                   <AlertTriangle size={14} color="#B45309" />
                   <span style={{ fontSize: 12, fontWeight: 700, color: "#B45309" }}>Not private by default</span>
                 </div>
-                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", lineHeight: 1.5 }}>
+                <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5 }}>
                   This app can't control whether "{appPrefs.calendarSyncTargetName}" is shared with anyone else — that's entirely up to how that calendar's own account is set up. If it's a Google Calendar, check it isn't set to "Make available to public" and isn't shared under its own sharing settings. If it's Outlook, check Calendar settings → Shared calendars. If it's Apple/iCloud, check Calendar → Edit → Shared With. When in doubt, switch back to the private "SHOS (private)" calendar above.
                 </div>
               </div>
@@ -3323,24 +3323,24 @@ function CalendarSyncSheet({ onClose }) {
         {/* Calendar target picker — real device calendars only, loaded
             on first open. Always offers the private default first. */}
         {showCalendarPicker && (
-          <div style={{ marginTop: 16, paddingTop: 16, borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Sync appointments to</div>
-            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 12 }}>Only calendars already on this device — nothing new is ever created except the private option below.</div>
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Sync appointments to</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 12 }}>Only calendars already on this device — nothing new is ever created except the private option below.</div>
             <div onClick={() => !calendarSyncing && selectCalendarTarget(null)} role="radio" tabIndex={0} aria-checked={!appPrefs.calendarSyncTargetName}
               onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !calendarSyncing) { e.preventDefault(); selectCalendarTarget(null); } }}
-              style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${!appPrefs.calendarSyncTargetName ? ACCENTS.healthcare : (darkMode ? DARK.border : "#DCDCE1")}`, background: !appPrefs.calendarSyncTargetName ? `${ACCENTS.healthcare}10` : "transparent", cursor: "pointer", marginBottom: 8 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>SHOS (private) — recommended</div>
-              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>On-device only, structurally can't sync or be shared.</div>
+              style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${!appPrefs.calendarSyncTargetName ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`, background: !appPrefs.calendarSyncTargetName ? `${ACCENTS.healthcare}10` : "transparent", cursor: "pointer", marginBottom: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>SHOS (private) — recommended</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>On-device only, structurally can't sync or be shared.</div>
             </div>
-            {availableCalendars === null && <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568", textAlign: "center", padding: 10 }}>Loading calendars…</div>}
+            {availableCalendars === null && <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, textAlign: "center", padding: 10 }}>Loading calendars…</div>}
             {availableCalendars?.length === 0 && (
-              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568", textAlign: "center", padding: 10 }}>No other calendars found on this device.</div>
+              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, textAlign: "center", padding: 10 }}>No other calendars found on this device.</div>
             )}
             {availableCalendars?.map((cal) => (
               <div key={cal.id} onClick={() => !calendarSyncing && selectCalendarTarget(cal.name)} role="radio" tabIndex={0} aria-checked={appPrefs.calendarSyncTargetName === cal.name}
                 onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !calendarSyncing) { e.preventDefault(); selectCalendarTarget(cal.name); } }}
-                style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${appPrefs.calendarSyncTargetName === cal.name ? ACCENTS.healthcare : (darkMode ? DARK.border : "#DCDCE1")}`, background: appPrefs.calendarSyncTargetName === cal.name ? `${ACCENTS.healthcare}10` : "transparent", cursor: "pointer", marginBottom: 8 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{cal.displayName || cal.name}</div>
+                style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${appPrefs.calendarSyncTargetName === cal.name ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`, background: appPrefs.calendarSyncTargetName === cal.name ? `${ACCENTS.healthcare}10` : "transparent", cursor: "pointer", marginBottom: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{cal.displayName || cal.name}</div>
                 <div style={{ fontSize: 11, color: "#B45309", marginTop: 2 }}>Not private by default — its own sharing settings apply.</div>
               </div>
             ))}
@@ -3425,11 +3425,11 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", justifyContent: "space-between" }}>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-          <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Calendar</span>
+          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+          <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Calendar</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {/* ADDED — real ask: phone-calendar sync now lives here, an
@@ -3440,7 +3440,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
           <div onClick={() => setShowSyncSheet(true)} style={{ display: "flex", alignItems: "center", cursor: "pointer" }} title="Phone calendar sync">
             {syncEnabled
               ? <CloudCheck size={20} weight="fill" color={ACCENTS.healthcare} />
-              : <CloudArrowUp size={20} color={darkMode ? DARK.textSecondary : "#5B5B62"} />}
+              : <CloudArrowUp size={20} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} />}
           </div>
           <span onClick={() => setShowFilters((s) => !s)} style={{ fontSize: 12, fontWeight: 600, color: activeModules.length < ALL_MODULE_KEYS.length ? "#3D63C9" : (darkMode ? DARK.textDisabled : "#5B5B62"), cursor: "pointer" }}>
             Filter{activeModules.length < ALL_MODULE_KEYS.length ? ` (${activeModules.length})` : ""}
@@ -3448,7 +3448,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
         </div>
       </div>
       {showFilters && (
-        <div style={{ padding: "10px 16px 0", display: "flex", flexWrap: "wrap", gap: 6, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", paddingBottom: 10 }}>
+        <div style={{ padding: "10px 16px 0", display: "flex", flexWrap: "wrap", gap: 6, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), paddingBottom: 10 }}>
           {ALL_MODULE_KEYS.map((key) => {
             const active = activeModules.includes(key);
             return (
@@ -3459,8 +3459,8 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
               // theme — nearly invisible against DARK.bg, unlike the
               // active chip (module accent, already theme-agnostic).
               <div key={key} onClick={() => toggleModule(key)}
-                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? ACCENTS[key] : (darkMode ? DARK.border : "#DCDCE1")}`, color: active ? ACCENTS[key] : (darkMode ? DARK.textDisabled : "#656568"), background: active ? `${ACCENTS[key]}15` : "transparent" }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: active ? ACCENTS[key] : (darkMode ? DARK.textDisabled : "#656568") }} />
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? ACCENTS[key] : (darkMode ? DARK.border : NEUTRAL.border)}`, color: active ? ACCENTS[key] : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled), background: active ? `${ACCENTS[key]}15` : "transparent" }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: active ? ACCENTS[key] : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) }} />
                 {TRASH_MODULE_LABELS[key]}
               </div>
             );
@@ -3475,13 +3475,13 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
             look already says whether sync is on), so a second, more
             intrusive banner here would just be redundant. */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <ChevronLeft size={20} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={() => { setCursor(new Date(year, month - 1, 1)); setSelectedDay(null); }} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</span>
-          <ChevronRight size={20} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={() => { setCursor(new Date(year, month + 1, 1)); setSelectedDay(null); }} />
+          <ChevronLeft size={20} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={() => { setCursor(new Date(year, month - 1, 1)); setSelectedDay(null); }} />
+          <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</span>
+          <ChevronRight size={20} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={() => { setCursor(new Date(year, month + 1, 1)); setSelectedDay(null); }} />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
           {WEEKDAY_LABELS.map((d, i) => (
-            <div key={i} style={{ textAlign: "center", fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", fontWeight: 700, padding: "4px 0" }}>{d}</div>
+            <div key={i} style={{ textAlign: "center", fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontWeight: 700, padding: "4px 0" }}>{d}</div>
           ))}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
@@ -3494,14 +3494,14 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
             const moduleColorsPresent = [...new Set(dayEvents.map((e) => e.moduleKey))].map((k) => ACCENTS[k] || "#656568");
             return (
               <div key={i} onClick={() => setSelectedDay(isSelected ? null : day)}
-                style={{ aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 8, cursor: "pointer", background: isSelected ? "#1B1B1F" : isToday ? (darkMode ? DARK.surfaceVariant : "#E7E7EB") : "transparent", gap: 2 }}>
+                style={{ aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 8, cursor: "pointer", background: isSelected ? "#1B1B1F" : isToday ? (darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant) : "transparent", gap: 2 }}>
                 {/* FIXED 1 Sep 2026 — real bug found during a light/dark
                     sweep: every day number was hardcoded to #1B1B1F
                     (near-black) regardless of theme — nearly invisible
                     against DARK.bg, with only today's cell readable by
                     accident (its own light highlight background gave
                     the dark text something to contrast against). */}
-                <span style={{ fontSize: 12, color: isSelected ? "#FFFFFF" : (darkMode ? DARK.textPrimary : "#1B1B1F"), fontWeight: isToday ? 700 : 400 }}>{day}</span>
+                <span style={{ fontSize: 12, color: isSelected ? "#FFFFFF" : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: isToday ? 700 : 400 }}>{day}</span>
                 {moduleColorsPresent.length > 0 && (
                   <div style={{ display: "flex", gap: 2 }}>
                     {moduleColorsPresent.slice(0, 3).map((c, j) => <div key={j} style={{ width: 4, height: 4, borderRadius: "50%", background: c }} />)}
@@ -3514,20 +3514,20 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
 
         {selectedDay && (
           <div style={{ marginTop: 20 }}>
-            <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : "#656568", marginBottom: 8 }}>
+            <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 8 }}>
               {new Date(year, month, selectedDay).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
             </div>
             {selectedEvents.length === 0 ? (
-              <div style={{ fontSize: 13, color: darkMode ? DARK.textDisabled : "#656568", fontStyle: "italic" }}>Nothing logged this day.</div>
+              <div style={{ fontSize: 13, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>Nothing logged this day.</div>
             ) : (
-              <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden" }}>
+              <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
                 {selectedEvents.map((ev, i) => (
                   <div key={i} onClick={() => goToEvent(ev)}
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: i < selectedEvents.length - 1 ? `1px solid ${darkMode ? DARK.border : "#DCDCE1"}` : "none", cursor: "pointer" }}>
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: i < selectedEvents.length - 1 ? `1px solid ${darkMode ? DARK.border : NEUTRAL.border}` : "none", cursor: "pointer" }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: ACCENTS[ev.moduleKey] || "#656568", flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
-                      <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568" }}>{TRASH_MODULE_LABELS[ev.moduleKey] || ev.moduleKey}</div>
+                      <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
+                      <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>{TRASH_MODULE_LABELS[ev.moduleKey] || ev.moduleKey}</div>
                     </div>
                   </div>
                 ))}
@@ -3592,11 +3592,11 @@ function TrashScreen({ onClose }) {
   const recordLabel = (entry) => entry.record.title || entry.record.name || entry.record.displayName || "Untitled";
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", justifyContent: "space-between" }}>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-          <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Trash</span>
+          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+          <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Trash</span>
         </div>
         {items.length > 0 && (
           <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#3D63C9", cursor: "pointer" }}>
@@ -3615,11 +3615,11 @@ function TrashScreen({ onClose }) {
         </div>
       )}
       <div style={{ padding: 16 }}>
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568", marginBottom: 14 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 14 }}>
           Deleted items stay here for 30 days before they're no longer shown. This is separate from the "tap to undo" that appears right after deleting something.
         </div>
         {items.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 20px", color: darkMode ? DARK.textDisabled : "#656568", fontSize: 13 }}>Nothing in the trash.</div>
+          <div style={{ textAlign: "center", padding: "40px 20px", color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontSize: 13 }}>Nothing in the trash.</div>
         ) : (
           <>
             {/* ADDED 26 Aug 2026 — real ask: "restore all" and "delete
@@ -3632,7 +3632,7 @@ function TrashScreen({ onClose }) {
                 <span onClick={deleteAll} style={{ fontSize: 13, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Delete all</span>
               </div>
             )}
-            <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden" }}>
+            <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
               {items.map((entry, i) => (
                 <div key={entry.trashId} onClick={() => selectMode && toggleSelected(entry.trashId)}
                   {...(selectMode ? {
@@ -3647,8 +3647,8 @@ function TrashScreen({ onClose }) {
                       </div>
                     )}
                     <div style={{ minWidth: 0, flex: 1, paddingRight: 10 }}>
-                      <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recordLabel(entry)}</div>
-                      <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", marginTop: 2 }}>{TRASH_MODULE_LABELS[entry.moduleKey] || entry.moduleKey} · deleted {new Date(entry.deletedAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</div>
+                      <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recordLabel(entry)}</div>
+                      <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginTop: 2 }}>{TRASH_MODULE_LABELS[entry.moduleKey] || entry.moduleKey} · deleted {new Date(entry.deletedAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</div>
                     </div>
                   </div>
                   {!selectMode && (
@@ -3716,10 +3716,10 @@ function DesignScreen({ onClose }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Colour scheme</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Colour scheme</span>
       </div>
       <div style={{ padding: 16 }}>
         {changed && (
@@ -3739,9 +3739,9 @@ function DesignScreen({ onClose }) {
             </button>
           </div>
         )}
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
-            <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>Dark mode</span>
+            <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>Dark mode</span>
             {/* CHANGED — real bug: the knob used to switch to
                 DARK.surface (#1C1C1F) when on, nearly identical to the
                 track's own #1B1B1F — the one control to turn dark mode
@@ -3757,13 +3757,13 @@ function DesignScreen({ onClose }) {
             </div>
           </div>
         </div>
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "14px 16px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>Colour-blind friendly palette</span>
+              <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>Colour-blind friendly palette</span>
               <div onClick={toggleCvdPalette} role="switch" tabIndex={0} aria-checked={cvdActive} aria-label="Colour-blind friendly palette"
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCvdPalette(); } }}
-                style={{ width: 44, height: 26, borderRadius: 999, background: cvdActive ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
+                style={{ width: 44, height: 26, borderRadius: 999, background: cvdActive ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
                 <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: cvdActive ? 21 : 3, transition: "left 0.15s" }} />
               </div>
             </div>
@@ -3771,7 +3771,7 @@ function DesignScreen({ onClose }) {
                 actually does, right where the toggle lives, since it's
                 a research-backed preset rather than a self-explanatory
                 control. */}
-            <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 6, lineHeight: 1.4 }}>
+            <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 6, lineHeight: 1.4 }}>
               Swaps all module and status colours below for one shared set, checked
               (via real colour-blindness simulation, not just standard vision) to stay
               distinguishable and legible under protanopia, deuteranopia, AND
@@ -3782,8 +3782,8 @@ function DesignScreen({ onClose }) {
             </div>
           </div>
         </div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Module colours</div>
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden" }}>
+        <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 0 6px" }}>Module colours</div>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
           {CUSTOMIZABLE_MODULE_KEYS.map((key) => {
             const isOverridden = key in overrides;
             const currentValue = overrides[key] || ACCENTS[key];
@@ -3799,8 +3799,8 @@ function DesignScreen({ onClose }) {
             green confusion is the most common form. Wired app-wide,
             dark mode included — see designTokens.js's ACTION export
             and resolveDarkAccent(). */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "20px 0 6px" }}>Status colours</div>
-        <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, overflow: "hidden" }}>
+        <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "20px 0 6px" }}>Status colours</div>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
           {CUSTOMIZABLE_ACTION_KEYS.map((key) => {
             const isOverridden = key in overrides;
             const currentValue = overrides[key] || ACTION[key === "actionRed" ? "red" : "green"];
@@ -3811,7 +3811,7 @@ function DesignScreen({ onClose }) {
           })}
         </div>
         {Object.keys(overrides).length > 0 && (
-          <div onClick={resetAll} style={{ marginTop: 14, fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", textDecoration: "underline", cursor: "pointer", textAlign: "center" }}>
+          <div onClick={resetAll} style={{ marginTop: 14, fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textDecoration: "underline", cursor: "pointer", textAlign: "center" }}>
             Reset all to defaults
           </div>
         )}
@@ -3978,7 +3978,7 @@ function PreferencesScreen({ onClose }) {
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>Preferences</span>
+        <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Preferences</span>
       </div>
       <div style={{ padding: 16 }}>
         {changed && (
@@ -3992,11 +3992,11 @@ function PreferencesScreen({ onClose }) {
             </button>
           </div>
         )}
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.textDisabled, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Navigation</div>
+        <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>Navigation</div>
         <div style={{ marginBottom: 20 }}><TabOrderCard T={T} onChanged={() => setChanged(true)} /></div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.textDisabled, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Contacts</div>
+        <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>Contacts</div>
         <div style={{ marginBottom: 20 }}><InactiveThresholdCard T={T} /></div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.textDisabled, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Healthcare</div>
+        <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>Healthcare</div>
         <MenstrualTrackingToggleCard T={T} />
       </div>
     </div>
@@ -4150,26 +4150,26 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
     const resolvedIconColor = iconColor || (darkMode ? DARK.textDisabled : "#5B5B62");
     return (
     <div onClick={disabled ? undefined : onClick}
-      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 }}>
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <Icon size={17} weight={emphasized ? "bold" : "regular"} color={resolvedIconColor} />
-        <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>{label}</span>
       </div>
-      {!disabled && <ChevronRight size={16} color={darkMode ? DARK.textDisabled : "#656568"} />}
-      {disabled && <span style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : "#656568", fontStyle: "italic" }}>Not built yet</span>}
+      {!disabled && <ChevronRight size={16} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} />}
+      {disabled && <span style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>Not built yet</span>}
     </div>
     );
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px", position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Settings</span>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px", position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Settings</span>
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "16px 16px 6px" }}>Profile</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 20px", overflow: "hidden" }}>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "16px 16px 6px" }}>Profile</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", overflow: "hidden" }}>
         <SettingsRow icon={User} label="My Profile" onClick={() => setShowMyProfile(true)} />
       </div>
 
@@ -4189,8 +4189,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
           itself reached via a gear) is now Shield; About's checklist
           icon is now Info. No rows added, removed, or rewired — same
           22 rows, same onClick handlers, just regrouped and re-iconed. */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Backup &amp; Data</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Backup &amp; Data</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* CHANGED — real bug found in the user's own testing: passing
             `exportBackup` directly meant the DOM click's SyntheticEvent
             got passed as `includeKeys`, which buildBackup() then tried
@@ -4198,7 +4198,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             export never hit this because its own button already
             wrapped the call in an arrow function that discards the
             event. Wrapping this one the same way. */}
-        <SettingsRow icon={Upload} label="Export backup" onClick={doPlainExport} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
+        <SettingsRow icon={Upload} label="Export backup" onClick={doPlainExport} iconColor={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} emphasized />
         {/* ADDED — real ask: real confirmation for this button — it
             fires the OS share sheet with no feedback of its own, and
             round-trip verification (backupService.js's own
@@ -4207,7 +4207,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             pattern already used for Export backup to a folder/
             Encrypted export below — this exact row just never had one. */}
         {plainExportStatus && (
-          <div style={{ fontSize: 12, color: plainExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : "#5B5B62"), padding: "0 16px 10px", textAlign: "center" }}>{plainExportStatus.msg}</div>
+          <div style={{ fontSize: 12, color: plainExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), padding: "0 16px 10px", textAlign: "center" }}>{plainExportStatus.msg}</div>
         )}
         {/* ADDED — real ask: an explicit "choose exactly where this
             goes" alternative to the row above, which opens the Share
@@ -4215,14 +4215,14 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             Only shown once actually available — see
             fileExportHelper.js's isChooseFolderExportAvailable. */}
         {chooseFolderAvailable && (
-          <SettingsRow icon={Folder} label="Export backup to a folder…" onClick={doPlainExportToFolder} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} />
+          <SettingsRow icon={Folder} label="Export backup to a folder…" onClick={doPlainExportToFolder} iconColor={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} />
         )}
         {/* FIXED — real bug found in the same pass as the round-trip
             verification above: this status was tracked (set on every
             export attempt) but never actually rendered anywhere —
             silently dead state, the failure branches included. */}
         {plainFolderExportStatus && (
-          <div style={{ fontSize: 12, color: plainFolderExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : "#5B5B62"), padding: "0 16px 10px", textAlign: "center" }}>{plainFolderExportStatus.msg}</div>
+          <div style={{ fontSize: 12, color: plainFolderExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), padding: "0 16px 10px", textAlign: "center" }}>{plainFolderExportStatus.msg}</div>
         )}
         {/* ADDED 19 Aug 2026 — real ask: default export stays one tap
             (the row above, unchanged), this is the opt-in "choose what
@@ -4232,16 +4232,16 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             Contacts' Import earlier this session, mirrored here —
             Export (data leaving) reads as Upload, Restore (data coming
             back in) reads as Download. */}
-        <SettingsRow icon={Filter} label="Selective export…" onClick={() => setShowSelectiveExport(true)} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
+        <SettingsRow icon={Filter} label="Selective export…" onClick={() => setShowSelectiveExport(true)} iconColor={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} emphasized />
         {/* ADDED — real ask: CSV export, for reading data elsewhere
             (Excel/Sheets), separate from the JSON backup above (which
             is for restoring into SHOS, not for opening as a
             spreadsheet). */}
-        <SettingsRow icon={FileCsv} label="Export as CSV…" onClick={() => setShowCSVExport(true)} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
+        <SettingsRow icon={FileCsv} label="Export as CSV…" onClick={() => setShowCSVExport(true)} iconColor={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} emphasized />
         {/* ADDED — real ask: password-protected backup, for storing or
             sending a backup somewhere less trusted than this device. */}
-        <SettingsRow icon={Lock} label="Export encrypted backup…" onClick={() => setShowEncryptedExport(true)} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
-        <SettingsRow icon={Download} label="Restore from backup" onClick={onImportClick} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
+        <SettingsRow icon={Lock} label="Export encrypted backup…" onClick={() => setShowEncryptedExport(true)} iconColor={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} emphasized />
+        <SettingsRow icon={Download} label="Restore from backup" onClick={onImportClick} iconColor={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} emphasized />
         {/* MOVED 1 Sep 2026 from Preferences — a backup-scheduling
             setting belongs next to the other backup controls, not
             bundled with an unrelated Contacts-display setting under a
@@ -4249,11 +4249,11 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <SettingsRow icon={Clock} label="Automatic backups" onClick={() => setShowAutoBackupSettings(true)} />
       </div>
       {status && (
-        <div style={{ margin: "0 16px 20px", padding: "10px 14px", borderRadius: 12, background: "#FFF4CE", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 12 }}>{status}</div>
+        <div style={{ margin: "0 16px 20px", padding: "10px 14px", borderRadius: 12, background: "#FFF4CE", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 12 }}>{status}</div>
       )}
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Security &amp; Privacy</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Security &amp; Privacy</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* CHANGED 19 Aug 2026 — real fix: Privacy was already real
             (onClick worked), but had been left sitting visually under
             "Not built yet" below since that entry was first added —
@@ -4266,8 +4266,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <SettingsRow icon={WifiHigh} label="Data & network" onClick={() => setShowDataNetwork(true)} />
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>General</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>General</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* ADDED — real ask: audited grouping — cross-cutting behavioural
             preferences (Contacts inactive threshold, Healthcare tracking
             toggles) get a real, findable home instead of living under
@@ -4282,15 +4282,15 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <SettingsRow icon={Ruler} label="Units" onClick={() => setShowUnits(true)} />
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Appearance</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Appearance</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* CHANGED 26 Aug 2026 — real ask: was a disabled "Not built
             yet" stub, now a real, working section. */}
         <SettingsRow icon={Palette} label="Colour scheme" onClick={() => setShowDesign(true)} />
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Content &amp; Lists</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Content &amp; Lists</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* CHANGED 1 Sep 2026 — real ask: Registries and Option lists
             were two separate rows for what's the same job from a
             user's point of view ("edit the picker choices used across
@@ -4308,8 +4308,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <SettingsRow icon={Compass} label="Guide" onClick={() => setShowGuide(true)} />
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Insights</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Insights</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* ADDED 26 Aug 2026 — real ask: Stats page. */}
         <SettingsRow icon={ChartBar} label="Stats" onClick={() => setShowStats(true)} />
         {/* ADDED 26 Aug 2026 — real ask: calendar view. */}
@@ -4318,8 +4318,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <SettingsRow icon={Trash2} label="Trash" onClick={() => setShowTrash(true)} />
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Support</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 20px", overflow: "hidden" }}>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Support</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", overflow: "hidden" }}>
         {/* CHANGED 19 Aug 2026 — Developer tools is now real (storage
             overview + reset), moved out of the "Not built yet" group
             below. */}

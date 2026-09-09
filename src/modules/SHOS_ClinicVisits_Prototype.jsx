@@ -650,7 +650,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
           module banner title. */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.healthcareBlue, zIndex: 1 }}>
         <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF" }}>{isNew ? "New visit" : "Edit visit"}</span>
+        <span style={{ ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "New visit" : "Edit visit"}</span>
         <div onClick={() => canSave && save()}
           style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.healthcareBlue : "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
           Save

@@ -1563,7 +1563,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
             close button instead of a back arrow — same principle,
             right control for this screen's actual navigation model. */}
         <div style={{ background: T.contactsTeal, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>{isNew ? "Add contact" : "Edit contact"}</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "Add contact" : "Edit contact"}</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         {draftRestored && (
@@ -2357,7 +2357,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         <div onClick={() => setShowDuplicates(false)} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 39 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", background: T.contactsTeal, borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF" }}>Possible duplicates</span>
+              <span style={{ ...TYPE.sheetTitle, color: "#FFFFFF" }}>Possible duplicates</span>
               <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => setShowDuplicates(false)} aria-label="Close duplicates panel" />
             </div>
             <div style={{ padding: "6px 20px 0", fontSize: 12, color: T.textSecondary }}>
@@ -2457,7 +2457,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
 
       {showFilters && (
         <div style={{ padding: "0 16px 12px" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Role</div>
+          <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 4 }}>Role</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
             {BDSM_ROLE_OPTIONS.map((r) => {
               const active = filterRoles.includes(r);
@@ -2469,7 +2469,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               );
             })}
           </div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Position</div>
+          <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 4 }}>Position</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
             {SEXUAL_POSITION_OPTIONS.map((p) => {
               const active = filterPositions.includes(p);
@@ -2483,7 +2483,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           </div>
           {/* ADDED 26 Aug 2026 — real ask: filter by Accommodation and
               Drives, alongside Role/Position. */}
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Accommodation</div>
+          <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 4 }}>Accommodation</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
             {HOSTS_OPTIONS.map((h) => {
               const active = filterHosts.includes(h);

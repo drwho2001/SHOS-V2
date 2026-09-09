@@ -237,11 +237,11 @@ function GivingReceivingChips({ label, value, onChange, options, T }) {
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>{label}</div>
       <div style={{ display: "flex", gap: 14 }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: T.textDisabled, textTransform: "uppercase", letterSpacing: 0.5 }}>Giving/Top</div>
+          <div style={{ ...TYPE.sectionLabel, color: T.textDisabled }}>Giving/Top</div>
           {giving.map((act) => <Chip key={act} act={act} fullValue={`${act} - giving`} />)}
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: T.textDisabled, textTransform: "uppercase", letterSpacing: 0.5 }}>Receiving/Bottom</div>
+          <div style={{ ...TYPE.sectionLabel, color: T.textDisabled }}>Receiving/Bottom</div>
           {receiving.map((act) => <Chip key={act} act={act} fullValue={`${act} - receiving`} />)}
         </div>
       </div>
@@ -1225,7 +1225,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
             named): T.textPrimary for plain nav, the module's own
             accent for the thing that opens edit/actions. */}
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onBack} />
-        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 17, color: T.textPrimary, flex: 1, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px" }}>
+        <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.recordTitle, color: T.textPrimary, flex: 1, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px" }}>
           {encounter.title || (encounter.date ? new Date(encounter.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Encounter")}
         </span>
         <div style={{ position: "relative", flexShrink: 0 }}>

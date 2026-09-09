@@ -26,7 +26,7 @@
 // rather than showing a spotlight around nothing.
 import React, { useState, useEffect, useCallback } from "react";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, XIcon as X } from "@phosphor-icons/react";
-import { NEUTRAL_DARK as DARK, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, RADIUS } from "../calculations/designTokens";
 
 export const TOUR_STEPS = [
   { id: "welcome", target: null, title: "Quick tour", body: "A minute on where things live — each tab, search, and Settings. Skip anytime." },
@@ -106,9 +106,9 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, darkMode }) {
     if (prev >= 0) setIndex(prev);
   };
 
-  const bg = darkMode ? DARK.surface : "#FFFFFF";
-  const textPrimary = darkMode ? DARK.textPrimary : "#1B1B1F";
-  const textSecondary = darkMode ? DARK.textSecondary : "#5B5B62";
+  const bg = darkMode ? DARK.surface : NEUTRAL.surface;
+  const textPrimary = darkMode ? DARK.textPrimary : NEUTRAL.textPrimary;
+  const textSecondary = darkMode ? DARK.textSecondary : NEUTRAL.textSecondary;
   const isFirst = findValidIndex(steps, index, -1) < 0;
   const isLast = index === steps.length - 1 || findValidIndex(steps, index, 1) >= steps.length;
 
@@ -133,11 +133,11 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, darkMode }) {
         <div style={{ fontSize: 12, color: textSecondary }}>{index + 1} / {steps.length}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {!isFirst && (
-            <button onClick={goBack} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 12px", borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: textPrimary, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            <button onClick={goBack} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 12px", borderRadius: 999, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: "transparent", color: textPrimary, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               <ChevronLeft size={14} weight="bold" /> Back
             </button>
           )}
-          <button onClick={goNext} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 14px", borderRadius: 999, border: "none", background: "#008585", color: "#FFFFFF", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={goNext} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.home, color: "#FFFFFF", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             {isLast ? "Done" : "Next"} {!isLast && <ChevronRight size={14} weight="bold" />}
           </button>
         </div>
@@ -179,7 +179,7 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, darkMode }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 500, pointerEvents: "auto" }}>
       <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)" }} />
       <div style={{ position: "absolute", top: spotTop, left: spotLeft, width: spotWidth, height: spotHeight, borderRadius: 16, boxShadow: "0 0 0 9999px rgba(0,0,0,0.6)", background: "transparent", pointerEvents: "none", transition: "top 150ms, left 150ms, width 150ms, height 150ms" }} />
-      <div style={{ position: "absolute", top: spotTop, left: spotLeft, width: spotWidth, height: spotHeight, borderRadius: 16, border: "2px solid #008585", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", top: spotTop, left: spotLeft, width: spotWidth, height: spotHeight, borderRadius: 16, border: `2px solid ${ACCENTS.home}`, pointerEvents: "none" }} />
       <div style={cardPositionStyle}>{card}</div>
     </div>
   );

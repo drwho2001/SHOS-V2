@@ -261,7 +261,7 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
             module banner title. Also added a real close button — this
             had no visible close control at all, only backdrop-tap. */}
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>{isNew ? "Log vaccination" : "Edit vaccination"}</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "Log vaccination" : "Edit vaccination"}</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>

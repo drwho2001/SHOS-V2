@@ -435,7 +435,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
       <div style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>{isNew ? "Add measurement" : "Edit measurement"}</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "Add measurement" : "Edit measurement"}</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
@@ -815,8 +815,8 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto" }}>
       <div style={{ background: T.healthcareBlue, display: "flex", alignItems: "center", gap: 12, padding: "16px 20px 14px" }}>
-        <ChevronLeft size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onBack} />
-        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>Manage groups</span>
+        <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onBack} />
+        <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Manage groups</span>
       </div>
       <div style={{ padding: "16px 20px 100px" }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
@@ -882,7 +882,7 @@ function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 215 }} onClick={onClose}>
       <div style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>Measurement preferences</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Measurement preferences</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close measurement preferences" />
         </div>
         <div style={{ overflowY: "auto", padding: "16px 20px 24px", flex: 1 }}>

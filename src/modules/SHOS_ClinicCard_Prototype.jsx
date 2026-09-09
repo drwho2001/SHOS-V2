@@ -23,7 +23,7 @@ import { PregnancyRepository } from "../repositories/pregnancyRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
@@ -319,7 +319,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary, flex: 1 }}>{profile.nickname ? `${profile.nickname}'s clinic card` : "Clinic Card"}</span>
+        <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary, flex: 1 }}>{profile.nickname ? `${profile.nickname}'s clinic card` : "Clinic Card"}</span>
         {/* ADDED — real ask: a real PDF export, for handing this to (or
             printing for) a clinician rather than only reading it on
             screen. Disabled mid-export rather than hidden, so a slow
@@ -609,7 +609,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 300, overflowY: "auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
             <X size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(false)} aria-label="Close visibility settings" />
-            <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>Which sections to show</span>
+            <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Which sections to show</span>
           </div>
           <div style={{ padding: "8px 16px", fontSize: 12, color: T.textSecondary }}>
             Every section shows the most detail permitted by default — these only ever narrow what's shown, never add anything.

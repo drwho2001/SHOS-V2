@@ -8,7 +8,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // every line of actual behavior below is unchanged from what was
 // working in App.jsx; only the file it lives in has changed.
 import React, { useState, useEffect } from "react";
-import { ACCENTS, ACTION, RADIUS, TYPE, deriveLightAccent, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE, deriveLightAccent, resolveDarkAccent } from "../calculations/designTokens";
 // CHANGED 2 Sep 2026 — real ask: "no hardcoded hexes" (medication blue
 // specifically), then a follow-up real ask: "meds blue on recent
 // activity looks awry — might match period colour." Root cause found:
@@ -118,16 +118,16 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surface : "#FFFFFF" }}>
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surface : NEUTRAL.surface }}>
       <Bell size={16} color={ACCENTS.healthcare} style={{ flexShrink: 0, marginTop: 2 }} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Get reminded about medications and other due dates</div>
-        <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2, marginBottom: 10 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Get reminded about medications and other due dates</div>
+        <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10 }}>
           SHOS can notify you when a dose or reminder is due. This asks your device once — you can change it any time in Settings.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <button onClick={enable} style={{ padding: "7px 14px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Enable notifications</button>
-          <span onClick={notNow} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : "#5B5B62", cursor: "pointer" }}>Not now</span>
+          <span onClick={notNow} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>Not now</span>
         </div>
       </div>
     </div>
@@ -550,10 +550,10 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       <div onClick={onClick} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, cursor: onClick ? "pointer" : "default", flex: 1 }}>
         <div style={{ position: "relative", width: size, height: size }}>
           <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={darkMode ? DARK.surfaceVariant : "#E7E7EB"} strokeWidth={stroke} />
+            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={stroke} />
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 300ms ease" }} />
           </svg>
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{centerText}</div>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{centerText}</div>
         </div>
         <span style={{ fontSize: 11, fontWeight: 600, color: color, textAlign: "center" }}>{caption}</span>
       </div>
@@ -561,9 +561,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   };
 
   const SummaryRow = ({ label, value, onClick, moduleColor }) => (
-    <div onClick={onClick} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", cursor: onClick ? "pointer" : "default" }}>
+    <div onClick={onClick} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: onClick ? "pointer" : "default" }}>
       <span style={{ fontSize: 13, color: moduleColor || "#5B5B62", fontWeight: 600 }}>{label}</span>
-      <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600, textAlign: "right" }}>{value}</span>
+      <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, textAlign: "right" }}>{value}</span>
     </div>
   );
 
@@ -574,18 +574,18 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // before.
   const QuickAddButton = ({ icon: Icon, label, color, onClick }) => (
     <div onClick={onClick}
-      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: RADIUS.md, border: `1px solid ${color}`, background: darkMode ? DARK.surface : "#FFFFFF", cursor: "pointer" }}>
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderRadius: RADIUS.md, border: `1px solid ${color}`, background: darkMode ? DARK.surface : NEUTRAL.surface, cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <Icon size={22} color={color} />
-        <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{label}</span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{label}</span>
       </div>
-      <ChevronRight size={18} color={darkMode ? DARK.textDisabled : "#656568"} />
+      <ChevronRight size={18} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} />
     </div>
   );
 
   return (
     <div style={{ padding: "20px 16px", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ ...TYPE.screenTitle, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ ...TYPE.screenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         {profileName ? `${profileName}'s dashboard` : "Your dashboard"}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {/* ADDED 1 Sep 2026 — real ask: "no way to leave duress mode,
@@ -599,15 +599,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               the same handler, so it works from inside a duress
               session too. */}
           {onLockNow && appLockEnabled && (
-            <Lock size={19} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onLockNow} title="Lock now" />
+            <Lock size={19} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onLockNow} title="Lock now" />
           )}
           {/* ADDED 19 Aug 2026 — Global Search, canonical Home placement
               per Doc 1, same treatment as the Settings gear icon right
               next to it. */}
-          <Search data-tour="search-icon" size={19} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onOpenSearch} title="Search" />
+          <Search data-tour="search-icon" size={19} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onOpenSearch} title="Search" />
           {/* ADDED 19 Aug 2026 — My Profile access on Home too, per
               the user's ask, alongside the existing Contacts shortcut. */}
-          <User size={19} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={() => setShowMyProfile(true)} title="My Profile" />
+          <User size={19} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={() => setShowMyProfile(true)} title="My Profile" />
           {/* ADDED 19 Aug 2026 — canonical Settings location per Doc 1:
               "gear icon in the Top App Bar, canonically on Home." */}
           {/* CHANGED 26 Aug 2026 — real ask: chrome-level icons
@@ -615,7 +615,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               lines, not too weighty — weight="bold" keeps this an
               outline icon (not a filled/solid one), just a heavier
               stroke, color darkened from grey to near-black. */}
-          <SettingsIcon data-tour="settings-icon" size={20} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onOpenSettings} title="Settings" />
+          <SettingsIcon data-tour="settings-icon" size={20} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onOpenSettings} title="Settings" />
         </div>
       </div>
       {/* ADDED — real ask: "dashboard needs teal header bar under
@@ -630,7 +630,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
 
       {/* ADDED 19 Aug 2026 — welcome text, the user's own wording as the
           basis: open, non-judgemental, genuinely useful tone. */}
-      <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62", lineHeight: 1.5, marginBottom: 20 }}>
+      <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5, marginBottom: 20 }}>
         Welcome to your personal sexual health operating system. Log hookups, testing, clinic visits, medications, and more — all in one place, with clear summaries when you need them. No judgement here, just a useful record that's actually yours.
       </div>
 
@@ -661,10 +661,10 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         }}>
           <Syringe size={18} color={doxyStatus.overdue ? actionRedColor : medsBlue} style={{ marginTop: 1 }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: doxyStatus.overdue ? "#E5484D" : "#1B1B1F" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: doxyStatus.overdue ? actionRedColor : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) }}>
               {doxyStatus.overdue ? "DoxyPEP dose overdue" : "DoxyPEP dose due soon"}
             </div>
-            <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 1 }}>
+            <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 1 }}>
               {doxyStatus.overdue
                 ? `${formatDoxyPepOverdueDuration(doxyStatus.msOverdue)} past the ${DOXYPEP_WINDOW_HOURS}h window`
                 : `${formatDoxyPepCountdown(doxyStatus.msRemaining)} remaining in the ${DOXYPEP_WINDOW_HOURS}h window`}
@@ -687,8 +687,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           empty/zero rings on a fresh install). */}
       {(testingStats?.testCount > 0 || adherence != null) && (
         <>
-          <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 6 }}>Status at a glance</div>
-          <div style={{ display: "flex", gap: 8, background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: "16px 8px", marginBottom: 24 }}>
+          <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Status at a glance</div>
+          <div style={{ display: "flex", gap: 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "16px 8px", marginBottom: 24 }}>
             {testingStats?.testCount > 0 && testingStats.daysSinceLast != null && (
               <StatusRing
                 pct={(testingStats.daysSinceLast / BASHH_TESTING_INTERVAL_DAYS) * 100}
@@ -712,8 +712,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         </>
       )}
 
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 6 }}>Recent activity</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: "0 14px", marginBottom: 24 }}>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Recent activity</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "0 14px", marginBottom: 24 }}>
         <SummaryRow label="Last encounter" moduleColor={ACCENTS.encounters} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
         <SummaryRow label="Last medication dose" moduleColor={medsBlue} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
         <SummaryRow label="Last test" moduleColor={healthcareColor} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
@@ -751,11 +751,11 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
         <div onClick={() => setShowClinicCard(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
           <CreditCard size={20} color={homeColor} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Clinic Card</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Clinic Card</span>
         </div>
         <div onClick={() => setShowTimeline(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
           <Stack size={20} color={homeColor} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Episodes</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Episodes</span>
         </div>
       </div>
       {/* ADDED 26 Aug 2026 — real ask: Calendar as a third button, its
@@ -766,13 +766,13 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
           <div onClick={onOpenCalendar} style={{ width: "50%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
             <Calendar size={20} color={homeColor} />
-            <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Calendar</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Calendar</span>
           </div>
         </div>
       )}
 
-      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 6 }}>Quick add</div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Personal</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Quick add</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 6 }}>Personal</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         <QuickAddButton icon={Users} label="New contact" color={ACCENTS.contacts} onClick={() => onQuickAdd("contacts")} />
         {/* CHANGED — real ask: a distinct icon for Encounter rather
@@ -802,7 +802,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             other write in this app requires. */}
         <QuickAddButton icon={Pill} label="Log medication" color={medsBlue} onClick={() => onNavigateToRecord("medication", null)} />
       </div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Healthcare</div>
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 6 }}>Healthcare</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <QuickAddButton icon={TestTube} label="Log test" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "testing")} />
         {/* CHANGED — real ask: Clinic Visit gets Stethoscope, Symptom
@@ -849,9 +849,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           a navigation shortcut, and shouldn't visually blend in with
           them. */}
       {backupInfo.dueForReminder && (
-        <div onClick={onOpenSettings} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: "1px solid #F59E0B40", background: "#FFF7ED", cursor: "pointer" }}>
-          <Database size={15} color="#B45309" />
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#B45309" }}>
+        <div onClick={onOpenSettings} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: `1px solid ${ACTION.amber}40`, background: "#FFF7ED", cursor: "pointer" }}>
+          <Database size={15} color={ACTION.gold} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: ACTION.gold }}>
             {backupInfo.lastAt ? `No backup in ${backupInfo.daysSince} days — export one` : "You've never exported a backup — do it now"}
           </span>
         </div>

@@ -5,7 +5,7 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, TYPE } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 
@@ -80,7 +80,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>Attachments</span>
+        <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Attachments</span>
       </div>
       <div style={{ padding: "10px 16px 0", fontSize: 12, color: T.textSecondary }}>
         Everything attached to a Test or Clinic Visit, in one place. Files still live on their original record — deleting here removes it from there too.

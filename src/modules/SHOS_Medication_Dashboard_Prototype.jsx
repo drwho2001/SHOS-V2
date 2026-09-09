@@ -41,7 +41,7 @@ import { MyProfileRepository } from "../repositories/myProfileRepository";
 // genuinely hand-tuned per-value for dark-surface contrast/design
 // intent, not derivable from LIGHT's tokens (fabBg/fabIcon are a
 // deliberate light-on-dark inversion, not an accent at all).
-import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 
 const LIGHT = {
   // bg deepened from #FAFAFA — at that value it was nearly indistinguishable from surface (#FFFFFF),
@@ -68,8 +68,7 @@ const LIGHT = {
   streakGlow: "#F59E0B26",
 };
 const DARK = {
-  bg: "#121214", surface: "#1C1C1F", surfaceVariant: "#26262A", border: "#3A3A3F",
-  textPrimary: "#F2F2F4", textSecondary: "#B8B8BE", textDisabled: "#89898C",
+  ...NEUTRAL_DARK,
   // CHANGED — real architecture fix: these three used to be separate
   // hand-picked literals, completely ignoring a customised colour
   // (ACCENTS.medication/ACTION.red/ACTION.green) the moment dark mode
@@ -953,7 +952,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "85vh", overflowY: "auto", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, display: "flex", flexDirection: "column" }}>
         <div style={{ background: T.medsBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>Update dose — {med.name}</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Update dose — {med.name}</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         <div style={{ padding: "8px 20px 20px" }}>
@@ -1201,7 +1200,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
         {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
             module banner title. */}
         <div style={{ background: T.medsBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 18, color: "#FFFFFF" }}>Add medication</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Add medication</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
 
@@ -1319,7 +1318,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>Medication settings</span>
+        <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Medication settings</span>
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", marginBottom: 20 }}>

@@ -881,7 +881,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
     <div data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, overflowY: "auto", zIndex: 200 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onCancel} />
-        <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>Edit My Profile</span>
+        <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Edit My Profile</span>
         <div onClick={handleSave} style={{ padding: "6px 14px", borderRadius: radius.full, background: T.contactsTeal, color: "#FFFFFF", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Save</div>
       </div>
 
