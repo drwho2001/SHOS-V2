@@ -2933,6 +2933,52 @@ this date; summarized here for durability.
   Not yet confirmed with the owner: the code-generation format (1
   above) and the exact reveal-screen copy — both worth a real
   conversation before writing any code, not just picked here.
+- **Android Keystore-backed device key — scoped 9 Sep 2026, real
+  update to the original Phase 4 framing, no code written.** Phase 4's
+  own scoping (see above) chose the current IndexedDB non-extractable-
+  key approach specifically because "no Keystore/secure-storage
+  Capacitor plugin installed today" and adding one was treated as
+  open-ended, unscoped risk. Re-checked that premise directly (a live
+  web search, not assumed still true 5 days later) rather than
+  carrying the old conclusion forward unexamined — and it's genuinely
+  more promising now than it looked at the time: `@aparajita/
+  capacitor-secure-storage` is a real, live candidate, from the SAME
+  author as `@aparajita/capacitor-biometric-auth` (already a real
+  dependency in this app's own `package.json`) — its own README
+  states it was "designed to be a companion to
+  @aparajita/capacitor-biometric-auth," and on Android it's backed by
+  exactly the AES-in-GCM-mode/Android-Keystore-generated-key design
+  this app's own `cryptoService.js` already uses conceptually for the
+  `device` slot, just with a real hardware-backed key instead of an
+  IndexedDB-stored one. Current published version is `8.0.0`, lining
+  up with this app's own Capacitor 8 pin. Not yet independently
+  confirmed: the plugin's own test coverage/CI setup (this project's
+  own standing bar, per the already-disclosed scoped-storage plugin
+  caveat elsewhere in this file) and whether Capacitor-8-specific
+  compatibility issues reported against it (a real, findable GitHub
+  issue exists) are actually resolved in `8.0.0` or still open —
+  needs a direct read of the plugin's own source/CI before adoption,
+  not just its README's own claims.
+  If adopted, the real code change is narrow and well-contained,
+  not a redesign: `cryptoService.js`'s `getDeviceProtectorKey()` is
+  the ONE function that would change — swapping its current
+  `crypto.subtle.generateKey()` + IndexedDB persistence for the new
+  plugin's own key-generation/retrieval calls, still returning
+  something `protectBytes()`/`unprotectBytes()` can use the same way.
+  Every other slot (`pin`/`tempGrace`/`biometric`/a future `recovery`
+  slot per the item above) is untouched, since they all wrap the Data
+  Key using THIS device key as their own underlying protector already
+  — this is the one real chokepoint, matching the project's own
+  repository/calculation split philosophy (one narrow function owns
+  the "how," everything else just calls it). Real remaining unknown,
+  genuinely can't be scoped further without it: whether the plugin's
+  own native API is actually usable as a raw AES-GCM key source for
+  wrapping arbitrary bytes (what this app needs) versus only a
+  higher-level "store this string, get it back" API (which would need
+  an adapter, or might not fit this app's own non-extractable-key
+  design at all) — needs to be read from the plugin's own real
+  TypeScript API surface before committing to it, not assumed from
+  its marketing description.
 - Registry-entry merge, per-value icons within a registry, and a true
   no-code schema editor are deliberate scope cuts, not gaps — don't
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
