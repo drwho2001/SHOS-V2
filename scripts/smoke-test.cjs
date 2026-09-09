@@ -7,7 +7,11 @@
 // real encryption-at-rest flows (see CLAUDE.md's Known Issues entry
 // for the full design) — that raw localStorage is genuinely ciphertext
 // and that App Lock's PIN really gates the vault, not just a stored
-// flag — and, added 9 Sep 2026 (closing the "verified once, covered
+// flag, and — added 9 Sep 2026, later the same day — that a real
+// EXISTING install's own legacy plaintext data actually migrates
+// through the real boot sequence, the single highest-stakes one-time
+// operation in this whole app that had zero regression coverage until
+// now — and, added 9 Sep 2026 (closing the "verified once, covered
 // never" backlog item CLAUDE.md logged the same day), three more
 // real, shipped features that had each only ever been checked by a
 // throwaway script: Resources' clickable links, Encounters' Anonymise
@@ -83,7 +87,7 @@ async function dismissTransientBanners(page) {
 }
 
 async function testMedicationReasonSideEffects(page) {
-  console.log("\n[1/8] Medication log — Reason/Side effects (added 1 Sep 2026)");
+  console.log("\n[1/9] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Log").first().click({ timeout: 5000 });
@@ -100,7 +104,7 @@ async function testMedicationReasonSideEffects(page) {
 }
 
 async function testSymptomTestTwoWayLink(page) {
-  console.log("\n[2/8] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
+  console.log("\n[2/9] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
   await page.locator("text=Healthcare").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Test of cure — Gonorrhoea").click({ timeout: 5000 });
@@ -130,7 +134,7 @@ async function testSymptomTestTwoWayLink(page) {
 }
 
 async function testLocationsExtraFields(page) {
-  console.log("\n[3/8] Locations registry — extra fields (added 2 Sep 2026)");
+  console.log("\n[3/9] Locations registry — extra fields (added 2 Sep 2026)");
   // the Settings gear only lives on the Home dashboard header — get back
   // there first, since the previous check left us on Healthcare/Symptoms.
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
@@ -158,7 +162,7 @@ async function testLocationsExtraFields(page) {
 // building it (the Refuge entry, a real https:// URL from the seeded
 // list), never given permanent coverage until now.
 async function testResourceLinkClickable(page) {
-  console.log("\n[4/8] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
+  console.log("\n[4/9] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
   // Reload first — the previous test (Locations registry) leaves the
   // Manage Lists > Locations sub-screen open, a stacked Settings
   // overlay that would otherwise sit on top of (and intercept clicks
@@ -204,7 +208,7 @@ async function testResourceLinkClickable(page) {
 // (anonymisePin) is still unset at this point — deactivating needs no
 // PIN then (see privacySettingsRepository.js's own deactivate()).
 async function testEncountersAnonymiseMasking(page) {
-  console.log("\n[5/8] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
+  console.log("\n[5/9] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
@@ -273,7 +277,7 @@ async function testEncountersAnonymiseMasking(page) {
 // logged at the real current time, which always has a real future
 // lockoutEndsAt() to check.
 async function testMedicationReminderClock(page) {
-  console.log("\n[6/8] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
+  console.log("\n[6/9] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   // Scoped on "Last dose" rather than the "Log dose" button's own text
@@ -292,6 +296,85 @@ async function testMedicationReminderClock(page) {
   assert(/Next dose[^)]*\(reminder ~[^)]+\)/.test(cardText), "logging a fresh dose shows a real reminder clock time alongside the relative \"Next dose\" estimate");
 }
 
+// ADDED 9 Sep 2026 — the single highest-stakes gap flagged in
+// CLAUDE.md's own Phase 4 write-up: every other flow in this suite
+// starts from a genuinely fresh install, where cryptoService.js's own
+// isMigrationNeeded() is always false (nothing to migrate) — meaning
+// the one real, one-time, irreversible operation this whole
+// encryption effort exists to run safely (an EXISTING install's real
+// legacy plaintext data getting encrypted for the first time) had
+// never actually been exercised by anything that survives past a
+// single verification session. Needs its own isolated browser
+// CONTEXT, not just the shared `page` every other test reuses — the
+// seed data has to exist in localStorage BEFORE the app's own first
+// script ever runs, which `page.evaluate()` after a normal `page.goto()`
+// can't do (the app's own boot sequence, including
+// `initializeFreshVault()`'s own fresh-vs-existing-install check,
+// would have already run by then). `context.addInitScript()` runs
+// before every document load in a context, which is exactly what's
+// needed here.
+// Seeds two real `shos_`-prefixed keys as plain, un-encrypted JSON —
+// `shos_app_preferences` (with a real `lastActiveTab`/`lastActiveAt`
+// pair, so a successful migration is provable through actual app
+// BEHAVIOR — the Medication tab resuming — not just a raw storage
+// shape check) and `shos_contacts` (a second, independent key, kept
+// deliberately empty/schema-trivial so it can't itself break
+// rendering — the point is proving MULTIPLE keys get walked, not
+// exercising Contacts' own UI). `lastActiveAt` is computed live,
+// inside the injected script itself (real `new Date()`, not a value
+// baked into this file), so it's always within
+// `App.jsx`'s own 10-minute resume-grace window regardless of when
+// this suite actually runs. No `shos_vault_key_slots` key is seeded —
+// its absence alongside real `shos_` data already present is exactly
+// the condition `initializeFreshVault()` uses to distinguish "an
+// existing install's first Phase 4 boot" from a genuinely fresh
+// profile (see that function's own comment).
+async function testEncryptionMigratesLegacyData(browser) {
+  console.log("\n[7/9] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await context.addInitScript(() => {
+    localStorage.setItem("shos_app_preferences", JSON.stringify({
+      lastActiveTab: "medication",
+      lastActiveAt: new Date().toISOString(),
+      hasCompletedOnboarding: true,
+    }));
+    localStorage.setItem("shos_contacts", JSON.stringify([]));
+  });
+  const page = await context.newPage();
+  const migrationPageErrors = [];
+  page.on("pageerror", (err) => migrationPageErrors.push(err.message));
+
+  await dismissOnboarding(page);
+  await page.waitForTimeout(500);
+
+  const bodyText = await page.evaluate(() => document.body.innerText);
+  assert(!bodyText.includes("Enter PIN to unlock"), "App Lock stayed off (the seeded preferences didn't accidentally enable it) — real content, not a lock screen");
+  assert(bodyText.includes("PrEP (Descovy)"), "the app resumed on the seeded lastActiveTab (Medication) without any manual tab click, proving the migrated preferences round-tripped through real decrypt + business logic, not just a raw storage flip");
+
+  const rawShapes = await page.evaluate(() => {
+    const out = {};
+    for (const key of ["shos_app_preferences", "shos_contacts"]) {
+      const raw = localStorage.getItem(key);
+      try {
+        const parsed = JSON.parse(raw);
+        out[key] = !!parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          && typeof parsed.iv === "string" && typeof parsed.ciphertext === "string"
+          && Object.keys(parsed).length === 2;
+      } catch {
+        out[key] = false;
+      }
+    }
+    return out;
+  });
+  assert(rawShapes.shos_app_preferences, "the seeded legacy shos_app_preferences is genuinely ciphertext after boot, not still plaintext");
+  assert(rawShapes.shos_contacts, "the seeded legacy shos_contacts is genuinely ciphertext after boot too — proving the migration walked more than just one key");
+
+  if (migrationPageErrors.length > 0) {
+    throw new Error("Uncaught page errors during the migration-from-legacy-data run:\n" + migrationPageErrors.join("\n"));
+  }
+  await context.close();
+}
+
 // ADDED 9 Sep 2026 — Phase 4's own real encryption-at-rest, the actual
 // point of the whole multi-session encryption effort (see CLAUDE.md's
 // Known Issues entry). This is the one flow class that had ZERO
@@ -303,7 +386,7 @@ async function testMedicationReminderClock(page) {
 // check broad, real coverage rather than just the vault metadata key
 // and whatever the fresh boot itself wrote.
 async function testEncryptionPositiveCheck(page) {
-  console.log("\n[7/8] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
+  console.log("\n[8/9] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
   const rawShapes = await page.evaluate(() => {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -374,7 +457,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
 async function testEncryptionAppLockGatesVault(page) {
-  console.log("\n[8/8] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
+  console.log("\n[9/9] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
@@ -430,6 +513,7 @@ async function testEncryptionAppLockGatesVault(page) {
     await testResourceLinkClickable(page);
     await testEncountersAnonymiseMasking(page);
     await testMedicationReminderClock(page);
+    await testEncryptionMigratesLegacyData(browser);
     await testEncryptionPositiveCheck(page);
     await testEncryptionAppLockGatesVault(page);
   } catch (err) {

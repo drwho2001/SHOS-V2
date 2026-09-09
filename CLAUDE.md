@@ -2549,15 +2549,40 @@ this date; summarized here for durability.
   backup file (`shos-backup-<date>.json`) downloads before migration
   runs, migration still completes correctly, and the migrated data
   stays visible in the real UI afterward. Full smoke-test suite passes
-  unmodified. Honestly flagged, not yet closed: the smoke-test suite
-  itself still has no permanent coverage of the migration-from-legacy-
-  data path at all (every one of its 5 flows starts from a genuinely
-  fresh install, so `isMigrationNeeded()` is always false there) — the
-  single highest-stakes one-time operation in this entire system has
-  zero regression coverage. Needs a real second browser context inside
-  the suite (pre-seeded with legacy plaintext before first navigation),
-  a structurally bigger change than fit alongside this fix — logged
-  here as a real, open backlog item, not silently deferred.
+  unmodified. Honestly flagged at the time, not yet closed then: the
+  smoke-test suite itself still had no permanent coverage of the
+  migration-from-legacy-data path at all (every one of its 5 flows
+  started from a genuinely fresh install, so `isMigrationNeeded()` was
+  always false there) — the single highest-stakes one-time operation
+  in this entire system had zero regression coverage. Needed a real
+  second browser context inside the suite (pre-seeded with legacy
+  plaintext before first navigation), a structurally bigger change
+  than fit alongside this fix at the time — logged as an open backlog
+  item rather than silently deferred.
+  **Closed 9 Sep 2026, later the same day**, as the next backlog item
+  worked once branch cleanup was handled: `testEncryptionMigratesLegacyData`
+  (test 7 of what's now a 9-flow suite) does exactly what was scoped
+  above. `context.addInitScript()` (a genuinely separate
+  `browser.newContext()`/`newPage()` from the one every other test
+  shares, not just a second `page.goto()`) seeds `shos_app_preferences`
+  (a real `lastActiveTab: "medication"`/`lastActiveAt: <live
+  new Date()>` pair, computed inside the injected script itself so it's
+  always within `App.jsx`'s own 10-minute resume-grace window
+  regardless of when the suite runs) and `shos_contacts` (`[]`,
+  deliberately schema-trivial so it can't itself break rendering — the
+  point is proving more than one key gets walked) as plain JSON, with
+  no `shos_vault_key_slots` key — exactly the "existing install's
+  first Phase 4 boot" condition `initializeFreshVault()` distinguishes
+  from a genuinely fresh profile. Verifies both directions the original
+  scoping asked for: real app BEHAVIOR (the Medication tab resumes
+  and shows real seed data with no manual click, proving the migrated
+  preference round-tripped through actual decrypt + business logic,
+  not just a raw storage flip) and the raw-storage shape (both seeded
+  keys are genuinely `{iv, ciphertext}` after boot, not still
+  plaintext). Verified stable across three consecutive full-suite runs
+  against both the dev server and a real `vite preview` build before
+  shipping — the same standard applied to the 5-to-8-flow batch earlier
+  this same day.
 
   A real, genuine circular dependency was found and resolved while
   wiring this into `App.jsx`, not anticipated in the original scoping:
