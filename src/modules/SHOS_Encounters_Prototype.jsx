@@ -13,7 +13,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, ConfettiIcon as Confetti } from "@phosphor-icons/react";
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
@@ -809,6 +809,26 @@ function ReadRow({ label, value, T }) {
 }
 
 // ── Encounter Card (Doc 3 B2) — used in the Activity Landing timeline ──
+// ADDED 9 Sep 2026 — real ask: "consider globally if icons/emoji could
+// be used to make it easier/quicker to understand," same treatment
+// RATING_OPTIONS/LOCATION_TYPE_OPTIONS already use. Deliberately a
+// RENDER-ONLY lookup, not baked into ENCOUNTER_TYPE_OPTIONS itself —
+// that option array IS the stored value on every existing encounter
+// (this session's own new seed data included), so changing the option
+// strings would desync from every already-saved record's own
+// encounterType and break its selected-chip highlighting. A separate
+// icon-by-name map sidesteps that entirely: nothing stored changes,
+// only how the type reads on the card. "Other" deliberately gets no
+// icon — not every value needs one, same restraint the rating/location
+// precedent already shows (My House/My Car/Other have no emoji either).
+const ENCOUNTER_TYPE_ICONS = {
+  Hookup: FlameSmall,
+  Group: Users,
+  "Date/Chill": Coffee,
+  Sauna: SaunaDrop,
+  Event: Confetti,
+};
+
 function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, selected = false, onToggleSelected, onLongPress, anonymise = false }) {
   const attendeeNames = encounter.attendeeIds.map((id) => contactName(contacts, id));
   const shown = attendeeNames.slice(0, 3);
@@ -878,9 +898,20 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
             <div style={{ width: 8, height: 8, borderRadius: radius.full, background: T.encountersPink }} />
             <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 15, color: T.textPrimary }}>{encounter.title || "Untitled encounter"}</span>
           </div>
-          <div style={{ fontSize: 12, color: T.textSecondary }}>
-            {encounter.date ? `${new Date(encounter.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · ${formatRelativeDate(encounter.date)}` : "No date"}
-            {encounter.encounterType ? ` · ${encounter.encounterType}` : ""}
+          <div style={{ fontSize: 12, color: T.textSecondary, display: "flex", alignItems: "center", gap: 4 }}>
+            <span>
+              {encounter.date ? `${new Date(encounter.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · ${formatRelativeDate(encounter.date)}` : "No date"}
+              {encounter.encounterType ? " · " : ""}
+            </span>
+            {encounter.encounterType && (() => {
+              const TypeIcon = ENCOUNTER_TYPE_ICONS[encounter.encounterType];
+              return (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                  {TypeIcon && <TypeIcon size={12} color={T.textSecondary} />}
+                  {encounter.encounterType}
+                </span>
+              );
+            })()}
           </div>
         </div>
         {encounter.enjoymentRating != null && (
