@@ -600,6 +600,34 @@ export async function runMigrationIfNeeded() {
   if (!meta || meta.migrated) return { ran: false, migratedCount: 0 };
   if (!activeDataKey) throw new Error("Vault must be unlocked before migration can run.");
 
+  // Real, previously-missing safety net — the original Phase 4 design
+  // explicitly promised this ("automatically export a real full backup
+  // first, reusing the existing exportBackup()") but it never actually
+  // got wired in; caught before recommending this branch for merge,
+  // given the real stakes (this runs against the owner's own actual
+  // device data, and once a key here re-encrypts under the new device-
+  // bound key, the ORIGINAL plaintext bytes are gone for good). The
+  // per-key verify-and-restore below only protects against a corrupted
+  // WRITE during this exact operation — it does nothing for a real
+  // decrypt bug discovered later, or for the device-bound key itself
+  // becoming unrecoverable (IndexedDB cleared/reset/a new device) —
+  // both of those need a real, external copy of the plaintext to
+  // recover from, which only a genuine backup FILE provides. Dynamic
+  // import, not a static one: backupService.js imports storageAdapter.js,
+  // which imports this file — a static import here would be a real
+  // circular dependency. Deliberately non-blocking: a failed backup
+  // (permission denied, no user gesture context, anything else) is
+  // logged clearly but doesn't stop the migration itself — refusing to
+  // ever encrypt the owner's data over a failed CONVENIENCE backup
+  // would be a worse outcome than proceeding with the per-key safety
+  // net that already exists below.
+  try {
+    const { exportBackup } = await import("./backupService.js");
+    await exportBackup();
+  } catch (err) {
+    console.error("[cryptoService] Pre-migration safety backup failed — proceeding with migration anyway (the per-key verify-and-restore below still applies). Consider exporting a manual backup from Settings if this keeps happening:", err);
+  }
+
   const candidateKeys = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);

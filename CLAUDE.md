@@ -2522,6 +2522,43 @@ this date; summarized here for durability.
   (legacy, not-yet-migrated plaintext) as-is — a lazy fallback safety
   net alongside the eager migration, costing nothing.
 
+  **Real gap found and closed 9 Sep 2026, before recommending this
+  branch for merge**: the original design above explicitly promised an
+  automatic pre-migration full backup ("reusing the existing
+  `exportBackup()` — a genuine safety net, not a new mechanism") — it
+  never actually got implemented; `runMigrationIfNeeded()` shipped with
+  only the per-key verify-and-restore described above. That's real
+  protection against a corrupted WRITE during the migration itself, but
+  nothing against a decrypt bug discovered later, or against the
+  device-bound key becoming unrecoverable (IndexedDB cleared, a device
+  reset, a new phone) — both need an actual external copy of the
+  plaintext to recover from, which only a real backup FILE provides.
+  Found while assessing whether this branch was safe to merge into
+  `main` (which drives the real, live PWA auto-update and APK release
+  the owner's own device pulls from) — closed before that
+  recommendation, not after. `runMigrationIfNeeded()` now calls
+  `exportBackup()` once, right before the per-key loop, via a DYNAMIC
+  `import()` (`backupService.js` imports `storageAdapter.js`, which
+  imports this file — a static import here would be a real circular
+  dependency). Deliberately non-blocking: a failed backup (permission
+  denied, no user-gesture context, anything else) is logged clearly but
+  doesn't stop the migration — refusing to ever encrypt the owner's
+  data over a failed convenience backup would be worse than proceeding
+  with the per-key safety net that already exists. Verified live:
+  seeded real legacy plaintext, booted the app, confirmed a genuine
+  backup file (`shos-backup-<date>.json`) downloads before migration
+  runs, migration still completes correctly, and the migrated data
+  stays visible in the real UI afterward. Full smoke-test suite passes
+  unmodified. Honestly flagged, not yet closed: the smoke-test suite
+  itself still has no permanent coverage of the migration-from-legacy-
+  data path at all (every one of its 5 flows starts from a genuinely
+  fresh install, so `isMigrationNeeded()` is always false there) — the
+  single highest-stakes one-time operation in this entire system has
+  zero regression coverage. Needs a real second browser context inside
+  the suite (pre-seeded with legacy plaintext before first navigation),
+  a structurally bigger change than fit alongside this fix — logged
+  here as a real, open backlog item, not silently deferred.
+
   A real, genuine circular dependency was found and resolved while
   wiring this into `App.jsx`, not anticipated in the original scoping:
   the App Lock screen used to ask `PrivacySettingsRepository.
