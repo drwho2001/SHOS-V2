@@ -29,7 +29,7 @@ import {
   SlidersHorizontalIcon as SlidersHorizontal, MapPinIcon as MapPin, XIcon as X,
   RulerIcon as Ruler, WifiHighIcon as WifiHigh, LinkBreakIcon as LinkBreak,
   FolderIcon as Folder, FunnelIcon as Filter, ClockIcon as Clock,
-  ChartBarIcon as ChartBar, InfoIcon as Info,
+  ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass,
 } from "@phosphor-icons/react";
 // FIXED 1 Sep 2026 — real ask: "Managed lists crashes app on
 // attempting to open" / "Same for resources [crashes], in light [mode]
@@ -2909,6 +2909,68 @@ const GLOSSARY_TERMS = [
   { term: "Cruising / PSE (Public sex environment)", body: "Meeting sexual partners in public or semi-public spaces (e.g. parks, saunas) — see Resources → Public sex & cruising for safety-specific guidance." },
 ];
 
+// ADDED 9 Sep 2026 — real ask: "nothing explains settings for example,
+// or switching/location of certain modules etc." A genuine gap this
+// app never had an answer for — Resources/Glossary both explain
+// clinical content, nothing explains the APP ITSELF. Same pattern as
+// Glossary (a static reference screen, no search needed at this
+// length) rather than an interactive spotlight/tour — this app has no
+// existing tour-style interaction to match, and a tour library would
+// be new dependency weight for something a plain reference screen
+// answers just as well. Content below is deliberately about WHERE
+// things live and WHAT the less-obvious toggles do, not a feature-by-
+// feature walkthrough — the real, repeated confusion this was built
+// for is "where do I find X," not "how do I use X once I'm there."
+const GUIDE_SECTIONS = [
+  {
+    heading: "Getting around",
+    body: "The bottom bar has 5 tabs: Contacts, Encounter, Home (centre), Medication, and Healthcare. Home is your dashboard — recent activity, quick-add buttons, and 3 extra shortcuts above Quick Add that aren't tabs of their own: Clinic Card (a read-only summary for showing a clinician), Episodes (grouped exposure windows, e.g. \"this test result relates to these encounters\"), and Calendar. My Profile lives inside Settings, not the bottom bar — tap the gear icon on Home to reach it.",
+  },
+  {
+    heading: "Where the Settings sections are",
+    body: "Tap the gear icon on Home. Backup & Data is every way to export/restore your data. Security & Privacy covers App Lock, the PIN, Anonymise mode, and what third-party network calls (if any) this app makes. General covers cross-cutting behaviour — Preferences (inactive-contact threshold, tracking toggles), Notifications, and Units. Appearance is per-module colour customisation. Content & Lists is where you edit the picker options used across the app (Manage lists), plus Resources (support links) and this Guide. Insights has Stats, Calendar, and Trash. Support has Developer tools and About.",
+  },
+  {
+    heading: "Menstrual, Contraception & Pregnancy tracking",
+    body: "Off by default, and not a tab of its own — it lives inside the Healthcare tab's own internal sub-nav, alongside Testing/Clinic Visits/Vaccinations/Symptoms. Turn it on in Settings → General → Preferences → \"Menstrual & contraception tracking.\" It stays opt-in regardless of gender — nothing in this app assumes who does or doesn't want it.",
+  },
+  {
+    heading: "Privacy & security features, plainly",
+    body: "App Lock (Settings → Security & Privacy → Privacy) adds a PIN/biometric gate on top of this device's own encryption — off by default, since most people rely on their phone's own lock screen. A duress PIN, if you set one, opens a decoy version of the app with fabricated data instead of your real records — a real, working safety feature, not a demo. Anonymise mode (same screen) masks attendee names on Contacts and Encounters with a hidden placeholder, useful if someone else might glance at your screen. None of this replaces your device's own lock screen — it's an extra layer, not a substitute.",
+  },
+  {
+    heading: "A few things worth knowing",
+    body: "Nothing in this app ever leaves your device on its own — there's no account, no cloud, no server. Deleting something usually archives it first (recoverable in Trash under Insights) rather than deleting outright — a genuine \"delete permanently\" option exists on most screens when you actually mean it. Most numbers you see (adherence %, active/inactive, most recent test) are calculated live from what you've logged, not something you type in directly.",
+  },
+];
+
+function GuideScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : NEUTRAL;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ fontSize: 16, fontWeight: 700, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Guide</span>
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16, lineHeight: 1.4 }}>
+          Where things live and what the less-obvious features do — not a feature-by-feature walkthrough, just answers to "where do I find X."
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {GUIDE_SECTIONS.map((s) => (
+            <div key={s.heading} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 14 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary, marginBottom: 6 }}>{s.heading}</div>
+              <div style={{ fontSize: 13, color: T.textSecondary, lineHeight: 1.5 }}>{s.body}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function GlossaryScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
@@ -3893,6 +3955,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   const [showResources, setShowResources] = useState(false);
   // ADDED 1 Sep 2026 — real ask, item 2 of the follow-up feature list: a glossary.
   const [showGlossary, setShowGlossary] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   // ADDED — real ask: audited settings grouping — a real home for
   // cross-cutting behavioural preferences (Contacts inactive threshold,
@@ -3969,6 +4032,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showUnits) { setShowUnits(false); return true; }
       if (showResources) { setShowResources(false); return true; }
       if (showGlossary) { setShowGlossary(false); return true; }
+      if (showGuide) { setShowGuide(false); return true; }
       if (showAutoBackupSettings) { setShowAutoBackupSettings(false); return true; }
       if (showManageLists) { setShowManageLists(false); return true; }
       if (showDevTools) { setShowDevTools(false); return true; }
@@ -3979,7 +4043,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showUnits, showManageLists, showAutoBackupSettings, showResources, showGlossary, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showUnits, showManageLists, showAutoBackupSettings, showResources, showGlossary, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.
@@ -4150,6 +4214,11 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <SettingsRow icon={LifeBuoy} label="Resources" onClick={() => setShowResources(true)} />
         {/* ADDED 1 Sep 2026 — real ask, item 2 of the follow-up feature list: a glossary. */}
         <SettingsRow icon={BookOpen} label="Glossary" onClick={() => setShowGlossary(true)} />
+        {/* ADDED 9 Sep 2026 — real ask: nothing in the app explained
+            what the Settings sections do or where less-obvious
+            features (Menstrual tracking, My Profile, Clinic Card) live
+            — see GuideScreen's own comment for the full scope. */}
+        <SettingsRow icon={Compass} label="Guide" onClick={() => setShowGuide(true)} />
       </div>
 
       <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Insights</div>
@@ -4215,6 +4284,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showGlossary && (
         <GlossaryScreen onClose={() => setShowGlossary(false)} />
+      )}
+      {showGuide && (
+        <GuideScreen onClose={() => setShowGuide(false)} />
       )}
       {showDesign && (
         <DesignScreen onClose={() => setShowDesign(false)} />
