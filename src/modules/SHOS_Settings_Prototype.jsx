@@ -2944,7 +2944,7 @@ const GUIDE_SECTIONS = [
   },
 ];
 
-function GuideScreen({ onClose }) {
+function GuideScreen({ onClose, onStartTour }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
 
@@ -2958,6 +2958,15 @@ function GuideScreen({ onClose }) {
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 16, lineHeight: 1.4 }}>
           Where things live and what the less-obvious features do — not a feature-by-feature walkthrough, just answers to "where do I find X."
         </div>
+        {/* ADDED 9 Sep 2026 — real ask: a genuine spotlight-overlay
+            tour, not just this written reference. Replayable here
+            anytime, regardless of whether the one-time post-onboarding
+            offer was already taken or skipped. */}
+        {onStartTour && (
+          <button onClick={onStartTour} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 16px", borderRadius: RADIUS.md, border: "none", background: "#008585", color: "#FFFFFF", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 16 }}>
+            Take the interactive tour
+          </button>
+        )}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {GUIDE_SECTIONS.map((s) => (
             <div key={s.heading} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 14 }}>
@@ -3933,7 +3942,7 @@ function PreferencesScreen({ onClose }) {
 // intact — genuinely-unbuilt things (Stats/Calendar/Trash/About were
 // all real by the time they were added, so nothing here is currently
 // faked) — just correcting a factual claim that time overtook.
-function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateToRecord, initialScreen, registerModuleBackHandler }) {
+function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateToRecord, initialScreen, registerModuleBackHandler, onStartTour }) {
   const [darkMode] = useDarkModePreference();
 
   const [showMyProfile, setShowMyProfile] = useState(false);
@@ -4286,7 +4295,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <GlossaryScreen onClose={() => setShowGlossary(false)} />
       )}
       {showGuide && (
-        <GuideScreen onClose={() => setShowGuide(false)} />
+        <GuideScreen onClose={() => setShowGuide(false)} onStartTour={onStartTour} />
       )}
       {showDesign && (
         <DesignScreen onClose={() => setShowDesign(false)} />

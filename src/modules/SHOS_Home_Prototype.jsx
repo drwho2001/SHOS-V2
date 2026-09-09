@@ -604,7 +604,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           {/* ADDED 19 Aug 2026 — Global Search, canonical Home placement
               per Doc 1, same treatment as the Settings gear icon right
               next to it. */}
-          <Search size={19} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onOpenSearch} title="Search" />
+          <Search data-tour="search-icon" size={19} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onOpenSearch} title="Search" />
           {/* ADDED 19 Aug 2026 — My Profile access on Home too, per
               the user's ask, alongside the existing Contacts shortcut. */}
           <User size={19} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={() => setShowMyProfile(true)} title="My Profile" />
@@ -615,7 +615,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               lines, not too weighty — weight="bold" keeps this an
               outline icon (not a filled/solid one), just a heavier
               stroke, color darkened from grey to near-black. */}
-          <SettingsIcon size={20} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onOpenSettings} title="Settings" />
+          <SettingsIcon data-tour="settings-icon" size={20} weight="bold" color={darkMode ? DARK.textPrimary : "#1B1B1F"} style={{ cursor: "pointer" }} onClick={onOpenSettings} title="Settings" />
         </div>
       </div>
       {/* ADDED — real ask: "dashboard needs teal header bar under

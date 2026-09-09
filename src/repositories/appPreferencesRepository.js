@@ -25,6 +25,12 @@ export const DEFAULT_APP_PREFERENCES = {
   // walk through. false until the user actually completes or
   // explicitly skips it — never auto-set true by anything else.
   hasCompletedOnboarding: false,
+  // ADDED 9 Sep 2026 — real ask: an interactive spotlight-overlay tour
+  // (InteractiveTour.jsx), not just the static Guide screen. Same
+  // "never auto-set true by anything else" rule as hasCompletedOnboarding
+  // above — only the tour's own Skip/Done actions ever set this.
+  // Replayable anytime from Settings > Guide regardless of this flag.
+  hasCompletedTour: false,
   // ADDED — real ask: "calendar sync could be good, if ensured kept
   // separate/private and never accidentally shared." Off by default,
   // same as every other opt-in privacy-adjacent feature in this app

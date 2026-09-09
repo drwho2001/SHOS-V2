@@ -18,7 +18,12 @@
 // masking, and the Medication Dashboard's next-reminder clock — and,
 // added 9 Sep 2026 later still, Settings' new bottom-nav tab-reorder
 // control (the "tab reorder" part of the original 18 Aug 2026
-// Settings/Management ask). This
+// Settings/Management ask), and — added 9 Sep 2026, even later —
+// the new interactive spotlight-overlay tour (InteractiveTour.jsx):
+// it auto-offers after a genuine onboarding completion (not a Skip),
+// correctly defers around the App Lock setup prompt rather than
+// having its own clicks silently eaten by that overlay's higher
+// z-index, and persists once dismissed either way. This
 // file WAS wired into CI the same day it was first written (4 Sep,
 // see `.github/workflows/smoke-test.yml`). Still also worth running by
 // hand before/after any risky change during a session:
@@ -114,7 +119,7 @@ async function goHomeThenOpenSettings(page) {
 }
 
 async function testMedicationReasonSideEffects(page) {
-  console.log("\n[1/10] Medication log — Reason/Side effects (added 1 Sep 2026)");
+  console.log("\n[1/11] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Log").first().click({ timeout: 5000 });
@@ -131,7 +136,7 @@ async function testMedicationReasonSideEffects(page) {
 }
 
 async function testSymptomTestTwoWayLink(page) {
-  console.log("\n[2/10] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
+  console.log("\n[2/11] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
   await page.locator("text=Healthcare").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Test of cure — Gonorrhoea").click({ timeout: 5000 });
@@ -161,7 +166,7 @@ async function testSymptomTestTwoWayLink(page) {
 }
 
 async function testLocationsExtraFields(page) {
-  console.log("\n[3/10] Locations registry — extra fields (added 2 Sep 2026)");
+  console.log("\n[3/11] Locations registry — extra fields (added 2 Sep 2026)");
   // the Settings gear only lives on the Home dashboard header — get back
   // there first, since the previous check left us on Healthcare/Symptoms.
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
@@ -186,7 +191,7 @@ async function testLocationsExtraFields(page) {
 // building it (the Refuge entry, a real https:// URL from the seeded
 // list), never given permanent coverage until now.
 async function testResourceLinkClickable(page) {
-  console.log("\n[4/10] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
+  console.log("\n[4/11] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
   // Reload first — the previous test (Locations registry) leaves the
   // Manage Lists > Locations sub-screen open, a stacked Settings
   // overlay that would otherwise sit on top of (and intercept clicks
@@ -229,7 +234,7 @@ async function testResourceLinkClickable(page) {
 // (anonymisePin) is still unset at this point — deactivating needs no
 // PIN then (see privacySettingsRepository.js's own deactivate()).
 async function testEncountersAnonymiseMasking(page) {
-  console.log("\n[5/10] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
+  console.log("\n[5/11] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
@@ -292,7 +297,7 @@ async function testEncountersAnonymiseMasking(page) {
 // logged at the real current time, which always has a real future
 // lockoutEndsAt() to check.
 async function testMedicationReminderClock(page) {
-  console.log("\n[6/10] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
+  console.log("\n[6/11] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   // Scoped on "Last dose" rather than the "Log dose" button's own text
@@ -345,7 +350,7 @@ async function testMedicationReminderClock(page) {
 // existing install's first Phase 4 boot" from a genuinely fresh
 // profile (see that function's own comment).
 async function testEncryptionMigratesLegacyData(browser) {
-  console.log("\n[7/10] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
+  console.log("\n[7/11] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
     localStorage.setItem("shos_app_preferences", JSON.stringify({
@@ -401,7 +406,7 @@ async function testEncryptionMigratesLegacyData(browser) {
 // check broad, real coverage rather than just the vault metadata key
 // and whatever the fresh boot itself wrote.
 async function testEncryptionPositiveCheck(page) {
-  console.log("\n[8/10] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
+  console.log("\n[8/11] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
   const rawShapes = await page.evaluate(() => {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -469,7 +474,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
 async function testEncryptionAppLockGatesVault(page) {
-  console.log("\n[9/10] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
+  console.log("\n[9/11] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
@@ -520,7 +525,7 @@ async function testEncryptionAppLockGatesVault(page) {
 // stored preference, the same class of gap this whole suite exists to
 // close.
 async function testTabReorder(page) {
-  console.log("\n[10/10] Settings — bottom nav tab order (added 9 Sep 2026)");
+  console.log("\n[10/11] Settings — bottom nav tab order (added 9 Sep 2026)");
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   await dismissTransientBanners(page);
@@ -560,6 +565,92 @@ async function testTabReorder(page) {
   await dismissTransientBanners(page);
 }
 
+// ADDED 9 Sep 2026 — real ask: an interactive spotlight-overlay tour
+// (InteractiveTour.jsx), not just the static Guide screen. Own fresh
+// context, same reasoning as testEncryptionMigratesLegacyData above —
+// this needs a genuinely fresh profile to drive onboarding through a
+// real completion (not the shared page's own Skip-based dismissOnboarding
+// flow), and a second fresh context to prove the Skip path deliberately
+// does NOT auto-offer the tour. Covers the two real regressions found
+// live while building this: the post-onboarding App Lock setup prompt
+// (zIndex 998) can otherwise silently eat every tour click underneath
+// it, and an early version auto-offered the tour even after an explicit
+// Skip tap, which directly contradicted the user's own "not now" signal.
+async function testInteractiveTour(browser) {
+  console.log("\n[11/11] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  const tourPageErrors = [];
+  page.on("pageerror", (err) => tourPageErrors.push(err.message));
+
+  await page.goto(APP_URL, { waitUntil: "networkidle" });
+  await page.waitForTimeout(1000);
+  // Complete onboarding for real (Next through every slide, "No" on any
+  // question) rather than Skip — only a genuine completion auto-offers
+  // the tour.
+  for (let i = 0; i < 8; i++) {
+    const finish = page.locator("text=Get started").first();
+    if (await finish.count()) { await finish.click({ timeout: 2000 }).catch(() => {}); break; }
+    const next = page.locator("text=Next").first();
+    if (await next.count()) { await next.click({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(300); continue; }
+    const no = page.locator("text=No").first();
+    if (await no.count()) { await no.click({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(300); continue; }
+    break;
+  }
+  await page.waitForTimeout(1200);
+  // The App Lock setup prompt can legitimately be showing at this exact
+  // moment too (a real, independent post-onboarding overlay) — the tour
+  // is deliberately deferred until it's dismissed, see App.jsx's own
+  // pendingTourOffer comment.
+  await page.getByRole("button", { name: "Not now" }).click({ timeout: 3000 }).catch(() => {});
+  await page.waitForTimeout(800);
+
+  assert(await page.locator("text=Quick tour").first().count() > 0, "the tour auto-offers right after a genuine onboarding completion, not App Lock's prompt swallowing the click");
+
+  for (let i = 0; i < 3; i++) {
+    await page.getByRole("button", { name: "Next" }).click({ timeout: 3000 });
+    await page.waitForTimeout(400);
+  }
+  assert(await page.locator("text=Medication").first().count() > 0, "stepping through Next reaches the real Medication tab step");
+  const spotlightBorder = await page.evaluate(() => {
+    return Array.from(document.querySelectorAll("div")).filter((d) => d.style.border && d.style.border.includes("0, 133, 133")).length;
+  });
+  assert(spotlightBorder > 0, "a real spotlight border renders around the tab's own DOM element, not a coordinate guess");
+
+  await page.getByRole("button", { name: "Skip tour" }).click({ timeout: 3000 });
+  await page.waitForTimeout(500);
+  assert(await page.locator("text=Quick tour").count() === 0, "the X icon closes the tour early (skip path)");
+
+  // Real behavioral proof of persistence, portable across both the dev
+  // server and a production `vite preview` build — a direct dynamic
+  // import of `/src/...` (used elsewhere in this suite for the same
+  // purpose) only resolves against the dev server's own raw ES-module
+  // serving, not a bundled production build, so a reload-based check is
+  // the one that actually works in both.
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(1200);
+  assert(await page.locator("text=Quick tour").count() === 0, "skipping partway through still persists hasCompletedTour — the tour does not auto-reappear on reload");
+  await context.close();
+
+  // Second fresh context: an explicit Skip tap on onboarding itself must
+  // NOT auto-offer the tour — that's the exact regression found live
+  // (it also broke this suite's own Skip-based dismissOnboarding flow
+  // for every other test before this fix).
+  const context2 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page2 = await context2.newPage();
+  page2.on("pageerror", (err) => tourPageErrors.push(err.message));
+  await page2.goto(APP_URL, { waitUntil: "networkidle" });
+  await page2.waitForTimeout(1000);
+  await page2.locator("text=Skip").first().click({ timeout: 5000 });
+  await page2.waitForTimeout(1000);
+  assert(await page2.locator("text=Quick tour").count() === 0, "explicitly tapping Skip on onboarding does NOT auto-offer the tour");
+  await context2.close();
+
+  if (tourPageErrors.length > 0) {
+    throw new Error("Uncaught page errors during the interactive-tour run:\n" + tourPageErrors.join("\n"));
+  }
+}
+
 (async () => {
   const browser = await chromium.launch({ executablePath: PLAYWRIGHT_EXECUTABLE });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -579,6 +670,7 @@ async function testTabReorder(page) {
     await testEncryptionPositiveCheck(page);
     await testEncryptionAppLockGatesVault(page);
     await testTabReorder(page);
+    await testInteractiveTour(browser);
   } catch (err) {
     failed = true;
     console.error("\n" + err.message);

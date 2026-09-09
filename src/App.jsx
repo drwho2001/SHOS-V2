@@ -12,6 +12,9 @@ import { localStorageAdapter } from "./storage/storageAdapter";
 // ADDED — real architecture extraction, see that file's own header.
 import SettingsScreen from "./modules/SHOS_Settings_Prototype";
 import GlobalSearchScreen from "./modules/SHOS_GlobalSearch_Prototype";
+// ADDED 9 Sep 2026 — real ask: an interactive spotlight-overlay tour,
+// not just the static Guide screen. See that file's own header.
+import TourOverlay from "./modules/InteractiveTour";
 import { PrivacySettingsRepository } from "./repositories/privacySettingsRepository";
 import { checkBiometryAvailable, authenticateWithBiometrics } from "./storage/biometricAuthService";
 // ADDED — Phase 4 (Sep 2026): the real vault-unlock entry points — see
@@ -556,7 +559,13 @@ function OnboardingScreen({ onFinish }) {
   // read), but Home's Quick Add section never showed the promised Log
   // period/Log contraception shortcuts without a manual reload. Fixed
   // by awaiting the write before ever advancing.
-  const advance = () => isLast ? onFinish() : setStep((s) => s + 1);
+  // CHANGED 9 Sep 2026 — real ask: auto-offer the interactive tour
+  // right after onboarding finishes, but ONLY on a genuine completion
+  // — someone who explicitly tapped Skip has already signalled "not
+  // this right now," and immediately showing another walkthrough
+  // overlay would go against that. `skipped` threads through to
+  // App.jsx's own onFinish so it can tell the two paths apart.
+  const advance = () => isLast ? onFinish(false) : setStep((s) => s + 1);
   const answer = async (yes) => { await slide.onAnswer(yes); advance(); };
 
   return (
@@ -600,7 +609,7 @@ function OnboardingScreen({ onFinish }) {
       ) : (
         <div style={{ display: "flex", gap: 10, padding: "0 24px 32px" }}>
           {!isLast && (
-            <button onClick={onFinish} style={{ flex: 1, padding: "14px 0", borderRadius: 999, border: "1px solid rgba(255,255,255,0.5)", background: "transparent", color: "#FFFFFF", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+            <button onClick={() => onFinish(true)} style={{ flex: 1, padding: "14px 0", borderRadius: 999, border: "1px solid rgba(255,255,255,0.5)", background: "transparent", color: "#FFFFFF", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
               Skip
             </button>
           )}
@@ -908,6 +917,28 @@ export default function App() {
   const [settingsInitialScreen, setSettingsInitialScreen] = useState(null);
   const openSettingsToCalendar = () => { setSettingsInitialScreen("calendar"); setShowSettings(true); };
   const [showSearch, setShowSearch] = useState(false);
+  // ADDED 9 Sep 2026 — the interactive tour, replayable from Settings >
+  // Guide (settingsInitialScreen === "guide" doesn't exist as its own
+  // screen key — GuideScreen is reached via Settings' own Content &
+  // Lists section, see that screen's own "Take the interactive tour"
+  // button, which just sets this true directly).
+  const [showTour, setShowTour] = useState(false);
+  // ADDED 9 Sep 2026 — real collision found live: the post-onboarding
+  // App Lock setup prompt (showAppLockPrompt, zIndex 998, set by the
+  // same boot-finishing step that runs before onboarding ever renders)
+  // can legitimately be pending at the exact moment onboarding's own
+  // onFinish wants to auto-offer the tour, since both are independent
+  // "first thing after onboarding" overlays. Rather than stack them
+  // (the App Lock prompt's higher z-index would silently eat every
+  // click meant for the tour underneath it), defer the tour offer
+  // until the App Lock prompt is actually dismissed — one overlay at a
+  // time, same as this app's own established pattern of gating locked/
+  // onboarding/AppLockScreen mutually exclusively.
+  const [pendingTourOffer, setPendingTourOffer] = useState(false);
+  const finishTour = async () => {
+    setShowTour(false);
+    await AppPreferencesRepository.update({ hasCompletedTour: true });
+  };
   // ADDED 26 Aug 2026 — dedicated visible toast for the back-button
   // exit warning below. The existing `status` state only renders
   // inside SettingsScreen, so it would've been invisible here.
@@ -1574,9 +1605,24 @@ export default function App() {
   // onboarding content, not after), shown instead of everything else
   // until finished or skipped.
   if (showOnboarding) {
-    return <OnboardingScreen onFinish={async () => {
+    return <OnboardingScreen onFinish={async (skipped) => {
       await AppPreferencesRepository.update({ hasCompletedOnboarding: true });
       setShowOnboarding(false);
+      // ADDED 9 Sep 2026 — real ask: offer the interactive tour right
+      // after onboarding, skippable. Deliberately NOT offered when the
+      // user explicitly tapped Skip — that's already a clear "not this
+      // right now" signal, and stacking a second walkthrough overlay
+      // straight after would go against it. Only for a genuine
+      // first-ever completion (also: an existing install replaying
+      // onboarding — no real path to that today, but the right guard
+      // regardless — shouldn't be re-offered a tour it may have
+      // already taken or dismissed).
+      if (skipped) return;
+      const prefs = await AppPreferencesRepository.getPreferences();
+      if (!prefs.hasCompletedTour) {
+        if (showAppLockPrompt) setPendingTourOffer(true);
+        else setShowTour(true);
+      }
     }} />;
   }
 
@@ -1807,7 +1853,7 @@ export default function App() {
           // distinct from the other four flat tabs.
           if (tab.key === "home") {
             return (
-              <div key={tab.key} role="button" aria-label={tab.label} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
+              <div key={tab.key} data-tour="tab-home" role="button" aria-label={tab.label} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
                 onMouseDown={startHomeLongPress} onMouseUp={cancelHomeLongPress} onMouseLeave={cancelHomeLongPress}
                 onTouchStart={startHomeLongPress} onTouchEnd={cancelHomeLongPress}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", marginTop: -18 }}>
@@ -1823,7 +1869,7 @@ export default function App() {
               Home is explicitly excluded — stays the raised circle
               treatment above, unchanged. */}
           return (
-            <div key={tab.key} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
+            <div key={tab.key} data-tour={`tab-${tab.key}`} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", opacity: isBuilt ? 1 : 0.45 }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 14px", borderRadius: 14, background: isActive ? resolveTabAccent(tab, darkMode) : "transparent" }}>
                 {/* FIXED — real device bug: Phosphor's "fill" weight for
@@ -1854,8 +1900,18 @@ export default function App() {
       )}
 
       {showSettings && (
-        <SettingsScreen onClose={() => { setShowSettings(false); setSettingsInitialScreen(null); }} onExport={exportBackup} onImportClick={handleImportClick} status={status} onNavigateToRecord={navigateToRecord} initialScreen={settingsInitialScreen} registerModuleBackHandler={registerModuleBackHandler} />
+        <SettingsScreen onClose={() => { setShowSettings(false); setSettingsInitialScreen(null); }} onExport={exportBackup} onImportClick={handleImportClick} status={status} onNavigateToRecord={navigateToRecord} initialScreen={settingsInitialScreen} registerModuleBackHandler={registerModuleBackHandler} onStartTour={() => {
+          // Real reason to force Home here rather than trusting whatever
+          // tab was active before Settings opened: the tour's own
+          // search-icon/settings-icon steps only exist in the DOM while
+          // Home is mounted (see App.jsx's own `active === "home"`
+          // render gate) — TourOverlay already skips a missing target
+          // gracefully, but landing on Home first means a replay from
+          // Guide always shows the full tour, not a degraded one.
+          setActive("home"); setShowSettings(false); setSettingsInitialScreen(null); setShowTour(true);
+        }} />
       )}
+      {showTour && <TourOverlay onDone={finishTour} darkMode={darkMode} />}
       {showSearch && (
         <GlobalSearchScreen onClose={() => setShowSearch(false)} onNavigate={navigateToRecord} />
       )}
@@ -1866,9 +1922,9 @@ export default function App() {
           straight back into the real app, immediately. */}
       {showAppLockPrompt && (
         <AppLockPrompt
-          onDismiss={() => setShowAppLockPrompt(false)}
-          onDismissForever={async () => { await PrivacySettingsRepository.update({ appLockPromptDismissed: true }); setShowAppLockPrompt(false); }}
-          onOpenSettings={() => { setShowAppLockPrompt(false); setShowSettings(true); }}
+          onDismiss={() => { setShowAppLockPrompt(false); if (pendingTourOffer) { setPendingTourOffer(false); setShowTour(true); } }}
+          onDismissForever={async () => { await PrivacySettingsRepository.update({ appLockPromptDismissed: true }); setShowAppLockPrompt(false); if (pendingTourOffer) { setPendingTourOffer(false); setShowTour(true); } }}
+          onOpenSettings={() => { setShowAppLockPrompt(false); setPendingTourOffer(false); setShowSettings(true); }}
         />
       )}
       {showImportModeDialog && (
