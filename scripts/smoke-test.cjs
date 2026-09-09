@@ -119,7 +119,7 @@ async function goHomeThenOpenSettings(page) {
 }
 
 async function testMedicationReasonSideEffects(page) {
-  console.log("\n[1/12] Medication log — Reason/Side effects (added 1 Sep 2026)");
+  console.log("\n[1/13] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Log").first().click({ timeout: 5000 });
@@ -136,7 +136,7 @@ async function testMedicationReasonSideEffects(page) {
 }
 
 async function testSymptomTestTwoWayLink(page) {
-  console.log("\n[2/12] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
+  console.log("\n[2/13] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
   await page.locator("text=Healthcare").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Test of cure — Gonorrhoea").click({ timeout: 5000 });
@@ -166,7 +166,7 @@ async function testSymptomTestTwoWayLink(page) {
 }
 
 async function testLocationsExtraFields(page) {
-  console.log("\n[3/12] Locations registry — extra fields (added 2 Sep 2026)");
+  console.log("\n[3/13] Locations registry — extra fields (added 2 Sep 2026)");
   // the Settings gear only lives on the Home dashboard header — get back
   // there first, since the previous check left us on Healthcare/Symptoms.
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
@@ -191,7 +191,7 @@ async function testLocationsExtraFields(page) {
 // building it (the Refuge entry, a real https:// URL from the seeded
 // list), never given permanent coverage until now.
 async function testResourceLinkClickable(page) {
-  console.log("\n[4/12] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
+  console.log("\n[4/13] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
   // Reload first — the previous test (Locations registry) leaves the
   // Manage Lists > Locations sub-screen open, a stacked Settings
   // overlay that would otherwise sit on top of (and intercept clicks
@@ -234,7 +234,7 @@ async function testResourceLinkClickable(page) {
 // (anonymisePin) is still unset at this point — deactivating needs no
 // PIN then (see privacySettingsRepository.js's own deactivate()).
 async function testEncountersAnonymiseMasking(page) {
-  console.log("\n[5/12] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
+  console.log("\n[5/13] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
@@ -297,7 +297,7 @@ async function testEncountersAnonymiseMasking(page) {
 // logged at the real current time, which always has a real future
 // lockoutEndsAt() to check.
 async function testMedicationReminderClock(page) {
-  console.log("\n[6/12] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
+  console.log("\n[6/13] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   // Scoped on "Last dose" rather than the "Log dose" button's own text
@@ -350,7 +350,7 @@ async function testMedicationReminderClock(page) {
 // existing install's first Phase 4 boot" from a genuinely fresh
 // profile (see that function's own comment).
 async function testEncryptionMigratesLegacyData(browser) {
-  console.log("\n[7/12] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
+  console.log("\n[7/13] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
     localStorage.setItem("shos_app_preferences", JSON.stringify({
@@ -406,7 +406,7 @@ async function testEncryptionMigratesLegacyData(browser) {
 // check broad, real coverage rather than just the vault metadata key
 // and whatever the fresh boot itself wrote.
 async function testEncryptionPositiveCheck(page) {
-  console.log("\n[8/12] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
+  console.log("\n[8/13] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
   const rawShapes = await page.evaluate(() => {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -474,7 +474,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
 async function testEncryptionAppLockGatesVault(page) {
-  console.log("\n[9/12] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
+  console.log("\n[9/13] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
@@ -525,7 +525,7 @@ async function testEncryptionAppLockGatesVault(page) {
 // stored preference, the same class of gap this whole suite exists to
 // close.
 async function testTabReorder(page) {
-  console.log("\n[10/12] Settings — bottom nav tab order (added 9 Sep 2026)");
+  console.log("\n[10/13] Settings — bottom nav tab order (added 9 Sep 2026)");
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   await dismissTransientBanners(page);
@@ -577,7 +577,7 @@ async function testTabReorder(page) {
 // it, and an early version auto-offered the tour even after an explicit
 // Skip tap, which directly contradicted the user's own "not now" signal.
 async function testInteractiveTour(browser) {
-  console.log("\n[11/12] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
+  console.log("\n[11/13] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const tourPageErrors = [];
@@ -669,7 +669,7 @@ async function testInteractiveTour(browser) {
 // the exact portability trap the interactive-tour flow above already
 // hit and fixed once this same day).
 async function testBackupMigratesOldFieldShape(page) {
-  console.log("\n[12/12] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
+  console.log("\n[12/13] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
   const oldShapedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -720,6 +720,112 @@ async function testBackupMigratesOldFieldShape(page) {
   assert(dashboardText.includes("Take with food"), "a real pre-existing note on the same record was preserved alongside the migrated value, not overwritten");
 }
 
+// ADDED 9 Sep 2026 — real ask: PIN-recovery/alternate-access, a real
+// open backlog item finally built (Settings > Privacy's "Recovery
+// string" section, AppLockScreen's own "Forgot PIN?" link). Runs on
+// the shared page, same as test 9's own App-Lock-gates-the-vault flow
+// — cleans up after itself (App Lock back off) so nothing after it is
+// affected, and doesn't depend on the richer seed dataset test 12 just
+// wiped, so this ordering (after 12, on the same page) is safe.
+// Real bug found live building this, not from reading the design: the
+// vault's own PIN slot (cryptoService.js) and PrivacySettingsRepository's
+// `anonymisePin` mirror are two separate copies of "the current PIN" —
+// a recovery-triggered reset only updated the vault side at first,
+// leaving Settings' own toggleAppLock()/changePin() (which read the
+// REPOSITORY's stale copy) silently broken the next time either was
+// used. This flow's own final "Remove"/App-Lock-off cleanup steps
+// directly exercise that exact path, so a regression here would fail
+// loudly, not silently.
+async function testPinRecoveryFlow(page) {
+  console.log("\n[13/13] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
+  // The App Lock setup prompt can be pending again here — test 12's
+  // own Replace All import doesn't touch privacySettings at all (its
+  // synthetic backup has no privacySettings key), but a plain reload
+  // is enough for it to reappear if nothing dismissed it since test 9's
+  // own App-Lock-off cleanup. Same collision class as the interactive
+  // tour's own pendingTourOffer fix earlier this session.
+  await page.getByRole("button", { name: "Not now" }).click({ timeout: 3000 }).catch(() => {});
+  await page.waitForTimeout(400);
+  await goHomeThenOpenSettings(page);
+  await page.getByText("Privacy", { exact: true }).first().click({ timeout: 5000 });
+  await page.waitForTimeout(500);
+  // "Set a PIN" vs "Change PIN" — a PIN value from an earlier test in
+  // this same shared-page run (e.g. test 9's own "2468") can already be
+  // stored even with App Lock currently off (turning App Lock off never
+  // clears the stored Revert PIN, by design — it's shared with
+  // Anonymise mode too), so either label is a real, valid starting
+  // state here, not just "Set a PIN".
+  await page.locator('button:has-text("PIN")').first().click({ timeout: 5000 });
+  await page.waitForTimeout(200);
+  const pinInputs = page.locator('input[inputmode="numeric"]');
+  await pinInputs.nth(0).fill("2468");
+  await pinInputs.nth(1).fill("2468");
+  await page.locator('button:has-text("Save PIN")').click({ timeout: 5000 });
+  await page.waitForTimeout(400);
+  await page.locator('[aria-label="App Lock"]').click({ timeout: 5000 });
+  await page.waitForTimeout(500);
+
+  assert(await page.locator("text=Set a recovery string").count() > 0, "the recovery-string section renders once App Lock is on");
+  await page.locator('button:has-text("Set a recovery string")').click({ timeout: 5000 });
+  await page.waitForTimeout(200);
+  const textInputs = page.locator('input[type="password"]:not([inputmode="numeric"])');
+  await textInputs.nth(0).fill("correct-horse-battery");
+  await textInputs.nth(1).fill("correct-horse-battery");
+  await page.locator('button:has-text("Save")').click({ timeout: 5000 });
+  await page.waitForTimeout(400);
+  assert(await page.locator("text=Change recovery string").count() > 0, "saving a recovery string switches the section to 'Change recovery string'");
+
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(800);
+  let bodyText = await page.evaluate(() => document.body.innerText);
+  assert(bodyText.includes("Forgot PIN?"), "the real lock screen shows 'Forgot PIN?' once a recovery string exists");
+
+  await page.locator("text=Forgot PIN?").click({ timeout: 5000 });
+  await page.waitForTimeout(300);
+  await page.fill('input[placeholder="Recovery string"]', "wrong-string-entirely");
+  await page.fill('input[placeholder="New PIN"]', "9999");
+  await page.fill('input[placeholder="Confirm new PIN"]', "9999");
+  await page.locator('button:has-text("Unlock and set new PIN")').click({ timeout: 5000 });
+  await page.waitForTimeout(600);
+  bodyText = await page.evaluate(() => document.body.innerText);
+  assert(bodyText.includes("wasn't right"), "a wrong recovery string is rejected — the vault itself refuses it, not a string comparison");
+
+  await page.fill('input[placeholder="Recovery string"]', "correct-horse-battery");
+  await page.fill('input[placeholder="New PIN"]', "9999");
+  await page.fill('input[placeholder="Confirm new PIN"]', "9999");
+  await page.locator('button:has-text("Unlock and set new PIN")').click({ timeout: 5000 });
+  await page.waitForTimeout(800);
+  bodyText = await page.evaluate(() => document.body.innerText);
+  assert(!bodyText.includes("Enter PIN to unlock") && !bodyText.includes("Unlock with your recovery string"), "the real recovery string unlocks the vault and sets a new PIN in the same step");
+
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(800);
+  await page.fill('input[type="password"]', "2468");
+  await page.locator('button:has-text("Unlock")').click({ timeout: 5000 });
+  await page.waitForTimeout(500);
+  bodyText = await page.evaluate(() => document.body.innerText);
+  assert(bodyText.includes("Incorrect PIN"), "the OLD PIN no longer works after a recovery-triggered reset");
+  await page.fill('input[type="password"]', "9999");
+  await page.locator('button:has-text("Unlock")').click({ timeout: 5000 });
+  await page.waitForTimeout(700);
+  bodyText = await page.evaluate(() => document.body.innerText);
+  assert(!bodyText.includes("Enter PIN to unlock"), "the NEW PIN set during recovery genuinely gates the vault going forward");
+
+  // Clean up: remove recovery string, turn App Lock back off — the real
+  // path that would break silently if the anonymisePin-mirror bug found
+  // live while building this ever regressed.
+  await dismissTransientBanners(page);
+  await goHomeThenOpenSettings(page);
+  await page.getByText("Privacy", { exact: true }).first().click({ timeout: 5000 });
+  await page.waitForTimeout(500);
+  await page.locator('button:has-text("Remove")').first().click({ timeout: 5000 });
+  await page.waitForTimeout(400);
+  assert(await page.locator("text=Set a recovery string").count() > 0, "removing the recovery string reverts the section cleanly");
+  await page.locator('[aria-label="App Lock"]').click({ timeout: 5000 });
+  await page.waitForTimeout(500);
+  assert((await page.getAttribute('[aria-label="App Lock"]', "aria-checked")) === "false", "App Lock turns back off cleanly after a recovery-triggered PIN reset — the PrivacySettingsRepository mirror stayed in sync");
+}
+
 (async () => {
   const browser = await chromium.launch({ executablePath: PLAYWRIGHT_EXECUTABLE });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -741,6 +847,7 @@ async function testBackupMigratesOldFieldShape(page) {
     await testTabReorder(page);
     await testInteractiveTour(browser);
     await testBackupMigratesOldFieldShape(page);
+    await testPinRecoveryFlow(page);
   } catch (err) {
     failed = true;
     console.error("\n" + err.message);

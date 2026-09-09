@@ -110,6 +110,23 @@ const DEVICE_PROTECTOR_RECORD_ID = "deviceProtector";
 // comment) while staying fast enough not to feel broken on unlock.
 const PIN_KDF_ITERATIONS = 100000;
 
+// ADDED 9 Sep 2026 — the "recovery" slot: real, honest alternate access
+// for "I forgot my PIN," per the owner's own explicit spec (CLAUDE.md's
+// own PIN-recovery scoping entry). A custom, user-CHOSEN string, typed
+// on a normal keyboard (not the numeric PIN pad) — closer to a real
+// remembered passphrase than an auto-generated code the owner would
+// have to write down and could lose just as easily as the PIN itself.
+// Structurally the SAME envelope shape as the `pin` slot (its own
+// salt/iterations, wraps the SAME permanent Data Key), stored in this
+// file's own already-unencrypted vault metadata — no new mechanism.
+// Deliberately entered far less often than a PIN (only when the PIN is
+// genuinely forgotten, or when first set/changed) and, unlike a 4-6
+// digit numeric PIN, can carry real entropy of its own — closer to
+// backupService.js's own export-password KDF cost than the PIN's
+// unlock-tuned lower one, since there's no "typed dozens of times a
+// day" latency budget to protect here.
+const RECOVERY_KDF_ITERATIONS = 250000;
+
 function bytesToBase64(bytes) {
   let binary = "";
   bytes.forEach((b) => { binary += String.fromCharCode(b); });
@@ -505,6 +522,94 @@ export async function enableBiometricSlot(currentPin) {
   const verifyDek = await unprotectBytes(deviceKey, biometricSlot);
   if (!bytesEqual(verifyDek, dek)) throw new Error("Biometric-slot verification failed — biometric unlock was not enabled.");
   writeVaultMeta({ ...meta, biometric: biometricSlot });
+}
+
+// --- Recovery string: set/change/clear, and the real "forgot my PIN"
+// unlock path. Same verify-before-commit safety rule as every other
+// slot change in this file — see enablePinProtection()'s own comment. ---
+
+// Gated behind the CURRENT PIN, same trust model as turning App Lock
+// off (disablePinProtectionWithPin above) — you're already inside the
+// unlocked app at this point, this just re-confirms you actually know
+// the PIN before letting you set the one thing that can bypass it
+// later. Also the real reason this can't be called until App Lock is
+// already on: there's no `pin` slot to unwrap the Data Key from
+// otherwise (the `device` slot exists instead, and needs no recovery
+// path — losing that key just falls back to the PIN, or there IS no
+// PIN yet). Overwrites any existing recovery string outright — this
+// doubles as "change recovery string," per the owner's own spec; the
+// old string simply stops working the moment this succeeds.
+export async function setRecoveryString(currentPin, recoveryString) {
+  if (!activeDataKey) throw new Error("Vault must be unlocked before setting a recovery string.");
+  const meta = readVaultMeta();
+  if (!meta.pin) throw new Error("App Lock must be turned on before setting a recovery string.");
+  const pinKey = await derivePinProtectorKey(currentPin, base64ToBytes(meta.pin.salt), meta.pin.iterations);
+  const dek = await unprotectBytes(pinKey, meta.pin.slot);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const recoveryKey = await derivePinProtectorKey(recoveryString, salt, RECOVERY_KDF_ITERATIONS);
+  const recoverySlot = await protectBytes(recoveryKey, dek);
+  const verifyKey = await derivePinProtectorKey(recoveryString, salt, RECOVERY_KDF_ITERATIONS);
+  const verifyDek = await unprotectBytes(verifyKey, recoverySlot);
+  if (!bytesEqual(verifyDek, dek)) throw new Error("Recovery string verification failed — nothing was changed.");
+  writeVaultMeta({ ...meta, recovery: { slot: recoverySlot, salt: bytesToBase64(salt), iterations: RECOVERY_KDF_ITERATIONS } });
+}
+
+export function hasRecoveryString() {
+  return !!readVaultMeta()?.recovery;
+}
+
+// No PIN re-confirmation needed to CLEAR (as opposed to set/change) —
+// same precedent as disableBiometricSlot() below: this only ever runs
+// from a button already gated behind being inside the unlocked, PIN-
+// protected app, not a new attack surface of its own.
+export function clearRecoveryString() {
+  const meta = readVaultMeta();
+  if (meta?.recovery) {
+    meta.recovery = null;
+    writeVaultMeta(meta);
+  }
+}
+
+// --- The real "forgot my PIN" path, called from AppLockScreen's own
+// "Forgot PIN?" link. Deliberately ONE combined call, not "unlock, then
+// separately reset the PIN" as two steps — activeDataKey is a
+// non-extractable CryptoKey by design (see file header), so once a
+// plain unlock imports the raw Data Key bytes into it, there is no way
+// to get those raw bytes back out again to wrap a new PIN slot with.
+// Collecting the new PIN in the SAME step as the recovery string (both
+// entered before this is ever called) means the real raw DEK bytes,
+// briefly held in this function's own `dek` variable, get used for
+// both the unlock AND the new PIN slot in one atomic pass — the same
+// verify-before-commit rule as every other slot change here, just
+// combined with the unlock itself rather than requiring the DEK to be
+// extracted and re-supplied a second time. A wrong recovery string
+// fails at the very first line (AES-GCM's own authentication tag),
+// before anything about the new PIN is ever touched. The OLD pin slot
+// (the one whose PIN was forgotten) is simply overwritten — there's no
+// real reason to keep it once a real recovery unlock has proven the
+// owner doesn't have it anymore, per the owner's own explicit design.
+// The existing recovery slot itself is left untouched — it keeps
+// working for a FUTURE forgotten PIN too, since it wraps the same
+// permanent Data Key regardless of how many times the PIN itself
+// changes.
+export async function unlockAndResetPinWithRecoveryCode(recoveryString, newPin) {
+  const meta = readVaultMeta();
+  if (!meta?.recovery) throw new Error("No recovery string has been set.");
+  const recoveryKey = await derivePinProtectorKey(recoveryString, base64ToBytes(meta.recovery.salt), meta.recovery.iterations);
+  const dek = await unprotectBytes(recoveryKey, meta.recovery.slot);
+  const newSalt = crypto.getRandomValues(new Uint8Array(16));
+  const newPinKey = await derivePinProtectorKey(newPin, newSalt, PIN_KDF_ITERATIONS);
+  const newPinSlot = await protectBytes(newPinKey, dek);
+  const verifyKey = await derivePinProtectorKey(newPin, newSalt, PIN_KDF_ITERATIONS);
+  const verifyDek = await unprotectBytes(verifyKey, newPinSlot);
+  if (!bytesEqual(verifyDek, dek)) throw new Error("New PIN verification failed — the recovery string was correct, but nothing else was changed. Try again.");
+  // biometric (if set) is deliberately left untouched — it wraps the
+  // Data Key via the device key, not the PIN, so it's independent of
+  // which PIN is active and keeps working exactly as before.
+  const graceMinutes = meta.graceMinutesPref || 0;
+  writeVaultMeta({ ...meta, device: null, pin: { slot: newPinSlot, salt: bytesToBase64(newSalt), iterations: PIN_KDF_ITERATIONS }, tempGrace: null });
+  activeDataKey = await importDataKey(dek);
+  if (graceMinutes > 0) await refreshGraceWindow(dek, graceMinutes);
 }
 
 export function disableBiometricSlot() {

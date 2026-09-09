@@ -77,7 +77,7 @@ import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../reposito
 // for the full envelope design. Every toggle/PIN-change handler below
 // that touches App Lock/biometric now has to keep the real vault in
 // sync, not just the stored settings flags.
-import { enablePinProtection, disablePinProtectionWithPin, changePin, enableBiometricSlot, disableBiometricSlot } from "../storage/cryptoService";
+import { enablePinProtection, disablePinProtectionWithPin, changePin, enableBiometricSlot, disableBiometricSlot, setRecoveryString as setRecoveryStringVault, hasRecoveryString, clearRecoveryString as clearRecoveryStringVault } from "../storage/cryptoService";
 import { NotificationPreferencesRepository, DEFAULT_NOTIFICATION_PREFERENCES, isPaused } from "../repositories/notificationPreferencesRepository";
 import { NotificationHistoryRepository } from "../repositories/notificationHistoryRepository";
 import { getDeferredInstallPrompt, onInstallPromptAvailable, triggerInstallPrompt } from "../storage/installPromptService";
@@ -1194,6 +1194,37 @@ function PrivacyScreen({ onClose }) {
   };
   const clearDuressPin = async () => { await PrivacySettingsRepository.clearDuressPin(); refresh(); };
 
+  // ADDED 9 Sep 2026 — real ask: PIN-recovery/alternate-access, per
+  // CLAUDE.md's own scoped design. Gated behind the CURRENT PIN
+  // (`settings.anonymisePin`, already known here — same trust model as
+  // changePin()/disablePinProtectionWithPin() above, not re-asked from
+  // scratch), only offered once App Lock is on. A free-text field, not
+  // the numeric-only PIN pad — meant to be a real, memorable passphrase
+  // the owner picks himself, not a random code to write down.
+  const [settingRecovery, setSettingRecovery] = useState(false);
+  const [recoveryStringInput, setRecoveryStringInput] = useState("");
+  const [recoveryStringConfirm, setRecoveryStringConfirm] = useState("");
+  const [recoveryError, setRecoveryError] = useState("");
+  const saveRecoveryString = async () => {
+    const trimmed = recoveryStringInput.trim();
+    if (trimmed.length < 6) { setRecoveryError("Recovery string should be at least 6 characters."); return; }
+    if (trimmed !== recoveryStringConfirm.trim()) { setRecoveryError("Recovery strings don't match — check both and try again."); return; }
+    try {
+      await setRecoveryStringVault(settings.anonymisePin, trimmed);
+      setRecoveryStringInput(""); setRecoveryStringConfirm(""); setSettingRecovery(false); setRecoveryError("");
+      // hasRecoveryString() reads the vault's own metadata directly, not
+      // `settings` — nothing here would otherwise trigger a re-render to
+      // pick up the change. refresh() re-fetches settings (a no-op on
+      // the actual data) purely to force one, same real-but-indirect
+      // trick already used elsewhere in this app for a sync vault change
+      // that isn't itself part of PrivacySettingsRepository's own state.
+      refresh();
+    } catch (err) {
+      setRecoveryError(err.message || "Couldn't set the recovery string — nothing was changed.");
+    }
+  };
+  const clearRecovery = () => { clearRecoveryStringVault(); refresh(); };
+
   // ADDED 19 Aug 2026 — App Lock toggle, real ask. Guarded: can't turn
   // on without a PIN already set, since App Lock with no PIN would
   // show a lock screen that anything (even leaving the field blank)
@@ -1358,7 +1389,7 @@ function PrivacyScreen({ onClose }) {
                   : "Turn on Anonymise mode above first — this only ever applies on top of it."}
               </div>
             </div>
-            <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.hideFurtherEnabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
+            <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.hideFurtherEnabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0 }}>
               {/* CHANGED — same knob-invisible-in-dark-mode bug class
                   as the Colour scheme screen's dark mode toggle: a
                   near-black knob in dark mode could blend into a
@@ -1381,7 +1412,7 @@ function PrivacyScreen({ onClose }) {
               <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>App Lock</div>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>Require your PIN just to open the app at all. Uses the same PIN as the Revert PIN below.</div>
             </div>
-            <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockEnabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
+            <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockEnabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0 }}>
               <div style={{ position: "absolute", top: 2, left: settings.appLockEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
             </div>
           </div>
@@ -1412,7 +1443,7 @@ function PrivacyScreen({ onClose }) {
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>Fingerprint or face unlock as a shortcut for the PIN above — the PIN still works any time this is on, off, or unavailable.</div>
                 {biometricError && <div style={{ fontSize: 11, color: ACTION.red, marginTop: 4 }}>{biometricError}</div>}
               </div>
-              <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.biometricUnlockEnabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
+              <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.biometricUnlockEnabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0 }}>
                 <div style={{ position: "absolute", top: 2, left: settings.biometricUnlockEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
               </div>
             </div>
@@ -1433,7 +1464,7 @@ function PrivacyScreen({ onClose }) {
                   <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Skip re-verification briefly</div>
                   <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>Reopening the app within a few minutes of last unlocking it won't ask again.</div>
                 </div>
-                <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockGraceMinutes > 0 ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
+                <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockGraceMinutes > 0 ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0 }}>
                   <div style={{ position: "absolute", top: 2, left: settings.appLockGraceMinutes > 0 ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
                 </div>
               </div>
@@ -1534,6 +1565,53 @@ function PrivacyScreen({ onClose }) {
           </div>
         )}
 
+        {/* ADDED 9 Sep 2026 — real ask: PIN-recovery/alternate-access.
+            Same "only offered once App Lock is actually on" gate as the
+            Duress PIN section above — there's no PIN to recover FROM
+            otherwise. */}
+        {settings.appLockEnabled && (
+          <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F", marginBottom: 4 }}>Recovery string (optional)</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 10 }}>
+              {hasRecoveryString()
+                ? "Set. If you ever forget your PIN, \"Forgot PIN?\" on the lock screen lets you unlock with this instead and set a new PIN in the same step — your real data stays exactly as it is."
+                : "A real passphrase you pick yourself — not a code to write down — for if you ever forget your PIN. Without one, forgetting your PIN means there's no way back into your real data."}
+            </div>
+            {settingRecovery ? (
+              <>
+                <div style={{ position: "relative", marginBottom: 8 }}>
+                  <input value={recoveryStringInput} onChange={(e) => setRecoveryStringInput(e.target.value)} type={showPins ? "text" : "password"} placeholder="New recovery string (6+ characters)"
+                    style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
+                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                    : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                </div>
+                <div style={{ position: "relative", marginBottom: 8 }}>
+                  <input value={recoveryStringConfirm} onChange={(e) => setRecoveryStringConfirm(e.target.value)} type={showPins ? "text" : "password"} placeholder="Confirm recovery string"
+                    style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontSize: 14, boxSizing: "border-box" }} />
+                  {showPins ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(false)} />
+                    : <Eye size={17} color={darkMode ? DARK.textDisabled : "#656568"} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPins(true)} />}
+                </div>
+                {recoveryError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 8 }}>{recoveryError}</div>}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => { setSettingRecovery(false); setRecoveryStringInput(""); setRecoveryStringConfirm(""); setRecoveryError(""); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: darkMode ? DARK.textSecondary : "#5B5B62", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+                  <button onClick={saveRecoveryString} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Save</button>
+                </div>
+              </>
+            ) : (
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setSettingRecovery(true)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${ACCENTS.healthcare}`, background: "transparent", color: ACCENTS.healthcare, fontWeight: 700, cursor: "pointer" }}>
+                  {hasRecoveryString() ? "Change recovery string" : "Set a recovery string"}
+                </button>
+                {hasRecoveryString() && (
+                  <button onClick={clearRecovery} style={{ padding: "10px 16px", borderRadius: 999, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: "transparent", color: ACTION.red, fontWeight: 600, cursor: "pointer" }}>
+                    Remove
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   );
@@ -1563,7 +1641,7 @@ function NotificationToggleRow({ label, description, enabled, onToggle, darkMode
           <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{label}</div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginTop: 2 }}>{description}</div>
         </div>
-        <div style={{ width: 40, height: 24, borderRadius: 999, background: enabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
+        <div style={{ width: 40, height: 24, borderRadius: 999, background: enabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0 }}>
           <div style={{ position: "absolute", top: 2, left: enabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
         </div>
       </div>
@@ -2240,7 +2318,7 @@ function AutomaticBackupsScreen({ onClose }) {
             <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Automatic backups</span>
             <div onClick={toggleAutoExport} role="switch" tabIndex={0} aria-checked={prefs.autoExportEnabled} aria-label="Automatic backups"
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleAutoExport(); } }}
-              style={{ width: 44, height: 26, borderRadius: 999, background: prefs.autoExportEnabled ? "#1B1B1F" : "#DCDCE1", position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
+              style={{ width: 44, height: 26, borderRadius: 999, background: prefs.autoExportEnabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
               <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: prefs.autoExportEnabled ? 21 : 3, transition: "left 0.15s" }} />
             </div>
           </div>
@@ -2295,7 +2373,7 @@ function DataNetworkScreen({ onClose }) {
         <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>{label}</span>
         <div onClick={onToggle} role="switch" tabIndex={0} aria-checked={enabled} aria-label={label}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
-          style={{ width: 44, height: 26, borderRadius: 999, background: enabled ? "#1B1B1F" : "#DCDCE1", position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
+          style={{ width: 44, height: 26, borderRadius: 999, background: enabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
           <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: enabled ? 21 : 3, transition: "left 0.15s" }} />
         </div>
       </div>
@@ -3187,7 +3265,7 @@ function CalendarSyncSheet({ onClose }) {
             </div>
             {calendarSyncError && <div style={{ fontSize: 11, color: ACTION.red, marginTop: 4 }}>{calendarSyncError}</div>}
           </div>
-          <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncEnabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
+          <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncEnabled ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
             <div style={{ position: "absolute", top: 2, left: appPrefs.calendarSyncEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
           </div>
         </div>
@@ -3217,7 +3295,7 @@ function CalendarSyncSheet({ onClose }) {
                   "Clinic appointment" instead of this visit's own title — safer if reminders show on your lock screen.
                 </div>
               </div>
-              <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncGenericTitle ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
+              <div style={{ width: 40, height: 24, borderRadius: 999, background: appPrefs.calendarSyncGenericTitle ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", flexShrink: 0, opacity: calendarSyncing ? 0.6 : 1 }}>
                 <div style={{ position: "absolute", top: 2, left: appPrefs.calendarSyncGenericTitle ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
               </div>
             </div>
@@ -3674,7 +3752,7 @@ function DesignScreen({ onClose }) {
                 shadow those use for depth against a light track. */}
             <div onClick={() => setDarkMode((d) => !d)} role="switch" tabIndex={0} aria-checked={darkMode} aria-label="Dark mode"
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDarkMode((d) => !d); } }}
-              style={{ width: 44, height: 26, borderRadius: 999, background: darkMode ? "#1B1B1F" : "#DCDCE1", position: "relative", cursor: "pointer", transition: "background 0.15s" }}>
+              style={{ width: 44, height: 26, borderRadius: 999, background: darkMode ? ACCENTS.home : "#DCDCE1", position: "relative", cursor: "pointer", transition: "background 0.15s" }}>
               <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: darkMode ? 21 : 3, transition: "left 0.15s" }} />
             </div>
           </div>
@@ -3685,7 +3763,7 @@ function DesignScreen({ onClose }) {
               <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>Colour-blind friendly palette</span>
               <div onClick={toggleCvdPalette} role="switch" tabIndex={0} aria-checked={cvdActive} aria-label="Colour-blind friendly palette"
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCvdPalette(); } }}
-                style={{ width: 44, height: 26, borderRadius: 999, background: cvdActive ? "#1B1B1F" : "#DCDCE1", position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
+                style={{ width: 44, height: 26, borderRadius: 999, background: cvdActive ? ACCENTS.home : (darkMode ? DARK.border : "#DCDCE1"), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
                 <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: cvdActive ? 21 : 3, transition: "left 0.15s" }} />
               </div>
             </div>
@@ -3798,7 +3876,7 @@ function MenstrualTrackingToggleCard({ T }) {
           <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Menstrual & contraception tracking</div>
           <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Adds a Cycle/Contraception/Pregnancy tab under Healthcare. Off by default — turning it on doesn't depend on any other setting.</div>
         </div>
-        <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.menstrualTrackingEnabled ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
+        <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.menstrualTrackingEnabled ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
           <div style={{ position: "absolute", top: 2, left: prefs.menstrualTrackingEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
         </div>
       </div>
@@ -3819,7 +3897,7 @@ function MenstrualTrackingToggleCard({ T }) {
             <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Hide Pregnancy tab</div>
             <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Keeps Cycle and Contraception, removes Pregnancy specifically — regardless of profile gender. A record you already have stays reachable by tapping it directly.</div>
           </div>
-          <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.pregnancyTrackingHidden ? ACCENTS.healthcare : "#DCDCE1", position: "relative", flexShrink: 0 }}>
+          <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.pregnancyTrackingHidden ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
             <div style={{ position: "absolute", top: 2, left: prefs.pregnancyTrackingHidden ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
           </div>
         </div>

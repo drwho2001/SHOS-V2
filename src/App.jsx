@@ -22,7 +22,7 @@ import { checkBiometryAvailable, authenticateWithBiometrics } from "./storage/bi
 // this file's own new cold-boot gate (replacing shouldRelock() there —
 // shouldRelock() still runs fine for the resume-from-background relock
 // check further down, since the vault is already unlocked by then).
-import { bootUnlock, unlockWithPin, unlockWithBiometric, getDuressPin, hasBiometricSlot, isMigrationNeeded, runMigrationIfNeeded, isVaultUnlocked } from "./storage/cryptoService";
+import { bootUnlock, unlockWithPin, unlockWithBiometric, getDuressPin, hasBiometricSlot, isMigrationNeeded, runMigrationIfNeeded, isVaultUnlocked, unlockAndResetPinWithRecoveryCode, hasRecoveryString } from "./storage/cryptoService";
 // ADDED — Phase 4 (Sep 2026): real, pre-existing bug found while
 // verifying this boot gate live — these three used to be self-invoking
 // IIFEs at module load, which ran (and tried to storage.save()) BEFORE
@@ -235,6 +235,19 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
   const [error, setError] = useState("");
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricAttempting, setBiometricAttempting] = useState(false);
+  // ADDED 9 Sep 2026 — real ask: PIN-recovery/alternate-access, per
+  // CLAUDE.md's own scoped design. Genuinely a real path, not a "reset
+  // my whole app" nuclear option — the recovery string unlocks the SAME
+  // real data, then a new PIN is set in this same step (collected
+  // before the unlock even runs, see cryptoService.js's own
+  // unlockAndResetPinWithRecoveryCode() for why this has to be one
+  // combined call, not "unlock, then separately reset").
+  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [recoveryString, setRecoveryString] = useState("");
+  const [recoveryNewPin, setRecoveryNewPin] = useState("");
+  const [recoveryNewPinConfirm, setRecoveryNewPinConfirm] = useState("");
+  const [recoveryError, setRecoveryError] = useState("");
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
 
   // CHANGED — Phase 4 (Sep 2026): a real, if plain, circular-dependency
   // problem — see cryptoService.js's own header for the full story —
@@ -257,6 +270,43 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
     } catch {
       setError("Incorrect PIN.");
       setPin("");
+      return;
+    }
+    onUnlock();
+  };
+
+  // Both the new-PIN and its confirmation are collected here, BEFORE
+  // unlockAndResetPinWithRecoveryCode() is ever called — see that
+  // function's own comment for why setting the new PIN can't happen as
+  // a separate step after a plain unlock. A wrong recovery string and a
+  // mismatched PIN confirmation are both real, distinct user mistakes,
+  // but shown with one shared message — no reason to tell an attacker
+  // WHICH part was wrong.
+  const attemptRecovery = async () => {
+    setRecoveryError("");
+    const trimmedPin = recoveryNewPin.trim();
+    if (trimmedPin.length < 4) { setRecoveryError("New PIN should be at least 4 digits."); return; }
+    if (trimmedPin !== recoveryNewPinConfirm.trim()) { setRecoveryError("New PINs don't match — check both and try again."); return; }
+    setRecoveryBusy(true);
+    try {
+      await unlockAndResetPinWithRecoveryCode(recoveryString, trimmedPin);
+      // REAL BUG found live verifying this: the vault's own PIN slot
+      // (cryptoService.js) and PrivacySettingsRepository's own
+      // `anonymisePin` field are two separate copies of "the current
+      // PIN" — Settings' savePin() always writes both together (see
+      // that function's own comment), but this recovery path only went
+      // through cryptoService directly. Left unsynced, Settings' own
+      // toggleAppLock()/changePin() calls (which pass the REPOSITORY's
+      // stale `anonymisePin`, not the vault's real one) would silently
+      // fail the moment someone tried to turn App Lock off or change
+      // the PIN again after a real recovery reset. The vault is already
+      // unlocked at this point (unlockAndResetPinWithRecoveryCode()
+      // just succeeded), so this write reaches real, now-decryptable
+      // storage correctly.
+      await PrivacySettingsRepository.update({ anonymisePin: trimmedPin });
+    } catch {
+      setRecoveryError("That recovery string wasn't right.");
+      setRecoveryBusy(false);
       return;
     }
     onUnlock();
@@ -326,6 +376,32 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  if (recoveryMode) {
+    return (
+      <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "#1B1B1F", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 28px", zIndex: 999, fontFamily: "'Inter', sans-serif" }}>
+        <Eye size={32} color="#FFFFFF" style={{ marginBottom: 16, opacity: 0.6 }} />
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF", marginBottom: 6, textAlign: "center" }}>Unlock with your recovery string</div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginBottom: 18, textAlign: "center", lineHeight: 1.5 }}>
+          This also sets a new PIN, since it proves you don't have the old one anymore.
+        </div>
+        <input value={recoveryString} onChange={(e) => { setRecoveryString(e.target.value); setRecoveryError(""); }} type="password" autoFocus placeholder="Recovery string"
+          style={{ width: 260, padding: "12px 16px", borderRadius: 8, border: "none", fontSize: 15, marginBottom: 10, boxSizing: "border-box" }} />
+        <input value={recoveryNewPin} onChange={(e) => { setRecoveryNewPin(e.target.value); setRecoveryError(""); }} type="password" inputMode="numeric" placeholder="New PIN"
+          style={{ width: 260, padding: "12px 16px", borderRadius: 8, border: "none", fontSize: 15, textAlign: "center", marginBottom: 10, boxSizing: "border-box" }} />
+        <input value={recoveryNewPinConfirm} onChange={(e) => { setRecoveryNewPinConfirm(e.target.value); setRecoveryError(""); }} type="password" inputMode="numeric" placeholder="Confirm new PIN"
+          onKeyDown={(e) => { if (e.key === "Enter") attemptRecovery(); }}
+          style={{ width: 260, padding: "12px 16px", borderRadius: 8, border: "none", fontSize: 15, textAlign: "center", marginBottom: 12, boxSizing: "border-box" }} />
+        {recoveryError && <div style={{ fontSize: 12, color: ACTION.red, marginBottom: 12, textAlign: "center" }}>{recoveryError}</div>}
+        <button onClick={attemptRecovery} disabled={recoveryBusy} style={{ padding: "10px 24px", borderRadius: 999, border: "none", background: "#0E8144", color: "#FFFFFF", fontWeight: 700, cursor: recoveryBusy ? "default" : "pointer", opacity: recoveryBusy ? 0.6 : 1, marginBottom: 14 }}>
+          {recoveryBusy ? "Unlocking…" : "Unlock and set new PIN"}
+        </button>
+        <div onClick={() => { setRecoveryMode(false); setRecoveryString(""); setRecoveryNewPin(""); setRecoveryNewPinConfirm(""); setRecoveryError(""); }} style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", cursor: "pointer", textDecoration: "underline" }}>
+          Back to PIN entry
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "#1B1B1F", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 999, fontFamily: "'Inter', sans-serif" }}>
       <Eye size={32} color="#FFFFFF" style={{ marginBottom: 16, opacity: 0.6 }} />
@@ -349,9 +425,18 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
           is deliberately chosen to stay dark enough for white text
           (not just bright enough to show against near-black) — same
           reasoning as every other Healthcare-tab button. */}
-      <button onClick={attempt} style={{ padding: "10px 24px", borderRadius: 999, border: "none", background: "#0E8144", color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
+      <button onClick={attempt} style={{ padding: "10px 24px", borderRadius: 999, border: "none", background: "#0E8144", color: "#FFFFFF", fontWeight: 700, cursor: "pointer", marginBottom: hasRecoveryString() ? 14 : 0 }}>
         Unlock
       </button>
+      {/* ADDED 9 Sep 2026 — real ask: PIN-recovery. hasRecoveryString()
+          is the same pre-unlock-safe vault-metadata read as
+          hasBiometricSlot() above — only shown once a recovery string
+          genuinely exists, never a dead-end link. */}
+      {hasRecoveryString() && (
+        <div onClick={() => setRecoveryMode(true)} style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", cursor: "pointer", textDecoration: "underline" }}>
+          Forgot PIN?
+        </div>
+      )}
     </div>
   );
 }
