@@ -89,6 +89,30 @@ async function dismissTransientBanners(page) {
   await page.waitForTimeout(300);
 }
 
+// ADDED 9 Sep 2026 — real regression found live while expanding the
+// seed dataset: navigating to Home via this coordinate click does NOT
+// reset window scroll to 0. If the PREVIOUS screen needed non-zero
+// scroll to reach (e.g. Playwright's own auto-scroll-into-view finding
+// a list item further down a longer list — exactly what happened once
+// the Encounters seed grew from 12 to 18, changing how far down
+// "Sauna trip" sits), Home renders still scrolled, and the Settings
+// gear's own fixed PIXEL position (356,40) no longer matches anything
+// real — the gear sits in Home's own in-flow header, not a
+// position:fixed one, so it moves with scroll. Reproduced directly:
+// element at (356,40) after the regression was the welcome paragraph
+// text, not the gear icon. This coordinate-click pattern was
+// duplicated at 7 call sites; explicit scroll-to-top before the gear
+// click, pulled into one shared helper, closes it everywhere at once
+// rather than patching only the 2 sites CI happened to catch this
+// time — the other 5 were equally exposed, just not triggered yet.
+async function goHomeThenOpenSettings(page) {
+  await page.mouse.click(195, 800);
+  await page.waitForTimeout(500);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.mouse.click(356, 40);
+  await page.waitForTimeout(600);
+}
+
 async function testMedicationReasonSideEffects(page) {
   console.log("\n[1/10] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
@@ -143,10 +167,7 @@ async function testLocationsExtraFields(page) {
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
   // it's the raised circular button), so this is a coordinate click
   // tied to the 390x844 viewport set below, not a text/role locator.
-  await page.mouse.click(195, 800);
-  await page.waitForTimeout(500);
-  await page.mouse.click(356, 40);
-  await page.waitForTimeout(600);
+  await goHomeThenOpenSettings(page);
   await page.locator("text=Manage lists").click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Locations").click({ timeout: 5000 });
@@ -175,10 +196,7 @@ async function testResourceLinkClickable(page) {
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   await dismissTransientBanners(page);
-  await page.mouse.click(195, 800);
-  await page.waitForTimeout(500);
-  await page.mouse.click(356, 40);
-  await page.waitForTimeout(600);
+  await goHomeThenOpenSettings(page);
   await page.locator("text=Resources", { exact: true }).click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator('input[placeholder="Search resources"]').fill("Refuge");
@@ -219,10 +237,7 @@ async function testEncountersAnonymiseMasking(page) {
   let text = await page.evaluate(() => document.body.innerText);
   assert(text.includes("Sam"), "before Anonymise mode, the real attendee name shows in the encounter's Attendees section");
 
-  await page.mouse.click(195, 800);
-  await page.waitForTimeout(500);
-  await page.mouse.click(356, 40);
-  await page.waitForTimeout(600);
+  await goHomeThenOpenSettings(page);
   await page.getByText("Privacy", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
   await page.locator("text=Turn on Anonymise mode").first().click({ timeout: 5000 });
@@ -240,10 +255,7 @@ async function testEncountersAnonymiseMasking(page) {
   assert(text.includes("•••• hidden"), "with Anonymise mode on, the encounter's Attendees section shows the masked placeholder");
   assert(!text.includes("Sam"), "the real attendee name no longer appears anywhere on the encounter detail screen");
 
-  await page.mouse.click(195, 800);
-  await page.waitForTimeout(500);
-  await page.mouse.click(356, 40);
-  await page.waitForTimeout(600);
+  await goHomeThenOpenSettings(page);
   await page.getByText("Privacy", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
   await page.locator('button:has-text("Turn off Anonymise mode")').click({ timeout: 5000 });
@@ -446,10 +458,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
     }
   }
   await dismissTransientBanners(page);
-  await page.mouse.click(195, 800);
-  await page.waitForTimeout(500);
-  await page.mouse.click(356, 40);
-  await page.waitForTimeout(600);
+  await goHomeThenOpenSettings(page);
   await page.getByText("Privacy", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
 }
@@ -515,10 +524,7 @@ async function testTabReorder(page) {
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   await dismissTransientBanners(page);
-  await page.mouse.click(195, 800);
-  await page.waitForTimeout(500);
-  await page.mouse.click(356, 40);
-  await page.waitForTimeout(600);
+  await goHomeThenOpenSettings(page);
   await page.locator("text=Preferences", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
 
@@ -542,10 +548,7 @@ async function testTabReorder(page) {
   assert(navLabels[2] === "Home", "Home stays fixed in the centre position regardless of the custom order");
 
   // Revert to the default order, leaving the suite in a clean state.
-  await page.mouse.click(195, 800);
-  await page.waitForTimeout(500);
-  await page.mouse.click(356, 40);
-  await page.waitForTimeout(600);
+  await goHomeThenOpenSettings(page);
   await page.locator("text=Preferences", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
   for (let i = 0; i < 3; i++) {
