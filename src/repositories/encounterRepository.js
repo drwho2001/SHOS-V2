@@ -380,6 +380,115 @@ let seedEncounters = [
     createdAt: daysAgo(45, 18, 0),
     isArchived: false,
   },
+  // ADDED 9 Sep 2026 — real ask: richer demo data linking to the 8 new
+  // contacts added the same pass (contactRepository.js), and exercising
+  // encounter fields the original 12 never really varied: kinksInvolved
+  // (empty on every one of the first 12 — real kink registry ids,
+  // confirmed live the same way contactRepository.js's own kink ids
+  // were), the "Group"/"Event" encounter types, protection_002/004
+  // (PrEP-only / None, not just Condom), and the negative end of
+  // wouldMeetAgain/enjoymentRating (every existing encounter reads
+  // "Yes" — real variety needs a "No" and a low rating too, or every
+  // screen that branches on either value goes untested).
+  {
+    ...DEFAULT_ENCOUNTER,
+    id: "encounter_013",
+    title: "Priya — birthday drinks then mine",
+    date: daysAgo(5, 22, 0),
+    isDateTime: true,
+    encounterType: "Hookup",
+    attendeeIds: ["contact_009"],
+    kinksInvolved: ["kink_037", "kink_058"],
+    myRole: "Dom",
+    protectionUsed: ["protection_001"],
+    enjoymentRating: 88,
+    wouldMeetAgain: "Yes",
+    createdAt: daysAgo(5, 23, 30),
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_ENCOUNTER,
+    id: "encounter_014",
+    title: "Devon — app hookup, his place",
+    date: daysAgo(65, 20, 0),
+    isDateTime: true,
+    encounterType: "Hookup",
+    attendeeIds: ["contact_011"],
+    myDoxyPepStatus: "Indicated - taken",
+    myPrepCoverage: "Adequate - daily (≥4/week)",
+    protectionUsed: [],
+    enjoymentRating: 78,
+    wouldMeetAgain: "Maybe",
+    createdAt: daysAgo(65, 22, 0),
+    isArchived: false,
+  },
+  // Deliberately a real negative result — every existing encounter
+  // reads wouldMeetAgain "Yes"/unset; a screen assuming it's always
+  // positive would never get caught without this.
+  {
+    ...DEFAULT_ENCOUNTER,
+    id: "encounter_015",
+    title: "Kai — his flat",
+    date: daysAgo(195, 21, 0),
+    isDateTime: true,
+    encounterType: "Hookup",
+    attendeeIds: ["contact_012"],
+    kinksInvolved: ["kink_016"],
+    myRole: "sub",
+    myPosition: ["Anal - receiving"],
+    protectionUsed: ["protection_004"],
+    enjoymentRating: 60,
+    wouldMeetAgain: "No",
+    notes: "Not really my thing, won't repeat.",
+    createdAt: daysAgo(195, 23, 0),
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_ENCOUNTER,
+    id: "encounter_016",
+    title: "Ash — mine, regular thing",
+    date: daysAgo(10, 20, 0),
+    isDateTime: true,
+    encounterType: "Date/Chill",
+    attendeeIds: ["contact_013"],
+    myRole: "Switch",
+    protectionUsed: ["protection_002"],
+    enjoymentRating: 93,
+    wouldMeetAgain: "Fuck YES 💖",
+    createdAt: daysAgo(10, 22, 30),
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_ENCOUNTER,
+    id: "encounter_017",
+    title: "Nat — coffee date",
+    date: daysAgo(40, 15, 0),
+    isDateTime: true,
+    encounterType: "Date/Chill",
+    attendeeIds: ["contact_016"],
+    enjoymentRating: 65,
+    wouldMeetAgain: "Maybe",
+    createdAt: daysAgo(40, 17, 0),
+    isArchived: false,
+  },
+  // A real multi-attendee entry (every existing one has exactly 1 or 2
+  // attendeeIds already covered above) — exercises the "Group" type and
+  // a 3rd real attendee-name-resolution path for Anonymise-mode masking.
+  {
+    ...DEFAULT_ENCOUNTER,
+    id: "encounter_018",
+    title: "Birthday party afters",
+    date: daysAgo(20, 23, 0),
+    isDateTime: true,
+    encounterType: "Group",
+    attendeeIds: ["contact_009", "contact_013", "contact_016"],
+    kinksInvolved: ["kink_029"],
+    enjoymentRating: 82,
+    wouldMeetAgain: "Yes",
+    notes: "Ended up back at Ash's after the party.",
+    createdAt: daysAgo(20, 23, 45),
+    isArchived: false,
+  },
 ];
 
 // CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
