@@ -136,6 +136,30 @@ const TABS = [
   { key: "healthcare", label: "Healthcare", icon: Hospital, component: HealthcareScreen, accent: ACCENTS.healthcare },
 ];
 
+// ADDED 9 Sep 2026 — real ask: the "tab reorder" part of the Settings/
+// Management ask (see AppPreferencesRepository's own tabOrder comment
+// for the full context). Home always stays in the centre position
+// (index 2 of 5) — its own raised-circle rendering below is written
+// specifically for that position, and it's the one tab this app's own
+// design deliberately never treats as equal to the other four (see the
+// bottom nav's own comment on why Home gets different treatment). Only
+// the other 4 tabs' own left-to-right order is ever affected by
+// tabOrder. Falls back to TABS' own built-in order whenever tabOrder
+// is null (never set) OR isn't a real permutation of the expected 4
+// keys (a stale/corrupt stored value, or a future TABS change adding/
+// removing a tab) — same defensive validation already applied to
+// lastActiveTab elsewhere in this file.
+function getOrderedTabs(tabOrder) {
+  const nonHome = TABS.filter((t) => t.key !== "home");
+  const home = TABS.find((t) => t.key === "home");
+  let ordered = nonHome;
+  if (Array.isArray(tabOrder) && tabOrder.length === nonHome.length && nonHome.every((t) => tabOrder.includes(t.key))) {
+    ordered = tabOrder.map((key) => nonHome.find((t) => t.key === key));
+  }
+  const mid = Math.ceil(ordered.length / 2);
+  return [...ordered.slice(0, mid), home, ...ordered.slice(mid)];
+}
+
 // ADDED — real ask: "if in same module surely should be same colour" —
 // the bottom nav's active-tab fill used tab.accent (the raw, light-
 // mode ACCENTS value) directly, with no dark-mode resolution at all,
@@ -407,7 +431,15 @@ function DecoyHome({ onLockNow }) {
           bottom nav (see App component's own comment on why) — a
           decoy screen that looks convincingly like the real app has
           to inherit this too, not just the one someone would actually
-          look at. */}
+          look at.
+          DELIBERATELY NOT honoring a real custom tabOrder — ADDED 9 Sep
+          2026 alongside that preference: this decoy is fabricated data
+          shown under duress, not a mirror of the owner's own real
+          personalization, and always using the built-in default order
+          here is one fewer thing to keep synced correctly under a
+          real security feature — no real ask to match tab order here,
+          same "don't guess past what was asked" restraint already
+          applied elsewhere in this codebase. */}
       <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", padding: "10px 0 calc(10px + env(safe-area-inset-bottom))", borderTop: "1px solid #DCDCE1", background: "#FFFFFF", flexShrink: 0 }}>
         {TABS.map((t) => (
           <div key={t.key} onClick={() => setTab(t.key)}
@@ -629,6 +661,13 @@ export default function App() {
   // effect's comment for why a naive fail-open/fail-closed default
   // here isn't good enough on its own.
   const [locked, setLocked] = useState(false);
+  // ADDED 9 Sep 2026 — real ask (18 Aug 2026, Kane — "tab reorder" part
+  // of the original Settings/Management ask). Read once at boot
+  // (finishBootAfterUnlock below), applied via getOrderedTabs() at
+  // render time — same "loaded once into session state, changed via
+  // Settings + a reload" pattern as ModuleColorRepository's own colour
+  // overrides.
+  const [tabOrder, setTabOrder] = useState(null);
   // ADDED 1 Sep 2026 — real ask: duress PIN. Session-only (not
   // persisted anywhere) — a decoy session never survives a real app
   // restart, by design; see DecoyHome's own comment on why there's
@@ -754,6 +793,7 @@ export default function App() {
       applyRealAccentOverrides(colorOverrides);
       await syncDarkModePreferenceFromStorage();
       setAppLockEnabled(settings.appLockEnabled);
+      setTabOrder(prefs.tabOrder);
       setShowOnboarding(!prefs.hasCompletedOnboarding);
       setShowAppLockPrompt(!settings.appLockEnabled && !settings.appLockPromptDismissed);
       // ADDED — Phase 4: one-time, idempotent registry/option-list
@@ -1742,7 +1782,7 @@ export default function App() {
           system nav bar doesn't overlay content at all, so this is a
           no-op there — not Android-only special-casing). */}
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: darkMode ? DARK.surface : "#FFFFFF", borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "10px 0 calc(14px + env(safe-area-inset-bottom))", zIndex: 10, fontFamily: "'Inter', sans-serif" }}>
-        {TABS.map((tab) => {
+        {getOrderedTabs(tabOrder).map((tab) => {
           const isActive = tab.key === active;
           const isBuilt = tab.component !== null || tab.key === "home";
           const Icon = tab.icon;

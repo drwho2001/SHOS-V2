@@ -2865,20 +2865,75 @@ this date; summarized here for durability.
   `notificationService.js`); the due-meds banner is the real safety net
   for a missed tap.
 - **"Settings/Management UI" (captured 18 Aug 2026, Kane) — checked 9
-  Sep 2026, only 1 of 3 parts actually done.** Original ask: "adjust
-  per-module accent colors, font, and (low priority) tab reorder,"
-  logged as its own cross-cutting item needing a dedicated session,
-  "Not started" at the time. Never re-checked by the later 9 Sep
-  backlog audit — that audit covered a separate ~35-item batch, not
-  this one, which is the real reason it went quiet rather than
-  because it was finished. Checked directly against the running app:
-  **per-module accent colors** — done, just shipped under a different
-  name (`DesignScreen`/"Colour scheme" in Settings, built out during
-  the `ModuleColorRepository` work — full per-color hex overrides plus
-  a CVD-safe palette toggle). **Font** (family or text size) — still
-  genuinely not built; no such setting exists anywhere in Settings.
-  **Tab reorder** — still not built either (always the low-priority
-  third of the original three). Two real, still-open items, not one.
+  Sep 2026, only 1 of 3 parts actually done at the time; tab reorder
+  closed for real later the same day, font attempted and reverted (see
+  below).** Original ask: "adjust per-module accent colors, font, and
+  (low priority) tab reorder," logged as its own cross-cutting item
+  needing a dedicated session, "Not started" at the time. Never
+  re-checked by the later 9 Sep backlog audit — that audit covered a
+  separate ~35-item batch, not this one, which is the real reason it
+  went quiet rather than because it was finished. **Per-module accent
+  colors** — done, just shipped under a different name (`DesignScreen`/
+  "Colour scheme" in Settings, built out during the
+  `ModuleColorRepository` work — full per-color hex overrides plus a
+  CVD-safe palette toggle).
+  **Tab reorder — built and shipped 9 Sep 2026, later the same day.**
+  New `tabOrder` preference (`appPreferencesRepository.js`, null =
+  built-in default order, else an array of the 4 non-Home tab keys) +
+  `App.jsx`'s `getOrderedTabs()`, which always keeps Home fixed in the
+  centre position (index 2 of 5) — its raised-circle rendering is
+  written specifically for that slot, and it's the one tab this app's
+  design has always treated as not-equal-to-the-other-four, so
+  reordering only ever touches the other 4. Settings > Preferences got
+  a new "Bottom nav tab order" card (tap left/right arrows to swap
+  adjacent tabs, not drag-and-drop — this app has no existing drag
+  interaction to match, and a tap control is far more reliably
+  testable) with the same "changed → reload to apply" banner already
+  established for `ModuleColorRepository`'s own colour overrides (both
+  are read once at `App.jsx`'s own boot time, not live-synced).
+  DecoyHome deliberately does NOT honor a custom tabOrder — always the
+  built-in default, a deliberate, documented scope cut (fabricated
+  duress data, not a mirror of the owner's real personalization).
+  Verified live via Playwright: moved Healthcare to the front, reloaded,
+  confirmed the real bottom nav actually rendered `[Healthcare,
+  Contacts, Home, Encounter, Medication]` (Home still centred), no
+  layout regression, reverted cleanly. Given a permanent 10th smoke-test
+  flow (`scripts/smoke-test.cjs`, was a 9-flow suite) proving the same
+  end-to-end — stable across 3 consecutive runs (dev server ×2, a real
+  `vite preview` build ×1) before shipping.
+  **Font/text-size — attempted 9 Sep 2026, reverted; real architectural
+  blocker found, not a quick win.** This app's inline styles are
+  hand-authored in fixed px throughout (`designTokens.js`'s own
+  TYPE/RADIUS constants included) — no root-font-size/rem convention
+  exists to hook a scale preference into, so a text-size setting needs
+  the whole app shell to visually scale, not a CSS variable swap.
+  First attempt: CSS `zoom` on `App.jsx`'s outer real-app wrapper
+  (Chromium-only trick, safe given this app's WebView-only target).
+  Live Playwright screenshot at a 1.3x "Larger" scale caught a real
+  regression before it shipped: the bottom nav's Healthcare tab was
+  clipped clean off the right edge, unreachable, no scroll affordance —
+  `zoom` scales a `position: fixed` descendant's own effective
+  CSS-pixel box along with everything else, so `left/right: 0` sizes
+  itself for a viewport 1.3x LARGER than the real screen. Second
+  attempt: `transform: scale()` with a compensating `width`/`minHeight`
+  (`100/scale`%) on the same wrapper — `transform` makes an element the
+  containing block for its own fixed-position descendants, which
+  should have kept the nav sized correctly against the wrapper's own
+  (unscaled) local box. Also caught live, not assumed safe: the
+  compensating width genuinely narrows the wrapper's LOCAL layout width
+  (77% of real width at 1.3x), and this app's real content — paragraphs,
+  card text — reflows into meaningfully more lines at that narrower
+  width, inflating total document height far past the viewport; the
+  bottom nav's `bottom: 0` then anchors to the bottom of that inflated
+  local box, landing over 2000px below the real, visible screen. Both
+  attempts fully reverted (`git checkout`, nothing shipped) rather than
+  landing something broken. The real, honest scope for this one:
+  doing it safely needs an actual design-system change (converting
+  `designTokens.js`'s px-based type scale to rem, or an equivalent
+  per-element approach) touching type usage across most of `src/modules/`
+  — a genuinely bigger, riskier undertaking than the original "low
+  risk, bounded" estimate, not a session to attempt speculatively
+  again without deciding on that real trade-off first.
 - **PIN-recovery/alternate-access mechanism — scoped 9 Sep 2026, no
   code written (session-limit-driven: scope only, no build).** The
   bigger of the two remaining Phase 4 bigger-ticket items to actually

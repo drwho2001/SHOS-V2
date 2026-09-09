@@ -124,6 +124,20 @@ export const DEFAULT_APP_PREFERENCES = {
   // and stops applying on its own once that happens, no cleanup
   // needed. null = nothing dismissed.
   doxyPepOverdueDismissedWindowStart: null,
+  // ADDED 9 Sep 2026 — real ask (18 Aug 2026, Kane — the "tab reorder"
+  // part of the original "adjust per-module accent colors, font, and
+  // (low priority) tab reorder" Settings/Management ask). null = the
+  // app's own built-in default order. A real value is an array of the
+  // 4 non-Home tab keys ("contacts"/"activity"/"medication"/
+  // "healthcare") in the order the user wants them — Home is
+  // deliberately never part of this array, since it always stays
+  // fixed in the centre position with its own raised-circle treatment
+  // (see App.jsx's own getOrderedTabs() for why reordering only ever
+  // touches the other 4). App.jsx validates this is still a real
+  // permutation of exactly those 4 keys before trusting it, the same
+  // "don't trust a stale/corrupt stored value" rule already applied to
+  // lastActiveTab.
+  tabOrder: null,
 };
 
 export const AppPreferencesRepository = {

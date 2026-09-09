@@ -15,7 +15,10 @@
 // never" backlog item CLAUDE.md logged the same day), three more
 // real, shipped features that had each only ever been checked by a
 // throwaway script: Resources' clickable links, Encounters' Anonymise
-// masking, and the Medication Dashboard's next-reminder clock. This
+// masking, and the Medication Dashboard's next-reminder clock — and,
+// added 9 Sep 2026 later still, Settings' new bottom-nav tab-reorder
+// control (the "tab reorder" part of the original 18 Aug 2026
+// Settings/Management ask). This
 // file WAS wired into CI the same day it was first written (4 Sep,
 // see `.github/workflows/smoke-test.yml`). Still also worth running by
 // hand before/after any risky change during a session:
@@ -87,7 +90,7 @@ async function dismissTransientBanners(page) {
 }
 
 async function testMedicationReasonSideEffects(page) {
-  console.log("\n[1/9] Medication log — Reason/Side effects (added 1 Sep 2026)");
+  console.log("\n[1/10] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Log").first().click({ timeout: 5000 });
@@ -104,7 +107,7 @@ async function testMedicationReasonSideEffects(page) {
 }
 
 async function testSymptomTestTwoWayLink(page) {
-  console.log("\n[2/9] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
+  console.log("\n[2/10] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
   await page.locator("text=Healthcare").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Test of cure — Gonorrhoea").click({ timeout: 5000 });
@@ -134,7 +137,7 @@ async function testSymptomTestTwoWayLink(page) {
 }
 
 async function testLocationsExtraFields(page) {
-  console.log("\n[3/9] Locations registry — extra fields (added 2 Sep 2026)");
+  console.log("\n[3/10] Locations registry — extra fields (added 2 Sep 2026)");
   // the Settings gear only lives on the Home dashboard header — get back
   // there first, since the previous check left us on Healthcare/Symptoms.
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
@@ -162,7 +165,7 @@ async function testLocationsExtraFields(page) {
 // building it (the Refuge entry, a real https:// URL from the seeded
 // list), never given permanent coverage until now.
 async function testResourceLinkClickable(page) {
-  console.log("\n[4/9] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
+  console.log("\n[4/10] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
   // Reload first — the previous test (Locations registry) leaves the
   // Manage Lists > Locations sub-screen open, a stacked Settings
   // overlay that would otherwise sit on top of (and intercept clicks
@@ -208,7 +211,7 @@ async function testResourceLinkClickable(page) {
 // (anonymisePin) is still unset at this point — deactivating needs no
 // PIN then (see privacySettingsRepository.js's own deactivate()).
 async function testEncountersAnonymiseMasking(page) {
-  console.log("\n[5/9] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
+  console.log("\n[5/10] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
@@ -277,7 +280,7 @@ async function testEncountersAnonymiseMasking(page) {
 // logged at the real current time, which always has a real future
 // lockoutEndsAt() to check.
 async function testMedicationReminderClock(page) {
-  console.log("\n[6/9] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
+  console.log("\n[6/10] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   // Scoped on "Last dose" rather than the "Log dose" button's own text
@@ -330,7 +333,7 @@ async function testMedicationReminderClock(page) {
 // existing install's first Phase 4 boot" from a genuinely fresh
 // profile (see that function's own comment).
 async function testEncryptionMigratesLegacyData(browser) {
-  console.log("\n[7/9] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
+  console.log("\n[7/10] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
     localStorage.setItem("shos_app_preferences", JSON.stringify({
@@ -386,7 +389,7 @@ async function testEncryptionMigratesLegacyData(browser) {
 // check broad, real coverage rather than just the vault metadata key
 // and whatever the fresh boot itself wrote.
 async function testEncryptionPositiveCheck(page) {
-  console.log("\n[8/9] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
+  console.log("\n[8/10] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
   const rawShapes = await page.evaluate(() => {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -457,7 +460,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
 async function testEncryptionAppLockGatesVault(page) {
-  console.log("\n[9/9] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
+  console.log("\n[9/10] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
@@ -498,6 +501,62 @@ async function testEncryptionAppLockGatesVault(page) {
   assert((await page.getAttribute('[aria-label="App Lock"]', "aria-checked")) === "false", "App Lock turns back off cleanly, reverting to the always-works device slot");
 }
 
+// ADDED 9 Sep 2026 — real ask (18 Aug 2026, Kane — the "tab reorder"
+// part of the original Settings/Management ask): Settings > Preferences'
+// new tab-order control (App.jsx's getOrderedTabs()) lets the 4
+// non-Home bottom-nav tabs be reordered, Home always staying fixed in
+// the centre. Reads via App.jsx's own boot-time state, same "reload to
+// apply" shape as a colour override — proves the reorder actually
+// reaches the real, live-rendered nav bar after a reload, not just the
+// stored preference, the same class of gap this whole suite exists to
+// close.
+async function testTabReorder(page) {
+  console.log("\n[10/10] Settings — bottom nav tab order (added 9 Sep 2026)");
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(800);
+  await dismissTransientBanners(page);
+  await page.mouse.click(195, 800);
+  await page.waitForTimeout(500);
+  await page.mouse.click(356, 40);
+  await page.waitForTimeout(600);
+  await page.locator("text=Preferences", { exact: true }).first().click({ timeout: 5000 });
+  await page.waitForTimeout(500);
+
+  assert(await page.locator("text=Bottom nav tab order").isVisible(), "the tab-order control renders in Settings > Preferences");
+
+  for (let i = 0; i < 3; i++) {
+    await page.locator('[aria-label="Move Healthcare left"]').click({ timeout: 5000 });
+    await page.waitForTimeout(200);
+  }
+  assert(await page.locator("text=Tab order needs a reload").isVisible(), "moving a tab shows the real \"reload to apply\" prompt");
+
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(800);
+  await dismissTransientBanners(page);
+
+  const navLabels = await page.evaluate(() => {
+    const nav = document.querySelector('div[style*="justify-content: space-around"][style*="position: fixed"]');
+    return nav ? Array.from(nav.children).map((el) => el.getAttribute("aria-label") || el.textContent.trim()) : [];
+  });
+  assert(navLabels[0] === "Healthcare", "Healthcare, moved to the front, actually renders first in the real, live bottom nav after reload");
+  assert(navLabels[2] === "Home", "Home stays fixed in the centre position regardless of the custom order");
+
+  // Revert to the default order, leaving the suite in a clean state.
+  await page.mouse.click(195, 800);
+  await page.waitForTimeout(500);
+  await page.mouse.click(356, 40);
+  await page.waitForTimeout(600);
+  await page.locator("text=Preferences", { exact: true }).first().click({ timeout: 5000 });
+  await page.waitForTimeout(500);
+  for (let i = 0; i < 3; i++) {
+    await page.locator('[aria-label="Move Healthcare right"]').click({ timeout: 5000 });
+    await page.waitForTimeout(200);
+  }
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(800);
+  await dismissTransientBanners(page);
+}
+
 (async () => {
   const browser = await chromium.launch({ executablePath: PLAYWRIGHT_EXECUTABLE });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -516,6 +575,7 @@ async function testEncryptionAppLockGatesVault(page) {
     await testEncryptionMigratesLegacyData(browser);
     await testEncryptionPositiveCheck(page);
     await testEncryptionAppLockGatesVault(page);
+    await testTabReorder(page);
   } catch (err) {
     failed = true;
     console.error("\n" + err.message);

@@ -3755,6 +3755,57 @@ function MenstrualTrackingToggleCard({ T }) {
   );
 }
 
+// ADDED 9 Sep 2026 — real ask: the "tab reorder" part of the original
+// 18 Aug 2026 Settings/Management ask (see AppPreferencesRepository's
+// own tabOrder comment and App.jsx's getOrderedTabs() for the full
+// context). Left/right move buttons rather than real drag-and-drop —
+// this app has no existing drag interaction anywhere else to match,
+// and a tap-based control is far more reliably testable/verifiable
+// (this session's own Playwright suite included) than native HTML5 or
+// touch drag-and-drop tends to be. Home is deliberately not one of the
+// 4 rows here — it always stays fixed in the centre of the real nav,
+// see getOrderedTabs()'s own comment for why.
+const NON_HOME_TAB_LABELS = { contacts: "Contacts", activity: "Encounter", medication: "Medication", healthcare: "Healthcare" };
+const DEFAULT_TAB_ORDER = ["contacts", "activity", "medication", "healthcare"];
+function TabOrderCard({ T, onChanged }) {
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  const order = (Array.isArray(prefs.tabOrder) && prefs.tabOrder.length === 4 && DEFAULT_TAB_ORDER.every((k) => prefs.tabOrder.includes(k)))
+    ? prefs.tabOrder : DEFAULT_TAB_ORDER;
+
+  const move = async (index, dir) => {
+    const next = index + dir;
+    if (next < 0 || next >= order.length) return;
+    const reordered = [...order];
+    [reordered[index], reordered[next]] = [reordered[next], reordered[index]];
+    setPrefs(await AppPreferencesRepository.update({ tabOrder: reordered }));
+    onChanged();
+  };
+
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>Bottom nav tab order</div>
+      <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 12 }}>
+        Reorder Contacts, Encounter, Medication, and Healthcare — Home always stays fixed in the centre.
+      </div>
+      {order.map((key, i) => (
+        <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderTop: i > 0 ? `1px solid ${T.border}` : "none" }}>
+          <span style={{ fontSize: 13, color: T.textPrimary }}>{NON_HOME_TAB_LABELS[key]}</span>
+          <div style={{ display: "flex", gap: 6 }}>
+            <div role="button" aria-label={`Move ${NON_HOME_TAB_LABELS[key]} left`} onClick={() => move(i, -1)}
+              style={{ padding: 6, borderRadius: 8, cursor: i === 0 ? "default" : "pointer", opacity: i === 0 ? 0.3 : 1, border: `1px solid ${T.border}` }}>
+              <ChevronLeft size={14} color={T.textPrimary} />
+            </div>
+            <div role="button" aria-label={`Move ${NON_HOME_TAB_LABELS[key]} right`} onClick={() => move(i, 1)}
+              style={{ padding: 6, borderRadius: 8, cursor: i === order.length - 1 ? "default" : "pointer", opacity: i === order.length - 1 ? 0.3 : 1, border: `1px solid ${T.border}` }}>
+              <ChevronRight size={14} color={T.textPrimary} />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ADDED — real ask: "review/audit all settings contents and regroup if
 // needed for clarity" — the Menstrual/contraception toggle (and the
 // Contacts inactive-threshold before it) had drifted into the Design
@@ -3766,6 +3817,12 @@ function MenstrualTrackingToggleCard({ T }) {
 function PreferencesScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
+  // ADDED 9 Sep 2026 — real ask: tab order, see TabOrderCard's own
+  // comment. App.jsx reads tabOrder once at boot, so a real reload is
+  // genuinely needed to apply a change here — same "changed → reload
+  // now" banner already established on the Appearance/Colour-scheme
+  // screen for the exact same reason (a colour override).
+  const [changed, setChanged] = useState(false);
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
@@ -3773,6 +3830,19 @@ function PreferencesScreen({ onClose }) {
         <span style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>Preferences</span>
       </div>
       <div style={{ padding: 16 }}>
+        {changed && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "10px 14px", borderRadius: 12, background: "#1B1B1F", color: "#FFFFFF", fontSize: 12, fontWeight: 600, marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <AlertTriangle size={15} /> Tab order needs a reload to apply.
+            </div>
+            <button onClick={() => window.location.reload()}
+              style={{ padding: "6px 12px", borderRadius: 999, border: "1px solid #FFFFFF", background: "transparent", color: "#FFFFFF", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+              Reload now
+            </button>
+          </div>
+        )}
+        <div style={{ fontSize: 11, fontWeight: 700, color: T.textDisabled, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Navigation</div>
+        <div style={{ marginBottom: 20 }}><TabOrderCard T={T} onChanged={() => setChanged(true)} /></div>
         <div style={{ fontSize: 11, fontWeight: 700, color: T.textDisabled, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Contacts</div>
         <div style={{ marginBottom: 20 }}><InactiveThresholdCard T={T} /></div>
         <div style={{ fontSize: 11, fontWeight: 700, color: T.textDisabled, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 6px" }}>Healthcare</div>
