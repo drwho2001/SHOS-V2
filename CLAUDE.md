@@ -2831,6 +2831,32 @@ this date; summarized here for durability.
   standing "avoid over-normalisation"/no-unprompted-scope-creep rule
   applies exactly as much to a cosmetic transition touching every
   picker in the app as it does to a new feature.
+- **Refill adherence "per-container, not per-unit" — checked 9 Sep
+  2026, found ALREADY RESOLVED, not a real gap.** A prior backlog audit
+  flagged this as "genuinely still open... no evidence this specific
+  metric exists" — checked directly against the actual code and git
+  history rather than trusted at face value, since CLAUDE.md's own
+  standing rule is to trust the repo over any doc when they disagree.
+  `medicationCalculations.js`'s `computeAdherence()` already windows
+  its own `sinceRefill` stat to the CURRENT container's cycle length
+  (`daysPerContainer`, derived from `unitsPerContainer`/`unitsPerDose`/
+  `effectiveDoseIntervalHours()`) rather than the full span since the
+  last refill log — exactly what "PrEP-style multi-container refills
+  skew a per-unit rate" was describing. `git blame` traces this to
+  commit `2ae0f36`, the earliest commit in this repo's own current
+  (post-27-Aug-rewrite) history — meaning this fix has been live since
+  before this session even started; the audit that flagged it as open
+  simply missed it, most likely checking a different file or an
+  outdated assumption rather than the real `computeAdherence()` body.
+  Verified the arithmetic against PrEP's own real seed config
+  (`unitsPerContainer: 30`, once-daily → a 30-day container cycle) by
+  hand: a refill logged 8 real days ago correctly windows to a 9-day
+  "since refill" stat, not yet wrapping since it hasn't crossed a full
+  container cycle — the seed data doesn't happen to exercise the
+  actual multi-cycle wraparound case, but the modulo arithmetic itself
+  (`(daysSince - 1) % daysPerContainer) + 1`) is sound for when it
+  eventually does. No code change needed — this entry exists to
+  correct the record, not to close a real gap.
 - **Cold-start notification-action race** — a still-open upstream
   Capacitor limitation (not fixable purely from this app's JS): tapping
   a notification action after the app was fully killed can fail to
