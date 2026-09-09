@@ -3151,6 +3151,85 @@ this date; summarized here for durability.
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
 
+## Recently shipped (9 Sep 2026, even later still — see Notion for full detail)
+
+Follow-up to the seed-data pass above, driven by the owner's own
+request for real narrative variety (a gay man on PrEP/DoxyPEP with a
+positive-test-to-vaccine arc; a cis woman's contraception-to-pregnancy
+story; a routine-testing-only thread across gender-diverse partners; a
+trans man's hormone/IUD-contraception needs) and for a first-launch
+onboarding step that helps build My Profile and points at relevant
+tracking. Real architectural note that shaped how this landed: SHOS is
+single-owner — "4 personas" can't mean 4 separate profiles, so
+represented through DATA (medications, contraception, testing) rather
+than by writing an identity onto My Profile, which stays blank for the
+real installing user to fill in themselves.
+
+**A real, serious pre-existing bug found and fixed, not something this
+session introduced.** Investigating the owner's own report — that
+pregnancy/contraception tracking isn't as discoverable as STI/HIV
+tracking — led first to the good news that a real onboarding question
+("Track menstrual & contraception health?") already existed, wired to
+`menstrualTrackingEnabled`. Verifying it live turned up something
+worse than a discoverability gap: answering "yes" correctly wrote the
+preference, but Home's own Quick Add section never showed the promised
+Log period/Log contraception shortcuts, even after a reload. Root
+cause: `AppPreferencesRepository.getPreferences()` and
+`PrivacySettingsRepository.getSettings()` are both async (this
+project's own Phase 2/3 encryption groundwork), and 4 call sites still
+chained a property directly onto the call's return value instead of
+awaiting/`.then()`-ing first — reading a property off a Promise object,
+always `undefined`. Not a timing race, not specific to onboarding:
+silently broken for every real install since each repository went
+async. Fixed all 4 — `SHOS_Home_Prototype.jsx`'s own
+`menstrualTrackingEnabled` and `appLockEnabled` (the "Lock now" quick
+button never showed either), `SHOS_Healthcare_Prototype.jsx`'s own
+copy of `menstrualTrackingEnabled` (the whole Menstrual & Contraception
+sub-tab never appeared), and `SHOS_Contacts_Prototype.jsx`'s
+`inactiveThresholdDays` (silently always fell back to the 90-day
+default). A full sweep for the same pattern across every
+`getPreferences()`/`getSettings()` call site in `src/` found no other
+instances. Also fixed a related, separate bug in the same
+investigation: `OnboardingScreen`'s own `answer()`/`onAnswer()` were
+genuinely fire-and-forget (the write wasn't awaited before advancing,
+and `onAnswer` didn't even return its own promise) — harmless when
+this screen was built (26 Aug, before these repositories went async),
+a real race once they did. Verified live end-to-end: the real
+onboarding flow now correctly shows the Quick Add shortcuts immediately
+after finishing, no manual reload needed; the Healthcare sub-tab
+appears; a distinctive inactive-threshold value round-trips correctly.
+Full smoke-test suite passes (10/10).
+
+**Hormone therapy and IUD contraception, represented through data**: a
+Testosterone (Sustanon) medication entry, a hormonal IUD contraception
+entry (medically real reasoning baked into its own notes — testosterone
+alone isn't reliable contraception, a real basis for both to coexist on
+one record), and a linked IUD-insertion clinic visit. Verified live:
+Testosterone lists correctly on the Medication Dashboard, the IUD entry
+shows under Currently Active in Contraception alongside the pre-existing
+Depot entry (concurrent methods already supported), zero page errors.
+
+**A scoped icon pass**, per the owner's own "consider globally... one
+or two max, icons better than emoji" ask. Encounter type got small
+Phosphor icons (Flame/Users/Coffee/Drop/Confetti), matching the
+existing Rating/Location-type precedent — but deliberately as a
+render-only lookup keyed by name, NOT baked into
+`ENCOUNTER_TYPE_OPTIONS` itself the way Location's own emoji-prefixed
+strings work: that array IS the literal stored value on every existing
+encounter (this session's own new seed data included), so changing the
+option strings would have desynced from every already-saved record's
+own `encounterType` and broken its selected-chip highlighting.
+Deliberately did NOT touch Test Results, which already have a subtle
+colour-dot treatment for exactly this "scan quickly" purpose —
+doubling up with an icon risked visual clutter or reading as more
+alarming than this app's own "no judgement" tone intends for sensitive
+health data. Verified live, zero page errors, full smoke-test suite
+passes.
+
+Every change in this batch, and the seed-data batch above it, landed
+as its own build-→verify-→commit-→push cycle directly to `main`, each
+with CI checked before moving to the next.
+
 ## Recently shipped (9 Sep 2026, later still — see Notion for full detail)
 
 Two real asks handled together: a much richer synthetic seed dataset
