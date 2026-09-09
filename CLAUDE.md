@@ -3151,6 +3151,79 @@ this date; summarized here for durability.
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
 
+## Recently shipped (9 Sep 2026, later still — see Notion for full detail)
+
+Two real asks handled together: a much richer synthetic seed dataset
+(so the app has realistic demo/audit data across every module, not
+just what the smoke suite happened to touch) and an in-app Guide
+screen (nothing previously explained Settings or where less-obvious
+features live), plus a real CI regression found and fixed along the
+way.
+
+**Seed data**: Contacts 8→16, Encounters 12→18 (linked to the new
+contacts), Testing 4→7 (a home-kit test with real kit codes, a Pending
+result, a genuine Chlamydia-positive — every prior positive was
+Gonorrhoea), Clinic Visits 3→5, Symptom Log 1→3 (added a genuinely
+still-active entry — the original was always resolved), Vaccinations
+2→4 (a 2-dose Hepatitis A/B course exercising `nextDue`), Locations
+5→7 (a real second same-kind location, finally giving `type` something
+to group by, plus the first entries populating address/relatedContactId),
+Measurements 3→6 (a second data point per existing type so trend charts
+have an actual trend, plus a new custom type exercising the typeKind
+flow). Registry-linked fields (kink/organism/result/protection ids)
+were confirmed against the real, live registries before use, not
+guessed — a wrong guess renders as a silent blank/broken chip, the
+exact bug class already documented once for Protection Registry.
+Checked Partner Notification and Pregnancy too; both already
+appropriately represented (Partner Notification is correctly
+zero-seeded — a real workflow-generated checklist, not browse data)
+and left alone. Verified live at every step (build → dev server →
+Playwright, screenshotted or read back via a direct repository call)
+plus cross-module spot checks (Clinic Card, Global Search) — zero page
+errors anywhere.
+
+**Real CI regression found and fixed**: expanding Encounters changed
+how far down the list "Sauna trip" sits, which changed how much scroll
+Playwright's own auto-scroll-into-view needed to reach it — and
+navigating to Home afterward does NOT reset window scroll to 0. The
+Settings gear icon lives in Home's own in-flow header (not a
+`position:fixed` one), so its pixel position moves with scroll; the
+Anonymise-mode test's hardcoded gear-icon coordinates started missing
+for the entire 5s timeout. Reproduced consistently in CI (not a flake)
+and locally against a fresh dev server. This exact coordinate-click
+pattern was duplicated at 7 sites across the suite, all equally
+exposed — pulled into one shared `goHomeThenOpenSettings()` helper
+with an explicit scroll-to-top, closing the whole class rather than
+patching just the 2 sites that happened to trigger it. Verified stable
+across 2 consecutive full runs before pushing; CI confirmed green on
+the next push.
+
+**Guide screen** (Settings > Content & Lists): same static-reference
+pattern as the existing Glossary screen, not an interactive tour — no
+existing tour interaction to match, and a tour library is real new
+dependency weight this app doesn't otherwise carry. 5 sections
+deliberately scoped to WHERE things live and WHAT the less-obvious
+toggles do (the actual repeated confusion), not a feature-by-feature
+walkthrough: the bottom nav + Home's own non-tab shortcuts (Clinic
+Card/Episodes/Calendar), what each of the 8 Settings sections covers,
+where Menstrual/Contraception/Pregnancy tracking actually lives
+(inside Healthcare's own sub-nav, gated behind a Preferences toggle —
+genuinely not discoverable otherwise), what App Lock/the duress
+PIN/Anonymise mode actually do in plain terms, and a few standing
+facts (nothing leaves the device on its own, archive-before-delete,
+most numbers are calculated not typed in).
+
+Also resolved the same session: the Android Keystore trade-off (see
+its own Known Issues entry above) — the owner deferred the call, and
+the decision was not to build it, for reasons recorded there.
+
+All of the above landed as 7 separate, individually build-→verify-
+→commit-→push cycles directly to `main` (the "hold pushes" instruction
+from the Phase 2-4 encryption effort no longer applies — confirmed
+explicitly by the owner this session), each with its own CI run
+checked before moving to the next. Full smoke-test suite (10/10) green
+throughout, confirmed both locally and in CI.
+
 ## Recently shipped (8 Sep 2026, later still — see Notion for full detail)
 
 Real ask: "ensure user's PWA is auto-updated to current version." The
