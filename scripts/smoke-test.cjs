@@ -223,7 +223,7 @@ async function testEncountersAnonymiseMasking(page) {
   await page.waitForTimeout(500);
   await page.mouse.click(356, 40);
   await page.waitForTimeout(600);
-  await page.locator("text=Privacy", { exact: true }).first().click({ timeout: 5000 });
+  await page.getByText("Privacy", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
   await page.locator("text=Turn on Anonymise mode").first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
@@ -244,7 +244,7 @@ async function testEncountersAnonymiseMasking(page) {
   await page.waitForTimeout(500);
   await page.mouse.click(356, 40);
   await page.waitForTimeout(600);
-  await page.locator("text=Privacy", { exact: true }).first().click({ timeout: 5000 });
+  await page.getByText("Privacy", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
   await page.locator('button:has-text("Turn off Anonymise mode")').click({ timeout: 5000 });
   await page.waitForTimeout(500);
@@ -450,7 +450,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
   await page.waitForTimeout(500);
   await page.mouse.click(356, 40);
   await page.waitForTimeout(600);
-  await page.locator("text=Privacy", { exact: true }).first().click({ timeout: 5000 });
+  await page.getByText("Privacy", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
 }
 

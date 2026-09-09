@@ -2934,6 +2934,81 @@ this date; summarized here for durability.
   — a genuinely bigger, riskier undertaking than the original "low
   risk, bounded" estimate, not a session to attempt speculatively
   again without deciding on that real trade-off first.
+  **Real correction, same day, the owner's own catch**: "tab reorder"
+  above was a misreading of the original 18 Aug ask — the actual
+  complaint was the Settings SCREEN itself (reached via Home's gear
+  icon: My Profile, Export, Privacy, etc.) being "jumbled and
+  unintuitive," not the bottom nav's tab order. The tab-reorder feature
+  above is real, tested, and left shipped (harmless, not worth
+  reverting), but it didn't address the actual ask. **Settings screen
+  cleanup — done 9 Sep 2026, later still.** Real problems found by
+  reading the actual menu: `Upload` was reused as the icon for 4
+  different rows in one section (Export backup/Export to a
+  folder/Selective export/Automatic backups); `Database` was reused
+  for both Developer tools and Stats; Colour scheme's icon was never a
+  real palette glyph at all — `TagIcon` had been aliased to the
+  variable name `Palette` instead of importing the real `PaletteIcon`,
+  so it rendered as a tag/label icon; Privacy's icon was a gear
+  (confusing — Settings itself is reached via a gear, so a second gear
+  one level in reads as "more settings," not "security"). Fixed with 5
+  new/corrected icons (`Folder`, `Filter`, `Clock`, `ChartBar`, `Info`,
+  plus the real `PaletteIcon`) so every row's icon is now unique and
+  actually apt. Also regrouped the 5 original sections
+  (Profile/Data/Advanced/Design/Insights) into 8 — the real problem was
+  "Advanced" having become a catch-all for 8 unrelated rows (dev tools,
+  registry management, security, notifications, reference content)
+  with no real theme: split into Backup & Data, Security & Privacy
+  (Privacy + Data & network, moved here from Data since what leaves the
+  device is a privacy question), General (Preferences/Notifications/
+  Units), Appearance, Content & Lists (Manage lists/Resources/
+  Glossary), Insights, and Support (Developer tools/About). Same 22
+  rows, same onClick handlers — pure regroup + re-icon, no rows added
+  or removed. Caught and fixed a real, separate pre-existing test-tooling
+  bug while verifying live: 3 sites in `scripts/smoke-test.cjs` called
+  `page.locator("text=Privacy", { exact: true })` — `exact` isn't a
+  valid option for `.locator()` (only `getByText`/`getByRole` accept
+  it), so it was silently ignored and the match was really a plain
+  substring search that happened to be safe only because nothing else
+  on screen contained the substring "Privacy" until the new "Security &
+  Privacy" section header did, making `.first()` grab the header
+  instead of the actual clickable row. Fixed at the real bug (switched
+  to `page.getByText("Privacy", { exact: true })`, which does true
+  exact matching) rather than avoiding the word in the new header.
+  **Also fixed the same session, a separate but related "fonts should
+  be consistent app-wide" report**: found by grepping every
+  `fontFamily` value in `src/` for anything other than the app's own
+  two declared families. `main.jsx`'s `ErrorBoundary` crash-recovery
+  screen (the one screen a user might see during an actual crash) used
+  generic `"sans-serif"`/`"monospace"` instead of `"'Inter', sans-serif"`/
+  `"'JetBrains Mono', monospace"` — a real, visible inconsistency, not
+  hypothetical, since the real font files are already `@fontsource`-
+  imported at the top of that exact file before the class component
+  is even defined, so there was no reason to fall back to system fonts.
+  Fixed both. Found 5 more real instances in
+  `SHOS_Settings_Prototype.jsx` (the hex-code input, 3 Developer Tools
+  storage/orphan-reference dumps, the build-SHA display) all using bare
+  `"monospace"` instead of the app's own JetBrains Mono declaration —
+  all legitimate monospace-content uses, just missing the real font
+  name. Fixed all 5. A full re-grep of `fontFamily` across `src/`
+  afterward confirmed zero remaining instances of either generic
+  fallback anywhere in the app.
+  Verified live via Playwright (build → dev server, screenshotted every
+  section of the new Settings menu in both scroll positions, confirmed
+  all 22 rows present with visually distinct icons, zero page errors)
+  and via the full smoke-test suite, including the corrected Anonymise-
+  mode test, which now genuinely exercises the real Privacy row rather
+  than silently no-oping on a text match that happened to still "pass"
+  by accident before. Stable, all 10 flows green.
+  **Real open questions from this same conversation, not yet acted
+  on**: (1) the owner clarified the PIN-recovery code-format decision
+  flagged as open in that item below — a custom, user-chosen string
+  entered via a normal keyboard (numbers included, not restricted to
+  digits like the App Lock PIN pad), not an auto-generated code — but
+  the feature itself (3 real UI surfaces) hasn't been built yet, this
+  just unblocks that one decision. (2) the Android Keystore trade-off
+  (extractable-at-two-points/hardware-backed-at-rest vs. the current
+  never-extractable/software-at-rest design) was explained in plain
+  terms in chat but the owner hasn't decided; still open.
 - **PIN-recovery/alternate-access mechanism — scoped 9 Sep 2026, no
   code written (session-limit-driven: scope only, no build).** The
   bigger of the two remaining Phase 4 bigger-ticket items to actually
@@ -2953,41 +3028,44 @@ this date; summarized here for durability.
   protect/verify-before-commit pattern every other slot already uses.
   Real decisions needed before any code, in the order they'd block
   each other:
-  (1) *Code generation* — a long random alphanumeric string (simplest,
-  no new asset) vs. a BIP39-style word list (friendlier to write down
-  by hand, but needs a bundled word-list asset — real new weight for
-  a small privacy-sensitive app). Alphanumeric is the likely right
-  call given this codebase's own stated bias against unnecessary new
-  dependencies/assets, but genuinely the owner's call to confirm.
-  (2) *Reveal UX* — a one-time-only reveal screen (Settings > Privacy,
-  gated behind the current PIN, same trust model already used for
-  turning App Lock off) showing the generated code with a copy button
-  and an explicit "this is the only time you'll see this, write it
-  down" warning — the same honest, non-oversold framing already used
-  elsewhere for the Anonymise PIN's own limitations.
-  (3) *Regeneration* — a "Regenerate recovery code" action (re-wrap +
-  verify-before-commit, same shape as `changePin()`), invalidating the
-  old code.
+  **(1) Code generation — RESOLVED by the owner 9 Sep 2026, later
+  still.** Not auto-generated at all: a custom, user-CHOSEN string,
+  entered via a normal keyboard (numbers included, not restricted to
+  digits the way the App Lock PIN pad is) — closer to a passphrase the
+  owner picks and can actually remember than a random code he'd have
+  to write down. This changes (2) below from a one-time reveal screen
+  into a real "set your recovery string" input (with confirm-by-
+  retyping, the same pattern any password-set flow uses) — no reveal-
+  once warning needed, since nothing is generated for the owner to
+  lose; he's the one setting it, and can view or change it again later
+  the same way the PIN can be changed.
+  (2) *Set/change UX* — a "Recovery string" section in Settings >
+  Privacy (mirroring the existing PIN/App-Lock/Biometric sections'
+  layout), gated behind the current PIN same as turning App Lock off,
+  with a free-text input (not the numeric PIN pad) and confirm-by-
+  retyping before it commits.
+  (3) *Changing it later* — a "Change recovery string" action (re-wrap
+  + verify-before-commit, same shape as `changePin()`), invalidating
+  the old string once the new one verifies.
   (4) *Recovery entry point* — a "Forgot PIN?" link on `AppLockScreen`
-  itself, opening a real alphanumeric-entry UI (not the existing
-  numeric PIN pad — a genuinely different input component), calling a
-  new `cryptoService.unlockWithRecoveryCode()` (structurally identical
-  to `unlockWithPin()` — a wrong code just fails AES-GCM's own
+  itself, opening the same free-text input (not the existing numeric
+  PIN pad — a genuinely different input component), calling a new
+  `cryptoService.unlockWithRecoveryCode()` (structurally identical to
+  `unlockWithPin()` — a wrong string just fails AES-GCM's own
   authentication tag). On success, forces an immediate "set a new PIN"
   step, since a real recovery unlock proves the owner doesn't have the
   old one anymore.
   Real UI surface this actually touches — the reason this is the
-  bigger of the two remaining items: a new "Recovery code" section in
-  Settings > Privacy (mirroring the existing PIN/App-Lock/Biometric
-  sections' own layout), the one-time reveal screen/modal, and
-  `AppLockScreen`'s new recovery-entry mode — three real screens/modes,
-  against the Keystore item's effectively zero.
+  bigger of the two remaining items: the new "Recovery string" section
+  in Settings > Privacy, its set/confirm input, and `AppLockScreen`'s
+  new recovery-entry mode — three real screens/modes, against the
+  Keystore item's effectively zero.
   Storage needs no new mechanism — the `recovery` slot's own
   salt/iterations live in the same already-unencrypted
   `shos_vault_key_slots` metadata the `pin`/`device` slots already use.
-  Not yet confirmed with the owner: the code-generation format (1
-  above) and the exact reveal-screen copy — both worth a real
-  conversation before writing any code, not just picked here.
+  Not yet built — the one real decision that was blocking this (code
+  format) is resolved as of 9 Sep 2026, later still; what's left is
+  actually building the 3 screens/modes above, not further scoping.
 - **Android Keystore-backed device key — scoped 9 Sep 2026, the real
   open API question resolved 9 Sep 2026 (later); still no code
   written, now blocked on a genuine trade-off worth the owner's own

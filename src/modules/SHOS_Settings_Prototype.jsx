@@ -20,14 +20,16 @@ import {
   CaretRightIcon as ChevronRight, EyeIcon as Eye, EyeSlashIcon as EyeOff,
   ListChecksIcon as ClipboardCheck, DatabaseIcon as Database, DownloadSimpleIcon as Download,
   FireIcon as Flame, TreeStructureIcon as ListTree, MicroscopeIcon as Microscope,
-  PillIcon as Pill, GearIcon as SettingsIcon, ShieldIcon as Shield,
+  PillIcon as Pill, ShieldIcon as Shield,
   StethoscopeIcon as Stethoscope, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User,
-  TagIcon as Palette, ArrowUUpLeftIcon as ResetIcon, CalendarIcon as Calendar,
+  PaletteIcon as Palette, ArrowUUpLeftIcon as ResetIcon, CalendarIcon as Calendar,
   FileCsvIcon as FileCsv, LockIcon as Lock, BellIcon as Bell,
   CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck,
   LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen,
   SlidersHorizontalIcon as SlidersHorizontal, MapPinIcon as MapPin, XIcon as X,
   RulerIcon as Ruler, WifiHighIcon as WifiHigh, LinkBreakIcon as LinkBreak,
+  FolderIcon as Folder, FunnelIcon as Filter, ClockIcon as Clock,
+  ChartBarIcon as ChartBar, InfoIcon as Info,
 } from "@phosphor-icons/react";
 // FIXED 1 Sep 2026 — real ask: "Managed lists crashes app on
 // attempting to open" / "Same for resources [crashes], in light [mode]
@@ -1720,7 +1722,7 @@ function NotificationPermissionBanner({ darkMode }) {
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 8 }}>
           The check itself failed rather than returning a real answer — this is worth reporting as a bug.
           {statusDetail && (
-            <div style={{ marginTop: 6, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "monospace", fontSize: 11, wordBreak: "break-word", whiteSpace: "pre-line" }}>
+            <div style={{ marginTop: 6, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, wordBreak: "break-word", whiteSpace: "pre-line" }}>
               {statusDetail}
             </div>
           )}
@@ -1732,7 +1734,7 @@ function NotificationPermissionBanner({ darkMode }) {
           {bridgeHealth && (
             <div style={{ marginTop: 6, fontSize: 11, color: bridgeHealth.ok ? ACTION.green : ACTION.red }}>
               {bridgeHealth.ok ? "Bridge check: other native calls work fine — this looks specific to notifications." : "Bridge check: a totally unrelated native call also failed — this looks like a broader native bridge issue, not just notifications."}
-              <div style={{ marginTop: 4, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "monospace", fontSize: 11, wordBreak: "break-word", whiteSpace: "pre-line", color: darkMode ? DARK.textSecondary : "#5B5B62" }}>
+              <div style={{ marginTop: 4, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, wordBreak: "break-word", whiteSpace: "pre-line", color: darkMode ? DARK.textSecondary : "#5B5B62" }}>
                 {bridgeHealth.detail}
               </div>
             </div>
@@ -1784,7 +1786,7 @@ function NotificationPermissionBanner({ darkMode }) {
             )}
           </div>
           {exactAlarmStatus === "error" && exactAlarmDetail && (
-            <div style={{ marginTop: 6, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "monospace", fontSize: 11, wordBreak: "break-word" }}>
+            <div style={{ marginTop: 6, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, wordBreak: "break-word" }}>
               {exactAlarmDetail}
             </div>
           )}
@@ -2827,7 +2829,7 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
             <>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>Hex</div>
               <input value={hexDraft} onChange={(e) => commitHex(e.target.value)} placeholder="#RRGGBB"
-                style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontFamily: "monospace", fontSize: 13, marginBottom: 10, boxSizing: "border-box" }} />
+                style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", fontFamily: "'JetBrains Mono', monospace", fontSize: 13, marginBottom: 10, boxSizing: "border-box" }} />
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : "#5B5B62", marginBottom: 4 }}>RGB</div>
               <div style={{ display: "flex", gap: 8 }}>
                 {["r", "g", "b"].map((channel) => (
@@ -2980,7 +2982,7 @@ function AboutScreen({ onClose }) {
               bump would. */}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Build</span>
-            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600, fontFamily: "monospace" }}>{typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev"}</span>
+            <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>{typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "dev"}</span>
           </div>
           {/* CHANGED — real fix: pointed at the old private repo this
               project moved off of — the public repo everyone's actual
@@ -4020,7 +4022,23 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <SettingsRow icon={User} label="My Profile" onClick={() => setShowMyProfile(true)} />
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Data</div>
+      {/* REGROUPED 9 Sep 2026 — real ask: the 5 original sections
+          ("Data"/"Advanced"/"Design"/"Insights") had grown into a
+          jumbled, unintuitive list — "Advanced" in particular had
+          become a catch-all for 8 unrelated rows (dev tools, security,
+          notifications, reference content) with no real theme. Split
+          into groups an actual user would search by. Also fixed 3
+          duplicate/wrong icons found along the way: Upload was reused
+          on 4 different Data rows (now Folder/Filter/Clock for the
+          non-primary 3), Database was reused for both Developer tools
+          and Stats (Stats now ChartBar), and Colour scheme's icon was
+          never a real palette glyph at all — aliased from TagIcon,
+          not PaletteIcon, so it rendered as a tag/label icon. Privacy's
+          gear icon (confusing one screen inside Settings, which is
+          itself reached via a gear) is now Shield; About's checklist
+          icon is now Info. No rows added, removed, or rewired — same
+          22 rows, same onClick handlers, just regrouped and re-iconed. */}
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Backup &amp; Data</div>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* CHANGED — real bug found in the user's own testing: passing
             `exportBackup` directly meant the DOM click's SyntheticEvent
@@ -4046,7 +4064,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             Only shown once actually available — see
             fileExportHelper.js's isChooseFolderExportAvailable. */}
         {chooseFolderAvailable && (
-          <SettingsRow icon={Upload} label="Export backup to a folder…" onClick={doPlainExportToFolder} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} />
+          <SettingsRow icon={Folder} label="Export backup to a folder…" onClick={doPlainExportToFolder} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} />
         )}
         {/* FIXED — real bug found in the same pass as the round-trip
             verification above: this status was tracked (set on every
@@ -4063,7 +4081,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             Contacts' Import earlier this session, mirrored here —
             Export (data leaving) reads as Upload, Restore (data coming
             back in) reads as Download. */}
-        <SettingsRow icon={Upload} label="Selective export…" onClick={() => setShowSelectiveExport(true)} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
+        <SettingsRow icon={Filter} label="Selective export…" onClick={() => setShowSelectiveExport(true)} iconColor={darkMode ? DARK.textPrimary : "#1B1B1F"} emphasized />
         {/* ADDED — real ask: CSV export, for reading data elsewhere
             (Excel/Sheets), separate from the JSON backup above (which
             is for restoring into SHOS, not for opening as a
@@ -4077,30 +4095,28 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             setting belongs next to the other backup controls, not
             bundled with an unrelated Contacts-display setting under a
             generic "Preferences" label. */}
-        <SettingsRow icon={Upload} label="Automatic backups" onClick={() => setShowAutoBackupSettings(true)} />
-        <SettingsRow icon={WifiHigh} label="Data & network" onClick={() => setShowDataNetwork(true)} />
+        <SettingsRow icon={Clock} label="Automatic backups" onClick={() => setShowAutoBackupSettings(true)} />
       </div>
       {status && (
         <div style={{ margin: "0 16px 20px", padding: "10px 14px", borderRadius: 12, background: "#FFF4CE", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 12 }}>{status}</div>
       )}
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Advanced</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Security &amp; Privacy</div>
       <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
-        {/* CHANGED 19 Aug 2026 — Developer tools is now real (storage
-            overview + reset), moved out of the "Not built yet" group
-            below. */}
-        <SettingsRow icon={Database} label="Developer tools" onClick={() => setShowDevTools(true)} />
-        {/* CHANGED 1 Sep 2026 — real ask: Registries and Option lists
-            were two separate rows for what's the same job from a
-            user's point of view ("edit the picker choices used across
-            the app") — combined into one, with a tab switcher inside
-            (see ManageListsScreen's own comment). */}
-        <SettingsRow icon={ListTree} label="Manage lists" onClick={() => setShowManageLists(true)} />
         {/* CHANGED 19 Aug 2026 — real fix: Privacy was already real
             (onClick worked), but had been left sitting visually under
             "Not built yet" below since that entry was first added —
             moved up to where it actually belongs. */}
-        <SettingsRow icon={SettingsIcon} label="Privacy" onClick={() => setShowPrivacy(true)} />
+        <SettingsRow icon={Shield} label="Privacy" onClick={() => setShowPrivacy(true)} />
+        {/* MOVED 9 Sep 2026 from Data — real ask: what leaves the
+            device (third-party network calls) is a privacy question,
+            not a backup one; sat oddly at the bottom of the export
+            list before. */}
+        <SettingsRow icon={WifiHigh} label="Data & network" onClick={() => setShowDataNetwork(true)} />
+      </div>
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>General</div>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* ADDED — real ask: audited grouping — cross-cutting behavioural
             preferences (Contacts inactive threshold, Healthcare tracking
             toggles) get a real, findable home instead of living under
@@ -4113,32 +4129,47 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             units setting (Weight/Height/Temperature), not buried inside
             Measurements' own gear icon. */}
         <SettingsRow icon={Ruler} label="Units" onClick={() => setShowUnits(true)} />
-        {/* REMOVED 1 Sep 2026 — Preferences row removed; its one real
-            setting (inactive-contact threshold) now lives inside
-            Design, see InactiveThresholdCard's own comment. */}
+      </div>
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Appearance</div>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
+        {/* CHANGED 26 Aug 2026 — real ask: was a disabled "Not built
+            yet" stub, now a real, working section. */}
+        <SettingsRow icon={Palette} label="Colour scheme" onClick={() => setShowDesign(true)} />
+      </div>
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Content &amp; Lists</div>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
+        {/* CHANGED 1 Sep 2026 — real ask: Registries and Option lists
+            were two separate rows for what's the same job from a
+            user's point of view ("edit the picker choices used across
+            the app") — combined into one, with a tab switcher inside
+            (see ManageListsScreen's own comment). */}
+        <SettingsRow icon={ListTree} label="Manage lists" onClick={() => setShowManageLists(true)} />
         {/* ADDED 1 Sep 2026 — real ask: a Resources section. */}
         <SettingsRow icon={LifeBuoy} label="Resources" onClick={() => setShowResources(true)} />
         {/* ADDED 1 Sep 2026 — real ask, item 2 of the follow-up feature list: a glossary. */}
         <SettingsRow icon={BookOpen} label="Glossary" onClick={() => setShowGlossary(true)} />
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Design</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 20px", overflow: "hidden" }}>
-        {/* CHANGED 26 Aug 2026 — real ask: was a disabled "Not built
-            yet" stub, now a real, working section. */}
-        <SettingsRow icon={Palette} label="Colour scheme" onClick={() => setShowDesign(true)} />
-      </div>
-
       <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Insights</div>
-      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 20px", overflow: "hidden" }}>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* ADDED 26 Aug 2026 — real ask: Stats page. */}
-        <SettingsRow icon={Database} label="Stats" onClick={() => setShowStats(true)} />
+        <SettingsRow icon={ChartBar} label="Stats" onClick={() => setShowStats(true)} />
         {/* ADDED 26 Aug 2026 — real ask: calendar view. */}
         <SettingsRow icon={Calendar} label="Calendar" onClick={() => setShowCalendar(true)} />
         {/* ADDED 26 Aug 2026 — real ask: Trash / recently deleted. */}
         <SettingsRow icon={Trash2} label="Trash" onClick={() => setShowTrash(true)} />
+      </div>
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: darkMode ? DARK.textDisabled : "#656568", textTransform: "uppercase", letterSpacing: 0.5, padding: "0 16px 6px" }}>Support</div>
+      <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, margin: "0 16px 20px", overflow: "hidden" }}>
+        {/* CHANGED 19 Aug 2026 — Developer tools is now real (storage
+            overview + reset), moved out of the "Not built yet" group
+            below. */}
+        <SettingsRow icon={Database} label="Developer tools" onClick={() => setShowDevTools(true)} />
         {/* ADDED 26 Aug 2026 — real ask: About/version screen. */}
-        <SettingsRow icon={ClipboardCheck} label="About" onClick={() => setShowAbout(true)} />
+        <SettingsRow icon={Info} label="About" onClick={() => setShowAbout(true)} />
       </div>
 
       {showMyProfile && (
