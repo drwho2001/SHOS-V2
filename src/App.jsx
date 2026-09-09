@@ -527,7 +527,7 @@ const ONBOARDING_SLIDES = [
     type: "question",
     title: "Track menstrual & contraception health?",
     body: "Adds a Cycle/Contraception/Pregnancy tab under Healthcare. Off by default — you can turn this on or off any time from Settings either way, this is just a shortcut.",
-    onAnswer: (yes) => { if (yes) AppPreferencesRepository.update({ menstrualTrackingEnabled: true }); },
+    onAnswer: (yes) => (yes ? AppPreferencesRepository.update({ menstrualTrackingEnabled: true }) : Promise.resolve()),
   },
   { title: "Start with My Profile", body: "Settings → My Profile lets you record your own details, testing status, and preferences — it's also what gets shared if you ever export a profile to someone else." },
   { title: "DoxyPEP & reminders", body: "If it's relevant to you, SHOS can track the 72-hour DoxyPEP window after a qualifying activity, and remind you about daily medication doses — both real notifications, not just in-app banners." },
@@ -540,8 +540,24 @@ function OnboardingScreen({ onFinish }) {
   const isLast = step === ONBOARDING_SLIDES.length - 1;
   const slide = ONBOARDING_SLIDES[step];
   const isQuestion = slide.type === "question";
+  // FIXED 9 Sep 2026 — real bug found live: answer()'s own write was
+  // genuinely fire-and-forget (slide.onAnswer() didn't even return the
+  // promise, so there was no handle to await even if this function had
+  // tried), and advance()/isLast's own onFinish() call raced it the
+  // same way. Harmless when this screen was first built (26 Aug,
+  // before AppPreferencesRepository/storageAdapter went async this
+  // same session) — every write finished before the next synchronous
+  // line ran regardless. Once real crypto.subtle encryption landed
+  // under storage.save(), that write genuinely takes a moment, and
+  // onFinish (→ setShowOnboarding(false) → Home's own first real
+  // mount) could fire before menstrualTrackingEnabled had actually
+  // persisted — reproduced directly: answering "Yes, turn it on"
+  // correctly wrote the preference (confirmed via a direct repository
+  // read), but Home's Quick Add section never showed the promised Log
+  // period/Log contraception shortcuts without a manual reload. Fixed
+  // by awaiting the write before ever advancing.
   const advance = () => isLast ? onFinish() : setStep((s) => s + 1);
-  const answer = (yes) => { slide.onAnswer(yes); advance(); };
+  const answer = async (yes) => { await slide.onAnswer(yes); advance(); };
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: ACCENTS.home, display: "flex", flexDirection: "column", zIndex: 999, fontFamily: "'Inter', sans-serif" }}>

@@ -2191,7 +2191,13 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const anonymise = privacy.anonymiseModeActive;
   // ADDED 19 Aug 2026 — real ask: configurable inactive threshold.
-  const [inactiveThresholdDays] = useLoadedState(() => AppPreferencesRepository.getPreferences().inactiveThresholdDays, [], 90);
+  // FIXED 9 Sep 2026 — real bug found live: getPreferences() is async,
+  // so chaining .inactiveThresholdDays directly onto its return value
+  // read a property off a Promise — always undefined, silently falling
+  // back to the 90-day default below regardless of what the owner
+  // actually configured in Settings > General > Preferences. Same bug
+  // class as Home's/Healthcare's own menstrualTrackingEnabled sites.
+  const [inactiveThresholdDays] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.inactiveThresholdDays), [], 90);
   const activeContacts = useMemo(() => contacts.filter((c) => !c.isArchived), [contacts]);
   // ADDED 18 Aug 2026 — loaded once here rather than per-card, needed
   // for the card's active-status dot (see ContactCard below).

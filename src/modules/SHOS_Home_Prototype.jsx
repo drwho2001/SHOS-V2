@@ -161,7 +161,13 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // directly in the render body — a real localStorage read + JSON.parse
   // on every single re-render of Home, not just once. Same lazy-
   // useState pattern as profileName just above.
-  const [appLockEnabled] = useLoadedState(() => PrivacySettingsRepository.getSettings().appLockEnabled, [], false);
+  // FIXED 9 Sep 2026 — real bug found live: getSettings() is async, so
+  // chaining .appLockEnabled directly onto its return value read a
+  // property off a Promise — always undefined/falsy, meaning the
+  // "Lock now" button below never showed for any real install with
+  // App Lock on. Same bug class as menstrualTrackingEnabled/
+  // inactiveThresholdDays found the same session.
+  const [appLockEnabled] = useLoadedState(() => PrivacySettingsRepository.getSettings().then((s) => s.appLockEnabled), [], false);
   const [lastContact, setLastContact] = useState(null);
   const [lastEncounter, setLastEncounter] = useState(null);
   const [lastDose, setLastDose] = useState(null);
@@ -179,7 +185,19 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // ADDED — real ask: Menstrual/Contraception shortcuts + real results
   // on the dashboard, gated behind the same toggle the Healthcare
   // sub-tab itself is gated behind.
-  const [menstrualTrackingEnabled] = useLoadedState(() => AppPreferencesRepository.getPreferences().menstrualTrackingEnabled, [], false);
+  // FIXED 9 Sep 2026 — real bug found live, not specific to onboarding:
+  // AppPreferencesRepository.getPreferences() is async (converted this
+  // same session's Phase 3), so chaining .menstrualTrackingEnabled
+  // directly onto its return value read a property off a Promise —
+  // always undefined, silently falsy, regardless of the real stored
+  // value or any timing. This has been broken since that repository
+  // went async, not something onboarding's own race introduced —
+  // meaning the Quick Add Log period/Log contraception shortcuts (and
+  // the Menstrual dashboard rows below) have likely never shown
+  // correctly for any real install with the toggle on. Fixed with
+  // .then(), the same correct pattern already used elsewhere in this
+  // file (see dismissedWindowStart just below).
+  const [menstrualTrackingEnabled] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.menstrualTrackingEnabled), [], false);
   const [lastPeriod, setLastPeriod] = useState(null);
   const [contraceptionDue, setContraceptionDue] = useState(null);
   // ADDED 19 Aug 2026 — real ask: a backup reminder. Read once on

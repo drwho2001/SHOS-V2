@@ -85,7 +85,15 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // Known Issues / the Notion Development log): useLoadedState instead
   // of a plain useState lazy initializer, one of the ~100 real sites
   // the audit found with this exact pattern.
-  const [menstrualTrackingEnabled] = useLoadedState(() => AppPreferencesRepository.getPreferences().menstrualTrackingEnabled, [], false);
+  // FIXED 9 Sep 2026 — real bug found live: AppPreferencesRepository.
+  // getPreferences() is async, so chaining .menstrualTrackingEnabled
+  // directly onto its return value read a property off a Promise —
+  // always undefined/falsy regardless of the real stored value. Same
+  // bug, same fix as SHOS_Home_Prototype.jsx's own copy of this exact
+  // line — meaning the Menstrual/Contraception/Pregnancy sub-tab here
+  // has likely never actually appeared for any real install with the
+  // toggle on, not just Home's own shortcuts.
+  const [menstrualTrackingEnabled] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.menstrualTrackingEnabled), [], false);
 
   // ADDED — real ask: Healthcare was "bland vs Home/Medication" —
   // checked and found the actual reason wasn't styling, it was that
