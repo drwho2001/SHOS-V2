@@ -3009,8 +3009,10 @@ this date; summarized here for durability.
   (extractable-at-two-points/hardware-backed-at-rest vs. the current
   never-extractable/software-at-rest design) was explained in plain
   terms in chat but the owner hasn't decided; still open.
-- **PIN-recovery/alternate-access mechanism — scoped 9 Sep 2026, no
-  code written (session-limit-driven: scope only, no build).** The
+- **PIN-recovery/alternate-access mechanism — RESOLVED 9 Sep 2026,
+  built and shipped (see "Recently shipped" below for the full
+  implementation entry, including a real bug found and fixed live).**
+  The
   bigger of the two remaining Phase 4 bigger-ticket items to actually
   build UI for (the other, an Android Keystore-backed device key, is
   almost pure native/backend work — swaps the device slot's own key
@@ -3063,9 +3065,6 @@ this date; summarized here for durability.
   Storage needs no new mechanism — the `recovery` slot's own
   salt/iterations live in the same already-unencrypted
   `shos_vault_key_slots` metadata the `pin`/`device` slots already use.
-  Not yet built — the one real decision that was blocking this (code
-  format) is resolved as of 9 Sep 2026, later still; what's left is
-  actually building the 3 screens/modes above, not further scoping.
 - **Android Keystore-backed device key — DECIDED 9 Sep 2026, later
   still: not building this now.** The owner deferred the final call
   (the trade-off itself was already explained in plain terms —
@@ -3150,6 +3149,115 @@ this date; summarized here for durability.
   no-code schema editor are deliberate scope cuts, not gaps — don't
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
+
+## Recently shipped (9 Sep 2026, backlog finish-out — see Notion for full detail)
+
+Real ask: "finish out backlog" — the two real open Known Issues items
+(PIN-recovery, font/text-size scaling), the latter narrowed live to
+"font/heading CONSISTENCY, not user-adjustable zoom" once actually
+discussed (the owner explicitly doesn't want a scaling feature — just
+consistent fonts/heading sizes app-wide, already substantially covered
+by an earlier session's font-FAMILY consistency pass). Also folded in
+a real live report mid-session: toggle switches showing inconsistent,
+wrong colours.
+
+**PIN-recovery/alternate-access — built, the last real open Known
+Issues item from Phase 4's own original scoping.** A new `recovery`
+slot in `cryptoService.js`'s vault, structurally identical to the
+existing `pin`/`device`/`biometric` slots (its own salt/iterations,
+wraps the same permanent Data Key, same verify-before-commit safety
+rule). `setRecoveryString(currentPin, recoveryString)` establishes or
+changes it, gated behind the current PIN — the owner's own explicit
+spec: a real, user-CHOSEN passphrase entered on a normal keyboard, not
+an auto-generated code to lose. Settings > Privacy gets a "Recovery
+string" section (Set/Change/Remove), only shown once App Lock is on,
+mirroring the existing Duress PIN section's own layout exactly.
+`AppLockScreen` gets a "Forgot PIN?" link, shown only once a recovery
+string actually exists — opens a real free-text recovery-mode UI (not
+the numeric PIN pad) that collects the recovery string AND a new
+PIN + confirmation together, then calls a single combined
+`unlockAndResetPinWithRecoveryCode(recoveryString, newPin)`. Real
+design reason this had to be ONE combined call, not "unlock, then
+separately reset the PIN": `activeDataKey` is a non-extractable
+`CryptoKey` by design (see `cryptoService.js`'s own header on why,
+predating this feature) — once a plain unlock imports the raw Data Key
+into it, there's no way to get the raw bytes back out to wrap a new
+PIN slot with. Collecting the new PIN before the unlock even runs
+means the real raw DEK bytes, held briefly in one function's own local
+variable, get used for both the unlock and the new PIN slot in the
+same atomic pass. The recovery slot itself is left untouched by a
+reset — it wraps the same permanent Data Key regardless of how many
+times the PIN changes, so it keeps working for a FUTURE forgotten PIN
+too.
+
+**Real bug found and fixed live, not from reading the design**: the
+vault's own PIN slot (`cryptoService.js`) and
+`PrivacySettingsRepository`'s own separate `anonymisePin` field are
+two different copies of "the current PIN" — Settings' own `savePin()`
+always writes both together, but this new recovery path only went
+through `cryptoService` directly at first. Caught by the permanent
+smoke-test flow's own cleanup step (turning App Lock back off after a
+recovery-triggered reset), not by inspection: `toggleAppLock()`/
+`changePin()` read the REPOSITORY's stale PIN copy, so they'd have
+silently failed the next time either was used after a real recovery.
+Fixed by also writing `PrivacySettingsRepository.update({ anonymisePin:
+newPin })` right after a successful recovery unlock, while the vault
+is already unlocked and that repository's own data is genuinely
+decryptable.
+
+**Toggle-switch colour consistency — a real live report, not part of
+the original backlog scoping.** Every toggle switch across Settings
+was using `ACCENTS.healthcare` (green) — a leftover from when Security
+& Privacy lived structurally under Healthcare, before this session's
+own earlier Settings reorg moved it to its own top-level section — or,
+in 4 more cases (Automatic backups, a generic Data & Network toggle,
+Dark mode, the CVD-safe-palette toggle), a hardcoded near-black
+regardless of section. Every one of these also hardcoded its OFF-state
+track colour to light-mode grey (`#DCDCE1`) unconditionally, even in
+dark mode. Standardized all 10 real instances to `ACCENTS.home` (teal
+— this app's own "system default" colour, confirmed against the
+Colour scheme screen's own Module Colours list) when ON, and a real
+dark-mode-aware neutral (`DARK.border` in dark mode, the same
+`#DCDCE1` in light mode) when OFF — matching the owner's own explicit
+rule: system-level toggles default to teal, module-specific ones keep
+their own module's colour. Three toggles confirmed genuinely
+module-scoped and deliberately left alone: Partner Notification's
+"Clinical version" toggle (a real Healthcare/Testing workflow, not a
+generic system setting), Medication Dashboard's own dose-reminder
+toggle (already `T.medsBlue`, correctly module-scoped and already
+dark-mode-aware), and Clinic Card's section-visibility toggles
+(already `T.healthcareBlue`, same reasoning).
+
+**Real bug found and fixed live doing this, not caught by the
+build**: `MenstrualTrackingToggleCard`'s own 2 toggles (Menstrual
+tracking, Hide Pregnancy tab) only receive `T` as a prop, not
+`darkMode` — the initial blanket find-and-replace referenced `darkMode`
+there, a genuine `ReferenceError` the moment that card actually
+rendered (silent at build time, since `darkMode` IS a valid free
+identifier at MODULE scope elsewhere in the same file — this was a
+real runtime bug, not a syntax error). Caught by the full smoke suite,
+not assumed safe from the diff. Fixed by using `T.border` directly for
+these two (the exact value `darkMode ? DARK.border : "#DCDCE1"`
+resolves to, since `T` already carries that resolution) rather than
+reaching for a `darkMode` that was never in scope.
+
+Given a permanent 13th smoke-test flow for the PIN-recovery feature
+(driving the real Settings UI and the real lock screen end-to-end, not
+`cryptoService` in isolation) — the toggle-colour fix is purely
+cosmetic and covered implicitly by every existing flow that already
+exercises these same toggles (App Lock, Automatic backups, Dark mode,
+etc. all already have real assertions elsewhere in the suite). Verified
+stable across two consecutive runs each against the dev server and a
+real `vite preview` production build before shipping.
+
+Honest note on scope: the font/heading-CONSISTENCY half of the
+original ask (standard heading sizes, one font throughout) was
+discussed but not yet independently re-audited this same round — this
+session's own earlier work already closed the font-FAMILY half (see
+the 9 Sep, later still entry below); a dedicated pass specifically
+checking heading/type-SIZE consistency against `designTokens.js`'s own
+`TYPE` scale across every module is still real, not-yet-done work if
+the owner wants it as its own follow-up.
 
 ## Recently shipped (9 Sep 2026, real backup audit — see Notion for full detail)
 
