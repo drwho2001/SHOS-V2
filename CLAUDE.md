@@ -2723,29 +2723,53 @@ this date; summarized here for durability.
   PIN-aware: it now re-enters the PIN first if a reload lands on the
   lock screen, before proceeding. Verified stable across two
   consecutive full runs before shipping.
-  **Standing backlog item (9 Sep 2026), not yet built**: this is the
-  general pattern to keep applying, not just an encryption-specific
-  fix. Several real, already-shipped features were each verified once
-  live via a throwaway/one-off Playwright check (proving the fix
-  worked at the time) but never got a permanent flow added to this
-  suite — meaning a later regression to any of them would ship
-  silently, the exact risk this suite exists to catch. Known examples,
-  not yet added: Settings' Resources screen's clickable links
-  (`resourceLinkHref()` — a saved phone number vs. URL vs. bare domain
-  each need their own real `href`, easy to regress silently);
-  Encounters' Anonymise-mode masking (`EncounterCard`/`ActivityDetails`
-  both reading `PrivacySettingsRepository` — only Contacts' own
-  Anonymise masking has any real coverage, via smoke-test's day-to-day
-  use, not a dedicated flow); Medication Dashboard's next-reminder
-  clock display (`nextReminderClock`, derived from `lockoutEndsAt()` —
-  a silent regression here would look like a plain missing UI element,
-  easy to miss on read-through); and the PWA's own
-  `controllerchange`-triggered reload-on-update logic in `main.jsx`
-  (verified once against a real `vite preview` build with a simulated
-  SW bump, never re-run since). None of these are urgent on their own;
-  logged together because the pattern itself — "verified once,
-  covered never" — is the real, recurring gap worth fixing at the
-  suite level, not just for these four.
+  **Three of the four "verified once, covered never" items closed (9
+  Sep 2026, later same day)** — the general pattern (a real,
+  already-shipped feature checked once via a throwaway Playwright
+  script, then never given permanent coverage, so a later regression
+  would ship silently) is still worth applying on sight to future
+  fixes; this round closed the specific backlog named above. Grew the
+  suite from 5 to 8 flows: Settings' Resources screen's clickable
+  links (`resourceLinkHref()` — checks the seeded Refuge entry, a real
+  `https://` URL, renders as a real `<a target="_blank">`, not plain
+  text); Encounters' Anonymise-mode masking (`EncounterCard`/
+  `ActivityDetails` both reading `PrivacySettingsRepository` — drives
+  the real Settings toggle, not the repository directly, and checks
+  both that the seeded "Sauna trip" encounter's real attendee name
+  disappears and that the `•••• hidden` placeholder appears in its
+  place, then reverts the toggle so the suite ends clean); and
+  Medication Dashboard's next-reminder clock (`nextReminderClock` —
+  deliberately logs a brand-new dose for the seeded Vitamin D3 entry
+  rather than trusting its own seed timestamp, since that seed dose is
+  only ~1 real day old and whether it reads as already-unlocked or
+  still-locked depends on what time of day the suite happens to run;
+  tapping "Log dose" twice handles either starting state without
+  needing to know which one applies — see the test's own comment for
+  the exact mechanism). Real, systemic flakiness found and fixed along
+  the way, not specific to any one of the three new tests: adding
+  several more mid-suite `page.reload()` calls surfaced a real gap in
+  the suite's own robustness — a fresh service-worker update banner
+  (see "Recently shipped" below) can land on ANY reload during a long
+  dev-server session, not just the very first page load, and its
+  bottom-anchored dismiss control sits right where several tests' own
+  fixed-coordinate Home-tab click needs to land. `dismissOnboarding`'s
+  one-time banner-dismissal block was pulled out into its own
+  `dismissTransientBanners()` and called after every reload point in
+  the suite, including inside the pre-existing `openSettingsPrivacyScreen`
+  helper (a latent version of the same risk that predates this
+  session's changes, just never actually triggered before now).
+  Verified stable across three consecutive full runs against both the
+  dev server and a real `vite preview` production build (the same
+  build CI actually tests) before shipping.
+  **Still open**: the PWA's own `controllerchange`-triggered
+  reload-on-update logic in `main.jsx` — verified once against a real
+  `vite preview` build with a simulated SW bump, never re-run since.
+  Deliberately not folded into this same pass: simulating a genuine
+  mid-session SW version bump inside the shared suite (rather than a
+  one-off standalone script) would mean deliberately triggering the
+  exact class of flakiness this same session just fixed elsewhere, and
+  doing that safely needs its own dedicated design, not a quick
+  addition alongside three unrelated flows.
 - **Cold-start notification-action race** — a still-open upstream
   Capacitor limitation (not fixable purely from this app's JS): tapping
   a notification action after the app was fully killed can fail to
