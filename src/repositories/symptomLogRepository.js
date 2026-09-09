@@ -83,6 +83,36 @@ let seedEntries = [
     notes: "Started a few days after seeing F. Mercury — went in for a symptomatic test.",
     isArchived: false,
   },
+  // ADDED 9 Sep 2026 — real ask: the existing entry is always resolved
+  // (dateResolved set) — no seed data exercised the genuinely different
+  // "still active" state (dateResolved null), which the whole Active/
+  // Resolved split this module is built around depends on. Linked to
+  // the new Chlamydia test/visit thread (test_006/encounter_015) rather
+  // than reusing the Gonorrhoea episode's own symlog_001.
+  {
+    ...DEFAULT_SYMPTOM_ENTRY,
+    id: "symlog_002",
+    title: "Mild discharge",
+    symptomIds: ["symptom_cat_001"],
+    dateStarted: daysAgo(198),
+    dateResolved: daysAgo(190),
+    severity: "Mild",
+    relatedEncounterIds: ["encounter_015"],
+    relatedTestIds: ["test_006"],
+    notes: "Noticed a couple of days after the encounter with Kai.",
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_SYMPTOM_ENTRY,
+    id: "symlog_003",
+    title: "Ongoing mild irritation",
+    symptomIds: ["symptom_cat_001"],
+    dateStarted: daysAgo(2),
+    dateResolved: null,
+    severity: "Mild",
+    notes: "Keeping an eye on it — not bad enough yet to book in.",
+    isArchived: false,
+  },
 ];
 
 // CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-

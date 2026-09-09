@@ -198,6 +198,39 @@ let seedVisits = [
     clinicalNotes: "Follow-up after miscarriage — confirmed complete, no intervention needed. Discussed contraception going forward.",
     isArchived: false,
   },
+  // ADDED 9 Sep 2026 — real ask: links to the new Chlamydia-positive
+  // test (test_006) — every existing visit's own linkedTestIds either
+  // points at the Gonorrhoea episode or is empty, so this is the first
+  // seed visit exercising a genuinely different infection's treatment
+  // path, plus a future-appointment example (isFutureAppointment/
+  // nextReviewDate/followUpType are all unset on every existing visit).
+  {
+    ...DEFAULT_CLINIC_VISIT,
+    id: "visit_004",
+    title: "Treatment — Chlamydia",
+    date: daysAgo(196),
+    location: "56 Dean Street",
+    clinician: ["Lucy"],
+    reasonForVisit: ["Treatment"],
+    clinicalNotes: "Confirmed Chlamydia on symptomatic screen. Doxycycline course given. TOC advised in 3 weeks.",
+    linkedTestIds: ["test_006"],
+    isFutureAppointment: true,
+    nextReviewDate: daysAgo(175),
+    followUpType: "Test of cure",
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_CLINIC_VISIT,
+    id: "visit_005",
+    title: "Routine annual screen",
+    date: daysAgo(160),
+    location: "56 Dean Street",
+    clinician: ["Jonathan"],
+    reasonForVisit: ["Routine screen"],
+    clinicalNotes: "Full annual screen — all clear.",
+    linkedTestIds: ["test_007"],
+    isArchived: false,
+  },
 ];
 
 let visits = null;

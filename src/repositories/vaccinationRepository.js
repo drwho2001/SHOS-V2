@@ -91,6 +91,39 @@ let seedVaccinations = [
     notes: "Routine MenB vaccination, offered opportunistically at a clinic visit.",
     isArchived: false,
   },
+  // ADDED 9 Sep 2026 — real ask: neither existing entry sets nextDue,
+  // doseNumber > 1, or a non-Deltoid injectionSite — a real 2-dose
+  // Hepatitis A/B course (Twinrix) exercises all three plus a genuine
+  // clinicVisitIds link, none of which any existing seed vaccination
+  // covers.
+  {
+    ...DEFAULT_VACCINATION,
+    id: "vaccination_003",
+    title: "Hepatitis A/B vaccine (Twinrix), dose 1",
+    vaccine: "Hepatitis A/B",
+    reason: ["Routine"],
+    doseNumber: 1,
+    date: daysAgo(160),
+    provider: "56 Dean Street",
+    injectionSite: "Deltoid",
+    clinicVisitIds: ["visit_005"],
+    notes: "First of a 3-dose Twinrix course, offered at the routine annual screen.",
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_VACCINATION,
+    id: "vaccination_004",
+    title: "Hepatitis A/B vaccine (Twinrix), dose 2",
+    vaccine: "Hepatitis A/B",
+    reason: ["Routine"],
+    doseNumber: 2,
+    date: daysAgo(130),
+    nextDue: daysAgo(-20),
+    provider: "56 Dean Street",
+    injectionSite: "Gluteal",
+    notes: "Second dose, on schedule. Third and final dose due at the 6-month mark.",
+    isArchived: false,
+  },
 ];
 
 // CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-

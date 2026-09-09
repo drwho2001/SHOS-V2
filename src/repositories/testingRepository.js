@@ -208,6 +208,67 @@ let seedTests = [
     notes: "Screen before going condom-free with Morgan — all clear.",
     isArchived: false,
   },
+  // ADDED 9 Sep 2026 — real ask: richer demo data covering fields the
+  // original 4 never exercised at all — a real home-kit test (Setting
+  // = "🏠 Home", kitCodePk/kitCodeSk/kitAccessKey, all empty on every
+  // existing seed test even though the real field was added specifically
+  // for this — see DEFAULT_TEST's own 1 Sep 2026 comment), a genuine
+  // Chlamydia-positive result (every existing positive is Gonorrhoea —
+  // organism_001, confirmed against the real, live OrganismRegistry the
+  // same way contactRepository.js's kink ids were), and a Pending result
+  // (result_003) — a real, reachable state (posted a kit, result not
+  // back yet) no existing seed test represents, so the UI branch for it
+  // was never exercised by demo data.
+  {
+    ...DEFAULT_TEST,
+    id: "test_005",
+    title: "Home kit STI screen",
+    date: daysAgo(3),
+    resultDate: null,
+    setting: "🏠 Home",
+    sampleType: ["Urine", "Blood"],
+    testingFor: ["HIV", "Chlamydia", "Gonorrhoea", "Syphilis"],
+    organismIds: [],
+    resultIds: ["result_003"],
+    mostRecent: false,
+    kitCodePk: "PK-48291",
+    kitCodeSk: "SK-77016",
+    kitAccessKey: "AXQ-93K1",
+    notes: "SH:24 kit posted, awaiting result.",
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_TEST,
+    id: "test_006",
+    title: "Symptomatic screen — Chlamydia positive",
+    date: daysAgo(196),
+    resultDate: daysAgo(193),
+    setting: "🏥🤢 Clinic - Symptomatic",
+    sampleType: ["Urine"],
+    testingFor: ["Chlamydia", "Gonorrhoea", "HIV", "Syphilis"],
+    organismIds: ["organism_001"],
+    resultIds: ["result_001"],
+    mostRecent: false,
+    writtenPlan: "Doxycycline course, test of cure in 3 weeks.",
+    notes: "Mild discharge after a hookup — positive for Chlamydia, negative for everything else screened.",
+    clinicVisitIds: ["visit_004"],
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_TEST,
+    id: "test_007",
+    title: "Routine annual screen",
+    date: daysAgo(160),
+    resultDate: daysAgo(155),
+    setting: "🏥😎 Clinic - Routine",
+    sampleType: ["Blood", "Urine", "Rectal swab"],
+    testingFor: ["HIV", "Chlamydia", "Gonorrhoea", "Syphilis", "Hepatitis B", "Hepatitis C"],
+    organismIds: [],
+    resultIds: ["result_002"],
+    mostRecent: false,
+    clinicVisitIds: ["visit_005"],
+    isArchived: false,
+  },
 ];
 
 // CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
