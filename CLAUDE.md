@@ -2864,6 +2864,75 @@ this date; summarized here for durability.
   mitigation shipped (an early listener buffer in
   `notificationService.js`); the due-meds banner is the real safety net
   for a missed tap.
+- **"Settings/Management UI" (captured 18 Aug 2026, Kane) — checked 9
+  Sep 2026, only 1 of 3 parts actually done.** Original ask: "adjust
+  per-module accent colors, font, and (low priority) tab reorder,"
+  logged as its own cross-cutting item needing a dedicated session,
+  "Not started" at the time. Never re-checked by the later 9 Sep
+  backlog audit — that audit covered a separate ~35-item batch, not
+  this one, which is the real reason it went quiet rather than
+  because it was finished. Checked directly against the running app:
+  **per-module accent colors** — done, just shipped under a different
+  name (`DesignScreen`/"Colour scheme" in Settings, built out during
+  the `ModuleColorRepository` work — full per-color hex overrides plus
+  a CVD-safe palette toggle). **Font** (family or text size) — still
+  genuinely not built; no such setting exists anywhere in Settings.
+  **Tab reorder** — still not built either (always the low-priority
+  third of the original three). Two real, still-open items, not one.
+- **PIN-recovery/alternate-access mechanism — scoped 9 Sep 2026, no
+  code written (session-limit-driven: scope only, no build).** The
+  bigger of the two remaining Phase 4 bigger-ticket items to actually
+  build UI for (the other, an Android Keystore-backed device key, is
+  almost pure native/backend work — swaps the device slot's own key
+  SOURCE from IndexedDB to Keystore, zero new screens). This one is
+  real UI throughout.
+  Architecture already has the headroom for this by design —
+  `cryptoService.js`'s vault metadata already stores the Data Key
+  wrapped under a named collection of independent "slots"
+  (`device`/`pin`/`tempGrace`/`biometric`), specifically so a future
+  recovery mechanism could add its own `recovery` slot wrapping the
+  SAME Data Key without touching or re-encrypting a single byte of
+  real app data — see that file's own header and the original Phase 4
+  scoping entry above for why this shape was chosen deliberately.
+  Adding it is "just" one more slot following the exact same
+  protect/verify-before-commit pattern every other slot already uses.
+  Real decisions needed before any code, in the order they'd block
+  each other:
+  (1) *Code generation* — a long random alphanumeric string (simplest,
+  no new asset) vs. a BIP39-style word list (friendlier to write down
+  by hand, but needs a bundled word-list asset — real new weight for
+  a small privacy-sensitive app). Alphanumeric is the likely right
+  call given this codebase's own stated bias against unnecessary new
+  dependencies/assets, but genuinely the owner's call to confirm.
+  (2) *Reveal UX* — a one-time-only reveal screen (Settings > Privacy,
+  gated behind the current PIN, same trust model already used for
+  turning App Lock off) showing the generated code with a copy button
+  and an explicit "this is the only time you'll see this, write it
+  down" warning — the same honest, non-oversold framing already used
+  elsewhere for the Anonymise PIN's own limitations.
+  (3) *Regeneration* — a "Regenerate recovery code" action (re-wrap +
+  verify-before-commit, same shape as `changePin()`), invalidating the
+  old code.
+  (4) *Recovery entry point* — a "Forgot PIN?" link on `AppLockScreen`
+  itself, opening a real alphanumeric-entry UI (not the existing
+  numeric PIN pad — a genuinely different input component), calling a
+  new `cryptoService.unlockWithRecoveryCode()` (structurally identical
+  to `unlockWithPin()` — a wrong code just fails AES-GCM's own
+  authentication tag). On success, forces an immediate "set a new PIN"
+  step, since a real recovery unlock proves the owner doesn't have the
+  old one anymore.
+  Real UI surface this actually touches — the reason this is the
+  bigger of the two remaining items: a new "Recovery code" section in
+  Settings > Privacy (mirroring the existing PIN/App-Lock/Biometric
+  sections' own layout), the one-time reveal screen/modal, and
+  `AppLockScreen`'s new recovery-entry mode — three real screens/modes,
+  against the Keystore item's effectively zero.
+  Storage needs no new mechanism — the `recovery` slot's own
+  salt/iterations live in the same already-unencrypted
+  `shos_vault_key_slots` metadata the `pin`/`device` slots already use.
+  Not yet confirmed with the owner: the code-generation format (1
+  above) and the exact reveal-screen copy — both worth a real
+  conversation before writing any code, not just picked here.
 - Registry-entry merge, per-value icons within a registry, and a true
   no-code schema editor are deliberate scope cuts, not gaps — don't
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
