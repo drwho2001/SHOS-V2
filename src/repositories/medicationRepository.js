@@ -266,6 +266,18 @@ const DEFAULT_MEDICATION = {
   // ("medicationCategory"), not hardcoded here — same pattern as every
   // other simple categorical field converted this session.
   category: [],
+  // ADDED 9 Sep 2026 — real gap found auditing a real backup: `notes`
+  // is read/written throughout SHOS_Medication_Dashboard_Prototype.jsx
+  // (the card display, both edit/add form textareas) and has real,
+  // meaningful data in real accounts — but was never actually declared
+  // here. Every existing read already survived this (defensive-default
+  // merge spreads the stored record's own `notes` through regardless,
+  // and both form initializers already had their own local `|| ""`
+  // fallback), so no data was ever at risk — this closes the
+  // repository-layer completeness gap so DEFAULT_MEDICATION is the
+  // real single source of truth again, not something each form quietly
+  // patched around on its own.
+  notes: "",
   // ADDED 26 Aug 2026 — real ask: dose changes (e.g. sertraline
   // 150mg→300mg) shouldn't lose or split the medication's history —
   // "same med/course, different dose." Confirmed with the user: one

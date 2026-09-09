@@ -24,6 +24,10 @@ import { AppPreferencesRepository } from "../repositories/appPreferencesReposito
 // the backup-reminder timestamp, which isn't really "a module's data",
 // just app-usage tracking.
 import { localStorageAdapter as storage } from "./storageAdapter.js";
+// ADDED 9 Sep 2026 — real ask: importing an old backup should keep
+// working on its own, not need a human to hand-check the schema first.
+// See that file's own header for the full reasoning.
+import { migrateBackupData } from "./backupMigrations.js";
 import { MedicationRepository } from "../repositories/medicationRepository.js";
 import { LogRepository } from "../repositories/logRepository.js";
 import { EncounterRepository } from "../repositories/encounterRepository.js";
@@ -803,5 +807,10 @@ export async function inspectBackupFile(file) {
 // there's exactly one place that decides what "replace" vs "merge"
 // actually does.
 export async function restoreFromParsedBackup(parsed, mode = "replace") {
-  if (mode === "merge") await mergeBackup(parsed); else await restoreBackup(parsed);
+  // Real ask: an old backup should just work. migrateBackupData() is a
+  // genuine no-op for an already-current backup (checked live against
+  // the owner's own real export) — see backupMigrations.js for why
+  // this can't just be "defensive-default merge on every read" alone.
+  const migrated = { ...parsed, data: migrateBackupData(parsed.data) };
+  if (mode === "merge") await mergeBackup(migrated); else await restoreBackup(migrated);
 }

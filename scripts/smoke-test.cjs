@@ -119,7 +119,7 @@ async function goHomeThenOpenSettings(page) {
 }
 
 async function testMedicationReasonSideEffects(page) {
-  console.log("\n[1/11] Medication log — Reason/Side effects (added 1 Sep 2026)");
+  console.log("\n[1/12] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Log").first().click({ timeout: 5000 });
@@ -136,7 +136,7 @@ async function testMedicationReasonSideEffects(page) {
 }
 
 async function testSymptomTestTwoWayLink(page) {
-  console.log("\n[2/11] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
+  console.log("\n[2/12] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
   await page.locator("text=Healthcare").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Test of cure — Gonorrhoea").click({ timeout: 5000 });
@@ -166,7 +166,7 @@ async function testSymptomTestTwoWayLink(page) {
 }
 
 async function testLocationsExtraFields(page) {
-  console.log("\n[3/11] Locations registry — extra fields (added 2 Sep 2026)");
+  console.log("\n[3/12] Locations registry — extra fields (added 2 Sep 2026)");
   // the Settings gear only lives on the Home dashboard header — get back
   // there first, since the previous check left us on Healthcare/Symptoms.
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
@@ -191,7 +191,7 @@ async function testLocationsExtraFields(page) {
 // building it (the Refuge entry, a real https:// URL from the seeded
 // list), never given permanent coverage until now.
 async function testResourceLinkClickable(page) {
-  console.log("\n[4/11] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
+  console.log("\n[4/12] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
   // Reload first — the previous test (Locations registry) leaves the
   // Manage Lists > Locations sub-screen open, a stacked Settings
   // overlay that would otherwise sit on top of (and intercept clicks
@@ -234,7 +234,7 @@ async function testResourceLinkClickable(page) {
 // (anonymisePin) is still unset at this point — deactivating needs no
 // PIN then (see privacySettingsRepository.js's own deactivate()).
 async function testEncountersAnonymiseMasking(page) {
-  console.log("\n[5/11] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
+  console.log("\n[5/12] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
@@ -297,7 +297,7 @@ async function testEncountersAnonymiseMasking(page) {
 // logged at the real current time, which always has a real future
 // lockoutEndsAt() to check.
 async function testMedicationReminderClock(page) {
-  console.log("\n[6/11] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
+  console.log("\n[6/12] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   // Scoped on "Last dose" rather than the "Log dose" button's own text
@@ -350,7 +350,7 @@ async function testMedicationReminderClock(page) {
 // existing install's first Phase 4 boot" from a genuinely fresh
 // profile (see that function's own comment).
 async function testEncryptionMigratesLegacyData(browser) {
-  console.log("\n[7/11] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
+  console.log("\n[7/12] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
     localStorage.setItem("shos_app_preferences", JSON.stringify({
@@ -406,7 +406,7 @@ async function testEncryptionMigratesLegacyData(browser) {
 // check broad, real coverage rather than just the vault metadata key
 // and whatever the fresh boot itself wrote.
 async function testEncryptionPositiveCheck(page) {
-  console.log("\n[8/11] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
+  console.log("\n[8/12] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
   const rawShapes = await page.evaluate(() => {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -474,7 +474,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
 async function testEncryptionAppLockGatesVault(page) {
-  console.log("\n[9/11] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
+  console.log("\n[9/12] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
@@ -525,7 +525,7 @@ async function testEncryptionAppLockGatesVault(page) {
 // stored preference, the same class of gap this whole suite exists to
 // close.
 async function testTabReorder(page) {
-  console.log("\n[10/11] Settings — bottom nav tab order (added 9 Sep 2026)");
+  console.log("\n[10/12] Settings — bottom nav tab order (added 9 Sep 2026)");
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   await dismissTransientBanners(page);
@@ -577,7 +577,7 @@ async function testTabReorder(page) {
 // it, and an early version auto-offered the tour even after an explicit
 // Skip tap, which directly contradicted the user's own "not now" signal.
 async function testInteractiveTour(browser) {
-  console.log("\n[11/11] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
+  console.log("\n[11/12] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const tourPageErrors = [];
@@ -651,6 +651,75 @@ async function testInteractiveTour(browser) {
   }
 }
 
+// ADDED 9 Sep 2026 — real ask: importing a genuinely old backup should
+// keep working on its own, not need a human to hand-check the schema
+// first (see backupMigrations.js's own header). Verified once, live,
+// against the owner's own real backup file (34 real contacts, 35
+// encounters, 12 medications, all restored with zero data loss and the
+// one real gap found — a medication `notes` field the repository's own
+// DEFAULT_MEDICATION had never declared — now correctly surfaced) — but
+// that check used a real personal file that can never live in this
+// repo, so it can't be the permanent regression test. This flow proves
+// the same real mechanism (migrateBackupData(), wired into
+// restoreFromParsedBackup(), the one shared entry point for every real
+// import) with a synthetic old-shaped record instead, driven through
+// the actual Settings > Restore-from-backup UI and a real virtual file
+// upload — not a dynamic import of `/src/...` (which only resolves
+// against Vite's dev server, not a production `vite preview` build —
+// the exact portability trap the interactive-tour flow above already
+// hit and fixed once this same day).
+async function testBackupMigratesOldFieldShape(page) {
+  console.log("\n[12/12] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
+  const oldShapedBackup = {
+    schemaVersion: 1,
+    appVersion: "0.1.0-prototype",
+    exportedAt: new Date().toISOString(),
+    data: {
+      medications: [
+        { id: "med_migration_check", name: "Migration Check Med", dosePerUnit: "200mg/245mg", notes: "Take with food", isArchived: false },
+      ],
+    },
+  };
+  const fileContent = JSON.stringify(oldShapedBackup);
+
+  await goHomeThenOpenSettings(page);
+  await page.locator("text=Backup & Data", { exact: true }).first().click({ timeout: 5000 });
+  await page.waitForTimeout(500);
+  await page.locator("text=Restore from backup", { exact: true }).first().click({ timeout: 5000 });
+  await page.waitForTimeout(400);
+  await page.locator("text=Replace all data", { exact: true }).click({ timeout: 5000 });
+  await page.waitForTimeout(300);
+
+  const fileInput = page.locator('input[type="file"]');
+  await fileInput.setInputFiles({ name: "old-shape-backup.json", mimeType: "application/json", buffer: Buffer.from(fileContent) });
+  await page.waitForTimeout(1500); // finishImport() reloads the page itself
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(1000);
+  await dismissTransientBanners(page);
+
+  await goHomeThenOpenSettings(page);
+  await page.locator("text=Support", { exact: true }).first().click({ timeout: 5000 });
+  await page.waitForTimeout(400);
+  await page.locator("text=Developer tools", { exact: true }).first().click({ timeout: 5000 });
+  await page.waitForTimeout(400);
+  const devToolsText = await page.evaluate(() => document.body.innerText);
+  assert(devToolsText.includes("Medications") && /Medications\D*1\b/.test(devToolsText.replace(/\n/g, " ")), "the Replace All import genuinely landed (Developer Tools shows exactly 1 real medication, the migrated one)");
+
+  // A plain reload is simpler and more robust than navigating back out
+  // through Developer Tools' own chevron — the import already landed
+  // and persisted, so a fresh load returns straight to Home with the
+  // real bottom nav available, same as any real relaunch would.
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(1000);
+  await dismissTransientBanners(page);
+  await page.locator("text=Medication").last().click({ timeout: 5000 });
+  await page.waitForTimeout(600);
+  const dashboardText = await page.evaluate(() => document.body.innerText);
+  assert(dashboardText.includes("Migration Check Med"), "the migrated medication itself is really there, not just a count");
+  assert(dashboardText.includes("200mg/245mg"), "the old dosePerUnit value survived the migration, visible in the real UI, not silently dropped");
+  assert(dashboardText.includes("Take with food"), "a real pre-existing note on the same record was preserved alongside the migrated value, not overwritten");
+}
+
 (async () => {
   const browser = await chromium.launch({ executablePath: PLAYWRIGHT_EXECUTABLE });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -671,6 +740,7 @@ async function testInteractiveTour(browser) {
     await testEncryptionAppLockGatesVault(page);
     await testTabReorder(page);
     await testInteractiveTour(browser);
+    await testBackupMigratesOldFieldShape(page);
   } catch (err) {
     failed = true;
     console.error("\n" + err.message);
