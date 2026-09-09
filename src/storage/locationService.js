@@ -35,8 +35,8 @@ let pluginLoadAttempted = false;
 // Nominatim was previously undisclosed and un-gateable — now checked
 // before every use, both here (reverse) and by forwardGeocode() below
 // (forward search), the two real Nominatim entry points in this app.
-function addressLookupAllowed() {
-  return AppPreferencesRepository.getPreferences().addressLookupEnabled;
+async function addressLookupAllowed() {
+  return (await AppPreferencesRepository.getPreferences()).addressLookupEnabled;
 }
 
 // FIXED — real bug found live-debugging notifications on a real device
@@ -108,7 +108,7 @@ async function reverseGeocode(latitude, longitude) {
 // Error on any failure along the way (permission denied, no signal,
 // lookup failed) — callers show it directly, never crash silently.
 export async function getCurrentLocationPlace() {
-  if (!addressLookupAllowed()) {
+  if (!(await addressLookupAllowed())) {
     throw new Error("Address lookup is turned off in Settings. You can still type an address manually.");
   }
   const { latitude, longitude } = await getCurrentCoords();
@@ -122,7 +122,7 @@ export async function getCurrentLocationPlace() {
 // gate, and one place to fix if the API ever changes. Same Nominatim
 // result shape (display_name + address.*) both callers already handle.
 export async function forwardGeocode(query) {
-  if (!addressLookupAllowed()) return [];
+  if (!(await addressLookupAllowed())) return [];
   const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`);
   if (!res.ok) return [];
   return res.json();

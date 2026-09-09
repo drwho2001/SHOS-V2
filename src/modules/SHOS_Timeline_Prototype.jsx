@@ -17,6 +17,7 @@ import { getEncounterCoverage } from "../calculations/exposureWindows";
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 // ADDED 19 Aug 2026 — Timeline (the nav-facing name; "Episode" is the
 // underlying data unit — see episodeRepository.js for the full
@@ -55,8 +56,15 @@ function visitLabel(v) {
 function symptomLogLabel(s) {
   return s ? `${s.title || "Symptom entry"} · ${formatDate(s.dateStarted)}` : "?";
 }
-function testIsPositive(t) {
-  const names = (t.resultIds || []).map((id) => ResultsRegistry.getById(id)?.name).filter(Boolean);
+// CHANGED — Phase 2 encryption groundwork: ResultsRegistry is now
+// async. Rather than making this pure helper async (called
+// synchronously from several places, including a per-row `.some()`/
+// `.filter()` and a synchronous nameFor-style callback), it now takes
+// a pre-resolved `resultNameById` lookup Map as a parameter — same
+// "pure function takes data as a parameter" fix used for
+// testingCalculations.js's suggestedRoutineRetestDate() this session.
+function testIsPositive(t, resultNameById) {
+  const names = (t.resultIds || []).map((id) => resultNameById?.get(id)).filter(Boolean);
   return names.some((n) => n.toLowerCase() === "positive");
 }
 
@@ -243,8 +251,8 @@ function StartSheet({ onSave, onClose, T }) {
   const [startEncounterId, setStartEncounterId] = useState("");
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const triggerReasonOptions = useMemo(() => CustomOptionListsRepository.getRanked("episodeTriggerReason"), []);
-  const encounters = useMemo(() => EncounterRepository.getAll().sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => ({ id: e.id, name: encounterLabel(e) })), []);
+  const triggerReasonOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("episodeTriggerReason"), [], []);
+  const encounters = useLoadedMemo(async () => (await EncounterRepository.getAll()).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => ({ id: e.id, name: encounterLabel(e) })), [], []);
   const canSave = title.trim().length > 0 && startEncounterId;
 
   return (
@@ -272,46 +280,7 @@ function StartSheet({ onSave, onClose, T }) {
 function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const episode = useMemo(() => EpisodeRepository.getById(episodeId), [episodeId, refreshKey]);
-  if (!episode) return null;
-
-  const startEncounter = EncounterRepository.getById(episode.startEncounterId);
-  const startDate = startEncounter?.date;
-  const isOpen = !episode.resolvedDate;
-
-  const linkedTests = episode.testIds.map((id) => TestingRepository.getById(id)).filter(Boolean);
-  const hasPositive = linkedTests.some(testIsPositive);
-  // ADDED 2 Sep 2026 — real ask: partner-notification message helper.
-  // Pulled from the positive test(s)' own linked organism(s), same
-  // real data the app already tracks — never invented or guessed.
-  const infectionNames = [...new Set(
-    linkedTests.filter(testIsPositive).flatMap((t) => t.organismIds || []).map((id) => OrganismRegistry.getById(id)?.name).filter(Boolean)
-  )];
-
-  const update = (changes) => { EpisodeRepository.update(episodeId, changes); setRefreshKey((k) => k + 1); };
-
-  const encounterCandidates = startDate
-    ? EncounterRepository.getAll().filter((e) => e.id !== episode.startEncounterId && e.date >= startDate && !episode.atRiskEncounterIds.includes(e.id))
-      .sort((a, b) => new Date(a.date) - new Date(b.date)).map((e) => ({ id: e.id, name: encounterLabel(e) }))
-    : [];
-  const testCandidates = startDate
-    ? TestingRepository.getAll().filter((t) => !t.isArchived && t.date >= startDate && !episode.testIds.includes(t.id))
-      .sort((a, b) => new Date(a.date) - new Date(b.date)).map((t) => ({ id: t.id, name: testLabel(t) }))
-    : [];
-  const visitCandidates = startDate
-    ? ClinicVisitsRepository.getAll().filter((v) => !v.isArchived && v.date >= startDate && !episode.clinicVisitIds.includes(v.id))
-      .sort((a, b) => new Date(a.date) - new Date(b.date)).map((v) => ({ id: v.id, name: visitLabel(v) }))
-    : [];
-  const symptomCandidates = startDate
-    ? SymptomLogRepository.getAll().filter((s) => !s.isArchived && s.dateStarted >= startDate && !episode.symptomLogIds.includes(s.id))
-      .sort((a, b) => new Date(a.dateStarted) - new Date(b.dateStarted)).map((s) => ({ id: s.id, name: symptomLogLabel(s) }))
-    : [];
-
-  const toggleNotified = (encounterId) => {
-    const already = episode.notifiedEncounterIds.includes(encounterId);
-    update({ notifiedEncounterIds: already ? episode.notifiedEncounterIds.filter((id) => id !== encounterId) : [...episode.notifiedEncounterIds, encounterId] });
-  };
-
+  const episode = useLoadedMemo(() => EpisodeRepository.getById(episodeId), [episodeId, refreshKey], null);
   // CHANGED 2 Sep 2026 — real ask: "episodes end date?" — resolvedDate
   // used to be hardcoded to whatever day you happened to tap the
   // button, with no way to set or correct it to when the episode
@@ -319,15 +288,132 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
   // came back). resolveDateDraft is a real, editable date — defaults
   // to today, but overridable before confirming, and resets to
   // episode.resolvedDate (or today) whenever a different episode is
-  // opened. Also added: reopen(), since a resolved episode previously
-  // had no undo at all — same "how do I undo this" standard every
-  // other action in this app already meets.
+  // opened.
   // NOTE: existing resolvedDate values (including seed data) are full
   // ISO timestamps, not date-only strings — <input type="date"> only
   // accepts "YYYY-MM-DD", same .slice(0,10) convention used everywhere
   // else in this app for exactly that reason.
-  const [resolveDateDraft, setResolveDateDraft] = useState(() => (episode.resolvedDate || new Date().toISOString()).slice(0, 10));
-  useEffect(() => { setResolveDateDraft((episode.resolvedDate || new Date().toISOString()).slice(0, 10)); }, [episodeId]);
+  // Must stay ABOVE the `if (!episode) return null` below — every hook
+  // in a component has to run on every render (Rules of Hooks), and
+  // episode is genuinely null for the one render before the load effect
+  // above resolves, now that this reads asynchronously instead of
+  // synchronously off useMemo. Guarded with episode?. accordingly.
+  const [resolveDateDraft, setResolveDateDraft] = useState(() => (episode?.resolvedDate || new Date().toISOString()).slice(0, 10));
+  useEffect(() => { setResolveDateDraft((episode?.resolvedDate || new Date().toISOString()).slice(0, 10)); }, [episodeId]);
+  // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository went
+  // async — same "must stay ABOVE the guard" reasoning as
+  // resolveDateDraft above, since this needs a hook. Re-derives its own
+  // start date from `episode` directly (guarded with `episode?.`)
+  // rather than reusing the `startDate` const below, since that const
+  // isn't in scope yet this early.
+  // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
+  // async too — hoisted above the guard for the same reason as
+  // symptomCandidates below, reused by symptomCandidates/
+  // encounterCandidates instead of each re-deriving it separately.
+  // Also feeds the "Exposure Encounter" read-only row further down,
+  // which previously read a plain post-guard `startEncounter` const.
+  const startEncounter = useLoadedMemo(() => EncounterRepository.getById(episode?.startEncounterId), [episode], null);
+  const startDate = startEncounter?.date;
+  const symptomCandidates = useLoadedMemo(async () => {
+    if (!episode || !startDate) return [];
+    return (await SymptomLogRepository.getAll())
+      .filter((s) => !s.isArchived && s.dateStarted >= startDate && !episode.symptomLogIds.includes(s.id))
+      .sort((a, b) => new Date(a.dateStarted) - new Date(b.dateStarted))
+      .map((s) => ({ id: s.id, name: symptomLogLabel(s) }));
+  }, [episode, startDate], []);
+  // ADDED — same reason as symptomCandidates above: `nameFor` below is
+  // a synchronous per-id render callback (LinkedItemsSection calls it
+  // directly while rendering, it can't itself await), so the currently-
+  // linked symptom entries' labels need to be resolved ahead of time
+  // into a lookup map, not fetched one at a time on demand.
+  const linkedSymptomLabelById = useLoadedMemo(async () => {
+    if (!episode?.symptomLogIds?.length) return {};
+    const entries = await Promise.all(episode.symptomLogIds.map((id) => SymptomLogRepository.getById(id)));
+    return Object.fromEntries(episode.symptomLogIds.map((id, i) => [id, symptomLogLabel(entries[i])]));
+  }, [episode], {});
+  // ADDED — same reason: encounterCandidates below used to call
+  // EncounterRepository.getAll() straight in the render body.
+  const encounterCandidates = useLoadedMemo(async () => {
+    if (!episode || !startDate) return [];
+    return (await EncounterRepository.getAll())
+      .filter((e) => e.id !== episode.startEncounterId && e.date >= startDate && !episode.atRiskEncounterIds.includes(e.id))
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map((e) => ({ id: e.id, name: encounterLabel(e) }));
+  }, [episode, startDate], []);
+  // ADDED — same reason as linkedSymptomLabelById: atRiskEncounterIds'
+  // own nameFor callback below is also a synchronous per-id render
+  // callback — and its own exposure-window coverage check needs the
+  // full encounter object (enc.date), not just a label, so this
+  // resolves full objects rather than pre-formatted strings.
+  const linkedEncounterById = useLoadedMemo(async () => {
+    if (!episode?.atRiskEncounterIds?.length) return {};
+    const entries = await Promise.all(episode.atRiskEncounterIds.map((id) => EncounterRepository.getById(id)));
+    return Object.fromEntries(episode.atRiskEncounterIds.map((id, i) => [id, entries[i]]));
+  }, [episode], {});
+  // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+  // async too — hoisted above the guard for the same reason as
+  // linkedEncounterById above (this one used to be a plain post-guard
+  // render-body call, feeding hasPositive/infectionNames below it).
+  const linkedTests = useLoadedMemo(async () => {
+    if (!episode?.testIds?.length) return [];
+    return (await Promise.all(episode.testIds.map((id) => TestingRepository.getById(id)))).filter(Boolean);
+  }, [episode], []);
+  // ADDED — same reason: testCandidates below used to call
+  // TestingRepository.getAll() straight in the render body.
+  const testCandidates = useLoadedMemo(async () => {
+    if (!episode || !startDate) return [];
+    return (await TestingRepository.getAll())
+      .filter((t) => !t.isArchived && t.date >= startDate && !episode.testIds.includes(t.id))
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map((t) => ({ id: t.id, name: testLabel(t) }));
+  }, [episode, startDate], []);
+  // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
+  // went async — hoisted above the guard for the same reason as
+  // linkedEncounterById/linkedTests above. visitCandidates used to be
+  // a plain post-guard render-body call, and clinicVisitIds' own
+  // nameFor callback below is a synchronous per-id render callback
+  // (LinkedItemsSection calls it directly while rendering, it can't
+  // itself await), so the currently-linked visits' labels need
+  // pre-resolving into a lookup object instead of fetched on demand.
+  const linkedVisitById = useLoadedMemo(async () => {
+    if (!episode?.clinicVisitIds?.length) return {};
+    const entries = await Promise.all(episode.clinicVisitIds.map((id) => ClinicVisitsRepository.getById(id)));
+    return Object.fromEntries(episode.clinicVisitIds.map((id, i) => [id, entries[i]]));
+  }, [episode], {});
+  const visitCandidates = useLoadedMemo(async () => {
+    if (!episode || !startDate) return [];
+    return (await ClinicVisitsRepository.getAll())
+      .filter((v) => !v.isArchived && v.date >= startDate && !episode.clinicVisitIds.includes(v.id))
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map((v) => ({ id: v.id, name: visitLabel(v) }));
+  }, [episode, startDate], []);
+  // CHANGED — Phase 2 encryption groundwork: ResultsRegistry/
+  // OrganismRegistry are now async — resolved once here, hoisted above
+  // the guard, for testIsPositive/infectionNames below.
+  const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
+  const organismNameById = useLoadedMemo(async () => new Map((await OrganismRegistry.getAll()).map((o) => [o.id, o.name])), [], new Map());
+  if (!episode) return null;
+
+  const isOpen = !episode.resolvedDate;
+
+  const hasPositive = linkedTests.some((t) => testIsPositive(t, resultNameById));
+  // ADDED 2 Sep 2026 — real ask: partner-notification message helper.
+  // Pulled from the positive test(s)' own linked organism(s), same
+  // real data the app already tracks — never invented or guessed.
+  const infectionNames = [...new Set(
+    linkedTests.filter((t) => testIsPositive(t, resultNameById)).flatMap((t) => t.organismIds || []).map((id) => organismNameById.get(id)).filter(Boolean)
+  )];
+
+  const update = async (changes) => { await EpisodeRepository.update(episodeId, changes); setRefreshKey((k) => k + 1); };
+
+  const toggleNotified = (encounterId) => {
+    const already = episode.notifiedEncounterIds.includes(encounterId);
+    update({ notifiedEncounterIds: already ? episode.notifiedEncounterIds.filter((id) => id !== encounterId) : [...episode.notifiedEncounterIds, encounterId] });
+  };
+
+  // Also added (2 Sep 2026): reopen(), since a resolved episode
+  // previously had no undo at all — same "how do I undo this" standard
+  // every other action in this app already meets.
 
   const resolve = (resolution) => {
     update({ resolvedDate: resolveDateDraft, resolution });
@@ -400,7 +486,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
           <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 6 }}>
             Anyone logged after the start date, while this stayed open. {hasPositive && "Tap a name once you've notified them — it'll show marked below."}
           </div>
-          <LinkedItemsSection linkedIds={episode.atRiskEncounterIds} onChange={(v) => update({ atRiskEncounterIds: v })} candidates={encounterCandidates} nameFor={(id) => encounterLabel(EncounterRepository.getById(id))} T={T} />
+          <LinkedItemsSection linkedIds={episode.atRiskEncounterIds} onChange={(v) => update({ atRiskEncounterIds: v })} candidates={encounterCandidates} nameFor={(id) => encounterLabel(linkedEncounterById[id])} T={T} />
           {/* ADDED 19 Aug 2026 — real exposure-window flagging, per
               the user's ask (BASHH/UK-guidance window periods — see
               exposureWindows.js for full sourcing/caveats). Each
@@ -414,7 +500,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
           {episode.atRiskEncounterIds.length > 0 && (
             <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
               {episode.atRiskEncounterIds.map((id) => {
-                const enc = EncounterRepository.getById(id);
+                const enc = linkedEncounterById[id];
                 const coverage = getEncounterCoverage(enc?.date, linkedTests);
                 return (
                   <div key={id} style={{ fontSize: 11, display: "flex", alignItems: "flex-start", gap: 6 }}>
@@ -441,7 +527,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
                     <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${notified ? T.actionGreen : T.textDisabled}`, background: notified ? T.actionGreen : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {notified && <Check size={12} color="#FFFFFF" weight="bold" />}
                     </div>
-                    <span style={{ fontSize: 13, color: T.textPrimary }}>{encounterLabel(EncounterRepository.getById(id))}</span>
+                    <span style={{ fontSize: 13, color: T.textPrimary }}>{encounterLabel(linkedEncounterById[id])}</span>
                   </div>
                 );
               })}
@@ -451,15 +537,15 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
         </SectionCard>
 
         <SectionCard title="Testing" T={T}>
-          <LinkedItemsSection label="Linked tests — initial, cultures, TOC (order tells the story)" linkedIds={episode.testIds} onChange={(v) => update({ testIds: v })} candidates={testCandidates} nameFor={(id) => testLabel(TestingRepository.getById(id))} T={T} alertIds={linkedTests.filter(testIsPositive).map((t) => t.id)} />
+          <LinkedItemsSection label="Linked tests — initial, cultures, TOC (order tells the story)" linkedIds={episode.testIds} onChange={(v) => update({ testIds: v })} candidates={testCandidates} nameFor={(id) => testLabel(linkedTests.find((t) => t.id === id))} T={T} alertIds={linkedTests.filter((t) => testIsPositive(t, resultNameById)).map((t) => t.id)} />
         </SectionCard>
 
         <SectionCard title="Treatment" T={T}>
-          <LinkedItemsSection label="Clinic visits" linkedIds={episode.clinicVisitIds} onChange={(v) => update({ clinicVisitIds: v })} candidates={visitCandidates} nameFor={(id) => visitLabel(ClinicVisitsRepository.getById(id))} T={T} />
+          <LinkedItemsSection label="Clinic visits" linkedIds={episode.clinicVisitIds} onChange={(v) => update({ clinicVisitIds: v })} candidates={visitCandidates} nameFor={(id) => visitLabel(linkedVisitById[id])} T={T} />
         </SectionCard>
 
         <SectionCard title="Symptoms" T={T}>
-          <LinkedItemsSection label="Symptom Log entries" linkedIds={episode.symptomLogIds} onChange={(v) => update({ symptomLogIds: v })} candidates={symptomCandidates} nameFor={(id) => symptomLogLabel(SymptomLogRepository.getById(id))} T={T} />
+          <LinkedItemsSection label="Symptom Log entries" linkedIds={episode.symptomLogIds} onChange={(v) => update({ symptomLogIds: v })} candidates={symptomCandidates} nameFor={(id) => linkedSymptomLabelById[id] || "—"} T={T} />
         </SectionCard>
 
         <SectionCard title="Notes" T={T}>
@@ -523,11 +609,27 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
 }
 
 function TimelineLanding({ onOpen, onAdd, onClose, T }) {
-  const [episodes] = useState(() => EpisodeRepository.getAll().filter((e) => !e.isArchived));
-  const sorted = useMemo(() => {
-    const withDate = episodes.map((e) => ({ ...e, _date: EncounterRepository.getById(e.startEncounterId)?.date || e.createdAt }));
+  const episodes = useLoadedMemo(() => EpisodeRepository.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
+  // async — was a plain useMemo directly calling
+  // EncounterRepository.getById() per episode, now needs useLoadedMemo.
+  const sorted = useLoadedMemo(async () => {
+    const withDate = await Promise.all(episodes.map(async (e) => ({ ...e, _date: (await EncounterRepository.getById(e.startEncounterId))?.date || e.createdAt })));
     return withDate.sort((a, b) => (a.resolvedDate ? 1 : 0) - (b.resolvedDate ? 1 : 0) || new Date(b._date) - new Date(a._date));
-  }, [episodes]);
+  }, [episodes], []);
+  // ADDED — same reason: each row below used to call
+  // TestingRepository.getById() straight in a synchronous render-body
+  // .map() to derive its own hasPositive flag.
+  // CHANGED — Phase 2 encryption groundwork: ResultsRegistry is now
+  // async too — resolved once here for testIsPositive below.
+  const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
+  const hasPositiveByEpisodeId = useLoadedMemo(async () => {
+    const entries = await Promise.all(episodes.map(async (e) => {
+      const linked = (await Promise.all(e.testIds.map((id) => TestingRepository.getById(id)))).filter(Boolean);
+      return [e.id, linked.some((t) => testIsPositive(t, resultNameById))];
+    }));
+    return Object.fromEntries(entries);
+  }, [episodes, resultNameById], {});
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -550,8 +652,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
           </div>
         )}
         {sorted.map((e) => {
-          const linkedTests = e.testIds.map((id) => TestingRepository.getById(id)).filter(Boolean);
-          const hasPositive = linkedTests.some(testIsPositive);
+          const hasPositive = hasPositiveByEpisodeId[e.id] || false;
           const isOpen = !e.resolvedDate;
           return (
             <div key={e.id} onClick={() => onOpen(e.id)}
@@ -592,31 +693,31 @@ export default function TimelineModule({ onClose, registerModuleBackHandler } = 
   const [screen, setScreen] = useState({ name: "list" });
   const [refreshKey, setRefreshKey] = useState(0);
   const backToList = () => setScreen({ name: "list" });
-  const startEpisode = (data) => { EpisodeRepository.create(data); backToList(); };
+  const startEpisode = async (data) => { await EpisodeRepository.create(data); backToList(); };
 
   // ADDED 2 Sep 2026 — real undo/redo for Episode's new genuine
   // permanent delete, same {mode, record} shape/timing as Encounters'
   // own deleteToast (8s window, tap to undo, tap again to redo).
   const [deleteToast, setDeleteToast] = useState(null);
   const undoTimerRef = useRef(null);
-  const handleDelete = (record) => {
-    EpisodeRepository.delete(record.id);
+  const handleDelete = async (record) => {
+    await EpisodeRepository.delete(record.id);
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "undo", record });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
     setRefreshKey((k) => k + 1);
   };
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    EpisodeRepository.restore(deleteToast.record);
+    await EpisodeRepository.restore(deleteToast.record);
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", record: deleteToast.record });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
     setRefreshKey((k) => k + 1);
   };
-  const redoDelete = () => {
+  const redoDelete = async () => {
     if (!deleteToast) return;
-    EpisodeRepository.delete(deleteToast.record.id);
+    await EpisodeRepository.delete(deleteToast.record.id);
     clearTimeout(undoTimerRef.current);
     setDeleteToast(null);
     setRefreshKey((k) => k + 1);

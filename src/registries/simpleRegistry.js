@@ -33,6 +33,14 @@ import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 // Returns a registry object: getAll/getById/getByName/create/update/
 // archive/unarchive/replaceAll — same contract as every other
 // repository in the app (structuredClone on read, opaque IDs).
+//
+// CHANGED — Phase 2 encryption groundwork: module-load-time synchronous
+// cache replaced with the same ensureLoaded()/memoized-loadPromise
+// pattern used for every other repository converted this session (see
+// CLAUDE.md) — every method is now async and awaits ensureLoaded()
+// first. Applies automatically to every registry built on this factory
+// (Kink/Chems/Protection/Symptoms/Organism/Results), same payoff as
+// the original defensive-merge fix above.
 export function createSimpleRegistry({ storageKey, idPrefix, seedNames = [] }) {
   const DEFAULT_ENTRY = { name: "" };
 
@@ -44,11 +52,9 @@ export function createSimpleRegistry({ storageKey, idPrefix, seedNames = [] }) {
     isArchived: false,
   }));
 
-  let entries = storage.load(storageKey, seedEntries);
-
-  function persist() {
-    storage.save(storageKey, entries);
-  }
+  let entries = null;
+  let nextNumber = 1;
+  let loadPromise = null;
 
   function computeNextNumber(existing) {
     const numbers = existing.map((e) => {
@@ -57,7 +63,19 @@ export function createSimpleRegistry({ storageKey, idPrefix, seedNames = [] }) {
     });
     return (numbers.length ? Math.max(...numbers) : 0) + 1;
   }
-  let nextNumber = computeNextNumber(entries);
+
+  async function ensureLoaded() {
+    if (entries === null) {
+      if (!loadPromise) loadPromise = storage.load(storageKey, seedEntries);
+      entries = await loadPromise;
+      nextNumber = computeNextNumber(entries);
+    }
+    return entries;
+  }
+
+  async function persist() {
+    await storage.save(storageKey, entries);
+  }
 
   function generateId() {
     const id = `${idPrefix}_${String(nextNumber).padStart(3, "0")}`;
@@ -71,11 +89,13 @@ export function createSimpleRegistry({ storageKey, idPrefix, seedNames = [] }) {
     // registry built on this factory (Kink/Chems/Protection/Symptoms)
     // gets the protection automatically — this is exactly the kind of
     // shared-abstraction payoff the factory was extracted for.
-    getAll() {
+    async getAll() {
+      await ensureLoaded();
       return structuredClone(entries.map((e) => ({ ...DEFAULT_ENTRY, ...e })));
     },
 
-    getById(id) {
+    async getById(id) {
+      await ensureLoaded();
       const found = entries.find((e) => e.id === id);
       return found ? structuredClone({ ...DEFAULT_ENTRY, ...found }) : null;
     },
@@ -83,12 +103,14 @@ export function createSimpleRegistry({ storageKey, idPrefix, seedNames = [] }) {
     // Case-insensitive exact match — used by the shared RegistryPicker
     // UI to check "does this name already exist" before creating a
     // duplicate when someone types a new tag.
-    getByName(name) {
+    async getByName(name) {
+      await ensureLoaded();
       const found = entries.find((e) => e.name.toLowerCase() === name.toLowerCase());
       return found ? structuredClone({ ...DEFAULT_ENTRY, ...found }) : null;
     },
 
-    create(data) {
+    async create(data) {
+      await ensureLoaded();
       const newEntry = {
         ...DEFAULT_ENTRY,
         ...data,
@@ -97,44 +119,45 @@ export function createSimpleRegistry({ storageKey, idPrefix, seedNames = [] }) {
         isArchived: false,
       };
       entries = [...entries, newEntry];
-      persist();
+      await persist();
       return newEntry;
     },
 
     // Convenience used by the picker: find-or-create by name in one
     // call, so typing a brand-new tag and picking an existing one look
     // identical to the calling UI code.
-    findOrCreate(name) {
+    async findOrCreate(name) {
       const trimmed = name.trim();
       if (!trimmed) return null;
-      const existing = this.getByName(trimmed);
+      const existing = await this.getByName(trimmed);
       if (existing) return existing;
       return this.create({ name: trimmed });
     },
 
-    update(id, changes) {
+    async update(id, changes) {
+      await ensureLoaded();
       let updated = null;
       entries = entries.map((e) => {
         if (e.id !== id) return e;
         updated = { ...e, ...changes };
         return updated;
       });
-      persist();
+      await persist();
       return updated;
     },
 
-    archive(id) {
+    async archive(id) {
       return this.update(id, { isArchived: true });
     },
 
-    unarchive(id) {
+    async unarchive(id) {
       return this.update(id, { isArchived: false });
     },
 
-    replaceAll(newEntries) {
+    async replaceAll(newEntries) {
       entries = newEntries;
       nextNumber = computeNextNumber(entries);
-      persist();
+      await persist();
     },
   };
 }

@@ -55,7 +55,7 @@ import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomple
 // ADDED 19 Aug 2026 — Anonymise mode. See privacySettingsRepository.js
 // for the full reasoning. Read-only from Contacts' side, same
 // one-directional pattern as every other cross-module read in this app.
-import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
+import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../repositories/privacySettingsRepository";
 // ADDED — real ask: link/unlink this contact as who My Profile's own
 // relationshipStatus is with, settable from either screen (see
 // myProfileRepository.js's own comment — single array lives there,
@@ -97,6 +97,7 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 const LIGHT = {
   ...NEUTRAL,
@@ -697,6 +698,13 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
 // what actually closes the "Fist vs Fisting" gap TagInput's own comment
 // flagged as unsolved — one canonical registry entry per concept,
 // found case-insensitively or created new via findOrCreate.
+// CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry/
+// ProtectionRegistry/SymptomsRegistry (whichever `registry` is passed
+// here) are now async — allEntries loaded via useLoadedMemo instead of
+// a plain render-body call; nameFor's archived-entry fallback resolved
+// via a missingNames lookup instead of a synchronous getById() call;
+// finalizeEntry/commitDraft now await registry.findOrCreate(), and
+// commitDraft awaits analyzeEntry (analyzeKinkEntry, also now async).
 function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, excludeIds = [], trackRole = false, roleOptions = [], resolveSynonym = (x) => x, analyzeEntry = null, getRoleOptionsForKink = null }) {
   const [draft, setDraft] = useState("");
   // ADDED — real ask: "did you mean...?" for a recognized typo or an
@@ -705,8 +713,15 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // Chems/Protection/Symptoms pickers don't have this analysis
   // available and are completely unaffected.
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
-  const allEntries = registry.getAll().filter((e) => !e.isArchived);
-  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name || "?";
+  const allEntries = useLoadedMemo(() => registry.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  const missingNames = useLoadedMemo(async () => {
+    const selectedIdsForLookup = trackRole ? value.map((v) => v.kinkId) : value;
+    const missingIds = selectedIdsForLookup.filter((id) => !allEntries.some((e) => e.id === id));
+    const map = new Map();
+    await Promise.all(missingIds.map(async (id) => { const e = await registry.getById(id); if (e) map.set(id, e.name); }));
+    return map;
+  }, [value, allEntries], new Map());
+  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || missingNames.get(id) || "?";
 
   // ADDED 18 Aug 2026 — trackRole mode: `value` becomes an array of
   // {kinkId, role} selections instead of plain registry IDs, so an
@@ -803,8 +818,8 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // multi-paste) — that's the real, common case this was actually
   // asked for, and juggling several pending prompts from one paste
   // would be real added complexity for a rare case.
-  const finalizeEntry = (resolvedName, role) => {
-    const entry = registry.findOrCreate(resolvedName);
+  const finalizeEntry = async (resolvedName, role) => {
+    const entry = await registry.findOrCreate(resolvedName);
     if (entry && !hasSelection(entry.id)) {
       if (trackRole) onChange([...value, { kinkId: entry.id, role }]);
       else onChange([...value, entry.id]);
@@ -822,7 +837,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // needs to recognize the WORD at parse time, before that's known.
   const extractionRoleOptions = getRoleOptionsForKink ? ["Top", "bottom", "Vers", "Dom", "sub", "Switch"] : roleOptions;
 
-  const commitDraft = (el) => {
+  const commitDraft = async (el) => {
     const raw = draft.trim();
     if (!raw) {
       if (el) focusNextField(el);
@@ -833,7 +848,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
     if (analyzeEntry && rawParts.length === 1) {
       const { text, role } = trackRole ? extractKinkRoleFromText(rawParts[0], extractionRoleOptions) : { text: rawParts[0], role: null };
       const normalized = normalizeTag(text);
-      const analysis = analyzeEntry(normalized);
+      const analysis = await analyzeEntry(normalized);
       if (analysis.type === "umbrella" || analysis.type === "fuzzy-suggestion") {
         setPendingSuggestion({ ...analysis, role });
         setDraft("");
@@ -842,15 +857,15 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
     }
 
     const newSelections = [];
-    rawParts.forEach((rawPart) => {
+    for (const rawPart of rawParts) {
       const { text, role } = trackRole ? extractKinkRoleFromText(rawPart, extractionRoleOptions) : { text: rawPart, role: null };
       const resolved = resolveSynonym(normalizeTag(text));
-      if (!resolved) return;
-      const entry = registry.findOrCreate(resolved);
+      if (!resolved) continue;
+      const entry = await registry.findOrCreate(resolved);
       if (entry && !hasSelection(entry.id) && !newSelections.some((s) => s.id === entry.id)) {
         newSelections.push({ id: entry.id, role });
       }
-    });
+    }
     if (newSelections.length > 0) {
       if (trackRole) onChange([...value, ...newSelections.map((s) => ({ kinkId: s.id, role: s.role }))]);
       else onChange([...value, ...newSelections.map((s) => s.id)]);
@@ -1181,8 +1196,12 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
 function LinkedContactsField({ contactId, allContacts, T, refresh }) {
   const [pickerValue, setPickerValue] = useState("");
   const [pendingLabel, setPendingLabel] = useState("");
-  const [linkedIds, setLinkedIds] = useState(() => ContactRepository.getById(contactId)?.linkedContactIds || []);
-  const [labels, setLabels] = useState(() => ContactRepository.getById(contactId)?.linkedContactLabels || {});
+  // CHANGED — Phase 2 encryption groundwork: ContactRepository went
+  // async — these used to chain a property access straight onto the
+  // (now-Promise) getById() call, same class of bug as Home's own
+  // permission-nudge loader found earlier this session.
+  const [linkedIds, setLinkedIds] = useLoadedState(async () => (await ContactRepository.getById(contactId))?.linkedContactIds || [], [contactId], []);
+  const [labels, setLabels] = useLoadedState(async () => (await ContactRepository.getById(contactId))?.linkedContactLabels || {}, [contactId], {});
   const linked = allContacts.filter((c) => linkedIds.includes(c.id));
   const linkable = allContacts.filter((c) => c.id !== contactId && !linkedIds.includes(c.id));
 
@@ -1191,18 +1210,18 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
     return Array.from(new Set(all)).sort((a, b) => a.localeCompare(b));
   }, [allContacts]);
 
-  const confirmLink = () => {
+  const confirmLink = async () => {
     if (!pickerValue) return;
     const label = pendingLabel.trim();
-    ContactRepository.linkContacts(contactId, pickerValue, label);
+    await ContactRepository.linkContacts(contactId, pickerValue, label);
     setLinkedIds((prev) => [...prev, pickerValue]);
     if (label) setLabels((prev) => ({ ...prev, [pickerValue]: label }));
     refresh();
     setPickerValue("");
     setPendingLabel("");
   };
-  const removeLink = (id) => {
-    ContactRepository.unlinkContacts(contactId, id);
+  const removeLink = async (id) => {
+    await ContactRepository.unlinkContacts(contactId, id);
     setLinkedIds((prev) => prev.filter((x) => x !== id));
     setLabels((prev) => { const { [id]: _removed, ...rest } = prev; return rest; });
     refresh();
@@ -1458,10 +1477,14 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   // same pattern as Vaccinations' vaccineOptions.
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const [relationshipTypeOptions, setRelationshipTypeOptions] = useState(() => CustomOptionListsRepository.getRanked("relationshipType"));
-  const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.getRanked("gender"));
-  const [pronounsOptions, setPronounsOptions] = useState(() => CustomOptionListsRepository.getRanked("pronouns"));
-  const [contraceptionOptions, setContraceptionOptions] = useState(() => CustomOptionListsRepository.getRanked("contraception"));
+  const [relationshipTypeOptions, setRelationshipTypeOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("relationshipType"), [], []);
+  const [genderOptions, setGenderOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("gender"), [], []);
+  const [pronounsOptions, setPronounsOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("pronouns"), [], []);
+  const [contraceptionOptions, setContraceptionOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
+  // — resolved once here for the Stated kinks/Limits overlap-warning
+  // check below.
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);
     if (draft) return draft.data;
@@ -1569,7 +1592,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           {/* ADDED — real ask: trans-inclusive, non-judgemental — free
               text, not a fixed dropdown of "approved" options. */}
           <SuggestField T={T} label="Gender" value={form.gender} onChange={set("gender")} options={genderOptions}
-            onAddNew={(v) => setGenderOptions(CustomOptionListsRepository.add("gender", v))} placeholder="e.g. Male, Female, Non-binary" />
+            onAddNew={(v) => { CustomOptionListsRepository.add("gender", v).then(setGenderOptions); }} placeholder="e.g. Male, Female, Non-binary" />
           {/* CHANGED — real ask, from a competitive-research finding:
               plain free text with no suggestions at all, the one field
               on this form that hadn't gotten the same SuggestField
@@ -1577,7 +1600,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
               anything, it just works" flexibility — this only adds
               suggestion chips, nothing is locked down. */}
           <SuggestField T={T} label="Pronouns" value={form.pronouns} onChange={set("pronouns")} options={pronounsOptions}
-            onAddNew={(v) => setPronounsOptions(CustomOptionListsRepository.add("pronouns", v))} placeholder="e.g. he/him, she/her, they/them" />
+            onAddNew={(v) => { CustomOptionListsRepository.add("pronouns", v).then(setPronounsOptions); }} placeholder="e.g. he/him, she/her, they/them" />
           <AgeField T={T} age={form.age} ageIsApprox={form.ageIsApprox} onChangeAge={set("age")} onChangeApprox={set("ageIsApprox")} />
           {/* ADDED 26 Aug 2026 — real ask: moved to the top of the form
               rather than buried in Location & logistics — the override
@@ -1615,7 +1638,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
         <SectionCard T={T} title="Relationship">
           <SelectField T={T} label="Rating" value={form.rating} onChange={set("rating")} options={RATING_OPTIONS} />
           <MultiSelectChips T={T} label="Relationship type" value={form.relationshipType} onChange={set("relationshipType")} options={relationshipTypeOptions} listName="relationshipType"
-            onAddNew={(v) => setRelationshipTypeOptions(CustomOptionListsRepository.add("relationshipType", v))} />
+            onAddNew={(v) => { CustomOptionListsRepository.add("relationshipType", v).then(setRelationshipTypeOptions); }} />
           <TagInput T={T} label="How did we meet?" value={form.howDidWeMeet} onChange={set("howDidWeMeet")} suggestions={howMetOptions} />
           <SelectField T={T} label="Meet again?" value={form.meetAgain} onChange={set("meetAgain")} options={MEET_AGAIN_OPTIONS} />
           {form.meetAgain === "No" && (
@@ -1688,7 +1711,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           <RegistryTagPicker T={T} label="Limits" value={form.limits} onChange={set("limits")} registry={KinkRegistry} excludeIds={form.statedKinks.map((s) => s.kinkId)} trackRole roleOptions={KINK_ROLE_OPTIONS} resolveSynonym={resolveKinkSynonym} analyzeEntry={analyzeKinkEntry} getRoleOptionsForKink={getKinkRoleOptions} />
           {(() => {
             const statedIds = new Set(form.statedKinks.map((s) => s.kinkId));
-            const overlapping = form.limits.filter((l) => statedIds.has(l.kinkId)).map((l) => KinkRegistry.getById(l.kinkId)?.name).filter(Boolean);
+            const overlapping = form.limits.filter((l) => statedIds.has(l.kinkId)).map((l) => kinkNameById.get(l.kinkId)).filter(Boolean);
             return overlapping.length > 0 ? (
               <div style={{ display: "flex", gap: 6, padding: "8px 0", alignItems: "flex-start" }}>
                 <AlertTriangle size={13} color={T.actionRed} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -1753,7 +1776,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
               onAddNew for a value not in the option list yet. */}
           {["female", "trans-male"].includes((form.gender || "").trim().toLowerCase()) && (
             <MultiSelectChips T={T} label="Contraception" value={form.contraception} onChange={set("contraception")} options={contraceptionOptions} listName="contraception"
-              onAddNew={(v) => setContraceptionOptions(CustomOptionListsRepository.add("contraception", v))} />
+              onAddNew={(v) => { CustomOptionListsRepository.add("contraception", v).then(setContraceptionOptions); }} />
           )}
           <MultiSelectChips T={T} label="Known to be on" value={form.knownPrepDoxy} onChange={set("knownPrepDoxy")} options={PREP_DOXY_OPTIONS} />
           <TextField T={T} label="Last tested date (if known)" value={form.lastTestedDate} onChange={set("lastTestedDate")} type="date" helper="Often unknown — leave blank, no pressure." />
@@ -1809,30 +1832,60 @@ function describeAvailabilityRule(r) {
 // Location & logistics as the edit sheet, plus the don't-meet-again
 // warning banner. ──
 function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, onNavigateToRecord, triggerDelete }) {
-  const contact = ContactRepository.getById(contactId);
+  // CHANGED — Phase 2 encryption groundwork: ContactRepository went
+  // async — this used to be a plain render-body const, previously
+  // flagged safe to leave alone "since it re-runs every render", the
+  // same reasoning that broke for RegistrySinglePicker/PregnancyTab
+  // once THEIR one real repository went async. Converted to a proper
+  // hook, kept at the very top (no hooks-before-guard issue — it
+  // already was above the `!contact` guard below).
+  const contact = useLoadedMemo(() => ContactRepository.getById(contactId), [contactId], null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
   // ADDED — real ask: "not just edit or archive contact but also
   // option to delete permanently."
   const [confirmDelete, setConfirmDelete] = useState(false);
   // ADDED 19 Aug 2026 — Anonymise mode, same read pattern as ContactsList.
-  const [privacy] = useState(() => PrivacySettingsRepository.getSettings());
+  const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const anonymise = privacy.anonymiseModeActive;
   const hideFurther = anonymise && privacy.hideFurtherEnabled;
   // ADDED — real ask: toggle to reveal blank fields, so it's obvious
   // what's actually missing rather than silently absent.
   const [showBlankFields, setShowBlankFields] = useState(false);
-  const [, forceRelink] = useState(0);
+  const [relinkVersion, forceRelink] = useState(0);
+  // CHANGED — Phase 2 encryption groundwork: ContactRepository went
+  // async — the "Linked contacts" section below used to filter/map
+  // ContactRepository.getAll() straight in the render body. Hoisted
+  // above this guard (hooks-before-guard), optional-chained since
+  // `contact` can still be null on the one render before it loads.
+  const linkedContactProfiles = useLoadedMemo(
+    () => ContactRepository.getAll().then((all) => all.filter((c) => (contact?.linkedContactIds || []).includes(c.id))),
+    [contact], []
+  );
+  // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
+  // async — the Timeline section below used to call
+  // EncounterRepository.getAll() straight in the render body (inside
+  // an IIFE). Hoisted above this guard for the same reason as
+  // linkedContactProfiles above.
+  const allEncounters = useLoadedMemo(() => EncounterRepository.getAll(), [], []);
+  // CHANGED — Phase 2 encryption groundwork: MyProfileRepository went
+  // async — hoisted above the guard (hooks-before-guard rule), same
+  // reasoning as linkedContactProfiles/allEncounters above.
+  const myProfile = useLoadedMemo(() => MyProfileRepository.getProfile(), [relinkVersion], { relationshipContactIds: [] });
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry
+  // are now async — resolved into lookup Maps here (hoisted above the
+  // guard), used by the Kink/Chems sections below.
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
+  const chemNameById = useLoadedMemo(async () => new Map((await ChemsRegistry.getAll()).map((c) => [c.id, c.name])), [], new Map());
   if (!contact) return null;
-  const myProfile = MyProfileRepository.getProfile();
   const isLinkedToMe = myProfile.relationshipContactIds.includes(contact.id);
-  const toggleLinkedToMe = () => {
-    if (isLinkedToMe) MyProfileRepository.unlinkRelationshipContact(contact.id);
-    else MyProfileRepository.linkRelationshipContact(contact.id);
+  const toggleLinkedToMe = async () => {
+    if (isLinkedToMe) await MyProfileRepository.unlinkRelationshipContact(contact.id);
+    else await MyProfileRepository.linkRelationshipContact(contact.id);
     forceRelink((v) => v + 1);
   };
 
-  const archive = () => { ContactRepository.archive(contact.id); refresh(); onBack(); };
+  const archive = async () => { await ContactRepository.archive(contact.id); refresh(); onBack(); };
   const flaggedDontMeetAgain = contact.meetAgain === "No";
   const methods = getContactableVia(contact);
 
@@ -1898,7 +1951,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
             This permanently deletes the contact — unlike archiving, there's no getting it back. Only use this for a genuinely erroneous or unwelcome entry.
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => { triggerDelete([contact]); refresh(); onBack(); }} style={{ ...btnStyle(T.actionRed, "filled"), padding: "8px 10px" }}>Delete permanently</button>
+            <button onClick={async () => { await triggerDelete([contact]); refresh(); onBack(); }} style={{ ...btnStyle(T.actionRed, "filled"), padding: "8px 10px" }}>Delete permanently</button>
             <button onClick={() => setConfirmDelete(false)} style={{ ...btnStyle(T.textSecondary, "outline"), padding: "8px 10px" }}>Cancel</button>
           </div>
         </div>
@@ -1940,7 +1993,6 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
             // (Encounter Count, Average/Highest Enjoyment, Last
             // Interaction) that motivated this section in the first
             // place.
-            const allEncounters = EncounterRepository.getAll();
             const summary = contactEncounterSummary(allEncounters, contact.id);
             const history = sortByDateDesc(
               allEncounters.filter((e) => e.attendeeIds.includes(contact.id) && !e.isArchived)
@@ -2039,11 +2091,11 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           ) : (
             <>
               <ReadRow T={T} label="Stated kinks" value={contact.statedKinks.map((sel) => {
-                const name = KinkRegistry.getById(sel.kinkId)?.name;
+                const name = kinkNameById.get(sel.kinkId);
                 return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
               }).filter(Boolean)} />
               <ReadRow T={T} label="Limits" value={contact.limits.map((sel) => {
-                const name = KinkRegistry.getById(sel.kinkId)?.name;
+                const name = kinkNameById.get(sel.kinkId);
                 return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
               }).filter(Boolean)} />
               <ReadRow T={T} label="Role" value={contact.bdsmRole} />
@@ -2057,7 +2109,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               "None known" rather than the row just disappearing —
               ReadRow's default behavior everywhere else (hide empty
               fields entirely) still applies to every other field. */}
-          <ReadRow T={T} label="Known chems" value={contact.knownChems.length > 0 ? contact.knownChems.map((id) => ChemsRegistry.getById(id)?.name).filter(Boolean) : "None known"} />
+          <ReadRow T={T} label="Known chems" value={contact.knownChems.length > 0 ? contact.knownChems.map((id) => chemNameById.get(id)).filter(Boolean) : "None known"} />
         </SectionCard>
 
         <SectionCard T={T} title="Physical & health">
@@ -2105,8 +2157,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
 
         {contact.linkedContactIds.length > 0 && (
           <SectionCard T={T} title="Linked contacts">
-            {ContactRepository.getAll()
-              .filter((c) => contact.linkedContactIds.includes(c.id))
+            {linkedContactProfiles
               .map((c) => (
                 <div key={c.id} onClick={() => onOpenContact(c.id)}
                   style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, color: T.contactsTeal, fontWeight: 600, cursor: "pointer" }}>
@@ -2137,14 +2188,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // pattern as every other cross-module settings read in this app —
   // toggling it in Settings and switching back to Contacts (a fresh
   // remount) picks up the new value naturally.
-  const [privacy] = useState(() => PrivacySettingsRepository.getSettings());
+  const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const anonymise = privacy.anonymiseModeActive;
   // ADDED 19 Aug 2026 — real ask: configurable inactive threshold.
-  const [inactiveThresholdDays] = useState(() => AppPreferencesRepository.getPreferences().inactiveThresholdDays);
+  const [inactiveThresholdDays] = useLoadedState(() => AppPreferencesRepository.getPreferences().inactiveThresholdDays, [], 90);
   const activeContacts = useMemo(() => contacts.filter((c) => !c.isArchived), [contacts]);
   // ADDED 18 Aug 2026 — loaded once here rather than per-card, needed
   // for the card's active-status dot (see ContactCard below).
-  const encounters = useMemo(() => EncounterRepository.getAll(), [contacts]);
+  const encounters = useLoadedMemo(() => EncounterRepository.getAll(), [contacts], []);
   // ADDED — real perf fix: was calling contactEncounterSummary(encounters,
   // id) per card AND per pair compared while sorting by "Last encounter"
   // — each call independently rescans the full encounters array. This
@@ -2185,6 +2236,12 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   const [filterHosts, setFilterHosts] = useState([]);
   const [filterDrives, setFilterDrives] = useState(false);
   const activeFilterCount = filterRoles.length + filterPositions.length + filterHosts.length + (filterDrives ? 1 : 0);
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
+  // — resolved once here (loaded, not per keystroke), read synchronously
+  // via .get() inside the `filtered` useMemo below, same "split slow-
+  // loading data from fast pure computation" split used elsewhere this
+  // session for a live search box.
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const searched = q
@@ -2192,7 +2249,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           [c.name, c.nickname, c.phone, c.snapchat, c.fabguys, c.fabswingers, c.recon, c.notes]
             .some((field) => (field || "").toLowerCase().includes(q))
           || [...c.statedKinks.map((s) => s.kinkId), ...c.limits.map((l) => l.kinkId)]
-              .map((id) => KinkRegistry.getById(id)?.name || "")
+              .map((id) => kinkNameById.get(id) || "")
               .some((name) => name.toLowerCase().includes(q))
         )
       : activeContacts;
@@ -2241,7 +2298,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       return displayName(a).localeCompare(displayName(b));
     });
     return sorted;
-  }, [activeContacts, query, sortBy, encounters, encounterSummaries, filterRoles, filterPositions, filterHosts, filterDrives]);
+  }, [activeContacts, query, sortBy, encounters, encounterSummaries, filterRoles, filterPositions, filterHosts, filterDrives, kinkNameById]);
 
   return (
     <div>
@@ -2318,7 +2375,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                         {(entry.city || entry.phone) && <span style={{ fontSize: 11, fontWeight: 400, color: T.textDisabled }}> · {[entry.city, entry.phone].filter(Boolean).join(" · ")}</span>}
                       </span>
                       {!entry.isArchived && (
-                        <span onClick={() => { ContactRepository.archive(entry.id); refresh(); }} style={{ fontSize: 11, fontWeight: 700, color: T.actionRed, cursor: "pointer" }}>Archive this one</span>
+                        <span onClick={async () => { await ContactRepository.archive(entry.id); refresh(); }} style={{ fontSize: 11, fontWeight: 700, color: T.actionRed, cursor: "pointer" }}>Archive this one</span>
                       )}
                     </div>
                   ))}
@@ -2347,11 +2404,11 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 record, enabled only when exactly one is selected —
                 exporting several at once as one file doesn't map to
                 "a single record to hand to a provider". */}
-            <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("contacts", ContactRepository.getById(selectedIds[0])); }}
+            <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("contacts", await ContactRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span onClick={() => { if (selectedIds.length > 0) { ContactRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            <span onClick={async () => { if (selectedIds.length > 0) { await ContactRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-            <span onClick={() => {
+            <span onClick={async () => {
               if (selectedIds.length === 0) return;
               if (window.confirm(`Delete ${selectedIds.length} contact${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
                 // CHANGED 26 Aug 2026 — now uses the shared
@@ -2360,8 +2417,8 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 // behavior, not just bulk. Still captures full records
                 // BEFORE deleting via getAll(), not the possibly-stale
                 // `contacts` prop.
-                const toRestore = ContactRepository.getAll().filter((c) => selectedIds.includes(c.id));
-                triggerDelete(toRestore);
+                const toRestore = (await ContactRepository.getAll()).filter((c) => selectedIds.includes(c.id));
+                await triggerDelete(toRestore);
                 refresh();
                 exitSelectMode();
               }
@@ -2468,7 +2525,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           {filtered.map((c) => <ContactCard key={c.id} contact={c} onOpen={onOpen} T={T} summary={encounterSummaries.get(c.id) || EMPTY_ENCOUNTER_SUMMARY} anonymise={anonymise} inactiveThresholdDays={inactiveThresholdDays}
             activeFilters={activeFilterCount > 0 ? { roles: filterRoles, positions: filterPositions, hosts: filterHosts, drives: filterDrives } : null}
             selectMode={selectMode} selected={selectedIds.includes(c.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }}
-            onToggleFavourite={(id) => { ContactRepository.update(id, { favourited: !c.favourited }); refresh(); }} />)}
+            onToggleFavourite={async (id) => { await ContactRepository.update(id, { favourited: !c.favourited }); refresh(); }} />)}
         </div>
       )}
 
@@ -2519,7 +2576,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
 }
 
 export default function ContactsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, registerModuleBackHandler } = {}) {
-  const [contacts, setContacts] = useState(() => loadContacts());
+  const [contacts, setContacts] = useLoadedState(() => loadContacts(), [], []);
   const refresh = () => setContacts(loadContacts());
   // ADDED 19 Aug 2026 — real undo/redo, same shared mechanism as
   // Encounters — see editUndoHelpers.js.
@@ -2554,9 +2611,9 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
   // two mechanisms consistent rather than inventing a second pattern.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
   const undoTimerRef = useRef(null);
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => ContactRepository.restore(record));
+    for (const record of deleteToast.records) await ContactRepository.restore(record);
     refresh();
     clearTimeout(undoTimerRef.current);
     // Records are back — offer a brief "redo" (re-delete) in case the
@@ -2564,10 +2621,10 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
   };
-  const redoDelete = () => {
+  const redoDelete = async () => {
     if (!deleteToast) return;
-    TrashRepository.add("contacts", deleteToast.records);
-    deleteToast.records.forEach((r) => ContactRepository.delete(r.id));
+    await TrashRepository.add("contacts", deleteToast.records);
+    for (const r of deleteToast.records) await ContactRepository.delete(r.id);
     refresh();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
@@ -2575,9 +2632,9 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
   // Single source of truth for "delete this record safely" — Trash
   // write + toast, used identically whether triggered from the List's
   // bulk-select toolbar or a single record's own Profile screen.
-  const triggerDelete = (records) => {
-    TrashRepository.add("contacts", records);
-    records.forEach((r) => ContactRepository.delete(r.id));
+  const triggerDelete = async (records) => {
+    await TrashRepository.add("contacts", records);
+    for (const r of records) await ContactRepository.delete(r.id);
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -2629,16 +2686,16 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
     return () => registerModuleBackHandler(null);
   }, [editingContact, showMyProfile, showImportProfile, screen, registerModuleBackHandler]);
 
-  const saveEdit = (form) => {
+  const saveEdit = async (form) => {
     if (editingContact && editingContact.id) {
       // ADDED 19 Aug 2026 — real undo/redo: snapshot right before the
       // real update happens, so undo restores the genuine pre-edit
       // state.
-      editUndo.captureBeforeEdit(editingContact.id);
-      ContactRepository.update(editingContact.id, form);
-      editUndo.notifyEdited(editingContact.id);
+      await editUndo.captureBeforeEdit(editingContact.id);
+      await ContactRepository.update(editingContact.id, form);
+      await editUndo.notifyEdited(editingContact.id);
     } else {
-      ContactRepository.create(form);
+      await ContactRepository.create(form);
     }
     refresh();
     setEditingContact(null);
@@ -2671,7 +2728,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
             onOpenMyProfile={() => setShowMyProfile(true)} onOpenImportProfile={() => setShowImportProfile(true)} refresh={refresh}
             deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />
         ) : (
-          <ContactProfile contactId={activeContactId} T={T} onBack={backToList} onEdit={(id) => setEditingContact(ContactRepository.getById(id))} onOpenContact={openProfile} refresh={refresh} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} />
+          <ContactProfile contactId={activeContactId} T={T} onBack={backToList} onEdit={async (id) => setEditingContact(await ContactRepository.getById(id))} onOpenContact={openProfile} refresh={refresh} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} />
         )}
 
         {editingContact !== null && (

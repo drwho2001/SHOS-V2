@@ -84,12 +84,23 @@ let seedLogs = [
   { id: "log_014", medicationId: "med_005", type: "dose", delta: -21, date: daysAgo(45, 9), voided: false },
 ];
 
-// Real startup: load whatever's actually been saved before. On a
-// genuinely first run, fall back to the seed data above.
-let logs = storage.load(STORAGE_KEY, seedLogs);
+// CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
+// loadPromise pattern, same as every other module-load-cached
+// repository converted this session (see CLAUDE.md).
+let logs = null;
+let nextLogNumber = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (logs === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedLogs);
+    logs = await loadPromise;
+    nextLogNumber = computeNextLogNumber(logs);
+  }
+  return logs;
+}
 
-function persist() {
-  storage.save(STORAGE_KEY, logs);
+async function persist() {
+  await storage.save(STORAGE_KEY, logs);
 }
 
 // Derived from actual IDs present, not logs.length — same fix already
@@ -101,7 +112,6 @@ function computeNextLogNumber(existingLogs) {
   });
   return (numbers.length ? Math.max(...numbers) : 0) + 1;
 }
-let nextLogNumber = computeNextLogNumber(logs);
 
 function generateLogId() {
   const id = `log_${String(nextLogNumber).padStart(3, "0")}`;
@@ -118,14 +128,16 @@ export const LogRepository = {
   // or its stock/adherence calculations would ask for. Includes voided
   // entries; callers that want to exclude them (e.g. stock math) filter
   // on `voided` themselves, same principle as isArchived above.
-  getForMedication(medicationId) {
+  async getForMedication(medicationId) {
+    await ensureLoaded();
     return structuredClone(logs.filter((l) => l.medicationId === medicationId).map((l) => ({ ...DEFAULT_LOG_ENTRY, ...l })));
   },
 
   // Every log entry across every medication — what the cross-medication
   // Log tab feed needs. Returns copies, not the live stored array/objects
   // — same reasoning as every other repository's getAll().
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(logs.map((l) => ({ ...DEFAULT_LOG_ENTRY, ...l })));
   },
 
@@ -134,7 +146,8 @@ export const LogRepository = {
   // optional — most dose entries won't set them, same as Notion's own
   // schema (Reason and Side effects were never required fields there
   // either).
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     const newEntry = {
       id: generateLogId(),
       medicationId: data.medicationId,
@@ -147,7 +160,7 @@ export const LogRepository = {
       notes: data.notes ?? "",
     };
     logs = [...logs, newEntry];
-    persist();
+    await persist();
     return newEntry;
   },
 
@@ -156,7 +169,8 @@ export const LogRepository = {
   // There's deliberately no 4th "Correction" log type: this just changes
   // the fact that was recorded, and Current Stock re-derives itself
   // automatically next time it's calculated.
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updatedEntry = null;
     logs = logs.map((l) => {
       if (l.id !== id) return l;
@@ -170,13 +184,13 @@ export const LogRepository = {
       updatedEntry = { ...l, ...changes, updatedAt: new Date().toISOString() };
       return updatedEntry;
     });
-    persist();
+    await persist();
     return updatedEntry;
   },
 
   // Marks an entry as voided rather than deleting it — the entry is kept
   // for history, but excluded from stock/adherence math going forward.
-  void(id) {
+  async void(id) {
     return this.update(id, { voided: true });
   },
 
@@ -184,7 +198,7 @@ export const LogRepository = {
   // explicit scope call: undo/redo should apply only within the module/
   // page it happened on, not as a cross-module action history — this
   // stays exactly that: reversing one specific void, nothing more.
-  unvoid(id) {
+  async unvoid(id) {
     return this.update(id, { voided: false });
   },
 
@@ -195,16 +209,17 @@ export const LogRepository = {
   // Medication needs to delete its own log history too, not just leave
   // it dangling. Real delete, not a field clear — called by
   // medicationRepository.js's own delete().
-  deleteForMedication(medicationId) {
+  async deleteForMedication(medicationId) {
+    await ensureLoaded();
     logs = logs.filter((l) => l.medicationId !== medicationId);
-    persist();
+    await persist();
   },
 
   // Wholesale replace — used only by backup restore. See ContactRepository
   // for the same pattern and reasoning.
-  replaceAll(newLogs) {
+  async replaceAll(newLogs) {
     logs = newLogs;
     nextLogNumber = computeNextLogNumber(logs);
-    persist();
+    await persist();
   },
 };

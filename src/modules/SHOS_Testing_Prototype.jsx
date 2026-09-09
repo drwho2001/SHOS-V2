@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCcw } from "@phosphor-icons/react";
 import { useEditUndo } from "../calculations/editUndoHelpers";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import PartnerNotificationSheet from "./SHOS_PartnerNotification_Prototype";
 import { PartnerNotificationRepository } from "../repositories/partnerNotificationRepository";
@@ -105,8 +106,14 @@ function isRecentTest(test, allTests) {
 // reads as ACTION.gold — the "archive" tone this app's own design
 // tokens already set aside for exactly this, previously unused —
 // rather than a full-strength red/green that implies current status.
-function computeTestDotColor(test, allTests, T, revealEarly = false) {
-  const resultNames = test.resultIds.map((id) => ResultsRegistry.getById(id)?.name).filter(Boolean);
+// CHANGED — Phase 2 encryption groundwork: ResultsRegistry is now
+// async — this used to call it directly on every render for every
+// test row, which breaks once getById returns a Promise. Now takes a
+// pre-resolved `resultNameById` lookup Map instead (built once via
+// useLoadedMemo by each caller), same "resolve to a lookup ahead of
+// time" pattern used throughout this session.
+function computeTestDotColor(test, allTests, T, resultNameById, revealEarly = false) {
+  const resultNames = (test.resultIds || []).map((id) => resultNameById.get(id)).filter(Boolean);
   const resultPending = test.resultDate && new Date(test.resultDate) > new Date() && !revealEarly;
   if (resultPending) return ACTION.amber;
   if (!isRecentTest(test, allTests)) return ACTION.gold;
@@ -219,11 +226,24 @@ function ReadRow({ label, value, T }) {
 // Organism could silently create a near-duplicate registry entry.
 // Fixed the same way: fuzzyIncludes narrowing while typing, and
 // findClosestMatch before creating a genuinely new single entry.
+// CHANGED — Phase 2 encryption groundwork: OrganismRegistry is now
+// async — allEntries loaded via useLoadedMemo instead of a plain
+// render-body call; nameFor's archived-entry fallback resolved via a
+// separate missingNames lookup (built once per render from whichever
+// selected ids aren't in allEntries) rather than a synchronous
+// registry.getById() call; commit/acceptPendingSuggestion/
+// dismissPendingSuggestion now await registry.findOrCreate().
 function RegistryTagPicker({ label, value, onChange, T, registry, placeholder }) {
   const [draft, setDraft] = useState("");
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
-  const allEntries = registry.getAll().filter((e) => !e.isArchived);
-  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name || "?";
+  const allEntries = useLoadedMemo(() => registry.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  const missingNames = useLoadedMemo(async () => {
+    const missingIds = value.filter((id) => !allEntries.some((e) => e.id === id));
+    const map = new Map();
+    await Promise.all(missingIds.map(async (id) => { const e = await registry.getById(id); if (e) map.set(id, e.name); }));
+    return map;
+  }, [value, allEntries], new Map());
+  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || missingNames.get(id) || "?";
   const draftTrimmedForFilter = draft.trim();
   const visibleSuggestions = (
     draftTrimmedForFilter
@@ -231,7 +251,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder })
       : allEntries
   ).filter((e) => !value.includes(e.id)).slice(0, 10);
 
-  const commit = () => {
+  const commit = async () => {
     const raw = draft.trim();
     if (!raw) return;
     const parts = raw.split(",").map((t) => t.trim()).filter(Boolean);
@@ -240,21 +260,21 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder })
       if (closest) { setPendingSuggestion({ typedAs: parts[0], suggestion: closest }); setDraft(""); return; }
     }
     const newIds = [];
-    parts.forEach((part) => {
-      const entry = registry.findOrCreate(part);
+    for (const part of parts) {
+      const entry = await registry.findOrCreate(part);
       if (entry && !value.includes(entry.id) && !newIds.includes(entry.id)) newIds.push(entry.id);
-    });
+    }
     if (newIds.length > 0) onChange([...value, ...newIds]);
     setDraft("");
   };
   const tapSuggestion = (entry) => { if (!value.includes(entry.id)) onChange([...value, entry.id]); };
-  const acceptPendingSuggestion = () => {
-    const entry = registry.findOrCreate(pendingSuggestion.suggestion);
+  const acceptPendingSuggestion = async () => {
+    const entry = await registry.findOrCreate(pendingSuggestion.suggestion);
     if (entry) tapSuggestion(entry);
     setPendingSuggestion(null);
   };
-  const dismissPendingSuggestion = () => {
-    const entry = registry.findOrCreate(pendingSuggestion.typedAs);
+  const dismissPendingSuggestion = async () => {
+    const entry = await registry.findOrCreate(pendingSuggestion.typedAs);
     if (entry) tapSuggestion(entry);
     setPendingSuggestion(null);
   };
@@ -322,10 +342,20 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder })
 // than one — the picker itself was the ONLY thing artificially
 // restricting this to a single value, so converting it is a safe,
 // well-isolated change, not a ripple into other logic.
+// CHANGED — Phase 2 encryption groundwork: ResultsRegistry is now
+// async — same treatment as RegistryTagPicker above (allEntries via
+// useLoadedMemo, a missingNames fallback lookup, addResult awaits
+// findOrCreate).
 function RegistryMultiResultPicker({ label, value, onChange, T, registry, placeholder }) {
   const [draft, setDraft] = useState("");
-  const allEntries = registry.getAll().filter((e) => !e.isArchived);
-  const currentNames = value.map((id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name).filter(Boolean);
+  const allEntries = useLoadedMemo(() => registry.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  const missingNames = useLoadedMemo(async () => {
+    const missingIds = value.filter((id) => !allEntries.some((e) => e.id === id));
+    const map = new Map();
+    await Promise.all(missingIds.map(async (id) => { const e = await registry.getById(id); if (e) map.set(id, e.name); }));
+    return map;
+  }, [value, allEntries], new Map());
+  const currentNames = value.map((id) => allEntries.find((e) => e.id === id)?.name || missingNames.get(id)).filter(Boolean);
   // CHANGED 1 Sep 2026 — same real omission as the Organism picker
   // above: never narrowed against typed text. Fixed the same way.
   const draftTrimmedForFilter = draft.trim();
@@ -335,10 +365,10 @@ function RegistryMultiResultPicker({ label, value, onChange, T, registry, placeh
       : allEntries
   ).filter((e) => !value.includes(e.id)).slice(0, 10);
 
-  const addResult = (raw) => {
+  const addResult = async (raw) => {
     const trimmed = raw.trim();
     if (!trimmed) return;
-    const entry = registry.findOrCreate(trimmed);
+    const entry = await registry.findOrCreate(trimmed);
     if (entry && !value.includes(entry.id)) onChange([...value, entry.id]);
     setDraft("");
   };
@@ -393,16 +423,16 @@ function AttachmentManager({ testId, attachments, onChanged, T }) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      TestingRepository.addAttachment(testId, { title: file.name, type: pendingType, fileDataUrl: reader.result });
+    reader.onload = async () => {
+      await TestingRepository.addAttachment(testId, { title: file.name, type: pendingType, fileDataUrl: reader.result });
       onChanged();
     };
     reader.readAsDataURL(file);
     e.target.value = "";
   };
 
-  const remove = (attachmentId) => {
-    TestingRepository.removeAttachment(testId, attachmentId);
+  const remove = async (attachmentId) => {
+    await TestingRepository.removeAttachment(testId, attachmentId);
     onChanged();
   };
 
@@ -479,7 +509,10 @@ function LinkPicker({ items, onPick, T, placeholder = "Search by name…" }) {
 // ── Add/Edit sheet ──
 function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord, T }) {
   const isNew = !testId;
-  const existing = testId ? TestingRepository.getById(testId) : null;
+  // CHANGED — Phase 2 encryption groundwork: ResultsRegistry is now
+  // async — resolved once here for the live "routine retest suggested"
+  // preview below, which reads it on every render as the form changes.
+  const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
   // ADDED 26 Aug 2026 — real ask: "Date of treatment should have a
   // clinic visit link... open the linked clinic visit when physically
   // there, and fill in remaining details." IMPORTANT: this deliberately
@@ -493,7 +526,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   // directly, keeping one single source of truth instead of adding a
   // second, unsynced way to represent the same relationship.
   const [linkVersion, setLinkVersion] = useState(0);
-  const linkedVisits = useMemo(() => (testId ? ClinicVisitsRepository.getByLinkedTest(testId) : []), [testId, linkVersion]);
+  const linkedVisits = useLoadedMemo(() => (testId ? ClinicVisitsRepository.getByLinkedTest(testId) : []), [testId, linkVersion], []);
   // CHANGED 1 Sep 2026 — real ask: "old options listed first and not
   // searchable" — this list had no .sort() at all (storage order =
   // oldest first) and rendered into a bare native <select>, the exact
@@ -502,9 +535,9 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   // RelationPicker instance. Sorted newest-first now; searchText adds
   // clinician name(s) as a second match field, same "search by name or
   // [this module's nearest equivalent field]" spec used elsewhere.
-  const unlinkedVisits = useMemo(() => {
+  const unlinkedVisits = useLoadedMemo(async () => {
     if (!testId) return [];
-    return ClinicVisitsRepository.getAll()
+    return (await ClinicVisitsRepository.getAll())
       .filter((v) => !v.isArchived && !(v.linkedTestIds || []).includes(testId))
       .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
       .map((v) => ({
@@ -512,11 +545,11 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
         name: `${v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(v.date)}`,
         searchText: (v.clinician || []).join(" ").toLowerCase(),
       }));
-  }, [testId, linkVersion]);
-  const linkVisit = (visitId) => {
-    const visit = ClinicVisitsRepository.getById(visitId);
+  }, [testId, linkVersion], []);
+  const linkVisit = async (visitId) => {
+    const visit = await ClinicVisitsRepository.getById(visitId);
     if (!visit) return;
-    ClinicVisitsRepository.update(visitId, { linkedTestIds: [...(visit.linkedTestIds || []), testId] });
+    await ClinicVisitsRepository.update(visitId, { linkedTestIds: [...(visit.linkedTestIds || []), testId] });
     setLinkVersion((v) => v + 1);
   };
   // ADDED — real ask: there was no way to remove a linked clinic visit,
@@ -524,10 +557,10 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   // small dedicated unlink control alongside each row, rather than a
   // long-press gesture (no touch-timing logic needed, and it's
   // actually more discoverable).
-  const unlinkVisit = (visitId) => {
-    const visit = ClinicVisitsRepository.getById(visitId);
+  const unlinkVisit = async (visitId) => {
+    const visit = await ClinicVisitsRepository.getById(visitId);
     if (!visit) return;
-    ClinicVisitsRepository.update(visitId, { linkedTestIds: (visit.linkedTestIds || []).filter((id) => id !== testId) });
+    await ClinicVisitsRepository.update(visitId, { linkedTestIds: (visit.linkedTestIds || []).filter((id) => id !== testId) });
     setLinkVersion((v) => v + 1);
   };
   // CHANGED — real ask, after shipping this as read-only: link/unlink
@@ -537,30 +570,30 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   // field), this just adds a second EDITABLE entry point into it,
   // exactly like Clinic Visits' linkedTestIds already has.
   const [symptomLinkVersion, setSymptomLinkVersion] = useState(0);
-  const linkedSymptoms = useMemo(() => (testId ? SymptomLogRepository.getAll().filter((s) => (s.relatedTestIds || []).includes(testId)) : []), [testId, symptomLinkVersion]);
-  const unlinkedSymptoms = useMemo(() => {
+  const linkedSymptoms = useLoadedMemo(async () => (testId ? (await SymptomLogRepository.getAll()).filter((s) => (s.relatedTestIds || []).includes(testId)) : []), [testId, symptomLinkVersion], []);
+  const unlinkedSymptoms = useLoadedMemo(async () => {
     if (!testId) return [];
-    return SymptomLogRepository.getAll()
+    return (await SymptomLogRepository.getAll())
       .filter((s) => !(s.relatedTestIds || []).includes(testId))
       .sort((a, b) => new Date(b.dateStarted || 0) - new Date(a.dateStarted || 0))
       .map((s) => ({ id: s.id, name: `${s.title || "Symptom entry"} · ${formatDate(s.dateStarted)}`, searchText: "" }));
-  }, [testId, symptomLinkVersion]);
-  const linkSymptom = (symptomId) => {
-    const entry = SymptomLogRepository.getById(symptomId);
+  }, [testId, symptomLinkVersion], []);
+  const linkSymptom = async (symptomId) => {
+    const entry = await SymptomLogRepository.getById(symptomId);
     if (!entry) return;
-    SymptomLogRepository.update(symptomId, { relatedTestIds: [...(entry.relatedTestIds || []), testId] });
+    await SymptomLogRepository.update(symptomId, { relatedTestIds: [...(entry.relatedTestIds || []), testId] });
     setSymptomLinkVersion((v) => v + 1);
   };
-  const unlinkSymptom = (symptomId) => {
-    const entry = SymptomLogRepository.getById(symptomId);
+  const unlinkSymptom = async (symptomId) => {
+    const entry = await SymptomLogRepository.getById(symptomId);
     if (!entry) return;
-    SymptomLogRepository.update(symptomId, { relatedTestIds: (entry.relatedTestIds || []).filter((id) => id !== testId) });
+    await SymptomLogRepository.update(symptomId, { relatedTestIds: (entry.relatedTestIds || []).filter((id) => id !== testId) });
     setSymptomLinkVersion((v) => v + 1);
   };
   // ADDED 19 Aug 2026 — real in-app editable option list.
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const sampleTypeOptions = useMemo(() => CustomOptionListsRepository.getRanked("sampleType"), []);
+  const sampleTypeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("sampleType"), [], []);
   // ADDED 19 Aug 2026 — draft autosave.
   const draftKey = `testEdit_${testId || "new"}`;
   const [form, setForm] = useState(() => {
@@ -569,34 +602,49 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
     // ADDED — real ask: Clinic Card's "TOC 2 week" shortcut — a real
     // new record starting with real values (a 2-weeks-out date,
     // testing for C&S), not always a totally blank form.
-    return existing || { ...DEFAULT_TEST, ...prefillData };
+    return { ...DEFAULT_TEST, ...prefillData };
   });
   const [draftRestored] = useState(() => !!loadDraft(draftKey));
-  // CHANGED — real bug fix, same as Encounters: fired on the very
-  // first render too, immediately autosaving the pristine, untouched
-  // default form the instant this sheet opened — so just opening and
-  // closing it with zero real edits left a draft behind, later shown
-  // as a false "Restored unsaved changes" prompt. Skips the initial
-  // mount with a ref, only saves once the form has genuinely changed.
-  const isFirstRender = useRef(true);
+  // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+  // async — `existing` used to be read synchronously above, straight
+  // into the `form` lazy initializer. Moved into a real load effect,
+  // same shape as Encounters' own EncounterEditSheet fix (see that
+  // file's own comment for the full StrictMode reasoning): an
+  // `isDirty` ref that only `set()` — the one path a genuine user edit
+  // takes — is allowed to flip, so the autosave effect never has to
+  // infer "was this the load or a real edit" from render order/timing,
+  // which is what a naive "skip the next autosave" ref got wrong under
+  // StrictMode's mount double-invoke.
+  const isDirty = useRef(false);
   useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (isNew || loadDraft(draftKey)) return;
+    (async () => {
+      const real = await TestingRepository.getById(testId);
+      if (real) setForm(real);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testId]);
+  useEffect(() => {
+    if (!isDirty.current) return;
     saveDraft(draftKey, form);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
-  const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
+  const set = (key) => (v) => { isDirty.current = true; setForm((f) => ({ ...f, [key]: v })); };
   const canSave = form.title.trim().length > 0 || form.testingFor.length > 0;
 
-  const save = () => {
+  const save = async () => {
     clearDraft(draftKey);
     if (isNew) {
-      const created = TestingRepository.create(form);
+      const created = await TestingRepository.create(form);
       onSaved(created.id);
     } else {
       // ADDED 19 Aug 2026 — real undo/redo extension.
-      onBeforeEdit?.(testId);
-      TestingRepository.update(testId, form);
-      onAfterEdit?.(testId);
+      // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited,
+      // and now TestingRepository itself (Phase 2 encryption
+      // groundwork), are all async — every step here awaited.
+      await onBeforeEdit?.(testId);
+      await TestingRepository.update(testId, form);
+      await onAfterEdit?.(testId);
       onSaved(testId);
     }
   };
@@ -719,7 +767,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
               every 3 months, same as everything else, so one uniform
               interval applies regardless of testingFor. */}
           {(() => {
-            const suggested = suggestedRoutineRetestDate(form);
+            const suggested = suggestedRoutineRetestDate(form, resultNameById);
             return suggested ? (
               <div style={{ fontSize: 12, color: T.healthcareBlue, background: `${T.healthcareBlue}12`, borderRadius: radius.sm, padding: "8px 10px", marginTop: 6 }}>
                 Routine retest suggested around {formatDate(suggested)} (3 months after this test).
@@ -758,7 +806,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
 
         {!isNew && (
           <SectionCard title="Attachments" T={T}>
-            <AttachmentManager testId={testId} attachments={TestingRepository.getById(testId)?.attachments || []} onChanged={() => setForm(TestingRepository.getById(testId))} T={T} />
+            <AttachmentManager testId={testId} attachments={form.attachments || []} onChanged={async () => setForm(await TestingRepository.getById(testId))} T={T} />
           </SectionCard>
         )}
         {isNew && (
@@ -773,7 +821,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
 
 // ── Detail view ──
 function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDelete, refresh, allTests }) {
-  const [test, setTest] = useState(() => TestingRepository.getById(testId));
+  const [test, setTest] = useLoadedState(() => TestingRepository.getById(testId), [testId], null);
   // ADDED — real ask: "hide result until result date... similar to
   // Dom/sub half-toggle." Soft-masked by default rather than fully
   // hidden with no way to see it — a real result is real data, not
@@ -790,24 +838,49 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   // re-reads from the repository — PartnerNotificationRepository isn't
   // itself reactive state, so nothing else here would trigger a
   // re-render after the sheet creates/edits/deletes a list.
-  const [, setPartnerNotifyVersion] = useState(0);
+  const [partnerNotifyVersion, setPartnerNotifyVersion] = useState(0);
+  // CHANGED — Phase 2 encryption groundwork: OrganismRegistry/
+  // ResultsRegistry are now async — pre-resolved into lookup Maps here
+  // (hoisted above the `!test` guard, same hooks-before-guard rule as
+  // everywhere else this session) so partnerNotifyList/organismNames/
+  // resultNames/computeTestDotColor below can all read them
+  // synchronously via .get().
+  const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
+  const organismNameById = useLoadedMemo(async () => new Map((await OrganismRegistry.getAll()).map((o) => [o.id, o.name])), [], new Map());
+  // CHANGED — PartnerNotificationRepository went async; hoisted above
+  // the `!test` guard below (hooks-before-guard rule) since this used
+  // to be a plain render-body call. Recomputes positivity from `test`
+  // itself (optional-chained — safe on the one render before `test`
+  // has loaded) rather than reusing `isPositive`, which is declared
+  // after the guard and can't be referenced here.
+  const partnerNotifyList = useLoadedMemo(() => {
+    const positive = (test?.resultIds || []).map((id) => resultNameById.get(id)).some((r) => r?.toLowerCase() === "positive");
+    return positive ? PartnerNotificationRepository.getByTestId(testId) : null;
+  }, [testId, test, partnerNotifyVersion, resultNameById], null);
   // ADDED — Measurements inline entry point (see import comment above).
   const [showAddMeasurement, setShowAddMeasurement] = useState(false);
-  const [measurements, setMeasurements] = useState(() => MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedTestId === testId));
-  const refreshMeasurements = () => setMeasurements(MeasurementRepository.getAll().filter((m) => !m.isArchived && m.linkedTestId === testId));
-  if (!test) return null;
-
-  const organismNames = test.organismIds.map((id) => OrganismRegistry.getById(id)?.name).filter(Boolean);
-  const resultNames = test.resultIds.map((id) => ResultsRegistry.getById(id)?.name).filter(Boolean);
-  const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
-  const partnerNotifyList = isPositive ? PartnerNotificationRepository.getByTestId(testId) : null;
-  const resultPending = test.resultDate && new Date(test.resultDate) > new Date() && !revealEarly;
+  // CHANGED — Phase 2 encryption groundwork: MeasurementRepository is
+  // now async — this used to chain .filter() straight onto getAll(),
+  // the same bug class fixed repeatedly this session for other
+  // repositories.
+  const [measurements, setMeasurements] = useLoadedState(async () => (await MeasurementRepository.getAll()).filter((m) => !m.isArchived && m.linkedTestId === testId), [testId], []);
+  const refreshMeasurements = async () => setMeasurements((await MeasurementRepository.getAll()).filter((m) => !m.isArchived && m.linkedTestId === testId));
+  // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository went
+  // async — hoisted above the `!test` guard, same reasoning as
+  // partnerNotifyList above (hooks-before-guard rule).
+  const relatedSymptoms = useLoadedMemo(() => SymptomLogRepository.getAll().then((all) => all.filter((s) => (s.relatedTestIds || []).includes(testId))), [testId], []);
   // ADDED 19 Aug 2026 — real data, previously built but never
   // displayed. See the import comment above for the full reasoning.
-  const linkedVisits = ClinicVisitsRepository.getByLinkedTest(testId);
-  // ADDED — reverse lookup into Symptom Log's own relatedTestIds, see
-  // the SymptomLogRepository import comment above.
-  const relatedSymptoms = SymptomLogRepository.getAll().filter((s) => (s.relatedTestIds || []).includes(testId));
+  // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
+  // went async — hoisted above the `!test` guard, same reasoning as
+  // relatedSymptoms/partnerNotifyList above.
+  const linkedVisits = useLoadedMemo(() => ClinicVisitsRepository.getByLinkedTest(testId), [testId], []);
+  if (!test) return null;
+
+  const organismNames = (test.organismIds || []).map((id) => organismNameById.get(id)).filter(Boolean);
+  const resultNames = (test.resultIds || []).map((id) => resultNameById.get(id)).filter(Boolean);
+  const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
+  const resultPending = test.resultDate && new Date(test.resultDate) > new Date() && !revealEarly;
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -826,7 +899,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-            <button onClick={() => { triggerDelete([test]); refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
+            <button onClick={async () => { await triggerDelete([test]); refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
           </div>
         </div>
       )}
@@ -839,7 +912,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
               — the fix here just hadn't reached this screen too.
               Shares the same recency-aware logic as the list row now
               (see computeTestDotColor's own comment). */}
-          <span style={{ width: 10, height: 10, borderRadius: radius.full, background: computeTestDotColor(test, allTests || [test], T, revealEarly), display: "inline-block" }} />
+          <span style={{ width: 10, height: 10, borderRadius: radius.full, background: computeTestDotColor(test, allTests || [test], T, resultNameById, revealEarly), display: "inline-block" }} />
           <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{test.title || "Untitled test"}</span>
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>{formatDate(test.date)}</div>
@@ -894,7 +967,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
             </div>
           )}
           {(() => {
-            const suggested = suggestedRoutineRetestDate(test);
+            const suggested = suggestedRoutineRetestDate(test, resultNameById);
             return suggested ? (
               <div style={{ fontSize: 12, color: T.healthcareBlue, background: `${T.healthcareBlue}12`, borderRadius: radius.sm, padding: "8px 10px", marginTop: 8 }}>
                 Routine retest suggested around {formatDate(suggested)}.
@@ -991,6 +1064,10 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
 
 // ── List / landing view ──
 function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
+  // CHANGED — Phase 2 encryption groundwork: ResultsRegistry is now
+  // async — resolved once here, used by both the search filter below
+  // and each row's own result names/dot color.
+  const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
   // ADDED 26 Aug 2026 — real ask: search within module, rolled out to
   // every module that didn't already have it (Contacts/Activity did).
   const [query, setQuery] = useState("");
@@ -998,8 +1075,8 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
     const base = [...tests].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
     const q = query.trim().toLowerCase();
     if (!q) return base;
-    return base.filter((t) => [t.title, t.setting, ...(t.testingFor || []), ...(t.resultIds || []).map((id) => ResultsRegistry.getById(id)?.name)].filter(Boolean).some((v) => v.toLowerCase().includes(q)));
-  }, [tests, query]);
+    return base.filter((t) => [t.title, t.setting, ...(t.testingFor || []), ...(t.resultIds || []).map((id) => resultNameById.get(id))].filter(Boolean).some((v) => v.toLowerCase().includes(q)));
+  }, [tests, query, resultNameById]);
   // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
   // to every module.
   const [selectMode, setSelectMode] = useState(false);
@@ -1072,15 +1149,15 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
             </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
                 record, enabled only when exactly one is selected. */}
-            <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("testing", TestingRepository.getById(selectedIds[0])); }}
+            <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("testing", await TestingRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span onClick={() => { if (selectedIds.length > 0) { TestingRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            <span onClick={async () => { if (selectedIds.length > 0) { await TestingRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-            <span onClick={() => {
+            <span onClick={async () => {
               if (selectedIds.length === 0) return;
               if (window.confirm(`Delete ${selectedIds.length} test${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
-                const toRestore = TestingRepository.getAll().filter((t) => selectedIds.includes(t.id));
-                triggerDelete(toRestore);
+                const toRestore = (await TestingRepository.getAll()).filter((t) => selectedIds.includes(t.id));
+                await triggerDelete(toRestore);
                 refresh();
                 exitSelectMode();
               }
@@ -1112,7 +1189,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
           </div>
         )}
         {sorted.map((t) => {
-          const resultNames = t.resultIds.map((id) => ResultsRegistry.getById(id)?.name).filter(Boolean);
+          const resultNames = (t.resultIds || []).map((id) => resultNameById.get(id)).filter(Boolean);
           const resultPending = t.resultDate && new Date(t.resultDate) > new Date();
           const isPositive = !resultPending && resultNames.some((r) => r.toLowerCase() === "positive");
           const isNegative = !resultPending && resultNames.some((r) => r.toLowerCase() === "negative");
@@ -1124,7 +1201,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
           // instead. `tests` (not the search-filtered `sorted`) is
           // passed so rank-based recency isn't skewed by an active
           // search query.
-          const dotColor = computeTestDotColor(t, tests, T);
+          const dotColor = computeTestDotColor(t, tests, T, resultNameById);
           return (
             <div key={t.id} onClick={() => selectMode ? toggleSelected(t.id) : onOpen(t.id)}
               onMouseDown={() => startPress(t.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(t.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
@@ -1189,32 +1266,32 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
   // TestingLanding (see that component's own comment) — tests/
   // deletedRecent/undoDelete/triggerDelete now live at the real module
   // level, shared by both TestingLanding and TestDetail.
-  const [tests, setTests] = useState(() => TestingRepository.getAll().filter((t) => !t.isArchived));
-  const refresh = () => setTests(TestingRepository.getAll().filter((t) => !t.isArchived));
+  const [tests, setTests] = useLoadedState(() => TestingRepository.getAll().then((all) => all.filter((t) => !t.isArchived)), [], []);
+  const refresh = () => { TestingRepository.getAll().then((all) => setTests(all.filter((t) => !t.isArchived))); };
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
   // implementation.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
   const undoTimerRef = useRef(null);
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => TestingRepository.restore(record));
+    for (const record of deleteToast.records) await TestingRepository.restore(record);
     refresh();
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
   };
-  const redoDelete = () => {
+  const redoDelete = async () => {
     if (!deleteToast) return;
-    TrashRepository.add("testing", deleteToast.records);
-    deleteToast.records.forEach((r) => TestingRepository.delete(r.id));
+    await TrashRepository.add("testing", deleteToast.records);
+    for (const r of deleteToast.records) await TestingRepository.delete(r.id);
     refresh();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
-  const triggerDelete = (records) => {
-    TrashRepository.add("testing", records);
-    records.forEach((r) => TestingRepository.delete(r.id));
+  const triggerDelete = async (records) => {
+    await TrashRepository.add("testing", records);
+    for (const r of records) await TestingRepository.delete(r.id);
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);

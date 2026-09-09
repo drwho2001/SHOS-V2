@@ -65,7 +65,7 @@ export function recordsToCSV(records) {
 // itself already knows which dataKeys are genuinely dated events and
 // leaves the rest (registries, singletons) untouched either way.
 export async function exportRecordsAsCSV(dataKey, label, dateRange = null) {
-  const { data } = buildBackup([dataKey], dateRange);
+  const { data } = await buildBackup([dataKey], dateRange);
   const records = data[dataKey];
   if (!Array.isArray(records) || records.length === 0) {
     throw new Error(dateRange ? `No ${label} in that date range — nothing to export.` : `No ${label} yet — nothing to export.`);

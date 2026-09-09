@@ -127,14 +127,25 @@ export const DEFAULT_APP_PREFERENCES = {
 };
 
 export const AppPreferencesRepository = {
-  getPreferences() {
-    const stored = storage.load(STORAGE_KEY, DEFAULT_APP_PREFERENCES);
+  // CHANGED — Phase 2 encryption groundwork (Sep 2026): both methods
+  // now `async`, `await`ing storage.load()/save() even though
+  // storageAdapter itself is still 100% synchronous today — same
+  // no-op-await approach as every other repository this session. This
+  // repository was missed from every earlier Phase 2 inventory (reads
+  // fresh per call, no module-load caching to grep for) — found only
+  // while scoping Phase 3. Its `lastActiveTab`/`lastActiveAt` feed
+  // App.jsx's `active` bootstrap state, already deliberately kept
+  // synchronous after an earlier attempt to convert it corrupted real
+  // stored data under StrictMode's double-invoke — see App.jsx's new
+  // `bootReady` gate, built alongside this conversion, for the fix.
+  async getPreferences() {
+    const stored = await storage.load(STORAGE_KEY, DEFAULT_APP_PREFERENCES);
     return { ...DEFAULT_APP_PREFERENCES, ...stored };
   },
 
-  update(changes) {
-    const updated = { ...this.getPreferences(), ...changes };
-    storage.save(STORAGE_KEY, updated);
+  async update(changes) {
+    const updated = { ...(await this.getPreferences()), ...changes };
+    await storage.save(STORAGE_KEY, updated);
     return updated;
   },
 };

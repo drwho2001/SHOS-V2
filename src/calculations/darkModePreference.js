@@ -47,8 +47,52 @@ function systemPrefersDark() {
   }
 }
 
-let currentValue = storage.load(STORAGE_KEY, systemPrefersDark());
+// CHANGED — Phase 2 encryption groundwork (Sep 2026): this is the one
+// remaining module-load-time storage read left in the whole codebase
+// after this session's repository sweep — found only because it's a
+// calculations file, not a repository/registry, so it was invisible
+// to every earlier grep-based inventory. Genuinely a different shape
+// from every other Phase 2 fix: useSyncExternalStore's own getSnapshot
+// must return a value SYNCHRONOUSLY — it has no async form at all, so
+// this can't be wrapped in ensureLoaded()/useLoadedState the way a
+// repository can. `currentValue` starts at the same safe fallback the
+// old code used (systemPrefersDark()), then a one-shot async correction
+// below awaits the real stored value and notifies listeners only if it
+// actually differs — a no-op for the common case (no explicit
+// preference saved yet, or it already matches the system default).
+// This resolves before any component's effects run (React's own
+// initial render, which registers this module's listeners via
+// subscribe(), happens synchronously before the microtask queue
+// this await schedules ever gets a turn) — so today, while
+// storageAdapter itself is still 100% synchronous, this is a same-tick
+// self-correction with no visible flash, not a real race. Worth
+// re-checking once storageAdapter goes fully async (Phase 3) — a
+// slower real load could then make that correction visible for anyone
+// whose saved preference differs from their system default.
+let currentValue = systemPrefersDark();
 const listeners = new Set();
+
+// CHANGED — Phase 4 (Sep 2026): this used to be a self-invoking IIFE
+// right here at module load. Real, pre-existing bug that only became
+// visible once storage.load() started needing an unlocked vault to
+// decrypt anything: module evaluation always happens before React (and
+// therefore App.jsx's own bootReady gate) ever runs, so for anyone with
+// App Lock on, this correction would ALWAYS fire before the vault
+// unlocked — not occasionally, every single cold boot — silently
+// failing to decrypt (storage.load()'s own try/catch swallows that and
+// returns the `currentValue` fallback unchanged) and never trying
+// again. A real saved dark-mode preference would silently never apply
+// for anyone using App Lock. Fixed the same way as the module-load-time
+// registry migrations found alongside this one: exported as a real
+// function instead, called once from App.jsx's own finishBootAfterUnlock()
+// — after a real unlock, whichever path got there.
+export async function syncDarkModePreferenceFromStorage() {
+  const stored = await storage.load(STORAGE_KEY, currentValue);
+  if (stored !== currentValue) {
+    currentValue = stored;
+    listeners.forEach((listener) => listener());
+  }
+}
 
 function setDarkModeValue(updater) {
   const next = typeof updater === "function" ? updater(currentValue) : updater;

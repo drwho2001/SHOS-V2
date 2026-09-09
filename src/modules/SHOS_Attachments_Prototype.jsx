@@ -7,6 +7,7 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 // retyped here. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 const TYPE_OPTIONS = ["Test result", "Prescription", "ID", "Photo", "Other"];
 
@@ -33,11 +34,11 @@ const TYPE_OPTIONS = ["Test result", "Prescription", "ID", "Photo", "Other"];
 // addAttachment/removeAttachment methods Testing/Clinic Visits' own
 // screens already use — no new deletion logic, no duplicate source of
 // truth.
-function loadAllAttachments() {
-  const fromTests = TestingRepository.getAll().filter((t) => !t.isArchived).flatMap((t) =>
+async function loadAllAttachments() {
+  const fromTests = (await TestingRepository.getAll()).filter((t) => !t.isArchived).flatMap((t) =>
     (t.attachments || []).map((a) => ({ ...a, sourceType: "test", sourceId: t.id, sourceTitle: t.title || (t.testingFor || []).join("/") || "Test" }))
   );
-  const fromVisits = ClinicVisitsRepository.getAll().filter((v) => !v.isArchived).flatMap((v) =>
+  const fromVisits = (await ClinicVisitsRepository.getAll()).filter((v) => !v.isArchived).flatMap((v) =>
     (v.attachments || []).map((a) => ({ ...a, sourceType: "clinicVisit", sourceId: v.id, sourceTitle: v.title || (v.reasonForVisit || []).join("/") || "Clinic visit" }))
   );
   return [...fromTests, ...fromVisits].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
@@ -66,12 +67,12 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
     registerModuleBackHandler(() => { onClose?.(); return true; });
     return () => registerModuleBackHandler(null);
   }, [registerModuleBackHandler, onClose]);
-  const all = useMemo(() => loadAllAttachments(), [refreshKey]);
+  const all = useLoadedMemo(() => loadAllAttachments(), [refreshKey], []);
   const filtered = filterType ? all.filter((a) => a.type === filterType) : all;
 
-  const handleDelete = (a) => {
-    if (a.sourceType === "test") TestingRepository.removeAttachment(a.sourceId, a.id);
-    else ClinicVisitsRepository.removeAttachment(a.sourceId, a.id);
+  const handleDelete = async (a) => {
+    if (a.sourceType === "test") await TestingRepository.removeAttachment(a.sourceId, a.id);
+    else await ClinicVisitsRepository.removeAttachment(a.sourceId, a.id);
     setRefreshKey((k) => k + 1);
   };
 

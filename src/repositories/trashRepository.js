@@ -37,18 +37,26 @@ export const MODULE_LABELS = {
   measurements: "Measurement",
 };
 
-function loadRaw() {
-  return storage.load(STORAGE_KEY, []);
+// CHANGED — real groundwork for encryption at rest (see CLAUDE.md's
+// Known Issues / the Notion Development log for the full plan): every
+// method below is now `async`, `await`ing storage.load()/save() even
+// though storageAdapter itself is still 100% synchronous today — a
+// no-op behaviorally, same real end-to-end proof as
+// customGroupsRepository.js's own first conversion. Chosen next
+// because every read/write here already happens fresh inside a
+// function too — no module-load-time caching to redesign.
+async function loadRaw() {
+  return await storage.load(STORAGE_KEY, []);
 }
-function saveRaw(items) {
-  storage.save(STORAGE_KEY, items);
+async function saveRaw(items) {
+  await storage.save(STORAGE_KEY, items);
 }
 
 export const TrashRepository = {
   // Called at the moment of deletion — records is an array (bulk
   // delete already captures an array; single delete passes [record]).
-  add(moduleKey, records) {
-    const items = loadRaw();
+  async add(moduleKey, records) {
+    const items = await loadRaw();
     const now = new Date().toISOString();
     const newEntries = records.map((record) => ({
       trashId: `trash_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -56,14 +64,14 @@ export const TrashRepository = {
       record,
       deletedAt: now,
     }));
-    saveRaw([...items, ...newEntries]);
+    await saveRaw([...items, ...newEntries]);
   },
 
   // Only returns entries still within the retention window — expired
   // ones are simply not shown, not actively purged by this call.
-  getAll() {
+  async getAll() {
     const cutoff = Date.now() - RETENTION_DAYS * 86400000;
-    return loadRaw()
+    return (await loadRaw())
       .filter((item) => new Date(item.deletedAt).getTime() >= cutoff)
       .sort((a, b) => new Date(b.deletedAt) - new Date(a.deletedAt));
   },
@@ -72,16 +80,16 @@ export const TrashRepository = {
   // manual "delete permanently" from the Trash screen). Does NOT call
   // the module repository's restore() itself — the Trash screen does
   // that explicitly, since it needs to know which repository to call.
-  removeEntry(trashId) {
-    saveRaw(loadRaw().filter((item) => item.trashId !== trashId));
+  async removeEntry(trashId) {
+    await saveRaw((await loadRaw()).filter((item) => item.trashId !== trashId));
   },
 
   // Real cleanup, explicit only — never called automatically. Clears
   // genuinely expired entries (past the retention window) that
   // getAll() already wasn't returning, freeing the storage space.
-  purgeExpired() {
+  async purgeExpired() {
     const cutoff = Date.now() - RETENTION_DAYS * 86400000;
-    saveRaw(loadRaw().filter((item) => new Date(item.deletedAt).getTime() >= cutoff));
+    await saveRaw((await loadRaw()).filter((item) => new Date(item.deletedAt).getTime() >= cutoff));
   },
 
   // ADDED 26 Aug 2026 — real ask: manual "empty trash now" option,
@@ -89,7 +97,7 @@ export const TrashRepository = {
   // regardless of age, not just what's already past the 30-day
   // window. Real, permanent, irreversible — the UI gates this behind
   // its own explicit confirmation, this function itself doesn't ask.
-  emptyAll() {
-    saveRaw([]);
+  async emptyAll() {
+    await saveRaw([]);
   },
 };

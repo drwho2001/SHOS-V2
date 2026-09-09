@@ -26,8 +26,8 @@ import { nowAsStoredDateTime } from "./dateInputHelpers";
 // unconditionally either way, since turning off the notification was
 // never a request to hide the in-app warning too.
 export async function syncDoxyPepAlert() {
-  const notifsEnabled = NotificationPreferencesRepository.getPreferences().doxyPepAlertEnabled;
-  const doxyMed = findDoxyPepMedication(MedicationRepository.getAll());
+  const notifsEnabled = (await NotificationPreferencesRepository.getPreferences()).doxyPepAlertEnabled;
+  const doxyMed = findDoxyPepMedication(await MedicationRepository.getAll());
   // No DoxyPEP medication set up at all — nothing to track, and
   // nothing should be left scheduled from a stale earlier state.
   if (!doxyMed) {
@@ -35,8 +35,8 @@ export async function syncDoxyPepAlert() {
     return { active: false };
   }
 
-  const encounters = EncounterRepository.getAll();
-  const doxyLogs = LogRepository.getForMedication(doxyMed.id);
+  const encounters = await EncounterRepository.getAll();
+  const doxyLogs = await LogRepository.getForMedication(doxyMed.id);
   const status = getDoxyPepStatus(encounters, doxyLogs);
   // ADDED — real ask: the in-app banner needs to navigate to (and,
   // for the "permanent" dismiss below, key off) this specific
@@ -112,10 +112,10 @@ export async function syncDoxyPepAlert() {
 // getDoxyPepStatus()'s own realTimestampFromStored() call
 // (doxyPepCalculations.js), which assumes every stored dose date
 // follows the fake-UTC convention.
-export function handleTakeDoxyDose() {
-  const doxyMed = findDoxyPepMedication(MedicationRepository.getAll());
+export async function handleTakeDoxyDose() {
+  const doxyMed = findDoxyPepMedication(await MedicationRepository.getAll());
   if (!doxyMed) return { medications: [] };
-  LogRepository.create({ medicationId: doxyMed.id, type: "dose", delta: -doxyMed.unitsPerDose, date: nowAsStoredDateTime() });
+  await LogRepository.create({ medicationId: doxyMed.id, type: "dose", delta: -doxyMed.unitsPerDose, date: nowAsStoredDateTime() });
   syncDoxyPepAlert();
   return { medications: [doxyMed.name] };
 }

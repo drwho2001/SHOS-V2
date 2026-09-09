@@ -43,6 +43,7 @@ import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 // CHANGED 2 Sep 2026 — real ask: Menstrual gets its own dedicated
 // colour (menstrualPurple) instead of borrowing ACTION.red purely for
@@ -52,8 +53,13 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 // confirms, the overdue-contraception flag, ReadRow's alert prop) is
 // a real semantic alert/destructive-action meaning, unrelated to
 // module colour, and stays on actionRed unchanged.
-const LIGHT = { ...NEUTRAL, healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, menstrualPurple: ACCENTS.menstrual };
-const DARK = { ...NEUTRAL_DARK, healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), menstrualPurple: resolveDarkAccent("menstrual", ACCENTS.menstrual) };
+// CHANGED — Phase 3 (Sep 2026): see the identical fix's own comment in
+// SHOS_Measurements_Prototype.jsx — these baked ACCENTS/ACTION values
+// in at import time, which can't reflect a real override resolved
+// later once that resolution genuinely has to be async. Converted to
+// functions, called fresh per-render.
+const buildLight = () => ({ ...NEUTRAL, healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, menstrualPurple: ACCENTS.menstrual });
+const buildDark = () => ({ ...NEUTRAL_DARK, healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), menstrualPurple: resolveDarkAccent("menstrual", ACCENTS.menstrual) });
 const radius = RADIUS;
 
 function formatDate(iso) {
@@ -328,15 +334,15 @@ function useDeleteUndo(repo, moduleKey) {
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setToast(null), 8000);
   };
-  const redo = () => {
+  const redo = async () => {
     if (!toast) return;
-    TrashRepository.add(moduleKey, toast.records);
+    await TrashRepository.add(moduleKey, toast.records);
     toast.records.forEach((r) => repo.delete(r.id));
     setToast(null);
     clearTimeout(timerRef.current);
   };
-  const trigger = (records) => {
-    TrashRepository.add(moduleKey, records);
+  const trigger = async (records) => {
+    await TrashRepository.add(moduleKey, records);
     records.forEach((r) => repo.delete(r.id));
     setToast({ mode: "undo", records });
     clearTimeout(timerRef.current);
@@ -352,10 +358,10 @@ function CycleSheet({ cycle, onSave, onClose, T }) {
   const isNew = !cycle;
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const [flowOptions, setFlowOptions] = useState(() => CustomOptionListsRepository.getRanked("menstrualFlow"));
+  const [flowOptions, setFlowOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("menstrualFlow"), [], []);
   const [form, setForm] = useState(() => cycle ? { ...cycle } : { ...DEFAULT_CYCLE, startDate: new Date().toISOString().slice(0, 10) });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
-  const symptoms = useMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), []);
+  const symptoms = useLoadedMemo(async () => (await SymptomsRegistry.getAll()).filter((s) => !s.isArchived), [], []);
   const canSave = !!form.startDate;
   return (
     <BottomSheet title={isNew ? "Log period" : "Edit period"} onClose={onClose} T={T} footer={<SaveButton label={isNew ? "Add" : "Save changes"} onClick={() => onSave(form)} canSave={canSave} T={T} />}>
@@ -379,30 +385,46 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
     else if (openAddOnMount) { setScreen({ name: "add" }); onConsumedQuickAdd?.(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openRecordId, openAddOnMount]);
-  const [cycles, setCycles] = useState(() => MenstrualCycleRepository.getAll().filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)));
-  const refresh = () => setCycles(MenstrualCycleRepository.getAll().filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)));
+  // CHANGED — Phase 2 encryption groundwork: MenstrualCycleRepository
+  // went async — the old loader/refresh() chained .filter()/.sort()
+  // straight onto getAll() (one of the flagged sites from the original
+  // audit). Split via .then(); refresh() bumps a counter instead of
+  // recomputing the array itself, same "let the loader reload" shape
+  // as PregnancyTab's own conversion.
+  const [, force] = useState(0);
+  const refresh = () => force((v) => v + 1);
+  const cycles = useLoadedMemo(
+    () => MenstrualCycleRepository.getAll().then((all) => all.filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))),
+    [force], []
+  );
+  const byId = useLoadedMemo(() => (screen.id ? MenstrualCycleRepository.getById(screen.id) : null), [screen.id, force], null);
   const deleteUndo = useDeleteUndo(MenstrualCycleRepository, "menstrualCycles");
   const editUndo = useEditUndo(MenstrualCycleRepository);
-  const avgLength = useMemo(() => MenstrualCycleRepository.getAverageCycleLengthDays(), [cycles]);
+  const avgLength = useLoadedMemo(() => MenstrualCycleRepository.getAverageCycleLengthDays(), [cycles], null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
+  // async — resolved once here (component-level, since a hook can't be
+  // called conditionally inside the screen-name branches below), used
+  // by the detail view's symptomNames.
+  const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
 
-  const create = (data) => { MenstrualCycleRepository.create(data); refresh(); setScreen({ name: "list" }); };
-  const save = (data) => {
-    editUndo.captureBeforeEdit(screen.id);
-    MenstrualCycleRepository.update(screen.id, data);
-    editUndo.notifyEdited(screen.id);
+  const create = async (data) => { await MenstrualCycleRepository.create(data); refresh(); setScreen({ name: "list" }); };
+  const save = async (data) => {
+    await editUndo.captureBeforeEdit(screen.id);
+    await MenstrualCycleRepository.update(screen.id, data);
+    await editUndo.notifyEdited(screen.id);
     refresh();
     setScreen({ name: "detail", id: screen.id });
   };
 
   if (screen.name === "detail") {
-    const c = MenstrualCycleRepository.getById(screen.id);
+    const c = byId;
     if (!c) return null;
-    const symptomNames = c.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean);
+    const symptomNames = c.symptomIds.map((id) => symptomNameById.get(id)).filter(Boolean);
     return (
       <div>
         <DetailHeader onBack={() => setScreen({ name: "list" })} onEdit={() => setScreen({ name: "edit", id: c.id })} onDelete={() => setConfirmDelete(true)} T={T} />
-        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={() => { deleteUndo.trigger([c]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
+        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([c]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Drop size={16} color={T.menstrualPurple} weight="fill" />
@@ -451,7 +473,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
       </div>
       <DeleteToast toast={deleteUndo.toast} onUndo={deleteUndo.undo} onRedo={deleteUndo.redo} T={T} noun="period" />
       {screen.name === "add" && <CycleSheet cycle={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} />}
-      {screen.name === "edit" && <CycleSheet cycle={MenstrualCycleRepository.getById(screen.id)} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
+      {screen.name === "edit" && <CycleSheet cycle={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
     </div>
   );
 }
@@ -484,8 +506,8 @@ function daysForUnit(value, unit, fromDate) {
 }
 function ContraceptionSheet({ entry, onSave, onClose, T }) {
   const isNew = !entry;
-  const [methodOptions, setMethodOptions] = useState(() => CustomOptionListsRepository.getRanked("contraception"));
-  const [formulationOptions, setFormulationOptions] = useState(() => CustomOptionListsRepository.getRanked("medicationType"));
+  const [methodOptions, setMethodOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
+  const [formulationOptions, setFormulationOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("medicationType"), [], []);
   const [form, setForm] = useState(() => entry ? { ...entry } : { ...DEFAULT_CONTRACEPTION_ENTRY, startDate: new Date().toISOString().slice(0, 10) });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   // Real convenience: only auto-fills formulation while it's still
@@ -493,7 +515,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
   // already has — same "suggest, never overwrite" rule already used
   // elsewhere in this app (e.g. Measurements' preferred-unit default).
   const setMethod = (v) => setForm((f) => ({ ...f, method: v, formulation: f.formulation || guessFormulation(v) }));
-  const visits = useMemo(() => ClinicVisitsRepository.getAll().filter((v) => !v.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), []);
+  const visits = useLoadedMemo(async () => (await ClinicVisitsRepository.getAll()).filter((v) => !v.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), [], []);
   const canSave = !!form.method && !!form.startDate;
   const [intervalUnit, setIntervalUnit] = useState("Days");
   // Real display value in whichever unit is currently selected — kept
@@ -547,7 +569,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
   return (
     <BottomSheet title={isNew ? "Add contraception" : "Edit contraception"} onClose={onClose} T={T} footer={<SaveButton label={isNew ? "Add" : "Save changes"} onClick={() => onSave(form)} canSave={canSave} T={T} />}>
       <FreeTextSuggestField label="Method" value={form.method} onChange={setMethod} options={methodOptions}
-        onAddNew={(v) => setMethodOptions(CustomOptionListsRepository.add("contraception", v))} T={T} placeholder="e.g. Depot, IUD, Combined pill" />
+        onAddNew={(v) => { CustomOptionListsRepository.add("contraception", v).then(setMethodOptions); }} T={T} placeholder="e.g. Depot, IUD, Combined pill" />
       <SelectField label="Formulation" value={form.formulation} onChange={set("formulation")} options={formulationOptions} listName="medicationType" T={T} hint="sets the icon shown for this entry" />
       <TextField label="Start date" value={form.startDate} onChange={setStartDate} T={T} type="date" />
       <TextField label="End date (leave blank if currently active)" value={form.endDate} onChange={set("endDate")} T={T} type="date" />
@@ -595,32 +617,44 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
   }, [openRecordId, openAddOnMount]);
   const [, force] = useState(0);
   const refresh = () => force((v) => v + 1);
-  const all = ContraceptionRepository.getAll().filter((e) => !e.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
+  // CHANGED — Phase 2 encryption groundwork: ContraceptionRepository
+  // went async — was a plain render-body call, kept working alongside
+  // this component's own [, force] refresh mechanism via useLoadedMemo.
+  const all = useLoadedMemo(
+    () => ContraceptionRepository.getAll().then((list) => list.filter((e) => !e.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))),
+    [force], []
+  );
   const active = all.filter((e) => !e.endDate);
   const past = all.filter((e) => e.endDate);
+  const byId = useLoadedMemo(() => (screen.id ? ContraceptionRepository.getById(screen.id) : null), [screen.id, force], null);
+  // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
+  // went async — hoisted above the detail-screen branch below (this
+  // used to be a plain render-body call inside that conditional, but a
+  // hook can't be called conditionally, so it's resolved here instead,
+  // keyed off byId's own linkedClinicVisitId).
+  const linkedVisit = useLoadedMemo(() => (byId?.linkedClinicVisitId ? ClinicVisitsRepository.getById(byId.linkedClinicVisitId) : null), [byId], null);
   const deleteUndo = useDeleteUndo(ContraceptionRepository, "contraception");
   const editUndo = useEditUndo(ContraceptionRepository);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
 
-  const create = (data) => { ContraceptionRepository.create(data); refresh(); setScreen({ name: "list" }); };
-  const save = (data) => {
-    editUndo.captureBeforeEdit(screen.id);
-    ContraceptionRepository.update(screen.id, data);
-    editUndo.notifyEdited(screen.id);
+  const create = async (data) => { await ContraceptionRepository.create(data); refresh(); setScreen({ name: "list" }); };
+  const save = async (data) => {
+    await editUndo.captureBeforeEdit(screen.id);
+    await ContraceptionRepository.update(screen.id, data);
+    await editUndo.notifyEdited(screen.id);
     refresh();
     setScreen({ name: "detail", id: screen.id });
   };
 
   if (screen.name === "detail") {
-    const e = ContraceptionRepository.getById(screen.id);
+    const e = byId;
     if (!e) return null;
-    const linkedVisit = e.linkedClinicVisitId ? ClinicVisitsRepository.getById(e.linkedClinicVisitId) : null;
     const overdue = e.nextDueDate && e.nextDueDate < today && !e.endDate;
     return (
       <div>
         <DetailHeader onBack={() => setScreen({ name: "list" })} onEdit={() => setScreen({ name: "edit", id: e.id })} onDelete={() => setConfirmDelete(true)} T={T} />
-        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={() => { deleteUndo.trigger([e]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
+        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([e]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <ContraceptionIcon formulation={e.formulation} size={16} color={T.healthcareBlue} />
@@ -693,7 +727,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
       </div>
       <DeleteToast toast={deleteUndo.toast} onUndo={deleteUndo.undo} onRedo={deleteUndo.redo} T={T} noun="entry" />
       {screen.name === "add" && <ContraceptionSheet entry={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} />}
-      {screen.name === "edit" && <ContraceptionSheet entry={ContraceptionRepository.getById(screen.id)} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
+      {screen.name === "edit" && <ContraceptionSheet entry={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
     </div>
   );
 }
@@ -744,18 +778,31 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
   // masking a sensitive entry should never depend on how you got
   // there, only on a deliberate "tap to reveal" each time.
   const [revealedIds, setRevealedIds] = useState([]);
-  const all = PregnancyRepository.getAll().filter((p) => !p.isArchived).sort((a, b) => new Date(b.testDate || 0) - new Date(a.testDate || 0));
+  const [, force] = useState(0);
+  const refresh = () => force((v) => v + 1);
+  // CHANGED — PregnancyRepository went async (ensureLoaded()); this used
+  // to be a plain direct call re-run every render (safe only while the
+  // repository stayed synchronous — see CLAUDE.md). Loaded via
+  // useLoadedMemo instead, keyed on `force` so the existing refresh()
+  // mechanism still triggers a reload the same way it always did.
+  const all = useLoadedMemo(
+    () => PregnancyRepository.getAll().then((list) => list.filter((p) => !p.isArchived).sort((a, b) => new Date(b.testDate || 0) - new Date(a.testDate || 0))),
+    [force],
+    []
+  );
+  // Same fix for the by-id lookup used by both the detail view and the
+  // edit sheet below — one loader, keyed on screen.id, reused for both
+  // since they always read the same record.
+  const byId = useLoadedMemo(() => (screen.id ? PregnancyRepository.getById(screen.id) : null), [screen.id, force], null);
   const deleteUndo = useDeleteUndo(PregnancyRepository, "pregnancies");
   const editUndo = useEditUndo(PregnancyRepository);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [, force] = useState(0);
-  const refresh = () => force((v) => v + 1);
 
-  const create = (data) => { PregnancyRepository.create(data); refresh(); setScreen({ name: "list" }); };
-  const save = (data) => {
-    editUndo.captureBeforeEdit(screen.id);
-    PregnancyRepository.update(screen.id, data);
-    editUndo.notifyEdited(screen.id);
+  const create = async (data) => { await PregnancyRepository.create(data); refresh(); setScreen({ name: "list" }); };
+  const save = async (data) => {
+    await editUndo.captureBeforeEdit(screen.id);
+    await PregnancyRepository.update(screen.id, data);
+    await editUndo.notifyEdited(screen.id);
     refresh();
     setScreen({ name: "detail", id: screen.id });
   };
@@ -769,13 +816,13 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
   };
 
   if (screen.name === "detail") {
-    const p = PregnancyRepository.getById(screen.id);
+    const p = byId;
     if (!p) return null;
     const masked = isMasked(p);
     return (
       <div>
         <DetailHeader onBack={() => setScreen({ name: "list" })} onEdit={() => setScreen({ name: "edit", id: p.id })} onDelete={() => setConfirmDelete(true)} T={T} />
-        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={() => { deleteUndo.trigger([p]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
+        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([p]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Baby size={16} color={T.healthcareBlue} weight="fill" />
@@ -832,7 +879,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
       </div>
       <DeleteToast toast={deleteUndo.toast} onUndo={deleteUndo.undo} onRedo={deleteUndo.redo} T={T} noun="entry" />
       {screen.name === "add" && <PregnancySheet pregnancy={null} onSave={create} onClose={() => setScreen({ name: "list" })} T={T} />}
-      {screen.name === "edit" && <PregnancySheet pregnancy={PregnancyRepository.getById(screen.id)} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
+      {screen.name === "edit" && <PregnancySheet pregnancy={byId} onSave={save} onClose={() => setScreen({ name: "detail", id: screen.id })} T={T} />}
     </div>
   );
 }
@@ -859,8 +906,10 @@ function tabForRecordId(id) {
 
 export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen } = {}) {
   const [darkMode] = useDarkModePreference();
-  const T = darkMode ? DARK : LIGHT;
-  const gender = MyProfileRepository.getProfile().gender;
+  const T = darkMode ? buildDark() : buildLight();
+  // CHANGED — Phase 2 encryption groundwork: MyProfileRepository went
+  // async — was a plain render-body call.
+  const [gender] = useLoadedState(async () => (await MyProfileRepository.getProfile()).gender, [], "");
   const [showPregnancyAnyway, setShowPregnancyAnyway] = useState(false);
   // ADDED — real ask: Home's own "Log contraception" shortcut (distinct
   // from "Log period") needs to land on THIS module's Contraception
@@ -873,12 +922,15 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
   // opt-out, independent of gender. Wins over the gender default AND
   // the ephemeral "show anyway" link below, but never over a direct
   // deep-link to a record that already exists.
-  const pregnancyTrackingHidden = AppPreferencesRepository.getPreferences().pregnancyTrackingHidden;
+  const pregnancyTrackingHidden = useLoadedMemo(() => AppPreferencesRepository.getPreferences().then((p) => p.pregnancyTrackingHidden), [], false);
   const showsPregnancyByDefault = couldBePregnant(gender);
   const deepLinkTab = tabForRecordId(openRecordId);
   const [subTab, setSubTab] = useState(deepLinkTab || (wantsContraceptionQuickAdd ? "contraception" : "cycle"));
-  const [, force] = useState(0);
-  const activePregnancy = PregnancyRepository.getActive();
+  // CHANGED — PregnancyRepository went async; reload keyed on subTab so
+  // switching back to/away from the Pregnancy tab (the only place a
+  // pregnancy record's status actually changes) picks up a fresh value,
+  // same practical effect as the old plain-call-every-render approach.
+  const activePregnancy = useLoadedMemo(() => PregnancyRepository.getActive(), [subTab], null);
   // A deep-linked Pregnancy record must be reachable even for a
   // gender that hides the tab by default — same "never a hard block"
   // rule as the "Show pregnancy tracking anyway" link itself.

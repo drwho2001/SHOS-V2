@@ -83,6 +83,7 @@ import { syncClinicVisitsToCalendar } from "../storage/calendarSyncService";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 // ADDED 3 Sep 2026 — real ask: fix the Safari/iOS gesture-gated
 // permission bug (see this file's own comment on notifPermStatus
@@ -96,18 +97,22 @@ import TimelineModule from "./SHOS_Timeline_Prototype";
 // own requirement, unlike the old auto-request on mount.
 function NotificationPermissionNudge({ status, onStatusChange }) {
   const [darkMode] = useDarkModePreference();
-  const [dismissed, setDismissed] = useState(() => NotificationPreferencesRepository.getPreferences().permissionNudgeDismissed);
+  // CHANGED — Phase 2 encryption groundwork: NotificationPreferencesRepository
+  // went async — the old loader chained `.permissionNudgeDismissed`
+  // straight onto the (now-Promise) getPreferences() call, which would
+  // silently resolve to undefined. Awaited properly instead.
+  const [dismissed, setDismissed] = useLoadedState(async () => (await NotificationPreferencesRepository.getPreferences()).permissionNudgeDismissed, [], false);
   if (status !== "prompt" || dismissed) return null;
 
-  const notNow = () => {
-    NotificationPreferencesRepository.update({ permissionNudgeDismissed: true });
+  const notNow = async () => {
+    await NotificationPreferencesRepository.update({ permissionNudgeDismissed: true });
     setDismissed(true);
   };
   const enable = async () => {
     const r = await requestNotificationPermission();
     onStatusChange(r.status);
     if (r.status !== "prompt") {
-      NotificationPreferencesRepository.update({ permissionNudgeDismissed: true });
+      await NotificationPreferencesRepository.update({ permissionNudgeDismissed: true });
       setDismissed(true);
     }
   };
@@ -148,7 +153,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // bare "Home". My Profile only has `nickname`, no separate name
   // field — falls back to a generic label if it's never been filled
   // in, rather than showing "'s dashboard" with a blank in front.
-  const [profileName] = useState(() => MyProfileRepository.getProfile().nickname);
+  const [profileName] = useLoadedState(async () => (await MyProfileRepository.getProfile()).nickname, [], "");
   // CHANGED 1 Sep 2026 — real fix, found during a smoothness/efficiency
   // review: unlike every other repository read on this screen (all
   // read once via a lazy useState initializer or a mount-only
@@ -156,7 +161,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // directly in the render body — a real localStorage read + JSON.parse
   // on every single re-render of Home, not just once. Same lazy-
   // useState pattern as profileName just above.
-  const [appLockEnabled] = useState(() => PrivacySettingsRepository.getSettings().appLockEnabled);
+  const [appLockEnabled] = useLoadedState(() => PrivacySettingsRepository.getSettings().appLockEnabled, [], false);
   const [lastContact, setLastContact] = useState(null);
   const [lastEncounter, setLastEncounter] = useState(null);
   const [lastDose, setLastDose] = useState(null);
@@ -174,13 +179,13 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // ADDED — real ask: Menstrual/Contraception shortcuts + real results
   // on the dashboard, gated behind the same toggle the Healthcare
   // sub-tab itself is gated behind.
-  const [menstrualTrackingEnabled] = useState(() => AppPreferencesRepository.getPreferences().menstrualTrackingEnabled);
+  const [menstrualTrackingEnabled] = useLoadedState(() => AppPreferencesRepository.getPreferences().menstrualTrackingEnabled, [], false);
   const [lastPeriod, setLastPeriod] = useState(null);
   const [contraceptionDue, setContraceptionDue] = useState(null);
   // ADDED 19 Aug 2026 — real ask: a backup reminder. Read once on
   // mount, same pattern as everything else on Home — see
   // backupService.js's getLastBackupInfo() for how "due" is computed.
-  const [backupInfo] = useState(() => getLastBackupInfo());
+  const [backupInfo] = useLoadedState(() => getLastBackupInfo(), [], { lastAt: null, daysSince: null, dueForReminder: false });
   // ADDED — real ask: "scheduled auto-export" — self-gated inside
   // runAutoExportIfDue() on whether the preference is actually turned
   // on (Settings -> Preferences), safe to call unconditionally here,
@@ -241,14 +246,20 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     const interval = setInterval(recompute, 60000);
     return () => clearInterval(interval);
   }, []);
-  const doxyPermanentlyDismissed = doxyStatus.active && doxyStatus.overdue &&
-    AppPreferencesRepository.getPreferences().doxyPepOverdueDismissedWindowStart === doxyStatus.windowStart;
-  const dismissDoxyForever = () => {
-    AppPreferencesRepository.update({ doxyPepOverdueDismissedWindowStart: doxyStatus.windowStart });
-    // Persisted read above is fresh on every render already (same
-    // pattern as CalendarScreen's own syncEnabled) — this just forces
-    // that re-render to actually happen right now, same role
-    // doxyTempDismissed already plays for the temporary case.
+  // CHANGED — Phase 2 encryption groundwork: AppPreferencesRepository
+  // went async, so the old plain "re-read fresh every render" call
+  // (safe only while getPreferences() was synchronous) needed a real
+  // dependency array instead — keyed on the same doxyTempDismissed
+  // bump dismissDoxyForever already uses to force a recompute, plus
+  // windowStart so a new exposure window is never mistaken for the
+  // dismissed one.
+  const dismissedWindowStart = useLoadedMemo(() => AppPreferencesRepository.getPreferences().then((p) => p.doxyPepOverdueDismissedWindowStart), [doxyTempDismissed], null);
+  const doxyPermanentlyDismissed = doxyStatus.active && doxyStatus.overdue && dismissedWindowStart === doxyStatus.windowStart;
+  const dismissDoxyForever = async () => {
+    await AppPreferencesRepository.update({ doxyPepOverdueDismissedWindowStart: doxyStatus.windowStart });
+    // Forces the useLoadedMemo above to recompute now that the write
+    // has actually landed — same role this flag already plays for the
+    // temporary-dismiss case.
     setDoxyTempDismissed(true);
   };
   const doxyBannerVisible = doxyStatus.active && !doxyTempDismissed && !doxyPermanentlyDismissed;
@@ -313,44 +324,61 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // other sync above. Also re-synced right after Clinic Visits' own
   // save.
   useEffect(() => {
-    syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+    (async () => syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll()))();
   }, []);
 
   useEffect(() => {
-    const contacts = ContactRepository.getAll().filter((c) => !c.isArchived);
-    const sortedContacts = [...contacts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    setLastContact(sortedContacts[0] || null);
+    // CHANGED — Phase 2 encryption groundwork: ContactRepository went
+    // async — same "wrap just this one gated/isolated block" approach
+    // as the menstrual/contraception block further down this same
+    // effect, since nothing else here depends on `contacts`.
+    (async () => {
+      const contacts = (await ContactRepository.getAll()).filter((c) => !c.isArchived);
+      const sortedContacts = [...contacts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setLastContact(sortedContacts[0] || null);
+    })();
 
-    const encounters = EncounterRepository.getAll();
-    const sortedEncounters = [...encounters].sort((a, b) => new Date(b.date) - new Date(a.date));
-    setLastEncounter(sortedEncounters[0] || null);
+    // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
+    // async — same "wrap just this one gated/isolated block" approach
+    // as the contacts block above.
+    (async () => {
+      const encounters = await EncounterRepository.getAll();
+      const sortedEncounters = [...encounters].sort((a, b) => new Date(b.date) - new Date(a.date));
+      setLastEncounter(sortedEncounters[0] || null);
+    })();
 
-    const meds = MedicationRepository.getAll();
-    // FIXED — real bug caught in testing: computeAdherence() reads
-    // med.logs directly (confirmed by reading SHOS_Medication_Dashboard_
-    // Prototype.jsx's own loadMedications(), the only other caller) —
-    // MedicationRepository.getAll() alone doesn't include it, logs live
-    // in their own repository keyed by medicationId. Same enrichment
-    // step that file already does before calling computeAdherence,
-    // reused here rather than assumed.
-    const medsWithLogs = meds.map((med) => ({ ...med, logs: LogRepository.getForMedication(med.id) }));
-    setAdherence(getOverallAdherence(medsWithLogs, computeAdherence));
-    const doseLogs = LogRepository.getAll().filter((l) => l.type === "dose" && !l.voided);
-    const sortedLogs = [...doseLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
-    const lastLog = sortedLogs[0];
-    if (lastLog) {
-      // CHANGED 26 Aug 2026 — real ask: was only ever showing the
-      // single last log entry, so logging several meds together (e.g.
-      // "Log all daily meds", or PrEP + something else close together)
-      // only ever displayed one of them. Now groups every dose logged
-      // within 10 minutes of the most recent one and shows all the
-      // names together, same underlying data, no schema change.
-      const TEN_MIN_MS = 10 * 60000;
-      const lastLogTime = new Date(lastLog.date).getTime();
-      const grouped = sortedLogs.filter((l) => lastLogTime - new Date(l.date).getTime() <= TEN_MIN_MS);
-      const names = [...new Set(grouped.map((l) => meds.find((m) => m.id === l.medicationId)?.name).filter(Boolean))];
-      setLastDose(names.length > 0 ? { name: names.join(", "), date: lastLog.date } : null);
-    }
+    // CHANGED — Phase 2 encryption groundwork: MedicationRepository/
+    // LogRepository went async — same "wrap just this one gated/
+    // isolated block" approach as the contacts block above, since
+    // nothing else here depends on adherence/lastDose.
+    (async () => {
+      const meds = await MedicationRepository.getAll();
+      // FIXED — real bug caught in testing: computeAdherence() reads
+      // med.logs directly (confirmed by reading SHOS_Medication_Dashboard_
+      // Prototype.jsx's own loadMedications(), the only other caller) —
+      // MedicationRepository.getAll() alone doesn't include it, logs live
+      // in their own repository keyed by medicationId. Same enrichment
+      // step that file already does before calling computeAdherence,
+      // reused here rather than assumed.
+      const medsWithLogs = await Promise.all(meds.map(async (med) => ({ ...med, logs: await LogRepository.getForMedication(med.id) })));
+      setAdherence(getOverallAdherence(medsWithLogs, computeAdherence));
+      const doseLogs = (await LogRepository.getAll()).filter((l) => l.type === "dose" && !l.voided);
+      const sortedLogs = [...doseLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const lastLog = sortedLogs[0];
+      if (lastLog) {
+        // CHANGED 26 Aug 2026 — real ask: was only ever showing the
+        // single last log entry, so logging several meds together (e.g.
+        // "Log all daily meds", or PrEP + something else close together)
+        // only ever displayed one of them. Now groups every dose logged
+        // within 10 minutes of the most recent one and shows all the
+        // names together, same underlying data, no schema change.
+        const TEN_MIN_MS = 10 * 60000;
+        const lastLogTime = new Date(lastLog.date).getTime();
+        const grouped = sortedLogs.filter((l) => lastLogTime - new Date(l.date).getTime() <= TEN_MIN_MS);
+        const names = [...new Set(grouped.map((l) => meds.find((m) => m.id === l.medicationId)?.name).filter(Boolean))];
+        setLastDose(names.length > 0 ? { name: names.join(", "), date: lastLog.date } : null);
+      }
+    })();
 
     // ADDED 19 Aug 2026 — Testing and Home are both fully built now, so
     // this is a real, appropriate interconnection (same "recent
@@ -364,10 +392,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     // anything dated after today, same principle as nextVisit's own
     // upcoming-only filter just below (mirrored, not duplicated logic
     // — one excludes future, the other excludes past).
-    const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
-    const sortedTests = [...tests].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-    setLastTest(sortedTests[0] || null);
-    setTestingStats(getTestingFrequencyStats(tests));
+    // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+    // async — same "wrap just this one gated/isolated block" approach
+    // used throughout this effect.
+    (async () => {
+      const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
+      const sortedTests = [...tests].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      setLastTest(sortedTests[0] || null);
+      setTestingStats(getTestingFrequencyStats(tests));
+    })();
 
     // CHANGED — real bug from the user's own testing ("Next clinic visit
     // is displaying incorrect or incomplete data"): this used to filter
@@ -379,25 +412,37 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     // "store facts, derive state" principle already used for Contacts'
     // own inactive-flag logic, just not consistently applied here
     // before now.
-    const today = new Date().toISOString().slice(0, 10);
-    const visits = ClinicVisitsRepository.getAll().filter((v) => !v.isArchived && v.date && v.date.slice(0, 10) >= today);
-    const sortedUpcoming = [...visits].sort((a, b) => new Date(a.date) - new Date(b.date));
-    setNextVisit(sortedUpcoming[0] || null);
+    // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
+    // went async — same "wrap just this one gated/isolated block"
+    // approach used throughout this effect.
+    (async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const visits = (await ClinicVisitsRepository.getAll()).filter((v) => !v.isArchived && v.date && v.date.slice(0, 10) >= today);
+      const sortedUpcoming = [...visits].sort((a, b) => new Date(a.date) - new Date(b.date));
+      setNextVisit(sortedUpcoming[0] || null);
+    })();
 
     // ADDED — real ask: Menstrual/Contraception real results on the
     // dashboard. Skipped entirely when the feature is off — no reason
     // to read either repository for a screen that won't show them.
+    // CHANGED — Phase 2 encryption groundwork: MenstrualCycleRepository/
+    // ContraceptionRepository went async. This effect is otherwise fully
+    // synchronous (every setState above already ran by the time this
+    // fires) so an async IIFE just for this last, gated block is
+    // simplest — doesn't hold up anything that already completed.
     if (menstrualTrackingEnabled) {
-      const cycles = MenstrualCycleRepository.getAll().filter((c) => !c.isArchived);
-      const sortedCycles = [...cycles].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
-      setLastPeriod(sortedCycles[0] || null);
+      (async () => {
+        const cycles = (await MenstrualCycleRepository.getAll()).filter((c) => !c.isArchived);
+        const sortedCycles = [...cycles].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
+        setLastPeriod(sortedCycles[0] || null);
 
-      // "Contraception due" mirrors "Next clinic visit" exactly — the
-      // soonest upcoming date across currently-active methods, not
-      // just the most recently started one.
-      const active = ContraceptionRepository.getActive().filter((e) => e.nextDueDate);
-      const sortedDue = [...active].sort((a, b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
-      setContraceptionDue(sortedDue[0] || null);
+        // "Contraception due" mirrors "Next clinic visit" exactly — the
+        // soonest upcoming date across currently-active methods, not
+        // just the most recently started one.
+        const active = (await ContraceptionRepository.getActive()).filter((e) => e.nextDueDate);
+        const sortedDue = [...active].sort((a, b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
+        setContraceptionDue(sortedDue[0] || null);
+      })();
     }
   }, []);
 

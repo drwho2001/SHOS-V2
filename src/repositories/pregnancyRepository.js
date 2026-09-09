@@ -107,8 +107,21 @@ let seedPregnancies = [
   },
 ];
 
-let pregnancies = storage.load(STORAGE_KEY, seedPregnancies);
-let nextNumber = computeNextNumber(pregnancies);
+// CHANGED — real groundwork for encryption at rest (see CLAUDE.md's
+// Known Issues / the Notion Development log for the full plan). Same
+// `ensureLoaded()`/memoized-`loadPromise` pattern as the other
+// module-load-cached repositories converted this session.
+let pregnancies = null;
+let nextNumber = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (pregnancies === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedPregnancies);
+    pregnancies = await loadPromise;
+    nextNumber = computeNextNumber(pregnancies);
+  }
+  return pregnancies;
+}
 
 function computeNextNumber(existing) {
   const numbers = existing.map((p) => {
@@ -124,8 +137,8 @@ function generateId() {
   return id;
 }
 
-function persist() {
-  storage.save(STORAGE_KEY, pregnancies);
+async function persist() {
+  await storage.save(STORAGE_KEY, pregnancies);
 }
 
 // `existing` is the prior stored record (empty object on create),
@@ -152,70 +165,77 @@ function shapeForSave(existing, changes) {
 }
 
 export const PregnancyRepository = {
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(pregnancies.map((p) => ({ ...DEFAULT_PREGNANCY, ...p })));
   },
 
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = pregnancies.find((p) => p.id === id);
     return found ? structuredClone({ ...DEFAULT_PREGNANCY, ...found }) : null;
   },
 
   // Read by the Cycle/Contraception screen to decide whether to show
   // its normal prompts or a "paused while pregnant" state.
-  getActive() {
-    return this.getAll().find((p) => !p.isArchived && p.testResult === "Positive" && p.status === "Ongoing") || null;
+  async getActive() {
+    return (await this.getAll()).find((p) => !p.isArchived && p.testResult === "Positive" && p.status === "Ongoing") || null;
   },
 
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     const newEntry = { ...shapeForSave({}, data), id: generateId(), createdAt: new Date().toISOString(), isArchived: false };
     pregnancies = [...pregnancies, newEntry];
-    persist();
+    await persist();
     return newEntry;
   },
 
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updated = null;
     pregnancies = pregnancies.map((p) => {
       if (p.id !== id) return p;
       updated = { ...shapeForSave(p, changes), id: p.id, createdAt: p.createdAt, isArchived: p.isArchived, updatedAt: new Date().toISOString() };
       return updated;
     });
-    persist();
+    await persist();
     return updated ? structuredClone(updated) : null;
   },
 
-  archive(id) {
+  async archive(id) {
     return this.update(id, { isArchived: true });
   },
 
-  delete(id) {
+  async delete(id) {
+    await ensureLoaded();
     pregnancies = pregnancies.filter((p) => p.id !== id);
-    persist();
+    await persist();
   },
 
-  unarchive(id) {
+  async unarchive(id) {
     return this.update(id, { isArchived: false });
   },
 
-  bulkArchive(ids) {
-    ids.forEach((id) => this.archive(id));
+  async bulkArchive(ids) {
+    for (const id of ids) await this.archive(id);
   },
 
-  bulkDelete(ids) {
+  async bulkDelete(ids) {
+    await ensureLoaded();
     pregnancies = pregnancies.filter((p) => !ids.includes(p.id));
-    persist();
+    await persist();
   },
 
-  restore(record) {
+  async restore(record) {
+    await ensureLoaded();
     if (pregnancies.some((p) => p.id === record.id)) return;
     pregnancies = [...pregnancies, record];
-    persist();
+    await persist();
   },
 
-  replaceAll(newPregnancies) {
+  async replaceAll(newPregnancies) {
     pregnancies = newPregnancies;
     nextNumber = computeNextNumber(pregnancies);
-    persist();
+    await persist();
   },
 };

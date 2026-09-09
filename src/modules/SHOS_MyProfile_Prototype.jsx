@@ -43,6 +43,7 @@ function platformIconFor(tag) {
   return match ? match.Icon : null;
 }
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { TestingRepository } from "../repositories/testingRepository";
 import { getCurrentLocationPlace, forwardGeocode } from "../storage/locationService";
 import {
@@ -151,8 +152,8 @@ function PhotoPicker({ value, onChange, T }) {
 // uses (a scheduled-but-not-yet-happened test shouldn't count).
 // "Store facts, derive state" — this was a fact stored in the wrong
 // place; the real fact already lives in Testing's own records.
-function getAutoLastTestedDate() {
-  const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
+async function getAutoLastTestedDate() {
+  const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
   const sorted = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date));
   return sorted[0]?.date || null;
 }
@@ -505,14 +506,28 @@ function TagInput({ label, value, onChange, T, placeholder }) {
 // Registry-backed picker, same shape/behavior as Contacts' own
 // RegistryTagPicker — resolves stored IDs to display names, creates a
 // new registry entry (case-insensitively deduped) on a fresh typed tag.
+// CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry
+// (whichever `registry` is passed here) are now async — allEntries
+// loaded via useLoadedMemo instead of a plain render-body call;
+// nameFor's archived-entry fallback resolved via a missingNames lookup
+// instead of a synchronous getById() call; finalizeEntry/commitDraft
+// now await registry.findOrCreate(), and commitDraft awaits
+// analyzeEntry (analyzeKinkEntry, also now async).
 function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, excludeIds = [], trackRole = false, roleOptions = [], resolveSynonym = (x) => x, analyzeEntry = null, getRoleOptionsForKink = null }) {
   const [draft, setDraft] = useState("");
   // ADDED — real ask: "did you mean...?" for a recognized typo or an
   // umbrella term, same mechanism now built and proven in Contacts/
   // Encounters.
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
-  const allEntries = registry.getAll().filter((e) => !e.isArchived);
-  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name || "?";
+  const allEntries = useLoadedMemo(() => registry.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  const missingNames = useLoadedMemo(async () => {
+    const selectedIdsForLookup = trackRole ? value.map((v) => v.kinkId) : value;
+    const missingIds = selectedIdsForLookup.filter((id) => !allEntries.some((e) => e.id === id));
+    const map = new Map();
+    await Promise.all(missingIds.map(async (id) => { const e = await registry.getById(id); if (e) map.set(id, e.name); }));
+    return map;
+  }, [value, allEntries], new Map());
+  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || missingNames.get(id) || "?";
 
   // ADDED 18 Aug 2026 — trackRole mode: `value` becomes an array of
   // {kinkId, role} selections — matches Contacts' Stated Kinks/
@@ -598,19 +613,19 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // slightly differently from how it was typed in Contacts silently
   // created a separate, near-duplicate registry entry instead of
   // resolving to the one real one.
-  const finalizeEntry = (resolvedName) => {
-    const entry = registry.findOrCreate(resolvedName);
+  const finalizeEntry = async (resolvedName) => {
+    const entry = await registry.findOrCreate(resolvedName);
     if (entry && !hasSelection(entry.id)) addEntries([entry.id]);
   };
 
-  const commitDraft = () => {
+  const commitDraft = async () => {
     const raw = draft.trim();
     if (!raw) return;
     const parts = raw.split(",").map((t) => t.trim()).filter(Boolean);
 
     if (analyzeEntry && parts.length === 1) {
       const normalized = normalizeTag(parts[0]);
-      const analysis = analyzeEntry(normalized);
+      const analysis = await analyzeEntry(normalized);
       if (analysis.type === "umbrella" || analysis.type === "fuzzy-suggestion") {
         setPendingSuggestion(analysis);
         setDraft("");
@@ -619,12 +634,12 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
     }
 
     const newIds = [];
-    parts.forEach((part) => {
+    for (const part of parts) {
       const resolved = resolveSynonym(normalizeTag(part));
-      if (!resolved) return;
-      const entry = registry.findOrCreate(resolved);
+      if (!resolved) continue;
+      const entry = await registry.findOrCreate(resolved);
       if (entry && !hasSelection(entry.id) && !newIds.includes(entry.id)) newIds.push(entry.id);
-    });
+    }
     addEntries(newIds);
     setDraft("");
   };
@@ -810,6 +825,22 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
 // ── Edit screen ──
 function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   const [form, setForm] = useState(profile);
+  // ADDED 4 Sep 2026 — real regression caught while converting the
+  // parent's profile load to async (see loadedRepositoryState.js):
+  // profile now starts as DEFAULT_PROFILE for the one render before
+  // the real value loads, and this screen can mount on that exact
+  // render (MyProfileModule's openEditingOnMount, reached from Clinic
+  // Card's identity-edit shortcut). Without this, form would freeze on
+  // the empty DEFAULT_PROFILE forever — useState(profile) only reads
+  // its argument once, at mount, never again. Resyncing on every
+  // profile change is safe here: nothing else updates the parent's
+  // profile while this screen is open (refresh() only runs from
+  // saveEdit, which immediately closes this screen right after).
+  useEffect(() => { setForm(profile); }, [profile]);
+  // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+  // async — getAutoLastTestedDate() was called straight in the render
+  // body below.
+  const lastTestedDate = useLoadedMemo(() => getAutoLastTestedDate(), [], null);
   const set = (field) => (value) => setForm((f) => ({ ...f, [field]: value }));
   // FIXED — real ask: "think my profile kinks and limits haven't
   // actually saved/disappear after a while." Root cause: RegistryTagPicker's
@@ -834,11 +865,11 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   };
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const [genderOptions, setGenderOptions] = useState(() => CustomOptionListsRepository.getRanked("gender"));
-  const [pronounsOptions, setPronounsOptions] = useState(() => CustomOptionListsRepository.getRanked("pronouns"));
-  const [relationshipStatusOptions, setRelationshipStatusOptions] = useState(() => CustomOptionListsRepository.getRanked("relationshipStatus"));
-  const allContacts = useMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived).map((c) => ({ id: c.id, name: c.name })), []);
-  const [contraceptionOptions, setContraceptionOptions] = useState(() => CustomOptionListsRepository.getRanked("contraception"));
+  const [genderOptions, setGenderOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("gender"), [], []);
+  const [pronounsOptions, setPronounsOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("pronouns"), [], []);
+  const [relationshipStatusOptions, setRelationshipStatusOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("relationshipStatus"), [], []);
+  const allContacts = useLoadedMemo(() => ContactRepository.getAll().then((all) => all.filter((c) => !c.isArchived).map((c) => ({ id: c.id, name: c.name }))), [], []);
+  const [contraceptionOptions, setContraceptionOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
   // ADDED — real ask: contraception relevant when Gender is Female or
   // Trans-male. Exact match against these two only — not e.g. Non-
   // binary, since that's a real per-person question this app shouldn't
@@ -860,18 +891,18 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
           <TextField label="Full name" value={form.displayName} onChange={set("displayName")} T={T} placeholder="Your full name" />
           <TextField label="Nickname" value={form.nickname} onChange={set("nickname")} T={T} placeholder="e.g. Alex" />
           <SuggestField label="Gender" value={form.gender} onChange={set("gender")} options={genderOptions}
-            onAddNew={(v) => setGenderOptions(CustomOptionListsRepository.add("gender", v))} T={T} placeholder="e.g. Male, Female, Non-binary" />
+            onAddNew={(v) => { CustomOptionListsRepository.add("gender", v).then(setGenderOptions); }} T={T} placeholder="e.g. Male, Female, Non-binary" />
           {/* CHANGED — real ask, from a competitive-research finding:
               plain free text with no suggestions, unlike Gender right
               above it. Same "type anything, it just works" flexibility
               — this only adds suggestion chips, nothing is locked down. */}
           <SuggestField label="Pronouns" value={form.pronouns} onChange={set("pronouns")} options={pronounsOptions}
-            onAddNew={(v) => setPronounsOptions(CustomOptionListsRepository.add("pronouns", v))} T={T} placeholder="e.g. he/him, she/her, they/them" />
+            onAddNew={(v) => { CustomOptionListsRepository.add("pronouns", v).then(setPronounsOptions); }} T={T} placeholder="e.g. he/him, she/her, they/them" />
           {/* ADDED — real ask: relationship status, a different axis
               from Contacts' own relationshipType — describes your
               overall situation, not your connection to one person. */}
           <SuggestField label="Relationship status" value={form.relationshipStatus} onChange={set("relationshipStatus")} options={relationshipStatusOptions}
-            onAddNew={(v) => setRelationshipStatusOptions(CustomOptionListsRepository.add("relationshipStatus", v))} T={T} placeholder="e.g. Single, Married, Poly" />
+            onAddNew={(v) => { CustomOptionListsRepository.add("relationshipStatus", v).then(setRelationshipStatusOptions); }} T={T} placeholder="e.g. Single, Married, Poly" />
           {form.relationshipStatus && (
             <RelationPicker label="Linked to" value={form.relationshipContactIds} onChange={set("relationshipContactIds")}
               T={T} items={allContacts} placeholder="No contacts yet — add one under Contacts first" />
@@ -978,7 +1009,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
           <div style={{ padding: "8px 0" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Last tested date</div>
             <div style={{ fontSize: 14, color: T.textPrimary }}>
-              {getAutoLastTestedDate() ? new Date(getAutoLastTestedDate()).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "No tests logged yet"}
+              {lastTestedDate ? new Date(lastTestedDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "No tests logged yet"}
             </div>
           </div>
         </SectionCard>
@@ -1032,19 +1063,33 @@ function ProfileDataView({ profile, T }) {
   // Real read-only summaries, single owner elsewhere — see each
   // repository's own comment for why this screen no longer edits
   // either of these directly.
-  const linkedContactNames = profile.relationshipContactIds
-    .map((id) => ContactRepository.getById(id)?.name)
-    .filter(Boolean);
-  const activeContraception = ContraceptionRepository.getActive().map((e) => e.method);
+  // CHANGED — Phase 2 encryption groundwork: ContactRepository went
+  // async — was a plain render-body call.
+  const linkedContactNames = useLoadedMemo(
+    () => Promise.all(profile.relationshipContactIds.map(async (id) => (await ContactRepository.getById(id))?.name)).then((names) => names.filter(Boolean)),
+    [profile.relationshipContactIds], []
+  );
+  // CHANGED — Phase 2 encryption groundwork: ContraceptionRepository
+  // went async — was a plain render-body call.
+  const activeContraception = useLoadedMemo(() => ContraceptionRepository.getActive().then((all) => all.map((e) => e.method)), [], []);
+  // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+  // async — getAutoLastTestedDate() was called straight in the render
+  // body below.
+  const lastTestedDate = useLoadedMemo(() => getAutoLastTestedDate(), [], null);
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry
+  // are now async — resolved via useLoadedMemo instead of a plain
+  // render-body call.
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
+  const chemNameById = useLoadedMemo(async () => new Map((await ChemsRegistry.getAll()).map((c) => [c.id, c.name])), [], new Map());
   const kinkNames = profile.statedKinks.map((sel) => {
-    const name = KinkRegistry.getById(sel.kinkId)?.name;
+    const name = kinkNameById.get(sel.kinkId);
     return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
   }).filter(Boolean);
   const limitNames = profile.limits.map((sel) => {
-    const name = KinkRegistry.getById(sel.kinkId)?.name;
+    const name = kinkNameById.get(sel.kinkId);
     return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
   }).filter(Boolean);
-  const chemNames = profile.knownChems.map((id) => ChemsRegistry.getById(id)?.name).filter(Boolean);
+  const chemNames = profile.knownChems.map((id) => chemNameById.get(id)).filter(Boolean);
 
   // CHANGED 18 Aug 2026 — real bug caught while verifying: ageIsApprox
   // is a boolean, and `false !== "" && false !== null && false !==
@@ -1129,7 +1174,7 @@ function ProfileDataView({ profile, T }) {
             Not currently on PrEP or DoxyPEP
           </div>
         )}
-        <ReadRow label="Last tested date" value={getAutoLastTestedDate() ? new Date(getAutoLastTestedDate()).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""} T={T} />
+        <ReadRow label="Last tested date" value={lastTestedDate ? new Date(lastTestedDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""} T={T} />
       </SectionCard>
       <SectionCard title="About me" T={T}>
         <ReadRow label="Note" value={profile.aboutMeNotes} T={T} />
@@ -1189,7 +1234,7 @@ function ShareProfilePanel({ T }) {
   };
 
   const doCopyText = async () => {
-    const json = JSON.stringify(buildProfileShare({ includeLastTestedDate }), null, 2);
+    const json = JSON.stringify(await buildProfileShare({ includeLastTestedDate }), null, 2);
     try {
       await navigator.clipboard.writeText(json);
       setStatus({ ok: true, msg: "Copied — paste it into a message to share." });
@@ -1277,7 +1322,7 @@ function ProfileSummary({ profile, T, onEdit }) {
 // optional, every existing call site keeps its current behavior by
 // simply not passing it.
 export default function MyProfileModule({ onClose, registerModuleBackHandler, openEditingOnMount = false }) {
-  const [profile, setProfile] = useState(() => MyProfileRepository.getProfile());
+  const [profile, setProfile] = useLoadedState(() => MyProfileRepository.getProfile(), [], DEFAULT_PROFILE);
   const [editing, setEditing] = useState(openEditingOnMount);
   // CHANGED 26 Aug 2026 — real ask: Share/Export placement, deferred
   // earlier this session pending a real click-through, now decided —
@@ -1306,10 +1351,10 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
     return () => registerModuleBackHandler(null);
   }, [showShare, editing, registerModuleBackHandler, onClose]);
 
-  const refresh = () => setProfile(MyProfileRepository.getProfile());
+  const refresh = async () => setProfile(await MyProfileRepository.getProfile());
 
-  const saveEdit = (form) => {
-    MyProfileRepository.update(form);
+  const saveEdit = async (form) => {
+    await MyProfileRepository.update(form);
     refresh();
     setEditing(false);
   };

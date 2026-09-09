@@ -19,6 +19,7 @@ import { useEditUndo } from "../calculations/editUndoHelpers";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { nowAsDateTimeLocalString } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import {
   EncounterRepository, DEFAULT_ENCOUNTER,
   ENCOUNTER_TYPE_OPTIONS, MY_POSITION_OPTIONS, CUM_LOCATION_OPTIONS, MY_ROLE_OPTIONS,
@@ -49,7 +50,7 @@ import { LocationsRepository } from "../repositories/locationsRepository";
 // module. Scoped narrowly to attendee names, matching exactly what was
 // reported (not location/kinks — those weren't part of the report and
 // privacySettingsRepository.js's own base tier is Contact-field-specific).
-import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
+import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../repositories/privacySettingsRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -261,13 +262,27 @@ function GivingReceivingChips({ label, value, onChange, options, T }) {
 // ergonomics the old TagField had, but now backed by a real linked
 // entity instead of a bare string, closing the "Fist vs Fisting never
 // matched" gap flagged back on 18 Aug.
+// CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry
+// (whichever `registry` is passed here) are now async — allEntries
+// loaded via useLoadedMemo instead of a plain render-body call;
+// nameFor's archived-entry fallback resolved via a missingNames lookup
+// instead of a synchronous getById() call; finalizeEntry/commit now
+// await registry.findOrCreate(), and commit awaits analyzeEntry
+// (analyzeKinkEntry, also now async).
 function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, excludeIds = [], trackRole = false, roleOptions = [], resolveSynonym = (x) => x, analyzeEntry = null, getRoleOptionsForKink = null }) {
   const [draft, setDraft] = useState("");
   // ADDED — real ask: "did you mean...?" for a recognized typo or an
   // umbrella term, same mechanism now built and proven in Contacts.
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
-  const allEntries = registry.getAll().filter((e) => !e.isArchived);
-  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || registry.getById(id)?.name || "?";
+  const allEntries = useLoadedMemo(() => registry.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  const missingNames = useLoadedMemo(async () => {
+    const selectedIdsForLookup = trackRole ? value.map((v) => v.kinkId) : value;
+    const missingIds = selectedIdsForLookup.filter((id) => !allEntries.some((e) => e.id === id));
+    const map = new Map();
+    await Promise.all(missingIds.map(async (id) => { const e = await registry.getById(id); if (e) map.set(id, e.name); }));
+    return map;
+  }, [value, allEntries], new Map());
+  const nameFor = (id) => allEntries.find((e) => e.id === id)?.name || missingNames.get(id) || "?";
 
   // ADDED 18 Aug 2026 — trackRole mode: `value` becomes an array of
   // {kinkId, role} selections instead of plain registry IDs — the user's
@@ -340,12 +355,12 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
   // was silently creating separate, near-duplicate registry entries.
   // The underlying registry was always genuinely shared (confirmed
   // directly); this picker just wasn't feeding it consistently.
-  const finalizeEntry = (resolvedName) => {
-    const entry = registry.findOrCreate(resolvedName);
+  const finalizeEntry = async (resolvedName) => {
+    const entry = await registry.findOrCreate(resolvedName);
     if (entry && !hasSelection(entry.id)) addEntries([entry.id]);
   };
 
-  const commit = () => {
+  const commit = async () => {
     const raw = draft.trim();
     if (!raw) { setDraft(""); return; }
     const parts = raw.split(",").map((t) => t.trim()).filter(Boolean);
@@ -355,7 +370,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
     // to an existing entry, and ask instead of silently deciding.
     if (analyzeEntry && parts.length === 1) {
       const normalized = normalizeTag(parts[0]);
-      const analysis = analyzeEntry(normalized);
+      const analysis = await analyzeEntry(normalized);
       if (analysis.type === "umbrella" || analysis.type === "fuzzy-suggestion") {
         setPendingSuggestion(analysis);
         setDraft("");
@@ -364,12 +379,12 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
     }
 
     const newIds = [];
-    parts.forEach((part) => {
+    for (const part of parts) {
       const resolved = resolveSynonym(normalizeTag(part));
-      if (!resolved) return;
-      const entry = registry.findOrCreate(resolved);
+      if (!resolved) continue;
+      const entry = await registry.findOrCreate(resolved);
       if (entry && !hasSelection(entry.id) && !newIds.includes(entry.id)) newIds.push(entry.id);
-    });
+    }
     addEntries(newIds);
     setDraft("");
   };
@@ -502,10 +517,34 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
 // `contacts`/`attendeeIds` are optional — only Location's own call
 // site passes them (see below) — so this stays a plain registry
 // picker for any future non-Location caller.
+// CHANGED — real groundwork for encryption at rest: `registry` here is
+// always LocationsRepository (this component's one real caller, per
+// the comment below) — now async (see locationsRepository.js's own
+// comment), so this component's several direct render-body/fire-and-
+// forget calls all needed converting.
 function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder, showLocateButton = false, contacts = null, attendeeIds = [] }) {
-  const allEntries = registry.getAll().filter((e) => !e.isArchived);
-  const current = value ? (allEntries.find((e) => e.id === value)?.name || registry.getById(value)?.name || "") : "";
-  const [draft, setDraft] = useState(current);
+  const allEntries = useLoadedMemo(() => registry.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  // Falls back to a real getById() only for a referenced entry that's
+  // since been archived (so it's missing from `allEntries` above) —
+  // same shape as the original synchronous version's own fallback.
+  const currentName = useLoadedMemo(async () => {
+    if (!value) return "";
+    const found = allEntries.find((e) => e.id === value);
+    if (found) return found.name;
+    const entry = await registry.getById(value);
+    return entry?.name || "";
+  }, [value, allEntries], "");
+  const [draft, setDraft] = useState(currentName);
+  // `currentName` starts at its "" fallback for one render before the
+  // real value resolves — resync once it does, but only if the user
+  // hasn't already started typing (draftTouchedRef flips true the
+  // moment they do, in the input's own onChange below), same "only
+  // correct if still untouched" pattern as every other loaded-value
+  // race fixed this session.
+  const draftTouchedRef = useRef(false);
+  useEffect(() => {
+    if (!draftTouchedRef.current) setDraft(currentName);
+  }, [currentName]);
   // ADDED — real ask: "use current location... tag current place for
   // example" (the user's own cruising-context example). Reuses the
   // same findOrCreate() commit() already uses below, so a located place
@@ -518,8 +557,8 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
     try {
       const place = await getCurrentLocationPlace();
       const name = summarizePlaceName(place);
-      const entry = registry.findOrCreate(name);
-      if (entry) { onChange(entry.id); setDraft(entry.name); }
+      const entry = await registry.findOrCreate(name);
+      if (entry) { onChange(entry.id); draftTouchedRef.current = true; setDraft(entry.name); }
     } catch (err) {
       setLocateError(err.message);
     } finally {
@@ -545,15 +584,15 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
   // EncounterRepository directly (this component only has one real
   // caller, Location, so the coupling is honest rather than forcing a
   // generic prop-callback for a single consumer).
-  const locationLastUsed = useMemo(() => {
+  const locationLastUsed = useLoadedMemo(async () => {
     const map = new Map();
-    for (const enc of EncounterRepository.getAll()) {
+    for (const enc of await EncounterRepository.getAll()) {
       if (!enc.locationId || !enc.date) continue;
       const existing = map.get(enc.locationId);
       if (!existing || enc.date > existing) map.set(enc.locationId, enc.date);
     }
     return map;
-  }, []);
+  }, [], new Map());
   const draftLower = draft.trim().toLowerCase();
   const contactById = useMemo(() => {
     const map = new Map();
@@ -609,10 +648,10 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
       .slice(0, 5);
   }, [contacts, attendeeIds, draftLower, allEntries]);
 
-  const commit = () => {
+  const commit = async () => {
     const trimmed = draft.trim();
     if (!trimmed) { onChange(""); return; }
-    const entry = registry.findOrCreate(trimmed);
+    const entry = await registry.findOrCreate(trimmed);
     // CHANGED 18 Aug 2026 — real bug: draft never synced back to the
     // entry's canonical stored name after commit, so typing "sauna"
     // when "Sauna" already existed would match the existing entry
@@ -620,11 +659,12 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
     // lowercase "sauna" — visually inconsistent with what's actually
     // saved. This is very likely what "doesn't feel right after
     // clicking out" was describing.
-    if (entry) { onChange(entry.id); setDraft(entry.name); }
+    if (entry) { onChange(entry.id); draftTouchedRef.current = true; setDraft(entry.name); }
   };
 
   const tapSuggestion = (entry) => {
     onChange(entry.id);
+    draftTouchedRef.current = true;
     setDraft(entry.name);
   };
 
@@ -633,15 +673,16 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
   // — just pre-filled with that contact's real address/link instead of
   // starting blank, so it behaves like any other location from here on
   // (editable, archivable, reusable next time without contacts at all).
-  const tapContactSuggestion = (contact) => {
+  const tapContactSuggestion = async (contact) => {
     const contactLabel = contact.nickname || contact.name;
-    const entry = registry.findOrCreate(`${contactLabel}’s place`);
+    const entry = await registry.findOrCreate(`${contactLabel}’s place`);
     if (!entry) return;
     const changes = {};
     if (!entry.relatedContactId) changes.relatedContactId = contact.id;
     if (!entry.address && (contact.address || contact.city)) changes.address = contact.address || contact.city;
-    const finalEntry = Object.keys(changes).length ? registry.update(entry.id, changes) : entry;
+    const finalEntry = Object.keys(changes).length ? await registry.update(entry.id, changes) : entry;
     onChange(finalEntry.id);
+    draftTouchedRef.current = true;
     setDraft(finalEntry.name);
   };
 
@@ -685,7 +726,7 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
           visible suggestion chips above already cover "pick existing"
           — same fix applied to every other picker in the app using
           this pattern, not just this one. */}
-      <input value={draft} onChange={(e) => setDraft(e.target.value)}
+      <input value={draft} onChange={(e) => { draftTouchedRef.current = true; setDraft(e.target.value); }}
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
         placeholder={placeholder || "Pick existing or type a new one"}
@@ -715,8 +756,8 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
   // ADDED 26 Aug 2026 — real ask, decided: allow adding someone not
   // yet in Contacts, right from here, instead of blocking the whole
   // Activity on a separate trip to Contacts first.
-  const handleCreate = () => {
-    const created = onCreatePlaceholder(query.trim());
+  const handleCreate = async () => {
+    const created = await onCreatePlaceholder(query.trim());
     onChange([...value, created.id]);
     setQuery("");
   };
@@ -772,14 +813,29 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
   const attendeeNames = encounter.attendeeIds.map((id) => contactName(contacts, id));
   const shown = attendeeNames.slice(0, 3);
   const extra = attendeeNames.length - shown.length;
-  const locationName = encounter.locationId ? (LocationsRepository.getById(encounter.locationId)?.name || "") : "";
+  // CHANGED — real groundwork for encryption at rest: LocationsRepository
+  // is now async (see its own comment), so this can no longer be a
+  // plain render-body call — useLoadedMemo instead, same as everywhere
+  // else this session. Each card in a list loads its own independently;
+  // cheap regardless of list size since ensureLoaded() memoizes the
+  // one real underlying read.
+  const locationName = useLoadedMemo(async () => {
+    if (!encounter.locationId) return "";
+    const loc = await LocationsRepository.getById(encounter.locationId);
+    return loc?.name || "";
+  }, [encounter.locationId], "");
   // Local copy — ActivityDetails has its own further down; this card
   // renders in a different component/scope (the encounter list), so it
   // needs its own rather than reaching across function boundaries.
-  const kinkNames = encounter.kinksInvolved.map((sel) => {
-    const name = KinkRegistry.getById(sel.kinkId)?.name;
-    return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
-  }).filter(Boolean);
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
+  // — same useLoadedMemo treatment as locationName above.
+  const kinkNames = useLoadedMemo(async () => {
+    const resolved = await Promise.all(encounter.kinksInvolved.map((sel) => KinkRegistry.getById(sel.kinkId)));
+    return encounter.kinksInvolved.map((sel, i) => {
+      const name = resolved[i]?.name;
+      return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
+    }).filter(Boolean);
+  }, [encounter.kinksInvolved], []);
   // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
   // to every module — same pattern as Contacts' own ContactCard.
   const pressTimer = useRef(null);
@@ -856,10 +912,10 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
 
 // ── 3a. Activity Landing ──
 function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
-  const [contacts] = useState(loadContacts);
+  const contacts = useLoadedMemo(loadContacts, [], []);
   // ADDED — real bug report: Anonymise mode masked Contacts but not
   // Encounters' own attendee display. Same read pattern Contacts uses.
-  const [privacy] = useState(() => PrivacySettingsRepository.getSettings());
+  const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const anonymise = privacy.anonymiseModeActive;
   const [showArchived, setShowArchived] = useState(false);
   // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
@@ -896,6 +952,26 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // now matches the exact same field set for consistency.
   const [query, setQuery] = useState("");
 
+  // ADDED 4 Sep 2026 — encryption groundwork: pulled the "sinceLastTest"
+  // filter's own TestingRepository.getAll() call out of the useMemo
+  // below into its own useLoadedMemo. Deliberately NOT converting the
+  // whole `visible` computation the same way — it depends on query/
+  // dateFilter/showArchived, which change on every keystroke/tap, and
+  // useLoadedMemo (effect-based) would introduce a real one-tick lag/
+  // flicker on each of those instead of the instant useMemo recompute
+  // this search box needs. Same "split slow-loading data from fast pure
+  // computation" split already used for ClinicCard's cutoffDate and
+  // RegistryManagement's duplicatePairs/usageMap earlier in this audit.
+  const lastTestDate = useLoadedMemo(async () => {
+    const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+    const lastTest = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    return lastTest?.date || null;
+  }, [], null);
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
+  // — same split as lastTestDate above (loaded once, not per keystroke),
+  // read synchronously via .get() inside the `visible` useMemo below.
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
+
   const visible = useMemo(() => {
     const base = encounters.filter((e) => (showArchived ? true : !e.isArchived));
     let filtered = base;
@@ -908,21 +984,19 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
         const cutoff = Date.now() - 30 * 86400000;
         filtered = dated.filter((e) => new Date(e.date).getTime() >= cutoff);
       } else if (dateFilter === "sinceLastTest") {
-        const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
-        const lastTest = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-        filtered = lastTest ? dated.filter((e) => new Date(e.date).getTime() >= new Date(lastTest.date).getTime()) : dated;
+        filtered = lastTestDate ? dated.filter((e) => new Date(e.date).getTime() >= new Date(lastTestDate).getTime()) : dated;
       }
     }
     const q = query.trim().toLowerCase();
     if (q) {
       filtered = filtered.filter((e) => {
         const attendeeNames = e.attendeeIds.map((id) => contactName(contacts, id));
-        const kinkNames = (e.kinksInvolved || []).map((sel) => KinkRegistry.getById(sel.kinkId)?.name);
+        const kinkNames = (e.kinksInvolved || []).map((sel) => kinkNameById.get(sel.kinkId));
         return [e.title, e.encounterType, e.notes, ...attendeeNames, ...kinkNames].filter(Boolean).some((v) => v.toLowerCase().includes(q));
       });
     }
     return sortByDateDesc(filtered);
-  }, [encounters, showArchived, dateFilter, query, contacts]);
+  }, [encounters, showArchived, dateFilter, query, contacts, lastTestDate]);
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", paddingBottom: 90 }}>
@@ -953,15 +1027,15 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
               </span>
               {/* ADDED 26 Aug 2026 — real ask: export/print a single
                   record, enabled only when exactly one is selected. */}
-              <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("encounters", EncounterRepository.getById(selectedIds[0])); }}
+              <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("encounters", await EncounterRepository.getById(selectedIds[0])); }}
                 style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-              <span onClick={() => { if (selectedIds.length > 0) { EncounterRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+              <span onClick={async () => { if (selectedIds.length > 0) { await EncounterRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-              <span onClick={() => {
+              <span onClick={async () => {
                 if (selectedIds.length === 0) return;
                 if (window.confirm(`Delete ${selectedIds.length} activit${selectedIds.length > 1 ? "ies" : "y"}? You'll have a few seconds to undo.`)) {
-                  const toRestore = EncounterRepository.getAll().filter((e) => selectedIds.includes(e.id));
-                  triggerDelete(toRestore);
+                  const toRestore = (await EncounterRepository.getAll()).filter((e) => selectedIds.includes(e.id));
+                  await triggerDelete(toRestore);
                   refresh();
                   exitSelectMode();
                 }
@@ -1048,34 +1122,51 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
 
 // ── 3b. Activity Details ──
 function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, triggerDelete, refresh }) {
-  const [encounter, setEncounter] = useState(() => EncounterRepository.getById(encounterId));
-  const [contacts] = useState(loadContacts);
+  const [encounter, setEncounter] = useLoadedState(() => EncounterRepository.getById(encounterId), [encounterId], null);
+  const contacts = useLoadedMemo(loadContacts, [], []);
   // ADDED — real bug report: Anonymise mode masked Contacts but not
   // an encounter's own linked-attendee names shown here.
-  const [privacy] = useState(() => PrivacySettingsRepository.getSettings());
+  const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const anonymise = privacy.anonymiseModeActive;
   const [menuOpen, setMenuOpen] = useState(false);
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven across every other module this session.
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // CHANGED — real groundwork for encryption at rest: LocationsRepository
+  // is now async (see its own comment) — moved above the `!encounter`
+  // guard below (same "hooks before guard" rule this whole session has
+  // followed) since it's now a real hook, not a plain const.
+  const locationName = useLoadedMemo(async () => {
+    if (!encounter?.locationId) return "";
+    const loc = await LocationsRepository.getById(encounter.locationId);
+    return loc?.name || "";
+  }, [encounter?.locationId], "");
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry/
+  // ProtectionRegistry/SymptomsRegistry are now async — resolved into
+  // lookup Maps here (hoisted above the guard, same hooks-before-guard
+  // rule), read synchronously via .get() by resolveNames/
+  // resolveKinkSelections below.
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
+  const chemNameById = useLoadedMemo(async () => new Map((await ChemsRegistry.getAll()).map((c) => [c.id, c.name])), [], new Map());
+  const protectionNameById = useLoadedMemo(async () => new Map((await ProtectionRegistry.getAll()).map((p) => [p.id, p.name])), [], new Map());
+  const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
   if (!encounter) return null;
 
   // Resolves an array of registry IDs to their display names — used
   // below for Kinks/Chems/Protection/Symptoms, since those are now real
   // registry links, not plain strings.
-  const resolveNames = (registry, ids) => ids.map((id) => registry.getById(id)?.name).filter(Boolean);
+  const resolveNames = (nameById, ids) => ids.map((id) => nameById.get(id)).filter(Boolean);
   // ADDED 18 Aug 2026 — kinksInvolved is now {kinkId, role} selections,
   // not plain IDs (see encounterRepository.js) — this resolves each to
   // its display name, appending the role in parentheses when set.
   const resolveKinkSelections = (selections) => selections.map((sel) => {
-    const name = KinkRegistry.getById(sel.kinkId)?.name;
+    const name = kinkNameById.get(sel.kinkId);
     return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
   }).filter(Boolean);
-  const locationName = encounter.locationId ? (LocationsRepository.getById(encounter.locationId)?.name || "") : "";
 
-  const archive = () => {
-    EncounterRepository.archive(encounter.id);
-    setEncounter(EncounterRepository.getById(encounter.id));
+  const archive = async () => {
+    await EncounterRepository.archive(encounter.id);
+    setEncounter(await EncounterRepository.getById(encounter.id));
     setMenuOpen(false);
   };
 
@@ -1134,7 +1225,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-            <button onClick={() => { triggerDelete([encounter]); refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
+            <button onClick={async () => { await triggerDelete([encounter]); refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
           </div>
         </div>
       )}
@@ -1181,17 +1272,17 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
 
         <SectionCard title="Kink & chems" T={T}>
           <ReadRow label="Kinks involved" value={resolveKinkSelections(encounter.kinksInvolved)} T={T} />
-          <ReadRow label="Chems/alcohol used" value={resolveNames(ChemsRegistry, encounter.chemsAlcoholUsed)} T={T} />
+          <ReadRow label="Chems/alcohol used" value={resolveNames(chemNameById, encounter.chemsAlcoholUsed)} T={T} />
         </SectionCard>
 
         <SectionCard title="Protection & medication context" T={T}>
-          <ReadRow label="Protection used" value={resolveNames(ProtectionRegistry, encounter.protectionUsed)} T={T} />
+          <ReadRow label="Protection used" value={resolveNames(protectionNameById, encounter.protectionUsed)} T={T} />
           <ReadRow label="My PrEP coverage" value={encounter.myPrepCoverage} T={T} />
           <ReadRow label="My DoxyPEP status" value={encounter.myDoxyPepStatus} T={T} />
         </SectionCard>
 
         <SectionCard title="Health" T={T}>
-          <ReadRow label="Symptoms noted" value={resolveNames(SymptomsRegistry, encounter.symptomsNoted)} T={T} />
+          <ReadRow label="Symptoms noted" value={resolveNames(symptomNameById, encounter.symptomsNoted)} T={T} />
         </SectionCard>
 
         <SectionCard title="Location" T={T}>
@@ -1217,7 +1308,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
 // ── Add/Edit sheet ──
 function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord }) {
   const isNew = !encounterId;
-  const [contacts, setContacts] = useState(loadContacts);
+  const [contacts, setContacts] = useLoadedState(loadContacts, [], []);
   // ADDED 26 Aug 2026 — real ask, decided: can't add an Activity for
   // someone not yet in Contacts, since AttendeePicker only searches
   // existing contacts. Rather than blocking with a warning, allow a
@@ -1228,19 +1319,28 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   // itself — a contact with just a name is already self-evidently
   // incomplete, no schema change needed to detect that later).
   const [placeholderContactIds, setPlaceholderContactIds] = useState([]);
-  const createPlaceholderContact = (name) => {
-    const created = ContactRepository.create({ name });
-    setContacts(loadContacts());
+  const createPlaceholderContact = async (name) => {
+    const created = await ContactRepository.create({ name });
+    setContacts(await loadContacts());
     setPlaceholderContactIds((ids) => [...ids, created.id]);
     return created;
   };
   // ADDED 19 Aug 2026 — draft autosave, same pattern/reasoning as
   // Contacts — see draftStorage.js.
   const draftKey = `encounterEdit_${encounterId || "new"}`;
+  // CHANGED 4 Sep 2026 — encryption groundwork: the isNew/draft cases
+  // stay a plain synchronous useState initializer (loadDraft reads
+  // sessionStorage directly, not storageAdapter — genuinely synchronous
+  // forever, and DEFAULT_ENCOUNTER needs no repository call at all). The
+  // edit case's EncounterRepository.getById(encounterId) is the one
+  // real async-sensitive call, so it moved to its own effect below
+  // instead of the useState initializer, with form falling back to
+  // DEFAULT_ENCOUNTER for the one render before it resolves rather than
+  // undefined (nothing here null-guards form before rendering fields).
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);
     if (draft) return draft.data;
-    return isNew ? { ...DEFAULT_ENCOUNTER } : EncounterRepository.getById(encounterId);
+    return { ...DEFAULT_ENCOUNTER };
   });
   const [draftRestored] = useState(() => !!loadDraft(draftKey));
   // CHANGED — real bug from the user's own testing: this fired on the
@@ -1250,25 +1350,55 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   // behind, which then showed as a false "Restored unsaved changes"
   // next time. Skips the initial mount with a ref, only saves once the
   // form has genuinely changed from what it started as.
-  const isFirstRender = useRef(true);
+  //
+  // REVISED 4 Sep 2026 — the original fix here (an isFirstRender ref
+  // plus a "skip the next autosave" ref set right before the edit-load
+  // effect's setForm) looked right but broke under React StrictMode
+  // (enabled in main.jsx): StrictMode double-invokes effects on mount,
+  // BEFORE the state update from the first invocation is actually
+  // applied and re-rendered — so both the loader effect and the
+  // autosave effect run twice against the still-stale `form` closure,
+  // consuming the one-shot skip flag during that double-invoke dance
+  // and leaving nothing to protect the real, later render where `form`
+  // actually becomes the loaded record. Caught live: opening Edit on an
+  // untouched existing Encounter created a real sessionStorage draft
+  // within 300ms, confirmed by reading sessionStorage directly.
+  // Fixed with an explicit dirty flag instead of inferring "was this a
+  // real edit" from timing/reference-equality: `set()` (the only path
+  // a genuine user edit takes) is the one place that flips it, so the
+  // autosave effect no longer has to guess.
+  const isDirty = useRef(false);
   useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (isNew || loadDraft(draftKey)) return;
+    // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
+    // async — an effect body can't itself be async, wrapped in an IIFE.
+    (async () => {
+      const real = await EncounterRepository.getById(encounterId);
+      if (real) setForm(real);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [encounterId]);
+  useEffect(() => {
+    if (!isDirty.current) return;
     saveDraft(draftKey, form);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
-  const set = (key) => (val) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (key) => (val) => { isDirty.current = true; setForm((f) => ({ ...f, [key]: val })); };
 
-  const save = () => {
+  const save = async () => {
     clearDraft(draftKey);
     if (isNew) {
-      EncounterRepository.create(form);
+      await EncounterRepository.create(form);
     } else {
       // ADDED 19 Aug 2026 — real undo/redo: snapshot taken right
       // before the update actually happens, so undo has the genuine
       // pre-edit state to restore, not a guess.
-      onBeforeEdit?.(encounterId);
-      EncounterRepository.update(encounterId, form);
-      onAfterEdit?.(encounterId);
+      // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited,
+      // and now EncounterRepository itself (Phase 2 encryption
+      // groundwork), are all async — every step here awaited.
+      await onBeforeEdit?.(encounterId);
+      await EncounterRepository.update(encounterId, form);
+      await onAfterEdit?.(encounterId);
     }
     // ADDED 26 Aug 2026 — real ask: DoxyPEP 72h notification. A new or
     // edited Activity is exactly what can start (or, if myPosition was
@@ -1302,7 +1432,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           <span>Restored unsaved changes from earlier.</span>
           {/* ADDED 19 Aug 2026 — same "discard and start clean" option
               Contacts got, same reasoning. */}
-          <span onClick={() => { clearDraft(draftKey); setForm(isNew ? { ...DEFAULT_ENCOUNTER } : EncounterRepository.getById(encounterId)); }}
+          <span onClick={async () => { clearDraft(draftKey); setForm(isNew ? { ...DEFAULT_ENCOUNTER } : await EncounterRepository.getById(encounterId)); }}
             style={{ fontWeight: 700, cursor: "pointer", textDecoration: "underline", flexShrink: 0 }}>
             Clear & start fresh
           </span>
@@ -1410,33 +1540,33 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
   // reasoning) — encounters/deletedRecent/undoDelete/triggerDelete now
   // live at the real module level, shared by both ActivityLanding and
   // ActivityDetails.
-  const [encounters, setEncounters] = useState(loadEncounters);
-  const refresh = () => setEncounters(loadEncounters());
+  const [encounters, setEncounters] = useLoadedState(loadEncounters, [], []);
+  const refresh = () => { loadEncounters().then(setEncounters); };
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, not just undo — same {mode, records}
   // shape already proven in Contacts (this session's reference
   // implementation) and editUndoHelpers.js's own undo/redo for edits.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
   const undoTimerRef = useRef(null);
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => EncounterRepository.restore(record));
+    for (const record of deleteToast.records) await EncounterRepository.restore(record);
     refresh();
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
   };
-  const redoDelete = () => {
+  const redoDelete = async () => {
     if (!deleteToast) return;
-    TrashRepository.add("encounters", deleteToast.records);
-    deleteToast.records.forEach((r) => EncounterRepository.delete(r.id));
+    await TrashRepository.add("encounters", deleteToast.records);
+    for (const r of deleteToast.records) await EncounterRepository.delete(r.id);
     refresh();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
-  const triggerDelete = (records) => {
-    TrashRepository.add("encounters", records);
-    records.forEach((r) => EncounterRepository.delete(r.id));
+  const triggerDelete = async (records) => {
+    await TrashRepository.add("encounters", records);
+    for (const r of records) await EncounterRepository.delete(r.id);
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);

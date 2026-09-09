@@ -137,14 +137,14 @@ export function notificationsGloballyEnabled(prefs) {
 }
 
 export const NotificationPreferencesRepository = {
-  getPreferences() {
-    const stored = storage.load(STORAGE_KEY, DEFAULT_NOTIFICATION_PREFERENCES);
+  async getPreferences() {
+    const stored = await storage.load(STORAGE_KEY, DEFAULT_NOTIFICATION_PREFERENCES);
     return { ...DEFAULT_NOTIFICATION_PREFERENCES, ...stored };
   },
 
-  update(changes) {
-    const updated = { ...this.getPreferences(), ...changes };
-    storage.save(STORAGE_KEY, updated);
+  async update(changes) {
+    const updated = { ...(await this.getPreferences()), ...changes };
+    await storage.save(STORAGE_KEY, updated);
     return updated;
   },
 };

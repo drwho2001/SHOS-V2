@@ -130,15 +130,25 @@ let seedMedications = [
   },
 ];
 
-// Real startup: load whatever's actually been saved before. On a
-// genuinely first run (nothing in storage yet), fall back to the seed
-// data above so the app isn't empty on day one.
-let medications = storage.load(STORAGE_KEY, seedMedications);
+// CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
+// loadPromise pattern, same as every other module-load-cached
+// repository converted this session (see CLAUDE.md).
+let medications = null;
+let nextMedicationNumber = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (medications === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedMedications);
+    medications = await loadPromise;
+    nextMedicationNumber = computeNextMedicationNumber(medications);
+  }
+  return medications;
+}
 
 // Every mutating method below calls this after changing `medications` —
 // same explicit "change, then persist" pattern as ContactRepository.
-function persist() {
-  storage.save(STORAGE_KEY, medications);
+async function persist() {
+  await storage.save(STORAGE_KEY, medications);
 }
 
 // Derived from the actual IDs present, not from medications.length — a
@@ -151,7 +161,6 @@ function computeNextMedicationNumber(existingMedications) {
   });
   return (numbers.length ? Math.max(...numbers) : 0) + 1;
 }
-let nextMedicationNumber = computeNextMedicationNumber(medications);
 
 function generateMedicationId() {
   const id = `med_${String(nextMedicationNumber).padStart(3, "0")}`;
@@ -250,13 +259,15 @@ export const MedicationRepository = {
   // active ones (e.g. the Registry tab) filter on isArchived themselves —
   // the repository just hands back the facts, it doesn't decide what a
   // screen should show.
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(medications.map((m) => ({ ...DEFAULT_MEDICATION, ...m })));
   },
 
   // A single medication by its id, or null if it doesn't exist. Returns
   // a copy, not the live stored object — same reasoning as getAll().
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = medications.find((m) => m.id === id);
     return found ? structuredClone({ ...DEFAULT_MEDICATION, ...found }) : null;
   },
@@ -275,7 +286,8 @@ export const MedicationRepository = {
   // repository already uses, which also means any FUTURE field added
   // to DEFAULT_MEDICATION is automatically included here — this exact
   // bug class can't recur.
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     const newMedication = {
       ...DEFAULT_MEDICATION,
       ...data,
@@ -285,14 +297,15 @@ export const MedicationRepository = {
       sortOrder: medications.length,
     };
     medications = [...medications, newMedication];
-    persist();
+    await persist();
     return newMedication;
   },
 
   // Updates any subset of a medication's own fields (registry metadata —
   // name, dosing pattern, thresholds, etc.). Does NOT touch log history;
   // that's a different repository entirely.
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updatedMedication = null;
     medications = medications.map((m) => {
       if (m.id !== id) return m;
@@ -301,7 +314,7 @@ export const MedicationRepository = {
       updatedMedication = { ...m, ...changes, updatedAt: new Date().toISOString() };
       return updatedMedication;
     });
-    persist();
+    await persist();
     return updatedMedication;
   },
 
@@ -312,7 +325,8 @@ export const MedicationRepository = {
   // superseded, then the current fields update to the new dose.
   // Stock/adherence/log history all stay attached to this same
   // record's id throughout, genuinely continuous.
-  updateDose(id, { doseStrengthValue, doseStrengthUnit, unitsPerDose, note }) {
+  async updateDose(id, { doseStrengthValue, doseStrengthUnit, unitsPerDose, note }) {
+    await ensureLoaded();
     let updatedMedication = null;
     medications = medications.map((m) => {
       if (m.id !== id) return m;
@@ -331,22 +345,23 @@ export const MedicationRepository = {
       };
       return updatedMedication;
     });
-    persist();
+    await persist();
     return updatedMedication;
   },
 
   // Archiving/unarchiving never deletes anything — matches the project's
   // standing "stage, don't auto-delete" rule. Archived medications drop
   // out of Registry/Inventory views but their log history stays intact.
-  archive(id) {
+  async archive(id) {
     return this.update(id, { isArchived: true });
   },
 
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven across every other module this session.
-  delete(id) {
+  async delete(id) {
+    await ensureLoaded();
     medications = medications.filter((m) => m.id !== id);
-    persist();
+    await persist();
     // ADDED — real gap found via the new orphan-reference checker
     // (orphanReferenceCheck.js): Clinic Visit's own medicationsGivenIds
     // references a Medication by id — only clears the link. The dose/
@@ -358,33 +373,36 @@ export const MedicationRepository = {
     LogRepository.deleteForMedication(id);
   },
 
-  unarchive(id) {
+  async unarchive(id) {
     return this.update(id, { isArchived: false });
   },
 
   // ADDED 26 Aug 2026 — real ask: long-press multi-select rolled out
   // to every module.
-  bulkArchive(ids) {
-    ids.forEach((id) => this.archive(id));
+  async bulkArchive(ids) {
+    for (const id of ids) await this.archive(id);
   },
 
-  bulkDelete(ids) {
+  async bulkDelete(ids) {
+    await ensureLoaded();
     medications = medications.filter((m) => !ids.includes(m.id));
-    persist();
-    ids.forEach((id) => { ClinicVisitsRepository.unlinkMedication(id); LogRepository.deleteForMedication(id); });
+    await persist();
+    for (const id of ids) { ClinicVisitsRepository.unlinkMedication(id); LogRepository.deleteForMedication(id); }
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.
-  restore(record) {
+  async restore(record) {
+    await ensureLoaded();
     if (medications.some((m) => m.id === record.id)) return;
     medications = [...medications, record];
-    persist();
+    await persist();
   },
 
   // Moves a medication up or down among ACTIVE medications only —
   // archived ones don't count towards position, matching the existing
   // prototype behavior. direction is the string "up" or "down".
-  reorder(id, direction) {
+  async reorder(id, direction) {
+    await ensureLoaded();
     const step = direction === "up" ? -1 : 1;
     const active = medications
       .filter((m) => !m.isArchived)
@@ -409,14 +427,14 @@ export const MedicationRepository = {
       if (m.id === neighbor.id) return { ...m, sortOrder: currentOrder };
       return m;
     });
-    persist();
+    await persist();
   },
 
   // Wholesale replace — used only by backup restore. See ContactRepository
   // for the same pattern and reasoning.
-  replaceAll(newMedications) {
+  async replaceAll(newMedications) {
     medications = newMedications;
     nextMedicationNumber = computeNextMedicationNumber(medications);
-    persist();
+    await persist();
   },
 };

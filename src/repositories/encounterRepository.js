@@ -382,13 +382,23 @@ let seedEncounters = [
   },
 ];
 
-// Real startup: load whatever's actually been saved before, same
-// pattern as ContactRepository — fall back to seed data only on a
-// genuinely first run.
-let encounters = storage.load(STORAGE_KEY, seedEncounters);
+// CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
+// loadPromise pattern, same as every other module-load-cached
+// repository converted this session (see CLAUDE.md).
+let encounters = null;
+let nextEncounterNumber = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (encounters === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedEncounters);
+    encounters = await loadPromise;
+    nextEncounterNumber = computeNextEncounterNumber(encounters);
+  }
+  return encounters;
+}
 
-function persist() {
-  storage.save(STORAGE_KEY, encounters);
+async function persist() {
+  await storage.save(STORAGE_KEY, encounters);
 }
 
 // Same ID-safety approach as ContactRepository: derived from the actual
@@ -400,7 +410,6 @@ function computeNextEncounterNumber(existingEncounters) {
   });
   return (numbers.length ? Math.max(...numbers) : 0) + 1;
 }
-let nextEncounterNumber = computeNextEncounterNumber(encounters);
 
 function generateEncounterId() {
   const id = `encounter_${String(nextEncounterNumber).padStart(3, "0")}`;
@@ -451,7 +460,8 @@ export const EncounterRepository = {
   // DEFAULT_ENCOUNTER, not missing entirely. Also runs kinksInvolved
   // through normalizeKinkSelections() so old flat-ID-array encounters
   // and new role-aware encounters both read back in the current shape.
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(
       encounters.map((e) => {
         const merged = { ...DEFAULT_ENCOUNTER, ...e };
@@ -460,7 +470,8 @@ export const EncounterRepository = {
     );
   },
 
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = encounters.find((e) => e.id === id);
     if (!found) return null;
     const merged = { ...DEFAULT_ENCOUNTER, ...found };
@@ -470,7 +481,8 @@ export const EncounterRepository = {
   // Every encounter that lists this contact as an attendee — the read
   // side of the Attendees relation. Used by encounterCalculations.js
   // and by the Contact Profile Timeline.
-  getByAttendee(contactId) {
+  async getByAttendee(contactId) {
+    await ensureLoaded();
     return structuredClone(
       encounters
         .filter((e) => e.attendeeIds.includes(contactId))
@@ -481,7 +493,8 @@ export const EncounterRepository = {
     );
   },
 
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     const newEncounter = {
       ...DEFAULT_ENCOUNTER,
       ...data,
@@ -490,11 +503,12 @@ export const EncounterRepository = {
       isArchived: false,
     };
     encounters = [...encounters, newEncounter];
-    persist();
+    await persist();
     return newEncounter;
   },
 
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updatedEncounter = null;
     encounters = encounters.map((e) => {
       if (e.id !== id) return e;
@@ -503,11 +517,11 @@ export const EncounterRepository = {
       updatedEncounter = { ...e, ...changes, updatedAt: new Date().toISOString() };
       return updatedEncounter;
     });
-    persist();
+    await persist();
     return updatedEncounter;
   },
 
-  archive(id) {
+  async archive(id) {
     return this.update(id, { isArchived: true });
   },
 
@@ -515,9 +529,10 @@ export const EncounterRepository = {
   // other module's own delete() this session: archive stays correct
   // for anything real that's just outdated, this is specifically for
   // a genuinely wrong entry.
-  delete(id) {
+  async delete(id) {
+    await ensureLoaded();
     encounters = encounters.filter((e) => e.id !== id);
-    persist();
+    await persist();
     // ADDED — real gap found via the new orphan-reference checker
     // (orphanReferenceCheck.js): Symptom Log/Episode both reference an
     // Encounter by id — only clears the link, same role as
@@ -532,41 +547,44 @@ export const EncounterRepository = {
   // own delete(). Only clears the link, same role as
   // measurementRepository.js's own unlink methods — the Encounter
   // itself stays, it just stops naming a Contact that no longer exists.
-  unlinkContact(contactId) {
+  async unlinkContact(contactId) {
+    await ensureLoaded();
     encounters = encounters.map((e) => ({ ...e, attendeeIds: (e.attendeeIds || []).filter((id) => id !== contactId) }));
-    persist();
+    await persist();
   },
 
-  unarchive(id) {
+  async unarchive(id) {
     return this.update(id, { isArchived: false });
   },
 
   // ADDED 26 Aug 2026 — real ask: long-press multi-select rolled out
   // to every module, same pattern as Contacts' own bulk methods.
-  bulkArchive(ids) {
-    ids.forEach((id) => this.archive(id));
+  async bulkArchive(ids) {
+    for (const id of ids) await this.archive(id);
   },
 
-  bulkDelete(ids) {
+  async bulkDelete(ids) {
+    await ensureLoaded();
     encounters = encounters.filter((e) => !ids.includes(e.id));
-    persist();
-    ids.forEach((id) => { SymptomLogRepository.unlinkEncounter(id); EpisodeRepository.unlinkEncounter(id); });
+    await persist();
+    for (const id of ids) { SymptomLogRepository.unlinkEncounter(id); EpisodeRepository.unlinkEncounter(id); }
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.
   // Reinserts the exact record (same id, same timestamps), unlike
   // create() which always generates a fresh id.
-  restore(record) {
+  async restore(record) {
+    await ensureLoaded();
     if (encounters.some((e) => e.id === record.id)) return;
     encounters = [...encounters, record];
-    persist();
+    await persist();
   },
 
   // Wholesale replace — used only by backup restore, same contract as
   // ContactRepository.replaceAll.
-  replaceAll(newEncounters) {
+  async replaceAll(newEncounters) {
     encounters = newEncounters;
     nextEncounterNumber = computeNextEncounterNumber(encounters);
-    persist();
+    await persist();
   },
 };

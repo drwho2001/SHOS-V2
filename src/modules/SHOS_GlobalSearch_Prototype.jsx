@@ -9,6 +9,7 @@ import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
 import { formatRelativeDate } from "../calculations/encounterCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // ADDED — real bug found in the user's own testing: kinks were never
 // indexed in Global Search at all — searching "fisting" found nothing,
@@ -78,10 +79,16 @@ function norm(v) {
 // same "don't over-engineer for a single-user app" judgment already
 // applied elsewhere in this project (e.g. the ID scheme staying
 // human-readable rather than moving to UUIDs).
-function buildIndex() {
+async function buildIndex() {
   const results = [];
 
-  ContactRepository.getAll().filter((c) => !c.isArchived).forEach((c) => {
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
+  // — this loop was a plain .forEach(), which can't await inside it
+  // (an unawaited async call here would let the loop finish, and this
+  // whole function return, before a kink name was ever resolved).
+  // Converted to for...of, same fix already applied to the Encounters
+  // loop below for its own attendeeNames resolution.
+  for (const c of (await ContactRepository.getAll()).filter((c) => !c.isArchived)) {
     // CHANGED 4 Sep 2026 — real ask, from a real device report: a
     // kink-term search (e.g. "piss") was pulling records that never
     // actually mention it — the free-text grab-bag below (phone/
@@ -95,7 +102,7 @@ function buildIndex() {
     // as if they were into it when the truth on file is the opposite.
     // Limits are deliberately excluded now; only real stated interest
     // makes a Contact findable by that kink.
-    const kinkNames = c.statedKinks.map((sel) => KinkRegistry.getById(sel.kinkId)?.name).filter(Boolean);
+    const kinkNames = (await Promise.all(c.statedKinks.map((sel) => KinkRegistry.getById(sel.kinkId)))).filter(Boolean).map((k) => k.name);
     const searchText = [c.name, c.nickname, ...kinkNames].join(" ");
     results.push({
       type: "contact", id: c.id,
@@ -108,9 +115,9 @@ function buildIndex() {
       // equivalent, not a record of anything that actually happened.
       date: c.createdAt || null,
     });
-  });
+  }
 
-  MedicationRepository.getAll().filter((m) => !m.isArchived).forEach((m) => {
+  (await MedicationRepository.getAll()).filter((m) => !m.isArchived).forEach((m) => {
     const searchText = [m.name, m.medicationType, m.usualSupplier, m.route].join(" ");
     results.push({
       type: "medication", id: m.id,
@@ -123,7 +130,7 @@ function buildIndex() {
     });
   });
 
-  EncounterRepository.getAll().filter((e) => !e.isArchived).forEach((e) => {
+  for (const e of (await EncounterRepository.getAll()).filter((e) => !e.isArchived)) {
     // CHANGED 4 Sep 2026 — same real fix as Contacts above: narrowed
     // to attendee names + kink tags actually recorded on the
     // encounter, dropped title/encounterType/notes as searchable
@@ -131,11 +138,11 @@ function buildIndex() {
     // search ("piss") pulling records that never mention it.
     // Attendee names are a genuinely new match field here (Global
     // Search never resolved attendeeIds to names before this).
-    const attendeeNames = (e.attendeeIds || []).map((id) => {
-      const contact = ContactRepository.getById(id);
+    const attendeeNames = (await Promise.all((e.attendeeIds || []).map(async (id) => {
+      const contact = await ContactRepository.getById(id);
       return contact?.nickname || contact?.name;
-    }).filter(Boolean);
-    const kinkNames = (e.kinksInvolved || []).map((sel) => KinkRegistry.getById(sel.kinkId)?.name).filter(Boolean);
+    }))).filter(Boolean);
+    const kinkNames = (await Promise.all((e.kinksInvolved || []).map((sel) => KinkRegistry.getById(sel.kinkId)))).filter(Boolean).map((k) => k.name);
     const searchText = [...attendeeNames, ...kinkNames].join(" ");
     results.push({
       type: "encounter", id: e.id,
@@ -144,9 +151,9 @@ function buildIndex() {
       searchText,
       date: e.date || null,
     });
-  });
+  }
 
-  TestingRepository.getAll().filter((t) => !t.isArchived).forEach((t) => {
+  (await TestingRepository.getAll()).filter((t) => !t.isArchived).forEach((t) => {
     const searchText = [t.title, ...(t.testingFor || []), t.trackingInfo, t.kitCodePk, t.kitCodeSk, t.kitAccessKey].join(" ");
     results.push({
       type: "test", id: t.id,
@@ -157,7 +164,7 @@ function buildIndex() {
     });
   });
 
-  ClinicVisitsRepository.getAll().filter((v) => !v.isArchived).forEach((v) => {
+  (await ClinicVisitsRepository.getAll()).filter((v) => !v.isArchived).forEach((v) => {
     const searchText = [v.title, v.clinician, ...(v.reasonForVisit || []), v.clinicalNotes].join(" ");
     results.push({
       type: "clinicVisit", id: v.id,
@@ -171,7 +178,7 @@ function buildIndex() {
   // ADDED 19 Aug 2026 — Symptom Log, added the same session it was
   // built, immediately (not after a session-long gap the way Testing's
   // own backup omission was caught once already this project).
-  SymptomLogRepository.getAll().filter((e) => !e.isArchived).forEach((e) => {
+  (await SymptomLogRepository.getAll()).filter((e) => !e.isArchived).forEach((e) => {
     const searchText = [e.title, e.notes].join(" ");
     results.push({
       type: "symptomLog", id: e.id,
@@ -182,7 +189,7 @@ function buildIndex() {
     });
   });
 
-  VaccinationRepository.getAll().filter((v) => !v.isArchived).forEach((v) => {
+  (await VaccinationRepository.getAll()).filter((v) => !v.isArchived).forEach((v) => {
     const searchText = [v.title, v.vaccine, v.provider, v.notes].join(" ");
     results.push({
       type: "vaccination", id: v.id,
@@ -238,7 +245,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
   // relevance-only list. Chronological is the real default per the user's
   // own stated preference.
   const [sortMode, setSortMode] = useState("chronological"); // "chronological" | "alphabetical"
-  const index = useMemo(() => buildIndex(), []);
+  const index = useLoadedMemo(() => buildIndex(), [], []);
   const results = useMemo(() => {
     const q = query.trim();
     if (!q.length) return [];

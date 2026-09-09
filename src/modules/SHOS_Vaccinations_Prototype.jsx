@@ -12,6 +12,7 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -210,9 +211,9 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   // ADDED 19 Aug 2026 — real in-app editable option lists.
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const [vaccineOptions, setVaccineOptions] = useState(() => CustomOptionListsRepository.getRanked("vaccine"));
-  const vaccinationReasonOptions = useMemo(() => CustomOptionListsRepository.getRanked("vaccinationReason"), []);
-  const injectionSiteOptions = useMemo(() => CustomOptionListsRepository.getRanked("injectionSite"), []);
+  const [vaccineOptions, setVaccineOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("vaccine"), [], []);
+  const vaccinationReasonOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("vaccinationReason"), [], []);
+  const injectionSiteOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("injectionSite"), [], []);
   const draftKey = `vaccination_${vaccination?.id || "new"}`;
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);
@@ -232,7 +233,7 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   }, [form]);
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const canSave = form.title.trim().length > 0;
-  const symptoms = useMemo(() => SymptomsRegistry.getAll().filter((s) => !s.isArchived), []);
+  const symptoms = useLoadedMemo(async () => (await SymptomsRegistry.getAll()).filter((s) => !s.isArchived), [], []);
   // CHANGED 1 Sep 2026 — real omission found in a broader audit: this
   // had no .sort() at all (storage order = oldest first), the same
   // "old options listed first" bug already fixed elsewhere. Sorted
@@ -240,13 +241,13 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   // field, same "search by name or [relevant field]" pattern used
   // elsewhere (Encounters searches by attendee, this searches by
   // clinician — Vaccinations' nearest equivalent).
-  const visits = useMemo(() => [...ClinicVisitsRepository.getAll()].filter((v) => !v.isArchived)
+  const visits = useLoadedMemo(async () => [...(await ClinicVisitsRepository.getAll())].filter((v) => !v.isArchived)
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
     .map((v) => ({
       id: v.id,
       name: `${v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(v.date)}`,
       searchText: (v.clinician || []).join(" ").toLowerCase(),
-    })), []);
+    })), [], []);
 
   const doSave = () => {
     clearDraft(draftKey);
@@ -266,7 +267,7 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
         <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder="e.g. Hep B booster" />
           <VaccineField value={form.vaccine} onChange={set("vaccine")} options={vaccineOptions}
-            onAddNew={(v) => setVaccineOptions(CustomOptionListsRepository.add("vaccine", v))} T={T} />
+            onAddNew={(v) => { CustomOptionListsRepository.add("vaccine", v).then(setVaccineOptions); }} T={T} />
           <MultiSelectChips label="Reason" value={form.reason} onChange={set("reason")} options={vaccinationReasonOptions} listName="vaccinationReason" T={T} />
           <TextField label="Dose number" value={form.doseNumber ?? ""} onChange={(v) => set("doseNumber")(v === "" ? null : Number(v))} T={T} type="number" />
           <TextField label="Date" value={form.date} onChange={set("date")} T={T} type="date" />
@@ -304,21 +305,32 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
 }
 
 function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, refresh }) {
-  const [v, setV] = useState(() => VaccinationRepository.getById(vaccinationId));
+  const v = useLoadedMemo(() => VaccinationRepository.getById(vaccinationId), [vaccinationId], null);
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven for Testing.
   const [confirmDelete, setConfirmDelete] = useState(false);
-  if (!v) return null;
-  const overdue = isOverdue(v.nextDue);
-  const visitNames = v.clinicVisitIds.map((id) => {
-    const visit = ClinicVisitsRepository.getById(id);
-    return visit ? `${visit.title || (visit.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(visit.date)}` : null;
-  }).filter(Boolean);
+  // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
+  // went async — hoisted above the guard (hooks-before-guard rule),
+  // guarded with `v?.` since it's genuinely null for one render.
+  const visitNames = useLoadedMemo(async () => {
+    if (!v?.clinicVisitIds?.length) return [];
+    const visits = await Promise.all(v.clinicVisitIds.map((id) => ClinicVisitsRepository.getById(id)));
+    return visits.filter(Boolean).map((visit) => `${visit.title || (visit.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(visit.date)}`);
+  }, [v], []);
   // FIXED 1 Sep 2026 — same real bug as the edit form's own picker:
   // symptomIds holds real SymptomsRegistry ids now, so displaying it
   // raw needs resolving to names first, same as visitNames just above
   // and ClinicVisits' own symptomTypeIds display.
-  const symptomNames = v.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean);
+  // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
+  // async — hoisted above the `!v` guard (hooks-before-guard rule),
+  // guarded with `v?.` since it's genuinely null for one render, same
+  // treatment as visitNames just above.
+  const symptomNames = useLoadedMemo(async () => {
+    if (!v?.symptomIds?.length) return [];
+    return (await Promise.all(v.symptomIds.map((id) => SymptomsRegistry.getById(id)))).filter(Boolean).map((s) => s.name);
+  }, [v], []);
+  if (!v) return null;
+  const overdue = isOverdue(v.nextDue);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -336,7 +348,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-            <button onClick={() => { triggerDelete([v]); refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
+            <button onClick={async () => { await triggerDelete([v]); refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
           </div>
         </div>
       )}
@@ -455,15 +467,15 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
             </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
                 record, enabled only when exactly one is selected. */}
-            <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("vaccinations", VaccinationRepository.getById(selectedIds[0])); }}
+            <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("vaccinations", await VaccinationRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span onClick={() => { if (selectedIds.length > 0) { VaccinationRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            <span onClick={async () => { if (selectedIds.length > 0) { await VaccinationRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-            <span onClick={() => {
+            <span onClick={async () => {
               if (selectedIds.length === 0) return;
               if (window.confirm(`Delete ${selectedIds.length} vaccination${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
-                const toRestore = VaccinationRepository.getAll().filter((v) => selectedIds.includes(v.id));
-                triggerDelete(toRestore);
+                const toRestore = (await VaccinationRepository.getAll()).filter((v) => selectedIds.includes(v.id));
+                await triggerDelete(toRestore);
                 refresh();
                 exitSelectMode();
               }
@@ -548,36 +560,42 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
   const [screen, setScreen] = useState({ name: "list" });
+  // CHANGED — Phase 2 encryption groundwork: VaccinationRepository went
+  // async, and VaccinationSheet's own `vaccination` prop is read only
+  // once, at mount, via a lazy useState initializer with no resync
+  // effect — resolved here instead, same "gate the mount on the real
+  // value being ready" fix as Symptom Log's own EntrySheet.
+  const editingVaccination = useLoadedMemo(() => (screen.name === "edit" ? VaccinationRepository.getById(screen.id) : null), [screen], null);
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // VaccinationsLanding — vaccinations/deletedRecent/undoDelete/
   // triggerDelete now live at the real module level, shared with
   // VaccinationDetail.
-  const [vaccinations, setVaccinations] = useState(() => VaccinationRepository.getAll().filter((v) => !v.isArchived));
-  const refresh = () => setVaccinations(VaccinationRepository.getAll().filter((v) => !v.isArchived));
+  const [vaccinations, setVaccinations] = useLoadedState(() => VaccinationRepository.getAll().then((all) => all.filter((v) => !v.isArchived)), [], []);
+  const refresh = () => { VaccinationRepository.getAll().then((all) => setVaccinations(all.filter((v) => !v.isArchived))); };
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
   // implementation.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
   const undoTimerRef = useRef(null);
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => VaccinationRepository.restore(record));
+    for (const record of deleteToast.records) await VaccinationRepository.restore(record);
     refresh();
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
   };
-  const redoDelete = () => {
+  const redoDelete = async () => {
     if (!deleteToast) return;
-    TrashRepository.add("vaccinations", deleteToast.records);
-    deleteToast.records.forEach((r) => VaccinationRepository.delete(r.id));
+    await TrashRepository.add("vaccinations", deleteToast.records);
+    for (const r of deleteToast.records) await VaccinationRepository.delete(r.id);
     refresh();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
-  const triggerDelete = (records) => {
-    TrashRepository.add("vaccinations", records);
-    records.forEach((r) => VaccinationRepository.delete(r.id));
+  const triggerDelete = async (records) => {
+    await TrashRepository.add("vaccinations", records);
+    for (const r of records) await VaccinationRepository.delete(r.id);
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -614,11 +632,14 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
     return () => registerModuleBackHandler(null);
   }, [screen, registerModuleBackHandler]);
 
-  const createVaccination = (data) => { VaccinationRepository.create(data); onDataChanged?.(); backToList(); };
-  const saveVaccination = (data) => {
-    editUndo.captureBeforeEdit(screen.id);
-    VaccinationRepository.update(screen.id, data);
-    editUndo.notifyEdited(screen.id);
+  const createVaccination = async (data) => { await VaccinationRepository.create(data); onDataChanged?.(); backToList(); };
+  const saveVaccination = async (data) => {
+    // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited, and
+    // now VaccinationRepository itself (Phase 2 encryption groundwork),
+    // are all async — every step here awaited.
+    await editUndo.captureBeforeEdit(screen.id);
+    await VaccinationRepository.update(screen.id, data);
+    await editUndo.notifyEdited(screen.id);
     onDataChanged?.();
     setScreen({ name: "detail", id: screen.id });
   };
@@ -646,7 +667,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
       )}
       {content}
       {screen.name === "add" && <VaccinationSheet T={T} vaccination={null} onSave={createVaccination} onClose={backToList} />}
-      {screen.name === "edit" && <VaccinationSheet T={T} vaccination={VaccinationRepository.getById(screen.id)} onSave={saveVaccination} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
+      {screen.name === "edit" && editingVaccination && <VaccinationSheet T={T} vaccination={editingVaccination} onSave={saveVaccination} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
     </div>
   );
 }

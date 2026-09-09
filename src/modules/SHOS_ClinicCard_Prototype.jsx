@@ -13,7 +13,7 @@ import { computeStock } from "../calculations/medicationCalculations";
 import { formatRelativeDate, sortByDateDesc } from "../calculations/encounterCalculations";
 import { nowAsStoredDate, inDaysAsStoredDate } from "../calculations/dateInputHelpers";
 import { useClinicCardVisibility, CLINIC_CARD_SECTIONS } from "../calculations/clinicCardVisibilityPreference";
-import { MyProfileRepository } from "../repositories/myProfileRepository";
+import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
@@ -25,6 +25,7 @@ import { PregnancyRepository } from "../repositories/pregnancyRepository";
 // retyped here. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 const LIGHT = {
   ...NEUTRAL,
@@ -61,10 +62,12 @@ const DARK = {
 // repositories. Identity is the one deliberate exception, editable
 // directly on this screen (DOB, clinic number, address, NHS number)
 // since there's genuinely nowhere else these fields belong.
-function loadMedicationsWithLogs() {
-  return MedicationRepository.getAll()
-    .filter((m) => !m.isArchived)
-    .map((m) => ({ ...m, logs: LogRepository.getForMedication(m.id) }));
+async function loadMedicationsWithLogs() {
+  return Promise.all(
+    (await MedicationRepository.getAll())
+      .filter((m) => !m.isArchived)
+      .map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) }))
+  );
 }
 
 // CHANGED — real ask: "Ensure clicking title takes you to that module,
@@ -136,10 +139,13 @@ function StubRow({ children, T }) {
 export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickAddWithPrefill, registerModuleBackHandler }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
-  const meds = useMemo(() => loadMedicationsWithLogs(), []);
-  const tests = useMemo(() => sortByDateDesc(TestingRepository.getAll().filter((t) => !t.isArchived)), []);
-  const encounters = useMemo(() => sortByDateDesc(EncounterRepository.getAll()), []);
-  const [profile, setProfile] = useState(() => MyProfileRepository.getProfile());
+  const meds = useLoadedMemo(() => loadMedicationsWithLogs(), [], []);
+  // FIXED — real pre-existing bug found while wiring MyProfileRepository:
+  // TestingRepository went async in an earlier batch this session, but
+  // this chained .filter() straight onto .getAll() was missed then.
+  const tests = useLoadedMemo(async () => sortByDateDesc((await TestingRepository.getAll()).filter((t) => !t.isArchived)), [], []);
+  const encounters = useLoadedMemo(async () => sortByDateDesc(await EncounterRepository.getAll()), [], []);
+  const [profile, setProfile] = useLoadedState(() => MyProfileRepository.getProfile(), [], DEFAULT_PROFILE);
 
   // ADDED — real ask: "Recent partners should have filterable
   // timeframe... maybe generic for whole clinic card — so can say all
@@ -162,7 +168,16 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   }, [timeframe, customDate, lastTestDate]);
   const withinTimeframe = (dateStr) => !cutoffDate || !dateStr || dateStr >= cutoffDate;
 
-  const nameFrom = (registry, id) => registry.getById(id)?.name || "—";
+  // CHANGED — Phase 2 encryption groundwork: ResultsRegistry/
+  // SymptomsRegistry are now async — this used to be a plain render-
+  // body helper calling registry.getById(id) directly on every use
+  // (recentTests/currentTreatment/activeSymptoms below), which breaks
+  // once getById returns a Promise. Replaced with two pre-resolved
+  // lookup Maps (same "resolve to a lookup ahead of time" pattern used
+  // throughout this session — see Timeline's linkedSymptomLabelById),
+  // read synchronously via .get() wherever nameFrom used to be called.
+  const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
+  const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
 
   const [editingIdentity, setEditingIdentity] = useState(false);
   // ADDED — real ask: tap-through with a confirmation step for
@@ -229,13 +244,13 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
     setIdentityDraft({ dateOfBirth: profile.dateOfBirth, clinicNumber: profile.clinicNumber, address: profile.address, nhsNumber: profile.nhsNumber });
     setEditingIdentity(true);
   };
-  const saveIdentity = () => {
-    setProfile(MyProfileRepository.update(identityDraft));
+  const saveIdentity = async () => {
+    setProfile(await MyProfileRepository.update(identityDraft));
     setEditingIdentity(false);
   };
 
   const recentTests = tests.slice(0, 5).map((t) => {
-    const resultNames = (t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id));
+    const resultNames = (t.resultIds || []).map((id) => resultNameById.get(id) || "—");
     const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
     const testingFor = (t.testingFor || []).join(", ") || t.title || "Test";
     return { id: t.id, title: testingFor, subtitle: `${formatRelativeDate(t.date)} · ${resultNames.join(", ") || "No result logged"}`, alert: isPositive };
@@ -246,7 +261,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // uses (Follow-up Actioned Date empty), not a new concept invented
   // for this screen.
   const currentTreatment = tests.filter((t) => {
-    const resultNames = (t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id));
+    const resultNames = (t.resultIds || []).map((id) => resultNameById.get(id) || "—");
     const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
     return isPositive && !t.followUpActionedDate;
   }).map((t) => ({
@@ -260,7 +275,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // Log's own real Date Resolved field being empty, not a guessed time
   // window. Severe entries flagged red, same Action State pattern as
   // the rest of this screen.
-  const activeSymptoms = SymptomLogRepository.getActive();
+  const activeSymptoms = useLoadedMemo(() => SymptomLogRepository.getActive(), [], []);
 
   // ADDED 2 Sep 2026 — real ask: "clinic cards may want some
   // information about contraception and/or pregnancy and/or
@@ -270,23 +285,29 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // Same "skip entirely when off" gating Home's own dashboard already
   // uses — nothing real to show, and no reason to read three
   // repositories, when the user doesn't use this feature at all.
-  const menstrualTrackingEnabled = AppPreferencesRepository.getPreferences().menstrualTrackingEnabled;
+  const menstrualTrackingEnabled = useLoadedMemo(() => AppPreferencesRepository.getPreferences().then((p) => p.menstrualTrackingEnabled), [], false);
   // Respects the same sensitive/masked flag the Menstrual & Contraception
   // module itself already offers per-entry — a pregnancy the user has
   // deliberately masked there doesn't surface on a screen built to be
   // shown to someone else.
-  const activePregnancyRaw = menstrualTrackingEnabled ? PregnancyRepository.getActive() : null;
+  // CHANGED — PregnancyRepository went async; matches meds/tests/
+  // encounters above (useLoadedMemo, same as those).
+  const activePregnancyRaw = useLoadedMemo(() => (menstrualTrackingEnabled ? PregnancyRepository.getActive() : null), [menstrualTrackingEnabled], null);
   const activePregnancy = activePregnancyRaw && !activePregnancyRaw.sensitive ? activePregnancyRaw : null;
-  const lastPeriod = menstrualTrackingEnabled
-    ? [...MenstrualCycleRepository.getAll().filter((c) => !c.isArchived)].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0] || null
-    : null;
-  const activeContraception = menstrualTrackingEnabled ? ContraceptionRepository.getActive() : [];
+  const lastPeriod = useLoadedMemo(
+    () => menstrualTrackingEnabled
+      ? MenstrualCycleRepository.getAll().then((all) => [...all.filter((c) => !c.isArchived)].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0] || null)
+      : null,
+    [menstrualTrackingEnabled], null
+  );
+  const activeContraception = useLoadedMemo(() => (menstrualTrackingEnabled ? ContraceptionRepository.getActive() : []), [menstrualTrackingEnabled], []);
 
   // CHANGED 19 Aug 2026 — real data, Vaccination Record now exists.
   // Shows recent vaccinations plus any overdue boosters/next-dues in
   // red — same Action State convention as the rest of this screen.
-  const vaccinations = sortByDateDesc(VaccinationRepository.getAll().filter((v) => !v.isArchived && withinTimeframe(v.date)));
-  const overdueVaccinations = VaccinationRepository.getOverdue();
+  const vaccinationsRaw = useLoadedMemo(() => VaccinationRepository.getAll(), [], []);
+  const vaccinations = sortByDateDesc(vaccinationsRaw.filter((v) => !v.isArchived && withinTimeframe(v.date)));
+  const overdueVaccinations = useLoadedMemo(() => VaccinationRepository.getOverdue(), [], []);
 
   const recentPartners = encounters.filter((e) => withinTimeframe(e.date)).slice(0, 8).map((e) => ({
     id: e.id,
@@ -525,7 +546,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         {activeSymptoms.length === 0 ? (
           <EmptyRow T={T}>Nothing active right now.</EmptyRow>
         ) : activeSymptoms.map((s) => (
-          <Row T={T} key={s.id} title={s.title} subtitle={[nameFrom(SymptomsRegistry, s.symptomId), s.severity, formatRelativeDate(s.dateStarted), s.dateResolved ? `resolved ${formatRelativeDate(s.dateResolved)}` : null].filter(Boolean).join(" · ")} alert={s.severity === "Severe"} onTap={() => setPendingNav({ tab: "healthcare", subTab: "symptomLog", recordId: s.id, label: s.title, moduleLabel: "Symptom Log" })} />
+          <Row T={T} key={s.id} title={s.title} subtitle={[symptomNameById.get(s.symptomId) || "—", s.severity, formatRelativeDate(s.dateStarted), s.dateResolved ? `resolved ${formatRelativeDate(s.dateResolved)}` : null].filter(Boolean).join(" · ")} alert={s.severity === "Severe"} onTap={() => setPendingNav({ tab: "healthcare", subTab: "symptomLog", recordId: s.id, label: s.title, moduleLabel: "Symptom Log" })} />
         ))}
       </SectionCard>
 

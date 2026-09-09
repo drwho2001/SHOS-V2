@@ -17,7 +17,8 @@ import { syncMedicationReminders } from "../calculations/medicationReminderSync"
 import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { localStorageAdapter } from "../storage/storageAdapter";
 import { useDarkModePreference } from "../calculations/darkModePreference";
-import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../repositories/medicationPreferencesRepository";
 import { LogRepository, REASON_OPTIONS, SIDE_EFFECT_OPTIONS } from "../repositories/logRepository";
 import { computeStock, computeAdherence, nextDoseEstimate, isDoseLockedOut, lockoutEndsEstimate, lockoutEndsAt, effectiveDoseIntervalHours } from "../calculations/medicationCalculations";
 // ADDED — real ask: Correction Sheet needs to change WHEN a dose was
@@ -155,12 +156,12 @@ function daysFromNow(dateStr) {
 //
 // (`isArchived` from the repository is mapped back to `archived` here,
 // purely so none of the existing UI code below needs renaming.)
-function loadMedications() {
-  return MedicationRepository.getAll().map((med) => ({
+async function loadMedications() {
+  return Promise.all((await MedicationRepository.getAll()).map(async (med) => ({
     ...med,
     archived: med.isArchived,
-    logs: LogRepository.getForMedication(med.id),
-  }));
+    logs: await LogRepository.getForMedication(med.id),
+  })));
 }
 
 function HoldButton({ onStep, dir, children, style }) {
@@ -1004,9 +1005,9 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
   // ADDED 19 Aug 2026 — real in-app editable option lists.
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const medicationTypeOptions = useMemo(() => CustomOptionListsRepository.getRanked("medicationType"), []);
-  const routeOptions = useMemo(() => CustomOptionListsRepository.getRanked("route"), []);
-  const [categoryOptions, setCategoryOptions] = useState(() => CustomOptionListsRepository.getRanked("medicationCategory"));
+  const medicationTypeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("medicationType"), [], []);
+  const routeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("route"), [], []);
+  const [categoryOptions, setCategoryOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("medicationCategory"), [], []);
   const [form, setForm] = useState({
     name: med.name, route: med.route || "", medicationType: med.medicationType || "",
     category: med.category || [],
@@ -1056,7 +1057,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
             identity facts before dosing mechanics. */}
         <SelectRow T={T} label="Medication type" value={form.medicationType} onChange={set("medicationType")} options={medicationTypeOptions} listName="medicationType" />
         <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions} listName="medicationCategory"
-          onAddNew={(v) => setCategoryOptions(CustomOptionListsRepository.add("medicationCategory", v))} />
+          onAddNew={(v) => { CustomOptionListsRepository.add("medicationCategory", v).then(setCategoryOptions); }} />
         <DoseStrengthField T={T} value={form.doseStrengthValue} unit={form.doseStrengthUnit} onChangeValue={set("doseStrengthValue")} onChangeUnit={set("doseStrengthUnit")} />
         <SelectRow T={T} label="Route" value={form.route} onChange={set("route")} options={routeOptions} listName="route" />
 
@@ -1151,9 +1152,9 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
 function AddMedicationSheet({ onCreate, onClose, T }) {
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const medicationTypeOptions = useMemo(() => CustomOptionListsRepository.getRanked("medicationType"), []);
-  const routeOptions = useMemo(() => CustomOptionListsRepository.getRanked("route"), []);
-  const [categoryOptions, setCategoryOptions] = useState(() => CustomOptionListsRepository.getRanked("medicationCategory"));
+  const medicationTypeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("medicationType"), [], []);
+  const routeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("route"), [], []);
+  const [categoryOptions, setCategoryOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("medicationCategory"), [], []);
   const [form, setForm] = useState({
     name: "", route: "", medicationType: "", category: [], doseStrengthValue: "", doseStrengthUnit: "",
     usagePattern: "daily", scheduleIntervalDays: 2, unitsPerDose: 1, dosesPerDay: 1,
@@ -1178,7 +1179,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
   // capable as before, just with a heads-up when it's worth a second
   // look. Checked only against ACTIVE medications — a re-add of a
   // long-archived one is a deliberate restart, not a live duplicate.
-  const existingNames = useMemo(() => MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => m.name), []);
+  const existingNames = useLoadedMemo(async () => (await MedicationRepository.getAll()).filter((m) => !m.isArchived).map((m) => m.name), [], []);
   const trimmedName = form.name.trim();
   // CHANGED — real perf fix: findClosestMatch runs Levenshtein against
   // every active medication name — was recomputing on every render,
@@ -1225,7 +1226,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
             pattern/inventory mechanics below. */}
         <SelectRow T={T} label="Medication type" value={form.medicationType} onChange={set("medicationType")} options={medicationTypeOptions} listName="medicationType" />
         <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions} listName="medicationCategory"
-          onAddNew={(v) => setCategoryOptions(CustomOptionListsRepository.add("medicationCategory", v))} />
+          onAddNew={(v) => { CustomOptionListsRepository.add("medicationCategory", v).then(setCategoryOptions); }} />
         <DoseStrengthField T={T} value={form.doseStrengthValue} unit={form.doseStrengthUnit} onChangeValue={set("doseStrengthValue")} onChangeUnit={set("doseStrengthUnit")} />
         <SelectRow T={T} label="Route" value={form.route} onChange={set("route")} options={routeOptions} listName="route" />
 
@@ -1303,16 +1304,16 @@ function DoseReminderBanner({ med, onTake, onSnooze, onSkip, T }) {
 // Design's dark mode toggle, for visual consistency across the app's
 // two settings surfaces.
 function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
-  const [prefs, setPrefs] = useState(() => MedicationPreferencesRepository.getPreferences());
-  const toggleReminders = () => {
-    const updated = MedicationPreferencesRepository.updatePreferences({ doseRemindersEnabled: !prefs.doseRemindersEnabled });
+  const [prefs, setPrefs] = useLoadedState(() => MedicationPreferencesRepository.getPreferences(), [], DEFAULT_MEDICATION_PREFERENCES);
+  const toggleReminders = async () => {
+    const updated = await MedicationPreferencesRepository.updatePreferences({ doseRemindersEnabled: !prefs.doseRemindersEnabled });
     setPrefs(updated);
     syncMedicationReminders();
   };
   // ADDED 26 Aug 2026 — real ask: customizable settings, not just
   // on/off. Snooze length matches TakeYourPills/Medisafe's own
   // default (30 min, confirmed via their store listings).
-  const setSnoozeMinutes = (mins) => setPrefs(MedicationPreferencesRepository.updatePreferences({ snoozeMinutes: mins }));
+  const setSnoozeMinutes = async (mins) => setPrefs(await MedicationPreferencesRepository.updatePreferences({ snoozeMinutes: mins }));
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -1361,7 +1362,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
 }
 
 export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, registerModuleBackHandler } = {}) {
-  const [meds, setMeds] = useState(() => loadMedications());
+  const [meds, setMeds] = useLoadedState(() => loadMedications(), [], []);
   // ADDED 19 Aug 2026 — real undo/redo for editing a medication's own
   // record (name/dose/route/etc.) — see editUndoHelpers.js. Separate
   // from the dose-log undo/redo just below (lastLoggedEntry/
@@ -1371,11 +1372,11 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // module's read-only cross-repository reference (e.g. Contacts'
   // Timeline reading EncounterRepository). Allergies is edited on My
   // Profile, not here.
-  const allergies = useMemo(() => MyProfileRepository.getProfile().allergies, []);
+  const allergies = useLoadedMemo(async () => (await MyProfileRepository.getProfile()).allergies, [], []);
   // Called after every write to either repository — re-reads both and
   // rebuilds the merged view so the screen reflects what's now actually
   // stored, the same way setMeds always used to trigger a re-render.
-  const refreshMeds = () => setMeds(loadMedications());
+  const refreshMeds = () => { loadMedications().then(setMeds); };
   const [sheet, setSheet] = useState(null);
   const [correction, setCorrection] = useState(null);
   const [editingMed, setEditingMed] = useState(null);
@@ -1420,25 +1421,25 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // implementation.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
   const undoTimerRef = useRef(null);
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => MedicationRepository.restore(record));
+    for (const record of deleteToast.records) await MedicationRepository.restore(record);
     refreshMeds();
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
   };
-  const redoDelete = () => {
+  const redoDelete = async () => {
     if (!deleteToast) return;
-    TrashRepository.add("medications", deleteToast.records);
-    deleteToast.records.forEach((r) => MedicationRepository.delete(r.id));
+    await TrashRepository.add("medications", deleteToast.records);
+    for (const r of deleteToast.records) await MedicationRepository.delete(r.id);
     refreshMeds();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
-  const triggerDelete = (records) => {
-    TrashRepository.add("medications", records);
-    records.forEach((r) => MedicationRepository.delete(r.id));
+  const triggerDelete = async (records) => {
+    await TrashRepository.add("medications", records);
+    for (const r of records) await MedicationRepository.delete(r.id);
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -1521,23 +1522,23 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // happens to that entry, so Redo never targets something stale).
   const [lastLoggedEntry, setLastLoggedEntry] = useState(null);
   const [redoAvailable, setRedoAvailable] = useState(null);
-  const undoLastLog = () => {
+  const undoLastLog = async () => {
     if (!lastLoggedEntry) return;
-    LogRepository.void(lastLoggedEntry.id);
+    await LogRepository.void(lastLoggedEntry.id);
     setRedoAvailable(lastLoggedEntry.id);
     setLastLoggedEntry(null);
     refreshMeds();
   };
-  const redoLastUndo = () => {
+  const redoLastUndo = async () => {
     if (!redoAvailable) return;
-    LogRepository.unvoid(redoAvailable);
+    await LogRepository.unvoid(redoAvailable);
     setRedoAvailable(null);
     refreshMeds();
   };
-  const logDose = (id) => {
-    const med = MedicationRepository.getById(id);
+  const logDose = async (id) => {
+    const med = await MedicationRepository.getById(id);
     if (!med) return;
-    const entry = LogRepository.create({ medicationId: id, type: "dose", delta: -med.unitsPerDose, date: nowAsStoredDateTime() });
+    const entry = await LogRepository.create({ medicationId: id, type: "dose", delta: -med.unitsPerDose, date: nowAsStoredDateTime() });
     setLastLoggedEntry(entry);
     setRedoAvailable(null);
     setTimeout(() => setLastLoggedEntry((current) => (current?.id === entry.id ? null : current)), 8000);
@@ -1553,14 +1554,14 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
 
   // Bulk-log — all Daily-pattern medications at once, sharing one timestamp so they group
   // together in the Log tab automatically.
-  const logAllDaily = () => {
+  const logAllDaily = async () => {
     if (dueDailyMeds.length === 0) {
       setBulkLockFlash(true);
       setTimeout(() => setBulkLockFlash(false), 1800);
       return;
     }
     const timestamp = nowAsStoredDateTime();
-    dueDailyMeds.forEach((m) => LogRepository.create({ medicationId: m.id, type: "dose", delta: -m.unitsPerDose, date: timestamp }));
+    for (const m of dueDailyMeds) await LogRepository.create({ medicationId: m.id, type: "dose", delta: -m.unitsPerDose, date: timestamp });
     syncDoxyPepAlert();
     syncMedicationReminders();
     syncRefillReminder();
@@ -1569,71 +1570,74 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     setTimeout(() => setBulkFlash(false), 2000);
   };
 
-  const logQuantity = (units) => {
+  const logQuantity = async (units) => {
     const isRefill = sheet.mode === "refill";
     const delta = isRefill ? units : -units;
     const type = isRefill ? "refill" : "waste";
-    LogRepository.create({ medicationId: sheet.med.id, type, delta, date: nowAsStoredDateTime() });
+    await LogRepository.create({ medicationId: sheet.med.id, type, delta, date: nowAsStoredDateTime() });
     // Logging a real refill clears any pending "requested" flag — matches
     // the original behavior, which only cleared it on the refill branch.
-    if (isRefill) MedicationRepository.update(sheet.med.id, { refillRequestedAt: null });
+    if (isRefill) await MedicationRepository.update(sheet.med.id, { refillRequestedAt: null });
     syncRefillReminder();
     refreshMeds();
     flashComplete(sheet.med.id);
     setSheet(null);
   };
-  const correctStock = (delta) => {
-    LogRepository.create({ medicationId: sheet.med.id, type: delta > 0 ? "refill" : "waste", delta, date: nowAsStoredDateTime(), notes: "Manual stock correction" });
+  const correctStock = async (delta) => {
+    await LogRepository.create({ medicationId: sheet.med.id, type: delta > 0 ? "refill" : "waste", delta, date: nowAsStoredDateTime(), notes: "Manual stock correction" });
     syncRefillReminder();
     refreshMeds();
     flashComplete(sheet.med.id);
     setSheet(null);
   };
   // ADDED 26 Aug 2026 — real ask: dose change as its own real action.
-  const confirmDoseUpdate = ({ doseStrengthValue, doseStrengthUnit, unitsPerDose, note, stockDelta }) => {
-    MedicationRepository.updateDose(updatingDose.id, { doseStrengthValue, doseStrengthUnit, unitsPerDose, note });
+  const confirmDoseUpdate = async ({ doseStrengthValue, doseStrengthUnit, unitsPerDose, note, stockDelta }) => {
+    await MedicationRepository.updateDose(updatingDose.id, { doseStrengthValue, doseStrengthUnit, unitsPerDose, note });
     if (stockDelta !== null && stockDelta !== 0) {
-      LogRepository.create({ medicationId: updatingDose.id, type: stockDelta > 0 ? "refill" : "waste", delta: stockDelta, date: nowAsStoredDateTime(), notes: `Stock update alongside dose change${note ? `: ${note}` : ""}` });
+      await LogRepository.create({ medicationId: updatingDose.id, type: stockDelta > 0 ? "refill" : "waste", delta: stockDelta, date: nowAsStoredDateTime(), notes: `Stock update alongside dose change${note ? `: ${note}` : ""}` });
     }
     syncRefillReminder();
     refreshMeds();
     flashComplete(updatingDose.id);
     setUpdatingDose(null);
   };
-  const markRequested = (id) => {
-    MedicationRepository.update(id, { refillRequestedAt: new Date().toISOString() });
+  const markRequested = async (id) => {
+    await MedicationRepository.update(id, { refillRequestedAt: new Date().toISOString() });
     syncRefillReminder();
     refreshMeds();
     flashComplete(id, "requested");
   };
-  const saveCorrection = (newAmount, newDate, reason, sideEffects) => {
+  const saveCorrection = async (newAmount, newDate, reason, sideEffects) => {
     const sign = correction.entry.delta < 0 ? -1 : 1;
-    LogRepository.update(correction.entry.id, { delta: sign * newAmount, date: newDate, reason, sideEffects });
+    await LogRepository.update(correction.entry.id, { delta: sign * newAmount, date: newDate, reason, sideEffects });
     refreshMeds();
     setCorrection(null);
   };
-  const voidCorrection = () => {
-    LogRepository.void(correction.entry.id);
+  const voidCorrection = async () => {
+    await LogRepository.void(correction.entry.id);
     refreshMeds();
     setCorrection(null);
   };
-  const saveMedication = (form) => {
+  const saveMedication = async (form) => {
     // ADDED 19 Aug 2026 — real undo/redo extension: Medication's dose-
     // LOG undo/redo already existed (LogRepository.unvoid), this is
     // the separate, previously-missing piece — undo/redo for editing
     // the medication RECORD itself (renaming it, changing its dose),
     // same shared mechanism as Encounters/Contacts.
-    editUndo.captureBeforeEdit(editingMed.id);
-    MedicationRepository.update(editingMed.id, form);
-    editUndo.notifyEdited(editingMed.id);
+    // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited, and
+    // now MedicationRepository itself (Phase 2 encryption groundwork),
+    // are all async — every step here awaited.
+    await editUndo.captureBeforeEdit(editingMed.id);
+    await MedicationRepository.update(editingMed.id, form);
+    await editUndo.notifyEdited(editingMed.id);
     refreshMeds();
     setEditingMed(null);
   };
-  const createMedication = (form) => {
+  const createMedication = async (form) => {
     // MedicationRepository.create assigns the real id (med_006, med_007, ...)
     // — no more `med_${Date.now()}`, matching the project's standing rule
     // that ids are opaque and sequential, never timestamp- or name-derived.
-    const newMed = MedicationRepository.create({
+    const newMed = await MedicationRepository.create({
       name: form.name.trim(), unit: "unit",
       usagePattern: form.usagePattern, unitsPerDose: form.unitsPerDose, dosesPerDay: form.dosesPerDay,
       unitsPerContainer: form.unitsPerContainer, refillThreshold: form.refillThreshold, defaultRefillQuantity: form.defaultRefillQuantity,
@@ -1642,7 +1646,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     // Initial stock is just the first Refill-type log entry (Doc 5 §5) —
     // no separate Opening Stock field, same rule as everywhere else.
     if (form.inventoryTracked) {
-      LogRepository.create({ medicationId: newMed.id, type: "refill", delta: form.defaultRefillQuantity || 0, date: nowAsStoredDateTime() });
+      await LogRepository.create({ medicationId: newMed.id, type: "refill", delta: form.defaultRefillQuantity || 0, date: nowAsStoredDateTime() });
     }
     refreshMeds();
     setAddingMed(false);
@@ -1653,18 +1657,18 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // The active-only, archived-meds-don't-count logic now lives inside
   // MedicationRepository.reorder itself (it owns sortOrder), so this is
   // just a thin translation from the UI's -1/+1 direction to "up"/"down".
-  const moveMedication = (id, dir) => {
-    MedicationRepository.reorder(id, dir < 0 ? "up" : "down");
+  const moveMedication = async (id, dir) => {
+    await MedicationRepository.reorder(id, dir < 0 ? "up" : "down");
     refreshMeds();
   };
 
   // Archive/retire — for a finished acute course you might need again (the user's example), not a
   // permanent delete. History (Log tab) stays visible regardless; only Registry/Inventory hide it.
-  const archiveMedication = (id) => { MedicationRepository.archive(id); refreshMeds(); };
-  const unarchiveMedication = (id) => { MedicationRepository.unarchive(id); refreshMeds(); };
+  const archiveMedication = async (id) => { await MedicationRepository.archive(id); refreshMeds(); };
+  const unarchiveMedication = async (id) => { await MedicationRepository.unarchive(id); refreshMeds(); };
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven across every other module this session.
-  const deleteMedication = (id) => { const med = MedicationRepository.getById(id); if (med) { triggerDelete([med]); refreshMeds(); } };
+  const deleteMedication = async (id) => { const med = await MedicationRepository.getById(id); if (med) { await triggerDelete([med]); refreshMeds(); } };
 
   const takeReminder = () => { logDose(dueReminder.id); flashComplete(dueReminder.id, "logged"); setDueReminder(null); };
   const snoozeReminder = () => { setSnoozedUntil((prev) => ({ ...prev, [dueReminder.id]: new Date(Date.now() + 30 * 60000).toISOString() })); setDueReminder(null); };
@@ -1797,15 +1801,15 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
               </span>
               {/* ADDED 26 Aug 2026 — real ask: export/print a single
                   record, enabled only when exactly one is selected. */}
-              <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("medications", MedicationRepository.getById(selectedIds[0])); }}
+              <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("medications", await MedicationRepository.getById(selectedIds[0])); }}
                 style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-              <span onClick={() => { if (selectedIds.length > 0) { MedicationRepository.bulkArchive(selectedIds); refreshMeds(); exitSelectMode(); } }}
+              <span onClick={async () => { if (selectedIds.length > 0) { await MedicationRepository.bulkArchive(selectedIds); refreshMeds(); exitSelectMode(); } }}
                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-              <span onClick={() => {
+              <span onClick={async () => {
                 if (selectedIds.length === 0) return;
                 if (window.confirm(`Delete ${selectedIds.length} medication${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
-                  const toRestore = MedicationRepository.getAll().filter((m) => selectedIds.includes(m.id));
-                  triggerDelete(toRestore);
+                  const toRestore = (await MedicationRepository.getAll()).filter((m) => selectedIds.includes(m.id));
+                  await triggerDelete(toRestore);
                   refreshMeds();
                   exitSelectMode();
                 }

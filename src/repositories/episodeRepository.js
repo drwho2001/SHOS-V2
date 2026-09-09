@@ -99,8 +99,20 @@ let seedEpisodes = [
   },
 ];
 
-let episodes = storage.load(STORAGE_KEY, seedEpisodes);
-let nextNumber = computeNextNumber(episodes);
+// CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
+// loadPromise pattern, same as every other module-load-cached
+// repository converted this session (see CLAUDE.md).
+let episodes = null;
+let nextNumber = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (episodes === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedEpisodes);
+    episodes = await loadPromise;
+    nextNumber = computeNextNumber(episodes);
+  }
+  return episodes;
+}
 
 function computeNextNumber(existing) {
   const numbers = existing.map((e) => {
@@ -116,16 +128,18 @@ function generateId() {
   return id;
 }
 
-function persist() {
-  storage.save(STORAGE_KEY, episodes);
+async function persist() {
+  await storage.save(STORAGE_KEY, episodes);
 }
 
 export const EpisodeRepository = {
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(episodes.map((e) => ({ ...DEFAULT_EPISODE, ...e })));
   },
 
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = episodes.find((e) => e.id === id);
     return found ? structuredClone({ ...DEFAULT_EPISODE, ...found }) : null;
   },
@@ -134,11 +148,12 @@ export const EpisodeRepository = {
   // Same "store facts, derive state" principle as Testing's own
   // Follow-up Actioned Date logic — resolution is a real timestamp,
   // never a separate boolean that could drift out of sync with it.
-  getOpen() {
-    return this.getAll().filter((e) => !e.isArchived && !e.resolvedDate);
+  async getOpen() {
+    return (await this.getAll()).filter((e) => !e.isArchived && !e.resolvedDate);
   },
 
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     const newEpisode = {
       ...DEFAULT_EPISODE,
       ...data,
@@ -147,11 +162,12 @@ export const EpisodeRepository = {
       isArchived: false,
     };
     episodes = [...episodes, newEpisode];
-    persist();
+    await persist();
     return newEpisode;
   },
 
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updated = null;
     episodes = episodes.map((e) => {
       if (e.id !== id) return e;
@@ -164,15 +180,15 @@ export const EpisodeRepository = {
       updated = { ...e, ...changes, updatedAt: new Date().toISOString() };
       return updated;
     });
-    persist();
+    await persist();
     return updated ? structuredClone({ ...DEFAULT_EPISODE, ...updated }) : null;
   },
 
-  archive(id) {
+  async archive(id) {
     return this.update(id, { isArchived: true });
   },
 
-  unarchive(id) {
+  async unarchive(id) {
     return this.update(id, { isArchived: false });
   },
 
@@ -187,9 +203,10 @@ export const EpisodeRepository = {
   // them yet — same shape as every sibling repository, so nothing has
   // to be reinvented if/when a real permanent-delete entry point is
   // added to that screen later.
-  delete(id) {
+  async delete(id) {
+    await ensureLoaded();
     episodes = episodes.filter((e) => e.id !== id);
-    persist();
+    await persist();
   },
 
   // ADDED — real gap found via the new orphan-reference checker
@@ -200,40 +217,45 @@ export const EpisodeRepository = {
   // measurementRepository.js's own unlink methods — startEncounterId
   // is the one single (non-array) field here, cleared to "" rather
   // than filtered out of a list.
-  unlinkEncounter(encounterId) {
+  async unlinkEncounter(encounterId) {
+    await ensureLoaded();
     episodes = episodes.map((e) => ({
       ...e,
       startEncounterId: e.startEncounterId === encounterId ? "" : e.startEncounterId,
       atRiskEncounterIds: (e.atRiskEncounterIds || []).filter((id) => id !== encounterId),
       notifiedEncounterIds: (e.notifiedEncounterIds || []).filter((id) => id !== encounterId),
     }));
-    persist();
+    await persist();
   },
 
-  unlinkTest(testId) {
+  async unlinkTest(testId) {
+    await ensureLoaded();
     episodes = episodes.map((e) => ({ ...e, testIds: (e.testIds || []).filter((id) => id !== testId) }));
-    persist();
+    await persist();
   },
 
-  unlinkClinicVisit(visitId) {
+  async unlinkClinicVisit(visitId) {
+    await ensureLoaded();
     episodes = episodes.map((e) => ({ ...e, clinicVisitIds: (e.clinicVisitIds || []).filter((id) => id !== visitId) }));
-    persist();
+    await persist();
   },
 
-  unlinkSymptomLog(symptomLogId) {
+  async unlinkSymptomLog(symptomLogId) {
+    await ensureLoaded();
     episodes = episodes.map((e) => ({ ...e, symptomLogIds: (e.symptomLogIds || []).filter((id) => id !== symptomLogId) }));
-    persist();
+    await persist();
   },
 
-  restore(record) {
+  async restore(record) {
+    await ensureLoaded();
     if (episodes.some((e) => e.id === record.id)) return;
     episodes = [...episodes, record];
-    persist();
+    await persist();
   },
 
-  replaceAll(newEpisodes) {
+  async replaceAll(newEpisodes) {
     episodes = newEpisodes;
     nextNumber = computeNextNumber(episodes);
-    persist();
+    await persist();
   },
 };

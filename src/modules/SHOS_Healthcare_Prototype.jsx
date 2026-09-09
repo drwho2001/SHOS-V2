@@ -20,6 +20,7 @@ import VaccinationsModule from "./SHOS_Vaccinations_Prototype";
 import MeasurementsModule from "./SHOS_Measurements_Prototype";
 import MenstrualHealthModule from "./SHOS_MenstrualHealth_Prototype";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
+import { useLoadedState } from "../calculations/loadedRepositoryState";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import AttachmentsScreen from "./SHOS_Attachments_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
@@ -80,7 +81,11 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // surface (2.13:1, checked). Same resolveDarkAccent + hand-picked
   // companion every other Healthcare-tab file now uses.
   const T = { healthcareBlue: darkMode ? resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144") : ACCENTS.healthcare, border: N.border, textSecondary: N.textSecondary, surface: N.surface, bg: N.bg };
-  const [menstrualTrackingEnabled] = useState(() => AppPreferencesRepository.getPreferences().menstrualTrackingEnabled);
+  // CHANGED 4 Sep 2026 — encryption-at-rest groundwork (see CLAUDE.md's
+  // Known Issues / the Notion Development log): useLoadedState instead
+  // of a plain useState lazy initializer, one of the ~100 real sites
+  // the audit found with this exact pattern.
+  const [menstrualTrackingEnabled] = useLoadedState(() => AppPreferencesRepository.getPreferences().menstrualTrackingEnabled, [], false);
 
   // ADDED — real ask: Healthcare was "bland vs Home/Medication" —
   // checked and found the actual reason wasn't styling, it was that
@@ -104,12 +109,18 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // extra plumbing this pass.
   const [dataVersion, setDataVersion] = useState(0);
   useEffect(() => {
-    const symptoms = SymptomLogRepository.getAll().filter((s) => !s.dateResolved).length;
-    const today = new Date().toISOString().slice(0, 10);
-    const overdue = VaccinationRepository.getAll().filter((v) => v.nextDue && v.nextDue < today).length;
-    const thisYear = new Date().getFullYear();
-    const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && new Date(t.date).getFullYear() === thisYear).length;
-    setSummary({ activeSymptoms: symptoms, overdueVaccinations: overdue, testsThisYear: tests });
+    // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository
+    // went async — wrapped in an async IIFE, same "isolate just the
+    // async read" approach used elsewhere this session, since the
+    // other two counts here are still fully synchronous.
+    (async () => {
+      const symptoms = (await SymptomLogRepository.getAll()).filter((s) => !s.dateResolved).length;
+      const today = new Date().toISOString().slice(0, 10);
+      const overdue = (await VaccinationRepository.getAll()).filter((v) => v.nextDue && v.nextDue < today).length;
+      const thisYear = new Date().getFullYear();
+      const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && new Date(t.date).getFullYear() === thisYear).length;
+      setSummary({ activeSymptoms: symptoms, overdueVaccinations: overdue, testsThisYear: tests });
+    })();
   }, [dataVersion]);
 
   const SummaryStat = ({ label, value, alert }) => (

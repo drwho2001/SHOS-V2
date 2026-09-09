@@ -189,10 +189,19 @@ export const DEFAULT_PROFILE = {
   updatedAt: null,
 };
 
-let profile = storage.load(STORAGE_KEY, { ...DEFAULT_PROFILE });
+let profile = null;
+let loadPromise = null;
 
-function persist() {
-  storage.save(STORAGE_KEY, profile);
+async function ensureLoaded() {
+  if (profile === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, { ...DEFAULT_PROFILE });
+    profile = await loadPromise;
+  }
+  return profile;
+}
+
+async function persist() {
+  await storage.save(STORAGE_KEY, profile);
 }
 
 // ADDED 20 Aug 2026 — same fix as contactRepository.js/encounterRepository.js:
@@ -218,7 +227,8 @@ function normalizeContraception(value) {
 export const MyProfileRepository = {
   // Singleton read — always returns a full shape (missing fields fall
   // back to DEFAULT_PROFILE), so callers never have to null-check.
-  getProfile() {
+  async getProfile() {
+    await ensureLoaded();
     const merged = { ...DEFAULT_PROFILE, ...profile };
     return structuredClone({
       ...merged,
@@ -227,9 +237,10 @@ export const MyProfileRepository = {
     });
   },
 
-  update(changes) {
+  async update(changes) {
+    await ensureLoaded();
     profile = { ...DEFAULT_PROFILE, ...profile, ...changes, updatedAt: new Date().toISOString() };
-    persist();
+    await persist();
     return structuredClone(profile);
   },
 
@@ -237,13 +248,15 @@ export const MyProfileRepository = {
   // Contact's own detail screen — but there's only one real array
   // (relationshipContactIds above), never a second copy on the
   // Contact record. Add/remove are idempotent.
-  linkRelationshipContact(contactId) {
+  async linkRelationshipContact(contactId) {
+    await ensureLoaded();
     const current = (profile.relationshipContactIds || DEFAULT_PROFILE.relationshipContactIds);
     if (current.includes(contactId)) return this.getProfile();
     return this.update({ relationshipContactIds: [...current, contactId] });
   },
 
-  unlinkRelationshipContact(contactId) {
+  async unlinkRelationshipContact(contactId) {
+    await ensureLoaded();
     const current = (profile.relationshipContactIds || DEFAULT_PROFILE.relationshipContactIds);
     return this.update({ relationshipContactIds: current.filter((id) => id !== contactId) });
   },
@@ -251,8 +264,8 @@ export const MyProfileRepository = {
   // Wholesale replace — used only by backup restore (if/when the
   // profile is added to backupService.js — not done yet, see note in
   // profileShareService.js on why it's being kept separate for now).
-  replaceAll(newProfile) {
+  async replaceAll(newProfile) {
     profile = { ...DEFAULT_PROFILE, ...newProfile };
-    persist();
+    await persist();
   },
 };

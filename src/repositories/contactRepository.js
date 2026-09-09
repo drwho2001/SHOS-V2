@@ -23,8 +23,9 @@
 // localStorage underneath — it only knows the load(key, fallback) /
 // save(key, value) shape. Swapping in a different adapter later (e.g.
 // an encrypted cloud backend) means editing storageAdapter.js, not this
-// file. Kept synchronous on purpose — see the note further down on why
-// this doesn't need to be async yet.
+// file. STALE NOTE UPDATED — Phase 2/3 (Sep 2026): this repository and
+// storageAdapter.js itself are both genuinely async now — see
+// ensureLoaded()'s own comment further down for the real conversion.
 
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 // ADDED — My Profile's own relationshipContactIds: a hard delete here
@@ -362,17 +363,26 @@ let seedContacts = [
   },
 ];
 
-// Real startup: load whatever's actually been saved before. On a
-// genuinely first run (nothing in storage yet), fall back to the seed
-// data above so the app isn't empty on day one.
-let contacts = storage.load(STORAGE_KEY, seedContacts);
+// CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
+// loadPromise pattern, same as every other module-load-cached
+// repository converted this session (see CLAUDE.md).
+let contacts = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (contacts === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedContacts);
+    contacts = await loadPromise;
+    nextContactNumber = computeNextContactNumber(contacts);
+  }
+  return contacts;
+}
 
 // Every mutating method below calls this after changing `contacts` —
 // keeping "change the in-memory array" and "persist it" as two
 // explicit, adjacent steps rather than hiding the save inside a proxy
 // or a setter, so it's obvious from reading any method that it saves.
-function persist() {
-  storage.save(STORAGE_KEY, contacts);
+async function persist() {
+  await storage.save(STORAGE_KEY, contacts);
 }
 
 // Derived from the actual IDs present, not from contacts.length — so a
@@ -387,7 +397,7 @@ function computeNextContactNumber(existingContacts) {
   });
   return (numbers.length ? Math.max(...numbers) : 0) + 1;
 }
-let nextContactNumber = computeNextContactNumber(contacts);
+let nextContactNumber = null;
 
 function generateContactId() {
   const id = `contact_${String(nextContactNumber).padStart(3, "0")}`;
@@ -479,7 +489,8 @@ export const ContactRepository = {
   // Also now runs statedKinks AND limits through normalizeKinkSelections()
   // (see above) so old flat-ID-array contacts and new role-aware
   // contacts both read back in the current shape.
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(
       contacts.map((c) => {
         const merged = { ...DEFAULT_CONTACT, ...c };
@@ -493,7 +504,8 @@ export const ContactRepository = {
     );
   },
 
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = contacts.find((c) => c.id === id);
     if (!found) return null;
     const merged = { ...DEFAULT_CONTACT, ...found };
@@ -505,7 +517,8 @@ export const ContactRepository = {
     });
   },
 
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     const newContact = {
       ...DEFAULT_CONTACT,
       ...data,
@@ -514,11 +527,12 @@ export const ContactRepository = {
       isArchived: false,
     };
     contacts = [...contacts, newContact];
-    persist();
+    await persist();
     return newContact;
   },
 
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updatedContact = null;
     contacts = contacts.map((c) => {
       if (c.id !== id) return c;
@@ -533,11 +547,11 @@ export const ContactRepository = {
       updatedContact = { ...c, ...changes, updatedAt: new Date().toISOString() };
       return updatedContact;
     });
-    persist();
+    await persist();
     return updatedContact;
   },
 
-  archive(id) {
+  async archive(id) {
     return this.update(id, { isArchived: true });
   },
 
@@ -546,10 +560,15 @@ export const ContactRepository = {
   // whole feature traces back to. Same reasoning as every other
   // module's delete() this session: archive stays correct for
   // anything real, this is for a genuinely wrong/unwanted entry.
-  delete(id) {
+  async delete(id) {
+    await ensureLoaded();
     const record = contacts.find((c) => c.id === id);
     contacts = contacts.filter((c) => c.id !== id);
-    persist();
+    await persist();
+    // Fire-and-forget — MyProfileRepository/EncounterRepository are
+    // still synchronous, LocationsRepository/PartnerNotificationRepository
+    // are now async but nothing here depends on their completion timing,
+    // same precedent as every other cross-repo unlink call this session.
     MyProfileRepository.unlinkRelationshipContact(id);
     // ADDED — real gap found in a redundancy audit: linkContacts()/
     // unlinkContacts() keep Contact<->Contact links symmetric by
@@ -560,8 +579,9 @@ export const ContactRepository = {
     // Calling unlinkContacts here is safe even though `id` is already
     // gone from `contacts` — its two update branches are independent,
     // so it just no-ops the already-deleted side and cleans up the
-    // survivor.
-    (record?.linkedContactIds || []).forEach((otherId) => this.unlinkContacts(id, otherId));
+    // survivor. Awaited (unlike the cross-repo calls above) since this
+    // is a same-repo self-call whose correctness this method owns.
+    for (const otherId of record?.linkedContactIds || []) await this.unlinkContacts(id, otherId);
     // ADDED — real gap found via the new orphan-reference checker
     // (orphanReferenceCheck.js): Encounter/Location/Partner
     // Notification all reference a Contact by id too — only clears the
@@ -571,24 +591,28 @@ export const ContactRepository = {
     PartnerNotificationRepository.unlinkContact(id);
   },
 
-  unarchive(id) {
+  async unarchive(id) {
     return this.update(id, { isArchived: false });
   },
 
   // ADDED 26 Aug 2026 — real ask: long-press multi-select on cards,
   // with bulk delete/archive. Same underlying logic as the single-
   // record methods above, just applied to several ids at once.
-  bulkArchive(ids) {
-    ids.forEach((id) => this.archive(id));
+  async bulkArchive(ids) {
+    for (const id of ids) await this.archive(id);
   },
 
-  bulkDelete(ids) {
+  async bulkDelete(ids) {
+    await ensureLoaded();
     const records = contacts.filter((c) => ids.includes(c.id));
     contacts = contacts.filter((c) => !ids.includes(c.id));
-    persist();
+    await persist();
     ids.forEach((id) => MyProfileRepository.unlinkRelationshipContact(id));
-    // Same dangling-link cleanup as delete() above, per contact.
-    records.forEach((record) => (record.linkedContactIds || []).forEach((otherId) => this.unlinkContacts(record.id, otherId)));
+    // Same dangling-link cleanup as delete() above, per contact —
+    // awaited for the same same-repo-correctness reason.
+    for (const record of records) {
+      for (const otherId of record.linkedContactIds || []) await this.unlinkContacts(record.id, otherId);
+    }
     ids.forEach((id) => {
       EncounterRepository.unlinkContact(id);
       LocationsRepository.unlinkContact(id);
@@ -603,10 +627,11 @@ export const ContactRepository = {
   // record open for (see ContactsModule's own deletedRecent state);
   // once that window closes, the reference is dropped and this can't
   // be called anymore — there's no "undelete from nothing."
-  restore(record) {
+  async restore(record) {
+    await ensureLoaded();
     if (contacts.some((c) => c.id === record.id)) return; // already present, no-op
     contacts = [...contacts, record];
-    persist();
+    await persist();
   },
 
   // Links two contacts together (e.g. a couple). Deliberately symmetric
@@ -629,31 +654,33 @@ export const ContactRepository = {
   // needs the Encounters module to exist first (it doesn't yet, in the
   // app) — same dependency the user already identified when Contacts was
   // built before Encounters. This only covers Contact<->Contact.
-  linkContacts(idA, idB, label = "") {
+  async linkContacts(idA, idB, label = "") {
     if (idA === idB) return;
+    await ensureLoaded();
     const a = contacts.find((c) => c.id === idA);
     const b = contacts.find((c) => c.id === idB);
     if (!a || !b) return;
-    if (!a.linkedContactIds.includes(idB)) this.update(idA, { linkedContactIds: [...a.linkedContactIds, idB] });
-    if (!b.linkedContactIds.includes(idA)) this.update(idB, { linkedContactIds: [...b.linkedContactIds, idA] });
+    if (!a.linkedContactIds.includes(idB)) await this.update(idA, { linkedContactIds: [...a.linkedContactIds, idB] });
+    if (!b.linkedContactIds.includes(idA)) await this.update(idB, { linkedContactIds: [...b.linkedContactIds, idA] });
     if (label) {
       const freshA = contacts.find((c) => c.id === idA);
       const freshB = contacts.find((c) => c.id === idB);
-      this.update(idA, { linkedContactLabels: { ...freshA.linkedContactLabels, [idB]: label } });
-      this.update(idB, { linkedContactLabels: { ...freshB.linkedContactLabels, [idA]: label } });
+      await this.update(idA, { linkedContactLabels: { ...freshA.linkedContactLabels, [idB]: label } });
+      await this.update(idB, { linkedContactLabels: { ...freshB.linkedContactLabels, [idA]: label } });
     }
   },
 
-  unlinkContacts(idA, idB) {
+  async unlinkContacts(idA, idB) {
+    await ensureLoaded();
     const a = contacts.find((c) => c.id === idA);
     const b = contacts.find((c) => c.id === idB);
     if (a) {
       const { [idB]: _removed, ...restA } = a.linkedContactLabels;
-      this.update(idA, { linkedContactIds: a.linkedContactIds.filter((id) => id !== idB), linkedContactLabels: restA });
+      await this.update(idA, { linkedContactIds: a.linkedContactIds.filter((id) => id !== idB), linkedContactLabels: restA });
     }
     if (b) {
       const { [idA]: _removed, ...restB } = b.linkedContactLabels;
-      this.update(idB, { linkedContactIds: b.linkedContactIds.filter((id) => id !== idA), linkedContactLabels: restB });
+      await this.update(idB, { linkedContactIds: b.linkedContactIds.filter((id) => id !== idA), linkedContactLabels: restB });
     }
   },
 
@@ -661,9 +688,9 @@ export const ContactRepository = {
   // stored contact with whatever's in the backup file, recomputes the
   // ID counter from the restored data (so new contacts created after a
   // restore don't collide with restored IDs), and persists.
-  replaceAll(newContacts) {
+  async replaceAll(newContacts) {
     contacts = newContacts;
     nextContactNumber = computeNextContactNumber(contacts);
-    persist();
+    await persist();
   },
 };

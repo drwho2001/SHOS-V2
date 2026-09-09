@@ -47,6 +47,7 @@ import {
   getAdherenceTrend, getTopSymptoms, getClinicVisitStats, getClinicVisitsPerMonth,
 } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useLoadedMemo, useLoadedState } from "../calculations/loadedRepositoryState";
 import { exportBackup, exportEncryptedBackup, exportBackupToChosenFolder, exportEncryptedBackupToChosenFolder, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
 import { isChooseFolderExportAvailable } from "../storage/fileExportHelper";
 import { exportRecordsAsCSV } from "../storage/csvExportService";
@@ -63,15 +64,22 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
 import { MeasurementRepository, getAvailableUnits, getDefaultUnit } from "../repositories/measurementRepository";
-import { MeasurementPreferencesRepository } from "../repositories/measurementPreferencesRepository";
+import { MeasurementPreferencesRepository, DEFAULT_MEASUREMENT_PREFERENCES } from "../repositories/measurementPreferencesRepository";
 import { TrashRepository, MODULE_LABELS as TRASH_MODULE_LABELS } from "../repositories/trashRepository";
 import { getCalendarEvents, groupEventsByDay } from "../calculations/calendarCalculations";
 import { LocationsRepository } from "../repositories/locationsRepository";
-import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
-import { NotificationPreferencesRepository, isPaused } from "../repositories/notificationPreferencesRepository";
+import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../repositories/privacySettingsRepository";
+// ADDED — Phase 4 (Sep 2026): App Lock's own PIN (anonymisePin, reused
+// per privacySettingsRepository.js's own header) now also gates real
+// vault decryption once it's on — see cryptoService.js's own header
+// for the full envelope design. Every toggle/PIN-change handler below
+// that touches App Lock/biometric now has to keep the real vault in
+// sync, not just the stored settings flags.
+import { enablePinProtection, disablePinProtectionWithPin, changePin, enableBiometricSlot, disableBiometricSlot } from "../storage/cryptoService";
+import { NotificationPreferencesRepository, DEFAULT_NOTIFICATION_PREFERENCES, isPaused } from "../repositories/notificationPreferencesRepository";
 import { NotificationHistoryRepository } from "../repositories/notificationHistoryRepository";
 import { getDeferredInstallPrompt, onInstallPromptAvailable, triggerInstallPrompt } from "../storage/installPromptService";
-import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository";
+import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../repositories/medicationPreferencesRepository";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { checkNotificationPermission, requestNotificationPermission, sendTestNotification, TEST_NOTIFICATION_DELAY_MS, checkExactAlarmPermission, requestExactAlarmPermission, getNotificationPlatform, isIOS, isStandalone, checkNativeBridgeHealth } from "../storage/notificationService";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
@@ -80,7 +88,7 @@ import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
 import { checkBiometryAvailable } from "../storage/biometricAuthService";
 import { checkCalendarAvailable, syncClinicVisitsToCalendar, removeAllSyncedEvents, removeSyncedEventsFrom, listAvailableCalendars, SHOS_CALENDAR_NAME } from "../storage/calendarSyncService";
-import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
+import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../repositories/appPreferencesRepository";
 import { EpisodeRepository } from "../repositories/episodeRepository";
 import { KinkRegistry } from "../registries/kinkRegistry";
 import { ChemsRegistry } from "../registries/chemsRegistry";
@@ -555,7 +563,7 @@ function DeveloperToolsScreen({ onClose }) {
   // Attachments the one thing that could push toward the browser's
   // localStorage quota over time). See storageAdapter.js's own
   // getStorageUsage() comment for the byte-counting approach.
-  const storageUsage = useMemo(() => localStorageAdapter.getStorageUsage(), []);
+  const storageUsage = useLoadedMemo(() => localStorageAdapter.getStorageUsage(), [], { totalBytes: 0, byKey: [] });
   const [showStorageBreakdown, setShowStorageBreakdown] = useState(false);
   // ADDED — real ask: a data-integrity sweep for dangling relation-by-
   // ID references (e.g. a hard-deleted Contact an old Encounter's
@@ -564,25 +572,62 @@ function DeveloperToolsScreen({ onClose }) {
   // once per screen-open, the data's small enough" judgment already
   // applied to Global Search's own index and the Registry duplicate
   // checker.
-  const orphans = useMemo(() => findOrphanReferences(), []);
+  const orphans = useLoadedMemo(() => findOrphanReferences(), [], []);
   const [showOrphans, setShowOrphans] = useState(false);
+  // ADDED — real groundwork for encryption at rest: hasUnbackedChanges()
+  // is now async (see backupService.js's own comment), so this can no
+  // longer be called straight in the render body below — a Promise is
+  // always truthy, so `{hasUnbackedChanges() && (...)}` would render
+  // the warning permanently, regardless of the real answer.
+  const unbackedChanges = useLoadedMemo(() => hasUnbackedChanges(), [], false);
+  // ADDED — real groundwork for encryption at rest: LocationsRepository
+  // is now async (see its own comment), so its count can no longer be
+  // read straight inline in the `counts` array below like every other
+  // (still-synchronous) repository here — loaded separately via
+  // useLoadedMemo and substituted in.
+  const locationsCount = useLoadedMemo(() => LocationsRepository.getAll().then((l) => l.length), [], 0);
+  // CHANGED — Phase 2 encryption groundwork: ContactRepository went
+  // async too — same treatment as locationsCount above.
+  const contactsCount = useLoadedMemo(() => ContactRepository.getAll().then((l) => l.length), [], 0);
+  // CHANGED — Phase 2 encryption groundwork: LogRepository/
+  // EpisodeRepository went async too — same treatment as
+  // locationsCount/contactsCount above.
+  const logsCount = useLoadedMemo(() => LogRepository.getAll().then((l) => l.length), [], 0);
+  const episodesCount = useLoadedMemo(() => EpisodeRepository.getAll().then((l) => l.length), [], 0);
+  const symptomLogCount = useLoadedMemo(() => SymptomLogRepository.getAll().then((l) => l.length), [], 0);
+  const vaccinationsCount = useLoadedMemo(() => VaccinationRepository.getAll().then((l) => l.length), [], 0);
+  const encountersCount = useLoadedMemo(() => EncounterRepository.getAll().then((l) => l.length), [], 0);
+  const testsCount = useLoadedMemo(() => TestingRepository.getAll().then((l) => l.length), [], 0);
+  const medicationsCount = useLoadedMemo(() => MedicationRepository.getAll().then((l) => l.length), [], 0);
+  const clinicVisitsCount = useLoadedMemo(() => ClinicVisitsRepository.getAll().then((l) => l.length), [], 0);
+  // CHANGED — Phase 2 encryption groundwork: the six simpleRegistry.js-
+  // based registries are now async — same useLoadedMemo treatment as
+  // every other repository count above (previously read inline in the
+  // counts array below, direct render-body calls that broke once these
+  // registries went async).
+  const kinkCount = useLoadedMemo(() => KinkRegistry.getAll().then((l) => l.length), [], 0);
+  const chemsCount = useLoadedMemo(() => ChemsRegistry.getAll().then((l) => l.length), [], 0);
+  const protectionCount = useLoadedMemo(() => ProtectionRegistry.getAll().then((l) => l.length), [], 0);
+  const symptomsRegistryCount = useLoadedMemo(() => SymptomsRegistry.getAll().then((l) => l.length), [], 0);
+  const organismCount = useLoadedMemo(() => OrganismRegistry.getAll().then((l) => l.length), [], 0);
+  const resultsCount = useLoadedMemo(() => ResultsRegistry.getAll().then((l) => l.length), [], 0);
   const counts = [
-    { label: "Contacts", value: ContactRepository.getAll().length },
-    { label: "Encounters", value: EncounterRepository.getAll().length },
-    { label: "Medications", value: MedicationRepository.getAll().length },
-    { label: "Medication log entries", value: LogRepository.getAll().length },
-    { label: "Tests", value: TestingRepository.getAll().length },
-    { label: "Clinic visits", value: ClinicVisitsRepository.getAll().length },
-    { label: "Symptom Log entries", value: SymptomLogRepository.getAll().length },
-    { label: "Vaccinations", value: VaccinationRepository.getAll().length },
-    { label: "Timeline episodes", value: EpisodeRepository.getAll().length },
-    { label: "Kink Registry entries", value: KinkRegistry.getAll().length },
-    { label: "Chems Registry entries", value: ChemsRegistry.getAll().length },
-    { label: "Protection Registry entries", value: ProtectionRegistry.getAll().length },
-    { label: "Symptoms Registry entries", value: SymptomsRegistry.getAll().length },
-    { label: "Locations", value: LocationsRepository.getAll().length },
-    { label: "Organism Registry entries", value: OrganismRegistry.getAll().length },
-    { label: "Results Registry entries", value: ResultsRegistry.getAll().length },
+    { label: "Contacts", value: contactsCount },
+    { label: "Encounters", value: encountersCount },
+    { label: "Medications", value: medicationsCount },
+    { label: "Medication log entries", value: logsCount },
+    { label: "Tests", value: testsCount },
+    { label: "Clinic visits", value: clinicVisitsCount },
+    { label: "Symptom Log entries", value: symptomLogCount },
+    { label: "Vaccinations", value: vaccinationsCount },
+    { label: "Timeline episodes", value: episodesCount },
+    { label: "Kink Registry entries", value: kinkCount },
+    { label: "Chems Registry entries", value: chemsCount },
+    { label: "Protection Registry entries", value: protectionCount },
+    { label: "Symptoms Registry entries", value: symptomsRegistryCount },
+    { label: "Locations", value: locationsCount },
+    { label: "Organism Registry entries", value: organismCount },
+    { label: "Results Registry entries", value: resultsCount },
   ];
 
   const handleReset = () => {
@@ -680,7 +725,7 @@ function DeveloperToolsScreen({ onClose }) {
                 are genuinely unbacked-up changes, not just a generic
                 "back up first" reminder every time regardless of
                 whether anything's actually at risk. */}
-            {hasUnbackedChanges() && (
+            {unbackedChanges && (
               <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12, padding: "10px 12px", borderRadius: 10, background: `${ACTION.red}15`, border: `1px solid ${ACTION.red}` }}>
                 <AlertTriangle size={14} color={ACTION.red} style={{ flexShrink: 0, marginTop: 2 }} />
                 <div style={{ fontSize: 12, color: ACTION.red, fontWeight: 600 }}>You have changes since your last backup that would be lost. Export a backup before continuing.</div>
@@ -725,11 +770,11 @@ function DeveloperToolsScreen({ onClose }) {
 function LocationExtraFields({ entry, refresh, T, color }) {
   const [address, setAddress] = useState(entry.address || "");
   const [notes, setNotes] = useState(entry.notes || "");
-  const contacts = useMemo(() => ContactRepository.getAll().filter((c) => !c.isArchived), []);
-  const setType = (type) => { LocationsRepository.update(entry.id, { type: entry.type === type ? "" : type }); refresh(); };
-  const commitAddress = () => { LocationsRepository.update(entry.id, { address: address.trim() }); refresh(); };
-  const commitNotes = () => { LocationsRepository.update(entry.id, { notes: notes.trim() }); refresh(); };
-  const setRelatedContact = (id) => { LocationsRepository.update(entry.id, { relatedContactId: id }); refresh(); };
+  const contacts = useLoadedMemo(() => ContactRepository.getAll().then((all) => all.filter((c) => !c.isArchived)), [], []);
+  const setType = async (type) => { await LocationsRepository.update(entry.id, { type: entry.type === type ? "" : type }); refresh(); };
+  const commitAddress = async () => { await LocationsRepository.update(entry.id, { address: address.trim() }); refresh(); };
+  const commitNotes = async () => { await LocationsRepository.update(entry.id, { notes: notes.trim() }); refresh(); };
+  const setRelatedContact = async (id) => { await LocationsRepository.update(entry.id, { relatedContactId: id }); refresh(); };
   const inputStyle = { width: "100%", padding: "6px 8px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box", marginBottom: 8 };
   return (
     <div style={{ paddingTop: 4 }}>
@@ -783,6 +828,14 @@ function ManageListsScreen({ onClose }) {
   const [openRegistry, setOpenRegistry] = useState(null);
   const [openOptionList, setOpenOptionList] = useState(null);
   const optionListNames = CustomOptionListsRepository.getAllListNames();
+  // CHANGED — Phase 2 encryption groundwork: CustomOptionListsRepository
+  // went async — `.get(name).length` used to be a synchronous per-row
+  // render call inside the JSX .map() below, which can't itself await;
+  // resolved into a lookup object ahead of time instead.
+  const listCounts = useLoadedMemo(async () => {
+    const entries = await Promise.all(optionListNames.map(async (name) => [name, (await CustomOptionListsRepository.get(name)).length]));
+    return Object.fromEntries(entries);
+  }, [], {});
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -838,7 +891,7 @@ function ManageListsScreen({ onClose }) {
                     )}
                     <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : "#1B1B1F", fontWeight: 500 }}>{OPTION_LIST_LABELS[name] || name}</span>
                   </div>
-                  <span style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568" }}>{CustomOptionListsRepository.get(name).length} options ›</span>
+                  <span style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : "#656568" }}>{listCounts[name] ?? 0} options ›</span>
                 </div>
               );
             })}
@@ -859,12 +912,14 @@ function ManageListsScreen({ onClose }) {
 // logic just to answer "did ANY category match" — kept a plain
 // function, not a hook, since it only ever runs against the query
 // string already in scope, nothing stateful.
-function hasAnyResourceMatch(query) {
+async function hasAnyResourceMatch(query) {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  return ResourcesRepository.getAllCategoryKeys().some((key) =>
-    ResourcesRepository.getEntries(key).some((e) => [e.name, e.link, e.notes].filter(Boolean).some((v) => v.toLowerCase().includes(q)))
-  );
+  for (const key of ResourcesRepository.getAllCategoryKeys()) {
+    const entries = await ResourcesRepository.getEntries(key);
+    if (entries.some((e) => [e.name, e.link, e.notes].filter(Boolean).some((v) => v.toLowerCase().includes(q)))) return true;
+  }
+  return false;
 }
 
 // ADDED 1 Sep 2026 — real ask: "want resources section in settings
@@ -893,12 +948,12 @@ function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
   const [link, setLink] = useState(entry.link);
   const [notes, setNotes] = useState(entry.notes);
 
-  const save = () => {
-    ResourcesRepository.updateEntry(categoryKey, entry.id, { link, notes });
+  const save = async () => {
+    await ResourcesRepository.updateEntry(categoryKey, entry.id, { link, notes });
     onChanged();
   };
-  const remove = () => {
-    ResourcesRepository.removeEntry(categoryKey, entry.id);
+  const remove = async () => {
+    await ResourcesRepository.removeEntry(categoryKey, entry.id);
     onChanged();
   };
 
@@ -943,14 +998,24 @@ function ResourceCategory({ categoryKey, darkMode, query }) {
   const T = darkMode ? DARK : NEUTRAL;
   const [refreshKey, setRefreshKey] = useState(0);
   const [addingName, setAddingName] = useState("");
-  const entries = useMemo(() => ResourcesRepository.getEntries(categoryKey), [categoryKey, refreshKey]);
+  // CHANGED 4 Sep 2026 — real groundwork for encryption at rest (see
+  // CLAUDE.md's Known Issues / the Notion Development log for the
+  // full plan): useLoadedMemo instead of a plain useMemo — same
+  // shape/ergonomics, but loads via an effect instead of
+  // synchronously, since storage.load() behind getEntries() is
+  // slated to become async once real encryption lands. Second real
+  // proof point for the shared hook (loadedRepositoryState.js),
+  // exercising the deps-driven recompute path specifically —
+  // clinicCardVisibilityPreference.js already proved the mount-once
+  // path.
+  const entries = useLoadedMemo(() => ResourcesRepository.getEntries(categoryKey), [categoryKey, refreshKey], []);
   const refresh = () => setRefreshKey((k) => k + 1);
   const q = query.trim().toLowerCase();
   const filtered = q ? entries.filter((e) => [e.name, e.link, e.notes].filter(Boolean).some((v) => v.toLowerCase().includes(q))) : entries;
 
-  const addEntry = () => {
+  const addEntry = async () => {
     if (!addingName.trim()) return;
-    ResourcesRepository.addEntry(categoryKey, { name: addingName });
+    await ResourcesRepository.addEntry(categoryKey, { name: addingName });
     setAddingName("");
     refresh();
   };
@@ -1018,6 +1083,13 @@ function ResourcesScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   const [query, setQuery] = useState("");
+  // ADDED — real groundwork for encryption at rest: hasAnyResourceMatch()
+  // is now async (see resourcesRepository.js's own comment), so this
+  // can no longer be called straight in the render body below — a
+  // Promise is always truthy, so `!hasAnyResourceMatch(query)` would
+  // never show the "no results" state once it went async. Same reactivity
+  // as before (only recomputes when `query` changes) via useLoadedMemo.
+  const hasMatch = useLoadedMemo(() => hasAnyResourceMatch(query), [query], true);
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : "#F0F0F3", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
@@ -1037,7 +1109,7 @@ function ResourcesScreen({ onClose }) {
           <ResourceCategory key={key} categoryKey={key} darkMode={darkMode} query={query} />
         ))}
         {!query.trim() && <ClinicalJustificationsCategory darkMode={darkMode} />}
-        {query.trim() && !hasAnyResourceMatch(query) && (
+        {query.trim() && !hasMatch && (
           <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>No resources match your search.</div>
         )}
       </div>
@@ -1052,7 +1124,7 @@ function ResourcesScreen({ onClose }) {
 function PrivacyScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
 
-  const [settings, setSettings] = useState(() => PrivacySettingsRepository.getSettings());
+  const [settings, setSettings] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const [pinEntry, setPinEntry] = useState("");
   const [pinError, setPinError] = useState("");
   const [settingPin, setSettingPin] = useState(false);
@@ -1066,22 +1138,39 @@ function PrivacyScreen({ onClose }) {
   // field on this screen.
   const [showPins, setShowPins] = useState(false);
 
-  const refresh = () => setSettings(PrivacySettingsRepository.getSettings());
+  const refresh = async () => setSettings(await PrivacySettingsRepository.getSettings());
 
-  const activate = () => { PrivacySettingsRepository.activate(); refresh(); };
-  const attemptDeactivate = () => {
-    const result = PrivacySettingsRepository.deactivate(pinEntry);
+  const activate = async () => { await PrivacySettingsRepository.activate(); refresh(); };
+  const attemptDeactivate = async () => {
+    const result = await PrivacySettingsRepository.deactivate(pinEntry);
     if (result.ok) { setPinEntry(""); setPinError(""); refresh(); }
     else setPinError(result.error);
   };
-  const savePin = () => {
+  // CHANGED — Phase 4 (Sep 2026): if App Lock is already on, this PIN
+  // isn't just a stored string anymore — it's the real key material
+  // wrapping the vault's Data Key. Real re-wrap via cryptoService's own
+  // verify-before-commit changePin() (see that file's header) using
+  // `settings.anonymisePin` as the OLD PIN — already known here without
+  // asking the user to retype it, same "already inside Settings, which
+  // the lock screen itself already gated" trust model as turning App
+  // Lock off below. If App Lock is OFF, there's no vault PIN slot to
+  // re-wrap yet (first-ever PIN, or a PIN changed while unused) — just
+  // the stored string, exactly as before this change.
+  const savePin = async () => {
     const trimmed = newPin.trim();
     if (trimmed.length < 4) { setPinError("PIN should be at least 4 digits."); return; }
     // CHANGED — real ask: force reconfirmation before accepting.
     if (trimmed !== confirmPin.trim()) { setPinError("PINs don't match — check both and try again."); return; }
-    PrivacySettingsRepository.update({ anonymisePin: trimmed });
-    setNewPin(""); setConfirmPin(""); setSettingPin(false); setPinError("");
-    refresh();
+    try {
+      if (settings.appLockEnabled) {
+        await changePin(settings.anonymisePin, trimmed, settings.appLockGraceMinutes);
+      }
+      await PrivacySettingsRepository.update({ anonymisePin: trimmed });
+      setNewPin(""); setConfirmPin(""); setSettingPin(false); setPinError("");
+      refresh();
+    } catch (err) {
+      setPinError(err.message || "Couldn't change the PIN — nothing was changed.");
+    }
   };
 
   // ADDED 1 Sep 2026 — real ask: "dummy pin good idea." Same
@@ -1092,16 +1181,16 @@ function PrivacyScreen({ onClose }) {
   const [newDuressPin, setNewDuressPin] = useState("");
   const [confirmDuressPin, setConfirmDuressPin] = useState("");
   const [duressPinError, setDuressPinError] = useState("");
-  const saveDuressPin = () => {
+  const saveDuressPin = async () => {
     const trimmed = newDuressPin.trim();
     if (trimmed.length < 4) { setDuressPinError("PIN should be at least 4 digits."); return; }
     if (trimmed !== confirmDuressPin.trim()) { setDuressPinError("PINs don't match — check both and try again."); return; }
-    const result = PrivacySettingsRepository.setDuressPin(trimmed);
+    const result = await PrivacySettingsRepository.setDuressPin(trimmed);
     if (!result.ok) { setDuressPinError(result.error); return; }
     setNewDuressPin(""); setConfirmDuressPin(""); setSettingDuressPin(false); setDuressPinError("");
     refresh();
   };
-  const clearDuressPin = () => { PrivacySettingsRepository.clearDuressPin(); refresh(); };
+  const clearDuressPin = async () => { await PrivacySettingsRepository.clearDuressPin(); refresh(); };
 
   // ADDED 19 Aug 2026 — App Lock toggle, real ask. Guarded: can't turn
   // on without a PIN already set, since App Lock with no PIN would
@@ -1109,28 +1198,62 @@ function PrivacyScreen({ onClose }) {
   // trivially bypasses — confusing, not actually locked. Turning OFF
   // never needs the PIN re-entered here; you're already inside
   // Settings, which the lock screen itself already gated.
-  const toggleAppLock = () => {
+  // CHANGED — Phase 4 (Sep 2026): this used to just flip a stored flag.
+  // Turning App Lock ON now really does establish the vault's `pin`
+  // slot (cryptoService.enablePinProtection) — the real thing that
+  // makes "pulled-from-device data always needs the PIN" true. Turning
+  // it OFF really does re-wrap the vault back onto the always-works
+  // device slot (disablePinProtectionWithPin) — both use `settings.
+  // anonymisePin` as the real PIN, already known here (see savePin's
+  // own comment on why re-asking for it isn't needed). Either call can
+  // throw on a genuine verification failure (see cryptoService.js's
+  // own "verify before commit" design) — caught here so a failure
+  // leaves both the vault AND the stored flag exactly as they were,
+  // never a mismatched pair.
+  const toggleAppLock = async () => {
     if (!settings.appLockEnabled && !settings.anonymisePin) {
       setPinError("Set a PIN below first, then App Lock can use it.");
       return;
     }
-    // CHANGED — real ask: turning App Lock back OFF should also turn
-    // off biometric unlock with it — biometric is only ever meaningful
-    // as an add-on to App Lock, leaving it silently "on" underneath
-    // would just be stale, unreachable state.
-    PrivacySettingsRepository.update({ appLockEnabled: !settings.appLockEnabled, ...(settings.appLockEnabled ? { biometricUnlockEnabled: false } : {}) });
-    refresh();
+    try {
+      if (settings.appLockEnabled) {
+        await disablePinProtectionWithPin(settings.anonymisePin);
+        // CHANGED — real ask: turning App Lock back OFF should also
+        // turn off biometric unlock with it — biometric is only ever
+        // meaningful as an add-on to App Lock, leaving it silently "on"
+        // underneath would just be stale, unreachable state.
+        await PrivacySettingsRepository.update({ appLockEnabled: false, biometricUnlockEnabled: false });
+      } else {
+        await enablePinProtection(settings.anonymisePin, settings.appLockGraceMinutes);
+        await PrivacySettingsRepository.update({ appLockEnabled: true });
+      }
+      refresh();
+    } catch (err) {
+      setPinError(err.message || "Couldn't change App Lock — nothing was changed.");
+    }
   };
 
   // ADDED — real ask: biometric unlock, layered on top of App Lock's
   // own PIN. Real device/enrollment check happens here at toggle-on
   // time — never just flips the flag and hopes, since the device
   // might have no biometric hardware or nothing enrolled.
+  // CHANGED — Phase 4 (Sep 2026): turning this on now really does
+  // establish the vault's own `biometric` slot (a device-protected copy
+  // of the Data Key — see cryptoService.js's own section on it for the
+  // honest trade-off this accepts) via cryptoService.enableBiometricSlot(),
+  // using the already-known real PIN to unwrap the DEK first. Without
+  // this, App.jsx's own AppLockScreen would gate on a real biometric
+  // prompt that succeeds but then has no way to actually recover the
+  // Data Key — exactly the bug found and fixed live while wiring the
+  // boot gate. Turning it off just removes the slot — no PIN needed,
+  // same "no re-entry once already in Settings" pattern as everywhere
+  // else on this screen.
   const [biometricError, setBiometricError] = useState("");
   const toggleBiometric = async () => {
     setBiometricError("");
     if (settings.biometricUnlockEnabled) {
-      PrivacySettingsRepository.update({ biometricUnlockEnabled: false });
+      disableBiometricSlot();
+      await PrivacySettingsRepository.update({ biometricUnlockEnabled: false });
       refresh();
       return;
     }
@@ -1139,7 +1262,13 @@ function PrivacyScreen({ onClose }) {
       setBiometricError(result.reason || "Biometrics aren't available on this device.");
       return;
     }
-    PrivacySettingsRepository.update({ biometricUnlockEnabled: true });
+    try {
+      await enableBiometricSlot(settings.anonymisePin);
+    } catch (err) {
+      setBiometricError(err.message || "Couldn't enable biometric unlock — nothing was changed.");
+      return;
+    }
+    await PrivacySettingsRepository.update({ biometricUnlockEnabled: true });
     refresh();
   };
 
@@ -1215,9 +1344,9 @@ function PrivacyScreen({ onClose }) {
             hiding when the base tier isn't even active never made
             sense — there'd be nothing for it to add on top of. */}
         <div style={{ background: darkMode ? DARK.surface : "#FFFFFF", border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", borderRadius: RADIUS.md, padding: 16, marginBottom: 16, opacity: settings.anonymiseModeActive ? 1 : 0.5 }}>
-          <div onClick={settings.anonymiseModeActive ? () => { PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } : undefined}
+          <div onClick={settings.anonymiseModeActive ? async () => { await PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } : undefined}
             role="switch" tabIndex={settings.anonymiseModeActive ? 0 : -1} aria-checked={settings.hideFurtherEnabled} aria-label="Also hide kinks & physical attributes"
-            onKeyDown={settings.anonymiseModeActive ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } } : undefined}
+            onKeyDown={settings.anonymiseModeActive ? async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); await PrivacySettingsRepository.update({ hideFurtherEnabled: !settings.hideFurtherEnabled }); refresh(); } } : undefined}
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: settings.anonymiseModeActive ? "pointer" : "default" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Also hide kinks & physical attributes</div>
@@ -1294,9 +1423,9 @@ function PrivacyScreen({ onClose }) {
               opt-in convenience layered on top. */}
           {settings.appLockEnabled && (
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
-              <div onClick={() => { PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); }}
+              <div onClick={async () => { await PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); }}
                 role="switch" tabIndex={0} aria-checked={settings.appLockGraceMinutes > 0} aria-label="Skip re-verification briefly"
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); } }}
+                onKeyDown={async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); await PrivacySettingsRepository.update({ appLockGraceMinutes: settings.appLockGraceMinutes > 0 ? 0 : 10 }); refresh(); } }}
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
                 <div style={{ flex: 1, paddingRight: 12 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : "#1B1B1F" }}>Skip re-verification briefly</div>
@@ -1310,7 +1439,7 @@ function PrivacyScreen({ onClose }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
                   <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>Grace period:</span>
                   <input type="number" min={1} max={120} value={settings.appLockGraceMinutes}
-                    onChange={(e) => { const v = Math.max(1, Math.min(120, Number(e.target.value) || 1)); PrivacySettingsRepository.update({ appLockGraceMinutes: v }); refresh(); }}
+                    onChange={async (e) => { const v = Math.max(1, Math.min(120, Number(e.target.value) || 1)); await PrivacySettingsRepository.update({ appLockGraceMinutes: v }); refresh(); }}
                     style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : "#1B1B1F", fontSize: 13, textAlign: "center" }} />
                   <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : "#5B5B62" }}>minutes</span>
                 </div>
@@ -1746,25 +1875,27 @@ function InstallPwaNudge({ darkMode }) {
 
 function NotificationsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
-  const [, forceRefresh] = useState(0);
+  const [refreshKey, forceRefresh] = useState(0);
   const refresh = () => forceRefresh((n) => n + 1);
   const [showHistory, setShowHistory] = useState(false);
-  const notifPrefs = NotificationPreferencesRepository.getPreferences();
-  const medPrefs = MedicationPreferencesRepository.getPreferences();
+  // CHANGED — Phase 2 encryption groundwork: NotificationPreferencesRepository
+  // is now async too — same useLoadedMemo/refreshKey pattern as medPrefs.
+  const notifPrefs = useLoadedMemo(() => NotificationPreferencesRepository.getPreferences(), [refreshKey], DEFAULT_NOTIFICATION_PREFERENCES);
+  const medPrefs = useLoadedMemo(() => MedicationPreferencesRepository.getPreferences(), [refreshKey], DEFAULT_MEDICATION_PREFERENCES);
 
   // Re-syncs immediately on toggle rather than waiting for the next
   // Home mount or relevant save — turning a reminder off should cancel
   // whatever's already pending right away, not leave a stale native
   // notification scheduled until the app happens to reopen.
-  const toggleNotif = (key) => {
-    NotificationPreferencesRepository.update({ [key]: !notifPrefs[key] });
+  const toggleNotif = async (key) => {
+    await NotificationPreferencesRepository.update({ [key]: !notifPrefs[key] });
     if (key === "doxyPepAlertEnabled") syncDoxyPepAlert();
     else if (key === "testingReminderEnabled") syncTestingReminder();
     else if (key === "refillReminderEnabled") syncRefillReminder();
     else syncClinicVisitReminders();
     refresh();
   };
-  const toggleMed = () => { MedicationPreferencesRepository.updatePreferences({ doseRemindersEnabled: !medPrefs.doseRemindersEnabled }); syncMedicationReminders(); refresh(); };
+  const toggleMed = async () => { await MedicationPreferencesRepository.updatePreferences({ doseRemindersEnabled: !medPrefs.doseRemindersEnabled }); syncMedicationReminders(); refresh(); };
 
   // Re-syncs every real reminder type at once — used by the master
   // switch, quiet hours, and vacation pause below, all of which affect
@@ -1777,19 +1908,19 @@ function NotificationsScreen({ onClose }) {
     syncClinicVisitReminders();
   };
 
-  const toggleMaster = () => { NotificationPreferencesRepository.update({ masterEnabled: !notifPrefs.masterEnabled }); resyncAll(); refresh(); };
+  const toggleMaster = async () => { await NotificationPreferencesRepository.update({ masterEnabled: !notifPrefs.masterEnabled }); resyncAll(); refresh(); };
 
   // ADDED 3 Sep 2026 — real ask: quiet hours + vacation pause.
-  const setQuietHours = (changes) => { NotificationPreferencesRepository.update(changes); resyncAll(); refresh(); };
+  const setQuietHours = async (changes) => { await NotificationPreferencesRepository.update(changes); resyncAll(); refresh(); };
   const pausedActive = isPaused(notifPrefs);
-  const startPause = (days) => {
+  const startPause = async (days) => {
     const until = new Date();
     until.setDate(until.getDate() + days);
-    NotificationPreferencesRepository.update({ pausedUntil: until.toISOString() });
+    await NotificationPreferencesRepository.update({ pausedUntil: until.toISOString() });
     resyncAll();
     refresh();
   };
-  const resumeNow = () => { NotificationPreferencesRepository.update({ pausedUntil: null }); resyncAll(); refresh(); };
+  const resumeNow = async () => { await NotificationPreferencesRepository.update({ pausedUntil: null }); resyncAll(); refresh(); };
 
   const hoursInput = (value, onChange) => (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
@@ -1876,11 +2007,11 @@ function NotificationsScreen({ onClose }) {
           description="Reminder around your suggested routine retest date (3 months after a negative test)." />
         <NotificationToggleRow darkMode={darkMode} label="Clinic appointment reminder A" enabled={notifPrefs.clinicVisitReminderAEnabled} onToggle={() => toggleNotif("clinicVisitReminderAEnabled")}
           description="First reminder before a booked clinic appointment. Defaults to 24 hours.">
-          {hoursInput(notifPrefs.clinicVisitReminderAHours, (v) => { NotificationPreferencesRepository.update({ clinicVisitReminderAHours: v }); syncClinicVisitReminders(); refresh(); })}
+          {hoursInput(notifPrefs.clinicVisitReminderAHours, async (v) => { await NotificationPreferencesRepository.update({ clinicVisitReminderAHours: v }); syncClinicVisitReminders(); refresh(); })}
         </NotificationToggleRow>
         <NotificationToggleRow darkMode={darkMode} label="Clinic appointment reminder B" enabled={notifPrefs.clinicVisitReminderBEnabled} onToggle={() => toggleNotif("clinicVisitReminderBEnabled")}
           description="Second, closer reminder before a booked clinic appointment. Defaults to 2 hours.">
-          {hoursInput(notifPrefs.clinicVisitReminderBHours, (v) => { NotificationPreferencesRepository.update({ clinicVisitReminderBHours: v }); syncClinicVisitReminders(); refresh(); })}
+          {hoursInput(notifPrefs.clinicVisitReminderBHours, async (v) => { await NotificationPreferencesRepository.update({ clinicVisitReminderBHours: v }); syncClinicVisitReminders(); refresh(); })}
         </NotificationToggleRow>
 
         {/* ADDED 3 Sep 2026 — real ask: a notification history log —
@@ -1902,8 +2033,8 @@ function NotificationsScreen({ onClose }) {
 // the full reasoning. Read-only besides a Clear action; this is a
 // diagnostic/awareness view, not something with its own settings.
 function NotificationHistoryScreen({ darkMode, onClose }) {
-  const [entries, setEntries] = useState(() => NotificationHistoryRepository.getAll());
-  const clear = () => { NotificationHistoryRepository.clear(); setEntries([]); };
+  const [entries, setEntries] = useLoadedState(() => NotificationHistoryRepository.getAll(), [], []);
+  const clear = async () => { await NotificationHistoryRepository.clear(); setEntries([]); };
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -1962,20 +2093,20 @@ const METRIC_UNITS = { Weight: "kg", Height: "cm", Temperature: "°C" };
 const IMPERIAL_UNITS = { Weight: "lb", Height: "in", Temperature: "°F" };
 
 function detectUnitSystem(prefs) {
-  const isImperial = UNIT_SYSTEM_TYPES.every((t) => (prefs.preferredUnitByType[t] || getDefaultUnit(t)) === IMPERIAL_UNITS[t]);
+  const isImperial = UNIT_SYSTEM_TYPES.every((t) => (prefs.preferredUnitByType[t] || getDefaultUnit(t, prefs)) === IMPERIAL_UNITS[t]);
   return isImperial ? "imperial" : "metric";
 }
 
 function UnitsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
-  const [prefs, setPrefs] = useState(() => MeasurementPreferencesRepository.getPreferences());
+  const [prefs, setPrefs] = useLoadedState(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
   const system = detectUnitSystem(prefs);
 
-  const setPreferred = (type, unit) => setPrefs(MeasurementPreferencesRepository.setPreferredUnit(type, unit));
-  const setSystem = (target) => {
+  const setPreferred = async (type, unit) => setPrefs(await MeasurementPreferencesRepository.setPreferredUnit(type, unit));
+  const setSystem = async (target) => {
     const units = target === "imperial" ? IMPERIAL_UNITS : METRIC_UNITS;
     let updated = prefs;
-    UNIT_SYSTEM_TYPES.forEach((type) => { updated = MeasurementPreferencesRepository.setPreferredUnit(type, units[type]); });
+    for (const type of UNIT_SYSTEM_TYPES) updated = await MeasurementPreferencesRepository.setPreferredUnit(type, units[type]);
     setPrefs(updated);
   };
 
@@ -1984,8 +2115,8 @@ function UnitsScreen({ onClose }) {
   // not measurement units) but this screen is the closest existing
   // "how things display" home rather than a new near-empty screen —
   // same reasoning as InactiveThresholdCard folding into DesignScreen.
-  const [appPrefs, setAppPrefs] = useState(() => AppPreferencesRepository.getPreferences());
-  const setWeekStartsOn = (value) => setAppPrefs(AppPreferencesRepository.update({ weekStartsOn: value }));
+  const [appPrefs, setAppPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  const setWeekStartsOn = async (value) => setAppPrefs(await AppPreferencesRepository.update({ weekStartsOn: value }));
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : "#F0F0F3", zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -2011,7 +2142,7 @@ function UnitsScreen({ onClose }) {
         </div>
 
         {UNIT_SYSTEM_TYPES.map((type) => {
-          const units = getAvailableUnits(type);
+          const units = getAvailableUnits(type, prefs.typeKinds[type]);
           const current = prefs.preferredUnitByType[type] || units[0];
           return (
             <div key={type} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: darkMode ? "1px solid " + DARK.border : "1px solid #DCDCE1" }}>
@@ -2086,13 +2217,13 @@ const AUTO_EXPORT_INTERVAL_OPTIONS = [
 // and reachable directly from the Data section next to Export/Restore.
 function AutomaticBackupsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
-  const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
 
-  const toggleAutoExport = () => {
-    setPrefs(AppPreferencesRepository.update({ autoExportEnabled: !prefs.autoExportEnabled }));
+  const toggleAutoExport = async () => {
+    setPrefs(await AppPreferencesRepository.update({ autoExportEnabled: !prefs.autoExportEnabled }));
   };
-  const setAutoExportInterval = (days) => {
-    setPrefs(AppPreferencesRepository.update({ autoExportIntervalDays: days }));
+  const setAutoExportInterval = async (days) => {
+    setPrefs(await AppPreferencesRepository.update({ autoExportIntervalDays: days }));
   };
 
   return (
@@ -2147,13 +2278,13 @@ function AutomaticBackupsScreen({ onClose }) {
 // to be scared of. Same standalone-screen pattern as AutomaticBackupsScreen.
 function DataNetworkScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
-  const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
 
-  const toggleAddressLookup = () => {
-    setPrefs(AppPreferencesRepository.update({ addressLookupEnabled: !prefs.addressLookupEnabled }));
+  const toggleAddressLookup = async () => {
+    setPrefs(await AppPreferencesRepository.update({ addressLookupEnabled: !prefs.addressLookupEnabled }));
   };
-  const toggleUpdateCheck = () => {
-    setPrefs(AppPreferencesRepository.update({ updateCheckEnabled: !prefs.updateCheckEnabled }));
+  const toggleUpdateCheck = async () => {
+    setPrefs(await AppPreferencesRepository.update({ updateCheckEnabled: !prefs.updateCheckEnabled }));
   };
 
   const row = (label, enabled, onToggle, description) => (
@@ -2273,19 +2404,25 @@ function TrendInsight({ text, tone, T }) {
 function StatsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
 
-  const encounters = useMemo(() => EncounterRepository.getAll(), []);
-  const contacts = useMemo(() => ContactRepository.getAll(), []);
-  const tests = useMemo(() => TestingRepository.getAll(), []);
+  const encounters = useLoadedMemo(() => EncounterRepository.getAll(), [], []);
+  const contacts = useLoadedMemo(() => ContactRepository.getAll(), [], []);
+  const tests = useLoadedMemo(() => TestingRepository.getAll(), [], []);
   // computeAdherence() reads med.logs directly — not part of the raw
   // repository record, so it has to be stitched on here too (same as
   // SHOS_Medication_Dashboard_Prototype.jsx's loadMedications()).
-  const medications = useMemo(() => MedicationRepository.getAll().map((med) => ({ ...med, logs: LogRepository.getForMedication(med.id) })), []);
+  const medications = useLoadedMemo(async () => Promise.all((await MedicationRepository.getAll()).map(async (med) => ({ ...med, logs: await LogRepository.getForMedication(med.id) }))), [], []);
   // ADDED — real ask: "expand stats".
-  const symptomEntries = useMemo(() => SymptomLogRepository.getAll(), []);
-  const clinicVisits = useMemo(() => ClinicVisitsRepository.getAll(), []);
+  const symptomEntries = useLoadedMemo(() => SymptomLogRepository.getAll(), [], []);
+  const clinicVisits = useLoadedMemo(() => ClinicVisitsRepository.getAll(), [], []);
+  // CHANGED — Phase 2 encryption groundwork: KinkRegistry/SymptomsRegistry
+  // are now async — resolved into lookup Maps here, passed as the
+  // resolver getTopKinks()/getTopSymptoms() expect (both stay plain,
+  // synchronous, I/O-free calculation functions — see statsCalculations.js).
+  const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
+  const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
 
   const activityMonths = useMemo(() => getActivitiesPerMonth(encounters, 6), [encounters]);
-  const topKinks = useMemo(() => getTopKinks(encounters, contacts, (id) => KinkRegistry.getById(id)?.name, 5), [encounters, contacts]);
+  const topKinks = useMemo(() => getTopKinks(encounters, contacts, (id) => kinkNameById.get(id), 5), [encounters, contacts, kinkNameById]);
   const testingStats = useMemo(() => getTestingFrequencyStats(tests), [tests]);
   // ADDED — real ask: "Stats is descriptive, not predictive" — a real
   // nudge against the person's OWN pattern (not just the fixed BASHH
@@ -2293,18 +2430,22 @@ function StatsScreen({ onClose }) {
   // the two distinct comparisons this covers.
   const testingTrend = useMemo(() => getTestingIntervalTrend(tests), [tests]);
   const adherence = useMemo(() => getOverallAdherence(medications, computeAdherence), [medications]);
-  const doxyCompliance = useMemo(() => {
+  // CHANGED — Phase 2 encryption groundwork: LogRepository went async
+  // — this used to be a plain useMemo directly calling
+  // LogRepository.getForMedication(), now needs useLoadedMemo since it
+  // awaits.
+  const doxyCompliance = useLoadedMemo(async () => {
     const doxyMed = findDoxyPepMedication(medications);
     if (!doxyMed) return null;
-    return getDoxyPepComplianceRate(encounters, LogRepository.getForMedication(doxyMed.id), isQualifyingEncounter, DOXYPEP_WINDOW_HOURS);
-  }, [encounters, medications]);
+    return getDoxyPepComplianceRate(encounters, await LogRepository.getForMedication(doxyMed.id), isQualifyingEncounter, DOXYPEP_WINDOW_HOURS);
+  }, [encounters, medications], null);
   const contactMonths = useMemo(() => getContactsAddedPerMonth(contacts, 6), [contacts]);
   // ADDED — real ask: "expand stats". See getAdherenceTrend's own
   // comment for why this is deliberately a simpler, self-contained
   // measure rather than reusing computeAdherence() (hardcoded to
   // "today", not safely reusable for a past month).
   const adherenceTrend = useMemo(() => getAdherenceTrend(medications, 6), [medications]);
-  const topSymptoms = useMemo(() => getTopSymptoms(symptomEntries, (id) => SymptomsRegistry.getById(id)?.name, 5), [symptomEntries]);
+  const topSymptoms = useMemo(() => getTopSymptoms(symptomEntries, (id) => symptomNameById.get(id), 5), [symptomEntries, symptomNameById]);
   const clinicVisitStats = useMemo(() => getClinicVisitStats(clinicVisits), [clinicVisits]);
   const clinicVisitMonths = useMemo(() => getClinicVisitsPerMonth(clinicVisits, 6), [clinicVisits]);
 
@@ -2878,7 +3019,7 @@ function AboutScreen({ onClose }) {
 // my phone's calendar," not a generic Settings menu several taps away.
 function CalendarSyncSheet({ onClose }) {
   const [darkMode] = useDarkModePreference();
-  const [appPrefs, setAppPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const [appPrefs, setAppPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const [calendarSyncError, setCalendarSyncError] = useState("");
   const [calendarSyncing, setCalendarSyncing] = useState(false);
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
@@ -2896,8 +3037,8 @@ function CalendarSyncSheet({ onClose }) {
     if (appPrefs.calendarSyncEnabled) {
       setCalendarSyncing(true);
       await removeAllSyncedEvents();
-      AppPreferencesRepository.update({ calendarSyncEnabled: false, calendarSyncTargetName: null });
-      setAppPrefs(AppPreferencesRepository.getPreferences());
+      await AppPreferencesRepository.update({ calendarSyncEnabled: false, calendarSyncTargetName: null });
+      setAppPrefs(await AppPreferencesRepository.getPreferences());
       setShowCalendarPicker(false);
       setCalendarSyncing(false);
       return;
@@ -2909,9 +3050,9 @@ function CalendarSyncSheet({ onClose }) {
       setCalendarSyncing(false);
       return;
     }
-    AppPreferencesRepository.update({ calendarSyncEnabled: true });
-    setAppPrefs(AppPreferencesRepository.getPreferences());
-    await syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+    await AppPreferencesRepository.update({ calendarSyncEnabled: true });
+    setAppPrefs(await AppPreferencesRepository.getPreferences());
+    await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
     setCalendarSyncing(false);
   };
 
@@ -2930,9 +3071,9 @@ function CalendarSyncSheet({ onClose }) {
     setCalendarSyncing(true);
     const previousName = appPrefs.calendarSyncTargetName || SHOS_CALENDAR_NAME;
     await removeSyncedEventsFrom(previousName);
-    AppPreferencesRepository.update({ calendarSyncTargetName: name });
-    setAppPrefs(AppPreferencesRepository.getPreferences());
-    await syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+    await AppPreferencesRepository.update({ calendarSyncTargetName: name });
+    setAppPrefs(await AppPreferencesRepository.getPreferences());
+    await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
     setShowCalendarPicker(false);
     setCalendarSyncing(false);
   };
@@ -2949,9 +3090,9 @@ function CalendarSyncSheet({ onClose }) {
   // the way switching calendars does.
   const toggleGenericTitle = async () => {
     setCalendarSyncing(true);
-    AppPreferencesRepository.update({ calendarSyncGenericTitle: !appPrefs.calendarSyncGenericTitle });
-    setAppPrefs(AppPreferencesRepository.getPreferences());
-    await syncClinicVisitsToCalendar(ClinicVisitsRepository.getAll());
+    await AppPreferencesRepository.update({ calendarSyncGenericTitle: !appPrefs.calendarSyncGenericTitle });
+    setAppPrefs(await AppPreferencesRepository.getPreferences());
+    await syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll());
     setCalendarSyncing(false);
   };
 
@@ -3070,7 +3211,13 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   // entry. Re-read fresh each render (not memoized) so the icon's own
   // on/off look stays honest immediately after the sheet changes it.
   const [showSyncSheet, setShowSyncSheet] = useState(false);
-  const syncEnabled = AppPreferencesRepository.getPreferences().calendarSyncEnabled;
+  // CHANGED — Phase 2 encryption groundwork: AppPreferencesRepository
+  // went async, so the old plain "re-read fresh every render" call
+  // (safe only while getPreferences() was synchronous) needed a real
+  // dependency instead — showSyncSheet is what actually changes when
+  // this value could have, since CalendarSyncSheet is the only place
+  // that writes calendarSyncEnabled.
+  const syncEnabled = useLoadedMemo(() => AppPreferencesRepository.getPreferences().then((p) => p.calendarSyncEnabled), [showSyncSheet], false);
   // ADDED 26 Aug 2026 — real ask: filters, standard on every other
   // module's list this session — shouldn't have been skipped here.
   const ALL_MODULE_KEYS = ["encounters", "testing", "clinicVisits", "vaccinations", "symptomLog", "medications"];
@@ -3078,14 +3225,14 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   const [activeModules, setActiveModules] = useState(ALL_MODULE_KEYS);
   const toggleModule = (key) => setActiveModules((cur) => cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]);
 
-  const allEvents = useMemo(() => getCalendarEvents({
-    encounters: EncounterRepository.getAll(),
-    tests: TestingRepository.getAll(),
-    clinicVisits: ClinicVisitsRepository.getAll(),
-    vaccinations: VaccinationRepository.getAll(),
-    symptomEntries: SymptomLogRepository.getAll(),
-    medications: MedicationRepository.getAll(),
-  }), []);
+  const allEvents = useLoadedMemo(async () => getCalendarEvents({
+    encounters: await EncounterRepository.getAll(),
+    tests: await TestingRepository.getAll(),
+    clinicVisits: await ClinicVisitsRepository.getAll(),
+    symptomEntries: await SymptomLogRepository.getAll(),
+    medications: await MedicationRepository.getAll(),
+    vaccinations: await VaccinationRepository.getAll(),
+  }), [], []);
   const events = useMemo(() => allEvents.filter((e) => activeModules.includes(e.moduleKey)), [allEvents, activeModules]);
   const grouped = useMemo(() => groupEventsByDay(events), [events]);
 
@@ -3093,7 +3240,13 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   // default Monday). getDay() is always 0=Sun..6=Sat regardless of
   // preference — when the week starts Monday, shift it so Monday
   // lands in column 0 instead.
-  const weekStartsOn = AppPreferencesRepository.getPreferences().weekStartsOn;
+  // CHANGED — Phase 2 encryption groundwork: this screen is opened
+  // fresh each time from Settings and nothing inside it changes
+  // weekStartsOn itself (set from the Units screen instead), so a
+  // once-per-mount load matches the old plain-call-every-render
+  // behavior closely enough — same reasoning as DesignScreen's own
+  // mostly-read-once sites.
+  const weekStartsOn = useLoadedMemo(() => AppPreferencesRepository.getPreferences().then((p) => p.weekStartsOn), [], "monday");
   const weekStartsMonday = weekStartsOn !== "sunday";
   const WEEKDAY_LABELS = weekStartsMonday
     ? ["M", "T", "W", "T", "F", "S", "S"]
@@ -3240,8 +3393,8 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
 function TrashScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
 
-  const [items, setItems] = useState(() => TrashRepository.getAll());
-  const refresh = () => setItems(TrashRepository.getAll());
+  const [items, setItems] = useLoadedState(() => TrashRepository.getAll(), [], []);
+  const refresh = async () => setItems(await TrashRepository.getAll());
   // ADDED 26 Aug 2026 — real ask: 4 real actions (restore all/
   // selected, delete all/selected), with real multi-select on this
   // screen — reuses the exact same Select-toggle + toolbar pattern
@@ -3252,34 +3405,34 @@ function TrashScreen({ onClose }) {
   const toggleSelected = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
   const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); };
 
-  const restoreEntries = (entries) => {
-    entries.forEach((entry) => {
+  const restoreEntries = async (entries) => {
+    for (const entry of entries) {
       const repo = TRASH_REPOSITORIES[entry.moduleKey];
-      if (repo) repo.restore(entry.record);
-      TrashRepository.removeEntry(entry.trashId);
-    });
+      if (repo) await repo.restore(entry.record);
+      await TrashRepository.removeEntry(entry.trashId);
+    }
     refresh();
   };
 
   const restoreItem = (entry) => restoreEntries([entry]);
   const restoreAll = () => restoreEntries(items);
-  const restoreSelected = () => { restoreEntries(items.filter((e) => selectedIds.includes(e.trashId))); exitSelectMode(); };
+  const restoreSelected = async () => { await restoreEntries(items.filter((e) => selectedIds.includes(e.trashId))); exitSelectMode(); };
 
-  const deletePermanently = (entry) => {
+  const deletePermanently = async (entry) => {
     if (window.confirm("Delete this permanently? It won't be recoverable after this.")) {
-      TrashRepository.removeEntry(entry.trashId);
+      await TrashRepository.removeEntry(entry.trashId);
       refresh();
     }
   };
-  const deleteAll = () => {
+  const deleteAll = async () => {
     if (window.confirm(`Permanently delete all ${items.length} item${items.length > 1 ? "s" : ""} in the trash? This can't be undone.`)) {
-      TrashRepository.emptyAll();
+      await TrashRepository.emptyAll();
       refresh();
     }
   };
-  const deleteSelected = () => {
+  const deleteSelected = async () => {
     if (window.confirm(`Permanently delete ${selectedIds.length} item${selectedIds.length > 1 ? "s" : ""}? This can't be undone.`)) {
-      selectedIds.forEach((id) => TrashRepository.removeEntry(id));
+      for (const id of selectedIds) await TrashRepository.removeEntry(id);
       exitSelectMode();
       refresh();
     }
@@ -3364,7 +3517,7 @@ function TrashScreen({ onClose }) {
 }
 
 function DesignScreen({ onClose }) {
-  const [overrides, setOverrides] = useState(() => ModuleColorRepository.getOverrides());
+  const [overrides, setOverrides] = useLoadedState(() => ModuleColorRepository.getOverrides(), [], {});
   const [changed, setChanged] = useState(false);
   // ADDED 26 Aug 2026 — real ask: single global dark mode toggle here,
   // replacing Medication's own per-module icon. Same shared
@@ -3372,18 +3525,22 @@ function DesignScreen({ onClose }) {
   // location of the control changed, not the preference itself.
   const [darkMode, setDarkMode] = useDarkModePreference();
 
-  const setColor = (key, hex) => {
-    ModuleColorRepository.setOverride(key, hex);
-    setOverrides(ModuleColorRepository.getOverrides());
+  // CHANGED — Phase 2 encryption groundwork: ModuleColorRepository is
+  // now async — every handler below awaits its write, then awaits a
+  // fresh getOverrides() before updating local state, same "write then
+  // reread" shape as everywhere else this session.
+  const setColor = async (key, hex) => {
+    await ModuleColorRepository.setOverride(key, hex);
+    setOverrides(await ModuleColorRepository.getOverrides());
     setChanged(true);
   };
-  const reset = (key) => {
-    ModuleColorRepository.resetOverride(key);
-    setOverrides(ModuleColorRepository.getOverrides());
+  const reset = async (key) => {
+    await ModuleColorRepository.resetOverride(key);
+    setOverrides(await ModuleColorRepository.getOverrides());
     setChanged(true);
   };
-  const resetAll = () => {
-    ModuleColorRepository.resetAll();
+  const resetAll = async () => {
+    await ModuleColorRepository.resetAll();
     setOverrides({});
     setChanged(true);
   };
@@ -3393,11 +3550,17 @@ function DesignScreen({ onClose }) {
   // that constant's own comment in moduleColorRepository.js for the
   // research behind the exact hues. "On" is derived from the actual
   // stored overrides each render, not a separate flag.
-  const cvdActive = ModuleColorRepository.isCvdPaletteActive();
-  const toggleCvdPalette = () => {
-    if (cvdActive) ModuleColorRepository.removeCvdPalette();
-    else ModuleColorRepository.applyCvdPalette();
-    setOverrides(ModuleColorRepository.getOverrides());
+  // CHANGED — Phase 2 encryption groundwork: isCvdPaletteActive() is
+  // now async — was a plain render-body call ("safe" only while the
+  // repository stayed synchronous, the same trap this exact pattern
+  // has hit for other repositories earlier this session), now resolved
+  // via useLoadedMemo, re-evaluated whenever the loaded overrides
+  // change so a manual colour edit still correctly flips it back off.
+  const cvdActive = useLoadedMemo(() => ModuleColorRepository.isCvdPaletteActive(), [overrides], false);
+  const toggleCvdPalette = async () => {
+    if (cvdActive) await ModuleColorRepository.removeCvdPalette();
+    else await ModuleColorRepository.applyCvdPalette();
+    setOverrides(await ModuleColorRepository.getOverrides());
     setChanged(true);
   };
 
@@ -3507,13 +3670,23 @@ function DesignScreen({ onClose }) {
 }
 
 function InactiveThresholdCard({ T }) {
-  const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const [draftValue, setDraftValue] = useState(() => String(prefs.inactiveThresholdDays));
+  // ADDED 4 Sep 2026 — encryption groundwork: prefs now loads via an
+  // effect instead of synchronously, so draftValue's own initializer
+  // (which reads prefs.inactiveThresholdDays at mount) would otherwise
+  // freeze on DEFAULT_APP_PREFERENCES' value forever once the real
+  // prefs loads a tick later — same regression class as MyProfile's
+  // form earlier in this audit. Resyncing on every prefs change is
+  // safe here: the only thing that ever changes prefs while this card
+  // is mounted is the user's own save() below, and resyncing to the
+  // value they just saved is a no-op, not a clobber.
+  useEffect(() => { setDraftValue(String(prefs.inactiveThresholdDays)); }, [prefs]);
 
-  const save = () => {
+  const save = async () => {
     const parsed = parseInt(draftValue, 10);
     if (!Number.isFinite(parsed) || parsed < 1) return;
-    setPrefs(AppPreferencesRepository.update({ inactiveThresholdDays: parsed }));
+    setPrefs(await AppPreferencesRepository.update({ inactiveThresholdDays: parsed }));
   };
 
   return (
@@ -3541,8 +3714,8 @@ function InactiveThresholdCard({ T }) {
 // needs this). Off by default, same "opt-in feature area" toggle
 // pattern as calendar sync above.
 function MenstrualTrackingToggleCard({ T }) {
-  const [prefs, setPrefs] = useState(() => AppPreferencesRepository.getPreferences());
-  const toggle = () => setPrefs(AppPreferencesRepository.update({ menstrualTrackingEnabled: !prefs.menstrualTrackingEnabled }));
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  const toggle = async () => setPrefs(await AppPreferencesRepository.update({ menstrualTrackingEnabled: !prefs.menstrualTrackingEnabled }));
   return (
     <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
       <div onClick={toggle} role="switch" tabIndex={0} aria-checked={prefs.menstrualTrackingEnabled} aria-label="Menstrual & contraception tracking"
@@ -3565,9 +3738,9 @@ function MenstrualTrackingToggleCard({ T }) {
           in Privacy) until it is.
       */}
       {prefs.menstrualTrackingEnabled && (
-        <div onClick={() => setPrefs(AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden }))}
+        <div onClick={async () => setPrefs(await AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden }))}
           role="switch" tabIndex={0} aria-checked={prefs.pregnancyTrackingHidden} aria-label="Hide Pregnancy tab"
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPrefs(AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden })); } }}
+          onKeyDown={async (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPrefs(await AppPreferencesRepository.update({ pregnancyTrackingHidden: !prefs.pregnancyTrackingHidden })); } }}
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", marginTop: 14, paddingTop: 14, borderTop: `1px solid ${T.border}` }}>
           <div style={{ flex: 1, paddingRight: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Hide Pregnancy tab</div>

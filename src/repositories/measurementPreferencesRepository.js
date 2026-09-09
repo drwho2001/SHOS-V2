@@ -31,24 +31,36 @@ export const DEFAULT_MEASUREMENT_PREFERENCES = {
   typeKinds: {},
 };
 
+// CHANGED — real groundwork for encryption at rest (see CLAUDE.md's
+// Known Issues / the Notion Development log for the full plan): every
+// method below is now `async`, `await`ing storage.load()/save() even
+// though storageAdapter itself is still 100% synchronous today — a
+// no-op behaviorally, same real end-to-end proof as
+// customGroupsRepository.js's/trashRepository.js's own conversions.
+// Safe to do now specifically because measurementRepository.js's own
+// getAvailableUnits()/getDefaultUnit() no longer call this repository
+// internally (see that file's own comment) — every remaining caller
+// of THIS repository already goes through a real UI action (a picker
+// tap, a preferences sheet load) rather than a plain-calculation
+// render-body call.
 export const MeasurementPreferencesRepository = {
-  getPreferences() {
-    return { ...DEFAULT_MEASUREMENT_PREFERENCES, ...storage.load(STORAGE_KEY, {}) };
+  async getPreferences() {
+    return { ...DEFAULT_MEASUREMENT_PREFERENCES, ...(await storage.load(STORAGE_KEY, {})) };
   },
-  updatePreferences(changes) {
-    const updated = { ...this.getPreferences(), ...changes };
-    storage.save(STORAGE_KEY, updated);
+  async updatePreferences(changes) {
+    const updated = { ...(await this.getPreferences()), ...changes };
+    await storage.save(STORAGE_KEY, updated);
     return updated;
   },
-  setPreferredUnit(type, unit) {
-    const prefs = this.getPreferences();
+  async setPreferredUnit(type, unit) {
+    const prefs = await this.getPreferences();
     return this.updatePreferences({ preferredUnitByType: { ...prefs.preferredUnitByType, [type]: unit } });
   },
-  setTypeKind(type, kind) {
-    const prefs = this.getPreferences();
+  async setTypeKind(type, kind) {
+    const prefs = await this.getPreferences();
     return this.updatePreferences({ typeKinds: { ...prefs.typeKinds, [type]: kind } });
   },
-  getTypeKind(type) {
-    return this.getPreferences().typeKinds[type] || null;
+  async getTypeKind(type) {
+    return (await this.getPreferences()).typeKinds[type] || null;
   },
 };

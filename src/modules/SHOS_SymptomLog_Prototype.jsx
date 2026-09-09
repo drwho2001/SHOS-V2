@@ -11,6 +11,7 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
+import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -123,11 +124,23 @@ function SelectField({ label, value, onChange, options, T }) {
 // creating a genuinely new entry — catches a likely typo before it
 // becomes a near-duplicate registry entry instead of matching the one
 // that already exists.
+// CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
+// async — allEntries loaded via useLoadedMemo instead of a plain
+// render-body call; selectedNames' archived-entry fallback resolved
+// via a missingNames lookup (same pattern as Testing's RegistryTagPicker)
+// instead of a synchronous getById() call; commit/acceptDidYouMean/
+// dismissDidYouMean now await findOrCreate().
 function SymptomSelect({ value, onChange, T }) {
   const [draft, setDraft] = useState("");
   const [didYouMean, setDidYouMean] = useState(null);
-  const allEntries = SymptomsRegistry.getAll().filter((e) => !e.isArchived);
-  const selectedNames = value.map((id) => ({ id, name: SymptomsRegistry.getById(id)?.name || "?" }));
+  const allEntries = useLoadedMemo(() => SymptomsRegistry.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  const missingNames = useLoadedMemo(async () => {
+    const missingIds = value.filter((id) => !allEntries.some((e) => e.id === id));
+    const map = new Map();
+    await Promise.all(missingIds.map(async (id) => { const e = await SymptomsRegistry.getById(id); if (e) map.set(id, e.name); }));
+    return map;
+  }, [value, allEntries], new Map());
+  const selectedNames = value.map((id) => ({ id, name: allEntries.find((e) => e.id === id)?.name || missingNames.get(id) || "?" }));
   const draftTrimmed = draft.trim();
   const visibleSuggestions = (
     draftTrimmed
@@ -153,7 +166,7 @@ function SymptomSelect({ value, onChange, T }) {
     setDidYouMean(null);
   };
 
-  const commit = () => {
+  const commit = async () => {
     const raw = draft.trim();
     if (!raw || didYouMean) return;
     // ADDED 2 Sep 2026 — real bug: "multi enter at once with commas
@@ -163,11 +176,11 @@ function SymptomSelect({ value, onChange, T }) {
     // became a single garbage registry entry literally named that.
     const parts = raw.split(",").map((t) => t.trim()).filter(Boolean);
     if (parts.length > 1) {
-      parts.forEach((part) => {
+      for (const part of parts) {
         const closest = findClosestMatch(allEntries.filter((e) => !value.includes(e.id)).map((e) => e.name), part);
-        const entry = SymptomsRegistry.findOrCreate(closest || part);
+        const entry = await SymptomsRegistry.findOrCreate(closest || part);
         if (entry) add(entry.id);
-      });
+      }
       setDraft("");
       return;
     }
@@ -178,18 +191,18 @@ function SymptomSelect({ value, onChange, T }) {
     // fixed synonym list.
     const closest = findClosestMatch(allEntries.filter((e) => !value.includes(e.id)).map((e) => e.name), raw);
     if (closest) { setDidYouMean({ raw, closest }); return; }
-    const entry = SymptomsRegistry.findOrCreate(raw);
+    const entry = await SymptomsRegistry.findOrCreate(raw);
     if (entry) add(entry.id);
     setDraft("");
   };
-  const acceptDidYouMean = () => {
-    const entry = SymptomsRegistry.findOrCreate(didYouMean.closest);
+  const acceptDidYouMean = async () => {
+    const entry = await SymptomsRegistry.findOrCreate(didYouMean.closest);
     if (entry) add(entry.id);
     setDraft("");
     setDidYouMean(null);
   };
-  const dismissDidYouMean = () => {
-    const entry = SymptomsRegistry.findOrCreate(didYouMean.raw);
+  const dismissDidYouMean = async () => {
+    const entry = await SymptomsRegistry.findOrCreate(didYouMean.raw);
     if (entry) add(entry.id);
     setDraft("");
     setDidYouMean(null);
@@ -331,12 +344,12 @@ function EntrySheet({ entry, onSave, onClose, T }) {
   // just a date/type, not memorable; who was there usually is. Each
   // encounter's attendee names now ride along as searchText, so typing
   // a contact's name finds it even though it isn't in the visible label.
-  const contacts = useMemo(() => ContactRepository.getAll(), []);
-  const encounters = useMemo(() => [...EncounterRepository.getAll()].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => {
+  const contacts = useLoadedMemo(() => ContactRepository.getAll(), [], []);
+  const encounters = useLoadedMemo(async () => [...(await EncounterRepository.getAll())].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => {
     const attendeeNames = (e.attendeeIds || []).map((id) => contacts.find((c) => c.id === id)?.nickname || contacts.find((c) => c.id === id)?.name).filter(Boolean);
     return { id: e.id, name: `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}`, searchText: attendeeNames.join(" ").toLowerCase() };
-  }), [contacts]);
-  const tests = useMemo(() => [...TestingRepository.getAll()].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` })), []);
+  }), [contacts], []);
+  const tests = useLoadedMemo(async () => [...(await TestingRepository.getAll())].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` })), [], []);
 
   const doSave = () => {
     clearDraft(draftKey);
@@ -380,20 +393,33 @@ function EntrySheet({ entry, onSave, onClose, T }) {
 }
 
 function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
-  const [entry, setEntry] = useState(() => SymptomLogRepository.getById(entryId));
+  const entry = useLoadedMemo(() => SymptomLogRepository.getById(entryId), [entryId], null);
   // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven for Testing/Vaccinations.
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // CHANGED — Phase 2 encryption groundwork: EncounterRepository went
+  // async — hoisted above the guard (hooks-before-guard rule), guarded
+  // with `entry?.` since it's genuinely null for one render.
+  const encounterNames = useLoadedMemo(async () => {
+    if (!entry?.relatedEncounterIds?.length) return [];
+    const resolved = await Promise.all(entry.relatedEncounterIds.map((id) => EncounterRepository.getById(id)));
+    return resolved.map((e) => (e ? `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}` : null)).filter(Boolean);
+  }, [entry], []);
+  // CHANGED — Phase 2 encryption groundwork: TestingRepository went
+  // async — same hoisted-above-the-guard treatment as encounterNames.
+  const testNames = useLoadedMemo(async () => {
+    if (!entry?.relatedTestIds?.length) return [];
+    const resolved = await Promise.all(entry.relatedTestIds.map((id) => TestingRepository.getById(id)));
+    return resolved.map((t) => (t ? `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` : null)).filter(Boolean);
+  }, [entry], []);
+  // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
+  // async — same hoisted-above-the-guard treatment as encounterNames/
+  // testNames above.
+  const symptomNames = useLoadedMemo(async () => {
+    if (!entry?.symptomIds?.length) return "";
+    return (await Promise.all(entry.symptomIds.map((id) => SymptomsRegistry.getById(id)))).filter(Boolean).map((s) => s.name).join(", ");
+  }, [entry], "");
   if (!entry) return null;
-  const symptomNames = entry.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean).join(", ");
-  const encounterNames = entry.relatedEncounterIds.map((id) => {
-    const e = EncounterRepository.getById(id);
-    return e ? `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}` : null;
-  }).filter(Boolean);
-  const testNames = entry.relatedTestIds.map((id) => {
-    const t = TestingRepository.getById(id);
-    return t ? `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` : null;
-  }).filter(Boolean);
   const isActive = !entry.dateResolved;
 
   return (
@@ -412,7 +438,7 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-            <button onClick={() => { triggerDelete([entry]); refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
+            <button onClick={async () => { await triggerDelete([entry]); refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
           </div>
         </div>
       )}
@@ -454,6 +480,11 @@ function EntryDetail({ entryId, onBack, onEdit, T, triggerDelete, refresh }) {
 }
 
 function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
+  // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
+  // async — resolved once here (via useLoadedMemo, so it stays a
+  // one-time load rather than adding lag to the live search box below),
+  // used by both the search filter and each row's own symptomName.
+  const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
   // ADDED 26 Aug 2026 — real ask: search within module, rolled out to
   // every module that didn't already have it. Applied before the
   // active/resolved split, so both sections respect it.
@@ -462,10 +493,10 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
     const q = query.trim().toLowerCase();
     if (!q) return entries;
     return entries.filter((e) => {
-      const symptomNames = e.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean);
+      const symptomNames = e.symptomIds.map((id) => symptomNameById.get(id)).filter(Boolean);
       return [e.title, e.severity, ...symptomNames].filter(Boolean).some((v) => v.toLowerCase().includes(q));
     });
-  }, [entries, query]);
+  }, [entries, query, symptomNameById]);
   const active = useMemo(() => searched.filter((e) => !e.dateResolved).sort((a, b) => new Date(b.dateStarted || 0) - new Date(a.dateStarted || 0)), [searched]);
   const resolved = useMemo(() => searched.filter((e) => e.dateResolved).sort((a, b) => new Date(b.dateResolved) - new Date(a.dateResolved)), [searched]);
   // CHANGED 26 Aug 2026 — real bug fix: the section header counts
@@ -507,7 +538,7 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
   // shared with EntryDetail.
 
   const Row = (e) => {
-    const symptomName = e.symptomIds.map((id) => SymptomsRegistry.getById(id)?.name).filter(Boolean).join(", ");
+    const symptomName = e.symptomIds.map((id) => symptomNameById.get(id)).filter(Boolean).join(", ");
     const isActive = !e.dateResolved;
     const isSelected = selectedIds.includes(e.id);
     return (
@@ -569,15 +600,15 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
             </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
                 record, enabled only when exactly one is selected. */}
-            <span onClick={() => { if (selectedIds.length === 1) exportRecordAsFile("symptomLog", SymptomLogRepository.getById(selectedIds[0])); }}
+            <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("symptomLog", await SymptomLogRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span onClick={() => { if (selectedIds.length > 0) { SymptomLogRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            <span onClick={async () => { if (selectedIds.length > 0) { await SymptomLogRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-            <span onClick={() => {
+            <span onClick={async () => {
               if (selectedIds.length === 0) return;
               if (window.confirm(`Delete ${selectedIds.length} entr${selectedIds.length > 1 ? "ies" : "y"}? You'll have a few seconds to undo.`)) {
-                const toRestore = SymptomLogRepository.getAll().filter((e) => selectedIds.includes(e.id));
-                triggerDelete(toRestore);
+                const toRestore = (await SymptomLogRepository.getAll()).filter((e) => selectedIds.includes(e.id));
+                await triggerDelete(toRestore);
                 refresh();
                 exitSelectMode();
               }
@@ -635,35 +666,40 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : LIGHT;
   const [screen, setScreen] = useState({ name: "list" });
+  // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository went
+  // async, and EntrySheet's own `entry` prop is a direct render-body
+  // read (its own `form` initializer reads the prop, not a repository
+  // call itself, so it's out of scope) — resolved here instead.
+  const editingEntry = useLoadedMemo(() => (screen.name === "edit" ? SymptomLogRepository.getById(screen.id) : null), [screen], null);
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // SymptomLogLanding — entries/deletedRecent/undoDelete/triggerDelete
   // now live at the real module level, shared with EntryDetail.
-  const [entries, setEntries] = useState(() => SymptomLogRepository.getAll().filter((e) => !e.isArchived));
-  const refresh = () => setEntries(SymptomLogRepository.getAll().filter((e) => !e.isArchived));
+  const [entries, setEntries] = useLoadedState(() => SymptomLogRepository.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  const refresh = () => { SymptomLogRepository.getAll().then((all) => setEntries(all.filter((e) => !e.isArchived))); };
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
   // implementation.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
   const undoTimerRef = useRef(null);
-  const undoDelete = () => {
+  const undoDelete = async () => {
     if (!deleteToast) return;
-    deleteToast.records.forEach((record) => SymptomLogRepository.restore(record));
+    for (const record of deleteToast.records) await SymptomLogRepository.restore(record);
     refresh();
     clearTimeout(undoTimerRef.current);
     setDeleteToast({ mode: "redo", records: deleteToast.records });
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
   };
-  const redoDelete = () => {
+  const redoDelete = async () => {
     if (!deleteToast) return;
-    TrashRepository.add("symptomLog", deleteToast.records);
-    deleteToast.records.forEach((r) => SymptomLogRepository.delete(r.id));
+    await TrashRepository.add("symptomLog", deleteToast.records);
+    for (const r of deleteToast.records) await SymptomLogRepository.delete(r.id);
     refresh();
     setDeleteToast(null);
     clearTimeout(undoTimerRef.current);
   };
-  const triggerDelete = (records) => {
-    TrashRepository.add("symptomLog", records);
-    records.forEach((r) => SymptomLogRepository.delete(r.id));
+  const triggerDelete = async (records) => {
+    await TrashRepository.add("symptomLog", records);
+    for (const r of records) await SymptomLogRepository.delete(r.id);
     setDeleteToast({ mode: "undo", records });
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
@@ -707,11 +743,14 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
   // adding a new one) here didn't update it until you left and
   // re-entered Healthcare. onDataChanged notifies the parent to
   // recompute immediately instead.
-  const createEntry = (data) => { SymptomLogRepository.create(data); onDataChanged?.(); backToList(); };
-  const saveEntry = (data) => {
-    editUndo.captureBeforeEdit(screen.id);
-    SymptomLogRepository.update(screen.id, data);
-    editUndo.notifyEdited(screen.id);
+  const createEntry = async (data) => { await SymptomLogRepository.create(data); onDataChanged?.(); backToList(); };
+  const saveEntry = async (data) => {
+    // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited are
+    // now async, and SymptomLogRepository itself is now async too
+    // (Phase 2 encryption groundwork) — every step here awaited.
+    await editUndo.captureBeforeEdit(screen.id);
+    await SymptomLogRepository.update(screen.id, data);
+    await editUndo.notifyEdited(screen.id);
     onDataChanged?.();
     setScreen({ name: "detail", id: screen.id });
   };
@@ -737,7 +776,16 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
       )}
       {content}
       {screen.name === "add" && <EntrySheet T={T} entry={null} onSave={createEntry} onClose={backToList} />}
-      {screen.name === "edit" && <EntrySheet T={T} entry={SymptomLogRepository.getById(screen.id)} onSave={saveEntry} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
+      {/* CHANGED — Phase 2 encryption groundwork: editingEntry loads
+          asynchronously now, and EntrySheet's own `form` reads its
+          `entry` prop only once, at mount, via a lazy useState
+          initializer — never resyncing later. Gating the mount on
+          editingEntry being resolved (rather than passing it through
+          possibly-null) avoids mounting the sheet with a blank form for
+          one tick and having it silently stick that way — same shape
+          as the original fully-synchronous behavior, just delayed by
+          a tick rather than corrupted. */}
+      {screen.name === "edit" && editingEntry && <EntrySheet T={T} entry={editingEntry} onSave={saveEntry} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
     </div>
   );
 }

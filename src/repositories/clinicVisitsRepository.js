@@ -200,8 +200,18 @@ let seedVisits = [
   },
 ];
 
-let visits = storage.load(STORAGE_KEY, seedVisits);
-let nextVisitNumber = computeNextVisitNumber(visits);
+let visits = null;
+let nextVisitNumber = null;
+let loadPromise = null;
+
+async function ensureLoaded() {
+  if (visits === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedVisits);
+    visits = await loadPromise;
+    nextVisitNumber = computeNextVisitNumber(visits);
+  }
+  return visits;
+}
 
 function computeNextVisitNumber(existing) {
   const numbers = existing.map((v) => {
@@ -217,16 +227,18 @@ function generateVisitId() {
   return id;
 }
 
-function persist() {
-  storage.save(STORAGE_KEY, visits);
+async function persist() {
+  await storage.save(STORAGE_KEY, visits);
 }
 
 export const ClinicVisitsRepository = {
-  getAll() {
+  async getAll() {
+    await ensureLoaded();
     return structuredClone(visits.map((v) => normalizeClinician({ ...DEFAULT_CLINIC_VISIT, ...v })));
   },
 
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = visits.find((v) => v.id === id);
     return found ? structuredClone(normalizeClinician({ ...DEFAULT_CLINIC_VISIT, ...found })) : null;
   },
@@ -235,13 +247,15 @@ export const ClinicVisitsRepository = {
   // two-way Testing↔Clinic Visits link (see testingRepository.js's own
   // getByClinicVisit-equivalent usage in the Testing module's detail
   // view).
-  getByLinkedTest(testId) {
+  async getByLinkedTest(testId) {
+    await ensureLoaded();
     return structuredClone(
       visits.filter((v) => (v.linkedTestIds || []).includes(testId)).map((v) => normalizeClinician({ ...DEFAULT_CLINIC_VISIT, ...v }))
     );
   },
 
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     const newVisit = normalizeClinician({
       ...DEFAULT_CLINIC_VISIT,
       ...data,
@@ -250,11 +264,12 @@ export const ClinicVisitsRepository = {
       isArchived: false,
     });
     visits = [...visits, newVisit];
-    persist();
+    await persist();
     return newVisit;
   },
 
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updated = null;
     visits = visits.map((v) => {
       if (v.id !== id) return v;
@@ -263,11 +278,11 @@ export const ClinicVisitsRepository = {
       updated = { ...v, ...changes, updatedAt: new Date().toISOString() };
       return updated;
     });
-    persist();
+    await persist();
     return updated ? structuredClone({ ...DEFAULT_CLINIC_VISIT, ...updated }) : null;
   },
 
-  archive(id) {
+  async archive(id) {
     return this.update(id, { isArchived: true });
   },
 
@@ -275,7 +290,7 @@ export const ClinicVisitsRepository = {
   // audit: every sibling repository with archive() also has the
   // reverse — this one didn't, so an archived Clinic Visit had no way
   // back short of manually editing storage.
-  unarchive(id) {
+  async unarchive(id) {
     return this.update(id, { isArchived: false });
   },
 
@@ -287,37 +302,42 @@ export const ClinicVisitsRepository = {
   // symptomLogRepository.js's/vaccinationRepository.js's own delete().
   // Only clears the link, same role as measurementRepository.js's own
   // unlink methods.
-  unlinkTest(testId) {
+  async unlinkTest(testId) {
+    await ensureLoaded();
     visits = visits.map((v) => ({ ...v, linkedTestIds: (v.linkedTestIds || []).filter((id) => id !== testId) }));
-    persist();
+    await persist();
   },
 
-  unlinkMedication(medicationId) {
+  async unlinkMedication(medicationId) {
+    await ensureLoaded();
     visits = visits.map((v) => ({ ...v, medicationsGivenIds: (v.medicationsGivenIds || []).filter((id) => id !== medicationId) }));
-    persist();
+    await persist();
   },
 
-  unlinkSymptomLog(symptomLogId) {
+  async unlinkSymptomLog(symptomLogId) {
+    await ensureLoaded();
     visits = visits.map((v) => ({
       ...v,
       symptomsDiscussedIds: (v.symptomsDiscussedIds || []).filter((id) => id !== symptomLogId),
       primaryReasonSymptomLogId: v.primaryReasonSymptomLogId === symptomLogId ? "" : v.primaryReasonSymptomLogId,
     }));
-    persist();
+    await persist();
   },
 
-  unlinkVaccination(vaccinationId) {
+  async unlinkVaccination(vaccinationId) {
+    await ensureLoaded();
     visits = visits.map((v) => ({ ...v, vaccinationsGivenIds: (v.vaccinationsGivenIds || []).filter((id) => id !== vaccinationId) }));
-    persist();
+    await persist();
   },
 
   // ADDED — real ask: "no delete option" — same reasoning as Testing/
   // Vaccinations/Symptom Log's own delete(): archive stays correct for
   // anything real that's just outdated, this is specifically for a
   // genuinely wrong entry.
-  delete(id) {
+  async delete(id) {
+    await ensureLoaded();
     visits = visits.filter((v) => v.id !== id);
-    persist();
+    await persist();
     MeasurementRepository.unlinkClinicVisit(id);
     ContraceptionRepository.unlinkClinicVisit(id);
     // ADDED — real gap found via the new orphan-reference checker
@@ -332,13 +352,14 @@ export const ClinicVisitsRepository = {
 
   // ADDED 26 Aug 2026 — real ask: long-press multi-select rolled out
   // to every module.
-  bulkArchive(ids) {
-    ids.forEach((id) => this.archive(id));
+  async bulkArchive(ids) {
+    for (const id of ids) await this.archive(id);
   },
 
-  bulkDelete(ids) {
+  async bulkDelete(ids) {
+    await ensureLoaded();
     visits = visits.filter((v) => !ids.includes(v.id));
-    persist();
+    await persist();
     ids.forEach((id) => {
       MeasurementRepository.unlinkClinicVisit(id);
       ContraceptionRepository.unlinkClinicVisit(id);
@@ -349,13 +370,14 @@ export const ClinicVisitsRepository = {
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.
-  restore(record) {
+  async restore(record) {
+    await ensureLoaded();
     if (visits.some((v) => v.id === record.id)) return;
     visits = [...visits, record];
-    persist();
+    await persist();
   },
 
-  addAttachment(visitId, { title, type, fileDataUrl }) {
+  async addAttachment(visitId, { title, type, fileDataUrl }) {
     const attachment = {
       id: generateAttachmentId(),
       title: title || "Untitled",
@@ -363,21 +385,23 @@ export const ClinicVisitsRepository = {
       date: new Date().toISOString(),
       fileDataUrl: fileDataUrl || "",
     };
+    const existing = await this.getById(visitId);
     return this.update(visitId, {
-      attachments: [...(this.getById(visitId)?.attachments || []), attachment],
+      attachments: [...(existing?.attachments || []), attachment],
     });
   },
 
-  removeAttachment(visitId, attachmentId) {
-    const visit = this.getById(visitId);
+  async removeAttachment(visitId, attachmentId) {
+    const visit = await this.getById(visitId);
     if (!visit) return null;
     return this.update(visitId, {
       attachments: visit.attachments.filter((a) => a.id !== attachmentId),
     });
   },
 
-  replaceAll(newVisits) {
+  async replaceAll(newVisits) {
     visits = newVisits;
-    persist();
+    nextVisitNumber = computeNextVisitNumber(visits);
+    await persist();
   },
 };

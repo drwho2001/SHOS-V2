@@ -93,8 +93,20 @@ let seedVaccinations = [
   },
 ];
 
-let vaccinations = storage.load(STORAGE_KEY, seedVaccinations);
-let nextNumber = computeNextNumber(vaccinations);
+// CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
+// loadPromise pattern, same as every other module-load-cached
+// repository converted this session (see CLAUDE.md).
+let vaccinations = null;
+let nextNumber = null;
+let loadPromise = null;
+async function ensureLoaded() {
+  if (vaccinations === null) {
+    if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedVaccinations);
+    vaccinations = await loadPromise;
+    nextNumber = computeNextNumber(vaccinations);
+  }
+  return vaccinations;
+}
 
 function computeNextNumber(existing) {
   const numbers = existing.map((v) => {
@@ -110,8 +122,8 @@ function generateId() {
   return id;
 }
 
-function persist() {
-  storage.save(STORAGE_KEY, vaccinations);
+async function persist() {
+  await storage.save(STORAGE_KEY, vaccinations);
 }
 
 // FIXED 1 Sep 2026 — real ask: "Vaccination log symptoms not correct
@@ -125,36 +137,42 @@ function persist() {
 // graceful on-read-repair pattern already used elsewhere in this app
 // (Symptom Log's own normalizeSymptomIds) rather than a one-time
 // destructive migration.
-function normalizeSymptomIds(entry) {
+// CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
+// async — this is now async too, awaited at both call sites below
+// (getAll() needs Promise.all since it applies this per-entry).
+async function normalizeSymptomIds(entry) {
   if (!entry.symptomIds || entry.symptomIds.length === 0) return entry;
-  const fixed = entry.symptomIds.map((value) => {
-    if (SymptomsRegistry.getById(value)) return value;
-    const byName = SymptomsRegistry.getAll().find((s) => s.name === value);
+  const fixed = await Promise.all(entry.symptomIds.map(async (value) => {
+    if (await SymptomsRegistry.getById(value)) return value;
+    const byName = (await SymptomsRegistry.getAll()).find((s) => s.name === value);
     return byName ? byName.id : value;
-  });
+  }));
   return { ...entry, symptomIds: fixed };
 }
 
 export const VaccinationRepository = {
-  getAll() {
-    return structuredClone(vaccinations.map((v) => normalizeSymptomIds({ ...DEFAULT_VACCINATION, ...v })));
+  async getAll() {
+    await ensureLoaded();
+    return structuredClone(await Promise.all(vaccinations.map((v) => normalizeSymptomIds({ ...DEFAULT_VACCINATION, ...v }))));
   },
 
-  getById(id) {
+  async getById(id) {
+    await ensureLoaded();
     const found = vaccinations.find((v) => v.id === id);
-    return found ? structuredClone(normalizeSymptomIds({ ...DEFAULT_VACCINATION, ...found })) : null;
+    return found ? structuredClone(await normalizeSymptomIds({ ...DEFAULT_VACCINATION, ...found })) : null;
   },
 
   // Real convenience read — same "compute the derived state, don't
   // store it" principle as Testing's investigation-status logic
   // (Follow-up Actioned Date empty = Open). Overdue = Next Due set and
   // in the past.
-  getOverdue() {
+  async getOverdue() {
     const today = new Date().toISOString().slice(0, 10);
-    return this.getAll().filter((v) => !v.isArchived && v.nextDue && v.nextDue < today);
+    return (await this.getAll()).filter((v) => !v.isArchived && v.nextDue && v.nextDue < today);
   },
 
-  create(data) {
+  async create(data) {
+    await ensureLoaded();
     const newVaccination = {
       ...DEFAULT_VACCINATION,
       ...data,
@@ -163,11 +181,12 @@ export const VaccinationRepository = {
       isArchived: false,
     };
     vaccinations = [...vaccinations, newVaccination];
-    persist();
+    await persist();
     return newVaccination;
   },
 
-  update(id, changes) {
+  async update(id, changes) {
+    await ensureLoaded();
     let updated = null;
     vaccinations = vaccinations.map((v) => {
       if (v.id !== id) return v;
@@ -176,20 +195,21 @@ export const VaccinationRepository = {
       updated = { ...v, ...changes, updatedAt: new Date().toISOString() };
       return updated;
     });
-    persist();
+    await persist();
     return updated ? structuredClone({ ...DEFAULT_VACCINATION, ...updated }) : null;
   },
 
-  archive(id) {
+  async archive(id) {
     return this.update(id, { isArchived: true });
   },
 
   // ADDED — real ask: "no delete option" — same reasoning as Testing's
   // own delete(): archive stays correct for anything real that's just
   // outdated, this is specifically for a genuinely wrong entry.
-  delete(id) {
+  async delete(id) {
+    await ensureLoaded();
     vaccinations = vaccinations.filter((v) => v.id !== id);
-    persist();
+    await persist();
     // ADDED — real gap found via the new orphan-reference checker
     // (orphanReferenceCheck.js): Clinic Visit's own vaccinationsGivenIds
     // references a Vaccination by id — only clears the link, same role
@@ -197,7 +217,7 @@ export const VaccinationRepository = {
     ClinicVisitsRepository.unlinkVaccination(id);
   },
 
-  unarchive(id) {
+  async unarchive(id) {
     return this.update(id, { isArchived: false });
   },
 
@@ -205,33 +225,36 @@ export const VaccinationRepository = {
   // (orphanReferenceCheck.js): clinicVisitIds needs cleaning up when
   // the Clinic Visit it points at is hard-deleted elsewhere — called
   // by clinicVisitsRepository.js's own delete().
-  unlinkClinicVisit(visitId) {
+  async unlinkClinicVisit(visitId) {
+    await ensureLoaded();
     vaccinations = vaccinations.map((v) => ({ ...v, clinicVisitIds: (v.clinicVisitIds || []).filter((id) => id !== visitId) }));
-    persist();
+    await persist();
   },
 
   // ADDED 26 Aug 2026 — real ask: long-press multi-select rolled out
   // to every module.
-  bulkArchive(ids) {
-    ids.forEach((id) => this.archive(id));
+  async bulkArchive(ids) {
+    for (const id of ids) await this.archive(id);
   },
 
-  bulkDelete(ids) {
+  async bulkDelete(ids) {
+    await ensureLoaded();
     vaccinations = vaccinations.filter((v) => !ids.includes(v.id));
-    persist();
-    ids.forEach((id) => ClinicVisitsRepository.unlinkVaccination(id));
+    await persist();
+    for (const id of ids) ClinicVisitsRepository.unlinkVaccination(id);
   },
 
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.
-  restore(record) {
+  async restore(record) {
+    await ensureLoaded();
     if (vaccinations.some((v) => v.id === record.id)) return;
     vaccinations = [...vaccinations, record];
-    persist();
+    await persist();
   },
 
-  replaceAll(newVaccinations) {
+  async replaceAll(newVaccinations) {
     vaccinations = newVaccinations;
     nextNumber = computeNextNumber(vaccinations);
-    persist();
+    await persist();
   },
 };

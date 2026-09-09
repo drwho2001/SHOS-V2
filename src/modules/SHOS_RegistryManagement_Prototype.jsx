@@ -9,6 +9,7 @@ import { NEUTRAL, ACTION, RADIUS, resolveDarkAccent } from "../calculations/desi
 // ADDED — real ask: "add button to check through registries... for
 // duplicates using fuzzy matching... so user doesn't have to dig."
 import { findDuplicatePairs } from "../calculations/fuzzyMatch";
+import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 // ADDED 19 Aug 2026 — Registry Management, per the user's priority order.
 // ONE shared screen for all 6 registries (Kink/Chems/Protection/
@@ -95,7 +96,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
   // flags for review rather than auto-merging.
   const [showDuplicates, setShowDuplicates] = useState(false);
 
-  const allEntries = useMemo(() => registry.getAll(), [refreshKey]);
+  const allEntries = useLoadedMemo(() => registry.getAll(), [refreshKey], []);
   const active = allEntries.filter((e) => !e.isArchived).sort((a, b) => a.name.localeCompare(b.name));
   const archived = allEntries.filter((e) => e.isArchived).sort((a, b) => a.name.localeCompare(b.name));
   const duplicatePairs = useMemo(() => findDuplicatePairs(allEntries), [allEntries]);
@@ -107,27 +108,44 @@ export default function RegistryManagementScreen({ registry, label, color, compu
   // recomputed on every render, including every keystroke while typing
   // a new entry name or renaming one (both drive re-renders here). Now
   // computed once per allEntries change into a lookup map.
-  const usageMap = useMemo(() => new Map(allEntries.map((e) => [e.id, computeUsage(e.id)])), [allEntries, computeUsage]);
+  // CHANGED — Phase 2 encryption groundwork: computeKinkUsage/
+  // computeChemsUsage now go through the now-async ContactRepository,
+  // so computeUsage(id) can return either a number or a Promise
+  // depending on which registry this screen is for — useLoadedMemo
+  // handles both uniformly (awaiting a plain number is a no-op).
+  const usageMap = useLoadedMemo(
+    async () => new Map(await Promise.all(allEntries.map(async (e) => [e.id, await computeUsage(e.id)]))),
+    [allEntries, computeUsage], new Map()
+  );
 
-  const handleAdd = () => {
+  // CHANGED — Phase 2 encryption groundwork: real pre-existing bug
+  // found while converting the six simpleRegistry.js-based registries
+  // to async — this screen is also used for Locations (already async
+  // from an earlier batch), so the bug was live for that tab even
+  // before this batch. All three handlers called `registry.findOrCreate/
+  // update/archive/unarchive()` fire-and-forget, then immediately called
+  // `refresh()` — once the registry is async, `refresh()`'s reload
+  // (via `allEntries`'s useLoadedMemo, keyed on refreshKey) could fire
+  // before the write actually landed, showing stale data. Awaited.
+  const handleAdd = async () => {
     const trimmed = addingName.trim();
     if (!trimmed) return;
-    registry.findOrCreate(trimmed);
+    await registry.findOrCreate(trimmed);
     setAddingName("");
     refresh();
   };
 
   const startEdit = (entry) => { setEditingId(entry.id); setEditingName(entry.name); };
-  const commitEdit = () => {
+  const commitEdit = async () => {
     const trimmed = editingName.trim();
-    if (trimmed) registry.update(editingId, { name: trimmed });
+    if (trimmed) await registry.update(editingId, { name: trimmed });
     setEditingId(null);
     refresh();
   };
 
-  const toggleArchive = (entry) => {
-    if (entry.isArchived) registry.unarchive(entry.id);
-    else registry.archive(entry.id);
+  const toggleArchive = async (entry) => {
+    if (entry.isArchived) await registry.unarchive(entry.id);
+    else await registry.archive(entry.id);
     refresh();
   };
 
@@ -178,7 +196,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
                     <div key={entry.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}>
                       <span style={{ fontSize: 14, fontWeight: 600, color: entry.isArchived ? T.textDisabled : T.textPrimary }}>{entry.name}{entry.isArchived ? " (archived)" : ""}</span>
                       {!entry.isArchived && (
-                        <span onClick={() => { registry.archive(entry.id); refresh(); }} style={{ fontSize: 11, fontWeight: 700, color: actionRed, cursor: "pointer" }}>Archive this one</span>
+                        <span onClick={async () => { await registry.archive(entry.id); refresh(); }} style={{ fontSize: 11, fontWeight: 700, color: actionRed, cursor: "pointer" }}>Archive this one</span>
                       )}
                     </div>
                   ))}

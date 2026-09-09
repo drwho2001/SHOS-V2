@@ -37,8 +37,8 @@ const SHARE_TYPE = "shos_profile_share";
 // field. Same logic as SHOS_MyProfile_Prototype.jsx's own version
 // (duplicated per this app's self-contained-module convention, not
 // imported cross-module).
-function getAutoLastTestedDate() {
-  const tests = TestingRepository.getAll().filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
+async function getAutoLastTestedDate() {
+  const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
   const sorted = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date));
   return sorted[0]?.date || null;
 }
@@ -56,9 +56,9 @@ function getAutoLastTestedDate() {
 // any receiving-side logic even ran. Now uses an explicit allowlist
 // matching exactly what mapShareToContactData expects to receive —
 // the sensitive fields never leave the device in the first place.
-export function buildProfileShare(options = {}) {
+export async function buildProfileShare(options = {}) {
   const { includeLastTestedDate = false } = options;
-  const profile = MyProfileRepository.getProfile();
+  const profile = await MyProfileRepository.getProfile();
   const shareableData = {
     displayName: profile.displayName,
     nickname: profile.nickname,
@@ -102,7 +102,7 @@ export function buildProfileShare(options = {}) {
     // maintained. Still just a raw date string here, same as before —
     // the underlying Test record itself is never referenced or
     // shared, only its date value.
-    ...(includeLastTestedDate ? { lastTestedDate: getAutoLastTestedDate() } : {}),
+    ...(includeLastTestedDate ? { lastTestedDate: await getAutoLastTestedDate() } : {}),
     profilePicture: profile.profilePicture,
     // Deliberately NOT included, ever — no toggle, no option, not
     // just "excluded by default": aboutMeNotes, allergies,
@@ -224,7 +224,7 @@ export function mapShareToContactData(parsedShare) {
 
 // Creates a real new Contact from a parsed share. This is the one
 // function with a repository side-effect in this file.
-export function importProfileAsContact(parsedShare) {
+export async function importProfileAsContact(parsedShare) {
   const contactData = mapShareToContactData(parsedShare);
   return ContactRepository.create(contactData);
 }
@@ -246,7 +246,7 @@ export function importProfileAsContact(parsedShare) {
 // Filesystem-write + native Share sheet path, falling back to the
 // original browser download wherever those plugins aren't present.
 export async function exportProfileShare(options = {}) {
-  const share = buildProfileShare(options);
+  const share = await buildProfileShare(options);
   const json = JSON.stringify(share, null, 2);
   const dateStamp = new Date().toISOString().slice(0, 10);
   await exportTextFile(`shos-shared-profile-${dateStamp}.json`, json, "application/json");
@@ -257,10 +257,10 @@ export async function exportProfileShare(options = {}) {
 // calling UI show a result without this file needing to know React.
 export function importProfileShareFromFile(file, onDone, onError) {
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
       const parsed = parseProfileShare(reader.result);
-      const newContact = importProfileAsContact(parsed);
+      const newContact = await importProfileAsContact(parsed);
       onDone?.(newContact);
     } catch (err) {
       onError?.(err);
@@ -274,10 +274,10 @@ export function importProfileShareFromFile(file, onDone, onError) {
 // brief called out "some form of exportable file/blob", and a pasted
 // JSON blob (from a message/AirDrop-opened text) is a valid form of
 // that without requiring a file picker flow on every platform.
-export function importProfileShareFromText(jsonText, onDone, onError) {
+export async function importProfileShareFromText(jsonText, onDone, onError) {
   try {
     const parsed = parseProfileShare(jsonText);
-    const newContact = importProfileAsContact(parsed);
+    const newContact = await importProfileAsContact(parsed);
     onDone?.(newContact);
     return newContact;
   } catch (err) {

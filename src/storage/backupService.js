@@ -241,37 +241,44 @@ function sanitizePrivacySettingsForPlainExport(settings) {
   return rest;
 }
 
-export function buildBackup(includeKeys = null, dateRange = null, { redactSecrets = true } = {}) {
+// CHANGED — real groundwork for encryption at rest: async now because
+// it awaits CustomGroupsRepository (converted first as the real
+// end-to-end proof of the repo-goes-async pattern — see
+// customGroupsRepository.js's own comment). Every other repository
+// call here is still fully synchronous and stays exactly as written —
+// calling a synchronous function inside an async one works unchanged,
+// no `await` needed until that specific repository converts too.
+export async function buildBackup(includeKeys = null, dateRange = null, { redactSecrets = true } = {}) {
   const allData = {
-    contacts: ContactRepository.getAll(),
-    medications: MedicationRepository.getAll(),
-    logs: LogRepository.getAll(),
-    encounters: EncounterRepository.getAll(),
-    kinks: KinkRegistry.getAll(),
-    chems: ChemsRegistry.getAll(),
-    protection: ProtectionRegistry.getAll(),
-    symptoms: SymptomsRegistry.getAll(),
-    locations: LocationsRepository.getAll(),
-    myProfile: MyProfileRepository.getProfile(),
-    tests: TestingRepository.getAll(),
-    organisms: OrganismRegistry.getAll(),
-    results: ResultsRegistry.getAll(),
-    clinicVisits: ClinicVisitsRepository.getAll(),
-    symptomLog: SymptomLogRepository.getAll(),
-    vaccinations: VaccinationRepository.getAll(),
-    episodes: EpisodeRepository.getAll(),
-    measurements: MeasurementRepository.getAll(),
-    menstrualCycles: MenstrualCycleRepository.getAll(),
-    contraception: ContraceptionRepository.getAll(),
-    pregnancies: PregnancyRepository.getAll(),
-    measurementPreferences: MeasurementPreferencesRepository.getPreferences(),
-    customGroups: CustomGroupsRepository.getAllForBackup(),
-    customOptionLists: CustomOptionListsRepository.getAllForBackup(),
+    contacts: await ContactRepository.getAll(),
+    medications: await MedicationRepository.getAll(),
+    logs: await LogRepository.getAll(),
+    encounters: await EncounterRepository.getAll(),
+    kinks: await KinkRegistry.getAll(),
+    chems: await ChemsRegistry.getAll(),
+    protection: await ProtectionRegistry.getAll(),
+    symptoms: await SymptomsRegistry.getAll(),
+    locations: await LocationsRepository.getAll(),
+    myProfile: await MyProfileRepository.getProfile(),
+    tests: await TestingRepository.getAll(),
+    organisms: await OrganismRegistry.getAll(),
+    results: await ResultsRegistry.getAll(),
+    clinicVisits: await ClinicVisitsRepository.getAll(),
+    symptomLog: await SymptomLogRepository.getAll(),
+    vaccinations: await VaccinationRepository.getAll(),
+    episodes: await EpisodeRepository.getAll(),
+    measurements: await MeasurementRepository.getAll(),
+    menstrualCycles: await MenstrualCycleRepository.getAll(),
+    contraception: await ContraceptionRepository.getAll(),
+    pregnancies: await PregnancyRepository.getAll(),
+    measurementPreferences: await MeasurementPreferencesRepository.getPreferences(),
+    customGroups: await CustomGroupsRepository.getAllForBackup(),
+    customOptionLists: await CustomOptionListsRepository.getAllForBackup(),
     privacySettings: redactSecrets
-      ? sanitizePrivacySettingsForPlainExport(PrivacySettingsRepository.getSettings())
-      : PrivacySettingsRepository.getSettings(),
-    resources: ResourcesRepository.getAllForBackup(),
-    partnerNotifications: PartnerNotificationRepository.getAll(),
+      ? sanitizePrivacySettingsForPlainExport(await PrivacySettingsRepository.getSettings())
+      : await PrivacySettingsRepository.getSettings(),
+    resources: await ResourcesRepository.getAllForBackup(),
+    partnerNotifications: await PartnerNotificationRepository.getAll(),
   };
   const keySet = includeKeys ? new Set(includeKeys) : null;
   let data = keySet
@@ -359,43 +366,43 @@ export function verifyBackupJson(backup, json) {
 // UI now asks which one you want before either runs, since silently
 // wiping everything with no confirmation was a real gap on its own,
 // separate from merge existing at all.
-export function restoreBackup(parsedBackup) {
+export async function restoreBackup(parsedBackup) {
   const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies } = parsedBackup.data;
-  if (Array.isArray(contacts)) ContactRepository.replaceAll(contacts);
-  if (Array.isArray(medications)) MedicationRepository.replaceAll(medications);
-  if (Array.isArray(logs)) LogRepository.replaceAll(logs);
-  if (Array.isArray(encounters)) EncounterRepository.replaceAll(encounters);
-  if (Array.isArray(kinks)) KinkRegistry.replaceAll(kinks);
-  if (Array.isArray(chems)) ChemsRegistry.replaceAll(chems);
-  if (Array.isArray(protection)) ProtectionRegistry.replaceAll(protection);
-  if (Array.isArray(symptoms)) SymptomsRegistry.replaceAll(symptoms);
-  if (Array.isArray(locations)) LocationsRepository.replaceAll(locations);
+  if (Array.isArray(contacts)) await ContactRepository.replaceAll(contacts);
+  if (Array.isArray(medications)) await MedicationRepository.replaceAll(medications);
+  if (Array.isArray(logs)) await LogRepository.replaceAll(logs);
+  if (Array.isArray(encounters)) await EncounterRepository.replaceAll(encounters);
+  if (Array.isArray(kinks)) await KinkRegistry.replaceAll(kinks);
+  if (Array.isArray(chems)) await ChemsRegistry.replaceAll(chems);
+  if (Array.isArray(protection)) await ProtectionRegistry.replaceAll(protection);
+  if (Array.isArray(symptoms)) await SymptomsRegistry.replaceAll(symptoms);
+  if (Array.isArray(locations)) await LocationsRepository.replaceAll(locations);
   // ADDED 19 Aug 2026 — old backups (before this fix) simply won't have
   // these keys, same graceful no-op pattern as myProfile below.
-  if (Array.isArray(tests)) TestingRepository.replaceAll(tests);
-  if (Array.isArray(organisms)) OrganismRegistry.replaceAll(organisms);
-  if (Array.isArray(results)) ResultsRegistry.replaceAll(results);
-  if (Array.isArray(clinicVisits)) ClinicVisitsRepository.replaceAll(clinicVisits);
-  if (Array.isArray(symptomLog)) SymptomLogRepository.replaceAll(symptomLog);
-  if (Array.isArray(vaccinations)) VaccinationRepository.replaceAll(vaccinations);
-  if (Array.isArray(episodes)) EpisodeRepository.replaceAll(episodes);
-  if (Array.isArray(measurements)) MeasurementRepository.replaceAll(measurements);
-  if (Array.isArray(menstrualCycles)) MenstrualCycleRepository.replaceAll(menstrualCycles);
-  if (Array.isArray(contraception)) ContraceptionRepository.replaceAll(contraception);
-  if (Array.isArray(pregnancies)) PregnancyRepository.replaceAll(pregnancies);
-  if (measurementPreferences && typeof measurementPreferences === "object") MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
-  if (customGroups && typeof customGroups === "object") CustomGroupsRepository.replaceAll(customGroups);
-  if (customOptionLists && typeof customOptionLists === "object") CustomOptionListsRepository.replaceAll(customOptionLists);
-  if (privacySettings && typeof privacySettings === "object") PrivacySettingsRepository.update(privacySettings);
-  if (resources && typeof resources === "object") ResourcesRepository.replaceAll(resources);
-  if (Array.isArray(partnerNotifications)) PartnerNotificationRepository.replaceAll(partnerNotifications);
+  if (Array.isArray(tests)) await TestingRepository.replaceAll(tests);
+  if (Array.isArray(organisms)) await OrganismRegistry.replaceAll(organisms);
+  if (Array.isArray(results)) await ResultsRegistry.replaceAll(results);
+  if (Array.isArray(clinicVisits)) await ClinicVisitsRepository.replaceAll(clinicVisits);
+  if (Array.isArray(symptomLog)) await SymptomLogRepository.replaceAll(symptomLog);
+  if (Array.isArray(vaccinations)) await VaccinationRepository.replaceAll(vaccinations);
+  if (Array.isArray(episodes)) await EpisodeRepository.replaceAll(episodes);
+  if (Array.isArray(measurements)) await MeasurementRepository.replaceAll(measurements);
+  if (Array.isArray(menstrualCycles)) await MenstrualCycleRepository.replaceAll(menstrualCycles);
+  if (Array.isArray(contraception)) await ContraceptionRepository.replaceAll(contraception);
+  if (Array.isArray(pregnancies)) await PregnancyRepository.replaceAll(pregnancies);
+  if (measurementPreferences && typeof measurementPreferences === "object") await MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
+  if (customGroups && typeof customGroups === "object") await CustomGroupsRepository.replaceAll(customGroups);
+  if (customOptionLists && typeof customOptionLists === "object") await CustomOptionListsRepository.replaceAll(customOptionLists);
+  if (privacySettings && typeof privacySettings === "object") await PrivacySettingsRepository.update(privacySettings);
+  if (resources && typeof resources === "object") await ResourcesRepository.replaceAll(resources);
+  if (Array.isArray(partnerNotifications)) await PartnerNotificationRepository.replaceAll(partnerNotifications);
   // Not Array.isArray — MyProfile is a singleton object, not a list.
   // Older backup files (from before 18 Aug 2026) simply won't have a
   // myProfile key at all, so this quietly no-ops on those rather than
   // erroring — restoring an old backup still works, it just leaves
   // whatever profile is already there untouched.
   if (myProfile && typeof myProfile === "object" && !Array.isArray(myProfile)) {
-    MyProfileRepository.replaceAll(myProfile);
+    await MyProfileRepository.replaceAll(myProfile);
   }
 }
 
@@ -418,53 +425,64 @@ export function restoreBackup(parsedBackup) {
 // those in from a backup. customOptionLists (plain string lists, not
 // id-based records) are unioned per category instead, since simple
 // duplicate labels would be actively unhelpful.
-export function mergeBackup(parsedBackup) {
+export async function mergeBackup(parsedBackup) {
   const { data } = parsedBackup;
-  const append = (repo, incoming) => {
+  // CHANGED — real pre-existing bug found while wiring PregnancyRepository
+  // in: this helper was still plain-synchronous even though it's called
+  // with LocationsRepository (converted to async last batch) — spreading
+  // a Promise via `[...repo.getAll(), ...incoming]` throws at runtime.
+  // Made async/await-aware here; a no-op for every repo still synchronous.
+  const append = async (repo, incoming) => {
     if (!Array.isArray(incoming) || incoming.length === 0) return;
-    repo.replaceAll([...repo.getAll(), ...incoming]);
+    await repo.replaceAll([...(await repo.getAll()), ...incoming]);
   };
-  append(ContactRepository, data.contacts);
-  append(MedicationRepository, data.medications);
-  append(LogRepository, data.logs);
-  append(EncounterRepository, data.encounters);
-  append(KinkRegistry, data.kinks);
-  append(ChemsRegistry, data.chems);
-  append(ProtectionRegistry, data.protection);
-  append(SymptomsRegistry, data.symptoms);
-  append(LocationsRepository, data.locations);
-  append(TestingRepository, data.tests);
-  append(OrganismRegistry, data.organisms);
-  append(ResultsRegistry, data.results);
-  append(ClinicVisitsRepository, data.clinicVisits);
-  append(SymptomLogRepository, data.symptomLog);
-  append(VaccinationRepository, data.vaccinations);
-  append(MeasurementRepository, data.measurements);
-  append(MenstrualCycleRepository, data.menstrualCycles);
-  append(ContraceptionRepository, data.contraception);
-  append(PregnancyRepository, data.pregnancies);
-  append(EpisodeRepository, data.episodes);
+  await append(ContactRepository, data.contacts);
+  await append(MedicationRepository, data.medications);
+  await append(LogRepository, data.logs);
+  await append(EncounterRepository, data.encounters);
+  await append(KinkRegistry, data.kinks);
+  await append(ChemsRegistry, data.chems);
+  await append(ProtectionRegistry, data.protection);
+  await append(SymptomsRegistry, data.symptoms);
+  await append(LocationsRepository, data.locations);
+  await append(TestingRepository, data.tests);
+  await append(OrganismRegistry, data.organisms);
+  await append(ResultsRegistry, data.results);
+  await append(ClinicVisitsRepository, data.clinicVisits);
+  await append(SymptomLogRepository, data.symptomLog);
+  await append(VaccinationRepository, data.vaccinations);
+  await append(MeasurementRepository, data.measurements);
+  await append(MenstrualCycleRepository, data.menstrualCycles);
+  await append(ContraceptionRepository, data.contraception);
+  await append(PregnancyRepository, data.pregnancies);
+  await append(EpisodeRepository, data.episodes);
   if (data.customOptionLists && typeof data.customOptionLists === "object") {
-    const current = CustomOptionListsRepository.getAllForBackup();
+    const current = await CustomOptionListsRepository.getAllForBackup();
     const merged = {};
     for (const key of new Set([...Object.keys(current), ...Object.keys(data.customOptionLists)])) {
       merged[key] = Array.from(new Set([...(current[key] || []), ...(data.customOptionLists[key] || [])]));
     }
-    CustomOptionListsRepository.replaceAll(merged);
+    await CustomOptionListsRepository.replaceAll(merged);
   }
-  append(PartnerNotificationRepository, data.partnerNotifications);
+  // FIXED — real gap found while converting CustomOptionListsRepository:
+  // this was missing an await even though append() and
+  // PartnerNotificationRepository are both already async from an
+  // earlier batch this session — a genuine pre-existing race (this
+  // merge branch's own final "return" could run before the partner-
+  // notification append actually landed).
+  await append(PartnerNotificationRepository, data.partnerNotifications);
   // Resources entries are {id, name, link, notes} objects, not plain
   // strings — concatenated per category rather than de-duplicated like
   // customOptionLists above; a re-added "Refuge" showing twice is mild
   // clutter, not a real data-integrity problem, same as any other
   // simple list this merge doesn't try to reconcile by content.
   if (data.resources && typeof data.resources === "object") {
-    const current = ResourcesRepository.getAllForBackup();
+    const current = await ResourcesRepository.getAllForBackup();
     const merged = {};
     for (const key of new Set([...Object.keys(current), ...Object.keys(data.resources)])) {
       merged[key] = [...(current[key] || []), ...(data.resources[key] || [])];
     }
-    ResourcesRepository.replaceAll(merged);
+    await ResourcesRepository.replaceAll(merged);
   }
 }
 
@@ -501,15 +519,22 @@ export const BACKUP_REMINDER_DAYS = 90;
 // timestamp through this one shared helper instead of calling each
 // other, breaking the cycle completely while keeping the exact same
 // behaviour otherwise.
-function getLastBackupTimestamp() {
-  return storage.load(LAST_BACKUP_KEY, null);
+// CHANGED — Phase 3 prep (8 Sep 2026): made async and awaited at both
+// call sites. Harmless no-op today (storage.load() is still 100%
+// synchronous), but this was a real latent bug waiting for
+// storageAdapter.js itself to go async — an unawaited call here would
+// have returned a Promise, and `!aPromise` is always false, so
+// `hasUnbackedChanges()`'s own "never backed up at all" branch would
+// have silently stopped firing for every genuinely fresh profile.
+async function getLastBackupTimestamp() {
+  return await storage.load(LAST_BACKUP_KEY, null);
 }
 
-export function getLastBackupInfo() {
-  const lastAt = getLastBackupTimestamp();
-  if (!lastAt) return { lastAt: null, daysSince: null, dueForReminder: hasUnbackedChanges() };
+export async function getLastBackupInfo() {
+  const lastAt = await getLastBackupTimestamp();
+  if (!lastAt) return { lastAt: null, daysSince: null, dueForReminder: await hasUnbackedChanges() };
   const daysSince = Math.floor((Date.now() - new Date(lastAt).getTime()) / 86400000);
-  return { lastAt, daysSince, dueForReminder: daysSince >= BACKUP_REMINDER_DAYS && hasUnbackedChanges() };
+  return { lastAt, daysSince, dueForReminder: daysSince >= BACKUP_REMINDER_DAYS && (await hasUnbackedChanges()) };
 }
 
 // ADDED 26 Aug 2026 — real ask: "warn if not exported backup since
@@ -524,11 +549,11 @@ export function getLastBackupInfo() {
 // reads rather than a second, separately-maintained list of every
 // repository — if a new data type is ever added to backups, this
 // check picks it up automatically too.
-export function hasUnbackedChanges() {
-  const lastAt = getLastBackupTimestamp();
+export async function hasUnbackedChanges() {
+  const lastAt = await getLastBackupTimestamp();
   if (!lastAt) return true; // never backed up at all
   const lastBackupTime = new Date(lastAt).getTime();
-  const { data } = buildBackup(null);
+  const { data } = await buildBackup(null);
   for (const [moduleKey, value] of Object.entries(data)) {
     const records = Array.isArray(value) ? value : [value];
     for (const record of records) {
@@ -548,7 +573,7 @@ export function hasUnbackedChanges() {
 }
 
 export async function exportBackup(includeKeys = null, dateRange = null) {
-  const backup = buildBackup(includeKeys, dateRange);
+  const backup = await buildBackup(includeKeys, dateRange);
   const json = JSON.stringify(backup, null, 2);
   // ADDED — real ask: verify before handing off, not after — see
   // verifyBackupJson()'s own comment for exactly what this can and
@@ -562,7 +587,7 @@ export async function exportBackup(includeKeys = null, dateRange = null) {
   // purposes — a selective export deliberately leaves things out, so
   // it shouldn't reset the clock on a reminder meant to catch "you
   // have no real safety net right now".
-  if (!includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  if (!includeKeys) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
   return verification;
 }
 
@@ -575,7 +600,7 @@ export async function exportBackup(includeKeys = null, dateRange = null) {
 // way the fire-and-forget Share-sheet version can (the OS dialog
 // itself is that version's feedback; this one has none built in).
 export async function exportBackupToChosenFolder(includeKeys = null, dateRange = null) {
-  const backup = buildBackup(includeKeys, dateRange);
+  const backup = await buildBackup(includeKeys, dateRange);
   const json = JSON.stringify(backup, null, 2);
   // ADDED — real ask: same round-trip verification as exportBackup()
   // above, before this one's own write.
@@ -583,7 +608,7 @@ export async function exportBackupToChosenFolder(includeKeys = null, dateRange =
   const dateStamp = new Date().toISOString().slice(0, 10);
   const suffix = includeKeys ? "-selective" : "";
   const result = await exportTextFileToChosenFolder(`shos-backup-${dateStamp}${suffix}.json`, json, "application/json");
-  if (result.ok && !includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  if (result.ok && !includeKeys) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
   return { ...result, totalRecords: verification.totalRecords };
 }
 
@@ -597,12 +622,12 @@ export async function exportBackupToChosenFolder(includeKeys = null, dateRange =
 // already covering them. Also reuses hasUnbackedChanges() unchanged —
 // no point silently writing an identical file with nothing new in it
 // every time the interval ticks over.
-export function isAutoExportDue() {
-  const prefs = AppPreferencesRepository.getPreferences();
+export async function isAutoExportDue() {
+  const prefs = await AppPreferencesRepository.getPreferences();
   if (!prefs.autoExportEnabled) return false;
-  const { lastAt, daysSince } = getLastBackupInfo();
+  const { lastAt, daysSince } = await getLastBackupInfo();
   if (!lastAt) return true; // never backed up at all — due immediately
-  return daysSince >= prefs.autoExportIntervalDays && hasUnbackedChanges();
+  return daysSince >= prefs.autoExportIntervalDays && (await hasUnbackedChanges());
 }
 
 // The one function callers actually use — call unconditionally on app
@@ -616,12 +641,12 @@ export function isAutoExportDue() {
 // (writeTextFileSilently) — see that function's own comment for why a
 // popup dialog on app load would be the wrong UX here.
 export async function runAutoExportIfDue() {
-  if (!isAutoExportDue()) return { ran: false };
-  const backup = buildBackup(null);
+  if (!(await isAutoExportDue())) return { ran: false };
+  const backup = await buildBackup(null);
   const json = JSON.stringify(backup, null, 2);
   const dateStamp = new Date().toISOString().slice(0, 10);
   const ok = await writeTextFileSilently(`shos-backup-${dateStamp}-auto.json`, json, "application/json");
-  if (ok) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  if (ok) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
   return { ran: ok };
 }
 
@@ -679,7 +704,7 @@ export async function buildEncryptedBackup(password, includeKeys = null, dateRan
   // own comment above buildBackup(). This whole envelope is already
   // password-gated, so the real App Lock PIN can safely travel through
   // here and come back intact on restore, unlike the plain path.
-  const backup = buildBackup(includeKeys, dateRange, { redactSecrets: false });
+  const backup = await buildBackup(includeKeys, dateRange, { redactSecrets: false });
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveBackupKey(password, salt);
@@ -725,7 +750,7 @@ export async function exportEncryptedBackup(password, includeKeys = null, dateRa
   const dateStamp = new Date().toISOString().slice(0, 10);
   const suffix = includeKeys ? "-selective" : "";
   await exportTextFile(`shos-backup-encrypted-${dateStamp}${suffix}.json`, json, "application/json");
-  if (!includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  if (!includeKeys) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
 }
 
 // Same "choose exactly where this goes" option as exportBackupToChosenFolder
@@ -736,7 +761,7 @@ export async function exportEncryptedBackupToChosenFolder(password, includeKeys 
   const dateStamp = new Date().toISOString().slice(0, 10);
   const suffix = includeKeys ? "-selective" : "";
   const result = await exportTextFileToChosenFolder(`shos-backup-encrypted-${dateStamp}${suffix}.json`, json, "application/json");
-  if (result.ok && !includeKeys) storage.save(LAST_BACKUP_KEY, new Date().toISOString());
+  if (result.ok && !includeKeys) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
   return result;
 }
 
@@ -777,6 +802,6 @@ export async function inspectBackupFile(file) {
 // final step for both the plain and encrypted import paths, so
 // there's exactly one place that decides what "replace" vs "merge"
 // actually does.
-export function restoreFromParsedBackup(parsed, mode = "replace") {
-  if (mode === "merge") mergeBackup(parsed); else restoreBackup(parsed);
+export async function restoreFromParsedBackup(parsed, mode = "replace") {
+  if (mode === "merge") await mergeBackup(parsed); else await restoreBackup(parsed);
 }

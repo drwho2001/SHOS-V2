@@ -14,15 +14,26 @@
 // automated clinical decision-making (Architecture Lock v1.0's Out of
 // Scope section), so this is a suggestion to consider, not a
 // scheduled action or a reminder that fires on its own.
-import { ResultsRegistry } from "../registries/resultsRegistry.js";
+//
+// CHANGED — Phase 2 encryption groundwork: ResultsRegistry is now
+// async. Rather than making this pure calculation function async (it's
+// called live, on every keystroke, from TestEditSheet's form preview —
+// an async round-trip there would add real, visible lag), it now takes
+// a pre-resolved `resultNameById` lookup Map as a parameter instead of
+// reading the registry itself — same "pure function takes data as a
+// parameter" fix already applied to measurementPreferencesRepository.js's
+// getAvailableUnits()/getDefaultUnit() this session, and it keeps this
+// file genuinely I/O-free, matching CLAUDE.md's own repository/
+// calculation split. Callers resolve the map once via useLoadedMemo
+// (or build it inline from an already-loaded TestingRepository read).
 
 // A test only gets a routine-retest suggestion if it actually came
 // back negative (positive moves into the treatment/TOC flow instead,
 // which already has its own explicit fields — a retest suggestion
 // there would be noise, not help) and has a real date to count from.
-export function suggestedRoutineRetestDate(test) {
+export function suggestedRoutineRetestDate(test, resultNameById) {
   if (!test?.date) return null;
-  const resultNames = (test.resultIds || []).map((id) => ResultsRegistry.getById(id)?.name).filter(Boolean);
+  const resultNames = (test.resultIds || []).map((id) => resultNameById?.get(id)).filter(Boolean);
   const isPositive = resultNames.some((n) => n.toLowerCase() === "positive");
   const isNegative = resultNames.some((n) => n.toLowerCase() === "negative");
   if (isPositive || !isNegative) return null;

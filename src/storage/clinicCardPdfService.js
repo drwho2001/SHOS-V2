@@ -49,44 +49,52 @@ const INK = rgb(27 / 255, 27 / 255, 31 / 255);
 const GREY = rgb(91 / 255, 91 / 255, 98 / 255);
 const LINE = rgb(220 / 255, 220 / 255, 220 / 255);
 
-function nameFrom(registry, id) {
-  return registry.getById(id)?.name || "—";
+// CHANGED — Phase 2 encryption groundwork: the registries this reads
+// from (Results/Symptoms) are now async — made async itself, awaited
+// at all 3 call sites below (assembleClinicCardData is already async).
+async function nameFrom(registry, id) {
+  return (await registry.getById(id))?.name || "—";
 }
 
 // Assembles the exact same section data ClinicCardScreen computes for
 // its own render — same filters, same "current treatment"/"active
 // symptoms" derivation, same recency sort — so the PDF is never a
 // second, drifting copy of that logic.
-function assembleClinicCardData() {
-  const profile = MyProfileRepository.getProfile();
-  const meds = MedicationRepository.getAll().filter((m) => !m.isArchived).map((m) => ({ ...m, logs: LogRepository.getForMedication(m.id) }));
-  const tests = sortByDateDesc(TestingRepository.getAll().filter((t) => !t.isArchived));
-  const encounters = sortByDateDesc(EncounterRepository.getAll());
-  const vaccinations = sortByDateDesc(VaccinationRepository.getAll().filter((v) => !v.isArchived));
-  const overdueVaccinations = VaccinationRepository.getOverdue();
-  const activeSymptoms = SymptomLogRepository.getActive();
+async function assembleClinicCardData() {
+  const profile = await MyProfileRepository.getProfile();
+  // FIXED — real pre-existing bug found while wiring MyProfileRepository:
+  // MedicationRepository went async in an earlier batch this session,
+  // but this chained .filter() straight onto .getAll() was missed then
+  // — would throw "getAll(...).filter is not a function" at runtime.
+  const meds = await Promise.all((await MedicationRepository.getAll()).filter((m) => !m.isArchived).map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) })));
+  const tests = sortByDateDesc((await TestingRepository.getAll()).filter((t) => !t.isArchived));
+  const encounters = sortByDateDesc(await EncounterRepository.getAll());
+  const vaccinations = sortByDateDesc((await VaccinationRepository.getAll()).filter((v) => !v.isArchived));
+  const overdueVaccinations = await VaccinationRepository.getOverdue();
+  const activeSymptoms = await SymptomLogRepository.getActive();
 
-  const recentTests = tests.slice(0, 5).map((t) => {
-    const resultNames = (t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id));
+  const recentTests = await Promise.all(tests.slice(0, 5).map(async (t) => {
+    const resultNames = await Promise.all((t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id)));
     const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
     return { title: (t.testingFor || []).join(", ") || t.title || "Test", subtitle: `${formatRelativeDate(t.date)} · ${resultNames.join(", ") || "No result logged"}`, alert: isPositive };
-  });
+  }));
 
-  const currentTreatment = tests.filter((t) => {
-    const resultNames = (t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id));
-    return resultNames.some((r) => r.toLowerCase() === "positive") && !t.followUpActionedDate;
-  }).map((t) => ({ title: (t.testingFor || []).join(", ") || t.title || "Positive result", subtitle: `${formatRelativeDate(t.date)} · awaiting follow-up` }));
+  const currentTreatment = (await Promise.all(tests.map(async (t) => {
+    const resultNames = await Promise.all((t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id)));
+    const isPositive = resultNames.some((r) => r.toLowerCase() === "positive") && !t.followUpActionedDate;
+    return isPositive ? t : null;
+  }))).filter(Boolean).map((t) => ({ title: (t.testingFor || []).join(", ") || t.title || "Positive result", subtitle: `${formatRelativeDate(t.date)} · awaiting follow-up` }));
 
   // ADDED 2 Sep 2026 — mirrors SHOS_ClinicCard_Prototype.jsx's own
   // "Menstrual & contraception" section exactly, sensitive-flag mask
   // included — see that file's comment for the full reasoning.
-  const menstrualTrackingEnabled = AppPreferencesRepository.getPreferences().menstrualTrackingEnabled;
-  const activePregnancyRaw = menstrualTrackingEnabled ? PregnancyRepository.getActive() : null;
+  const menstrualTrackingEnabled = (await AppPreferencesRepository.getPreferences()).menstrualTrackingEnabled;
+  const activePregnancyRaw = menstrualTrackingEnabled ? await PregnancyRepository.getActive() : null;
   const activePregnancy = activePregnancyRaw && !activePregnancyRaw.sensitive ? activePregnancyRaw : null;
   const lastPeriod = menstrualTrackingEnabled
-    ? [...MenstrualCycleRepository.getAll().filter((c) => !c.isArchived)].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0] || null
+    ? [...(await MenstrualCycleRepository.getAll()).filter((c) => !c.isArchived)].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))[0] || null
     : null;
-  const activeContraception = menstrualTrackingEnabled ? ContraceptionRepository.getActive() : [];
+  const activeContraception = menstrualTrackingEnabled ? await ContraceptionRepository.getActive() : [];
   const menstrualContraception = [
     ...(activePregnancy ? [{ title: "Currently pregnant", subtitle: activePregnancy.estimatedDueDate ? `Due ${formatRelativeDate(activePregnancy.estimatedDueDate)}` : "Ongoing", alert: true }] : []),
     ...activeContraception.map((c) => {
@@ -122,11 +130,11 @@ function assembleClinicCardData() {
     currentTreatment,
     menstrualContraception,
     menstrualTrackingEnabled,
-    activeSymptoms: activeSymptoms.map((s) => ({
+    activeSymptoms: await Promise.all(activeSymptoms.map(async (s) => ({
       title: s.title,
-      subtitle: [nameFrom(SymptomsRegistry, s.symptomId), s.severity, formatRelativeDate(s.dateStarted), s.dateResolved ? `resolved ${formatRelativeDate(s.dateResolved)}` : null].filter(Boolean).join(" · "),
+      subtitle: [await nameFrom(SymptomsRegistry, s.symptomId), s.severity, formatRelativeDate(s.dateStarted), s.dateResolved ? `resolved ${formatRelativeDate(s.dateResolved)}` : null].filter(Boolean).join(" · "),
       alert: s.severity === "Severe",
-    })),
+    }))),
     recentEncounters: encounters.slice(0, 8).map((e) => ({ title: e.title || e.encounterType || "Encounter", subtitle: e.date ? formatRelativeDate(e.date) : "" })),
     emergency: [
       (profile.emergencyContactName || profile.emergencyContactPhone) && [profile.emergencyContactName || "Emergency contact", profile.emergencyContactPhone],
@@ -206,7 +214,7 @@ class PageCursor {
 // sections to show) never appears in the exported PDF either, so
 // exporting can never show someone more than the screen itself does.
 export async function generateClinicCardPdf(visibility) {
-  const data = assembleClinicCardData();
+  const data = await assembleClinicCardData();
   const doc = await PDFDocument.create();
   const fonts = {
     regular: await doc.embedFont(StandardFonts.Helvetica),
@@ -271,7 +279,7 @@ export async function exportClinicCardPdf(visibility) {
   const doc = await generateClinicCardPdf(visibility);
   const bytes = await doc.save();
   const base64 = uint8ArrayToBase64(bytes);
-  const profile = MyProfileRepository.getProfile();
+  const profile = await MyProfileRepository.getProfile();
   const namePart = (profile.nickname || "clinic-card").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
   const filename = `${namePart || "clinic-card"}-${new Date().toISOString().slice(0, 10)}.pdf`;
   await exportBinaryFile(filename, base64, "application/pdf");

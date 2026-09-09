@@ -205,8 +205,24 @@ export const OPTION_LIST_ICONS = {
   relationshipStatus: { icon: "Heart", color: ACCENTS.contacts },
 };
 
-let lists = { ...SEED_LISTS, ...storage.load(STORAGE_KEY, {}) };
-function persist() { storage.save(STORAGE_KEY, lists); }
+// CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
+// loadPromise pattern, same as every other module-load-cached
+// repository converted this session (see CLAUDE.md). Two separate
+// caches here (lists/usageMeta), so two separate ensure-helpers —
+// kept independent rather than merged into one, since a caller that
+// only needs `lists` (the overwhelming majority — get()/add()/rename()/
+// remove()/reorder()) shouldn't have to wait on usage-ranking metadata
+// it doesn't need, and vice versa for getRanked()/recordUsage().
+let lists = null;
+let listsLoadPromise = null;
+async function ensureListsLoaded() {
+  if (lists === null) {
+    if (!listsLoadPromise) listsLoadPromise = storage.load(STORAGE_KEY, {});
+    lists = { ...SEED_LISTS, ...(await listsLoadPromise) };
+  }
+  return lists;
+}
+async function persist() { await storage.save(STORAGE_KEY, lists); }
 
 // ADDED 3 Sep 2026 — real ask: "newly added user data should be
 // suggested at top of any autofill/suggest as typing. balance that
@@ -222,8 +238,16 @@ function persist() { storage.save(STORAGE_KEY, lists); }
 // undermine. Only `.getRanked()`, a new opt-in method for suggestion/
 // autocomplete UI specifically, uses this metadata.
 const USAGE_STORAGE_KEY = "shos_custom_option_lists_usage";
-let usageMeta = storage.load(USAGE_STORAGE_KEY, {});
-function persistUsage() { storage.save(USAGE_STORAGE_KEY, usageMeta); }
+let usageMeta = null;
+let usageLoadPromise = null;
+async function ensureUsageLoaded() {
+  if (usageMeta === null) {
+    if (!usageLoadPromise) usageLoadPromise = storage.load(USAGE_STORAGE_KEY, {});
+    usageMeta = await usageLoadPromise;
+  }
+  return usageMeta;
+}
+async function persistUsage() { await storage.save(USAGE_STORAGE_KEY, usageMeta); }
 
 // A brand-new entry gets a decaying head start (worth ~5 real uses,
 // fading to 0 over 14 days) so it actually surfaces while it's new
@@ -245,7 +269,8 @@ function scoreFor(name, value, now) {
 }
 
 export const CustomOptionListsRepository = {
-  get(name) {
+  async get(name) {
+    await ensureListsLoaded();
     return [...(lists[name] || SEED_LISTS[name] || [])];
   },
 
@@ -255,8 +280,9 @@ export const CustomOptionListsRepository = {
   // history yet. Every other consumer of a list (Manage Lists' editor,
   // any place that needs the literal curated order) should keep using
   // plain get() — this is deliberately opt-in, not a replacement.
-  getRanked(name) {
-    const options = this.get(name);
+  async getRanked(name) {
+    const options = await this.get(name);
+    await ensureUsageLoaded();
     const now = Date.now();
     return options
       .map((value, index) => ({ value, index, score: scoreFor(name, value, now) }))
@@ -268,22 +294,23 @@ export const CustomOptionListsRepository = {
   // suggestions or freshly typed as new (add() below calls this
   // itself for the "new" case, so callers only need this explicitly
   // for the "picked an existing suggestion" case).
-  recordUsage(name, value) {
+  async recordUsage(name, value) {
     if (!value) return;
+    await ensureUsageLoaded();
     const forList = usageMeta[name] || {};
     const existing = forList[value];
     usageMeta = { ...usageMeta, [name]: { ...forList, [value]: { count: (existing?.count || 0) + 1, addedAt: existing?.addedAt || null } } };
-    persistUsage();
+    await persistUsage();
   },
 
   getAllListNames() {
     return Object.keys(SEED_LISTS);
   },
 
-  add(name, value) {
+  async add(name, value) {
     const trimmed = (value || "").trim();
     if (!trimmed) return this.get(name);
-    const current = this.get(name);
+    const current = await this.get(name);
     // CHANGED — was a case-SENSITIVE `current.includes(trimmed)` check,
     // so typing "male" when "Male" already existed silently added a
     // second, differently-cased option to the shared suggestion list
@@ -308,36 +335,38 @@ export const CustomOptionListsRepository = {
       // individually — re-picking an existing option is exactly as
       // real a "use" as typing a new one, it just doesn't change the
       // list itself.
-      this.recordUsage(name, existingMatch);
+      await this.recordUsage(name, existingMatch);
       return current;
     }
+    await ensureListsLoaded();
     lists = { ...lists, [name]: [...current, trimmed] };
-    persist();
+    await persist();
     // Records WHEN this was added — the "newly added" half of
     // getRanked()'s scoring above. A brand new value starts at count 0
     // (recordUsage would double-count it as "used once" too, which
     // isn't true yet — it was just created, not picked).
+    await ensureUsageLoaded();
     const forList = usageMeta[name] || {};
     usageMeta = { ...usageMeta, [name]: { ...forList, [trimmed]: { count: 0, addedAt: new Date().toISOString() } } };
-    persistUsage();
+    await persistUsage();
     return lists[name];
   },
 
-  rename(name, oldValue, newValue) {
+  async rename(name, oldValue, newValue) {
     if ((PROTECTED_VALUES[name] || []).includes(oldValue)) return this.get(name);
     const trimmed = (newValue || "").trim();
-    const current = this.get(name);
+    const current = await this.get(name);
     if (!trimmed) return current;
     lists = { ...lists, [name]: current.map((v) => (v === oldValue ? trimmed : v)) };
-    persist();
+    await persist();
     return lists[name];
   },
 
-  remove(name, value) {
+  async remove(name, value) {
     if ((PROTECTED_VALUES[name] || []).includes(value)) return this.get(name);
-    const current = this.get(name);
+    const current = await this.get(name);
     lists = { ...lists, [name]: current.filter((v) => v !== value) };
-    persist();
+    await persist();
     return lists[name];
   },
 
@@ -345,22 +374,24 @@ export const CustomOptionListsRepository = {
     return (PROTECTED_VALUES[name] || []).includes(value);
   },
 
-  reorder(name, newOrder) {
+  async reorder(name, newOrder) {
+    await ensureListsLoaded();
     lists = { ...lists, [name]: newOrder };
-    persist();
+    await persist();
     return lists[name];
   },
 
   // For backupService.js — one bundled object, all lists together,
   // rather than one storage key per list. Matches the same "combine
   // data updated together" guidance used elsewhere in this project.
-  getAllForBackup() {
+  async getAllForBackup() {
+    await ensureListsLoaded();
     return { ...lists };
   },
 
-  replaceAll(newLists) {
+  async replaceAll(newLists) {
     lists = { ...SEED_LISTS, ...newLists };
-    persist();
+    await persist();
   },
 };
 
@@ -374,13 +405,28 @@ export const CustomOptionListsRepository = {
 // for PEP (Protection Registry) and the Kink Registry expansion —
 // `add()` itself is idempotent (checks for an existing value first),
 // so this is genuinely safe to run even if the value's already there.
-const SAMPLE_TYPE_MIGRATION_FLAG = "shos_sampletype_vaginal_added_v1";
-try {
-  if (typeof localStorage !== "undefined" && !localStorage.getItem(SAMPLE_TYPE_MIGRATION_FLAG)) {
-    CustomOptionListsRepository.add("sampleType", "Vaginal/front hole swab");
-    localStorage.setItem(SAMPLE_TYPE_MIGRATION_FLAG, "true");
+// CHANGED 4 Sep 2026 — real groundwork for encryption at rest (see
+// CLAUDE.md's Known Issues / the Notion Development log for the full
+// plan): this used to touch `localStorage` directly, bypassing
+// `storageAdapter` — one of a handful of real bypasses the audit
+// found. Routed through the same adapter this file already uses for
+// its own real data above.
+// CHANGED — Phase 2 encryption groundwork: add() is now async — wrapped
+// in an IIFE since a module-load-time side effect can't itself be
+// async. Idempotent either way (add() checks for an existing value
+// first), so this being fire-and-forget at import time is safe.
+// CHANGED — Phase 4 (Sep 2026): a real, pre-existing bug the self-
+// invoking IIFE version of this had, only surfaced once storage.save()
+// started needing an unlocked vault — module evaluation always happens
+// before App.jsx's own bootReady gate resolves, so this would ALWAYS
+// fail to save (not just occasionally) for anyone with App Lock on,
+// forever leaving the sample type un-added and silently retrying every
+// cold boot. Exported as a real function instead, called once from
+// App.jsx's own finishBootAfterUnlock() after a real unlock.
+export const SAMPLE_TYPE_MIGRATION_FLAG = "shos_sampletype_vaginal_added_v1";
+export async function runSampleTypeMigration() {
+  if (!(await storage.load(SAMPLE_TYPE_MIGRATION_FLAG, false))) {
+    await CustomOptionListsRepository.add("sampleType", "Vaginal/front hole swab");
+    await storage.save(SAMPLE_TYPE_MIGRATION_FLAG, true);
   }
-} catch {
-  // Same "never let a background convenience break the app" reasoning
-  // as every other real-device migration this session.
 }
