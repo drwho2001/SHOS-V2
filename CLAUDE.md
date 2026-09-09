@@ -3151,6 +3151,80 @@ this date; summarized here for durability.
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
 
+## Recently shipped (9 Sep 2026, session limit reset — see Notion for full detail)
+
+Real ask: an interactive spotlight-overlay tour ("click here, this is
+X for Y, with a slightly opaque overlay"), not just the static Guide
+screen's written reference — the Guide screen stayed, this is
+additive. New `src/modules/InteractiveTour.jsx` (`TourOverlay`): a
+9-step walkthrough (welcome → each bottom-nav tab → Home → Search →
+Settings → closing) targeting real DOM elements via a `data-tour="…"`
+attribute (added at each real anchor — the 5 bottom-nav tab wrappers
+in `App.jsx`, Home's own search/settings icons), not fixed
+coordinates — a step whose target isn't in the DOM is skipped
+automatically in both directions rather than spotlighting nothing. The
+spotlight itself is a plain CSS box-shadow cutout (a rounded rect sized
+to the target's real `getBoundingClientRect()`, refreshed via a cheap
+400ms poll while open so a transient banner appearing/disappearing
+doesn't leave it misaligned) — deliberately a Next/Back/Skip-driven
+tour, not a "click the real live element to advance" one, since
+puppeting real navigation (switching tabs, opening Settings) mid-tour
+for every step would be a much bigger integration surface for a first
+version; the closing step points at the Guide screen for anything
+needing more depth.
+
+Trigger: auto-offered once, right after a genuine onboarding
+completion (a new `hasCompletedTour` flag,
+`appPreferencesRepository.js`, same "only set by the tour's own
+Skip/Done, never elsewhere" rule as `hasCompletedOnboarding`) — and
+replayable anytime after via a new "Take the interactive tour" button
+on the Guide screen itself (Settings > Content & Lists > Guide),
+regardless of whether the one-time offer was already taken, skipped,
+or never seen (an existing install upgrading into this feature).
+
+Two real regressions found and fixed live before shipping, both from
+actually driving the flow end-to-end rather than trusting the design
+on paper: (1) the post-onboarding App Lock setup prompt
+(`AppLockPrompt`, zIndex 998) can legitimately be pending at the exact
+same moment onboarding's own completion wants to auto-offer the tour
+— both are independent "first thing after onboarding" overlays. Left
+unhandled, the App Lock prompt's higher z-index silently ate every
+click meant for the tour underneath it. Fixed with a `pendingTourOffer`
+flag: if the App Lock prompt is currently showing, the tour offer
+defers until it's actually dismissed (either "Not now" or "Don't ask
+again"), rather than stacking two overlays. (2) The very first version
+auto-offered the tour on ANY path through `OnboardingScreen`'s
+`onFinish`, including an explicit Skip tap — directly contradicting
+the "not now" signal a real Skip tap sends, and (found only once this
+broke the existing smoke suite, which dismisses onboarding via Skip)
+silently blocking every other test's own subsequent Settings/tab
+clicks once App Lock's own dismissal started re-triggering the tour.
+Fixed by threading a real `skipped` boolean through `onFinish` (the
+Skip button now calls `onFinish(true)`, `advance()`'s own completion
+path calls `onFinish(false)`) so the two paths are genuinely
+distinguishable, not inferred from timing.
+
+Given a permanent 11th smoke-test flow (`scripts/smoke-test.cjs`, was
+a 10-flow suite), not just a throwaway verification script — this
+project's own established "verified once, covered never" lesson
+applied on sight, not after the fact. Runs in its own fresh browser
+context (like the existing legacy-data-migration test), since it needs
+to drive onboarding through a genuine completion rather than the
+shared page's own Skip-based `dismissOnboarding()` helper, plus a
+second fresh context proving the Skip path specifically does NOT
+auto-offer the tour — the exact regression class (2) above. One real
+test-tooling lesson from writing it: an early version confirmed
+persistence via a dynamic `import("/src/repositories/…")` inside
+`page.evaluate` — works against Vite's dev server (which serves raw
+`/src/` ES modules), but fails against a real `vite preview` production
+build (`Failed to fetch dynamically imported module` — `dist/` only
+ships hashed bundles under `/assets/`, not `/src/`). Fixed by relying
+on the already-present behavioral check instead (reload → tour doesn't
+reappear), which is portable to both and is the stronger proof anyway.
+Verified stable across two consecutive full-suite runs against both
+the dev server and a real `vite preview` production build (the same
+build CI actually tests) before shipping.
+
 ## Recently shipped (9 Sep 2026, even later still — see Notion for full detail)
 
 Follow-up to the seed-data pass above, driven by the owner's own
