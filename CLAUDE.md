@@ -2723,6 +2723,29 @@ this date; summarized here for durability.
   PIN-aware: it now re-enters the PIN first if a reload lands on the
   lock screen, before proceeding. Verified stable across two
   consecutive full runs before shipping.
+  **Standing backlog item (9 Sep 2026), not yet built**: this is the
+  general pattern to keep applying, not just an encryption-specific
+  fix. Several real, already-shipped features were each verified once
+  live via a throwaway/one-off Playwright check (proving the fix
+  worked at the time) but never got a permanent flow added to this
+  suite — meaning a later regression to any of them would ship
+  silently, the exact risk this suite exists to catch. Known examples,
+  not yet added: Settings' Resources screen's clickable links
+  (`resourceLinkHref()` — a saved phone number vs. URL vs. bare domain
+  each need their own real `href`, easy to regress silently);
+  Encounters' Anonymise-mode masking (`EncounterCard`/`ActivityDetails`
+  both reading `PrivacySettingsRepository` — only Contacts' own
+  Anonymise masking has any real coverage, via smoke-test's day-to-day
+  use, not a dedicated flow); Medication Dashboard's next-reminder
+  clock display (`nextReminderClock`, derived from `lockoutEndsAt()` —
+  a silent regression here would look like a plain missing UI element,
+  easy to miss on read-through); and the PWA's own
+  `controllerchange`-triggered reload-on-update logic in `main.jsx`
+  (verified once against a real `vite preview` build with a simulated
+  SW bump, never re-run since). None of these are urgent on their own;
+  logged together because the pattern itself — "verified once,
+  covered never" — is the real, recurring gap worth fixing at the
+  suite level, not just for these four.
 - **Cold-start notification-action race** — a still-open upstream
   Capacitor limitation (not fixable purely from this app's JS): tapping
   a notification action after the app was fully killed can fail to
