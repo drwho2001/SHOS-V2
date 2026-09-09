@@ -361,6 +361,145 @@ let seedContacts = [
     createdAt: daysAgo(112),
     isArchived: false,
   },
+  // ADDED 9 Sep 2026 — real ask: a richer, more representative demo
+  // dataset covering every field/edge case a new user or a real audit
+  // pass would actually exercise, not just the 8 contacts above (which
+  // never populated statedKinks/limits/contraception/rating/favourited/
+  // the two active-tracking override flags at all). Kink registry IDs
+  // below (kink_005/016/029/037/040/058) were confirmed against the
+  // real, running registry — not guessed — since KinkRegistry assigns
+  // IDs sequentially from its own SEED_NAMES order at first load; a
+  // wrong guess here would silently render as a blank/broken chip,
+  // exactly the class of bug this project's own orphan-checker was
+  // built to catch (see the 3 Sep "Protection Registry stored a NAME
+  // not an id" fix in CLAUDE.md). knownChems deliberately left empty
+  // across every seed contact — ChemsRegistry has no seed names at
+  // all (a real, privacy-conscious default, not an oversight), so
+  // there's no real id to safely reference yet.
+  {
+    ...DEFAULT_CONTACT,
+    id: "contact_009",
+    name: "Priya",
+    pronouns: "They/them",
+    gender: "Non-binary",
+    city: "Birmingham",
+    snapchat: "priya_bm",
+    contactableVia: ["Snapchat"],
+    hosts: "Sometimes", travels: "Yes", travelMode: ["Public transport"],
+    availability: ["Weekends", "Nights"],
+    statedKinks: ["kink_037", "kink_058"],
+    bdsmRole: ["sub"], sexualPosition: ["Vers"],
+    rating: "😊 Happy",
+    createdAt: daysAgo(6),
+    isArchived: false,
+  },
+  // Deliberate near-duplicate of contact_003 ("Sam") — same phone
+  // number, a genuinely different display name — real test data for
+  // findContactDuplicateCandidates() (fuzzyMatch.js), which flags an
+  // exact phone match directly regardless of name similarity.
+  {
+    ...DEFAULT_CONTACT,
+    id: "contact_010",
+    name: "Sam T.",
+    phone: "07700 900123",
+    contactableVia: ["Phone/WhatsApp"],
+    city: "Manchester",
+    createdAt: daysAgo(3),
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_CONTACT,
+    id: "contact_011",
+    name: "Devon",
+    pronouns: "He/him",
+    gender: "Trans-male",
+    city: "Bristol",
+    relationshipType: ["Friend with benefits"],
+    howDidWeMeet: ["App"],
+    contraception: ["Testosterone"],
+    knownPrepDoxy: ["PrEP"],
+    contactableVia: ["Phone/WhatsApp"],
+    phone: "07700 900654",
+    createdAt: daysAgo(70),
+    isArchived: false,
+  },
+  // Deliberately very old createdAt with no recent activity — a real
+  // exercise of the inactive-contact detection (default 90-day
+  // threshold), and of `limits` being excluded from what a kink search
+  // can match (see the 4 Sep Global Search fix in CLAUDE.md) — Kai is
+  // explicitly NOT into Age play, so a search for it must never surface
+  // this contact as if he were.
+  {
+    ...DEFAULT_CONTACT,
+    id: "contact_012",
+    name: "Kai",
+    pronouns: "He/they",
+    gender: "Male",
+    city: "Leeds",
+    statedKinks: ["kink_016", "kink_029"],
+    limits: ["kink_040"],
+    bdsmRole: ["Dom"], sexualPosition: ["Top"],
+    chastityStatus: "Caged",
+    foreskin: "Uncircumcised", foreskinDetail: "Average",
+    cummer: ["Multiple loads", "Big load"],
+    createdAt: daysAgo(200),
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_CONTACT,
+    id: "contact_013",
+    name: "Ash",
+    pronouns: "She/they",
+    gender: "Non-binary",
+    city: "London",
+    drives: true, carDetails: "Red Mini Cooper", carRegistration: "AB12 CDE",
+    favourited: true,
+    rating: "😍 Love",
+    relationshipType: ["Regular"],
+    createdAt: daysAgo(15),
+    isArchived: false,
+  },
+  // A real one-off/anonymous encounter — the exact scenario
+  // excludeFromActiveTracking/markedComplete exist for (see
+  // DEFAULT_CONTACT's own comments on both flags): no contact details,
+  // never meant to recur, shouldn't nag about "incomplete" fields or
+  // get flagged inactive.
+  {
+    ...DEFAULT_CONTACT,
+    id: "contact_014",
+    name: "Anonymous — sauna",
+    notes: "One-off, sauna encounter, no contact details exchanged.",
+    excludeFromActiveTracking: true,
+    markedComplete: true,
+    createdAt: daysAgo(2),
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_CONTACT,
+    id: "contact_015",
+    name: "Jamie",
+    pronouns: "He/him",
+    gender: "Male",
+    city: "Manchester",
+    readilyAvailable: "Unavailable foreseeably",
+    meetAgain: "No", dontMeetAgainReason: "Relocated",
+    notes: "Moved away, unlikely to meet again.",
+    createdAt: daysAgo(300),
+    isArchived: true,
+  },
+  {
+    ...DEFAULT_CONTACT,
+    id: "contact_016",
+    name: "Nat",
+    pronouns: "She/her",
+    gender: "Female",
+    city: "Cardiff",
+    contraception: ["Implant"],
+    rating: "😐 Meh",
+    length: "Long", thickness: "Thick",
+    createdAt: daysAgo(45),
+    isArchived: false,
+  },
 ];
 
 // CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
