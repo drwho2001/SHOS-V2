@@ -2795,6 +2795,42 @@ this date; summarized here for durability.
   exact class of flakiness this same session just fixed elsewhere, and
   doing that safely needs its own dedicated design, not a quick
   addition alongside three unrelated flows.
+- **Two items a prior backlog audit left inconclusive (due to a
+  test-script issue, not a confirmed problem) — resolved for real 9
+  Sep 2026, later the same day.** Both were re-checked live with
+  Playwright, deliberately checking DOM state at the exact instant
+  after the action rather than after an arbitrary `waitForTimeout` (the
+  thing that made the earlier check inconclusive in the first place).
+  **Void-confirm screen's zero-display timing** — confirmed NOT a bug.
+  `CorrectionSheet`'s amount input reads `confirmVoid ? 0 : amount`, a
+  plain synchronous React state toggle with no async gap of any kind;
+  checked the input's real `.value` (not `innerText`) in the exact same
+  microtask as the click and again 500ms later — both read `0`,
+  disabled, immediately, no flash of the pre-void amount at any point.
+  This is the already-correct, deliberate 18 Aug 2026 fix (see that
+  entry's own comment) doing exactly what it was built to do.
+  **Location picker dropdown's visual settling** — confirmed
+  functionally correct, with one real but minor cosmetic property
+  worth naming honestly rather than glossing over. Typed a real partial
+  match ("Ho") against the seeded Locations registry, tapped the
+  resulting "Home" suggestion chip, and checked immediately (not after
+  a settle delay): the input correctly showed "Home", and a chip count
+  scoped specifically to the Location field's own container (not every
+  `role="button"` chip on the whole edit form, which is what likely
+  made an earlier check ambiguous) was already `0` — no residual or
+  flickering suggestion, immediately and 500ms later alike. The one
+  real, visible thing happening: the suggestion-chip row's whole height
+  disappears in the same instant as the tap (confirmed by screenshot,
+  before/after) with no transition, so the "Practices" section below it
+  visibly jumps up right away — a real, plain CSS "no transition on an
+  element that unmounts" characteristic of every picker using this
+  shared pattern (Location, `RegistryTagPicker`,
+  `RegistryMultiResultPicker` alike), not something specific to
+  Location or a data-correctness problem. Deliberately NOT adding a
+  transition here without a real ask to do so — CLAUDE.md's own
+  standing "avoid over-normalisation"/no-unprompted-scope-creep rule
+  applies exactly as much to a cosmetic transition touching every
+  picker in the app as it does to a new feature.
 - **Cold-start notification-action race** — a still-open upstream
   Capacitor limitation (not fixable purely from this app's JS): tapping
   a notification action after the app was fully killed can fail to
