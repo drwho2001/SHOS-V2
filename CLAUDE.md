@@ -3066,10 +3066,28 @@ this date; summarized here for durability.
   Not yet built — the one real decision that was blocking this (code
   format) is resolved as of 9 Sep 2026, later still; what's left is
   actually building the 3 screens/modes above, not further scoping.
-- **Android Keystore-backed device key — scoped 9 Sep 2026, the real
-  open API question resolved 9 Sep 2026 (later); still no code
-  written, now blocked on a genuine trade-off worth the owner's own
-  call, not a research gap.** Phase 4's own scoping (see above) chose
+- **Android Keystore-backed device key — DECIDED 9 Sep 2026, later
+  still: not building this now.** The owner deferred the final call
+  (the trade-off itself was already explained in plain terms —
+  hardware-backed-at-rest vs. never-extractable-in-JS — see below for
+  the full technical writeup). Real call: stay with the current
+  IndexedDB non-extractable-key design. Reasoning, stated plainly
+  rather than left implicit: this app has exactly one real threat
+  model that matters at this layer — a stolen or physically-accessed
+  device — and against that, the current design is already good (a
+  non-extractable key an attacker can't pull out of the browser's own
+  APIs, plus the PIN-derived envelope layer on top whenever App Lock
+  is on). The Keystore plugin would trade that structural guarantee
+  for a narrower, harder-to-materialize threat (a code-injection bug
+  in this app's own JS reading the key at one of two brief moments)
+  in exchange for a single-maintainer, no-visible-test-suite native
+  dependency and real Java/Kotlin surface this session's tooling can't
+  verify on a real device. For a single-user, single-device, no-network
+  app, that's not a trade worth taking without a specific reason to —
+  revisit only if a real, concrete threat to the current design
+  surfaces (not proactively). Full technical writeup (the API research,
+  the exact trade-off, the plugin's own maintenance profile) preserved
+  below for reference if this ever needs revisiting.
   the current IndexedDB non-extractable-key approach specifically
   because "no Keystore/secure-storage Capacitor plugin installed
   today" and adding one was treated as open-ended, unscoped risk.
