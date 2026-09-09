@@ -279,6 +279,49 @@ let seedMeasurements = [
     note: "Routine COCP check.",
     isArchived: false,
   },
+  // ADDED 9 Sep 2026 — real ask: every type above had exactly ONE real
+  // data point — not enough for the trend chart/group-by-type view to
+  // show an actual trend line, just a single dot. Added a second point
+  // to Weight and CD4 count (real history, kg-entered this time for
+  // Weight so both real-world entry units are exercised), and a
+  // brand-new custom type (not one of the app's own built-in presets)
+  // to exercise the custom-type + typeKind flow end-to-end.
+  {
+    ...DEFAULT_MEASUREMENT,
+    id: "measurement_004",
+    type: "Weight",
+    date: daysAgo(2),
+    value: 67.5,
+    unit: "kg",
+    enteredValue: 67.5,
+    enteredUnit: "kg",
+    note: "",
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_MEASUREMENT,
+    id: "measurement_005",
+    type: "CD4 count",
+    date: daysAgo(120),
+    value: 590,
+    unit: "cells/µL",
+    enteredValue: 590,
+    enteredUnit: "cells/µL",
+    note: "Routine bloods.",
+    isArchived: false,
+  },
+  {
+    ...DEFAULT_MEASUREMENT,
+    id: "measurement_006",
+    type: "Blood glucose",
+    date: daysAgo(5),
+    value: 5.4,
+    unit: "mmol/L",
+    enteredValue: 5.4,
+    enteredUnit: "mmol/L",
+    note: "Fasting, routine bloods.",
+    isArchived: false,
+  },
 ];
 
 // CHANGED — Phase 2 encryption groundwork: module-load-time synchronous
