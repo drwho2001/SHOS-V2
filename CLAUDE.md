@@ -3151,6 +3151,107 @@ this date; summarized here for durability.
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
 
+## Recently shipped (9 Sep 2026, real backup audit — see Notion for full detail)
+
+Real ask: review the owner's own real backup file, check whether the
+Known Issues backlog is actually clear and a "full audit" has been
+done, remap the data if needed, and — the real constructive part —
+build a permanent system so future imports don't need a human (me) to
+manually check schema compatibility first, since the owner won't
+always have this kind of session available.
+
+**Backup schema audit — clean, no remap needed.** Every record type in
+the real file (34 contacts, 35 encounters, 12 medications, 84 dose
+logs, 7 tests, 4 clinic visits, 3 symptom log entries, 3 vaccinations,
+1 episode, 29 locations, plus the 6 registries and every singleton —
+myProfile, privacySettings, customOptionLists, resources,
+measurementPreferences) was checked field-by-field against each
+repository's own current `DEFAULT_*` shape, not assumed compatible.
+Contacts (the richest schema) and Encounters both matched their
+current `DEFAULT_` object exactly, key for key. The only three
+"extra" fields found (Testing's `relatedSymptomIds`, Clinic Visits'
+`resultIds`, Symptom Log's singular `symptomId`) are all confirmed,
+already-documented DEAD fields — present in `DEFAULT_*` for backward
+compatibility, never read or written by any current screen — so their
+presence is harmless, not a sign of drift. `customOptionLists`' 17 real
+list names matched the app's own 17 live list names exactly. The
+registries (kinks/chems/protection/symptoms/organisms/results) travel
+WITH their own referencing records in the same file, so a Replace All
+restore is self-consistent by construction regardless of the app's own
+separate seed/demo registry — there's no separate "current registry"
+for a real single-user install to conflict with. Verified this wasn't
+just theoretical: restored the real file end-to-end via
+`restoreFromParsedBackup()` (the same function the real Settings >
+Restore-from-backup UI calls) and confirmed all 34/35/12/69 real
+records landed correctly with zero page errors.
+
+**One real, genuine gap found along the way** — not a schema mismatch,
+a repository completeness bug: `notes` is read and written throughout
+`SHOS_Medication_Dashboard_Prototype.jsx` (the card display, both the
+Edit and Add form textareas) with real, meaningful data behind it in
+the owner's own account (his real PrEP and Zapain entries both carry a
+genuine dose-composition note) — but `medicationRepository.js`'s own
+`DEFAULT_MEDICATION` never actually declared the field. Nothing was
+ever silently broken by this (both forms already had their own local
+`med.notes || ""` fallback, added in an earlier session's own fix for
+this same underlying discoverability gap — see that fix's own comment,
+still live), but it meant the repository wasn't really the single
+source of truth `DEFAULT_*` is supposed to be. Fixed by adding
+`notes: ""` to `DEFAULT_MEDICATION` directly.
+
+**Honest backlog/audit status, since that was directly asked**: NOT
+fully clear. Two real open items remain in Known Issues below —
+PIN-recovery/alternate-access (scoped, zero code written) and font/
+text-size scaling (attempted and reverted, real architectural blocker
+found) — plus one accepted, ongoing upstream limitation (the cold-start
+notification-action race). The broader "full audit" the owner
+originally floated (systematic visual-consistency and mobile-scrolling
+sweep across every screen, arduous-process review) has NOT been done
+as its own dedicated pass — real bugs in those categories have been
+found and fixed throughout this session, but always in response to a
+specific report, never via one systematic sweep. Said plainly rather
+than implied: today's real, thorough work was the schema/data-integrity
+half specifically (what this section covers), not that broader sweep.
+
+**The real constructive deliverable: automatic backup-import
+migration.** New `src/storage/backupMigrations.js` — a small,
+append-only registry of "old field → new field" migrations, run
+automatically inside `restoreFromParsedBackup()` (the one real shared
+entry point for every import path — plain, encrypted, Replace All,
+Merge alike), before any repository ever sees the data. This closes a
+real gap "defensive-default merge on every read" (this project's own
+standing architecture rule) can't cover on its own: a field the
+current app ADDS just gets its default value for free on an old
+backup, no code needed — but a field that gets RENAMED leaves the old
+backup's real value sitting under the old name, invisible to every
+current screen, exactly as inert as if it had been deleted. Seeded
+with one real historical example, not a fabricated one:
+`medicationRepository.js`'s own `dosePerUnit` (free text) →
+`doseStrengthValue`/`doseStrengthUnit` (structured) rename, baked into
+this repo's very first commit. A real compound free-text value (e.g.
+"200mg/245mg", exactly what the owner's own real PrEP entry contains)
+can't be safely auto-split into a single number + unit without
+guessing — guessing wrong would silently corrupt a real dose, worse
+than leaving it alone — so the migration preserves it verbatim inside
+`notes` instead (prepended, never overwriting a real note already
+there) rather than forcing a shape it may not fit. Idempotent by
+construction: every migration step checks its own old field is
+actually present before touching anything, confirmed live as a genuine
+no-op against an already-current record. The registry is honestly
+close to empty today — nothing else has ever been renamed in this
+app's real history — but the machinery is real, tested, and wired in,
+ready for the next rename (which, going by this session's own history
+of field restructuring, will happen) without needing a human to check
+first.
+
+Given a permanent 12th smoke-test flow (was an 11-flow suite) — driving
+the real Settings > Restore-from-backup UI with a synthetic old-shaped
+file via a real virtual file upload (`page.setInputFiles()`), not a
+dynamic `import("/src/...")` (the exact dev-server-only trap the
+interactive-tour flow above already hit and fixed this same day) — so
+it's portable to both the dev server and a real production build.
+Verified stable across two consecutive runs against both.
+
 ## Recently shipped (9 Sep 2026, session limit reset — see Notion for full detail)
 
 Real ask: an interactive spotlight-overlay tour ("click here, this is
