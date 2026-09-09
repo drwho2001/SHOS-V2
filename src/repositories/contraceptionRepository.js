@@ -68,6 +68,14 @@ const seedDepotStart = daysAgo(45);
 let seedEntries = [
   { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_001", method: "Combined pill", formulation: "Pill/Tablet", startDate: daysAgo(400), endDate: daysAgo(95), notes: "Stopped when the relationship with Morgan became exclusive." },
   { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_002", method: "Depot", formulation: "Injection", startDate: seedDepotStart, intervalDays: 84, nextDueDate: addDays(seedDepotStart, 84), notes: "Started after the miscarriage — wanted something more reliable than the pill." },
+  // ADDED 9 Sep 2026 — real ask: represent hormone-related contraception
+  // needs through real data — a hormonal IUD, linked to a real clinic
+  // visit for the insertion appointment (see clinicVisitsRepository.js's
+  // own visit_006) and to medicationRepository.js's new Testosterone
+  // entry via the shared notes context. A currently-active entry (no
+  // endDate), independent of the Depot method above — this app's own
+  // design already allows more than one concurrent method on record.
+  { ...DEFAULT_CONTRACEPTION_ENTRY, id: "contra_003", method: "IUD (hormonal)", formulation: "IUD/Implant", startDate: daysAgo(75), linkedClinicVisitId: "visit_006", notes: "Testosterone alone isn't reliable contraception — opted for a hormonal IUD as well." },
 ];
 
 // CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-

@@ -231,6 +231,21 @@ let seedVisits = [
     linkedTestIds: ["test_007"],
     isArchived: false,
   },
+  // ADDED 9 Sep 2026 — real ask: an IUD insertion appointment, the
+  // clinic-visit half of contraceptionRepository.js's own new IUD
+  // entry (linked both directions, same pattern as visit_001's own
+  // linkedTestIds).
+  {
+    ...DEFAULT_CLINIC_VISIT,
+    id: "visit_006",
+    title: "IUD insertion",
+    date: daysAgo(75),
+    location: "56 Dean Street",
+    clinician: ["Hayley"],
+    reasonForVisit: ["Contraception"],
+    clinicalNotes: "Hormonal IUD inserted — testosterone alone isn't reliable contraception. Straightforward procedure, mild cramping advised as normal for a few days.",
+    isArchived: false,
+  },
 ];
 
 let visits = null;

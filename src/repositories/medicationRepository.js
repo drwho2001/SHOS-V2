@@ -128,6 +128,30 @@ let seedMedications = [
     isArchived: true,
     sortOrder: 4,
   },
+  // ADDED 9 Sep 2026 — real ask: represent hormone therapy through real
+  // data rather than forcing a gender label onto My Profile (which
+  // stays blank for the real installing user to fill in themselves —
+  // see contraceptionRepository.js's own IUD entry for the matching
+  // half of this same story: T alone isn't reliable contraception, so
+  // both threads are real and coexist). A biweekly injection, same
+  // "custom" usagePattern already used for Amoxicillin's own non-daily/
+  // non-prn regimen.
+  {
+    id: "med_006",
+    name: "Testosterone (Sustanon)",
+    unit: "injection",
+    usagePattern: "custom",
+    dosesPerDay: null,
+    unitsPerDose: 1,
+    inventoryTracked: true,
+    unitsPerContainer: 1,
+    refillThreshold: 1,
+    defaultRefillQuantity: 1,
+    usualSupplier: "Sexual Health Clinic",
+    refillRequestedAt: null,
+    isArchived: false,
+    sortOrder: 5,
+  },
 ];
 
 // CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
