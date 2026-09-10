@@ -198,7 +198,14 @@ function StatTile({ label, value, tint, subtitle, onClick, T }) {
 // Redesigned for more contrast per the user's ask: tinted background/border, fraction shown as the
 // primary value with the percentage as a secondary line, per the user's "give absolute value" request.
 function AdherencePill({ label, hit, expected, T }) {
-  const pct = Math.round((hit / expected) * 100);
+  // FIXED 10 Sep 2026 — real bug found live: with expected === 0 (a
+  // real case — a custom-schedule medication with no dose logged yet
+  // has no "expected" days in its window at all), this divided 0/0 and
+  // showed "NaN%". medicationCalculations.js's own windowStats() already
+  // guards this exact case (100% — nothing was due, nothing was missed),
+  // this component just recomputed the percentage itself without the
+  // same guard instead of using that already-correct value.
+  const pct = expected > 0 ? Math.round((hit / expected) * 100) : 100;
   return (
     <div style={{ textAlign: "center" }}>
       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: T.medsBlue }}>{hit}/{expected}</div>

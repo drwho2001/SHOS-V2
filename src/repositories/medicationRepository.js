@@ -141,6 +141,13 @@ let seedMedications = [
     name: "Testosterone (Sustanon)",
     unit: "injection",
     usagePattern: "custom",
+    // FIXED 10 Sep 2026 — real bug found in a live notification-timing
+    // audit: this record's own comment says "biweekly" but never
+    // actually set scheduleIntervalDays, the field every custom-
+    // schedule calculation (adherence, streak, and now reminders) keys
+    // off — effectiveDoseIntervalHours() silently returned null for
+    // this medication, so none of that math ever worked for it.
+    scheduleIntervalDays: 14,
     dosesPerDay: null,
     unitsPerDose: 1,
     inventoryTracked: true,

@@ -11,11 +11,19 @@
 // notificationService.js, this file is the one place that reads real
 // data and decides what to actually schedule.
 //
-// SCOPE: based on daily-pattern medications only, per the user's explicit
-// "base it on daily meds" — PRN and custom-interval medications are
-// not part of this reminder system (PRN has no fixed due time to
-// remind about; custom-interval could be added later the same way if
-// wanted, not done here).
+// SCOPE: originally daily-pattern medications only, per the user's
+// explicit "base it on daily meds" (26 Aug 2026) — PRN was excluded
+// because it has no fixed due time to remind about at all, which still
+// holds. Custom-interval (every-N-days) medications were excluded then
+// as a scope cut, not a limitation — medicationCalculations.js's own
+// isDoseLockedOut()/lockoutEndsAt() already computed a real interval
+// for them via effectiveDoseIntervalHours() the whole time, this file
+// just never asked. EXTENDED 10 Sep 2026, a real live-audit finding:
+// the seed data has an actual every-14-days medication (Testosterone),
+// which was silently getting zero reminder coverage — now included on
+// exactly the same Take/Skip/Snooze machinery as daily meds, no new
+// code paths needed since the calculation layer already treated both
+// uniformly.
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { MedicationPreferencesRepository, isSkippedToday, isDoseSnoozed } from "../repositories/medicationPreferencesRepository";
 import { LogRepository } from "../repositories/logRepository";
@@ -30,7 +38,9 @@ import { nowAsStoredDateTime } from "./dateInputHelpers";
 // reminder notifications are scheduled from, so the two can never
 // disagree with each other.
 export async function getDailyMedsState() {
-  const meds = (await MedicationRepository.getAll()).filter((m) => !m.isArchived && m.usagePattern === "daily");
+  const meds = (await MedicationRepository.getAll()).filter((m) =>
+    !m.isArchived && (m.usagePattern === "daily" || (m.usagePattern === "custom" && m.scheduleIntervalDays))
+  );
   const prefs = await MedicationPreferencesRepository.getPreferences();
 
   const due = [];
