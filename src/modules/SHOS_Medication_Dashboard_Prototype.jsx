@@ -42,7 +42,7 @@ import { MyProfileRepository } from "../repositories/myProfileRepository";
 // genuinely hand-tuned per-value for dark-surface contrast/design
 // intent, not derivable from LIGHT's tokens (fabBg/fabIcon are a
 // deliberate light-on-dark inversion, not an accent at all).
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 
 const LIGHT = {
   // bg deepened from #FAFAFA — at that value it was nearly indistinguishable from surface (#FFFFFF),
@@ -50,6 +50,9 @@ const LIGHT = {
   // shifted slightly to stay a distinct third tone rather than collapsing into the new bg.
   ...NEUTRAL,
   medsBlue: ACCENTS.medication, actionRed: ACTION.red, actionGreen: ACTION.green,
+  // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker
+  // stand-ins for actionRed/actionGreen-as-text-on-its-own-tint only.
+  actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
   // Doc 2's Platforms gold (#E8A400) is tuned as a chip *fill* with dark text — used directly as
   // *text* on a light background it fails contrast (~2.1:1, needs 4.5:1). This is a separate,
   // darker gold specifically for foreground/text use — see Doc 5 §5 note on the Inventory status line.
@@ -80,6 +83,9 @@ const DARK = {
   // silently ignoring it. See designTokens.js's own comment for the
   // full reasoning.
   medsBlue: resolveDarkAccent("medication", ACCENTS.medication, "#5B85F5"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+  // Dark mode's resolved actionRed/actionGreen already have real
+  // headroom against a near-black background — reuse as-is.
+  actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
   goldText: "#FFD666", // dark mode's existing Platforms-gold dark accent already contrasts fine as text here
   // CHANGED — real gap found by the user: fabBg/fabIcon were a
   // deliberate light-on-dark inversion (a near-white circle, dark
@@ -1856,7 +1862,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
         {allergies.length > 0 && (
           <div style={{ margin: "12px 16px 12px", padding: "10px 14px", borderRadius: radius.md, background: `${T.actionRed}14`, border: `1px solid ${T.actionRed}40`, display: "flex", alignItems: "center", gap: 8 }}>
             <AlertTriangle size={15} color={T.actionRed} style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: T.actionRed, fontWeight: 600 }}>Allergies: {allergies.join(", ")}</span>
+            <span style={{ fontSize: 12, color: T.actionRedText, fontWeight: 600 }}>Allergies: {allergies.join(", ")}</span>
           </div>
         )}
 

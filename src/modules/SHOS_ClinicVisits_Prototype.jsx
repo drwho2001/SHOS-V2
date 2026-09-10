@@ -43,7 +43,7 @@ import { syncClinicVisitsToCalendar } from "../storage/calendarSyncService";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // Same Healthcare blue + font conventions as Testing — applied from
@@ -51,6 +51,9 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 const LIGHT = {
   ...NEUTRAL,
   healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
+  // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker
+  // stand-ins for actionRed/actionGreen-as-text-on-its-own-tint only.
+  actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
 };
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
 // for the full reasoning (same pattern, reused everywhere). CHANGED —
@@ -60,6 +63,9 @@ const LIGHT = {
 const DARK = {
   ...NEUTRAL_DARK,
   healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+  // Dark mode's resolved actionRed/actionGreen already have real
+  // headroom against a near-black background — reuse as-is.
+  actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
 };
 const radius = RADIUS;
 
@@ -659,7 +665,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
       </div>
 
       {draftRestored && (
-        <div style={{ margin: "10px 16px 0", fontSize: 11, color: T.actionGreen, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px" }}>
+        <div style={{ margin: "10px 16px 0", fontSize: 11, color: T.actionGreenText, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px" }}>
           Restored unsaved changes from earlier.
         </div>
       )}
@@ -755,7 +761,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
                   const isPrimary = form.primaryReasonSymptomLogId === id;
                   return (
                     <div key={id} onClick={() => set("primaryReasonSymptomLogId")(isPrimary ? "" : id)}
-                      style={{ padding: "4px 9px", borderRadius: radius.full, fontSize: 11, fontWeight: isPrimary ? 700 : 400, cursor: "pointer", border: `1px solid ${isPrimary ? T.actionRed : T.border}`, color: isPrimary ? T.actionRed : T.textSecondary, background: isPrimary ? `${T.actionRed}12` : "transparent" }}>
+                      style={{ padding: "4px 9px", borderRadius: radius.full, fontSize: 11, fontWeight: isPrimary ? 700 : 400, cursor: "pointer", border: `1px solid ${isPrimary ? T.actionRed : T.border}`, color: isPrimary ? T.actionRedText : T.textSecondary, background: isPrimary ? `${T.actionRed}12` : "transparent" }}>
                       {s?.name || "Entry"}{isPrimary ? " ★" : ""}
                     </div>
                   );

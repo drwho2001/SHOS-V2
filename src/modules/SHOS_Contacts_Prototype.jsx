@@ -96,13 +96,20 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 const LIGHT = {
   ...NEUTRAL,
   contactsTeal: ACCENTS.contacts, actionRed: ACTION.red, actionGreen: ACTION.green,
+  // ADDED 10 Sep 2026 — real accessibility fix: darker stand-ins used
+  // ONLY where the accent is literal text colour sitting on its own
+  // light self-tint background (e.g. active filter chips, status
+  // badges) — see designTokens.js's own comment on ACCENT_TEXT_SAFE/
+  // ACTION_TEXT_SAFE for why this isn't just contactsTeal/actionRed/
+  // actionGreen redefined outright.
+  contactsTealText: ACCENT_TEXT_SAFE.contacts, actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
   navActive: ACCENTS.contacts, fabBg: ACCENTS.contacts, fabIcon: "#FFFFFF",
 };
 // Dark mode, built on Medication's own DARK object (the reference
@@ -120,6 +127,11 @@ const DARK = {
   // keeps today's exact behaviour by default, only brightening once a
   // real override exists — see designTokens.js's own comment.
   contactsTeal: resolveDarkAccent("contacts", ACCENTS.contacts), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+  // Dark mode's own resolved accents already read fine against a
+  // near-black background (real headroom, not just barely-passing) —
+  // no separate darker text variant needed there, so these just reuse
+  // the same values as above.
+  contactsTealText: resolveDarkAccent("contacts", ACCENTS.contacts), actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
   navActive: ACCENTS.contacts, fabBg: ACCENTS.contacts, fabIcon: "#FFFFFF",
 };
 const radius = RADIUS;
@@ -312,7 +324,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
           </label>
         </SectionCard>
         {status && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: radius.sm, marginTop: 14, background: status.ok ? `${T.actionGreen}15` : `${T.actionRed}15`, color: status.ok ? T.actionGreen : T.actionRed, fontSize: 13 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: radius.sm, marginTop: 14, background: status.ok ? `${T.actionGreen}15` : `${T.actionRed}15`, color: status.ok ? T.actionGreenText : T.actionRedText, fontSize: 13 }}>
             {status.ok ? <Check size={16} /> : <X size={16} />}
             {status.msg}
           </div>
@@ -565,7 +577,7 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew, listNa
           return (
             <div key={opt} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt); } }}
-              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTeal : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>
+              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>
               {opt}
             </div>
           );
@@ -665,7 +677,7 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.contactsTeal}15`, border: `1px solid ${T.contactsTeal}`, marginBottom: 6, fontSize: 12 }}>
           <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}"? You typed "{pendingSuggestion.typedAs}".</span>
           <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { tapSuggestion(pendingSuggestion.suggestion); setPendingSuggestion(null); }}
-            style={{ fontWeight: 700, color: T.contactsTeal, cursor: "pointer" }}>Yes, use it</div>
+            style={{ fontWeight: 700, color: T.contactsTealText, cursor: "pointer" }}>Yes, use it</div>
           <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { if (!value.includes(pendingSuggestion.typedAs)) onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
             style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
         </div>
@@ -1090,7 +1102,7 @@ function AutoDetectedMethods({ contact, T }) {
       <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 6 }}>Already covered, from the fields above:</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {detected.map((m) => (
-          <span key={m} style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: `${T.contactsTeal}15`, color: T.contactsTeal, fontWeight: 600 }}>{m}</span>
+          <span key={m} style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: `${T.contactsTeal}15`, color: T.contactsTealText, fontWeight: 600 }}>{m}</span>
         ))}
       </div>
     </div>
@@ -1146,7 +1158,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
           {DAYS_OF_WEEK.map((day) => (
             <div key={day} onClick={() => toggleDay(day)}
-              style={{ width: 34, height: 28, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: radius.sm, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${draft.days.includes(day) ? T.contactsTeal : T.border}`, color: draft.days.includes(day) ? T.contactsTeal : T.textSecondary, background: draft.days.includes(day) ? `${T.contactsTeal}15` : T.surface }}>
+              style={{ width: 34, height: 28, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: radius.sm, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${draft.days.includes(day) ? T.contactsTeal : T.border}`, color: draft.days.includes(day) ? T.contactsTealText : T.textSecondary, background: draft.days.includes(day) ? `${T.contactsTeal}15` : T.surface }}>
               {day}
             </div>
           ))}
@@ -1439,7 +1451,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
       {contact.relationshipType.length > 0 && (
         <div style={{ display: "flex", gap: 4, marginLeft: 16, marginTop: 4, flexWrap: "wrap" }}>
           {contact.relationshipType.map((rt) => (
-            <span key={rt} style={{ fontSize: 10, fontWeight: 600, color: T.contactsTeal, background: `${T.contactsTeal}15`, borderRadius: radius.full, padding: "2px 8px" }}>{rt}</span>
+            <span key={rt} style={{ fontSize: 10, fontWeight: 600, color: T.contactsTealText, background: `${T.contactsTeal}15`, borderRadius: radius.full, padding: "2px 8px" }}>{rt}</span>
           ))}
         </div>
       )}
@@ -1588,7 +1600,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         {draftRestored && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, margin: "0 20px 8px", fontSize: 11, color: T.actionGreen, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, margin: "0 20px 8px", fontSize: 11, color: T.actionGreenText, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px", flexShrink: 0 }}>
             <span>Restored unsaved changes from earlier.</span>
             {/* ADDED 19 Aug 2026 — the user's ask: a way to discard a
                 restored draft and start clean instead of continuing it. */}
@@ -1948,7 +1960,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
         <div style={{ margin: "0 16px 12px", padding: 12, borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, background: `${T.actionRed}15`, display: "flex", gap: 8, alignItems: "flex-start" }}>
           <AlertTriangle size={16} color={T.actionRed} style={{ flexShrink: 0, marginTop: 1 }} />
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: T.actionRed }}>Marked: don't meet again</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.actionRedText }}>Marked: don't meet again</div>
             {contact.dontMeetAgainReason && <div style={{ fontSize: 12, color: T.textPrimary, marginTop: 2 }}>{contact.dontMeetAgainReason}</div>}
           </div>
         </div>
@@ -2494,7 +2506,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               const active = filterRoles.includes(r);
               return (
                 <div key={r} onClick={() => setFilterRoles((f) => active ? f.filter((x) => x !== r) : [...f, r])}
-                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTeal : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>
+                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>
                   {r}
                 </div>
               );
@@ -2506,7 +2518,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               const active = filterPositions.includes(p);
               return (
                 <div key={p} onClick={() => setFilterPositions((f) => active ? f.filter((x) => x !== p) : [...f, p])}
-                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTeal : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>
+                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>
                   {p}
                 </div>
               );
@@ -2520,14 +2532,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               const active = filterHosts.includes(h);
               return (
                 <div key={h} onClick={() => setFilterHosts((f) => active ? f.filter((x) => x !== h) : [...f, h])}
-                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTeal : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>
+                  style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>
                   {h}
                 </div>
               );
             })}
           </div>
           <div onClick={() => setFilterDrives((d) => !d)}
-            style={{ display: "inline-flex", padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", marginBottom: 6, border: `1px solid ${filterDrives ? T.contactsTeal : T.border}`, color: filterDrives ? T.contactsTeal : T.textSecondary, background: filterDrives ? `${T.contactsTeal}15` : "transparent" }}>
+            style={{ display: "inline-flex", padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", marginBottom: 6, border: `1px solid ${filterDrives ? T.contactsTeal : T.border}`, color: filterDrives ? T.contactsTealText : T.textSecondary, background: filterDrives ? `${T.contactsTeal}15` : "transparent" }}>
             Drives
           </div>
           {activeFilterCount > 0 && (

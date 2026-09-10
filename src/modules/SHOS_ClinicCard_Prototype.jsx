@@ -23,13 +23,16 @@ import { PregnancyRepository } from "../repositories/pregnancyRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 const LIGHT = {
   ...NEUTRAL,
   healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red,
+  // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker stand-in
+  // for actionRed-as-text-on-its-own-tint only (the allergy chips).
+  actionRedText: ACTION_TEXT_SAFE.red,
 };
 // CHANGED — real architecture fix, same as Contacts' own comment:
 // resolveDarkAccent() keeps today's exact behaviour by default, only
@@ -37,6 +40,8 @@ const LIGHT = {
 const DARK = {
   ...NEUTRAL_DARK,
   healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
+  // Dark mode's resolved actionRed already has real headroom — reuse.
+  actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
 };
 
 // ADDED 19 Aug 2026 — Clinic Card. Real feature set built out over
@@ -472,7 +477,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         ) : (
           <div style={{ padding: "12px 14px", display: "flex", flexWrap: "wrap", gap: 6 }}>
             {profile.allergies.map((a) => (
-              <span key={a} style={{ fontSize: 12, fontWeight: 700, color: T.actionRed, background: `${T.actionRed}1A`, padding: "4px 10px", borderRadius: 999 }}>{a}</span>
+              <span key={a} style={{ fontSize: 12, fontWeight: 700, color: T.actionRedText, background: `${T.actionRed}1A`, padding: "4px 10px", borderRadius: 999 }}>{a}</span>
             ))}
           </div>
         )}

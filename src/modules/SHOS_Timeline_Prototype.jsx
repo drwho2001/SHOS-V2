@@ -16,7 +16,7 @@ import { getEncounterCoverage } from "../calculations/exposureWindows";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 
@@ -28,6 +28,9 @@ import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 const LIGHT = {
   ...NEUTRAL,
   healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
+  // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker
+  // stand-ins for actionRed/actionGreen-as-text-on-its-own-tint only.
+  actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
 };
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
 // for the full reasoning.
@@ -37,6 +40,9 @@ const LIGHT = {
 const DARK = {
   ...NEUTRAL_DARK,
   healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+  // Dark mode's resolved actionRed/actionGreen already have real
+  // headroom against a near-black background — reuse as-is.
+  actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
 };
 const radius = RADIUS;
 
@@ -213,7 +219,7 @@ function LinkedItemsSection({ label, linkedIds, onChange, candidates, nameFor, T
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {linkedIds.map((id) => (
             <div key={id} onClick={() => onChange(linkedIds.filter((v) => v !== id))}
-              style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: alertIds.includes(id) ? `${T.actionRed}18` : T.surfaceVariant, color: alertIds.includes(id) ? T.actionRed : T.textPrimary, fontWeight: alertIds.includes(id) ? 700 : 400, cursor: "pointer" }}>
+              style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: alertIds.includes(id) ? `${T.actionRed}18` : T.surfaceVariant, color: alertIds.includes(id) ? T.actionRedText : T.textPrimary, fontWeight: alertIds.includes(id) ? 700 : 400, cursor: "pointer" }}>
               {nameFor(id)} ✕
             </div>
           ))}
@@ -478,7 +484,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
         </div>
       </div>
       {episode.isArchived && (
-        <div style={{ margin: "0 16px 4px", background: `${T.actionRed}15`, border: `1px solid ${T.actionRed}`, borderRadius: radius.sm, padding: 10, fontSize: 12, color: T.actionRed }}>
+        <div style={{ margin: "0 16px 4px", background: `${T.actionRed}15`, border: `1px solid ${T.actionRed}`, borderRadius: radius.sm, padding: 10, fontSize: 12, color: T.actionRedText }}>
           This episode is archived.
         </div>
       )}

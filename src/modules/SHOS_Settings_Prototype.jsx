@@ -41,7 +41,7 @@ import {
 // object, but only NEUTRAL_DARK was ever imported — a real
 // ReferenceError, only thrown once the `darkMode ? DARK : NEUTRAL`
 // ternary actually evaluated the NEUTRAL branch, i.e. in light mode.
-import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { ACCENTS, ACTION, ACTION_TEXT_SAFE, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { ModuleColorRepository, CUSTOMIZABLE_MODULE_KEYS, CUSTOMIZABLE_ACTION_KEYS } from "../repositories/moduleColorRepository";
 import { computeAdherence } from "../calculations/medicationCalculations";
 import { isQualifyingEncounter, DOXYPEP_WINDOW_HOURS, findDoxyPepMedication } from "../calculations/doxyPepCalculations";
@@ -762,7 +762,13 @@ function DeveloperToolsScreen({ onClose }) {
             {unbackedChanges && (
               <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12, padding: "10px 12px", borderRadius: 10, background: `${ACTION.red}15`, border: `1px solid ${ACTION.red}` }}>
                 <AlertTriangle size={14} color={ACTION.red} style={{ flexShrink: 0, marginTop: 2 }} />
-                <div style={{ fontSize: 12, color: ACTION.red, fontWeight: 600 }}>You have changes since your last backup that would be lost. Export a backup before continuing.</div>
+                {/* ADDED 10 Sep 2026 — real accessibility fix: ACTION.red
+                    as text on its own `${ACTION.red}15` tint (2 lines up)
+                    fails 4.5:1 — see designTokens.js's own comment on
+                    ACTION_TEXT_SAFE. Dark mode's resolved red already
+                    has headroom, so only light mode swaps to the darker
+                    stand-in. */}
+                <div style={{ fontSize: 12, color: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION_TEXT_SAFE.red, fontWeight: 600 }}>You have changes since your last backup that would be lost. Export a backup before continuing.</div>
               </div>
             )}
             <div style={{ display: "flex", gap: 8 }}>

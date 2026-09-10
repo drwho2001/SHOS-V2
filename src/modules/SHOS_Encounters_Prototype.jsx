@@ -60,12 +60,16 @@ import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../reposito
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const LIGHT = {
   ...NEUTRAL,
   encountersPink: ACCENTS.encounters, actionRed: ACTION.red, actionGreen: ACTION.green,
+  // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker stand-ins
+  // for actionRed/actionGreen-as-text-on-its-own-tint only (encountersPink
+  // already clears 4.5:1 in that pattern and needs no variant).
+  actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
   navActive: ACCENTS.encounters, fabBg: ACCENTS.encounters, fabIcon: "#FFFFFF",
 };
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
@@ -88,6 +92,10 @@ const DARK = {
   ...NEUTRAL_DARK,
   encountersPink: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"),
   actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+  // Dark mode's resolved actionRed/actionGreen already have real
+  // headroom against a near-black background — no separate darker text
+  // variant needed, so these just reuse the same values as above.
+  actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
   navActive: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"), fabBg: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"), fabIcon: "#FFFFFF",
 };
 const radius = RADIUS;
@@ -1293,7 +1301,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
 
       <div style={{ padding: "0 16px" }}>
         {encounter.isArchived && (
-          <div style={{ background: `${T.actionRed}15`, border: `1px solid ${T.actionRed}`, borderRadius: radius.sm, padding: 10, fontSize: 12, color: T.actionRed, marginBottom: 4 }}>
+          <div style={{ background: `${T.actionRed}15`, border: `1px solid ${T.actionRed}`, borderRadius: radius.sm, padding: 10, fontSize: 12, color: T.actionRedText, marginBottom: 4 }}>
             This encounter is archived.
           </div>
         )}
@@ -1493,7 +1501,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
       </div>
 
       {draftRestored && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, margin: "10px 16px 0", fontSize: 11, color: T.actionGreen, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, margin: "10px 16px 0", fontSize: 11, color: T.actionGreenText, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px" }}>
           <span>Restored unsaved changes from earlier.</span>
           {/* ADDED 19 Aug 2026 — same "discard and start clean" option
               Contacts got, same reasoning. */}

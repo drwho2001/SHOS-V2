@@ -213,6 +213,48 @@ export const ACTION = {
   gold: "#B45309",
 };
 
+// ADDED 10 Sep 2026 — real Known Issues follow-up: "every module's own
+// accent colour used as text on a light self-tint of itself" (badges/
+// chips like `color: T.contactsTeal, background: \`${T.contactsTeal}15\``)
+// was flagged as needing each of the ~10 module/status accents checked
+// individually before any got darkened, not a single-module fix. Did
+// that check for real, by hand-computing the exact WCAG relative-
+// luminance contrast ratio (the same formula axe-core itself uses) for
+// every accent against its own tint at every alpha value actually used
+// in the codebase (checked via grep, not guessed): only 4 real sites
+// exist where an accent is literally the TEXT colour sitting on its own
+// tinted background — contacts, home, ACTION.red, ACTION.green.
+// menstrual/kink/protection were checked too (all would also fail) but
+// have zero real occurrences of this specific pattern anywhere in the
+// app today, so there's nothing to fix for them. encounters/healthcare/
+// medication already clear 4.5:1 comfortably and are untouched.
+// Deliberately NOT darkening the base ACCENTS/ACTION exports themselves
+// — they're reused everywhere else in the app (filled buttons with
+// white text, borders, icons, tab highlights) where they already read
+// correctly, and ACTION.red/green specifically were already hand-tuned
+// for a DIFFERENT goal (equal perceived vividness between the two, see
+// that block's own comment above) that a global hue/lightness change
+// could quietly undo. Same principle already used once this session for
+// Contacts' "Incomplete" badge (#9A6700 → #926100, a standalone colour,
+// not a change to ACCENTS.contacts) — these are darker STAND-INS, swapped
+// in only at the confirmed text-on-self-tint sites, leaving every other
+// use of the base accent (and dark mode, which already resolves through
+// resolveDarkAccent to a much lighter value with plenty of headroom on a
+// near-black background) completely alone. Deliberately not override-
+// aware like ACCENTS/ACTION are — if a user later customises
+// ACCENTS.contacts via the Design screen, that custom colour's own
+// contrast at this pattern is a fresh question the existing Design
+// screen doesn't otherwise police either; out of scope here, which is
+// fixing the shipped defaults, not building a general contrast checker.
+export const ACCENT_TEXT_SAFE = {
+  contacts: "#9D5604",
+  home: "#007373",
+};
+export const ACTION_TEXT_SAFE = {
+  red: "#C52626",
+  green: "#11781A",
+};
+
 // ADDED — Phase 3 (Sep 2026): the real replacement for the old
 // getOverridesSync() bypass — see ACCENTS' own comment above for the
 // full reasoning. Called exactly once, from App.jsx's `bootReady`

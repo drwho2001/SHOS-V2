@@ -56,7 +56,7 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 // ADDED 19 Aug 2026 — Healthcare blue (#4A80F0), per Doc 2's design
@@ -68,6 +68,9 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 const LIGHT = {
   ...NEUTRAL,
   healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
+  // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker
+  // stand-ins for actionRed/actionGreen-as-text-on-its-own-tint only.
+  actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
   navActive: ACCENTS.healthcare,
 };
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
@@ -78,6 +81,9 @@ const LIGHT = {
 const DARK = {
   ...NEUTRAL_DARK,
   healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+  // Dark mode's resolved actionRed/actionGreen already have real
+  // headroom against a near-black background — reuse as-is.
+  actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
   navActive: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"),
 };
 const radius = RADIUS;
@@ -670,7 +676,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
       </div>
 
       {draftRestored && (
-        <div style={{ margin: "10px 16px 0", fontSize: 11, color: T.actionGreen, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px" }}>
+        <div style={{ margin: "10px 16px 0", fontSize: 11, color: T.actionGreenText, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px" }}>
           Restored unsaved changes from earlier.
         </div>
       )}

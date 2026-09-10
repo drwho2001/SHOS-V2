@@ -3163,31 +3163,25 @@ this date; summarized here for durability.
   real shared UI component — used everywhere, keeping each module's own
   accent colour on the card's left stripe/Cancel button while the
   danger cues (border/background/confirm button) always stay red.
-- **Accessibility — first real pass done 10 Sep 2026 (see "Recently
-  shipped" below for the fixes that shipped), two genuine findings
-  deliberately deferred, not silently skipped.** An automated
-  `axe-core` scan (never done systematically before this) found and
-  fixed two real contrast bugs and added a `<main>` landmark + real
-  `<h1>` screen titles on the 6 primary screens. What's still real,
-  not-yet-done work: (1) a much larger `scrollable-region-focusable`
-  gap — the `position: fixed; inset: 0; overflow-y: auto` shape used
-  for nearly every full-screen overlay app-wide has no `tabIndex`, so
-  a keyboard-only user may not be able to scroll most screens past
-  what's initially visible at all (native Space/PageDown scrolling
-  only reaches a nested `overflow:auto` div once something inside it
-  already has focus) — needs a real design-system fix (likely one
-  shared `<ScrollableScreen>` wrapper every overlay adopts), not a
-  narrow per-file patch. (2) Every module's own accent colour used as
-  text-on-a-light-self-tint for badges/chips (40 sites across 11
-  files, e.g. `${T.contactsTeal}15` backgrounds) — Contacts' own
-  version of this pattern measured ~4:1, just under WCAG AA's 4.5:1 —
-  needs each of the ~10 module accent colours checked individually
-  against this same pattern before any of them get darkened, not a
-  single-module fix. Also out of scope for this pass entirely: a real
-  screen-reader walkthrough (axe catches structural/contrast issues,
-  not actual reading-order/announcement quality), and the broader
-  `region`-landmark finding (every screen's own content not wrapped in
-  semantic regions) — both genuinely bigger, separate undertakings.
+- **Accessibility — first real pass done 10 Sep 2026, module-accent
+  contrast sweep RESOLVED the same day (see "Recently shipped" below
+  for both).** An automated `axe-core` scan (never done systematically
+  before this) found and fixed two real contrast bugs and added a
+  `<main>` landmark + real `<h1>` screen titles on the 6 primary
+  screens. What's still real, not-yet-done work: a much larger
+  `scrollable-region-focusable` gap — the `position: fixed; inset: 0;
+  overflow-y: auto` shape used for nearly every full-screen overlay
+  app-wide has no `tabIndex`, so a keyboard-only user may not be able
+  to scroll most screens past what's initially visible at all (native
+  Space/PageDown scrolling only reaches a nested `overflow:auto` div
+  once something inside it already has focus) — needs a real
+  design-system fix (likely one shared `<ScrollableScreen>` wrapper
+  every overlay adopts), not a narrow per-file patch. Also out of scope
+  entirely: a real screen-reader walkthrough (axe catches structural/
+  contrast issues, not actual reading-order/announcement quality), and
+  the broader `region`-landmark finding (every screen's own content not
+  wrapped in semantic regions) — both genuinely bigger, separate
+  undertakings.
 - **Spacing consistency — audited 10 Sep 2026, clean result, not a
   gap anymore.** The real live report that started this (Contacts'
   "N active" count sitting flush against the header banner's bottom
@@ -3218,6 +3212,81 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (10 Sep 2026, module-accent-colour contrast sweep)
+
+Real ask: continue through the deferred backlog — picked the module-
+accent-colour contrast sweep, the more bounded of the two remaining
+accessibility items (the other, `scrollable-region-focusable`, needs a
+new shared wrapper component across dozens of files — a bigger,
+separate undertaking, still open).
+
+Checked all ~10 module/status accent colours individually against the
+"text-on-a-light-self-tint-of-itself" pattern the Known Issues entry
+called for, by hand-computing the exact WCAG relative-luminance
+contrast ratio (the same formula `axe-core` itself uses) at every real
+tint alpha value actually used in the codebase (found via a full grep
+of `${T.xxx}NN`-shaped background tints across `src/modules/`, cross-
+checked against a live `axe-core` scan of every reachable primary
+screen — which came back clean on this specific pattern only because
+the failing states are conditional, e.g. an "active" filter chip axe
+never saw toggled on; the math is what actually found the real sites).
+
+**Real result: 4 of the ~10 accents genuinely fail 4.5:1 in this exact
+pattern, at every alpha actually used — contacts (`#B36205`), home
+(`#008585`), `ACTION.red` (`#D93838`), `ACTION.green` (`#148A1E`).**
+menstrual/kink/protection were also checked and would also fail, but
+have zero real occurrences of this specific pattern anywhere in the
+app today — nothing to fix for them. encounters/healthcare/medication
+already clear 4.5:1 comfortably (6.4:1-9.8:1 depending on alpha) and
+needed no change.
+
+**Deliberately did NOT darken the base `ACCENTS`/`ACTION` exports
+themselves** — they're reused everywhere else in the app (filled
+buttons with white text, borders, icons, tab highlights) where they
+already read correctly, and `ACTION.red`/`ACTION.green` specifically
+were already hand-tuned for a different goal (equal perceived
+vividness between the two — see that block's own comment in
+`designTokens.js`) that a global hue/lightness change could quietly
+undo. Same principle already used once this session for Contacts' own
+"Incomplete" badge fix (`#9A6700` → `#926100`, a standalone colour, not
+a change to `ACCENTS.contacts`): new `ACCENT_TEXT_SAFE`/
+`ACTION_TEXT_SAFE` darker stand-ins added to `designTokens.js`,
+computed to clear 4.5:1 with real margin (≥4.9:1) even at the worst-case
+alpha actually paired with text anywhere in the app, swapped in ONLY at
+the confirmed text-on-self-tint sites' `color:` property — background,
+border, and every other use of the base accent (icons, filled buttons,
+tab pills) left completely untouched. Dark mode needed no separate
+variant — its own `resolveDarkAccent()`-resolved values already have
+real contrast headroom against a near-black surface, confirmed by the
+same math, not assumed.
+
+14 real sites fixed across 10 files (`SHOS_Contacts_Prototype.jsx` ×10,
+`SHOS_MyProfile_Prototype.jsx` ×3, `SHOS_Home_Prototype.jsx` ×1 — the
+"Update available" link, `SHOS_Encounters_Prototype.jsx` ×2,
+`SHOS_Testing_Prototype.jsx` ×1, `SHOS_ClinicVisits_Prototype.jsx` ×2,
+`SHOS_Timeline_Prototype.jsx` ×2, `SHOS_Medication_Dashboard_Prototype.jsx`
+×1 — the allergies banner, `SHOS_ClinicCard_Prototype.jsx` ×1 — the
+allergy chips, `SHOS_Settings_Prototype.jsx` ×1 — the unbacked-changes
+warning). Every site was individually confirmed as a genuine
+text-color-on-its-own-tint pairing (not just border/background alone)
+before touching it — several `${T.contactsTeal}15`-alpha grep hits
+turned out to be border-only or a different, plain-background chip
+(Contacts' own separate "A–Z/Newest/Last encounter" sort-by row, e.g.,
+uses `T.contactsTeal` as text on a PLAIN background, not a self-tint —
+correctly left alone, a different pattern/known issue if any, not this
+one) — caught by reading surrounding JSX context for each hit, not
+assumed from the grep alone.
+
+Verified live via Playwright against the real rendered pixels, not
+just the math: read the actual computed `color`/`background-color` off
+Contacts' own real "Partner" relationship badge after the fix
+(`rgb(157, 86, 4)` text on `rgba(179, 98, 5, 0.082)` background) and
+re-derived the contrast ratio from those exact live values — 5.03:1,
+up from the pre-fix 4.05:1, confirming the fix actually reaches the
+rendered DOM, not just the source. Full build, `npx eslint .` clean,
+and all 15 smoke-test flows pass against a real `vite preview`
+production build.
 
 ## Recently shipped (10 Sep 2026, spacing consistency audit)
 

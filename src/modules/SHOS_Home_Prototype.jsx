@@ -8,7 +8,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // every line of actual behavior below is unchanged from what was
 // working in App.jsx; only the file it lives in has changed.
 import React, { useState, useEffect } from "react";
-import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE, deriveLightAccent, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, ACCENTS, ACTION, ACCENT_TEXT_SAFE, RADIUS, TYPE, deriveLightAccent, resolveDarkAccent } from "../calculations/designTokens";
 // CHANGED 2 Sep 2026 — real ask: "no hardcoded hexes" (medication blue
 // specifically), then a follow-up real ask: "meds blue on recent
 // activity looks awry — might match period colour." Root cause found:
@@ -145,6 +145,11 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   const actionRedColor = darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red;
   const actionGreenColor = darkMode ? resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4") : ACTION.green;
   const homeColor = darkMode ? resolveDarkAccent("home", ACCENTS.home) : ACCENTS.home;
+  // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: a darker
+  // stand-in used only where homeColor is literal text sitting on its
+  // own light self-tint background (the "Update available" link) — dark
+  // mode's resolved value already has headroom, so it's untouched.
+  const homeColorText = darkMode ? homeColor : ACCENT_TEXT_SAFE.home;
   // ADDED 2 Sep 2026 — real ask: Menstrual's own colour, not ACTION.red
   // borrowed for module identity — see designTokens.js's comment.
   const menstrualColor = darkMode ? resolveDarkAccent("menstrual", ACCENTS.menstrual) : ACCENTS.menstrual;
@@ -900,7 +905,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         <a href={RELEASE_APK_URL} target="_blank" rel="noreferrer"
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}40`, background: darkMode ? DARK.surface : `${homeColor}10`, textDecoration: "none" }}>
           <Download size={15} color={homeColor} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: homeColor }}>Update available ({updateInfo.latestSha}) — tap to download</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: homeColorText }}>Update available ({updateInfo.latestSha}) — tap to download</span>
         </a>
       )}
 

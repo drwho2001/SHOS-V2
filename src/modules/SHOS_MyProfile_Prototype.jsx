@@ -72,12 +72,15 @@ import { ContraceptionRepository } from "../repositories/contraceptionRepository
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
 const LIGHT = {
   ...NEUTRAL,
   contactsTeal: ACCENTS.contacts, actionRed: ACTION.red, actionGreen: ACTION.green,
+  // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker stand-ins
+  // for the accent-as-text-on-its-own-tint pattern only, not a redefine.
+  contactsTealText: ACCENT_TEXT_SAFE.contacts, actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
   navActive: ACCENTS.contacts, fabBg: NEUTRAL.textPrimary, fabIcon: NEUTRAL.surface,
 };
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
@@ -90,6 +93,10 @@ const DARK = {
   // resolveDarkAccent() keeps today's exact behaviour by default, only
   // brightening once a real colour override exists.
   contactsTeal: resolveDarkAccent("contacts", ACCENTS.contacts), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+  // Dark mode's resolved accents already have real contrast headroom
+  // against a near-black background — no separate darker text variant
+  // needed, so these just reuse the same values as above.
+  contactsTealText: resolveDarkAccent("contacts", ACCENTS.contacts), actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
   navActive: ACCENTS.contacts, fabBg: NEUTRAL_DARK.textPrimary, fabIcon: NEUTRAL_DARK.surface,
 };
 const radius = RADIUS;
@@ -394,7 +401,7 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew }) {
           return (
             <div key={opt} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt); } }}
-              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTeal : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>
+              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>
               {opt}
             </div>
           );
@@ -489,7 +496,7 @@ function TagInput({ label, value, onChange, T, placeholder }) {
       {pendingSuggestion && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.contactsTeal}15`, border: `1px solid ${T.contactsTeal}`, marginBottom: 6, fontSize: 12 }}>
           <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}" — already on this list? You typed "{pendingSuggestion.typedAs}".</span>
-          <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => setPendingSuggestion(null)} style={{ fontWeight: 700, color: T.contactsTeal, cursor: "pointer" }}>OK, skip it</div>
+          <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => setPendingSuggestion(null)} style={{ fontWeight: 700, color: T.contactsTealText, cursor: "pointer" }}>OK, skip it</div>
           <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
             style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
         </div>
@@ -793,7 +800,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
           {DAYS_OF_WEEK.map((d) => (
             <div key={d} onClick={() => toggleDay(d)}
-              style={{ width: 32, height: 32, borderRadius: radius.full, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${draft.days.includes(d) ? T.contactsTeal : T.border}`, color: draft.days.includes(d) ? T.contactsTeal : T.textSecondary, background: draft.days.includes(d) ? `${T.contactsTeal}15` : "transparent" }}>
+              style={{ width: 32, height: 32, borderRadius: radius.full, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${draft.days.includes(d) ? T.contactsTeal : T.border}`, color: draft.days.includes(d) ? T.contactsTealText : T.textSecondary, background: draft.days.includes(d) ? `${T.contactsTeal}15` : "transparent" }}>
               {d}
             </div>
           ))}
@@ -1287,7 +1294,7 @@ function ShareProfilePanel({ T }) {
         </div>
       </div>
       {status && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 14px", borderRadius: radius.sm, marginTop: 10, background: status.ok ? `${T.actionGreen}15` : `${T.actionRed}15`, color: status.ok ? T.actionGreen : T.actionRed, fontSize: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 14px", borderRadius: radius.sm, marginTop: 10, background: status.ok ? `${T.actionGreen}15` : `${T.actionRed}15`, color: status.ok ? T.actionGreenText : T.actionRedText, fontSize: 12 }}>
           {status.ok ? <Check size={14} /> : <X size={14} />}
           {status.msg}
         </div>
