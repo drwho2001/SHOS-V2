@@ -121,7 +121,7 @@ async function goHomeThenOpenSettings(page) {
 }
 
 async function testMedicationReasonSideEffects(page) {
-  console.log("\n[1/14] Medication log — Reason/Side effects (added 1 Sep 2026)");
+  console.log("\n[1/15] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Log").first().click({ timeout: 5000 });
@@ -138,7 +138,7 @@ async function testMedicationReasonSideEffects(page) {
 }
 
 async function testSymptomTestTwoWayLink(page) {
-  console.log("\n[2/14] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
+  console.log("\n[2/15] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
   await page.locator("text=Healthcare").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Test of cure — Gonorrhoea").click({ timeout: 5000 });
@@ -168,7 +168,7 @@ async function testSymptomTestTwoWayLink(page) {
 }
 
 async function testLocationsExtraFields(page) {
-  console.log("\n[3/14] Locations registry — extra fields (added 2 Sep 2026)");
+  console.log("\n[3/15] Locations registry — extra fields (added 2 Sep 2026)");
   // the Settings gear only lives on the Home dashboard header — get back
   // there first, since the previous check left us on Healthcare/Symptoms.
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
@@ -193,7 +193,7 @@ async function testLocationsExtraFields(page) {
 // building it (the Refuge entry, a real https:// URL from the seeded
 // list), never given permanent coverage until now.
 async function testResourceLinkClickable(page) {
-  console.log("\n[4/14] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
+  console.log("\n[4/15] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
   // Reload first — the previous test (Locations registry) leaves the
   // Manage Lists > Locations sub-screen open, a stacked Settings
   // overlay that would otherwise sit on top of (and intercept clicks
@@ -236,7 +236,7 @@ async function testResourceLinkClickable(page) {
 // (anonymisePin) is still unset at this point — deactivating needs no
 // PIN then (see privacySettingsRepository.js's own deactivate()).
 async function testEncountersAnonymiseMasking(page) {
-  console.log("\n[5/14] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
+  console.log("\n[5/15] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
@@ -299,7 +299,7 @@ async function testEncountersAnonymiseMasking(page) {
 // logged at the real current time, which always has a real future
 // lockoutEndsAt() to check.
 async function testMedicationReminderClock(page) {
-  console.log("\n[6/14] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
+  console.log("\n[6/15] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   // Scoped on "Last dose" rather than the "Log dose" button's own text
@@ -352,7 +352,7 @@ async function testMedicationReminderClock(page) {
 // existing install's first Phase 4 boot" from a genuinely fresh
 // profile (see that function's own comment).
 async function testEncryptionMigratesLegacyData(browser) {
-  console.log("\n[7/14] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
+  console.log("\n[7/15] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
     localStorage.setItem("shos_app_preferences", JSON.stringify({
@@ -408,7 +408,7 @@ async function testEncryptionMigratesLegacyData(browser) {
 // check broad, real coverage rather than just the vault metadata key
 // and whatever the fresh boot itself wrote.
 async function testEncryptionPositiveCheck(page) {
-  console.log("\n[8/14] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
+  console.log("\n[8/15] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
   const rawShapes = await page.evaluate(() => {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -476,7 +476,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
 async function testEncryptionAppLockGatesVault(page) {
-  console.log("\n[9/14] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
+  console.log("\n[9/15] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
@@ -527,7 +527,7 @@ async function testEncryptionAppLockGatesVault(page) {
 // stored preference, the same class of gap this whole suite exists to
 // close.
 async function testTabReorder(page) {
-  console.log("\n[10/14] Settings — bottom nav tab order (added 9 Sep 2026)");
+  console.log("\n[10/15] Settings — bottom nav tab order (added 9 Sep 2026)");
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   await dismissTransientBanners(page);
@@ -579,7 +579,7 @@ async function testTabReorder(page) {
 // it, and an early version auto-offered the tour even after an explicit
 // Skip tap, which directly contradicted the user's own "not now" signal.
 async function testInteractiveTour(browser) {
-  console.log("\n[11/14] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
+  console.log("\n[11/15] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const tourPageErrors = [];
@@ -671,7 +671,7 @@ async function testInteractiveTour(browser) {
 // the exact portability trap the interactive-tour flow above already
 // hit and fixed once this same day).
 async function testBackupMigratesOldFieldShape(page) {
-  console.log("\n[12/14] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
+  console.log("\n[12/15] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
   const oldShapedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -722,6 +722,78 @@ async function testBackupMigratesOldFieldShape(page) {
   assert(dashboardText.includes("Take with food"), "a real pre-existing note on the same record was preserved alongside the migrated value, not overwritten");
 }
 
+// ADDED 10 Sep 2026 — real ask: backup-import fuzz testing, a
+// deferred backlog item picked up once the heading-size audit closed.
+// Real bug found live building this, not assumed from reading the
+// code (see backupService.js's own sanitizeBackupData() comment for
+// the full story): an imported file is untrusted external input, and
+// nothing previously checked that an array field's own ELEMENTS were
+// real records before handing them to a repository's replaceAll() —
+// a null/string/number/nested-array element crashed the very next
+// unguarded property read (contactRepository.js's own
+// computeNextContactNumber() doing `c.id` per record, no guard), and
+// replaceAll() had already reassigned its module-level array to the
+// bad data BEFORE that crash — a failed import left the running app's
+// in-memory state corrupted (nothing persisted, since persist() never
+// ran, but a raw "Cannot read properties of null" error with no
+// indication a reload was now needed). Fixed by dropping any non-object
+// array element at the one shared import chokepoint
+// (restoreFromParsedBackup()) before either repository or migration
+// code ever sees it. This flow proves the fix, not just documents it:
+// a backup with 5 genuinely malformed contacts array elements (null, a
+// bare string, a number, a boolean, a nested array) alongside ONE real
+// valid contact restores cleanly — no "Import failed" error, no page
+// error, and exactly the one valid contact lands (not zero, not a
+// partial/corrupted count).
+async function testBackupImportDropsGarbageRecords(page) {
+  console.log("\n[15/15] Backup import — malformed array elements are dropped, not a crash (added 10 Sep 2026)");
+  const malformedBackup = {
+    schemaVersion: 1,
+    appVersion: "0.1.0-prototype",
+    exportedAt: new Date().toISOString(),
+    data: {
+      contacts: [null, "just a string", 42, true, [1, 2, 3], { id: "contact_fuzz_check", name: "Survives The Fuzz" }],
+    },
+  };
+  const fileContent = JSON.stringify(malformedBackup);
+
+  // testPinRecoveryFlow (test 13) leaves the shared page on the Privacy
+  // screen — a full-screen overlay goHomeThenOpenSettings' coordinate
+  // clicks don't reliably recover from (the App Lock toggle it just
+  // clicked is right where Home's own bottom nav would be). A reload
+  // guarantees a clean Home start, same defensive pattern already used
+  // mid-suite elsewhere in this file.
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(1000);
+  await dismissTransientBanners(page);
+
+  await goHomeThenOpenSettings(page);
+  await page.locator("text=Backup & Data", { exact: true }).first().click({ timeout: 5000 });
+  await page.waitForTimeout(500);
+  await page.locator("text=Restore from backup", { exact: true }).first().click({ timeout: 5000 });
+  await page.waitForTimeout(400);
+  await page.locator("text=Replace all data", { exact: true }).click({ timeout: 5000 });
+  await page.waitForTimeout(300);
+
+  const fileInput = page.locator('input[type="file"]');
+  await fileInput.setInputFiles({ name: "malformed-fuzz-backup.json", mimeType: "application/json", buffer: Buffer.from(fileContent) });
+  await page.waitForTimeout(1500);
+  const statusText = await page.evaluate(() => document.body.innerText);
+  assert(!statusText.includes("Import failed"), "a malformed array element does not crash the import — no raw JS error surfaces to the user");
+
+  await page.waitForTimeout(1500);
+  await page.waitForLoadState("networkidle").catch(() => {});
+  await dismissTransientBanners(page);
+
+  await goHomeThenOpenSettings(page);
+  await page.locator("text=Support", { exact: true }).first().click({ timeout: 5000 });
+  await page.waitForTimeout(400);
+  await page.locator("text=Developer tools", { exact: true }).first().click({ timeout: 5000 });
+  await page.waitForTimeout(400);
+  const devToolsText = await page.evaluate(() => document.body.innerText);
+  assert(/Contacts\D*1\b/.test(devToolsText.replace(/\n/g, " ")), "exactly the one real valid contact landed — every malformed element (null/string/number/boolean/nested-array) was dropped, not silently corrupting the count");
+}
+
 // ADDED 9 Sep 2026 — real ask: PIN-recovery/alternate-access, a real
 // open backlog item finally built (Settings > Privacy's "Recovery
 // string" section, AppLockScreen's own "Forgot PIN?" link). Runs on
@@ -739,7 +811,7 @@ async function testBackupMigratesOldFieldShape(page) {
 // directly exercise that exact path, so a regression here would fail
 // loudly, not silently.
 async function testPinRecoveryFlow(page) {
-  console.log("\n[13/14] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
+  console.log("\n[13/15] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
   // The App Lock setup prompt can be pending again here — test 12's
   // own Replace All import doesn't touch privacySettings at all (its
   // synthetic backup has no privacySettings key), but a plain reload
@@ -843,7 +915,7 @@ async function testPinRecoveryFlow(page) {
 // Runs in its own fresh browser context (real SW registration/
 // lifecycle state, not shared with the rest of the suite).
 async function testServiceWorkerAutoUpdate(browser) {
-  console.log("\n[14/14] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
+  console.log("\n[14/15] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
 
   // Real preview-build-only test: `vite preview` (what CI and this
   // suite's own recommended local flow both use) serves dist/sw.js
@@ -952,6 +1024,7 @@ async function testServiceWorkerAutoUpdate(browser) {
     await testBackupMigratesOldFieldShape(page);
     await testPinRecoveryFlow(page);
     await testServiceWorkerAutoUpdate(browser);
+    await testBackupImportDropsGarbageRecords(page);
   } catch (err) {
     failed = true;
     console.error("\n" + err.message);

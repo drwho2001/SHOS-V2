@@ -3164,6 +3164,86 @@ this date; summarized here for durability.
   accent colour on the card's left stripe/Cancel button while the
   danger cues (border/background/confirm button) always stay red.
 
+## Recently shipped (10 Sep 2026, backup-import fuzz testing)
+
+Real ask: pick one of the deferred backlog items flagged after the PWA
+auto-update fix and "aim to complete whichever chosen" — picked backup-import
+fuzz testing over real-device testing/Play Store readiness/accessibility/
+data-volume stress testing, since it's the most bounded and completable
+without a real device or external accounts, and extends infrastructure this
+session already built (`backupMigrations.js`, the encryption-migration test).
+
+**Real, genuine crash found and fixed — reproduced live before fixing, not
+assumed from reading the code.** An imported backup file is untrusted
+external input by definition, but nothing in `backupService.js` previously
+checked that an array field's own ELEMENTS were real records before handing
+them to a repository's `replaceAll()` — only whether the field itself was an
+array. `contactRepository.js`'s own `computeNextContactNumber()` (and its
+~20 sibling `*Repository.js` copies of the same "derive the next id from
+existing records" pattern) does `c.id` per record with no guard — a `null`
+array element throws `Cannot read properties of null (reading 'id')`.
+Reproduced directly via a real `page.setInputFiles()` upload through the
+Settings > Restore-from-backup UI (a malformed `contacts` array: `null`, a
+bare string, a number, a boolean, a nested array, and one real valid
+record) — the exact crash surfaced as `Import failed: Cannot read
+properties of null (reading 'id')`. Worse than a clean rejection: since
+`replaceAll()` does `contacts = newContacts;` *before* calling
+`computeNextContactNumber()`, the module-level array was already reassigned
+to the corrupted data at the moment of the throw — `persist()` never runs
+(so nothing bad is written to storage), but the running app's in-memory
+state is left silently stale/corrupted until the next reload, with no
+indication to the user that a reload is now needed. Fixed with a new
+`sanitizeBackupData()` in `backupService.js`, run at the one shared import
+chokepoint (`restoreFromParsedBackup()`) *before* `migrateBackupData()` —
+migration order matters here too, since `migrateMedicationDosePerUnit()`
+has the identical unguarded `med.dosePerUnit` shape and would crash on a
+malformed medications element just as easily. Every array field's elements
+are filtered down to genuine, non-null, non-array objects; a malformed
+element is dropped outright rather than crashing or being fabricated into a
+fake record — "keep whatever real fields a genuine record has" is already
+the app's own defensive-default-merge job on read, but "the element wasn't
+a real record at all" isn't a shape gap that job can fix.
+
+**A second, related gap found and fixed in the same pass**: `typeof x ===
+"object"` is also `true` for an *array* (a JS quirk) — five singleton-object
+checks in `restoreBackup()`/`mergeBackup()` (`measurementPreferences`,
+`customGroups`, `customOptionLists`, `privacySettings`, `resources`) used
+exactly that check with no `!Array.isArray()` guard, unlike `myProfile`'s
+own already-correct check a few lines below them. A malformed backup with
+e.g. `privacySettings: ["a","b"]` would have passed the guard and been
+spread into a real settings object as bogus numeric-keyed junk (`{0:"a",
+1:"b"}`) — not a crash, but silent data corruption. All five (plus two
+nested per-category spots inside `mergeBackup()`'s `customOptionLists`/
+`resources` merge loops, where a non-array value under a real key could
+spread a string's individual characters into a list) now match
+`myProfile`'s pattern.
+
+**Two more adversarial cases checked and confirmed already safe, not
+assumed**: a `<script>`/`onerror`-attribute XSS attempt planted in an
+imported contact's `name`/`notes` fields rendered as inert text — no script
+execution, confirming React's default JSX escaping is what's actually
+protecting imported data everywhere, with no `dangerouslySetInnerHTML`
+anywhere touching it. A non-array value where an array was expected (e.g.
+`data.contacts: "not an array"`) was already safely skipped by the
+existing `Array.isArray()` guards with no change needed.
+
+Given a permanent 15th smoke-test flow — drives the real Restore-from-backup
+UI with the exact malformed array that reproduced the crash, asserts no
+"Import failed" error surfaces and that Developer Tools shows exactly the
+one real valid contact (not zero, not a corrupted count). One real
+test-tooling fix needed along the way: the new test runs right after the
+PIN-recovery flow, which leaves the shared page on the Privacy screen (a
+full-screen overlay `goHomeThenOpenSettings`'s coordinate clicks don't
+reliably recover from) — added a defensive `page.reload()` at the start,
+the same pattern already used mid-suite elsewhere in this file. Verified
+stable across two consecutive full 15-flow runs against a real `vite
+preview` production build before shipping.
+
+Honest scope note: real-device testing, Play Store readiness, an
+accessibility (screen reader/contrast) pass, and data-volume/performance
+stress testing remain genuinely deferred — each flagged as its own bigger,
+separate undertaking, not started this round.
+
 ## Recently shipped (10 Sep 2026, heading-size audit follow-up)
 
 Real ask: "do the heading-size audit next" — re-checking the earlier same-day

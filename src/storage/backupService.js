@@ -365,6 +365,45 @@ export function verifyBackupJson(backup, json) {
   return { ok: true, totalRecords, counts };
 }
 
+// ADDED — real ask: backup-import fuzz testing (10 Sep 2026). An
+// imported file is untrusted external input by definition — nothing
+// here previously checked that an array field's own ELEMENTS were
+// real records before handing them to a repository's replaceAll()
+// (only whether the field itself was an array). A malformed element
+// (null, a bare string/number, a nested array) crashes the very next
+// function that reads an unconditional property off it — found live:
+// contactRepository.js's computeNextContactNumber() (and its ~20
+// sibling *Repository.js copies of the same "derive the next id from
+// existing records" pattern) does `c.id` per record with no guard,
+// throwing "Cannot read properties of null (reading 'id')" before
+// persist() is ever reached. Worse than a clean rejection: replaceAll()
+// already reassigned its module-level array to the bad data BEFORE
+// that crash, so the running app's in-memory state is left corrupted
+// (though nothing bad was ever persisted, since persist() never got
+// called) until the next reload — a user who hits this gets a cryptic
+// raw JS error with no indication the app itself is now stale until
+// they reload. Fixed once, at the one shared import chokepoint
+// (restoreFromParsedBackup() below, same reasoning as
+// migrateBackupData()'s own placement there) rather than in every
+// repository: a malformed element is dropped outright, not fabricated
+// or allowed to crash — "keep whatever real fields a genuine record
+// has" is already this app's own defensive-default-merge job on read,
+// but "the element wasn't a real record at all" isn't a shape gap
+// defaults can fix. Applied BEFORE migrateBackupData() runs, not
+// after — migrateMedicationDosePerUnit() has the identical unguarded
+// `med.dosePerUnit` shape, so a malformed medications element would
+// crash migration itself if sanitization ran second.
+function sanitizeBackupData(data) {
+  if (!data || typeof data !== "object") return data;
+  const sanitized = { ...data };
+  for (const [key, value] of Object.entries(sanitized)) {
+    if (Array.isArray(value)) {
+      sanitized[key] = value.filter((item) => item !== null && typeof item === "object" && !Array.isArray(item));
+    }
+  }
+  return sanitized;
+}
+
 // Restores a parsed backup — replaces ALL current data with what's in
 // the file. See mergeBackup() below for the additive alternative — the
 // UI now asks which one you want before either runs, since silently
@@ -394,11 +433,18 @@ export async function restoreBackup(parsedBackup) {
   if (Array.isArray(menstrualCycles)) await MenstrualCycleRepository.replaceAll(menstrualCycles);
   if (Array.isArray(contraception)) await ContraceptionRepository.replaceAll(contraception);
   if (Array.isArray(pregnancies)) await PregnancyRepository.replaceAll(pregnancies);
-  if (measurementPreferences && typeof measurementPreferences === "object") await MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
-  if (customGroups && typeof customGroups === "object") await CustomGroupsRepository.replaceAll(customGroups);
-  if (customOptionLists && typeof customOptionLists === "object") await CustomOptionListsRepository.replaceAll(customOptionLists);
-  if (privacySettings && typeof privacySettings === "object") await PrivacySettingsRepository.update(privacySettings);
-  if (resources && typeof resources === "object") await ResourcesRepository.replaceAll(resources);
+  // FIXED — real gap found during backup-import fuzz testing (10 Sep
+  // 2026): `typeof x === "object"` is also true for an ARRAY (JS quirk),
+  // so a malformed backup with e.g. `privacySettings: ["a","b"]` used to
+  // pass this guard and get spread into the repository's update() call,
+  // silently merging bogus numeric-keyed junk (`{0:"a",1:"b"}`) into a
+  // real settings object. `myProfile`'s own check below already excluded
+  // arrays correctly — these five singleton checks now match it.
+  if (measurementPreferences && typeof measurementPreferences === "object" && !Array.isArray(measurementPreferences)) await MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
+  if (customGroups && typeof customGroups === "object" && !Array.isArray(customGroups)) await CustomGroupsRepository.replaceAll(customGroups);
+  if (customOptionLists && typeof customOptionLists === "object" && !Array.isArray(customOptionLists)) await CustomOptionListsRepository.replaceAll(customOptionLists);
+  if (privacySettings && typeof privacySettings === "object" && !Array.isArray(privacySettings)) await PrivacySettingsRepository.update(privacySettings);
+  if (resources && typeof resources === "object" && !Array.isArray(resources)) await ResourcesRepository.replaceAll(resources);
   if (Array.isArray(partnerNotifications)) await PartnerNotificationRepository.replaceAll(partnerNotifications);
   // Not Array.isArray — MyProfile is a singleton object, not a list.
   // Older backup files (from before 18 Aug 2026) simply won't have a
@@ -460,11 +506,14 @@ export async function mergeBackup(parsedBackup) {
   await append(ContraceptionRepository, data.contraception);
   await append(PregnancyRepository, data.pregnancies);
   await append(EpisodeRepository, data.episodes);
-  if (data.customOptionLists && typeof data.customOptionLists === "object") {
+  // FIXED — same real singleton/array-typeof gap as restoreBackup()
+  // above, found during backup-import fuzz testing.
+  if (data.customOptionLists && typeof data.customOptionLists === "object" && !Array.isArray(data.customOptionLists)) {
     const current = await CustomOptionListsRepository.getAllForBackup();
     const merged = {};
     for (const key of new Set([...Object.keys(current), ...Object.keys(data.customOptionLists)])) {
-      merged[key] = Array.from(new Set([...(current[key] || []), ...(data.customOptionLists[key] || [])]));
+      const incoming = Array.isArray(data.customOptionLists[key]) ? data.customOptionLists[key] : [];
+      merged[key] = Array.from(new Set([...(current[key] || []), ...incoming]));
     }
     await CustomOptionListsRepository.replaceAll(merged);
   }
@@ -480,11 +529,12 @@ export async function mergeBackup(parsedBackup) {
   // customOptionLists above; a re-added "Refuge" showing twice is mild
   // clutter, not a real data-integrity problem, same as any other
   // simple list this merge doesn't try to reconcile by content.
-  if (data.resources && typeof data.resources === "object") {
+  if (data.resources && typeof data.resources === "object" && !Array.isArray(data.resources)) {
     const current = await ResourcesRepository.getAllForBackup();
     const merged = {};
     for (const key of new Set([...Object.keys(current), ...Object.keys(data.resources)])) {
-      merged[key] = [...(current[key] || []), ...(data.resources[key] || [])];
+      const incoming = Array.isArray(data.resources[key]) ? data.resources[key] : [];
+      merged[key] = [...(current[key] || []), ...incoming];
     }
     await ResourcesRepository.replaceAll(merged);
   }
@@ -811,6 +861,9 @@ export async function restoreFromParsedBackup(parsed, mode = "replace") {
   // genuine no-op for an already-current backup (checked live against
   // the owner's own real export) — see backupMigrations.js for why
   // this can't just be "defensive-default merge on every read" alone.
-  const migrated = { ...parsed, data: migrateBackupData(parsed.data) };
+  // sanitizeBackupData() runs FIRST — see its own comment above for
+  // why a malformed element has to be dropped before migration ever
+  // sees it, not after.
+  const migrated = { ...parsed, data: migrateBackupData(sanitizeBackupData(parsed.data)) };
   if (mode === "merge") await mergeBackup(migrated); else await restoreBackup(migrated);
 }
