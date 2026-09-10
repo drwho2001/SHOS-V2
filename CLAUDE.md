@@ -3199,6 +3199,46 @@ this date; summarized here for durability.
   screenshot per module) rather than fixing sites one at a time as
   they're individually reported.
 
+## Recently shipped (10 Sep 2026, data-volume/performance stress testing)
+
+Real ask: continue through the deferred backlog. Picked data-volume/
+performance stress testing — the next achievable item without a real
+device or external accounts, and directly relevant given
+`SHOS_GlobalSearch_Prototype.jsx`'s own long-standing header comment
+explicitly rejects a persisted search-index optimisation as
+"unnecessary at this app's real data scale," an assumption worth
+actually re-verifying at scale rather than trusting indefinitely.
+
+Generated a synthetic backup at a genuinely "years of heavy daily use"
+scale (500 contacts, 1,500 encounters, 3,000 medication log entries,
+200 tests, 100 locations — 5,302 records) and imported it through the
+real Settings > Restore-from-backup UI (the same production import
+path, not a direct storage write), then timed real interactions
+against that dataset: Contacts list render, Contacts' own search
+filter, a 3000px scroll, and Global Search's index build + a real
+fuzzy query. Then repeated at 4x scale (2,000 contacts, 6,000
+encounters, 12,000 logs, 800 tests, 300 locations — 21,102 records, a
+scale no realistic single-user personal app would ever reach) to check
+for non-linear degradation, not just "does it work at one arbitrary
+number."
+
+**Clean result — no performance problem found, verified rather than
+assumed.** Every measurement stayed well under 2.5 seconds at even the
+extreme 21,102-record scale, and scaling was sub-linear or flat across
+every metric, not a cliff: import (Replace All) 1.69s → 2.49s for 4x
+the data; Developer Tools' own full counts-plus-orphan-reference sweep
+across every repository 0.76s → 1.10s; Contacts list first-render
+315ms → 329ms (essentially flat despite contact count going 500→2,000);
+Contacts' own search-filter keystroke response 330ms → 389ms; a
+3000px scroll 203ms → 205ms (flat); Global Search's full index build
+plus a real fuzzy query against the larger dataset 884ms → 1.13s. Zero
+page errors, zero crashes, at either scale. This confirms Global
+Search's own existing header comment (no persisted index needed) still
+holds at real, even extreme, data volumes — not something to revisit
+speculatively. No code changes made — this was a genuine "verified
+clean" result, the honest outcome of a stress test, not a "found and
+fixed" one; documented here rather than silently assumed complete.
+
 ## Recently shipped (10 Sep 2026, accessibility pass)
 
 Real ask: continue through the deferred backlog list (real-device testing,
