@@ -144,6 +144,15 @@ export const DEFAULT_APP_PREFERENCES = {
   // "don't trust a stale/corrupt stored value" rule already applied to
   // lastActiveTab.
   tabOrder: null,
+  // ADDED 10 Sep 2026 — real ask: show Dom/sub (bdsmRole) and Top/
+  // bottom (sexualPosition) on the Contacts LIST card, not just the
+  // profile detail view (both fields already existed and were already
+  // shown there). Off by default, deliberately opt-in — this is more
+  // sensitive at-a-glance than the relationship-type chips already on
+  // the card (visible the instant the list is scanned, not one tap
+  // in), same "opt-in for anything more exposing" precedent as App
+  // Lock/calendar sync/encrypted export elsewhere in this file.
+  showRoleOnContactCards: false,
 };
 
 export const AppPreferencesRepository = {

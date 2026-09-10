@@ -3213,6 +3213,79 @@ this date; summarized here for durability.
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
 
+## Recently shipped (10 Sep 2026, Contacts card — transport icon, age, role display)
+
+Real ask, live report: Contacts cards should show a pin next to city
+(always), a single icon for how they'd get to/host a meetup (house if
+they host, car if they drive, bicycle if they cycle, bus if public
+transport, walking figure if they walk — highest tier only, ranked
+Drives > Cycles > Public transport > Walk), plus an option to show
+Dom/sub and Top/bottom info on the card too, "if not already existing."
+
+**Transport-mode icon — one icon, ranked, not a growing pile.** Found
+that `travelMode` (`TRAVEL_MODE_OPTIONS` — Public transport/Car/Cycle/
+Walk/Taxi, `contactRepository.js`) already existed as a multi-select
+field, shown as plain text in the profile detail's ReadRow but never as
+a card icon; the older `drives` boolean (predates `travelMode`) already
+rendered a bare Car icon unconditionally. New `getTransportIcon()`
+picks the single highest tier present — Car (folding in legacy
+`drives === true` as an alias for `travelMode`'s own "Car", so contacts
+set up before `travelMode` existed still show correctly) > Cycle > Public
+transport > Walk — real Phosphor glyphs (`BicycleIcon`/`BusIcon`/
+`PersonSimpleWalkIcon`), replacing the old unconditional Car-only icon.
+Taxi (a real `travelMode` option) deliberately isn't part of the
+ranking — not named in the ask, doesn't obviously rank against the
+other four — still visible in the detail view's own full list, just not
+promoted to a card icon.
+
+**Pin next to city — always shown, a real `MapPinIcon`.** Previously
+just plain "· city" text. This freed `MapPin` from its old use as the
+"they'll travel to you" indicator (mutually exclusive with the Host
+icon) — that indicator switched to `NavigationArrowIcon` instead, so
+the two different facts (a location label vs. "will come to you") don't
+read as the same pin twice on one row. Host icon (House, `hosts ===
+"Yes"`) is unchanged — a different, orthogonal fact from transport mode
+(how THEY get around, not whether they'll host).
+
+**Age — already built, just never exercised by seed data.** Confirmed
+via code read: `contact.age`/`contact.ageIsApprox` (with the `≈` prefix
+for an approximate age) were already rendered on both the card and the
+profile detail — the live report ("no age added that I can see from
+your screenshot") was seed data never populating the field on any of
+the 16 seed contacts, not a missing feature. Added real ages (a mix of
+exact and `≈`-approximate) to 8 seed contacts spanning both card and
+detail views, confirmed live in a fresh-install screenshot.
+
+**Dom/sub & Top/bottom on the card — a new opt-in preference.** Both
+`bdsmRole`/`sexualPosition` already existed and were already shown on
+the profile detail; this is the list-card copy, gated behind a new
+`showRoleOnContactCards` preference (`appPreferencesRepository.js`,
+default `false`) — more exposing than the relationship-type chips
+already on the card (visible the instant the list renders, not one tap
+in), so opt-in rather than on-by-default, same precedent as App Lock/
+calendar sync/encrypted export elsewhere in that file. New Settings >
+Preferences > Contacts toggle (`ShowRoleOnCardsToggleCard`, next to the
+existing inactive-threshold control), same toggle-track pattern as
+`MenstrualTrackingToggleCard`. When on, renders as the same chip style
+as the relationship-type row, on its own line so the two concepts don't
+blur together.
+
+Real scope check done before touching anything, not assumed: Contacts'
+own separate "A–Z / Newest / Oldest / Last encounter / Incomplete"
+sort-by row also uses `T.contactsTeal` as text — but on a plain
+background with no self-tint at all, a different pattern from the
+badges this session's earlier contrast sweep targeted — confirmed by
+reading the surrounding JSX, not assumed from the grep alone.
+
+Verified live via Playwright against a fresh install: the city pin, the
+single ranked transport icon (a Car icon for a `drives`-only contact,
+proving the legacy-boolean fallback), the Host + `NavigationArrow`
+pairing, and — after toggling the new preference on in Settings — real
+`sub`/`Vers` badges rendering on a contact's card. Full build,
+`npx eslint .` clean, and all 15 smoke-test flows pass against a real
+`vite preview` production build (run twice, once before and once after
+adding the seed ages).
+
 ## Recently shipped (10 Sep 2026, module-accent-colour contrast sweep)
 
 Real ask: continue through the deferred backlog — picked the module-

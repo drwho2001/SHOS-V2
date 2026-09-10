@@ -3995,6 +3995,34 @@ function InactiveThresholdCard({ T }) {
   );
 }
 
+// ADDED 10 Sep 2026 — real ask: "option to show Dom/sub, top/bottom
+// info" on the Contacts list card — both fields (bdsmRole/
+// sexualPosition) already existed and were already shown on the
+// profile detail view; this only controls the LIST card, which is
+// glanceable the instant the list renders, not one tap in. Off by
+// default, same "opt-in for anything more exposing than the
+// relationship-type chips already on the card" reasoning as App
+// Lock/calendar sync elsewhere in this file.
+function ShowRoleOnCardsToggleCard({ T }) {
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  const toggle = async () => setPrefs(await AppPreferencesRepository.update({ showRoleOnContactCards: !prefs.showRoleOnContactCards }));
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
+      <div onClick={toggle} role="switch" tabIndex={0} aria-checked={prefs.showRoleOnContactCards} aria-label="Show Dom/sub and Top/bottom on contact cards"
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+        <div style={{ flex: 1, paddingRight: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Show Dom/sub & Top/bottom on cards</div>
+          <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Already shown on a contact's own profile — this adds it to the list view too, visible at a glance. Off by default.</div>
+        </div>
+        <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.showRoleOnContactCards ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
+          <div style={{ position: "absolute", top: 2, left: prefs.showRoleOnContactCards ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ADDED — real ask: Menstrual/Contraception/Pregnancy tracking, gated
 // behind this toggle rather than gender (menopause HRT/TRT tracking
 // already established gender-based assumptions don't hold for who
@@ -4131,7 +4159,8 @@ function PreferencesScreen({ onClose }) {
         <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>Navigation</div>
         <div style={{ marginBottom: 20 }}><TabOrderCard T={T} onChanged={() => setChanged(true)} /></div>
         <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>Contacts</div>
-        <div style={{ marginBottom: 20 }}><InactiveThresholdCard T={T} /></div>
+        <div style={{ marginBottom: 12 }}><InactiveThresholdCard T={T} /></div>
+        <div style={{ marginBottom: 20 }}><ShowRoleOnCardsToggleCard T={T} /></div>
         <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>Healthcare</div>
         <MenstrualTrackingToggleCard T={T} />
       </div>

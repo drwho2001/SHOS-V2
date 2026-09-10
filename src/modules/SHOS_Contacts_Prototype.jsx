@@ -5,6 +5,11 @@ import {
   ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2,
   UploadSimpleIcon as Upload, DownloadSimpleIcon as Download, CheckIcon as Check, UserIcon as User, HouseIcon as Home, MapPinIcon as MapPin, EyeSlashIcon as EyeOff, EyeIcon as Eye, ArrowsClockwiseIcon as RefreshCcw, StarIcon as Star,
   CrosshairIcon as Crosshair,
+  // ADDED 10 Sep 2026 — real ask: a single "how we'd meet" icon ranked
+  // Car (Drives) > Cycle > Public transport > Walk, plus a distinct
+  // icon for "will travel to you" now that MapPin is used for the
+  // city pin below — see getTransportIcon()'s own comment.
+  BicycleIcon as Bicycle, BusIcon as Bus, PersonSimpleWalkIcon as Walk, NavigationArrowIcon as NavigationArrow,
   // ADDED 2 Sep 2026 — real ask: real platform logos for what actually
   // gets typed into "Other platforms" (contactableVia) — Messenger,
   // Telegram, Instagram, WhatsApp, Twitter/X, Snapchat all have real
@@ -1292,7 +1297,28 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
 }
 
 
-function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, anonymise = false, inactiveThresholdDays = 90, activeFilters = null, selectMode = false, selected = false, onToggleSelected, onLongPress, onToggleFavourite }) {
+// ADDED 10 Sep 2026 — real ask: show ONE icon for "how we'd meet up"
+// instead of stacking every mode a contact has — ranked Car (Drives)
+// > Cycle > Public transport > Walk, highest tier only. `drives` (the
+// older, plain boolean field, predates `travelMode`) is folded in as
+// an alias for travelMode's own "Car" tier so a contact set up before
+// `travelMode` existed still shows correctly — not deprecated, just no
+// longer the only source. Taxi (a real travelMode option) isn't part
+// of this ranking — it wasn't named in the ask and doesn't obviously
+// rank against the other four — still visible in the profile detail's
+// own full Travel mode list, just not promoted to a card icon.
+const TRANSPORT_TIERS = [
+  { test: (c) => c.drives === true || (c.travelMode || []).includes("Car"), Icon: Car },
+  { test: (c) => (c.travelMode || []).includes("Cycle"), Icon: Bicycle },
+  { test: (c) => (c.travelMode || []).includes("Public transport"), Icon: Bus },
+  { test: (c) => (c.travelMode || []).includes("Walk"), Icon: Walk },
+];
+function getTransportIcon(contact) {
+  const tier = TRANSPORT_TIERS.find((t) => t.test(contact));
+  return tier ? tier.Icon : null;
+}
+
+function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, anonymise = false, inactiveThresholdDays = 90, showRoleOnCards = false, activeFilters = null, selectMode = false, selected = false, onToggleSelected, onLongPress, onToggleFavourite }) {
   // ADDED 26 Aug 2026 — real ask: "show on card which field is being
   // filtered/why result is coming up... especially needed for if
   // someone uses multiple filters at once." Computes only the parts
@@ -1426,19 +1452,38 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             than intended). Now 14px, one step down, not two. */}
         {contact.age != null && <span style={{ fontSize: 14, color: T.textSecondary }}>· {contact.ageIsApprox ? "≈" : ""}{contact.age}</span>}
         <MethodIcons methods={methods} T={T} />
-        {contact.city && !anonymise && <span style={{ fontSize: 12, color: T.textSecondary }}>· {contact.city}</span>}
-        {contact.drives && <Car size={13} color={T.textSecondary} />}
+        {/* ADDED 10 Sep 2026 — real ask: "use pin next to city" — a
+            literal location pin, always shown alongside the city name
+            (distinct from the "will travel to you" NavigationArrow
+            below, a different fact about a different thing). */}
+        {contact.city && !anonymise && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontSize: 12, color: T.textSecondary }}>
+            <MapPin size={12} /> {contact.city}
+          </span>
+        )}
+        {/* ADDED 10 Sep 2026 — real ask: ONE icon for "how we'd meet
+            up", the highest tier only (Car > Cycle > Public transport >
+            Walk) — see getTransportIcon()'s own comment for the ranked
+            list and why `drives` folds into the Car tier. */}
+        {(() => {
+          const TransportIcon = getTransportIcon(contact);
+          return TransportIcon ? <TransportIcon size={13} color={T.textSecondary} /> : null;
+        })()}
         {/* ADDED 18 Aug 2026 — hosts/travels indicator, the user's ask:
-            "house or car icon" — House if they host, MapPin if they
+            "house or car icon" — House if they host, an icon if they'll
             travel to you instead. Mutually exclusive (hosts takes
             priority if both apply) to keep the card from getting
             cluttered with two icons meaning something similar. This is
-            deliberately separate from the Car icon above, which shows
-            `drives` (owns a car) — a different fact from `travels`. */}
+            deliberately separate from the transport-mode icon above,
+            which shows HOW they get around — a different fact from
+            `travels` (WILL they come to you). CHANGED 10 Sep 2026 —
+            swapped from MapPin to NavigationArrow now that MapPin is
+            the city pin above; two different pins on one row would
+            have read as the same fact twice. */}
         {contact.hosts === "Yes" ? (
           <Home size={13} color={T.textSecondary} />
         ) : contact.travels === "Yes" ? (
-          <MapPin size={13} color={T.textSecondary} />
+          <NavigationArrow size={13} color={T.textSecondary} />
         ) : null}
         {contact.linkedContactIds.length > 0 && <Link2 size={13} color={T.contactsTeal} />}
         {flaggedDontMeetAgain && <AlertTriangle size={13} color={T.actionRed} />}
@@ -1452,6 +1497,24 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
         <div style={{ display: "flex", gap: 4, marginLeft: 16, marginTop: 4, flexWrap: "wrap" }}>
           {contact.relationshipType.map((rt) => (
             <span key={rt} style={{ fontSize: 10, fontWeight: 600, color: T.contactsTealText, background: `${T.contactsTeal}15`, borderRadius: radius.full, padding: "2px 8px" }}>{rt}</span>
+          ))}
+        </div>
+      )}
+      {/* ADDED 10 Sep 2026 — real ask: "option to show Dom/sub, top/
+          bottom info" on the card — both fields already existed and
+          were already shown on the profile detail; this is the
+          opt-in list-card copy, gated behind showRoleOnCards (off by
+          default — see AppPreferencesRepository's own comment). Same
+          chip look as the relationship-type row above, kept on its own
+          line so the two concepts (relationship vs. role) don't blur
+          together. */}
+      {showRoleOnCards && !anonymise && ((contact.bdsmRole || []).length > 0 || (contact.sexualPosition || []).length > 0) && (
+        <div style={{ display: "flex", gap: 4, marginLeft: 16, marginTop: 4, flexWrap: "wrap" }}>
+          {(contact.bdsmRole || []).map((r) => (
+            <span key={`role-${r}`} style={{ fontSize: 10, fontWeight: 600, color: T.contactsTealText, background: `${T.contactsTeal}15`, borderRadius: radius.full, padding: "2px 8px" }}>{r}</span>
+          ))}
+          {(contact.sexualPosition || []).map((p) => (
+            <span key={`pos-${p}`} style={{ fontSize: 10, fontWeight: 600, color: T.contactsTealText, background: `${T.contactsTeal}15`, borderRadius: radius.full, padding: "2px 8px" }}>{p}</span>
           ))}
         </div>
       )}
@@ -2229,6 +2292,10 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // actually configured in Settings > General > Preferences. Same bug
   // class as Home's/Healthcare's own menstrualTrackingEnabled sites.
   const [inactiveThresholdDays] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.inactiveThresholdDays), [], 90);
+  // ADDED 10 Sep 2026 — real ask: Dom/sub + Top/bottom on the list card,
+  // gated behind an opt-in preference — see AppPreferencesRepository's
+  // own showRoleOnContactCards comment for why this defaults off.
+  const [showRoleOnCards] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.showRoleOnContactCards), [], false);
   const activeContacts = useMemo(() => contacts.filter((c) => !c.isArchived), [contacts]);
   // ADDED 18 Aug 2026 — loaded once here rather than per-card, needed
   // for the card's active-status dot (see ContactCard below).
@@ -2582,7 +2649,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "0 16px 100px" }}>
-          {filtered.map((c) => <ContactCard key={c.id} contact={c} onOpen={onOpen} T={T} summary={encounterSummaries.get(c.id) || EMPTY_ENCOUNTER_SUMMARY} anonymise={anonymise} inactiveThresholdDays={inactiveThresholdDays}
+          {filtered.map((c) => <ContactCard key={c.id} contact={c} onOpen={onOpen} T={T} summary={encounterSummaries.get(c.id) || EMPTY_ENCOUNTER_SUMMARY} anonymise={anonymise} inactiveThresholdDays={inactiveThresholdDays} showRoleOnCards={showRoleOnCards}
             activeFilters={activeFilterCount > 0 ? { roles: filterRoles, positions: filterPositions, hosts: filterHosts, drives: filterDrives } : null}
             selectMode={selectMode} selected={selectedIds.includes(c.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }}
             onToggleFavourite={async (id) => { await ContactRepository.update(id, { favourited: !c.favourited }); refresh(); }} />)}
