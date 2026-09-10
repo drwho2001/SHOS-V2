@@ -4146,13 +4146,21 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // mode default, which would have silently broken once that default
   // became theme-aware — replaced with its own explicit `emphasized`
   // flag, decoupled from colour entirely.
-  const SettingsRow = ({ icon: Icon, label, onClick, disabled, iconColor, emphasized = false }) => {
-    const resolvedIconColor = iconColor || (darkMode ? DARK.textDisabled : "#5B5B62");
+  // FIXED — real inconsistency found in a live audit: 6 of this
+  // screen's 22 rows had accumulated an `emphasized`/`iconColor`
+  // override (bold + full-strength colour) added piecemeal as each
+  // feature shipped, with no actual rule behind which rows got it —
+  // even 2 rows in the SAME Backup & Data section disagreed with their
+  // 5 siblings. No section is actually more "important" than any
+  // other, so every row now renders identically instead of some
+  // looking bold/dark and others muted at random.
+  const SettingsRow = ({ icon: Icon, label, onClick, disabled }) => {
+    const resolvedIconColor = darkMode ? DARK.textDisabled : "#5B5B62";
     return (
     <div onClick={disabled ? undefined : onClick}
       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Icon size={17} weight={emphasized ? "bold" : "regular"} color={resolvedIconColor} />
+        <Icon size={17} weight="regular" color={resolvedIconColor} />
         <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>{label}</span>
       </div>
       {!disabled && <ChevronRight size={16} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} />}
@@ -4198,7 +4206,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             export never hit this because its own button already
             wrapped the call in an arrow function that discards the
             event. Wrapping this one the same way. */}
-        <SettingsRow icon={Upload} label="Export backup" onClick={doPlainExport} iconColor={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} emphasized />
+        <SettingsRow icon={Upload} label="Export backup" onClick={doPlainExport} />
         {/* ADDED — real ask: real confirmation for this button — it
             fires the OS share sheet with no feedback of its own, and
             round-trip verification (backupService.js's own
@@ -4215,7 +4223,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             Only shown once actually available — see
             fileExportHelper.js's isChooseFolderExportAvailable. */}
         {chooseFolderAvailable && (
-          <SettingsRow icon={Folder} label="Export backup to a folder…" onClick={doPlainExportToFolder} iconColor={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} />
+          <SettingsRow icon={Folder} label="Export backup to a folder…" onClick={doPlainExportToFolder} />
         )}
         {/* FIXED — real bug found in the same pass as the round-trip
             verification above: this status was tracked (set on every
@@ -4232,16 +4240,16 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             Contacts' Import earlier this session, mirrored here —
             Export (data leaving) reads as Upload, Restore (data coming
             back in) reads as Download. */}
-        <SettingsRow icon={Filter} label="Selective export…" onClick={() => setShowSelectiveExport(true)} iconColor={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} emphasized />
+        <SettingsRow icon={Filter} label="Selective export…" onClick={() => setShowSelectiveExport(true)} />
         {/* ADDED — real ask: CSV export, for reading data elsewhere
             (Excel/Sheets), separate from the JSON backup above (which
             is for restoring into SHOS, not for opening as a
             spreadsheet). */}
-        <SettingsRow icon={FileCsv} label="Export as CSV…" onClick={() => setShowCSVExport(true)} iconColor={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} emphasized />
+        <SettingsRow icon={FileCsv} label="Export as CSV…" onClick={() => setShowCSVExport(true)} />
         {/* ADDED — real ask: password-protected backup, for storing or
             sending a backup somewhere less trusted than this device. */}
-        <SettingsRow icon={Lock} label="Export encrypted backup…" onClick={() => setShowEncryptedExport(true)} iconColor={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} emphasized />
-        <SettingsRow icon={Download} label="Restore from backup" onClick={onImportClick} iconColor={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} emphasized />
+        <SettingsRow icon={Lock} label="Export encrypted backup…" onClick={() => setShowEncryptedExport(true)} />
+        <SettingsRow icon={Download} label="Restore from backup" onClick={onImportClick} />
         {/* MOVED 1 Sep 2026 from Preferences — a backup-scheduling
             setting belongs next to the other backup controls, not
             bundled with an unrelated Contacts-display setting under a
