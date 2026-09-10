@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SHOS — Privacy Policy</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+    line-height: 1.6;
+    color: #1B1B1F;
+    background: #fff;
+  }
+  h1 { font-size: 24px; margin-bottom: 4px; }
+  h2 { font-size: 17px; margin-top: 32px; }
+  .updated { color: #666; font-size: 13px; margin-bottom: 24px; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 6px; }
+  code { background: #f2f2f4; padding: 1px 5px; border-radius: 4px; font-size: 90%; }
+  .callout {
+    background: #f2f9f7;
+    border-left: 3px solid #008585;
+    padding: 12px 16px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<h1>SHOS — Privacy Policy</h1>
+<p class="updated">Last updated: 10 September 2026</p>
+
+<div class="callout">
+  <strong>In one sentence:</strong> SHOS has no backend and no user accounts —
+  every record you create is stored, encrypted, only on your own device, and
+  nothing about your health, contacts, or activity is ever sent to us,
+  because there is no "us" your data is sent to.
+</div>
+
+<h2>Who this policy covers</h2>
+<p>
+  SHOS ("the app") is a personal sexual health and lifestyle tracker built
+  by a single independent developer. This policy applies to the SHOS
+  Android app and its web/PWA build. There is no company, server
+  infrastructure, or account system operated by the developer that
+  processes your data — this policy is short because there is
+  genuinely very little for it to describe.
+</p>
+
+<h2>What data the app collects</h2>
+<p>
+  All data you enter into SHOS — contacts, encounters, test results,
+  medications, symptoms, clinic visits, and every other record type — is
+  created and stored <strong>entirely on your own device</strong>, in your
+  device's local app storage. It is encrypted at rest (AES-256-GCM) the
+  moment it's written. The developer never receives, sees, or has access
+  to any of it, at any point, because it never leaves your device unless
+  you personally choose to export it (see "Your own exports" below).
+</p>
+<p>The app does not:</p>
+<ul>
+  <li>require you to create an account or sign in</li>
+  <li>collect your name, email address, or any identifying information for itself</li>
+  <li>use analytics, advertising, or tracking SDKs of any kind</li>
+  <li>sync data to any cloud service</li>
+  <li>share, sell, or transmit your data to any third party</li>
+</ul>
+
+<h2>Your own exports</h2>
+<p>
+  SHOS lets you export a backup of your own data (as a plain or
+  password-encrypted file) to your device's own storage or share sheet,
+  entirely at your own initiative. Where that file goes afterward — a
+  cloud drive, an email to yourself, a USB drive — is entirely under
+  your control; the app has no part in that beyond the export itself,
+  and no copy is retained anywhere else.
+</p>
+
+<h2>Optional features that use the network</h2>
+<p>
+  SHOS is designed to work fully offline. Two optional features make
+  outbound network requests, both off by default configurability and
+  both visible/toggleable in <strong>Settings &gt; Security &amp; Privacy
+  &gt; Data &amp; network</strong>:
+</p>
+<ul>
+  <li>
+    <strong>Address lookup.</strong> If you use the optional "look up an
+    address" helper when adding a Location, the text you type is sent to
+    OpenStreetMap's public Nominatim search API to return matching
+    addresses. This only happens when you actively use that search box —
+    nothing is sent automatically or in the background.
+  </li>
+  <li>
+    <strong>Update check.</strong> The app periodically checks GitHub's
+    public API to see whether a newer version is available. This is a
+    generic, anonymous request for release metadata — it does not include
+    any of your personal data.
+  </li>
+</ul>
+<p>
+  Both can be turned off from that same Settings screen; the app
+  functions fully without them.
+</p>
+
+<h2>Device permissions</h2>
+<p>The Android app requests the following permissions, each used only for the specific feature named — never collected or transmitted anywhere:</p>
+<ul>
+  <li><strong>Notifications</strong> — for medication, testing, and clinic-visit reminders you configure yourself.</li>
+  <li><strong>Location (coarse/fine)</strong> — only if you tap "use current location" when adding a Location; never accessed in the background.</li>
+  <li><strong>Calendar (read/write)</strong> — only if you turn on calendar sync, and only ever writes to a private, local-only calendar the app creates on your device; never reads or touches your existing calendars.</li>
+  <li><strong>Storage (legacy, capped to older Android versions)</strong> — used to save a backup file you export yourself.</li>
+  <li><strong>Biometric</strong> — used only as a local unlock gate for the app's own PIN/App Lock feature (via the Android system biometric prompt). The app never receives or stores your fingerprint/face data itself — that stays entirely within Android's own secure biometric system.</li>
+</ul>
+
+<h2>Data deletion</h2>
+<p>
+  Since nothing is stored anywhere except your own device, deleting your
+  data is entirely in your hands: remove individual records in-app,
+  clear all app data from Android's own App Info screen, or uninstall
+  the app. There is no server-side copy to separately request deletion
+  of, because none exists.
+</p>
+
+<h2>Children's privacy</h2>
+<p>
+  SHOS is intended for adult users (UK sexual-health context) and is not
+  directed at children. It does not knowingly collect data from
+  children, and as a matter of the app's own design, it does not
+  collect data from anyone at all — see above.
+</p>
+
+<h2>Changes to this policy</h2>
+<p>
+  If this policy changes, the updated version will be published at this
+  same address with a new "Last updated" date.
+</p>
+
+<h2>Contact</h2>
+<p>
+  Questions about this policy can be raised via the project's public
+  repository:
+  <a href="https://github.com/drwho2001/SHOS-V2">github.com/drwho2001/SHOS-V2</a>.
+</p>
+
+</body>
+</html>
