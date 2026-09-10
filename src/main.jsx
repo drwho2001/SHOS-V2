@@ -195,30 +195,27 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 // worker running inside Capacitor's own WebView would be an
 // unnecessary extra moving part there, not a real benefit.
 if ("serviceWorker" in navigator) {
-  // ADDED 8 Sep 2026 — real ask: "ensure PWA is auto-updated to current
-  // version." sw.js's install/activate handlers already call
-  // self.skipWaiting()/self.clients.claim() unconditionally, so a new
-  // service worker takes over immediately once installed — but that
-  // alone doesn't help a tab that's ALREADY open: its React app is
-  // already running the old JS bundle in memory, and swapping the SW
-  // underneath it doesn't change that. `controllerchange` fires exactly
-  // once, the moment a new SW actually takes control — reloading then
-  // is the standard "auto-update" pattern (the same thing Vite's own
-  // PWA plugin's `registerType: 'autoUpdate'` does under the hood).
-  // Guarded two ways: `hadController`, captured BEFORE registration
-  // even starts, so a brand-new install (first-ever visit — no
-  // previous controller, nothing stale to swap in for) doesn't reload
-  // a page that was never running an old version in the first place;
-  // `reloaded`, so a real, uncontrolled edge case (this firing more
-  // than once) can never loop.
-  const hadController = !!navigator.serviceWorker.controller;
-  let reloaded = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (reloaded || !hadController) return;
-    reloaded = true;
-    window.location.reload();
-  });
-
+  // FIXED 10 Sep 2026 — real bug found while adding permanent test
+  // coverage for this exact code, not from a live report: this used to
+  // ALSO reload the page unconditionally on `controllerchange`. But
+  // `App.jsx`'s own `swUpdateAvailable` banner (added 3 Sep 2026,
+  // BEFORE this file's own reload was added 8 Sep) already listens for
+  // the identical `controllerchange` event, with its own explicit,
+  // still-sound reasoning: "reloading out from under someone mid-form
+  // would be a worse bug than the staleness itself," hence a
+  // dismissible "A new version of SHOS is ready — Refresh" prompt, not
+  // a forced reload. Both listeners fired on the same event; this
+  // file's own module-level listener is registered before React ever
+  // mounts, so it always ran FIRST and reloaded the page before the
+  // banner's own effect (registered inside a mounted component) could
+  // ever render, let alone be seen or dismissed — silently defeating
+  // the whole point of that earlier, more careful design, without this
+  // file's own 8 Sep addition ever having been told the banner existed.
+  // The `registration.update()` re-check below still does real, useful
+  // work on its own (making sure a new service worker is actually
+  // DETECTED promptly) — it's what makes the banner itself timely; it
+  // just shouldn't also force the reload the banner already handles
+  // safely.
   const registerServiceWorker = () => {
     navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).then((registration) => {
       // ADDED 8 Sep 2026 — real ask, other half of the fix above: a

@@ -2790,15 +2790,16 @@ this date; summarized here for durability.
   Verified stable across three consecutive full runs against both the
   dev server and a real `vite preview` production build (the same
   build CI actually tests) before shipping.
-  **Still open**: the PWA's own `controllerchange`-triggered
-  reload-on-update logic in `main.jsx` — verified once against a real
-  `vite preview` build with a simulated SW bump, never re-run since.
-  Deliberately not folded into this same pass: simulating a genuine
-  mid-session SW version bump inside the shared suite (rather than a
-  one-off standalone script) would mean deliberately triggering the
-  exact class of flakiness this same session just fixed elsewhere, and
-  doing that safely needs its own dedicated design, not a quick
-  addition alongside three unrelated flows.
+  **RESOLVED 10 Sep 2026 — see "Recently shipped" below for the full
+  story, including a real bug found in the process.** The PWA's own
+  `controllerchange`-triggered update logic in `main.jsx` — verified
+  once against a real `vite preview` build with a simulated SW bump,
+  never re-run since — now has permanent smoke-test coverage. Building
+  that coverage surfaced a genuine, previously-invisible regression:
+  `main.jsx` had ALSO been forcing an unconditional reload on the same
+  event `App.jsx`'s own dismissible update banner already handled
+  safely, silently making that banner unreachable since 8 Sep. Fixed
+  by removing the redundant forced reload.
 - **Two items a prior backlog audit left inconclusive (due to a
   test-script issue, not a confirmed problem) — resolved for real 9
   Sep 2026, later the same day.** Both were re-checked live with
@@ -3162,6 +3163,58 @@ this date; summarized here for durability.
   real shared UI component — used everywhere, keeping each module's own
   accent colour on the card's left stripe/Cancel button while the
   danger cues (border/background/confirm button) always stay red.
+
+## Recently shipped (10 Sep 2026, later still — PWA auto-update fix)
+
+Real follow-up once the ESLint/error-logging round above was done: closing
+the one remaining bounded backlog item, the PWA auto-update logic's own
+"verified once, never given permanent coverage" gap.
+
+**Real bug found while building the test, not from a live report.**
+`main.jsx`'s own `controllerchange` listener (added 8 Sep 2026) was
+unconditionally calling `window.location.reload()` the instant a new
+service worker took over — but `App.jsx`'s own `swUpdateAvailable`
+banner (added 3 Sep 2026, five days EARLIER) already listens for the
+identical event, with its own explicit, still-sound reasoning:
+"reloading out from under someone mid-form would be a worse bug than
+the staleness itself," hence a dismissible "A new version of SHOS is
+ready — Refresh" prompt, not a forced reload. Both listeners fire on
+the same event; `main.jsx`'s own listener registers at true module
+load, before React ever mounts, so it always ran FIRST — reloading the
+page before the banner's own effect (registered inside a mounted
+component) could ever render, let alone be seen or dismissed. The
+later addition never checked whether anything already handled this
+event, silently making the earlier, more careful design's whole reason
+for existing moot for 7 days. Fixed by removing the redundant forced
+reload from `main.jsx` — the `registration.update()` re-check there
+still does real, useful work (making sure a new SW is actually
+DETECTED promptly), it just no longer also forces the reload the
+banner already handles safely.
+
+**A real, genuine Playwright/browser limitation found while writing the
+test, worth recording so a future session doesn't re-lose time to it**:
+neither `page.route()` nor `context.route()` intercepts a service
+worker's own internal update-check fetch — confirmed directly, not
+assumed: a `context.route("**/sw.js", ...)` handler never fired once
+across several real `registration.update()` calls, with `routeHit`
+staying `0` throughout. A service worker's own network requests
+apparently don't go through the same interception path Playwright's
+page/context-level routing hooks into. Worked around by simulating a
+real new deploy the way one actually happens: swapping the real
+`dist/sw.js` file `vite preview` serves directly off disk (a
+`fs.writeFileSync`, immediately visible to the next real fetch, no
+server restart needed), wrapped in a `try/finally` that unconditionally
+restores the original file even if an assertion throws. Deliberately a
+preview-build-only test (skips gracefully if `dist/sw.js` doesn't
+exist, i.e. running against a dev server) — same "verified-once, real
+production build only" carve-out already established elsewhere in this
+suite.
+
+Given a permanent 14th smoke-test flow. Verified stable: the fixed
+behavior (dismissible banner appears, no forced reload, tapping Refresh
+genuinely reloads) confirmed live end-to-end against a real `vite
+preview` build, full 14-flow suite green, `dist/sw.js` confirmed
+restored to its original content after the run.
 
 ## Recently shipped (10 Sep 2026, follow-up — see Notion for full detail)
 

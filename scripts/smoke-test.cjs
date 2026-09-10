@@ -43,6 +43,8 @@ const PLAYWRIGHT_EXECUTABLE = process.env.PLAYWRIGHT_EXECUTABLE || undefined; //
 const APP_URL = process.env.SMOKE_TEST_URL || "http://localhost:5183";
 
 const { chromium } = require(PLAYWRIGHT_MODULE);
+const fs = require("fs");
+const path = require("path");
 
 function assert(cond, msg) {
   if (!cond) throw new Error("FAILED: " + msg);
@@ -119,7 +121,7 @@ async function goHomeThenOpenSettings(page) {
 }
 
 async function testMedicationReasonSideEffects(page) {
-  console.log("\n[1/13] Medication log — Reason/Side effects (added 1 Sep 2026)");
+  console.log("\n[1/14] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Log").first().click({ timeout: 5000 });
@@ -136,7 +138,7 @@ async function testMedicationReasonSideEffects(page) {
 }
 
 async function testSymptomTestTwoWayLink(page) {
-  console.log("\n[2/13] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
+  console.log("\n[2/14] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
   await page.locator("text=Healthcare").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Test of cure — Gonorrhoea").click({ timeout: 5000 });
@@ -166,7 +168,7 @@ async function testSymptomTestTwoWayLink(page) {
 }
 
 async function testLocationsExtraFields(page) {
-  console.log("\n[3/13] Locations registry — extra fields (added 2 Sep 2026)");
+  console.log("\n[3/14] Locations registry — extra fields (added 2 Sep 2026)");
   // the Settings gear only lives on the Home dashboard header — get back
   // there first, since the previous check left us on Healthcare/Symptoms.
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
@@ -191,7 +193,7 @@ async function testLocationsExtraFields(page) {
 // building it (the Refuge entry, a real https:// URL from the seeded
 // list), never given permanent coverage until now.
 async function testResourceLinkClickable(page) {
-  console.log("\n[4/13] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
+  console.log("\n[4/14] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
   // Reload first — the previous test (Locations registry) leaves the
   // Manage Lists > Locations sub-screen open, a stacked Settings
   // overlay that would otherwise sit on top of (and intercept clicks
@@ -234,7 +236,7 @@ async function testResourceLinkClickable(page) {
 // (anonymisePin) is still unset at this point — deactivating needs no
 // PIN then (see privacySettingsRepository.js's own deactivate()).
 async function testEncountersAnonymiseMasking(page) {
-  console.log("\n[5/13] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
+  console.log("\n[5/14] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
@@ -297,7 +299,7 @@ async function testEncountersAnonymiseMasking(page) {
 // logged at the real current time, which always has a real future
 // lockoutEndsAt() to check.
 async function testMedicationReminderClock(page) {
-  console.log("\n[6/13] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
+  console.log("\n[6/14] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   // Scoped on "Last dose" rather than the "Log dose" button's own text
@@ -350,7 +352,7 @@ async function testMedicationReminderClock(page) {
 // existing install's first Phase 4 boot" from a genuinely fresh
 // profile (see that function's own comment).
 async function testEncryptionMigratesLegacyData(browser) {
-  console.log("\n[7/13] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
+  console.log("\n[7/14] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
     localStorage.setItem("shos_app_preferences", JSON.stringify({
@@ -406,7 +408,7 @@ async function testEncryptionMigratesLegacyData(browser) {
 // check broad, real coverage rather than just the vault metadata key
 // and whatever the fresh boot itself wrote.
 async function testEncryptionPositiveCheck(page) {
-  console.log("\n[8/13] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
+  console.log("\n[8/14] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
   const rawShapes = await page.evaluate(() => {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -474,7 +476,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
 async function testEncryptionAppLockGatesVault(page) {
-  console.log("\n[9/13] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
+  console.log("\n[9/14] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
@@ -525,7 +527,7 @@ async function testEncryptionAppLockGatesVault(page) {
 // stored preference, the same class of gap this whole suite exists to
 // close.
 async function testTabReorder(page) {
-  console.log("\n[10/13] Settings — bottom nav tab order (added 9 Sep 2026)");
+  console.log("\n[10/14] Settings — bottom nav tab order (added 9 Sep 2026)");
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   await dismissTransientBanners(page);
@@ -577,7 +579,7 @@ async function testTabReorder(page) {
 // it, and an early version auto-offered the tour even after an explicit
 // Skip tap, which directly contradicted the user's own "not now" signal.
 async function testInteractiveTour(browser) {
-  console.log("\n[11/13] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
+  console.log("\n[11/14] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const tourPageErrors = [];
@@ -669,7 +671,7 @@ async function testInteractiveTour(browser) {
 // the exact portability trap the interactive-tour flow above already
 // hit and fixed once this same day).
 async function testBackupMigratesOldFieldShape(page) {
-  console.log("\n[12/13] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
+  console.log("\n[12/14] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
   const oldShapedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -737,7 +739,7 @@ async function testBackupMigratesOldFieldShape(page) {
 // directly exercise that exact path, so a regression here would fail
 // loudly, not silently.
 async function testPinRecoveryFlow(page) {
-  console.log("\n[13/13] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
+  console.log("\n[13/14] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
   // The App Lock setup prompt can be pending again here — test 12's
   // own Replace All import doesn't touch privacySettings at all (its
   // synthetic backup has no privacySettings key), but a plain reload
@@ -826,6 +828,107 @@ async function testPinRecoveryFlow(page) {
   assert((await page.getAttribute('[aria-label="App Lock"]', "aria-checked")) === "false", "App Lock turns back off cleanly after a recovery-triggered PIN reset — the PrivacySettingsRepository mirror stayed in sync");
 }
 
+// ADDED 10 Sep 2026 — real bug found (not a live report) while finally
+// giving this its own permanent coverage: main.jsx used to ALSO force
+// an unconditional reload on the same `controllerchange` event
+// App.jsx's own swUpdateAvailable banner already handles safely (see
+// main.jsx's own comment for the full story) — main.jsx's reload fired
+// first every time, since its listener registered before React ever
+// mounted, silently making the banner's "Refresh" button and its own
+// "don't reload out from under someone mid-form" reasoning
+// unreachable. Fixed by removing the redundant forced reload; this
+// test proves the CORRECTED behavior end-to-end: a genuine new
+// service-worker version is detected, the dismissible banner appears
+// (not an automatic reload), and tapping Refresh reloads for real.
+// Runs in its own fresh browser context (real SW registration/
+// lifecycle state, not shared with the rest of the suite).
+async function testServiceWorkerAutoUpdate(browser) {
+  console.log("\n[14/14] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
+
+  // Real preview-build-only test: `vite preview` (what CI and this
+  // suite's own recommended local flow both use) serves dist/sw.js
+  // directly off disk per-request, no restart needed to pick up a
+  // change — the same real mechanism a genuine deploy relies on. A
+  // dev-server run (dist/ doesn't exist) skips this one gracefully
+  // rather than failing on an environment it was never meant to run
+  // against, the same "preview build only" carve-out already used
+  // elsewhere in this suite (e.g. the interactive-tour test's own
+  // dynamic-import lesson).
+  const distSwPath = path.join(__dirname, "..", "dist", "sw.js");
+  if (!fs.existsSync(distSwPath)) {
+    console.log("  skip — no dist/sw.js found (this suite is running against a dev server, not a preview build)");
+    return;
+  }
+
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+
+  await dismissOnboarding(page);
+  await dismissTransientBanners(page);
+
+  // A real precondition for `controllerchange` to ever mean anything —
+  // the very first registration doesn't emit it, by design.
+  const hasController = await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+    return !!navigator.serviceWorker.controller;
+  });
+  assert(hasController, "the real service worker is registered and controlling the page");
+
+  // A marker that only a real page navigation/reload would ever clear
+  // — this is what actually proves "no automatic reload happened",
+  // rather than trusting a UI banner's mere presence.
+  await page.evaluate(() => { window.__smokeTestNoReloadMarker = true; });
+
+  // Simulate a real new deploy by actually swapping the real file
+  // `vite preview` serves off disk — the same thing a genuine deploy
+  // does. Playwright's own request interception (both page- and
+  // context-level) does NOT see a service worker's own internal
+  // update-check fetch — confirmed live, not assumed: a
+  // context.route("**/sw.js", ...) handler never fired even once
+  // across several real registration.update() calls — so faking the
+  // response at the network layer isn't an option here; only a real
+  // byte change on disk reliably triggers the browser's own real
+  // update algorithm. try/finally guarantees the real file is restored
+  // even if an assertion below throws — this must never leave the
+  // build output modified.
+  const originalSwSource = fs.readFileSync(distSwPath, "utf8");
+  const bumpedSwSource = originalSwSource.replace(
+    /const CACHE_NAME = "[^"]+"/,
+    `const CACHE_NAME = "shos-runtime-smoketest-${Date.now()}"`
+  );
+  assert(bumpedSwSource !== originalSwSource, "the simulated new service-worker version is genuinely different from the real one on disk");
+
+  try {
+    fs.writeFileSync(distSwPath, bumpedSwSource);
+
+    // Same real re-check the app's own visibilitychange handler
+    // performs — triggers the browser to fetch the now-changed sw.js
+    // off disk, see it's different, and run through the real install/
+    // activate/controllerchange lifecycle exactly as a genuine deploy
+    // would.
+    await page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.getRegistration();
+      await registration.update();
+    });
+
+    const bannerAppeared = await page.locator('[aria-label="Dismiss update notice"]').first()
+      .waitFor({ state: "visible", timeout: 15000 }).then(() => true).catch(() => false);
+    assert(bannerAppeared, "a real new service-worker version triggers the dismissible update banner");
+
+    const stillNoReload = await page.evaluate(() => window.__smokeTestNoReloadMarker === true);
+    assert(stillNoReload, "the update banner appearing did NOT force an automatic page reload — the marker survived");
+
+    await page.getByText("Refresh", { exact: true }).click({ timeout: 5000 });
+    await page.waitForLoadState("load", { timeout: 10000 });
+    const reloadedAway = await page.evaluate(() => window.__smokeTestNoReloadMarker === undefined);
+    assert(reloadedAway, "tapping Refresh on the banner genuinely reloads the page for real");
+  } finally {
+    fs.writeFileSync(distSwPath, originalSwSource);
+  }
+
+  await context.close();
+}
+
 (async () => {
   const browser = await chromium.launch({ executablePath: PLAYWRIGHT_EXECUTABLE });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -848,6 +951,7 @@ async function testPinRecoveryFlow(page) {
     await testInteractiveTour(browser);
     await testBackupMigratesOldFieldShape(page);
     await testPinRecoveryFlow(page);
+    await testServiceWorkerAutoUpdate(browser);
   } catch (err) {
     failed = true;
     console.error("\n" + err.message);
