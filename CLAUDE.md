@@ -3149,6 +3149,23 @@ this date; summarized here for durability.
   no-code schema editor are deliberate scope cuts, not gaps — don't
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
+- **Delete-confirmation UX is genuinely inconsistent across modules —
+  found 10 Sep 2026, a real design-direction call, not fixed
+  unilaterally.** Three different patterns, all live today: the native
+  `window.confirm()` browser dialog (Contacts/Encounters/Testing/
+  ClinicVisits/Medication/SymptomLog/Vaccinations/Measurements/Timeline/
+  Settings — 10 files, the dominant pattern); a custom styled confirm
+  sheet (`DeleteConfirm`, MenstrualHealth's Cycle/Contraception/Pregnancy
+  tabs only); and an inline Cancel/Delete button-swap
+  (PartnerNotification's own delete-list action). All three are real,
+  working, and each internally consistent, but a user moving between
+  modules genuinely sees three different visual treatments for the same
+  action. Two directions, both legitimate: normalise the two outliers to
+  the dominant `window.confirm()` (smallest diff, matches the existing
+  majority) or normalise everything to a custom sheet (better-looking,
+  matches the rest of this app's own UI language, but touches ~10
+  files). Left as an explicit open item rather than picked unilaterally
+  — worth the owner's own call before either direction ships.
 
 ## Recently shipped (10 Sep 2026 — see Notion for full detail)
 
@@ -3198,6 +3215,39 @@ all 14 real asset files (PWA/favicon/apple-touch-icon, Android legacy
 launcher icons at every density) from 4096px masters. Verified: production
 build succeeds, full 13-flow smoke-test suite passes against a real
 `vite preview` build.
+
+## Recently shipped (10 Sep 2026, later still — see Notion for full detail)
+
+Real ask, once the backlog and icon redesign were both done: "one final
+full complete audit... from fresh install to 6 months later," simulating
+real use — onboarding, deleting the seed/demo data as a normal user
+(not via Developer Tools' reset), and exploring Settings — checking for
+consistent feel, ambiguity, and icon/emoji clarity.
+
+**Real crash found and fixed, not from inspection — from actually
+performing a bulk delete as a user would.** `SHOS_Contacts_Prototype.jsx`'s
+own `refresh()` did `setContacts(loadContacts())`; `loadContacts()`
+returns `ContactRepository.getAll()`, async since that repository's own
+Phase 2 conversion earlier this multi-session effort — so `contacts`
+state was being set to a raw, unresolved Promise, crashing the very
+next render's `contacts.filter(...)` in `ContactsList` and tripping the
+`ErrorBoundary`. Reproduced live via a real "Select all" + Delete on
+the full seed contact list (also affects bulk Archive, same `refresh()`
+call). This is the exact bare-loader-reference bug class already fixed
+once this session for Encounters' own `loadContacts`/`loadEncounters` —
+a repo-wide sweep after the fix (`setX(loadX())` with no `.then`/`await`
+across every module file) found no other instances, so this really was
+the one remaining gap, not a sign the earlier fix was incomplete.
+Verified live: bulk delete and bulk archive both complete cleanly with
+correct empty states. Full 13-flow smoke-test suite passes.
+
+Otherwise a clean pass: onboarding copy is clear with no ambiguous
+questions; Home and all 5 tabs read consistently against the seed data;
+Settings' all 22 rows (per the 9 Sep reorg) have distinct, apt icons;
+colour/type consistency (from the audit earlier the same day) held up
+under real navigation. One real, unresolved finding — a genuine
+inconsistency, not a bug — logged below in Known Issues rather than
+fixed unilaterally, since it's a real design-direction call.
 
 ## Recently shipped (9 Sep 2026, backlog finish-out — see Notion for full detail)
 
