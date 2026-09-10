@@ -594,7 +594,11 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   );
 
   return (
-    <div style={{ padding: "20px 16px", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ background: darkMode ? DARK.bg : NEUTRAL.bg, minHeight: "100vh", display: "flex", justifyContent: "center" }}>
+      {/* ADDED — real report: same thin-border desktop-width-cap
+          treatment already applied to Contacts/My Profile/Medication
+          Dashboard, rolled out here for consistency. */}
+      <div style={{ width: "100%", maxWidth: 600, borderLeft: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, borderRight: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, padding: "20px 16px", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}>
       <h1 style={{ ...TYPE.screenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         {profileName ? `${profileName}'s dashboard` : "Your dashboard"}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -914,10 +918,13 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         // bottom) taller than the viewport was simply unreachable, no
         // way to scroll to it at all. Matches every other module's
         // overlay wrapper elsewhere in this file.
-        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", zIndex: 200, overflowY: "auto" }}>
-          <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
+        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }}>
+          <div style={{ width: "100%", maxWidth: 600, borderLeft: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, borderRight: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}` }}>
+            <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
+          </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

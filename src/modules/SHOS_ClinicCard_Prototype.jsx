@@ -316,7 +316,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   }));
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+      {/* ADDED — real report: same thin-border desktop-width-cap
+          treatment already applied to Contacts/My Profile/Medication
+          Dashboard, rolled out here for consistency. */}
+      <div style={{ width: "100%", maxWidth: 600, borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary, flex: 1 }}>{profile.nickname ? `${profile.nickname}'s clinic card` : "Clinic Card"}</span>
@@ -634,6 +638,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           <MyProfileModule onClose={() => setShowMyProfile(false)} openEditingOnMount registerModuleBackHandler={registerModuleBackHandler} />
         </div>
       )}
+      </div>
     </div>
   );
 }

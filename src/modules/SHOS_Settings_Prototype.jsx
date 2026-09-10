@@ -4300,7 +4300,11 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+      {/* ADDED — real report: same thin-border desktop-width-cap
+          treatment already applied to Contacts/My Profile/Medication
+          Dashboard, rolled out here for consistency. */}
+      <div style={{ width: "100%", maxWidth: 600, borderLeft: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, borderRight: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}` }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px", position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Settings</span>
@@ -4528,6 +4532,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       {showAbout && (
         <AboutScreen onClose={() => setShowAbout(false)} />
       )}
+      </div>
     </div>
   );
 }

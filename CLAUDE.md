@@ -3199,6 +3199,57 @@ this date; summarized here for durability.
   screenshot per module) rather than fixing sites one at a time as
   they're individually reported.
 
+## Recently shipped (10 Sep 2026, desktop-width-cap border consistency)
+
+Real live report: "contacts has very thin grey lines running vertically
+on both sides, making it look like centre is on a raised button or
+something. I like it, but not on encounters or healthcare module
+etc...should be imho." Root-caused, not guessed: a `maxWidth: 600` +
+`borderLeft`/`borderRight` wrapper (centers content on a wide viewport,
+with a 1px border marking the cap) was added to Contacts, My Profile,
+and Medication Dashboard at various earlier points this multi-session
+effort — each independently, per their own comments — and never rolled
+out anywhere else. The border itself renders regardless of viewport
+width (visible as a thin edge line even at phone width, the full
+grey-margin "raised card" look only appears past 600px), which is why
+it showed up in the Play Store screenshots above for Contacts but not
+Encounters/Healthcare.
+
+Rolled out to the remaining module screens reachable directly from
+`App.jsx` (Encounters, Healthcare, Home, Settings) and every
+independently-invoked full-screen overlay (Global Search, Clinic Card,
+Attachments, Partner Notification) — 8 files total. Deliberately did
+NOT chase this into every further-nested sub-screen (Healthcare's own
+6 sub-tabs, Timeline, Registry Management, Option List Editor, or any
+module's own Settings-style nested overlay) — checked against existing
+precedent first, not assumed: Medication Dashboard's own nested
+`MedicationSettingsScreen` (a `position: fixed` overlay) was already,
+deliberately left unwrapped even after this pattern shipped on
+Medication Dashboard's own landing screen, so leaving equivalently
+-nested screens unwrapped elsewhere (Registry Management, Option List
+Editor, each Healthcare sub-module's own Edit/Detail sheets, etc.)
+matches how the app already behaves, not a new gap. Healthcare's 6
+sub-tabs (Testing/Clinic Visits/Vaccinations/Symptoms/Measurements/
+Menstrual & Contraception) and Timeline needed no direct edit at all —
+each already renders as normal-flow content nested inside its own
+already-wrapped parent (Healthcare or, for Timeline, whichever of
+Healthcare/Home invoked it), so they inherit the border automatically.
+
+Encounters needed 3 sites (its landing list, detail view, and edit
+sheet — the module's own top-level component is a thin switcher, not a
+single screen). A genuinely useful side effect, not a coincidence:
+Encounters' own FAB button already had a `maxWidth: 600, margin: "0
+auto"` comment reading "wrapped for wide-viewport centering," dated
+26 Aug — the wrap this fix adds was already anticipated in that
+comment and never finished.
+
+Verified live: full build, `npx eslint .` clean, all 15 smoke-test
+flows pass. Visual verification specifically needed a DESKTOP-width
+viewport (1000px, not the ~400px phone width used for the Play Store
+screenshots) to actually see the grey-margin effect the report
+described — confirmed all 5 primary screens (Contacts/Encounters/
+Healthcare/Home/Medication) now render identically at that width.
+
 ## Recently shipped (10 Sep 2026, Play Store readiness)
 
 Real ask: continue through the deferred backlog. Real-device testing

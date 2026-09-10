@@ -139,7 +139,17 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   );
 
   return (
-    <div style={{ fontFamily: FONT_FAMILY }}>
+    <div style={{ fontFamily: FONT_FAMILY, display: "flex", justifyContent: "center" }}>
+      {/* ADDED — real report: thin vertical border lines already shipped
+          on Contacts/My Profile/Medication Dashboard as a deliberate
+          desktop-width-cap treatment, but never rolled out here — this
+          wraps the whole Healthcare screen (header, sub-tabs, summary,
+          and whichever sub-module is active below), so every one of the
+          6 Healthcare sub-screens (Testing/Clinic Visits/Vaccinations/
+          Symptoms/Measurements/Menstrual & Contraception) inherits it
+          automatically rather than needing its own copy — none of them
+          are reachable except through this screen. */}
+      <div style={{ width: "100%", maxWidth: 600, borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }}>
       {/* ADDED 26 Aug 2026 — real ask: page title on a banner filled
           with the module's own colour, same pattern applied across
           every module this pass. Healthcare didn't have a title
@@ -226,10 +236,13 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           registerModuleBackHandler={registerModuleBackHandler} />
       )}
       {showTimeline && (
-        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 210 }}>
-          <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
+        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 210, display: "flex", justifyContent: "center" }}>
+          <div style={{ width: "100%", maxWidth: 600, borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }}>
+            <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
+          </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

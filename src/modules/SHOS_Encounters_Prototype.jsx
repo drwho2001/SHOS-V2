@@ -1044,7 +1044,13 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   }, [encounters, showArchived, dateFilter, query, contacts, lastTestDate, kinkNameById]);
 
   return (
-    <div style={{ background: T.bg, minHeight: "100vh", paddingBottom: 90 }}>
+    <div style={{ background: T.bg, minHeight: "100vh", display: "flex", justifyContent: "center" }}>
+      {/* ADDED — real report: thin vertical border lines already shipped
+          on Contacts/My Profile/Medication Dashboard as a deliberate
+          desktop-width-cap treatment, but never rolled out to the rest
+          of the app — inconsistent by omission, not by design. Same
+          maxWidth: 600 + border pattern applied here. */}
+      <div style={{ width: "100%", maxWidth: 600, background: T.bg, minHeight: "100vh", borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}`, paddingBottom: 90 }}>
       <div style={{ position: "sticky", top: 0, background: T.bg, zIndex: 5 }}>
         {/* ADDED 26 Aug 2026 — real ask: page title on a banner filled
             with the module's own colour, same pattern applied across
@@ -1169,6 +1175,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           <Plus size={24} />
         </div>
       </div>
+      </div>
     </div>
   );
 }
@@ -1224,7 +1231,10 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
   };
 
   return (
-    <div style={{ background: T.bg, minHeight: "100vh", paddingBottom: 40 }}>
+    <div style={{ background: T.bg, minHeight: "100vh", display: "flex", justifyContent: "center" }}>
+      {/* ADDED — real report: same thin-border desktop-width-cap
+          treatment already applied to ActivityLanding above. */}
+      <div style={{ width: "100%", maxWidth: 600, background: T.bg, minHeight: "100vh", borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}`, paddingBottom: 40 }}>
       {/* CHANGED — real ask: "Next to back button shows date, instead
           should show back, and centred on screen at top should be the
           encounter title." Real title (not date) now centered; date
@@ -1352,6 +1362,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           </div>
         )}
       </div>
+      </div>
     </div>
   );
 }
@@ -1465,7 +1476,10 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto" }} data-encounter-sheet>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }} data-encounter-sheet>
+      {/* ADDED — real report: same thin-border desktop-width-cap
+          treatment already applied to this module's other screens. */}
+      <div style={{ width: "100%", maxWidth: 600, background: T.bg, minHeight: "100vh", borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }}>
       {/* CHANGED 26 Aug 2026 — real ask: forms (Add/Edit Activity)
           should also have the module banner title, matching every
           other module screen. */}
@@ -1555,6 +1569,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={4}
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box", marginTop: 8 }} />
         </SectionCard>
+      </div>
       </div>
     </div>
   );
