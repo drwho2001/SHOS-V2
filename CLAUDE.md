@@ -3163,17 +3163,30 @@ this date; summarized here for durability.
   real shared UI component — used everywhere, keeping each module's own
   accent colour on the card's left stripe/Cancel button while the
   danger cues (border/background/confirm button) always stay red.
-- **Accessibility — first real pass done 10 Sep 2026, module-accent
-  contrast sweep and the app-wide `scrollable-region-focusable` gap
-  both RESOLVED the same day (see "Recently shipped" below for all
-  three).** An automated `axe-core` scan (never done systematically
-  before this) found and fixed two real contrast bugs and added a
-  `<main>` landmark + real `<h1>` screen titles on the 6 primary
-  screens. Still out of scope entirely, genuinely bigger undertakings:
-  a real screen-reader walkthrough (axe catches structural/contrast
-  issues, not actual reading-order/announcement quality), and the
-  broader `region`-landmark finding (every screen's own content not
-  wrapped in semantic regions).
+- **Accessibility — RESOLVED 10 Sep 2026: module-accent contrast sweep,
+  the app-wide `scrollable-region-focusable` gap, the region-landmark
+  gap, AND a real screen-reader-quality pass are all done (see
+  "Recently shipped" below for the full set).** An automated `axe-core`
+  scan (never done systematically before this session) found and fixed
+  two real contrast bugs and added a `<main>` landmark + real `<h1>`
+  screen titles on the primary screens — later extended to 2 more
+  screens (Encounters, Contacts' own per-contact detail view) once a
+  full re-scan found they'd been missed. The `region`-landmark gap
+  turned out to be narrower than originally scoped once actually
+  investigated: only Settings and Global Search (the two screens
+  rendered as direct siblings of `App.jsx`'s own `<main>`, not nested
+  inside it) plus 3 small transient dialogs were genuinely unlandmarked
+  — fixed with `role="region"`/`role="dialog"`, not a new wrapper
+  component. The screen-reader-quality pass found and fixed a real,
+  significant gap beyond axe's own structural checks: the entire bottom
+  navigation (the app's primary means of moving between screens) had no
+  `tabIndex`/keyboard handler at all, and all 21 undo/redo/delete toast
+  sites across 11 files were mouse/touch-only with no live-region
+  announcement — both fixed and verified live (real Tab/Enter-key
+  navigation, a real keyboard-triggered undo restoring a deleted
+  contact). Still genuinely out of scope, a bigger undertaking: a full
+  screen-reader reading-order/announcement-quality audit beyond the
+  specific gaps found here.
 - **Spacing consistency — audited 10 Sep 2026, clean result, not a
   gap anymore.** The real live report that started this (Contacts'
   "N active" count sitting flush against the header banner's bottom
@@ -3204,6 +3217,149 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (10 Sep 2026, region-landmark + screen-reader pass, and a total-app audit)
+
+Real ask: check a historical Known Issues reference that didn't resolve
+cleanly on re-read (traced via `git log`/commit messages to
+`097daab` — the "design-direction call" it named was the
+delete-confirmation pattern inconsistency, already resolved the same
+day it was logged, in `122b7e8`'s `ConfirmDeleteCard` rollout — nothing
+outstanding there, just a stale forward-reference that never got a
+matching Known Issues bullet), then do the deferred region-landmark/
+screen-reader pass, then a genuinely thorough total-app audit — "as if
+this app had never been built before," the explicit framing for this
+round.
+
+**Region-landmark gap — narrower than originally scoped, verified live
+via axe-core before fixing anything.** The original framing pointed at
+"every screen's own content not wrapped in semantic regions" as a
+big, cross-cutting problem. Checked directly with `axe-core`'s own
+`region` rule against every primary screen first: Home/Contacts/
+Encounters/Medication/Healthcare all came back clean — the earlier
+`<main>` landmark fix already covers everything rendered as one of
+`App.jsx`'s own tab contents, since that's everywhere navigation
+within a module actually lives (Healthcare's own sub-tabs, Testing,
+Clinic Visits, Attachments, Partner Notification, Clinic Card — all
+DOM descendants of that one `<main>`, confirmed by tracing each
+`import` in `App.jsx` directly, not assumed). The real, narrow gap was
+exactly 2 screens rendered as direct SIBLINGS of `<main>` instead —
+`SettingsScreen` and `GlobalSearchScreen`, both `App.jsx`-level
+overlays outside the landmark entirely, confirmed live (32 real
+`axe-core` violations on Settings' main menu, same on Global Search).
+Fixed with one `role="region"` each on their own outer root — and
+because Settings' own ~20 sub-screens (Privacy, Developer tools, etc.)
+are all DOM descendants of that SAME root regardless of their own
+`position:fixed` styling, this one fix covers the whole Settings tree,
+verified live by drilling into 2 sub-screens directly. 3 more small,
+genuinely transient dialogs (`AppLockPrompt`, the import-mode dialog,
+the encrypted-import password prompt) got `role="dialog"` instead —
+more accurate than "region" for a dismissible prompt, not a page
+section.
+
+**Screen-reader-quality pass — found real, significant gaps axe's
+structural checks don't catch on their own.** Investigating the region
+gap surfaced something bigger: the bottom navigation bar — the app's
+own primary means of moving between screens — had `onClick` handlers
+on plain `<div>`s with no `tabIndex`, no `role`, and no keyboard
+handler at all, on any of the 5 tabs. A keyboard-only or
+screen-reader user could not navigate this app AT ALL beyond whatever
+screen it opened to. Fixed with `role="button"`/`aria-label`/
+`aria-current`/`tabIndex={0}`/a real `onKeyDown` (Enter/Space) on every
+tab, plus `role="navigation"` on the containing bar. Verified live via
+a genuine keyboard-only interaction, not just reading the diff:
+focused the Contacts tab directly and pressed Enter — it navigated.
+The same missing-keyboard-access shape turned up in a second place
+once looked for deliberately: every undo/redo/delete-restore toast in
+the app (21 real sites across 11 files — `editUndoHelpers`' own
+per-record toast, duplicated independently per module the same way
+delete-confirmations once were, plus a separate bulk-delete toast
+duplicated the same way) was a clickable `<div>` with no keyboard
+access and no live-region announcement, so a screen-reader user
+wouldn't even know one had appeared. Fixed all 21 with `role="button"`/
+`tabIndex={0}`/`aria-live="polite"`/a real `onKeyDown`, plus a smaller
+transient "Press back again to exit" toast (`role="status"`, no
+"button" semantics needed since it's not clickable). Verified live
+end-to-end, the strongest possible proof: deleted a real contact via
+its own profile menu, then — using only `.focus()` and a real
+`page.keyboard.press("Enter")`, never a click — restored it via the
+undo toast, confirming both the keyboard focus AND the actual undo
+logic fire correctly together.
+
+A full re-scan while verifying this also caught 2 real, unrelated
+findings the earlier accessibility pass's own file scope had missed:
+Encounters' own screen title and Contacts' per-contact profile
+screen both had ZERO `<h1>` at all (`page-has-heading-one`) — the
+original heading-audit pass only tokenized 6 screens explicitly named
+at the time; Encounters was never one of them despite having the same
+colored-banner-title shape as the other 4 real screen banners, and
+Contacts' own list↔detail navigation turned out to fully swap (the
+list's `<h1>` unmounts when the detail view replaces it, confirmed
+live, not assumed) — unlike Healthcare/Medication Dashboard, which
+keep their own top-level `<h1>` mounted across every sub-navigation.
+Both fixed with a real `<h1>` (Encounters' own banner title; the
+contact's own name on the profile screen) — then the SAME swap
+pattern was checked on Encounters' own detail view too (once its
+landing got fixed) and found missing there as well, fixed the same
+way. Also found, via a full (not `region`-restricted) `axe-core` scan:
+Contacts' own sort-by chip row had a real, serious `color-contrast`
+violation on its ACTIVE "Last encounter" chip — `T.contactsTeal` text
+on a plain background, which an earlier same-day contrast-sweep entry
+had explicitly checked and called fine specifically BECAUSE it wasn't
+a self-tint. That reasoning was wrong — fixed the same way as every
+other site in that sweep (swapped to the already-existing
+`T.contactsTealText`), and the earlier entry corrected in place rather
+than left standing as a false "verified clean."
+
+**Total-app audit — found one real, significant, previously-invisible
+data-safety gap.** `storageAdapter.js`'s own `save()` has always
+returned `true`/`false` specifically so a caller could notice a failed
+write — its own header comment says so — but a full grep across every
+one of the ~31 real call sites in the app (every repository/registry's
+own `persist()`) found NOT ONE that ever checked it. A genuine
+`localStorage` quota-exceeded failure (a real, plausible risk on a
+long-installed device — this session's own earlier data-volume stress
+test already proved real installs can reach tens of thousands of
+records) would silently vanish into a caught `catch` block with only a
+`console.error` nobody watches, while the app's own in-memory React
+state carries on as if the save succeeded — real, silent data loss on
+an app whose entire design promise is "your data is safe, on your own
+device." Retrofitting a check at all 31 fire-and-forget call sites
+would be real, disproportionate churn for what should be a rare
+failure — fixed at the one real chokepoint instead:
+`storageAdapter.js`'s `save()` now dispatches a plain
+`"shos:storage-save-failed"` DOM event on failure; `main.jsx`'s
+existing global error-listener pattern (already used for
+`window.onerror`/`unhandledrejection`) durably logs it to the same
+on-device error log, and a new listener in `App.jsx` shows a real,
+persistent (not auto-dismissing — this is too serious to risk someone
+missing it), unmissable red banner telling the user their last change
+may not have saved and to check their device's free storage.
+Deliberately does NOT try to identify or retry the specific failed
+write — by the time this fires the calling code has already moved on,
+so the honest, safe action is a clear warning, not a false promise of
+auto-recovery. Verified live end-to-end: simulated a real
+`QuotaExceededError` via the exact same event `storageAdapter.js`
+itself dispatches, confirmed the banner renders with real
+`role="alert"` semantics, is genuinely dismissible, and — the real
+proof the fix is durable, not just visual — confirmed the failure
+shows up afterward in the real Settings → Developer Tools → Error log
+screen, not just a console line.
+
+Also directly verified (a genuine "checked, not assumed" pass, not a
+new gap): the installed PWA's own offline support, previously
+implemented (`public/sw.js`'s own header comment already documents the
+network-first-with-cache-fallback design) but never actually
+live-tested end to end. Warmed the service worker via a real online
+load, then genuinely took the browser context offline and reloaded —
+the app opened correctly with real cached data (medication due-state,
+etc.) and zero page errors. Clean result, no code change needed —
+documented here rather than left as an untested assumption.
+
+Verified live throughout: full build, `npx eslint .` clean, and the
+full 15-flow smoke-test suite passes against a real `vite preview`
+production build both before and after the total-audit fixes (two
+separate full runs, not one reused result).
 
 ## Recently shipped (10 Sep 2026, scrollable-region-focusable fix)
 
@@ -3394,10 +3550,22 @@ text-color-on-its-own-tint pairing (not just border/background alone)
 before touching it — several `${T.contactsTeal}15`-alpha grep hits
 turned out to be border-only or a different, plain-background chip
 (Contacts' own separate "A–Z/Newest/Last encounter" sort-by row, e.g.,
-uses `T.contactsTeal` as text on a PLAIN background, not a self-tint —
-correctly left alone, a different pattern/known issue if any, not this
-one) — caught by reading surrounding JSX context for each hit, not
-assumed from the grep alone.
+uses `T.contactsTeal` as text on a PLAIN background, not a self-tint,
+so it was left alone here as a different pattern).
+
+**Correction, 10 Sep 2026, later the same day**: that sort-by row's
+plain-background usage was NOT actually fine — a full WCAG 2 AA
+`axe-core` scan (run as part of a later accessibility pass) flagged it
+as a real, serious `color-contrast` violation on its own terms, not
+because it's a self-tint. `T.contactsTeal` directly on this app's
+plain surface colour still fails 4.5:1 in light mode. Fixed the same
+way as every other site in this sweep — swapped to the already-existing
+`T.contactsTealText`/`ACCENT_TEXT_SAFE.contacts` for just the active
+chip's text colour, border/background left untouched. The real lesson:
+"plain background, not a self-tint" was the wrong test for whether a
+module accent needs the safe text variant — the right test is just the
+actual computed contrast ratio, checked directly, not inferred from
+the CSS pattern.
 
 Verified live via Playwright against the real rendered pixels, not
 just the math: read the actual computed `color`/`background-color` off

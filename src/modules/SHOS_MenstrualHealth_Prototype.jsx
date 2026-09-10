@@ -302,6 +302,8 @@ function DeleteToast({ toast, onUndo, onRedo, T, noun }) {
   if (!toast) return null;
   return (
     <div onClick={toast.mode === "undo" ? onUndo : onRedo}
+      role="button" tabIndex={0} aria-live="polite"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (toast.mode === "undo" ? onUndo : onRedo)(); } }}
       style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
       <span style={{ fontSize: 13 }}>{toast.mode === "undo" ? `${toast.records.length} ${noun}${toast.records.length > 1 ? "s" : ""} deleted` : `${toast.records.length} ${noun}${toast.records.length > 1 ? "s" : ""} restored`}</span>
       <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue }}>{toast.mode === "undo" ? "Tap to undo" : "Tap to redo"}</span>

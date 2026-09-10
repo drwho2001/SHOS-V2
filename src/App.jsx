@@ -558,7 +558,12 @@ function AppLockPrompt({ onDismiss, onDismissForever, onOpenSettings }) {
   const [darkMode] = useDarkModePreference();
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={onDismiss}>
+    // ADDED — same region-landmark gap as SettingsScreen/GlobalSearch:
+    // this renders as a direct sibling of App.jsx's own <main>, so its
+    // content was never inside any landmark. A dialog role is more
+    // accurate here than "region" — this is a transient, dismissible
+    // prompt, not a distinct section of app content.
+    <div role="dialog" aria-label="Want to lock the app with a PIN?" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={onDismiss}>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <Eye size={20} color={ACCENTS.home} />
@@ -1121,6 +1126,28 @@ export default function App() {
     const onControllerChange = () => setSwUpdateAvailable(true);
     navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
     return () => navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+  }, []);
+  // ADDED — real gap found via a total-app audit: storageAdapter.js's
+  // save() has always returned true/false so a caller could notice a
+  // failed write, but a full grep found every one of the ~31 real call
+  // sites in the app fire-and-forgets it — a genuine quota-exceeded
+  // failure would silently lose data with no visible sign anything
+  // went wrong. storageAdapter.js now dispatches a real
+  // "shos:storage-save-failed" event from its one save() chokepoint;
+  // main.jsx's own listener durably logs it (same path as its other
+  // two global error listeners) — this is the separate, user-visible
+  // half: a real, persistent (not auto-dismissing — this is too
+  // serious to risk someone missing it) banner. Deliberately does NOT
+  // try to identify or re-run the specific failed write — by the time
+  // this fires, the calling code's own fire-and-forget already moved
+  // on, so the honest, safe action is telling the user their most
+  // recent change may not be saved and to check their device's free
+  // storage, not pretending to auto-recover something already lost.
+  const [saveFailedBanner, setSaveFailedBanner] = useState(null);
+  useEffect(() => {
+    const onSaveFailed = (event) => setSaveFailedBanner(event.detail?.message || "Unknown error");
+    window.addEventListener("shos:storage-save-failed", onSaveFailed);
+    return () => window.removeEventListener("shos:storage-save-failed", onSaveFailed);
   }, []);
   const [notifToast, setNotifToast] = useState(null);
   const notifToastTimerRef = useRef(null);
@@ -1780,6 +1807,29 @@ export default function App() {
           rather than stack). Each banner's own ref now measures just
           its own content height (no baked-in safe-area padding), summed
           below for the main content wrapper's paddingTop. */}
+      {/* ADDED — real gap found via a total-app audit: see
+          saveFailedBanner's own declaration above for the full
+          reasoning. Deliberately zIndex 150 — above the due-reminder
+          banners (100, a routine daily cadence this is not) but below
+          real modals/sheets (200+, same "the user's active work takes
+          priority, the banner reappears once they close it" precedent
+          already established there). Does NOT participate in the
+          due-banner group's own height-offset system (dueBannerHeight
+          etc.) — this is a rare, not-recurring event, not worth the
+          real risk of touching that already-delicate shared
+          measurement code for something that should essentially never
+          fire in normal use. */}
+      {saveFailedBanner && (
+        <div role="alert" style={{ position: "fixed", top: "env(safe-area-inset-top)", left: 16, right: 16, marginTop: 10, display: "flex", alignItems: "flex-start", gap: 10, background: ACTION.red, color: "#FFFFFF", padding: "12px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 150, fontFamily: "'Inter', sans-serif" }}>
+          <AlertTriangle size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>Your last change may not have saved</div>
+            <div style={{ fontSize: 12, marginTop: 2, color: "rgba(255,255,255,.9)" }}>Your device may be low on storage. Check Settings → Developer tools → Storage, and try freeing up space.</div>
+          </div>
+          <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setSaveFailedBanner(null)} aria-label="Dismiss storage save-failed banner" />
+        </div>
+      )}
+
       {(dueMeds.length > 0 || refillDue.length > 0 || testingDue || clinicVisitDue) && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 100, fontFamily: "'Inter', sans-serif" }}>
           {dueMeds.length > 0 && (
@@ -1981,7 +2031,16 @@ export default function App() {
           reports for exactly this gap (0 on a device/browser where the
           system nav bar doesn't overlay content at all, so this is a
           no-op there — not Android-only special-casing). */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: darkMode ? DARK.surface : NEUTRAL.surface, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "10px 0 calc(14px + env(safe-area-inset-bottom))", zIndex: 10, fontFamily: "'Inter', sans-serif" }}>
+      {/* ADDED — real accessibility gap found via a screen-reader-quality
+          pass (axe's own "region" rule flagged these 4 tab labels as
+          outside any landmark; digging into why revealed a bigger issue
+          — none of the 5 tabs, Home included, had a tabIndex or keydown
+          handler at all, so the app's entire primary navigation was
+          unreachable by keyboard/screen-reader alike, not just
+          missing a landmark). role="navigation"+aria-label closes the
+          landmark gap; each tab below gets tabIndex/onKeyDown/
+          aria-current to actually be operable, not just labeled. */}
+      <div role="navigation" aria-label="Main navigation" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: darkMode ? DARK.surface : NEUTRAL.surface, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "10px 0 calc(14px + env(safe-area-inset-bottom))", zIndex: 10, fontFamily: "'Inter', sans-serif" }}>
         {getOrderedTabs(tabOrder).map((tab) => {
           const isActive = tab.key === active;
           const isBuilt = tab.component !== null || tab.key === "home";
@@ -1991,7 +2050,9 @@ export default function App() {
           // distinct from the other four flat tabs.
           if (tab.key === "home") {
             return (
-              <div key={tab.key} data-tour="tab-home" role="button" aria-label={tab.label} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
+              <div key={tab.key} data-tour="tab-home" role="button" aria-label={tab.label} aria-current={isActive ? "page" : undefined} tabIndex={0}
+                onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActive(tab.key); setNavResetCount((c) => c + 1); } }}
                 onMouseDown={startHomeLongPress} onMouseUp={cancelHomeLongPress} onMouseLeave={cancelHomeLongPress}
                 onTouchStart={startHomeLongPress} onTouchEnd={cancelHomeLongPress}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", marginTop: -18 }}>
@@ -2007,7 +2068,9 @@ export default function App() {
               Home is explicitly excluded — stays the raised circle
               treatment above, unchanged. */}
           return (
-            <div key={tab.key} data-tour={`tab-${tab.key}`} onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
+            <div key={tab.key} data-tour={`tab-${tab.key}`} role="button" aria-label={tab.label} aria-current={isActive ? "page" : undefined} tabIndex={0}
+              onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActive(tab.key); setNavResetCount((c) => c + 1); } }}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", opacity: isBuilt ? 1 : 0.45 }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 14px", borderRadius: 14, background: isActive ? resolveTabAccent(tab, darkMode) : "transparent" }}>
                 {/* FIXED — real device bug: Phosphor's "fill" weight for
@@ -2032,7 +2095,12 @@ export default function App() {
       </div>
 
       {backExitToast && (
-        <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", background: "#1B1B1F", color: "#FFFFFF", padding: "10px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300 }}>
+        // ADDED — real screen-reader-quality gap found the same pass:
+        // a sighted user sees this toast appear, but nothing announced
+        // it to a screen reader at all. role="status" is a live region
+        // (polite by default) — it gets announced without stealing
+        // focus, the correct semantics for a transient toast.
+        <div role="status" style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", background: "#1B1B1F", color: "#FFFFFF", padding: "10px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300 }}>
           Press back again to exit
         </div>
       )}
@@ -2066,7 +2134,7 @@ export default function App() {
         />
       )}
       {showImportModeDialog && (
-        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => setShowImportModeDialog(false)}>
+        <div role="dialog" aria-label="Import backup" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => setShowImportModeDialog(false)}>
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
               Import backup
@@ -2091,7 +2159,7 @@ export default function App() {
           determined the picked file is genuinely encrypted — a plain
           backup never reaches this, it restores immediately instead. */}
       {pendingEncryptedEnvelope && (
-        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => { setPendingEncryptedEnvelope(null); setDecryptPassword(""); setDecryptError(""); }}>
+        <div role="dialog" aria-label="This backup is encrypted" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => { setPendingEncryptedEnvelope(null); setDecryptPassword(""); setDecryptError(""); }}>
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
               This backup is encrypted

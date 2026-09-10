@@ -709,6 +709,8 @@ function DeleteUndoToast({ toast, onUndo, onRedo, T }) {
   const isUndo = toast.mode === "undo";
   return (
     <div onClick={isUndo ? onUndo : onRedo}
+      role="button" tabIndex={0} aria-live="polite"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (isUndo ? onUndo : onRedo)(); } }}
       style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: isUndo ? "#1B1B1F" : T.healthcareBlue, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
       {isUndo ? <Check size={14} /> : <RefreshCcw size={14} />}
       {isUndo ? "Episode deleted — tap to undo" : "Undone — tap to redo"}

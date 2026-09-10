@@ -53,6 +53,27 @@ export const localStorageAdapter = {
   // Saves a value. Returns true/false so a repository can notice if a
   // save silently failed (e.g. storage quota exceeded) rather than
   // assuming data is safe when it isn't.
+  //
+  // FIXED 10 Sep 2026 — real gap found via a total-app audit: this
+  // return value had existed since the file's own header comment was
+  // written, but a full grep across every one of the ~31 real call
+  // sites in the app (every repository/registry's own persist()) found
+  // NOT ONE that actually checked it — every save is fire-and-forget.
+  // A genuine localStorage.setItem() failure (quota exceeded is the
+  // real, plausible one — this app's own data-volume stress test
+  // already proved real installs can reach tens of thousands of
+  // records) would silently vanish into a caught catch block with only
+  // a console.error nobody watches, while the user's own in-memory
+  // React state carries on as if the save succeeded — the exact
+  // "assuming data is safe when it isn't" scenario this comment always
+  // warned about, just never actually wired up. Retrofitting a check
+  // at all 31 fire-and-forget call sites would be a much bigger,
+  // riskier change than this app's own data actually needs — instead,
+  // this ONE real chokepoint now dispatches a plain DOM CustomEvent on
+  // failure; App.jsx's own top-level listener is the single place that
+  // turns it into a real, persistent, unmissable banner (see its own
+  // comment) and a durable local error-log entry, without every
+  // repository needing its own UI-surfacing logic.
   async save(key, value) {
     try {
       const encrypted = await encryptForStorage(JSON.stringify(value));
@@ -60,6 +81,9 @@ export const localStorageAdapter = {
       return true;
     } catch (err) {
       console.error(`Storage save failed for "${key}":`, err);
+      if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+        window.dispatchEvent(new CustomEvent("shos:storage-save-failed", { detail: { key, message: err?.message || String(err) } }));
+      }
       return false;
     }
   },

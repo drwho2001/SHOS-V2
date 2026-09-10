@@ -4335,7 +4335,15 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+    // ADDED — real accessibility gap found via a region-landmark audit:
+    // SettingsScreen renders as a direct sibling of App.jsx's own
+    // <main> (not nested inside it), so nothing here — the main menu's
+    // own content, and all ~20 sub-screens below, which are DOM
+    // descendants of THIS root regardless of their own position:fixed
+    // styling — was ever inside any landmark at all. One role="region"
+    // here covers the whole tree; confirmed live via axe-core before
+    // and after, not assumed from the DOM shape alone.
+    <div tabIndex={0} role="region" aria-label="Settings" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}

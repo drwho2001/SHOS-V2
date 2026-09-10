@@ -315,7 +315,10 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: T.bg, zIndex: 200, display: "flex", justifyContent: "center", fontFamily: FONT_FAMILY }}>
+    // ADDED — same region-landmark gap as SettingsScreen: this renders
+    // as a direct sibling of App.jsx's own <main>, so its content was
+    // never inside any landmark.
+    <div role="region" aria-label="Search" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: T.bg, zIndex: 200, display: "flex", justifyContent: "center", fontFamily: FONT_FAMILY }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}

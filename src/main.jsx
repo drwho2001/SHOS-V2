@@ -93,6 +93,19 @@ window.addEventListener("error", (event) => {
 window.addEventListener("unhandledrejection", (event) => {
   logErrorLocally("unhandledrejection", event.reason);
 });
+// ADDED — real gap found via a total-app audit: storageAdapter.js's
+// own save() has always returned true/false so a caller could notice
+// a failed write, but nothing anywhere ever checked it — a genuine
+// localStorage quota-exceeded failure would silently lose data with
+// zero record of it happening. storageAdapter.js now dispatches this
+// event from its one real save() chokepoint on failure; durably
+// logging it here (same path as the other two global listeners,
+// registered this early for the same reason) means Developer Tools'
+// Error log shows it even if the user misses the live banner
+// App.jsx's own separate listener shows for this same event.
+window.addEventListener("shos:storage-save-failed", (event) => {
+  logErrorLocally("storage-save-failed", event.detail?.message || "Unknown storage error");
+});
 
 class ErrorBoundary extends React.Component {
   constructor(props) {

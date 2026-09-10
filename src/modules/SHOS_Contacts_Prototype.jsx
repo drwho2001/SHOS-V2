@@ -2054,7 +2054,13 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
       <div style={{ padding: "0 16px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 2 }}>
           <span style={{ width: 14, height: 14, borderRadius: radius.full, background: T.contactsTeal, display: "inline-block" }} />
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 20, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>
+          {/* CHANGED — real accessibility gap found via a full axe scan
+              (page-has-heading-one): the profile detail view is its
+              own distinct screen (reached via the Contacts list) but
+              had no heading at all — the contact's own name is the
+              natural, real title here. Same <h1>/margin:0 treatment as
+              every other screen title this app already uses. */}
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 20, color: T.textPrimary, margin: 0 }}>{anonymise ? MASKED : displayName(contact)}</h1>
           {contact.age != null && <span style={{ fontSize: 15, color: T.textSecondary }}>{contact.ageIsApprox ? "≈" : ""}{contact.age}</span>}
           <MethodIcons methods={methods} T={T} />
         </div>
@@ -2637,7 +2643,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           { key: "incomplete", label: "Incomplete" },
         ].map((opt) => (
           <div key={opt.key} onClick={() => setSortBy(opt.key)}
-            style={{ padding: "6px 12px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer", border: `1px solid ${sortBy === opt.key ? T.contactsTeal : T.border}`, color: sortBy === opt.key ? T.contactsTeal : T.textSecondary }}>
+            style={{ padding: "6px 12px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer", border: `1px solid ${sortBy === opt.key ? T.contactsTeal : T.border}`, color: sortBy === opt.key ? T.contactsTealText : T.textSecondary }}>
             {opt.label}
           </div>
         ))}
@@ -2661,6 +2667,8 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           toast pattern for consistency. */}
       {deleteToast && (
         <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
+          role="button" tabIndex={0} aria-live="polite"
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (deleteToast.mode === "undo" ? undoDelete : redoDelete)(); } }}
           style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
           <span style={{ fontSize: 13 }}>
             {deleteToast.mode === "undo"
@@ -2849,6 +2857,8 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
           every header shape in this app. */}
       {editUndo.toast && (
         <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
+          role="button" tabIndex={0} aria-live="polite"
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo)(); } }}
           style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.contactsTeal, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
           {editUndo.toast.mode === "undo" ? "Contact updated — tap to undo" : "Undone — tap to redo"}

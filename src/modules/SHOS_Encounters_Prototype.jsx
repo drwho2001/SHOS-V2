@@ -1064,7 +1064,13 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             with the module's own colour, same pattern applied across
             every module this pass. */}
         <div style={{ background: T.encountersPink, borderBottom: "2px solid rgba(0,0,0,0.15)", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 22, color: "#FFFFFF" }}>Encounter</span>
+          {/* CHANGED — real accessibility gap found via a full axe
+              scan (page-has-heading-one): Encounters was missed by the
+              earlier heading pass, which only covered 6 named primary
+              screens — this is a 7th. Same real <h1> treatment, same
+              margin:0 to avoid the browser's own default heading
+              margin adding unwanted spacing. */}
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 22, color: "#FFFFFF", margin: 0 }}>Encounter</h1>
           {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
               matching Medication's pattern — long-press stays as an
               additional quick entry. */}
@@ -1158,6 +1164,8 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
         <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
+          role="button" tabIndex={0} aria-live="polite"
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (deleteToast.mode === "undo" ? undoDelete : redoDelete)(); } }}
           style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 20, right: 20, maxWidth: 560, margin: "0 auto", background: "#1B1B1F", color: "#FFFFFF", padding: "12px 16px", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", zIndex: 40, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
           <span style={{ fontSize: 13 }}>
             {deleteToast.mode === "undo"
@@ -1265,9 +1273,14 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
             named): T.textPrimary for plain nav, the module's own
             accent for the thing that opens edit/actions. */}
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onBack} />
-        <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.recordTitle, color: T.textPrimary, flex: 1, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px" }}>
+        {/* CHANGED — real accessibility gap found via live axe testing:
+            Encounters' landing and detail screens fully swap (the
+            landing's own <h1> unmounts when detail is shown, confirmed
+            live, not assumed), so this detail view had zero headings
+            of its own. Same real <h1> treatment as the landing title. */}
+        <h1 style={{ fontFamily: "'Inter', sans-serif", ...TYPE.recordTitle, margin: 0, color: T.textPrimary, flex: 1, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px" }}>
           {encounter.title || (encounter.date ? new Date(encounter.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Encounter")}
-        </span>
+        </h1>
         <div style={{ position: "relative", flexShrink: 0 }}>
           <MoreVertical size={20} color={T.encountersPink} style={{ cursor: "pointer" }} onClick={() => setMenuOpen((o) => !o)} />
           {menuOpen && (
@@ -1598,6 +1611,8 @@ function EditUndoToast({ toast, onUndo, onRedo, T }) {
   // shape in this app.
   return (
     <div onClick={isUndo ? onUndo : onRedo}
+      role="button" tabIndex={0} aria-live="polite"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (isUndo ? onUndo : onRedo)(); } }}
       style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: isUndo ? "#1B1B1F" : T.encountersPink, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
       {isUndo ? <Check size={14} /> : <RefreshCcw size={14} />}
       {isUndo ? "Encounter updated — tap to undo" : "Undone — tap to redo"}
