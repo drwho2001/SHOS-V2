@@ -344,7 +344,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
         </div>
       )}
 
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div tabIndex={0} style={{ flex: 1, overflowY: "auto" }}>
         {query.trim().length === 0 && (
           <div style={{ padding: "40px 24px", textAlign: "center", color: T.textDisabled, fontSize: 13 }}>
             Start typing to search across Contacts, Medications, Activities, Tests, and Clinic Visits.

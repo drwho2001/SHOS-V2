@@ -268,7 +268,7 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "Log vaccination" : "Edit vaccination"}</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
-        <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
+        <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder="e.g. Hep B booster" />
           <VaccineField value={form.vaccine} onChange={set("vaccine")} options={vaccineOptions}
             onAddNew={(v) => { CustomOptionListsRepository.add("vaccine", v).then(setVaccineOptions); }} T={T} />

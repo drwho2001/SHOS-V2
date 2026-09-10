@@ -1484,7 +1484,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }} data-encounter-sheet>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }} data-encounter-sheet>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to this module's other screens. */}
       <div style={{ width: "100%", maxWidth: 600, background: T.bg, minHeight: "100vh", borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }}>

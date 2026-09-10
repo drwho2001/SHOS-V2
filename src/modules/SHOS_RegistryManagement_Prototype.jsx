@@ -166,7 +166,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
   );
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary, flex: 1 }}>{label}</span>
@@ -187,7 +187,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
             <div style={{ padding: "6px 20px 0", fontSize: 12, color: T.textSecondary }}>
               Flagged by name similarity — nothing is merged automatically. Rename one to match the other, or archive the one you don't want.
             </div>
-            <div style={{ overflowY: "auto", padding: "10px 20px 24px", flex: 1 }}>
+            <div tabIndex={0} style={{ overflowY: "auto", padding: "10px 20px 24px", flex: 1 }}>
               {duplicatePairs.length === 0 ? (
                 <div style={{ fontSize: 13, color: T.textDisabled, padding: "20px 0", textAlign: "center" }}>No likely duplicates found.</div>
               ) : duplicatePairs.map(({ a, b }) => (

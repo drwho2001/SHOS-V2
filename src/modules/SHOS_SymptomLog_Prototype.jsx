@@ -372,7 +372,7 @@ function EntrySheet({ entry, onSave, onClose, T }) {
               only closing via a backdrop tap. */}
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
-        <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
+        <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder="e.g. Rash after chem session" />
           <SymptomSelect value={form.symptomIds} onChange={set("symptomIds")} T={T} />
           <SelectField label="Severity" value={form.severity} onChange={set("severity")} options={SEVERITY_OPTIONS} T={T} />

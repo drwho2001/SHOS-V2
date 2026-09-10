@@ -449,7 +449,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "Add measurement" : "Edit measurement"}</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
-        <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
+        <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <MeasurementTypeField value={form.type} onChange={setType} options={editableOptions} rankedOptions={rankedEditableOptions} listName="measurementType"
             onAddNew={(v) => { CustomOptionListsRepository.add("measurementType", v).then((updated) => { setTypeOptions(updated); CustomOptionListsRepository.getRanked("measurementType").then(setRankedTypeOptions); }); }}
             onNewTypeCreated={(v) => v !== BLOOD_PRESSURE_TYPE && setNewTypeNeedingKind(v)} T={T} locked={!isNew && measurement.type === BLOOD_PRESSURE_TYPE} />
@@ -831,7 +831,7 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto" }}>
       <div style={{ background: T.healthcareBlue, display: "flex", alignItems: "center", gap: 12, padding: "16px 20px 14px" }}>
         <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onBack} />
         <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Manage groups</span>
@@ -913,7 +913,7 @@ function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Measurement preferences</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close measurement preferences" />
         </div>
-        <div style={{ overflowY: "auto", padding: "16px 20px 24px", flex: 1 }}>
+        <div tabIndex={0} style={{ overflowY: "auto", padding: "16px 20px 24px", flex: 1 }}>
           <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, marginBottom: 8 }}>Default units</div>
           {CONVERTIBLE_TYPES.map((type) => {
             const units = getAvailableUnits(type, prefs.typeKinds[type]);

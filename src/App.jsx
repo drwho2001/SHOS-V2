@@ -512,7 +512,7 @@ function DecoyHome({ onLockNow }) {
         <div style={{ ...TYPE.recordTitle, color: "#1B1B1F" }}>SHOS</div>
         {onLockNow && <Lock size={19} weight="bold" color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onLockNow} title="Lock now" />}
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
+      <div tabIndex={0} style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
         {tabContent[tab]}
       </div>
       {/* Same env(safe-area-inset-bottom) fix as the real app's own

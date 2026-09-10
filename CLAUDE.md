@@ -3164,24 +3164,16 @@ this date; summarized here for durability.
   accent colour on the card's left stripe/Cancel button while the
   danger cues (border/background/confirm button) always stay red.
 - **Accessibility — first real pass done 10 Sep 2026, module-accent
-  contrast sweep RESOLVED the same day (see "Recently shipped" below
-  for both).** An automated `axe-core` scan (never done systematically
+  contrast sweep and the app-wide `scrollable-region-focusable` gap
+  both RESOLVED the same day (see "Recently shipped" below for all
+  three).** An automated `axe-core` scan (never done systematically
   before this) found and fixed two real contrast bugs and added a
   `<main>` landmark + real `<h1>` screen titles on the 6 primary
-  screens. What's still real, not-yet-done work: a much larger
-  `scrollable-region-focusable` gap — the `position: fixed; inset: 0;
-  overflow-y: auto` shape used for nearly every full-screen overlay
-  app-wide has no `tabIndex`, so a keyboard-only user may not be able
-  to scroll most screens past what's initially visible at all (native
-  Space/PageDown scrolling only reaches a nested `overflow:auto` div
-  once something inside it already has focus) — needs a real
-  design-system fix (likely one shared `<ScrollableScreen>` wrapper
-  every overlay adopts), not a narrow per-file patch. Also out of scope
-  entirely: a real screen-reader walkthrough (axe catches structural/
-  contrast issues, not actual reading-order/announcement quality), and
-  the broader `region`-landmark finding (every screen's own content not
-  wrapped in semantic regions) — both genuinely bigger, separate
-  undertakings.
+  screens. Still out of scope entirely, genuinely bigger undertakings:
+  a real screen-reader walkthrough (axe catches structural/contrast
+  issues, not actual reading-order/announcement quality), and the
+  broader `region`-landmark finding (every screen's own content not
+  wrapped in semantic regions).
 - **Spacing consistency — audited 10 Sep 2026, clean result, not a
   gap anymore.** The real live report that started this (Contacts'
   "N active" count sitting flush against the header banner's bottom
@@ -3212,6 +3204,62 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (10 Sep 2026, scrollable-region-focusable fix)
+
+Real ask: continue through the deferred backlog — picked the one
+remaining scoped accessibility gap from the earlier `axe-core` pass,
+the `scrollable-region-focusable` finding flagged as needing "a real
+design-system fix... not a narrow per-file patch."
+
+**Re-scoped from the original framing before touching anything.** The
+Known Issues text pointed at the `position: fixed; inset: 0; overflow-y:
+auto` shape specifically, but a full grep for that combined shape only
+matched 35 of the app's 75 `position:fixed, inset:0` divs — many of the
+other 40 are dimmed modal backdrops or splash/lock screens with no
+`overflow` of their own at all, genuinely not scrollable, so adding
+`tabIndex` there would have been a no-op or actively wrong (a focusable
+element with nothing to scroll). The real, precise target is every
+element that actually carries `overflowY: "auto"` — 55 sites across 19
+files once nested scrollable regions (a search-results list, a
+bottom-sheet's own scrolling body, inside an otherwise non-scrolling
+backdrop) are included, not just the ones that happen to also be a
+full-screen `position:fixed` root.
+
+**Deliberately did NOT build the suggested shared `<ScrollableScreen>`
+wrapper.** Every one of the 55 sites already has the exact CSS needed
+(`overflowY: "auto"` on a properly-sized flex container) — the ONLY
+missing piece for `scrollable-region-focusable` is `tabIndex={0}`
+itself, a one-line, mechanical, zero-structural-risk addition at each
+site. A new wrapper component would mean touching each of these same
+55 render trees anyway, for no behavioral gain over adding the one
+missing attribute directly — the "needs a shared wrapper" framing in
+the original Known Issues entry turned out to overstate the real
+fix once actually scoped.
+
+**Deliberately did NOT add `role="region"`/`aria-label` alongside
+`tabIndex`.** The `scrollable-region-focusable` axe rule itself only
+requires the scrollable element (or a focusable descendant) to be
+keyboard-reachable — confirmed live via `axe-core` before and after,
+not assumed from the rule's name. Writing a genuinely meaningful,
+distinct accessible name for 55 different containers — several already
+containing their own `<h1>`/section headings from the earlier pass —
+is really the separate, broader `region`-landmark finding Known Issues
+already scopes as its own, bigger, undertaking; bundling it in here
+would risk exactly the kind of unverified screen-reader semantics
+change that finding is deliberately deferred for.
+
+Verified live via Playwright against a real `vite preview` build: the
+Settings overlay (picked as the deepest, most content-heavy example)
+is genuinely reachable via real sequential `Tab` key presses (not just
+`.focus()`), receives real focus, and its `scrollHeight` exceeds its
+`clientHeight` (genuinely has more content than fits, the actual case
+this fix targets) — confirmed with zero page errors. Re-ran the same
+`axe-core` `scrollable-region-focusable` check from the original pass
+against both Settings and Contacts: zero violations on either,
+down from a real, reproducible finding before the fix. Full build,
+`npx eslint .` clean, and all 15 smoke-test flows pass against a real
+`vite preview` production build.
 
 ## Recently shipped (10 Sep 2026, Contacts card — transport icon, age, role display)
 

@@ -289,7 +289,7 @@ function CityAutocomplete({ label, value, onChange, T, placeholder }) {
         placeholder={placeholder} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
       {open && (loading || results.length > 0) && (
-        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, marginTop: 2, zIndex: 10, maxHeight: 220, overflowY: "auto", boxShadow: "0 4px 16px rgba(0,0,0,.15)" }}>
+        <div tabIndex={0} style={{ position: "absolute", top: "100%", left: 0, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, marginTop: 2, zIndex: 10, maxHeight: 220, overflowY: "auto", boxShadow: "0 4px 16px rgba(0,0,0,.15)" }}>
           {loading && <div style={{ padding: 10, fontSize: 12, color: T.textDisabled }}>Searching…</div>}
           {results.map((r) => (
             <div key={r.place.place_id} onMouseDown={() => pick(r)}
@@ -885,7 +885,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   const showsContraception = ["female", "trans-male"].includes((form.gender || "").trim().toLowerCase());
 
   return (
-    <div data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, overflowY: "auto", zIndex: 200 }}>
+    <div tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, overflowY: "auto", zIndex: 200 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onCancel} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Edit My Profile</span>
@@ -1376,7 +1376,7 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
     // correct (`position: fixed, inset: 0, overflowY: auto`, entirely
     // self-contained) — applying the exact same pattern here instead
     // of depending on App.jsx's wrapper to provide it.
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", overflowY: "auto", fontFamily: "'Inter', sans-serif", background: T.bg, display: "flex", justifyContent: "center" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", overflowY: "auto", fontFamily: "'Inter', sans-serif", background: T.bg, display: "flex", justifyContent: "center" }}>
       {/* CHANGED 26 Aug 2026 — same fix already shipped in Medication:
           was a fixed 390px regardless of viewport; now fills the screen
           on mobile and caps at a real desktop-appropriate width on

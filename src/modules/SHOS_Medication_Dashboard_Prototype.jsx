@@ -963,7 +963,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "85vh", overflowY: "auto", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, display: "flex", flexDirection: "column" }}>
+      <div tabIndex={0} onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "85vh", overflowY: "auto", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, display: "flex", flexDirection: "column" }}>
         <div style={{ background: T.medsBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Update dose — {med.name}</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
@@ -1059,7 +1059,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, padding: "0 20px 12px", flexShrink: 0 }}>Changes how stock/adherence are calculated going forward — doesn't touch past log entries.</div>
 
-        <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
+        <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
         <div style={{ padding: "6px 0 10px" }}>
           <input value={form.name} onChange={(e) => set("name")(e.target.value)}
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, boxSizing: "border-box" }} />
@@ -1217,7 +1217,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
 
-        <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
+        <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
         <div style={{ padding: "6px 0 10px" }}>
           <input value={form.name} onChange={(e) => set("name")(e.target.value)} placeholder="Medication name" autoFocus
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
@@ -1328,7 +1328,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
   const setSnoozeMinutes = async (mins) => setPrefs(await MedicationPreferencesRepository.updatePreferences({ snoozeMinutes: mins }));
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Medication settings</span>

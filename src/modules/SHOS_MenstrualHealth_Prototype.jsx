@@ -259,7 +259,7 @@ function BottomSheet({ title, onClose, T, children, footer }) {
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{title}</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
-        <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>{children}</div>
+        <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>{children}</div>
         {footer && <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>{footer}</div>}
       </div>
     </div>

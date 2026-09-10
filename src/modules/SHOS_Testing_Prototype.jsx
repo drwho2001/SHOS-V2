@@ -663,7 +663,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
           module banner title, matching every other module screen. */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.healthcareBlue, zIndex: 1 }}>

@@ -304,7 +304,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16, color: T.textPrimary }}>Import shared profile</span>
@@ -533,7 +533,7 @@ function AddressAutocomplete({ label, value, onChange, T, placeholder, onCityDet
         placeholder={placeholder || "Start typing an address..."} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
       {open && (loading || results.length > 0) && (
-        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, marginTop: 2, zIndex: 10, maxHeight: 220, overflowY: "auto", boxShadow: "0 4px 16px rgba(0,0,0,.15)" }}>
+        <div tabIndex={0} style={{ position: "absolute", top: "100%", left: 0, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, marginTop: 2, zIndex: 10, maxHeight: 220, overflowY: "auto", boxShadow: "0 4px 16px rgba(0,0,0,.15)" }}>
           {loading && <div style={{ padding: 10, fontSize: 12, color: T.textDisabled }}>Searching…</div>}
           {results.map((r) => (
             <div key={r.place_id} onMouseDown={() => pick(r)}
@@ -1674,7 +1674,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           </div>
         )}
 
-        <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
+        <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
         <SectionCard T={T} title="Identity">
           <PhotoPicker T={T} value={form.profilePicture} onChange={set("profilePicture")} />
           <TextField T={T} label="Full name" value={form.name} onChange={set("name")} placeholder="Full name" />
@@ -2462,7 +2462,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
             <div style={{ padding: "6px 20px 0", fontSize: 12, color: T.textSecondary }}>
               Flagged by name, phone, and social-handle matches — plus lighter signals (city, address, approximate age, shared notes wording) that only count once something else already put a pair in question. Higher confidence just means more of these line up — nothing is merged automatically; check each pair yourself.
             </div>
-            <div style={{ overflowY: "auto", padding: "10px 20px 24px", flex: 1 }}>
+            <div tabIndex={0} style={{ overflowY: "auto", padding: "10px 20px 24px", flex: 1 }}>
               {duplicateCandidates.map(({ a, b, confidence, matched }, i) => (
                 <div key={`${a.id}-${b.id}`} style={{ border: `1px solid ${T.border}`, borderRadius: 12, padding: 12, marginBottom: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>

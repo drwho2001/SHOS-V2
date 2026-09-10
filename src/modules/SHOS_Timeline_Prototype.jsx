@@ -268,7 +268,7 @@ function StartSheet({ onSave, onClose, T }) {
         <div style={{ padding: "20px 20px 4px", flexShrink: 0 }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Start an episode</span>
         </div>
-        <div style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
+        <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <TextField label="Title" value={title} onChange={setTitle} T={T} placeholder="e.g. Chlamydia exposure, Aug 2026" />
           <SelectField label="Why this started" value={triggerReason} onChange={setTriggerReason} options={triggerReasonOptions} listName="episodeTriggerReason" T={T} />
           <SingleEncounterSelect value={startEncounterId} onChange={setStartEncounterId} T={T} items={encounters} />
