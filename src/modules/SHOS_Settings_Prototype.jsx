@@ -13,6 +13,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // — every line of actual behavior below is unchanged from what was
 // working in App.jsx; only the file it lives in has changed.
 import React, { useState, useMemo, useEffect, useRef } from "react";
+import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import packageJson from "../../package.json";
 const APP_VERSION = packageJson.version;
 import {
@@ -3543,6 +3544,10 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
 
 function TrashScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
+  // Local T-shaped object for the shared ConfirmDeleteCard — this screen
+  // otherwise reads NEUTRAL/DARK directly rather than a per-module T,
+  // but the card needs .actionRed/.textPrimary/etc. on one object.
+  const T = { ...(darkMode ? DARK : NEUTRAL), actionRed: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red };
 
   const [items, setItems] = useLoadedState(() => TrashRepository.getAll(), [], []);
   const refresh = async () => setItems(await TrashRepository.getAll());
@@ -3555,6 +3560,11 @@ function TrashScreen({ onClose }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const toggleSelected = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
   const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); };
+  // CHANGED 10 Sep 2026 — standardised delete confirmation: these three
+  // were native window.confirm() dialogs, now the shared inline card.
+  const [confirmDeleteEntry, setConfirmDeleteEntry] = useState(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
 
   const restoreEntries = async (entries) => {
     for (const entry of entries) {
@@ -3570,23 +3580,20 @@ function TrashScreen({ onClose }) {
   const restoreSelected = async () => { await restoreEntries(items.filter((e) => selectedIds.includes(e.trashId))); exitSelectMode(); };
 
   const deletePermanently = async (entry) => {
-    if (window.confirm("Delete this permanently? It won't be recoverable after this.")) {
-      await TrashRepository.removeEntry(entry.trashId);
-      refresh();
-    }
+    await TrashRepository.removeEntry(entry.trashId);
+    setConfirmDeleteEntry(null);
+    refresh();
   };
   const deleteAll = async () => {
-    if (window.confirm(`Permanently delete all ${items.length} item${items.length > 1 ? "s" : ""} in the trash? This can't be undone.`)) {
-      await TrashRepository.emptyAll();
-      refresh();
-    }
+    await TrashRepository.emptyAll();
+    setConfirmDeleteAll(false);
+    refresh();
   };
   const deleteSelected = async () => {
-    if (window.confirm(`Permanently delete ${selectedIds.length} item${selectedIds.length > 1 ? "s" : ""}? This can't be undone.`)) {
-      for (const id of selectedIds) await TrashRepository.removeEntry(id);
-      exitSelectMode();
-      refresh();
-    }
+    for (const id of selectedIds) await TrashRepository.removeEntry(id);
+    setConfirmDeleteSelected(false);
+    exitSelectMode();
+    refresh();
   };
 
   const recordLabel = (entry) => entry.record.title || entry.record.name || entry.record.displayName || "Untitled";
@@ -3609,10 +3616,19 @@ function TrashScreen({ onClose }) {
           <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
             <span onClick={() => selectedIds.length > 0 && restoreSelected()} style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Restore</span>
-            <span onClick={() => selectedIds.length > 0 && deleteSelected()} style={{ fontSize: 13, color: selectedIds.length > 0 ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+            <span onClick={() => selectedIds.length > 0 && setConfirmDeleteSelected(true)} style={{ fontSize: 13, color: selectedIds.length > 0 ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>
+      )}
+      {confirmDeleteSelected && (
+        <ConfirmDeleteCard
+          T={T}
+          message={`Permanently delete ${selectedIds.length} item${selectedIds.length > 1 ? "s" : ""}? This can't be undone.`}
+          confirmLabel="Delete"
+          onCancel={() => setConfirmDeleteSelected(false)}
+          onConfirm={deleteSelected}
+        />
       )}
       <div style={{ padding: 16 }}>
         <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 14 }}>
@@ -3629,8 +3645,18 @@ function TrashScreen({ onClose }) {
             {!selectMode && (
               <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
                 <span onClick={restoreAll} style={{ fontSize: 13, fontWeight: 600, color: "#3D63C9", cursor: "pointer" }}>Restore all</span>
-                <span onClick={deleteAll} style={{ fontSize: 13, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Delete all</span>
+                <span onClick={() => setConfirmDeleteAll(true)} style={{ fontSize: 13, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Delete all</span>
               </div>
+            )}
+            {confirmDeleteAll && (
+              <ConfirmDeleteCard
+                T={T}
+                margin="0 0 12px"
+                message={`Permanently delete all ${items.length} item${items.length > 1 ? "s" : ""} in the trash? This can't be undone.`}
+                confirmLabel="Delete all"
+                onCancel={() => setConfirmDeleteAll(false)}
+                onConfirm={deleteAll}
+              />
             )}
             <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
               {items.map((entry, i) => (
@@ -3654,12 +3680,23 @@ function TrashScreen({ onClose }) {
                   {!selectMode && (
                     <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
                       <span onClick={() => restoreItem(entry)} style={{ fontSize: 12, fontWeight: 700, color: "#3D63C9", cursor: "pointer" }}>Restore</span>
-                      <span onClick={() => deletePermanently(entry)} style={{ fontSize: 12, fontWeight: 700, color: ACTION.red, cursor: "pointer" }}>Delete</span>
+                      <span onClick={() => setConfirmDeleteEntry(entry)} style={{ fontSize: 12, fontWeight: 700, color: ACTION.red, cursor: "pointer" }}>Delete</span>
                     </div>
                   )}
                 </div>
               ))}
             </div>
+            {confirmDeleteEntry && (
+              <div style={{ marginTop: 12 }}>
+                <ConfirmDeleteCard
+                  T={T}
+                  margin="0"
+                  message="Delete this permanently? It won't be recoverable after this."
+                  onCancel={() => setConfirmDeleteEntry(null)}
+                  onConfirm={() => deletePermanently(confirmDeleteEntry)}
+                />
+              </div>
+            )}
           </>
         )}
       </div>

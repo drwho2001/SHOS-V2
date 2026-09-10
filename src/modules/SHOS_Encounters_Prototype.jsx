@@ -1,8 +1,12 @@
 // SHOS_Encounters_Prototype.jsx — "Activity" screens (Doc 1 nav label) for
 // the Encounter domain object (Doc 3 B2, Doc 4 §3). Self-contained, same
 // pattern as the Contacts and Medication prototype files — its own theme
-// constants and form primitives, no shared UI-library file yet (per the
-// project's "discover abstractions after multiple modules exist" rule).
+// constants and form primitives. One real shared UI component now exists
+// (src/components/ConfirmDeleteCard.jsx) — extracted 10 Sep 2026 once
+// Contacts, MenstrualHealth, and Timeline had all independently built the
+// same inline delete-confirm card, exactly the "discover abstractions
+// after multiple modules exist" threshold this file's own convention
+// always pointed at.
 //
 // Reads/writes ONLY through EncounterRepository + encounterCalculations.js.
 // Attendee picking reads ContactRepository (read-only here — Encounters
@@ -10,6 +14,7 @@
 // as documented in encounterRepository.js).
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
+import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
@@ -953,8 +958,9 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // to every module.
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
   const toggleSelected = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
-  const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); };
+  const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); setConfirmingBulkDelete(false); };
   // CHANGED 26 Aug 2026 — real gap found and fixed: encounters/
   // deletedRecent/undoDelete/triggerDelete used to live only here, so
   // a single-record delete from ActivityDetails wrote to Trash but
@@ -1062,18 +1068,26 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
                 style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
               <span onClick={async () => { if (selectedIds.length > 0) { await EncounterRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-              <span onClick={async () => {
-                if (selectedIds.length === 0) return;
-                if (window.confirm(`Delete ${selectedIds.length} activit${selectedIds.length > 1 ? "ies" : "y"}? You'll have a few seconds to undo.`)) {
-                  const toRestore = (await EncounterRepository.getAll()).filter((e) => selectedIds.includes(e.id));
-                  await triggerDelete(toRestore);
-                  refresh();
-                  exitSelectMode();
-                }
-              }} style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+              <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
+                style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
               <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
             </div>
           </div>
+        )}
+        {confirmingBulkDelete && (
+          <ConfirmDeleteCard
+            T={T}
+            moduleColor={T.encountersPink}
+            message={`Delete ${selectedIds.length} activit${selectedIds.length > 1 ? "ies" : "y"} permanently? You'll have a few seconds to undo.`}
+            confirmLabel="Delete"
+            onCancel={() => setConfirmingBulkDelete(false)}
+            onConfirm={async () => {
+              const toRestore = (await EncounterRepository.getAll()).filter((e) => selectedIds.includes(e.id));
+              await triggerDelete(toRestore);
+              refresh();
+              exitSelectMode();
+            }}
+          />
         )}
         {/* ADDED 1 Sep 2026 — real ask: search within module, same
             placement/pattern as every sibling module's own search box. */}
@@ -1250,15 +1264,13 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
       )}
 
       {confirmDelete && (
-        <div style={{ margin: "0 16px 12px", padding: 12, borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, background: `${T.actionRed}11` }}>
-          <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>
-            This permanently deletes the record — unlike archiving, there's no getting it back. Only use this for a genuinely wrong entry.
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-            <button onClick={async () => { await triggerDelete([encounter]); refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
-          </div>
-        </div>
+        <ConfirmDeleteCard
+          T={T}
+          moduleColor={T.encountersPink}
+          message="This permanently deletes the record — unlike archiving, there's no getting it back. Only use this for a genuinely wrong entry."
+          onCancel={() => setConfirmDelete(false)}
+          onConfirm={async () => { await triggerDelete([encounter]); refresh(); onBack(); }}
+        />
       )}
 
       <div style={{ padding: "0 16px" }}>

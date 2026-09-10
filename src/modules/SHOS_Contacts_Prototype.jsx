@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import {
   PlusIcon as Plus, MagnifyingGlassIcon as Search, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, GearSixIcon as Settings2, UsersIcon as Users,
   ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2,
@@ -1946,15 +1947,13 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
       )}
 
       {confirmDelete && (
-        <div style={{ margin: "0 16px 12px", padding: 12, borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, background: `${T.actionRed}11` }}>
-          <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>
-            This permanently deletes the contact — unlike archiving, there's no getting it back. Only use this for a genuinely erroneous or unwelcome entry.
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={async () => { await triggerDelete([contact]); refresh(); onBack(); }} style={{ ...btnStyle(T.actionRed, "filled"), padding: "8px 10px" }}>Delete permanently</button>
-            <button onClick={() => setConfirmDelete(false)} style={{ ...btnStyle(T.textSecondary, "outline"), padding: "8px 10px" }}>Cancel</button>
-          </div>
-        </div>
+        <ConfirmDeleteCard
+          T={T}
+          moduleColor={T.contactsTeal}
+          message="This permanently deletes the contact — unlike archiving, there's no getting it back. Only use this for a genuinely erroneous or unwelcome entry."
+          onCancel={() => setConfirmDelete(false)}
+          onConfirm={async () => { await triggerDelete([contact]); refresh(); onBack(); }}
+        />
       )}
 
       <div style={{ padding: "0 16px 100px" }}>
@@ -2226,8 +2225,9 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // guessed at a shape for it.
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
   const toggleSelected = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
-  const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); };
+  const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); setConfirmingBulkDelete(false); };
   // ADDED 26 Aug 2026 — real ask: filter Contacts by role/position
   // (top/bottom/dom/sub etc.), in addition to being able to search for
   // it. Uses the real bdsmRole/sexualPosition fields already on
@@ -2414,24 +2414,31 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
             <span onClick={async () => { if (selectedIds.length > 0) { await ContactRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-            <span onClick={async () => {
-              if (selectedIds.length === 0) return;
-              if (window.confirm(`Delete ${selectedIds.length} contact${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
-                // CHANGED 26 Aug 2026 — now uses the shared
-                // triggerDelete helper (lifted to module level) so
-                // single-record delete gets identical Trash+undo
-                // behavior, not just bulk. Still captures full records
-                // BEFORE deleting via getAll(), not the possibly-stale
-                // `contacts` prop.
-                const toRestore = (await ContactRepository.getAll()).filter((c) => selectedIds.includes(c.id));
-                await triggerDelete(toRestore);
-                refresh();
-                exitSelectMode();
-              }
-            }} style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+            {/* CHANGED 10 Sep 2026 — standardised delete confirmation:
+                was a native window.confirm() dialog, now the same shared
+                inline card every module uses. */}
+            <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>
+      )}
+      {confirmingBulkDelete && (
+        <ConfirmDeleteCard
+          T={T}
+          moduleColor={T.contactsTeal}
+          message={`Delete ${selectedIds.length} contact${selectedIds.length > 1 ? "s" : ""} permanently? You'll have a few seconds to undo.`}
+          confirmLabel="Delete"
+          onCancel={() => setConfirmingBulkDelete(false)}
+          onConfirm={async () => {
+            // Still captures full records BEFORE deleting via getAll(),
+            // not the possibly-stale `contacts` prop.
+            const toRestore = (await ContactRepository.getAll()).filter((c) => selectedIds.includes(c.id));
+            await triggerDelete(toRestore);
+            refresh();
+            exitSelectMode();
+          }}
+        />
       )}
       {/* ADDED 19 Aug 2026 — visible confirmation that data is
           deliberately masked, not missing/broken. */}

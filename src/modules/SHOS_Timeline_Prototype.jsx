@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, WarningIcon as AlertTriangle, TrashIcon as Trash2, ArchiveIcon as Archive, ArrowsClockwiseIcon as RefreshCcw, ChatCircleTextIcon as MessageSquare, CopyIcon as Copy } from "@phosphor-icons/react";
 import { EpisodeRepository, RESOLUTION_OPTIONS } from "../repositories/episodeRepository";
+import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 // ADDED 19 Aug 2026 — TRIGGER_REASON_OPTIONS now lives here, real
 // in-app editable option list.
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
@@ -458,15 +459,13 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
         </div>
       )}
       {confirmDelete && (
-        <div style={{ margin: "0 16px 12px", background: T.surface, border: `1px solid ${T.actionRed}`, borderRadius: radius.md, padding: 14 }}>
-          <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 10 }}>
-            Delete "{episode.title}" permanently? This only removes the episode itself — nothing it links to (Encounters, Tests, Clinic Visits) is touched. You'll have a few seconds to undo.
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-            <button onClick={confirmDeletePermanently} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
-          </div>
-        </div>
+        <ConfirmDeleteCard
+          T={T}
+          moduleColor={T.healthcareBlue}
+          message={`Delete "${episode.title}" permanently? This only removes the episode itself — nothing it links to (Encounters, Tests, Clinic Visits) is touched. You'll have a few seconds to undo.`}
+          onCancel={() => setConfirmDelete(false)}
+          onConfirm={confirmDeletePermanently}
+        />
       )}
       <div style={{ padding: "0 16px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>

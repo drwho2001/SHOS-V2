@@ -4,6 +4,7 @@ import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, Arr
 // writes through these two repositories instead. Nothing about how the UI
 // looks or behaves changes; this just moves WHERE the facts actually live.
 import { MedicationRepository, DOSE_UNIT_OPTIONS } from "../repositories/medicationRepository";
+import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { findClosestMatch } from "../calculations/fuzzyMatch";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
@@ -332,15 +333,14 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
       )}
 
       {confirmDelete && (
-        <div style={{ margin: "0 0 12px", padding: 12, borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, background: `${T.actionRed}11` }}>
-          <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>
-            This permanently deletes {med.name} — unlike archiving, there's no getting it back. Only use this for a genuinely erroneous entry.
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => onDelete(med.id)} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
-            <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-          </div>
-        </div>
+        <ConfirmDeleteCard
+          T={T}
+          moduleColor={T.medsBlue}
+          margin="0 0 12px"
+          message={`This permanently deletes ${med.name} — unlike archiving, there's no getting it back. Only use this for a genuinely erroneous entry.`}
+          onCancel={() => setConfirmDelete(false)}
+          onConfirm={() => onDelete(med.id)}
+        />
       )}
 
       {stock.tracked ? (
@@ -1412,8 +1412,9 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // one of those instead of a genuine hold-to-select gesture.
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
   const toggleSelected = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
-  const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); };
+  const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); setConfirmingBulkDelete(false); };
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.
   // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
@@ -1804,18 +1805,26 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
                 style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
               <span onClick={async () => { if (selectedIds.length > 0) { await MedicationRepository.bulkArchive(selectedIds); refreshMeds(); exitSelectMode(); } }}
                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-              <span onClick={async () => {
-                if (selectedIds.length === 0) return;
-                if (window.confirm(`Delete ${selectedIds.length} medication${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
-                  const toRestore = (await MedicationRepository.getAll()).filter((m) => selectedIds.includes(m.id));
-                  await triggerDelete(toRestore);
-                  refreshMeds();
-                  exitSelectMode();
-                }
-              }} style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+              <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
+                style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
               <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
             </div>
           </div>
+        )}
+        {confirmingBulkDelete && (
+          <ConfirmDeleteCard
+            T={T}
+            moduleColor={T.medsBlue}
+            message={`Delete ${selectedIds.length} medication${selectedIds.length > 1 ? "s" : ""} permanently? You'll have a few seconds to undo.`}
+            confirmLabel="Delete"
+            onCancel={() => setConfirmingBulkDelete(false)}
+            onConfirm={async () => {
+              const toRestore = (await MedicationRepository.getAll()).filter((m) => selectedIds.includes(m.id));
+              await triggerDelete(toRestore);
+              refreshMeds();
+              exitSelectMode();
+            }}
+          />
         )}
 
         {/* ADDED 19 Aug 2026 — real ask: allergies visible here too, not

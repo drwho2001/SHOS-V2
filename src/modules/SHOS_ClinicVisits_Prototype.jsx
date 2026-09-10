@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, CalendarIcon as Calendar, ArrowsClockwiseIcon as RefreshCcw, XIcon as X, CrosshairIcon as Crosshair } from "@phosphor-icons/react";
+import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 // ADDED — real ask: "use current location" on Clinic Visits, the last
 // of the three modules with a location-ish field (Contacts/Encounters
 // already have it) — same Nominatim reverse-geocode service, no second
@@ -851,15 +852,13 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
         </div>
       </div>
       {confirmDelete && (
-        <div style={{ margin: "0 16px 12px", padding: 12, borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, background: `${T.actionRed}11` }}>
-          <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>
-            This permanently deletes the record — unlike archiving, there's no getting it back. Only use this for a genuinely wrong entry.
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-            <button onClick={async () => { await triggerDelete([visit]); refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
-          </div>
-        </div>
+        <ConfirmDeleteCard
+          T={T}
+          moduleColor={T.healthcareBlue}
+          message="This permanently deletes the record — unlike archiving, there's no getting it back. Only use this for a genuinely wrong entry."
+          onCancel={() => setConfirmDelete(false)}
+          onConfirm={async () => { await triggerDelete([visit]); refresh(); onBack(); }}
+        />
       )}
 
       <div style={{ padding: "0 16px 100px" }}>
@@ -979,8 +978,9 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
   // to every module.
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
   const toggleSelected = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
-  const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); };
+  const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); setConfirmingBulkDelete(false); };
   const pressTimer = useRef(null);
   // CHANGED — real ask: long-press for select/multiselect fired too
   // easily. 750ms (1.5x the original 500ms), same across every module
@@ -1043,18 +1043,26 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
             <span onClick={async () => { if (selectedIds.length > 0) { await ClinicVisitsRepository.bulkArchive(selectedIds); syncClinicVisitsToCalendar(await ClinicVisitsRepository.getAll()); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-            <span onClick={async () => {
-              if (selectedIds.length === 0) return;
-              if (window.confirm(`Delete ${selectedIds.length} visit${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
-                const toRestore = (await ClinicVisitsRepository.getAll()).filter((v) => selectedIds.includes(v.id));
-                await triggerDelete(toRestore);
-                refresh();
-                exitSelectMode();
-              }
-            }} style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+            <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>
+      )}
+      {confirmingBulkDelete && (
+        <ConfirmDeleteCard
+          T={T}
+          moduleColor={T.healthcareBlue}
+          message={`Delete ${selectedIds.length} visit${selectedIds.length > 1 ? "s" : ""} permanently? You'll have a few seconds to undo.`}
+          confirmLabel="Delete"
+          onCancel={() => setConfirmingBulkDelete(false)}
+          onConfirm={async () => {
+            const toRestore = (await ClinicVisitsRepository.getAll()).filter((v) => selectedIds.includes(v.id));
+            await triggerDelete(toRestore);
+            refresh();
+            exitSelectMode();
+          }}
+        />
       )}
       {/* CHANGED — same real fix, consistent with the standardized
           floating-add-button ask applied across every other module. */}

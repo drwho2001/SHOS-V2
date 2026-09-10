@@ -18,6 +18,7 @@ import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, Arr
 import { MeasurementRepository, DEFAULT_MEASUREMENT, BLOOD_PRESSURE_TYPE, BLOOD_PRESSURE_UNIT, getAvailableUnits, getDefaultUnit, hasUnitConversion, convertFromCanonical, KIND_UNITS, KIND_LABELS } from "../repositories/measurementRepository";
 import { MeasurementPreferencesRepository, DEFAULT_MEASUREMENT_PREFERENCES } from "../repositories/measurementPreferencesRepository";
 import { CustomGroupsRepository } from "../repositories/customGroupsRepository";
+import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
@@ -563,15 +564,13 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
         </div>
       </div>
       {confirmDelete && (
-        <div style={{ margin: "0 16px 12px", padding: 12, borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, background: `${T.actionRed}11` }}>
-          <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>
-            This permanently deletes the record — unlike archiving, there's no getting it back.
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-            <button onClick={async () => { await triggerDelete([m]); await refresh(); onBack(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
-          </div>
-        </div>
+        <ConfirmDeleteCard
+          T={T}
+          moduleColor={T.healthcareBlue}
+          message="This permanently deletes the record — unlike archiving, there's no getting it back."
+          onCancel={() => setConfirmDelete(false)}
+          onConfirm={async () => { await triggerDelete([m]); await refresh(); onBack(); }}
+        />
       )}
       <div style={{ padding: "0 16px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
@@ -657,8 +656,9 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
 
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
   const toggleSelected = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
-  const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); };
+  const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); setConfirmingBulkDelete(false); };
   const allVisibleIds = useMemo(() => byTypeGroups.flatMap((g) => g.entries.map((e) => e.id)), [byTypeGroups]);
 
   const readingLabel = (m) => displayReading(m, prefs) || "—";
@@ -699,18 +699,26 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
             <span onClick={async () => { if (selectedIds.length > 0) { await MeasurementRepository.bulkArchive(selectedIds); await refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-            <span onClick={async () => {
-              if (selectedIds.length === 0) return;
-              if (window.confirm(`Delete ${selectedIds.length} measurement${selectedIds.length > 1 ? "s" : ""}? You'll have a few seconds to undo.`)) {
-                const toRestore = (await MeasurementRepository.getAll()).filter((m) => selectedIds.includes(m.id));
-                await triggerDelete(toRestore);
-                await refresh();
-                exitSelectMode();
-              }
-            }} style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+            <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>
+      )}
+      {confirmingBulkDelete && (
+        <ConfirmDeleteCard
+          T={T}
+          moduleColor={T.healthcareBlue}
+          message={`Delete ${selectedIds.length} measurement${selectedIds.length > 1 ? "s" : ""} permanently? You'll have a few seconds to undo.`}
+          confirmLabel="Delete"
+          onCancel={() => setConfirmingBulkDelete(false)}
+          onConfirm={async () => {
+            const toRestore = (await MeasurementRepository.getAll()).filter((m) => selectedIds.includes(m.id));
+            await triggerDelete(toRestore);
+            await refresh();
+            exitSelectMode();
+          }}
+        />
       )}
       <div style={{ padding: "8px 16px 0" }}>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by type"
@@ -803,6 +811,7 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
   const [groups, setGroups] = useLoadedState(() => CustomGroupsRepository.get(domain), [], []);
   const [newName, setNewName] = useState("");
   const [expandedId, setExpandedId] = useState(null);
+  const [confirmDeleteGroupId, setConfirmDeleteGroupId] = useState(null);
   const refresh = async () => { setGroups(await CustomGroupsRepository.get(domain)); onChanged?.(); };
 
   const createGroup = async () => {
@@ -837,9 +846,19 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
                 <div style={{ fontSize: 11, color: T.textSecondary }}>{g.members.length} item{g.members.length === 1 ? "" : "s"}</div>
               </div>
               <Trash2 size={16} color={T.actionRed} style={{ cursor: "pointer" }}
-                onClick={async (e) => { e.stopPropagation(); if (window.confirm(`Delete "${g.name}"? Its items stay, just ungrouped.`)) { await CustomGroupsRepository.delete(domain, g.id); await refresh(); } }}
+                onClick={(e) => { e.stopPropagation(); setConfirmDeleteGroupId(g.id); }}
                 aria-label="Delete group" title="Delete group" />
             </div>
+            {confirmDeleteGroupId === g.id && (
+              <ConfirmDeleteCard
+                T={T}
+                moduleColor={T.healthcareBlue}
+                message={`Delete "${g.name}"? Its items stay, just ungrouped.`}
+                confirmLabel="Delete group"
+                onCancel={() => setConfirmDeleteGroupId(null)}
+                onConfirm={async () => { await CustomGroupsRepository.delete(domain, g.id); setConfirmDeleteGroupId(null); await refresh(); }}
+              />
+            )}
             {expandedId === g.id && (
               <div style={{ padding: "0 12px 12px", borderTop: `1px solid ${T.border}` }}>
                 <div style={{ fontSize: 11, color: T.textSecondary, margin: "10px 0 6px" }}>Tap to add/remove from this group</div>

@@ -31,6 +31,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X, EyeIcon as Eye, EyeSlashIcon as EyeSlash, DropIcon as Drop, PillIcon as Pill, BabyIcon as Baby, SyringeIcon as Syringe, BandaidsIcon as Bandaids, AnchorSimpleIcon as AnchorSimple } from "@phosphor-icons/react";
 import { MenstrualCycleRepository, DEFAULT_CYCLE } from "../repositories/menstrualCycleRepository";
+import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { ContraceptionRepository, DEFAULT_CONTRACEPTION_ENTRY } from "../repositories/contraceptionRepository";
 import { PregnancyRepository, DEFAULT_PREGNANCY, TEST_RESULT_OPTIONS, OUTCOME_OPTIONS } from "../repositories/pregnancyRepository";
 import { TrashRepository } from "../repositories/trashRepository";
@@ -297,17 +298,6 @@ function DetailHeader({ onBack, onEdit, onDelete, T }) {
     </div>
   );
 }
-function DeleteConfirm({ onCancel, onConfirm, T }) {
-  return (
-    <div style={{ margin: "0 16px 12px", padding: 12, borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, background: `${T.actionRed}11` }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>This permanently deletes the record — unlike archiving, there's no getting it back.</div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={onCancel} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-        <button onClick={onConfirm} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: T.actionRed, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete permanently</button>
-      </div>
-    </div>
-  );
-}
 function DeleteToast({ toast, onUndo, onRedo, T, noun }) {
   if (!toast) return null;
   return (
@@ -424,7 +414,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
     return (
       <div>
         <DetailHeader onBack={() => setScreen({ name: "list" })} onEdit={() => setScreen({ name: "edit", id: c.id })} onDelete={() => setConfirmDelete(true)} T={T} />
-        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([c]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
+        {confirmDelete && <ConfirmDeleteCard T={T} moduleColor={T.menstrualPurple} onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([c]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Drop size={16} color={T.menstrualPurple} weight="fill" />
@@ -654,7 +644,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
     return (
       <div>
         <DetailHeader onBack={() => setScreen({ name: "list" })} onEdit={() => setScreen({ name: "edit", id: e.id })} onDelete={() => setConfirmDelete(true)} T={T} />
-        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([e]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
+        {confirmDelete && <ConfirmDeleteCard T={T} moduleColor={T.menstrualPurple} onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([e]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <ContraceptionIcon formulation={e.formulation} size={16} color={T.healthcareBlue} />
@@ -822,7 +812,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
     return (
       <div>
         <DetailHeader onBack={() => setScreen({ name: "list" })} onEdit={() => setScreen({ name: "edit", id: p.id })} onDelete={() => setConfirmDelete(true)} T={T} />
-        {confirmDelete && <DeleteConfirm onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([p]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} T={T} />}
+        {confirmDelete && <ConfirmDeleteCard T={T} moduleColor={T.menstrualPurple} onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([p]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Baby size={16} color={T.healthcareBlue} weight="fill" />

@@ -14,6 +14,7 @@
 // "that's a tangent" on the bigger nav/module-architecture question.
 import React, { useState, useMemo, useEffect } from "react";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
+import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { CaretLeftIcon as ChevronLeft, XIcon as X, MagnifyingGlassIcon as Search, CheckIcon as Check, PencilSimpleIcon as Edit, ExportIcon as ExportIcon, TrashIcon as Trash2 } from "@phosphor-icons/react";
 import { ContactRepository } from "../repositories/contactRepository";
 import { EncounterRepository } from "../repositories/encounterRepository";
@@ -234,10 +235,15 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
         </button>
       </div>
       {confirmDelete ? (
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => setConfirmDelete(false)} style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.textSecondary, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-          <button onClick={() => { onDelete(); }} style={{ flex: 1, padding: 10, borderRadius: 999, border: "none", background: ACTION.red, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>Delete this list</button>
-        </div>
+        <ConfirmDeleteCard
+          T={T}
+          moduleColor={ACCENTS.healthcare}
+          margin="0"
+          message="This permanently deletes the checklist — unlike archiving, there's no getting it back."
+          confirmLabel="Delete this list"
+          onCancel={() => setConfirmDelete(false)}
+          onConfirm={onDelete}
+        />
       ) : (
         <div onClick={() => setConfirmDelete(true)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 8, fontSize: 12, color: ACTION.red, cursor: "pointer" }}>
           <Trash2 size={13} /> Delete this list
