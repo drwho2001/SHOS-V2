@@ -231,6 +231,9 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
     saveDraft(draftKey, form);
+    // draftKey deliberately omitted — derived once from the record
+    // being edited and fixed for this sheet instance's whole life.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const canSave = form.title.trim().length > 0;

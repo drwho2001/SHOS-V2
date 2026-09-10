@@ -37,6 +37,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # ADDED 10 Sep 2026 — real ask: "smoke lint type check... do it if
+      # needed." Runs first, fails fast (before the heavier Playwright
+      # install/build steps) — ESLint already found and helped fix 5 real
+      # bugs the day it was added (a missing import that would crash a
+      # screen on first use, a stale-closure search-filter bug, two
+      # dead-memoization constants, and a Home dashboard section that
+      # could silently never populate). `npm run typecheck` (tsc
+      # --checkJs) deliberately NOT run here — see tsconfig.json's own
+      # header for why it's a real diagnostic tool but not a clean gate
+      # on this specific untyped JS/JSX codebase today.
+      - name: Lint
+        run: npm run lint
+
       # scripts/smoke-test.cjs's own header notes this repo doesn't
       # depend on playwright directly (a dev-machine convenience, not
       # meant to bloat every real install) — installed here, in CI

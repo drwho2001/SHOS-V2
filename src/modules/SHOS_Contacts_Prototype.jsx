@@ -1406,7 +1406,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
         <span onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
           title={isInactive ? `No encounter in over ${inactiveThresholdDays} days` : "Active — a recent encounter is logged"}
           aria-label={isInactive ? "Inactive contact, tap for details" : "Active contact, tap for details"}
-          style={{ width: 8, height: 8, borderRadius: radius.full, background: isInactive ? T.actionRed : T.contactsTeal, display: "inline-block", cursor: "pointer", boxShadow: showStatusInfo ? `0 0 0 4px ${isInactive ? T.actionRed : T.contactsTeal}33` : "none" }} />
+          style={{ width: 8, height: 8, borderRadius: radius.full, background: isInactive ? T.actionRed : T.actionGreen, display: "inline-block", cursor: "pointer", boxShadow: showStatusInfo ? `0 0 0 4px ${isInactive ? T.actionRed : T.actionGreen}33` : "none" }} />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>
         {ratingEmoji && <span style={{ fontSize: 14 }}>{ratingEmoji}</span>}
         {/* Age — tuned this round to sit close in size to the name (was
@@ -1432,7 +1432,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
         {flaggedDontMeetAgain && <AlertTriangle size={13} color={T.actionRed} />}
       </div>
       {showStatusInfo && (
-        <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 11, color: isInactive ? T.actionRed : T.contactsTeal, fontWeight: 600, marginLeft: 16, marginTop: -2, marginBottom: 4 }}>
+        <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 11, color: isInactive ? T.actionRed : T.actionGreen, fontWeight: 600, marginLeft: 16, marginTop: -2, marginBottom: 4 }}>
           {isInactive ? `Inactive — no encounter in over ${inactiveThresholdDays} days` : "Active — a recent encounter is logged"}
         </div>
       )}
@@ -1480,6 +1480,13 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
 // (outlined box), per the user's ask. Location & logistics reordered to:
 // Hosts, Travels, Address, City, Drives (+ car details), Availability,
 // availability exceptions, Readily available. ──
+// FIXED 10 Sep 2026 — real ESLint finding: was defined inside
+// ContactEditSheet's own body, so the useMemo below that filters
+// against it was getting a fresh array identity every render — its
+// memoization was a no-op. Hoisted to module scope (a pure literal, no
+// dependency on props/state).
+const REDUNDANT_PLATFORM_SUGGESTIONS = ["phone", "snapchat", "fabguys", "fabswingers", "recon"];
+
 function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   const isNew = !contact;
   // ADDED 19 Aug 2026 — draft autosave, real fix for a real gap the user
@@ -1550,7 +1557,6 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   // explicitly rather than relying on historical data staying clean —
   // these four are always redundant with the dedicated fields, so there's
   // no case where suggesting them here is correct.
-  const REDUNDANT_PLATFORM_SUGGESTIONS = ["phone", "snapchat", "fabguys", "fabswingers", "recon"];
   const contactableViaOptions = useMemo(
     () => getKnownValues(contacts, "contactableVia").filter((v) => !REDUNDANT_PLATFORM_SUGGESTIONS.includes(v.toLowerCase().trim())),
     [contacts]
@@ -2318,7 +2324,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       return displayName(a).localeCompare(displayName(b));
     });
     return sorted;
-  }, [activeContacts, query, sortBy, encounters, encounterSummaries, filterRoles, filterPositions, filterHosts, filterDrives, kinkNameById]);
+  }, [activeContacts, query, sortBy, encounterSummaries, filterRoles, filterPositions, filterHosts, filterDrives, kinkNameById]);
 
   return (
     <div>
@@ -2717,6 +2723,11 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
       return false;
     });
     return () => registerModuleBackHandler(null);
+    // backToList deliberately omitted — it's a stateless dispatcher
+    // (setScreen("list"); refresh();), identical behaviour regardless
+    // of which render's closure gets called; every real dependency its
+    // own condition (screen === "profile") reads is already listed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingContact, showMyProfile, showImportProfile, screen, registerModuleBackHandler]);
 
   const saveEdit = async (form) => {

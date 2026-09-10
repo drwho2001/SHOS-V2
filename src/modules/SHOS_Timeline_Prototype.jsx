@@ -300,7 +300,31 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
   // above resolves, now that this reads asynchronously instead of
   // synchronously off useMemo. Guarded with episode?. accordingly.
   const [resolveDateDraft, setResolveDateDraft] = useState(() => (episode?.resolvedDate || new Date().toISOString()).slice(0, 10));
-  useEffect(() => { setResolveDateDraft((episode?.resolvedDate || new Date().toISOString()).slice(0, 10)); }, [episodeId]);
+  // FIXED 10 Sep 2026 — real bug found by adding ESLint to the project:
+  // `episode` loads asynchronously (useLoadedMemo) and starts null for
+  // one render — the effect just below only re-derives resolveDateDraft
+  // when episodeId changes, so opening an ALREADY-RESOLVED episode
+  // could initialize this field from the null-episode fallback
+  // ("today") and never self-correct once the real episode (with its
+  // own real resolvedDate) actually resolved a tick later — silently
+  // showing the wrong date, and incorrectly surfacing the "Save"
+  // button below (compares resolveDateDraft against
+  // episode.resolvedDate) the instant the screen opened, before any
+  // real edit. Fixed with a second effect that self-corrects once the
+  // real value resolves, but ONLY if the user hasn't touched the field
+  // yet — same "only correct if untouched" guard as every other
+  // resync-on-async-load fix in this app.
+  const resolveDateTouchedRef = useRef(false);
+  // episode?.resolvedDate deliberately omitted here — this effect's
+  // job is specifically "reset when switching to a different episode";
+  // the effect just below handles resyncing once the new episode's
+  // real resolvedDate actually resolves.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { resolveDateTouchedRef.current = false; setResolveDateDraft((episode?.resolvedDate || new Date().toISOString()).slice(0, 10)); }, [episodeId]);
+  useEffect(() => {
+    if (resolveDateTouchedRef.current || !episode?.resolvedDate) return;
+    setResolveDateDraft(episode.resolvedDate.slice(0, 10));
+  }, [episode?.resolvedDate]);
   // CHANGED — Phase 2 encryption groundwork: SymptomLogRepository went
   // async — same "must stay ABOVE the guard" reasoning as
   // resolveDateDraft above, since this needs a hook. Re-derives its own
@@ -572,7 +596,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
                 few days after it came back). */}
             <div style={{ padding: "4px 0 8px" }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>End date</div>
-              <input type="date" value={resolveDateDraft} onChange={(e) => setResolveDateDraft(e.target.value)}
+              <input type="date" value={resolveDateDraft} onChange={(e) => { resolveDateTouchedRef.current = true; setResolveDateDraft(e.target.value); }}
                 style={{ padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
@@ -590,7 +614,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
             <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginBottom: 10 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>End date</div>
-                <input type="date" value={resolveDateDraft} onChange={(e) => setResolveDateDraft(e.target.value)}
+                <input type="date" value={resolveDateDraft} onChange={(e) => { resolveDateTouchedRef.current = true; setResolveDateDraft(e.target.value); }}
                   style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
               </div>
               {resolveDateDraft !== (episode.resolvedDate || "").slice(0, 10) && (

@@ -1367,6 +1367,12 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
   );
 }
 
+// FIXED 10 Sep 2026 — real ESLint finding: was defined inside the
+// component body, so the useMemo below that sorts by it was getting a
+// fresh object identity every render — its memoization was a no-op.
+// Hoisted to module scope (a pure literal, no dependency on props/state).
+const PATTERN_ORDER = { daily: 0, custom: 1, prn: 2 };
+
 export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, registerModuleBackHandler } = {}) {
   const [meds, setMeds] = useLoadedState(() => loadMedications(), [], []);
   // ADDED 19 Aug 2026 — real undo/redo for editing a medication's own
@@ -1692,7 +1698,6 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // group rather than overriding it entirely. "custom" (rarely used)
   // placed between the two — reasonable default, not explicitly
   // specified by the user, flagged here rather than silently assumed.
-  const PATTERN_ORDER = { daily: 0, custom: 1, prn: 2 };
   // CHANGED — real ask: "show non inventory tracked with a visual
   // separator with tracked meds above". Adds inventoryTracked as the
   // PRIMARY sort key, ahead of the existing daily/custom/PRN grouping

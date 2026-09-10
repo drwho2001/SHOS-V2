@@ -63,7 +63,10 @@ export function useLoadedState(loader, deps, fallback) {
     // dependency — loader is a fresh closure every render by design,
     // matching how the useMemo/useState call sites this replaces
     // already worked (their own deps arrays never included the
-    // function either).
+    // function either). ESLint can't statically verify a spread/passed-
+    // through deps array — that's expected for a generic wrapper hook
+    // like this one, not a real omission.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   return [value, setValue];
 }

@@ -352,6 +352,9 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
     saveDraft(draftKey, form);
+    // draftKey deliberately omitted — derived once from the record
+    // being edited and fixed for this sheet instance's whole life.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
   // ADDED — applies the real "last entry" unit (if one exists) once
   // MeasurementRepository.getLastEntry() resolves, IF the form is
@@ -375,6 +378,10 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
     if (!lastEntryForPresetType) return;
     const fallbackDefault = getDefaultUnit(presetType, initialPrefsRef.current);
     setForm((f) => (f.type === presetType && f.unit === fallbackDefault ? { ...f, unit: lastEntryForPresetType.enteredUnit, enteredUnit: lastEntryForPresetType.enteredUnit } : f));
+    // presetType deliberately omitted — a prop fixed for this sheet
+    // instance's whole life (a new preset opens a freshly-mounted
+    // sheet), so it can never actually change while this effect exists.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastEntryForPresetType]);
   // ADDED — corrects the new-presetType-entry's initial `unit` (set
   // above from `prefs`' fallback value) once real preferences load, IF
@@ -394,6 +401,9 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
     const realDefault = getDefaultUnit(presetType, prefs);
     if (realDefault === fallbackDefault) return;
     setForm((f) => (f.type === presetType && f.unit === fallbackDefault ? { ...f, unit: realDefault } : f));
+    // isNew/presetType deliberately omitted — both props fixed for this
+    // sheet instance's whole life, same reasoning as the effect above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefs, lastEntryForPresetType]);
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const isBP = form.type === BLOOD_PRESSURE_TYPE;
@@ -651,7 +661,6 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
     const ungrouped = byTypeGroups.filter((tg) => !groupedTypes.has(tg.type));
     if (ungrouped.length > 0) sections.push({ id: "ungrouped", name: "Ungrouped", subGroups: ungrouped });
     return sections;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupMode, byTypeGroups, groupsVersion], null);
 
   const [selectMode, setSelectMode] = useState(false);

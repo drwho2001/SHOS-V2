@@ -234,6 +234,19 @@ function ResultRow({ result, onSelect }) {
 // honest exception: it has no separate detail screen at all, so its
 // result uses scroll-to + a neutral highlight within the dashboard
 // instead, a real and disclosed limit rather than a silent gap.
+// FIXED 10 Sep 2026 — real ESLint finding: these were defined inside
+// the component body, so the useMemo below that depends on them was
+// silently getting a NEW array/object identity every render — its own
+// memoization was a no-op, recomputing on every render regardless of
+// whether `results` actually changed. Hoisted to module scope (pure
+// literals, no dependency on props/state) so the memo is real again.
+const TYPE_ORDER = ["contact", "encounter", "medication", "test", "clinicVisit", "symptomLog", "vaccination"];
+const TYPE_PLURAL = {
+  contact: "Contacts", encounter: "Encounters", medication: "Medications",
+  test: "Tests", clinicVisit: "Clinic Visits", symptomLog: "Symptom Log",
+  vaccination: "Vaccinations",
+};
+
 export default function GlobalSearchScreen({ onClose, onNavigate }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
@@ -282,12 +295,6 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
   // RESULT TYPE, always on — `results` is already sorted by the
   // active sortMode before this runs, so bucketing by type preserves
   // that order (most-recent-first or A-Z) within each group.
-  const TYPE_ORDER = ["contact", "encounter", "medication", "test", "clinicVisit", "symptomLog", "vaccination"];
-  const TYPE_PLURAL = {
-    contact: "Contacts", encounter: "Encounters", medication: "Medications",
-    test: "Tests", clinicVisit: "Clinic Visits", symptomLog: "Symptom Log",
-    vaccination: "Vaccinations",
-  };
   const groupedResults = useMemo(() => {
     const buckets = {};
     results.forEach((r) => {

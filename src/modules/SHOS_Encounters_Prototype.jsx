@@ -1033,7 +1033,15 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
       });
     }
     return sortByDateDesc(filtered);
-  }, [encounters, showArchived, dateFilter, query, contacts, lastTestDate]);
+    // FIXED 10 Sep 2026 — real ESLint finding: kinkNameById (used above
+    // for kink-name search matches) starts as an empty fallback Map()
+    // and resolves asynchronously (useLoadedMemo) — without it in this
+    // list, a kink-name search performed before it resolves would
+    // silently keep returning stale/empty results until some OTHER
+    // dependency happened to change, the same "stale closure on an
+    // async-resolved value" bug class this app's own history has found
+    // and fixed many times over.
+  }, [encounters, showArchived, dateFilter, query, contacts, lastTestDate, kinkNameById]);
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", paddingBottom: 90 }}>

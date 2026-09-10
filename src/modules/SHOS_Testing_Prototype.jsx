@@ -3,7 +3,13 @@ import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CaretRightIcon as Chevr
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
-import { fuzzyIncludes } from "../calculations/fuzzyMatch";
+// FIXED 10 Sep 2026 — real bug found by adding ESLint to the project:
+// findClosestMatch (the "did you mean?" typo-suggestion check, used
+// below) was called but never imported — every other module's own
+// RegistryTagPicker copy imports it correctly. This would have thrown
+// a real ReferenceError, crashing this screen, the moment a user typed
+// a single near-duplicate Organism/Result tag name.
+import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
 import PartnerNotificationSheet from "./SHOS_PartnerNotification_Prototype";
 import { PartnerNotificationRepository } from "../repositories/partnerNotificationRepository";
 import { nowAsDateString } from "../calculations/dateInputHelpers";

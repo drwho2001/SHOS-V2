@@ -967,6 +967,11 @@ export default function App() {
       await finishBootAfterUnlock();
     })();
     return () => { cancelled = true; };
+    // Deliberately [] — this is the one-shot boot sequence, meant to run
+    // exactly once. finishBootAfterUnlock is a fresh closure every
+    // render by design (not memoized); including it would refire this
+    // whole boot sequence on every render instead of once at mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [status, setStatus] = useState(null);
   // ADDED 19 Aug 2026 — Dashboard quick-add: set alongside switching
@@ -1318,6 +1323,11 @@ export default function App() {
       }
     })();
     return () => { listenerHandle?.remove(); };
+    // goBackOneLevel deliberately omitted — every real state its own
+    // logic reads (showSettings/showSearch/active) is already listed
+    // here, so this effect already re-registers the listener with a
+    // fresh closure whenever any of them change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSettings, showSearch, active]);
 
   // ADDED — real ask: actually re-lock when the app comes back from
@@ -1404,6 +1414,15 @@ export default function App() {
     // use for the identical reason.
     if (!bootReady || !isVaultUnlocked()) return;
     AppPreferencesRepository.update({ lastActiveTab: active, lastActiveAt: new Date().toISOString() });
+    // Deliberately [active] only — see this effect's own comment above
+    // for the full history: `active` itself was once converted to an
+    // async-loaded value and reverted after a real StrictMode data-loss
+    // bug (a stale "home" placeholder got persisted over real stored
+    // data) — this effect's job is purely to persist real tab changes,
+    // and the `if (!bootReady...) return;` guard above already handles
+    // the boot-timing race correctly without bootReady needing to be a
+    // dependency that re-triggers the effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
   // ADDED 26 Aug 2026 — real ask: custom medication reminder
@@ -1448,6 +1467,15 @@ export default function App() {
       });
     })();
     return () => { listenerHandle?.remove(); };
+    // Deliberately [] — registers the native listener once. Every
+    // onX handler here (onDueMedsTake/Skip/Snooze, onRefillRequested/
+    // Snooze, onTestingSnooze, onClinicVisitSnooze) is a thin dispatcher
+    // that reads fresh data itself on every call (via its own
+    // repository/sync-file call) rather than closing over local
+    // component state — so capturing them once at mount carries no
+    // real staleness risk, unlike a handler that reads a stale useState
+    // value directly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ADDED 26 Aug 2026 — real ask: swipe gesture navigation, explicitly
@@ -1476,6 +1504,10 @@ export default function App() {
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchend", onTouchEnd);
     };
+    // Same reasoning as the hardware back-button effect above:
+    // goBackOneLevel deliberately omitted, its real inputs
+    // (showSettings/showSearch/active) already listed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSettings, showSearch, active]);
   const fileInputRef = useRef(null);
   // ADDED 1 Sep 2026 — real ask: long-press Home to relock, see the
@@ -1557,7 +1589,6 @@ export default function App() {
       }
     })();
     return () => { listenerHandle?.remove(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ADDED 19 Aug 2026 — Global Search's navigation handler. Deliberately

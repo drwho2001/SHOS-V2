@@ -439,30 +439,40 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       const sortedUpcoming = [...visits].sort((a, b) => new Date(a.date) - new Date(b.date));
       setNextVisit(sortedUpcoming[0] || null);
     })();
+  }, []);
 
+  // FIXED 10 Sep 2026 — real bug found by adding ESLint to the project
+  // (exhaustive-deps flagged menstrualTrackingEnabled missing from the
+  // big mount-once effect above, which is exactly right): this block
+  // used to live inside that `[]`-deps effect, gated on
+  // menstrualTrackingEnabled — but that preference itself loads
+  // asynchronously (useLoadedState, starts false, resolves a tick
+  // later). A `[]` effect only ever sees the value it captured at
+  // mount, so a user with tracking genuinely ON would very likely have
+  // this block skipped forever the instant this screen mounted (before
+  // the real preference had a chance to resolve) — the Cycle/
+  // Contraception dashboard summary would silently never populate for
+  // the rest of that Home mount, only "fixing itself" on a full
+  // reload that happened to race the load the other way. Split into
+  // its own effect, correctly re-running once the real value resolves.
+  useEffect(() => {
     // ADDED — real ask: Menstrual/Contraception real results on the
     // dashboard. Skipped entirely when the feature is off — no reason
     // to read either repository for a screen that won't show them.
-    // CHANGED — Phase 2 encryption groundwork: MenstrualCycleRepository/
-    // ContraceptionRepository went async. This effect is otherwise fully
-    // synchronous (every setState above already ran by the time this
-    // fires) so an async IIFE just for this last, gated block is
-    // simplest — doesn't hold up anything that already completed.
-    if (menstrualTrackingEnabled) {
-      (async () => {
-        const cycles = (await MenstrualCycleRepository.getAll()).filter((c) => !c.isArchived);
-        const sortedCycles = [...cycles].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
-        setLastPeriod(sortedCycles[0] || null);
+    if (!menstrualTrackingEnabled) return;
+    (async () => {
+      const cycles = (await MenstrualCycleRepository.getAll()).filter((c) => !c.isArchived);
+      const sortedCycles = [...cycles].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
+      setLastPeriod(sortedCycles[0] || null);
 
-        // "Contraception due" mirrors "Next clinic visit" exactly — the
-        // soonest upcoming date across currently-active methods, not
-        // just the most recently started one.
-        const active = (await ContraceptionRepository.getActive()).filter((e) => e.nextDueDate);
-        const sortedDue = [...active].sort((a, b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
-        setContraceptionDue(sortedDue[0] || null);
-      })();
-    }
-  }, []);
+      // "Contraception due" mirrors "Next clinic visit" exactly — the
+      // soonest upcoming date across currently-active methods, not
+      // just the most recently started one.
+      const active = (await ContraceptionRepository.getActive()).filter((e) => e.nextDueDate);
+      const sortedDue = [...active].sort((a, b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
+      setContraceptionDue(sortedDue[0] || null);
+    })();
+  }, [menstrualTrackingEnabled]);
 
   // ADDED 19 Aug 2026 — real fix, the user's ask: explicit time, not just
   // a vague relative string. Within the last 24h: relative time-since

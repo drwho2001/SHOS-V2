@@ -31,6 +31,7 @@ import {
   RulerIcon as Ruler, WifiHighIcon as WifiHigh, LinkBreakIcon as LinkBreak,
   FolderIcon as Folder, FunnelIcon as Filter, ClockIcon as Clock,
   ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass,
+  BugIcon as Bug,
 } from "@phosphor-icons/react";
 // FIXED 1 Sep 2026 — real ask: "Managed lists crashes app on
 // attempting to open" / "Same for resources [crashes], in light [mode]
@@ -52,7 +53,14 @@ import {
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedMemo, useLoadedState } from "../calculations/loadedRepositoryState";
 import { exportBackup, exportEncryptedBackup, exportBackupToChosenFolder, exportEncryptedBackupToChosenFolder, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
-import { isChooseFolderExportAvailable } from "../storage/fileExportHelper";
+import { isChooseFolderExportAvailable, exportTextFile } from "../storage/fileExportHelper";
+// ADDED 10 Sep 2026 — real ask: "allow error reporting." See
+// errorLogRepository.js's own header for why this is a local,
+// on-device log rather than a real third-party crash-reporting
+// service — this app's whole design is "nothing leaves the device
+// unless the owner explicitly exports it," and a real crash reporter
+// would quietly cross that line.
+import { ErrorLogRepository } from "../repositories/errorLogRepository";
 import { exportRecordsAsCSV } from "../storage/csvExportService";
 import { localStorageAdapter } from "../storage/storageAdapter";
 import { computeKinkUsage, computeChemsUsage, computeProtectionUsage, computeSymptomsUsage, computeOrganismUsage, computeResultsUsage, computeLocationsUsage } from "../calculations/registryUsage";
@@ -577,6 +585,11 @@ function DeveloperToolsScreen({ onClose }) {
   // checker.
   const orphans = useLoadedMemo(() => findOrphanReferences(), [], []);
   const [showOrphans, setShowOrphans] = useState(false);
+  // ADDED — real ask: "allow error reporting" — see ErrorLogScreen's
+  // own header for the full reasoning (a local, on-device log, not a
+  // real third-party crash reporter).
+  const errorCount = useLoadedMemo(() => ErrorLogRepository.getAll().then((l) => l.length), [], 0);
+  const [showErrorLog, setShowErrorLog] = useState(false);
   // ADDED — real groundwork for encryption at rest: hasUnbackedChanges()
   // is now async (see backupService.js's own comment), so this can no
   // longer be called straight in the render body below — a Promise is
@@ -713,6 +726,24 @@ function DeveloperToolsScreen({ onClose }) {
           </div>
         )}
       </div>
+
+      {/* ADDED — real ask: "allow error reporting." See
+          ErrorLogScreen's own header for the full reasoning (a local,
+          on-device log, not a real third-party crash-reporting
+          service — this app's whole "nothing leaves the device
+          without you choosing to" design applies here too). */}
+      <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Diagnostics</div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
+        <div onClick={() => setShowErrorLog(true)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: "pointer" }}>
+          <Bug size={15} color={errorCount > 0 ? ACTION.red : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} />
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>Error log</span>
+          <span style={{ fontSize: 13, color: errorCount > 0 ? ACTION.red : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>
+            {errorCount === 0 ? "None" : errorCount}
+          </span>
+          <ChevronRight size={16} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} />
+        </div>
+      </div>
+      {showErrorLog && <ErrorLogScreen darkMode={darkMode} onClose={() => setShowErrorLog(false)} />}
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Danger zone</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: `1px solid ${ACTION.red}`, borderRadius: RADIUS.md, margin: "0 16px 20px", padding: 16 }}>
@@ -2142,6 +2173,68 @@ function NotificationHistoryScreen({ darkMode, onClose }) {
               </span>
             </div>
             {e.body && <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>{e.body}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ADDED 10 Sep 2026 — real ask: "allow error reporting." Same shape as
+// NotificationHistoryScreen just above — a plain, capped local log,
+// viewable and clearable — plus a real Export action (same
+// exportTextFile() every other export in this app already uses),
+// since the whole point of an on-device-only log is that the owner
+// himself decides if and when to share it, e.g. pasting it into a bug
+// report — nothing here ever leaves the device on its own.
+function ErrorLogScreen({ darkMode, onClose }) {
+  const [entries, setEntries] = useLoadedState(() => ErrorLogRepository.getAll(), [], []);
+  const clear = async () => { await ErrorLogRepository.clear(); setEntries([]); };
+  const [exportStatus, setExportStatus] = useState(null);
+  const exportLog = async () => {
+    const text = entries.map((e) =>
+      `[${e.occurredAt}] ${e.source}\n${e.message}${e.stack ? `\n${e.stack}` : ""}`
+    ).join("\n\n---\n\n");
+    try {
+      await exportTextFile(`shos-error-log-${new Date().toISOString().slice(0, 10)}.txt`, text || "No errors logged.");
+      setExportStatus({ ok: true, msg: "Exported." });
+    } catch {
+      setExportStatus({ ok: false, msg: "Couldn't export — try again." });
+    }
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+          <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Error log</span>
+        </div>
+        {entries.length > 0 && (
+          <div style={{ display: "flex", gap: 14 }}>
+            <span onClick={exportLog} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>Export</span>
+            <span onClick={clear} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Clear</span>
+          </div>
+        )}
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 12 }}>
+          On-device only — nothing here is ever sent anywhere automatically. Export produces a plain text file you can choose to share yourself, e.g. in a bug report.
+        </div>
+        {exportStatus && <div style={{ fontSize: 12, color: exportStatus.ok ? ACTION.green : ACTION.red, marginBottom: 12 }}>{exportStatus.msg}</div>}
+        {entries.length === 0 ? (
+          <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textAlign: "center", padding: "40px 16px" }}>
+            No errors logged. A real uncaught error or crash will show up here automatically.
+          </div>
+        ) : entries.map((e, i) => (
+          <div key={i} style={{ padding: "10px 0", borderBottom: i < entries.length - 1 ? ("1px solid " + (darkMode ? DARK.border : NEUTRAL.border)) : "none" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontFamily: "'JetBrains Mono', monospace" }}>{e.source}</span>
+              <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flexShrink: 0 }}>
+                {new Date(e.occurredAt).toLocaleDateString([], { day: "numeric", month: "short" })}, {new Date(e.occurredAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, wordBreak: "break-word" }}>{e.message}</div>
           </div>
         ))}
       </div>

@@ -57,6 +57,43 @@ import "@fontsource/jetbrains-mono/700.css";
 // hook equivalent exists), and deliberately uses only inline styles
 // and no app imports beyond React itself, so it can never itself fail
 // to render even if the crash is import-level or storage-level.
+// ADDED 10 Sep 2026 — real ask: "allow error reporting." This app has
+// no backend/telemetry by design (see CLAUDE.md's own opening line —
+// that's the actual privacy guarantee, not a gap), so a real
+// crash-reporting SERVICE is deliberately out — see
+// errorLogRepository.js's own header for the full reasoning. This is
+// the local alternative: a small helper, used by both the global
+// window-level listeners below and the ErrorBoundary's own
+// componentDidCatch, that best-effort records a caught error to that
+// on-device log. Deliberately NOT a static import (same reasoning as
+// the ErrorBoundary's own existing cryptoService dynamic import below)
+// — logging the error must never itself risk becoming a second crash,
+// and the repository it calls into depends on the (possibly not yet
+// unlocked) encrypted storage layer.
+function logErrorLocally(source, error) {
+  import("./repositories/errorLogRepository.js").then(({ ErrorLogRepository }) => {
+    ErrorLogRepository.record({ source, message: error?.message ?? error, stack: error?.stack });
+  }).catch(() => {
+    // Logging the error failed too (e.g. vault not unlocked yet) —
+    // console.error is the same honest fallback this file already uses
+    // everywhere else a best-effort step can't be guaranteed.
+  });
+}
+
+// ADDED — real ask: catch errors OUTSIDE React's own render tree too
+// (a rejected Promise nobody awaited, a plain runtime error in an
+// event handler) — the ErrorBoundary below only ever sees render-phase
+// errors, by React's own design. Registered here, at true module load,
+// for the same "as early as this app's JS can possibly run" reasoning
+// already established for installPromptService.js/notificationService.js's
+// own module-level listeners above.
+window.addEventListener("error", (event) => {
+  logErrorLocally("window.onerror", event.error || event.message);
+});
+window.addEventListener("unhandledrejection", (event) => {
+  logErrorLocally("unhandledrejection", event.reason);
+});
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -67,6 +104,7 @@ class ErrorBoundary extends React.Component {
   }
   componentDidCatch(error, info) {
     console.error("[ErrorBoundary] Caught a render error:", error, info);
+    logErrorLocally("ErrorBoundary", error);
   }
   // Clears exactly the two newest, most likely-to-be-corrupt pieces of
   // app state (the "resume last tab" fields added this session) before
