@@ -3149,23 +3149,106 @@ this date; summarized here for durability.
   no-code schema editor are deliberate scope cuts, not gaps — don't
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
-- **Delete-confirmation UX is genuinely inconsistent across modules —
-  found 10 Sep 2026, a real design-direction call, not fixed
-  unilaterally.** Three different patterns, all live today: the native
-  `window.confirm()` browser dialog (Contacts/Encounters/Testing/
-  ClinicVisits/Medication/SymptomLog/Vaccinations/Measurements/Timeline/
-  Settings — 10 files, the dominant pattern); a custom styled confirm
-  sheet (`DeleteConfirm`, MenstrualHealth's Cycle/Contraception/Pregnancy
-  tabs only); and an inline Cancel/Delete button-swap
-  (PartnerNotification's own delete-list action). All three are real,
-  working, and each internally consistent, but a user moving between
-  modules genuinely sees three different visual treatments for the same
-  action. Two directions, both legitimate: normalise the two outliers to
-  the dominant `window.confirm()` (smallest diff, matches the existing
-  majority) or normalise everything to a custom sheet (better-looking,
-  matches the rest of this app's own UI language, but touches ~10
-  files). Left as an explicit open item rather than picked unilaterally
-  — worth the owner's own call before either direction ships.
+- **Delete-confirmation UX — RESOLVED 10 Sep 2026, see the "Recently
+  shipped" entry below for the full implementation.** Was: three
+  different patterns live across the app (`window.confirm()` in 10
+  files, a custom `DeleteConfirm` sheet in MenstrualHealth only, an
+  inline button-swap in PartnerNotification). Now standardised on one
+  new shared `src/components/ConfirmDeleteCard.jsx` — the app's first
+  real shared UI component — used everywhere, keeping each module's own
+  accent colour on the card's left stripe/Cancel button while the
+  danger cues (border/background/confirm button) always stay red.
+
+## Recently shipped (10 Sep 2026, final pre-release pass — see Notion for full detail)
+
+Real ask, framed explicitly as "the last test before release if no real
+outstanding bugs or issues": a 6-part follow-up covering a reported
+bottom-nav visual glitch, Settings icon inconsistency, a full
+notification-timing deep-dive, delete-confirmation standardisation, the
+Contacts status dot's interactivity, and one more genuinely full
+module-by-module audit.
+
+**Bottom-nav "fixed halfway down" — confirmed a screenshot artifact, not
+a real bug.** Tested 5 real device-size viewports directly: the nav's
+bottom edge always exactly equals `window.innerHeight`, matching
+`position: fixed; bottom: 0` behaving correctly (`App.jsx`). The
+reported "halfway down" placement was Playwright's own `fullPage: true`
+screenshot-stitching, not the live app.
+
+**Settings icon weight/colour inconsistency — fixed.** Root cause:
+piecemeal `emphasized`/`iconColor` props accumulated across many past
+sessions' individual feature additions to `SettingsRow`, with no real
+design rule behind which of the 22 rows got which treatment. Removed
+both props entirely — every row's icon is now a plain, consistent
+`size={17} weight="regular"` in a single neutral colour.
+
+**Delete confirmations standardised app-wide — new shared component.**
+Closer inspection of the "3 different patterns" Known Issues finding
+from earlier the same day showed the real picture was more nuanced:
+`window.confirm()` was used almost exclusively for bulk-select-toolbar
+deletes, while nearly every single-record delete (Contacts/Encounters/
+Testing/ClinicVisits/Vaccinations/SymptomLog/Measurements) had already,
+independently, built a near-identical custom inline card — meaning this
+project's own "discover abstractions after multiple modules exist" rule
+had clearly already been crossed. Built `src/components/
+ConfirmDeleteCard.jsx` — the app's first real shared UI component — and
+converted every delete confirmation across Contacts, Encounters,
+ClinicVisits, Testing, Vaccinations, SymptomLog, Measurements (including
+a third, previously undiscovered site in `ManageGroupsScreen`),
+Medication Dashboard, MenstrualHealth (removing a duplicated local
+`DeleteConfirm` component entirely), Timeline, PartnerNotification, and
+Settings' Trash screen. Module accent colours are preserved (left
+stripe/Cancel button); danger cues (border/background/confirm button)
+always stay red, keeping the "this is destructive" signal consistent
+everywhere.
+
+**Contacts' active/inactive status dot — made interactive.** Tapping it
+now toggles a small caption explaining what the dot means ("Active — a
+recent encounter is logged" / "Inactive — no encounter in over N days"),
+with a focus ring and full `aria-label`/`title` coverage — previously a
+purely decorative, unexplained colour dot.
+
+**Notification timing deep-dive — verified correct, plus 4 real bugs
+found and fixed.** Proved out empirically (a standalone script inlining
+the real pure calculation functions from `medicationCalculations.js`)
+that late/early doses correctly shift the next reminder forward/back
+by the same amount, and that consistent delays compound exactly as
+expected for a real waking-to-sleeping phase shift — this was already
+correct, existing behaviour, not a bug. Traced a live, concrete gap
+using the app's own seed data: Testosterone (Sustanon, `usagePattern:
+"custom"`) was getting zero reminder coverage at all —
+`medicationReminderSync.js`'s `getDailyMedsState()` only ever filtered
+for `usagePattern === "daily"`, silently excluding every custom-interval
+medication even though the calculation layer already supported one via
+`effectiveDoseIntervalHours()`. Fixed by extending the filter to include
+`usagePattern === "custom"` medications that have a real
+`scheduleIntervalDays` set. That surfaced a second real bug: Testosterone's
+own seed record never actually had `scheduleIntervalDays` set despite
+its comment claiming "biweekly" — added `scheduleIntervalDays: 14`. That
+fix, letting real adherence math execute for this medication for the
+first time, surfaced a third: `AdherencePill`'s `Math.round((hit /
+expected) * 100)` produced `NaN%` whenever `expected === 0` — fixed with
+the same `expected > 0 ? ... : 100` guard `medicationCalculations.js`'s
+own `windowStats()` already used elsewhere. Fourth: `doxyPepSync.js`'s
+native notification used `moduleSmallIconName("home")`/`ACCENTS.home`
+(teal) while Home's own real in-app DoxyPEP banner has always used
+`medsBlue` — a genuine notification/in-app colour mismatch, fixed to
+use `"medication"`/`ACCENTS.medication`, matching the user's own "module
+colour for ease of recognition" ask.
+
+**Emoji/icon consideration pass — deliberately declined new additions.**
+Considered adding icons/emoji more broadly per the user's "consider
+adding across all modules" ask, and chose not to: Test Results already
+deliberately has no icon treatment (a documented earlier decision, to
+avoid clutter/alarm on sensitive health data), and free-form multiselect
+fields (Kinks, Practices) don't map to a small fixed icon set the way
+Encounter Type's enum already does. Treated as a genuine option to
+decline with reasoning, not a mandate to add regardless.
+
+**Full module-by-module audit — clean.** No further real bugs found
+beyond the 4 already listed above. Verified via full build + a 13-flow
+`scripts/smoke-test.cjs` run against a real `vite preview` production
+build — all 13 flows pass.
 
 ## Recently shipped (10 Sep 2026 — see Notion for full detail)
 
