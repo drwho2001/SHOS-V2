@@ -3199,6 +3199,76 @@ this date; summarized here for durability.
   screenshot per module) rather than fixing sites one at a time as
   they're individually reported.
 
+## Recently shipped (10 Sep 2026, Play Store readiness)
+
+Real ask: continue through the deferred backlog. Real-device testing
+stays impossible in this sandboxed environment (no physical device or
+emulator with Play Services access) — picked Play Store readiness
+instead, the other deferred item, and scoped honestly what's actually
+achievable without a live Play Console account: a real hosted privacy
+policy, real screenshots from the actual running app, and accurate
+draft content for the Play Console's own forms, rather than a Console
+submission this session structurally cannot complete.
+
+**A real, hosted privacy policy — not a placeholder.** New
+`public/privacy-policy.html`, deployed automatically by the existing
+`web-alpha.yml` GitHub Pages workflow (no new CI wiring needed — it's a
+static file, `public/` already ships as-is). Live at
+`https://drwho2001.github.io/SHOS-V2/privacy-policy.html` once this
+push's Web Alpha run completes. Content drafted directly from this
+app's own verified architecture (no backend/accounts/cloud sync,
+AES-256-GCM encryption at rest) and the real, current
+`AndroidManifest.xml` permission list — every permission named in the
+policy was checked against the actual manifest, not assumed from
+memory, including the two genuine outbound network calls (Nominatim
+address lookup, GitHub update check) already disclosed in-app via
+Settings > Data & network.
+
+**Real Play Store screenshots — captured from the actual app, not
+mockups.** 5 screenshots (Home, Contacts, Encounters, Medication,
+Healthcare) via Playwright against a real `vite preview` production
+build, at 1080×1919 (9:16 — a standard Play Store phone screenshot
+size), using the app's own public seed/demo data per the established
+personal-alpha/public-alpha split. First pass included the due-meds/
+refill/SW-update banners still visible (not representative of a clean
+listing screenshot) — fixed by driving each real dismiss control
+(`aria-label="Dismiss due medications banner"` etc.) before each
+capture, not just cropping them out.
+
+**`PLAY_STORE_LISTING.md`** — everything else fillable without a live
+Console account: store listing copy (short/full description,
+category), Data Safety form answers (including an honest flag on the
+one genuine gray area — whether the optional Nominatim address-lookup
+call counts as "data shared with a third party" under Play's own
+category definitions, resolved toward the more conservative
+declaration rather than claiming zero data sharing and risking a
+policy mismatch), content-rating guidance (a mature rating is the
+honest expectation given the health/sexual-activity/substance-tracking
+subject matter — flagged clearly rather than downplayed to chase a
+lower rating), and what's still genuinely blocked without the owner's
+own involvement: a real signing keystore (deliberately not generated
+in this sandboxed environment — a signing key is a genuine secret that
+shouldn't be created or handled here), the closed-testing track Play
+requires before production release, and real-device verification.
+
+**Real test-environment lesson, not an app bug**: verifying this
+change's full smoke-test run first showed a false failure on flow 14
+(the PWA auto-update test) — caused by a stray `dist/` directory left
+over from this same session's own screenshot-generation build, built
+with a GitHub-Pages-specific `--base=/SHOS-V2/` override, while the
+suite was pointed at the dev server. Flow 14's own skip-guard only
+checks whether `dist/sw.js` exists on disk, not whether the suite is
+actually running against a real preview build — so it tried its real
+SW-file-swap trick against a server that wasn't serving that file
+correctly, a genuine gap in the guard's own precision worth knowing
+about if this happens again, not something to fix reflexively this
+session. Rebuilt with the default base and re-ran against a correctly
+-bound `vite preview` server — all 15 flows pass. `npx eslint .` clean.
+
+Honest scope note, unchanged: real-device testing remains genuinely
+deferred — still no physical device or emulator with Play Services
+access in this environment.
+
 ## Recently shipped (10 Sep 2026, data-volume/performance stress testing)
 
 Real ask: continue through the deferred backlog. Picked data-volume/
