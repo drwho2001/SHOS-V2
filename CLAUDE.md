@@ -3188,6 +3188,16 @@ this date; summarized here for durability.
   not actual reading-order/announcement quality), and the broader
   `region`-landmark finding (every screen's own content not wrapped in
   semantic regions) — both genuinely bigger, separate undertakings.
+- **Spacing consistency — not yet audited.** A real live report (10 Sep
+  2026): Contacts' own "N active" count text sat right against the header
+  banner's bottom edge, zero top padding — fixed for that one site (now
+  matches its own existing bottom padding). No systematic sweep for the
+  same "sits flush against the header/banner above it" shape has been
+  done anywhere else in the app — worth a dedicated pass (grep for
+  content immediately following a `position: sticky`/banner header with
+  `padding-top: 0` or none at all, spot-check visually against a real
+  screenshot per module) rather than fixing sites one at a time as
+  they're individually reported.
 
 ## Recently shipped (10 Sep 2026, accessibility pass)
 
