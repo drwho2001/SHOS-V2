@@ -118,19 +118,29 @@ checked against the code, not guessed:
   hardware access, e.g. biometrics/notifications/calendar/filesystem,
   none of which send data off-device).
 - **The one genuine gray area, flagged honestly rather than glossed
-  over**: the optional address-lookup feature sends a user-typed search
-  query to OpenStreetMap's public Nominatim API (a third party, not the
-  developer). Whether Play's own definitions count this as "data
-  shared with a third party" (even though the developer never sees or
-  stores it, and the feature is off by default / user-initiated /
-  toggle-able) is a real judgment call under Play's specific category
+  over** — and larger than it might first look, checked directly
+  against `src/storage/locationService.js` rather than assumed from
+  the feature's name: the optional address-lookup feature has two
+  real modes. Typing in the address-search field sends that typed text
+  to OpenStreetMap's public Nominatim API (a third party, not the
+  developer). The "use current location" button is a real step up in
+  sensitivity — it sends the device's actual GPS coordinates
+  (`reverseGeocode(latitude, longitude)`) to that same Nominatim
+  endpoint, not just typed text — the file's own header comment
+  states this plainly as a genuine privacy trade-off, not something
+  found only while writing this doc. Whether Play's own definitions
+  count either as "data shared with a third party" (even though the
+  developer never sees or stores it, and both are off by default /
+  user-initiated / individually toggle-able in Settings > Data &
+  network) is a real judgment call under Play's specific category
   definitions — the safer, more conservative answer is to declare
   **Location — Approximate or precise location — collected: No,
   shared: Yes (with the third-party service, only when the user
-  actively searches, not stored)** rather than claim "no data at all"
-  and risk a policy mismatch. The GitHub update-check call sends no
-  personal data (a generic, anonymous release-metadata request), so it
-  doesn't need a data-type declaration at all.
+  actively taps "use current location" or searches, never stored)**
+  rather than claim "no data at all" and risk a policy mismatch. The
+  GitHub update-check call sends no personal data (a generic,
+  anonymous release-metadata request), so it doesn't need a data-type
+  declaration at all.
 - **Is all user data encrypted in transit?** Yes for the two outbound
   calls above (both plain HTTPS).
 - **Do you provide a way for users to request data deletion?** Not

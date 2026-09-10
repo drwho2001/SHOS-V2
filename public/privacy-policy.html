@@ -91,8 +91,13 @@
     <strong>Address lookup.</strong> If you use the optional "look up an
     address" helper when adding a Location, the text you type is sent to
     OpenStreetMap's public Nominatim search API to return matching
-    addresses. This only happens when you actively use that search box —
-    nothing is sent automatically or in the background.
+    addresses. If you instead use the optional "use current location"
+    button, your device's real GPS coordinates are sent to that same
+    Nominatim service to resolve them into a place name/address —
+    a more sensitive request than a typed search, since it's your
+    actual location, so it gets the same explicit toggle and only ever
+    happens when you actively tap that button, never automatically or
+    in the background.
   </li>
   <li>
     <strong>Update check.</strong> The app periodically checks GitHub's
