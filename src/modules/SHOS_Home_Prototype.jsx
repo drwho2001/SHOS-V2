@@ -595,7 +595,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
 
   return (
     <div style={{ padding: "20px 16px", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ ...TYPE.screenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <h1 style={{ ...TYPE.screenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         {profileName ? `${profileName}'s dashboard` : "Your dashboard"}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {/* ADDED 1 Sep 2026 — real ask: "no way to leave duress mode,
@@ -627,7 +627,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               stroke, color darkened from grey to near-black. */}
           <SettingsIcon data-tour="settings-icon" size={20} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onOpenSettings} title="Settings" />
         </div>
-      </div>
+      </h1>
       {/* ADDED — real ask: "dashboard needs teal header bar under
           title" — every other module's own title sits on a filled
           colour banner; Home deliberately doesn't (a filled banner

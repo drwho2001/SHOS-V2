@@ -671,9 +671,9 @@ function OnboardingScreen({ onFinish }) {
           <img src={`${import.meta.env.BASE_URL}pwa-512.png`} alt="SHOS"
             style={{ width: 150, height: 150, borderRadius: 32, boxShadow: "0 8px 24px rgba(0,0,0,.25)" }} />
         )}
-        <div style={{ ...(step === 0 ? TYPE.subScreenTitle : TYPE.screenTitle), color: "#FFFFFF", marginTop: step === 0 ? 18 : 0, marginBottom: 14 }}>
+        <h1 style={{ ...(step === 0 ? TYPE.subScreenTitle : TYPE.screenTitle), margin: 0, color: "#FFFFFF", marginTop: step === 0 ? 18 : 0, marginBottom: 14 }}>
           {step === 0 ? "Welcome" : slide.title}
-        </div>
+        </h1>
         <div style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>{slide.body}</div>
       </div>
       <div style={{ display: "flex", justifyContent: "center", gap: 6, paddingBottom: 20 }}>
@@ -1915,7 +1915,19 @@ export default function App() {
       {swUpdateAvailable && (
         <div style={{ position: "fixed", bottom: "calc(150px + env(safe-area-inset-bottom))", left: 16, right: 16, display: "flex", alignItems: "center", gap: 10, background: "#1B1B1F", color: "#FFFFFF", padding: "10px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, fontFamily: "'Inter', sans-serif" }}>
           <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>A new version of SHOS is ready — may include notification fixes.</span>
-          <span onClick={() => window.location.reload()} style={{ fontSize: 12, fontWeight: 700, color: ACCENTS.healthcare, cursor: "pointer", flexShrink: 0 }}>Refresh</span>
+          {/* FIXED — real accessibility finding (10 Sep 2026, automated
+              axe-core scan): ACCENTS.healthcare (#09582E, a dark green)
+              on this banner's own #1B1B1F background gave a 2:1 contrast
+              ratio, well under the 4.5:1 WCAG AA minimum for text this
+              size — a real, user-facing legibility bug for everyone, not
+              only screen-reader users, since the module-accent colour
+              was picked without ever being checked against this specific
+              dark banner. White (matching the banner's own body text,
+              already proven legible at 17:1) plus an underline (the same
+              text-link pattern already used for AppLockScreen's own
+              "Back to PIN entry" link) distinguishes it as the tappable
+              action without needing a new colour. */}
+          <span onClick={() => window.location.reload()} style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", textDecoration: "underline", cursor: "pointer", flexShrink: 0 }}>Refresh</span>
           <X size={16} color="rgba(255,255,255,.7)" style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => setSwUpdateAvailable(false)} aria-label="Dismiss update notice" />
         </div>
       )}
@@ -1928,7 +1940,17 @@ export default function App() {
           above. env(safe-area-inset-top) is the live value the OS
           reports for that overlap (0 where there's none, so this is a
           no-op on any device/browser that isn't drawing edge-to-edge). */}
-      <div style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + testingBannerHeight + clinicVisitBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
+      {/* FIXED — real accessibility finding (10 Sep 2026, automated
+          axe-core scan): "landmark-one-main" — the app's own real
+          screen content had never been inside a <main> landmark
+          anywhere, on any screen, making it harder for screen-reader
+          users to jump straight to the actual content and skip the
+          nav chrome around it. This is the one container that's
+          genuinely always "the real screen" regardless of which tab
+          is active, so it's the correct, single place for the
+          landmark — no layout change, `<main>`'s own default display
+          matches the `<div>` it replaces. */}
+      <main style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + testingBannerHeight + clinicVisitBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
         {active === "home" ? (
           <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} />
         ) : ActiveModule ? (
@@ -1943,7 +1965,7 @@ export default function App() {
             <div style={{ fontSize: 13 }}>Needs Testing, Vaccination, and Clinic Visits to exist first.</div>
           </div>
         )}
-      </div>
+      </main>
 
       {/* FIXED — real device bug: the phone's own system nav bar
           (gesture bar / 3-button bar) started hovering over/covering

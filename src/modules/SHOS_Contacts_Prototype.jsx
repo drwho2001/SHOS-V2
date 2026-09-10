@@ -1457,7 +1457,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
           haven't been explicitly marked done. */}
       {isContactIncomplete(contact) && (
         <div style={{ marginLeft: 16, marginTop: 4 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: "#9A6700", background: "#FFF3C4", borderRadius: radius.full, padding: "2px 8px" }}>Incomplete</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#926100", background: "#FFF3C4", borderRadius: radius.full, padding: "2px 8px" }}>Incomplete</span>
         </div>
       )}
       {flaggedDontMeetAgain ? (
@@ -1605,8 +1605,8 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           <TextField T={T} label="Full name" value={form.name} onChange={set("name")} placeholder="Full name" />
           {possibleDuplicate && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderRadius: radius.sm, background: "#FFF3C4", marginTop: -4, marginBottom: 8 }}>
-              <AlertTriangle size={13} color="#9A6700" />
-              <span style={{ fontSize: 12, color: "#9A6700" }}>Possible duplicate of "{possibleDuplicate.nickname || possibleDuplicate.name}" — check before saving a second entry.</span>
+              <AlertTriangle size={13} color="#926100" />
+              <span style={{ fontSize: 12, color: "#926100" }}>Possible duplicate of "{possibleDuplicate.nickname || possibleDuplicate.name}" — check before saving a second entry.</span>
             </div>
           )}
           <TextField T={T} label="Nickname (shown instead of name, if set)" value={form.nickname} onChange={set("nickname")} placeholder="Optional" />
@@ -2334,7 +2334,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           Profile-type icons INTO the banner itself, white against the
           colour, instead of a separate plain row below it. */}
       <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.contactsTeal, borderBottom: "2px solid rgba(0,0,0,0.15)", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ ...TYPE.screenTitle, color: "#FFFFFF" }}>Contacts</span>
+        <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Contacts</h1>
         {/* ADDED 18 Aug 2026 — My Profile and Import Shared Profile both
             live here now (Doc 1: My Profile isn't a primary-nav tab;
             Import creates a Contact, so it belongs where Contacts are
@@ -2356,8 +2356,8 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               that screen's red — this is a softer, scored signal, not
               a same-name exact flag. */}
           {duplicateCandidates.length > 0 && (
-            <div onClick={() => setShowDuplicates(true)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 999, background: "#FFF3C4", color: "#9A6700", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-              <AlertTriangle size={12} color="#9A6700" /> {duplicateCandidates.length}
+            <div onClick={() => setShowDuplicates(true)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 999, background: "#FFF3C4", color: "#926100", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              <AlertTriangle size={12} color="#926100" /> {duplicateCandidates.length}
             </div>
           )}
           <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
@@ -2389,7 +2389,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                     <span style={{
                       fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
-                      color: confidence === "High" ? "#B42318" : confidence === "Medium" ? "#9A6700" : T.textSecondary,
+                      color: confidence === "High" ? "#B42318" : confidence === "Medium" ? "#926100" : T.textSecondary,
                       background: confidence === "High" ? "#FEE4E2" : confidence === "Medium" ? "#FFF3C4" : T.surfaceVariant,
                     }}>{confidence} confidence</span>
                     <span style={{ fontSize: 11, color: T.textDisabled }}>matched: {matched.join(", ")}</span>
@@ -2534,7 +2534,18 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, padding: "0 16px 14px", overflowX: "auto" }}>
+      {/* FIXED — real accessibility finding (10 Sep 2026, automated
+          axe-core scan): a horizontally-scrolling region with no way
+          for a keyboard user to reach or operate it at all — no
+          tabIndex, so Tab skips straight over it. tabIndex={0} makes
+          the region itself focusable (arrow keys then scroll it),
+          matching axe's own "scrollable-region-focusable" fix. The
+          chips inside are still plain onClick divs, not real buttons —
+          a real, bigger gap (this exact pattern repeats across many
+          chip/pill UI elements app-wide), deliberately out of scope
+          for this narrower fix; see CLAUDE.md's Known Issues for the
+          honest, not-yet-done accessibility work this surfaced. */}
+      <div role="group" aria-label="Sort contacts" tabIndex={0} style={{ display: "flex", gap: 8, padding: "0 16px 14px", overflowX: "auto" }}>
         {[
           { key: "name", label: "A–Z" },
           { key: "newest", label: "Newest" },

@@ -147,7 +147,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           stats card was the actual root of the "bland" complaint
           flagged earlier, not just styling. */}
       <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.healthcareBlue, borderBottom: "2px solid rgba(0,0,0,0.15)", padding: "16px 16px 14px" }}>
-        <span style={{ ...TYPE.screenTitle, color: "#FFFFFF" }}>Healthcare</span>
+        <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Healthcare</h1>
       </div>
       <div style={{ padding: "14px 16px 0", background: T.bg }}>
         {/* CHANGED — real ask: "ensure all six sit in two rows of three

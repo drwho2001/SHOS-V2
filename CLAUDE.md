@@ -3163,6 +3163,106 @@ this date; summarized here for durability.
   real shared UI component — used everywhere, keeping each module's own
   accent colour on the card's left stripe/Cancel button while the
   danger cues (border/background/confirm button) always stay red.
+- **Accessibility — first real pass done 10 Sep 2026 (see "Recently
+  shipped" below for the fixes that shipped), two genuine findings
+  deliberately deferred, not silently skipped.** An automated
+  `axe-core` scan (never done systematically before this) found and
+  fixed two real contrast bugs and added a `<main>` landmark + real
+  `<h1>` screen titles on the 6 primary screens. What's still real,
+  not-yet-done work: (1) a much larger `scrollable-region-focusable`
+  gap — the `position: fixed; inset: 0; overflow-y: auto` shape used
+  for nearly every full-screen overlay app-wide has no `tabIndex`, so
+  a keyboard-only user may not be able to scroll most screens past
+  what's initially visible at all (native Space/PageDown scrolling
+  only reaches a nested `overflow:auto` div once something inside it
+  already has focus) — needs a real design-system fix (likely one
+  shared `<ScrollableScreen>` wrapper every overlay adopts), not a
+  narrow per-file patch. (2) Every module's own accent colour used as
+  text-on-a-light-self-tint for badges/chips (40 sites across 11
+  files, e.g. `${T.contactsTeal}15` backgrounds) — Contacts' own
+  version of this pattern measured ~4:1, just under WCAG AA's 4.5:1 —
+  needs each of the ~10 module accent colours checked individually
+  against this same pattern before any of them get darkened, not a
+  single-module fix. Also out of scope for this pass entirely: a real
+  screen-reader walkthrough (axe catches structural/contrast issues,
+  not actual reading-order/announcement quality), and the broader
+  `region`-landmark finding (every screen's own content not wrapped in
+  semantic regions) — both genuinely bigger, separate undertakings.
+
+## Recently shipped (10 Sep 2026, accessibility pass)
+
+Real ask: continue through the deferred backlog list (real-device testing,
+Play Store readiness, an accessibility pass, data-volume stress testing) —
+picked the accessibility pass, since it's the one item achievable with real
+tooling in this environment and was flagged as "never done systematically"
+across this whole multi-session effort. Added `axe-core` as a devDependency
+(injected into a real running preview build via Playwright, never imported
+by `src/` — not shipped to users) and scanned Home, Contacts (list + a real
+contact's detail), Encounters, Medication Dashboard, Healthcare, Settings
+(main menu + Colour scheme), and dark mode, against the WCAG 2 A/AA + best-
+practice ruleset.
+
+**Two real, user-facing contrast bugs found and fixed — not just
+screen-reader-only findings.** (1) The PWA update banner's "Refresh"
+action (`App.jsx`) rendered in `ACCENTS.healthcare` (`#09582E`, a dark
+green) on the banner's own near-black `#1B1B1F` background — a 2:1
+contrast ratio, well under WCAG AA's 4.5:1 minimum, making the one
+actionable button on that banner hard to read for anyone, not only
+axe. Fixed to white + underline (matching the banner's own already-legible
+body text and the existing text-link pattern used elsewhere for
+`AppLockScreen`'s "Back to PIN entry" link) — confirmed via screenshot,
+no visual regression. (2) Every seeded contact's "Incomplete" badge (and
+the same warning colour's "Possible duplicate"/"Medium confidence" uses)
+in `SHOS_Contacts_Prototype.jsx` used `#9A6700` on `#FFF3C4` at 4.37:1 —
+just under the 4.5:1 threshold, affecting literally every contact card in
+the list. Darkened to `#926100` (4.80:1, a real margin, not another
+razor-thin pass) — visually near-identical, still reads as the same
+mustard warning tone.
+
+**Structural findings, fixed where cleanly bounded, honestly deferred
+where not.** `landmark-one-main` (no `<main>` landmark anywhere, on any
+screen) — fixed with one `<main>` wrapping `App.jsx`'s own real per-tab
+screen content, the one container that's genuinely always "the real
+screen" regardless of which tab is active; zero layout change, `<main>`'s
+default display matches the `<div>` it replaced. `page-has-heading-one`
+(no real `<h1>` anywhere — every "screen title" in this app is a styled
+`<div>`/`<span>`, not a semantic heading) — converted the 6 primary
+screen-title sites already tokenized by this session's own earlier
+heading-size audit (`TYPE.screenTitle`/`subScreenTitle` in `App.jsx`'s
+onboarding, Home, Contacts, Healthcare, Medication Dashboard, My Profile)
+to real `<h1>` elements with `margin: 0` added to prevent the browser's
+own default heading margin from creating unwanted spacing — confirmed
+via screenshot and the full smoke suite, no visual regression.
+`scrollable-region-focusable` on Contacts' own horizontally-scrolling
+sort-chip row (`overflowX: "auto"`, no `tabIndex` — a keyboard user could
+never reach or scroll it at all) — fixed with `tabIndex={0}` +
+`role="group"` + `aria-label`, confirmed this exact `overflowX: "auto"`
+shape is isolated to this one file, not a repeated pattern elsewhere.
+
+**Two genuinely bigger findings, deliberately NOT fixed this round —
+scoped and documented, not silently skipped, same discipline already
+applied to the font-scaling item.** (1) `region` (30-40+ nodes per
+screen — "all page content should be contained by a landmark") and a
+second, much larger `scrollable-region-focusable` instance (the
+`position: fixed; inset: 0; overflow-y: auto` shape that's this app's own
+standard full-screen-overlay container, used on nearly every screen and
+sub-screen app-wide, not just Settings) would each need a real,
+cross-cutting design-system pass — verifying and touching dozens of
+files, not a narrow patch. (2) `ACCENTS.contacts`/`T.contactsTeal`
+(`#B36205`) used as text on a light self-tint background (e.g. the
+"Partner"/"Friend with benefits" relationship badges, ~4:1, just under
+4.5:1) — this exact "module accent colour as text on a light tint of
+itself" pattern appears 40 times across 11 module files, each using a
+DIFFERENT module's own accent colour; fixing it properly means checking
+all ~10 module accents against this same pattern individually (some may
+already pass, some may not), not darkening one module's brand colour in
+isolation. Logged below in Known Issues as real, scoped, not-yet-done
+work — see there for anyone picking this up next.
+
+Verified live: full build, `npx eslint .` clean, all 15 smoke-test flows
+pass (stable across two consecutive runs), plus a direct screenshot
+confirming the Refresh-button and Incomplete-badge fixes render correctly
+with no layout regression from the `<main>`/`<h1>` structural changes.
 
 ## Recently shipped (10 Sep 2026, backup-import fuzz testing)
 

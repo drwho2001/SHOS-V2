@@ -1784,7 +1784,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
         {/* CHANGED 26 Aug 2026 — real ask: icons moved into the
             banner, matching Contacts' treatment. */}
         <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.medsBlue, borderBottom: "2px solid rgba(0,0,0,0.15)", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ ...TYPE.screenTitle, color: "#FFFFFF" }}>Medication</span>
+          <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Medication</h1>
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
             {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
                 not long-press (see the selectMode state comment above

@@ -1305,7 +1305,7 @@ function ProfileSummary({ profile, T, onEdit }) {
   return (
     <div style={{ padding: "16px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ ...TYPE.screenTitle, color: T.textPrimary }}>{profile.nickname || profile.displayName || "My Profile"}</div>
+        <h1 style={{ ...TYPE.screenTitle, margin: 0, color: T.textPrimary }}>{profile.nickname || profile.displayName || "My Profile"}</h1>
         <div onClick={onEdit} style={{ padding: "8px 16px", borderRadius: radius.full, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           Edit
         </div>
