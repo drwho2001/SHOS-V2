@@ -2583,7 +2583,13 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
 
 export default function ContactsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, registerModuleBackHandler } = {}) {
   const [contacts, setContacts] = useLoadedState(() => loadContacts(), [], []);
-  const refresh = () => setContacts(loadContacts());
+  // FIXED — real crash found via a live bulk-delete/bulk-archive audit:
+  // loadContacts() returns ContactRepository.getAll(), async since this
+  // repository's own Phase 2 conversion — setContacts(loadContacts())
+  // was setting state to a raw, unresolved Promise, crashing the very
+  // next render's `contacts.filter(...)` in ContactsList. Same pattern
+  // already fixed for Encounters' own loadContacts/loadEncounters.
+  const refresh = () => { loadContacts().then(setContacts); };
   // ADDED 19 Aug 2026 — real undo/redo, same shared mechanism as
   // Encounters — see editUndoHelpers.js.
   const editUndo = useEditUndo(ContactRepository);
