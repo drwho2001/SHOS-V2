@@ -178,7 +178,7 @@ oversight.
   for a change that "looks safe" — several real bugs this session
   only surfaced that way, not from reading the diff.
 
-## Known issues (as of 4 Sep 2026 — update this section as things change)
+## Known issues (as of 10 Sep 2026 — update this section as things change)
 
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
@@ -3149,6 +3149,55 @@ this date; summarized here for durability.
   no-code schema editor are deliberate scope cuts, not gaps — don't
   rebuild without a real, demonstrated need (see "avoid over-normalisation"
   above).
+
+## Recently shipped (10 Sep 2026 — see Notion for full detail)
+
+Two pieces of work: a full heading/type-size and general-colour-token
+consistency audit (the dedicated pass the 9 Sep backlog-finish-out entry
+below flagged as not-yet-done), and a ground-up app icon redesign.
+
+**Font/colour consistency audit.** Swept `src/modules/` for hardcoded
+`fontSize`/`fontWeight` pairs that duplicated an existing `TYPE` token
+pattern without using it, and hardcoded colour literals that duplicated
+`NEUTRAL`/`NEUTRAL_DARK`/`ACTION` values. Added two new tokens to
+`designTokens.js` (`subScreenTitle`, `sheetTitle`) formalising two real,
+previously-untokenized heading patterns already in wide use; converted
+~25 uppercase section-label sites in Settings alone to the existing
+`TYPE.sectionLabel`, plus ~625 dark-mode colour-literal sites across
+`App.jsx` and most modules to reference `NEUTRAL`/`NEUTRAL_DARK`/`ACTION`
+instead of hand-typed hex. Found and fixed real bugs along the way, not
+just style drift: Home's DoxyPEP overdue banner had no dark-mode text
+colour at all (a real visibility gap, not cosmetic); Medication
+Dashboard's dark-mode object was a hand-typed 7-key duplicate of
+`NEUTRAL_DARK` that would silently drift the next time a token changed;
+several amber/gold banners across Home and Timeline used raw hex instead
+of `ACTION.amber`/`ACTION.gold`. Verified live via the full smoke-test
+suite plus a manual visual pass across every module in both light and
+dark mode — no regressions, no page errors.
+
+**App icon redesign.** Full detail in the commit itself
+(`Redesign app icon: teal gradient bg, deeper ECG trace, bolder badges`)
+given how much real back-and-forth iteration it went through — summarized
+here. Rebuilt via real vector rendering (a temporary Playwright+SVG
+render harness, not raster resizing) rather than the flat mockup
+stand-ins the 4 Sep icon entry below shipped: a teal diagonal gradient
+background with a radial glow, a corner tint, and a diagonal sheen
+streak for depth; a real P-QRS-T ECG trace (genuine flat Q/S troughs, a
+deliberately widened Q wedge, a taller R peak, miter-jointed spikes for
+a crisp point rather than a rounded blob) in a gradient built from the
+app's own real dark-mode accent colours; five Phosphor-icon badges
+anchored to the trace's anatomical vertices with their own drop shadows;
+the SHOS wordmark with a real contrast shadow. Below apple-touch-icon's
+180px the wordmark is dropped entirely (proven via a native-pixel
+blowup, not assumed, that it doesn't resolve at 32-144px — also matches
+standard favicon/launcher-icon convention of mark-only, since the OS
+already shows the app name separately) and a bolder stroke/badge variant
+is used, both fixing real small-size graininess that turned out to be a
+disproportionate shadow-blur radius, not a resolution problem. Regenerated
+all 14 real asset files (PWA/favicon/apple-touch-icon, Android legacy
+launcher icons at every density) from 4096px masters. Verified: production
+build succeeds, full 13-flow smoke-test suite passes against a real
+`vite preview` build.
 
 ## Recently shipped (9 Sep 2026, backlog finish-out — see Notion for full detail)
 
