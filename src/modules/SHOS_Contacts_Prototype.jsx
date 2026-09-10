@@ -2467,7 +2467,11 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           <EyeOff size={13} /> Anonymise mode is on — names, photos, cities, and car details are hidden.
         </div>
       )}
-      <div style={{ padding: "0 16px 12px", fontSize: 12, color: T.textSecondary }}>
+      {/* FIXED — real report: "the 14 active on contacts is a little too
+          close to the header bar" — this had zero top padding, sitting
+          right against the header banner's own bottom edge. Added top
+          padding to roughly double the visual gap. */}
+      <div style={{ padding: "12px 16px 12px", fontSize: 12, color: T.textSecondary }}>
         {activeContacts.length} active
       </div>
 
