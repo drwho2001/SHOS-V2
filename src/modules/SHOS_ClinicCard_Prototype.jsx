@@ -78,7 +78,7 @@ async function loadMedicationsWithLogs() {
 // confirmation step first, via the shared pendingNav state below.
 function SectionHeader({ children, onTap, T }) {
   return (
-    <div onClick={onTap} style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, padding: "16px 16px 6px", cursor: onTap ? "pointer" : "default", display: "flex", alignItems: "center", gap: 4 }}>
+    <div onClick={onTap} style={{ ...TYPE.sectionLabel, color: T.textSecondary, padding: "16px 16px 6px", cursor: onTap ? "pointer" : "default", display: "flex", alignItems: "center", gap: 4 }}>
       {children}
       {onTap && <ChevronRight size={12} color={T.textSecondary} />}
     </div>
@@ -95,7 +95,7 @@ function SectionHeader({ children, onTap, T }) {
 function CollapsibleSectionHeader({ children, onTap, count, collapsed, onToggleCollapse, T }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 6px" }}>
-      <div onClick={onTap} style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, cursor: onTap ? "pointer" : "default", display: "flex", alignItems: "center", gap: 4 }}>
+      <div onClick={onTap} style={{ ...TYPE.sectionLabel, color: T.textSecondary, cursor: onTap ? "pointer" : "default", display: "flex", alignItems: "center", gap: 4 }}>
         {children}
         {onTap && <ChevronRight size={12} color={T.textSecondary} />}
       </div>

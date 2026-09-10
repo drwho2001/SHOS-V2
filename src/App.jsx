@@ -380,7 +380,7 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
     return (
       <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "#1B1B1F", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 28px", zIndex: 999, fontFamily: "'Inter', sans-serif" }}>
         <Eye size={32} color="#FFFFFF" style={{ marginBottom: 16, opacity: 0.6 }} />
-        <div style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF", marginBottom: 6, textAlign: "center" }}>Unlock with your recovery string</div>
+        <div style={{ ...TYPE.subScreenTitle, color: "#FFFFFF", marginBottom: 6, textAlign: "center" }}>Unlock with your recovery string</div>
         <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginBottom: 18, textAlign: "center", lineHeight: 1.5 }}>
           This also sets a new PIN, since it proves you don't have the old one anymore.
         </div>
@@ -405,7 +405,7 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "#1B1B1F", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 999, fontFamily: "'Inter', sans-serif" }}>
       <Eye size={32} color="#FFFFFF" style={{ marginBottom: 16, opacity: 0.6 }} />
-      <div style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF", marginBottom: 16 }}>Enter PIN to unlock</div>
+      <div style={{ ...TYPE.subScreenTitle, color: "#FFFFFF", marginBottom: 16 }}>Enter PIN to unlock</div>
       {biometricAvailable && (
         <button onClick={tryBiometric} disabled={biometricAttempting}
           style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 600, fontSize: 13, cursor: biometricAttempting ? "default" : "pointer", marginBottom: 16, opacity: biometricAttempting ? 0.6 : 1 }}>
@@ -671,7 +671,7 @@ function OnboardingScreen({ onFinish }) {
           <img src={`${import.meta.env.BASE_URL}pwa-512.png`} alt="SHOS"
             style={{ width: 150, height: 150, borderRadius: 32, boxShadow: "0 8px 24px rgba(0,0,0,.25)" }} />
         )}
-        <div style={{ ...(step === 0 ? { fontSize: 16, fontWeight: 700 } : TYPE.screenTitle), color: "#FFFFFF", marginTop: step === 0 ? 18 : 0, marginBottom: 14 }}>
+        <div style={{ ...(step === 0 ? TYPE.subScreenTitle : TYPE.screenTitle), color: "#FFFFFF", marginTop: step === 0 ? 18 : 0, marginBottom: 14 }}>
           {step === 0 ? "Welcome" : slide.title}
         </div>
         <div style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>{slide.body}</div>

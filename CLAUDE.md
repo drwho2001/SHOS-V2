@@ -3164,6 +3164,61 @@ this date; summarized here for durability.
   accent colour on the card's left stripe/Cancel button while the
   danger cues (border/background/confirm button) always stay red.
 
+## Recently shipped (10 Sep 2026, heading-size audit follow-up)
+
+Real ask: "do the heading-size audit next" — re-checking the earlier same-day
+font/colour consistency audit (see that entry below) specifically for
+leftover heading-size drift it didn't catch, not starting over. That audit's
+own real scope was "hardcoded `fontSize`/`fontWeight` pairs that duplicated
+an existing `TYPE` token pattern" plus formalising `subScreenTitle`/
+`sheetTitle` — a full re-sweep (every `fontSize:` literal across
+`src/modules/`, plus every `textTransform: "uppercase"` site) confirmed the
+app's type scale is already tight (11-22px, no wild outliers) and the bulk
+of real heading/section-label drift was already closed, but found 6 more
+genuine leftover sites the original pass's own file scope (`src/modules/`
+only) couldn't have reached, plus 2 it missed within scope.
+
+**`App.jsx`'s own security screens** — `AppLockScreen`'s "Enter PIN to
+unlock" and its recovery-mode "Unlock with your recovery string" heading
+were both hand-typed `fontSize: 16, fontWeight: 700`, an exact but unnamed
+duplicate of `TYPE.subScreenTitle` — outside `src/modules/`, so invisible to
+the original sweep. Also `OnboardingScreen`'s own step-0 "Welcome" title
+hardcoded the same pair as a ternary fallback instead of referencing the
+token directly. All 3 converted to `TYPE.subScreenTitle`.
+
+**`InteractiveTour.jsx`** (also outside `src/modules/`) — the tour card's
+own step title was the same unnamed `16/700` duplicate; converted, plus a
+missing `TYPE` import added.
+
+**Two more uppercase section-label sites at 11/700, not 12/700** —
+`SHOS_ClinicCard_Prototype.jsx`'s `SectionHeader`/`CollapsibleSectionHeader`
+and `SHOS_GlobalSearch_Prototype.jsx`'s per-type-group header all matched
+`TYPE.sectionLabel`'s own uppercase/700-weight/0.5-letter-spacing shape
+exactly, just 1px smaller with no comment explaining why — genuine drift,
+not a deliberate compact variant (no such reasoning existed in either
+file). All 3 converted to `TYPE.sectionLabel`. Caught a real missing
+`TYPE` import in `SHOS_GlobalSearch_Prototype.jsx` via ESLint's own
+`no-undef` immediately after (this file already used `TYPE_ORDER`/
+`TYPE_PLURAL`, unrelated local constants from an earlier fix, which is
+what made the grep for "does this file already use TYPE" misleading at a
+glance) — fixed before it could ship.
+
+Deliberately left alone: every other `fontSize: 16/700`-shaped hit found
+in the sweep (Save/Done-style filled buttons across ~8 modules, several
+large stat-number displays at 20/700 in Contacts/Medication Dashboard) —
+these share a *size* with `subScreenTitle` by coincidence, not a heading
+*role*, and converting a button or a stat display to a heading token would
+be a real semantic error even though the pixels match. No sizes outside
+the canonical 9-22px scale were found anywhere (the few 26-28px hits are
+large numeric input displays in Medication Dashboard, an intentional
+emphasis choice, not heading drift).
+
+Verified live: full build, `npx eslint .` clean, and all 14 smoke-test
+flows pass against a real `vite preview` build. No visual change at any
+of the 8 fixed sites — same rendered pixels, just naming an already-correct
+value instead of duplicating it, so a future `TYPE` change can't silently
+leave these 8 sites behind.
+
 ## Recently shipped (10 Sep 2026, later still — PWA auto-update fix)
 
 Real follow-up once the ESLint/error-logging round above was done: closing
@@ -3618,14 +3673,16 @@ etc. all already have real assertions elsewhere in the suite). Verified
 stable across two consecutive runs each against the dev server and a
 real `vite preview` production build before shipping.
 
-Honest note on scope: the font/heading-CONSISTENCY half of the
-original ask (standard heading sizes, one font throughout) was
-discussed but not yet independently re-audited this same round — this
-session's own earlier work already closed the font-FAMILY half (see
-the 9 Sep, later still entry below); a dedicated pass specifically
-checking heading/type-SIZE consistency against `designTokens.js`'s own
-`TYPE` scale across every module is still real, not-yet-done work if
-the owner wants it as its own follow-up.
+Honest note on scope, since superseded: the font/heading-CONSISTENCY
+half of the original ask (standard heading sizes, one font throughout)
+was discussed but not yet independently re-audited this same round —
+this session's own earlier work already closed the font-FAMILY half
+(see the 9 Sep, later still entry below). **RESOLVED 10 Sep 2026** —
+the heading/type-SIZE half was closed later the same day by the
+"font/colour consistency audit" entry above, then given a dedicated
+follow-up pass (see the "10 Sep 2026, heading-size audit follow-up"
+entry near the top of this section) that caught the few sites outside
+`src/modules/` the first pass's own file scope couldn't reach.
 
 ## Recently shipped (9 Sep 2026, real backup audit — see Notion for full detail)
 

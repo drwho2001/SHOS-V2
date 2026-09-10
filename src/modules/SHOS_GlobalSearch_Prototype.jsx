@@ -28,7 +28,7 @@ import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 // result-badge color here was #3B82F6, a different, lighter blue than
 // Medication Dashboard's own accent (ACCENTS.medication, #3D63C9) —
 // same drift App.jsx's nav tab/quick-add button had.
-import { NEUTRAL, ACCENTS, FONT_FAMILY, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, ACCENTS, FONT_FAMILY, RADIUS, TYPE } from "../calculations/designTokens";
 // FIXED 1 Sep 2026 — real ask: "global search nav breaks as soon as
 // first letter typed." Root cause: the sort-toggle row (added 26 Aug
 // 2026) referenced `radius.full` but this module never defined or
@@ -353,7 +353,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
         )}
         {groupedResults.map(([label, items]) => (
           <div key={label}>
-            <div style={{ padding: "10px 16px 4px", fontSize: 11, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, background: T.bg }}>{label}</div>
+            <div style={{ ...TYPE.sectionLabel, padding: "10px 16px 4px", color: T.textSecondary, background: T.bg }}>{label}</div>
             {items.map((r) => <ResultRow key={`${r.type}-${r.id}`} result={r} onSelect={handleSelect} />)}
           </div>
         ))}

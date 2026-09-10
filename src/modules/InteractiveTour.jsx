@@ -26,7 +26,7 @@
 // rather than showing a spotlight around nothing.
 import React, { useState, useEffect, useCallback } from "react";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, XIcon as X } from "@phosphor-icons/react";
-import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, RADIUS } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, RADIUS, TYPE } from "../calculations/designTokens";
 
 export const TOUR_STEPS = [
   { id: "welcome", target: null, title: "Quick tour", body: "A minute on where things live — each tab, search, and Settings. Skip anytime." },
@@ -125,7 +125,7 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, darkMode }) {
   const card = (
     <div style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: textPrimary }}>{step.title}</div>
+        <div style={{ ...TYPE.subScreenTitle, color: textPrimary }}>{step.title}</div>
         <X size={18} weight="bold" color={textSecondary} role="button" aria-label="Skip tour" style={{ cursor: "pointer", flexShrink: 0, marginTop: 2 }} onClick={() => onDone("skipped")} />
       </div>
       <div style={{ fontSize: 13.5, color: textSecondary, lineHeight: 1.5, marginTop: 8 }}>{step.body}</div>
