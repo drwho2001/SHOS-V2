@@ -1329,6 +1329,13 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
   // never recur — excludeFromActiveTracking skips the flag entirely
   // regardless of how long it's actually been.
   const isInactive = !contact.excludeFromActiveTracking && daysSinceLastInteraction !== null && daysSinceLastInteraction > inactiveThresholdDays;
+  // ADDED 10 Sep 2026 — real audit finding: the dot's own explanation
+  // only ever showed via a `title` hover tooltip, invisible on a real
+  // touchscreen (no hover state) — so the colour meant nothing to
+  // anyone but a desktop mouse user. Tapping the dot now shows the same
+  // explanation inline instead, with stopPropagation so it doesn't also
+  // open the contact's profile (the card's own onClick).
+  const [showStatusInfo, setShowStatusInfo] = useState(false);
   // Rating is stored with its emoji embedded ("😍 Love") — just the
   // emoji character shows on the card, full label on the profile.
   const ratingEmoji = contact.rating ? contact.rating.split(" ")[0] : null;
@@ -1396,8 +1403,10 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <span title={isInactive ? `No encounter in over ${inactiveThresholdDays} days` : undefined}
-          style={{ width: 8, height: 8, borderRadius: radius.full, background: isInactive ? T.actionRed : T.contactsTeal, display: "inline-block" }} />
+        <span onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
+          title={isInactive ? `No encounter in over ${inactiveThresholdDays} days` : "Active — a recent encounter is logged"}
+          aria-label={isInactive ? "Inactive contact, tap for details" : "Active contact, tap for details"}
+          style={{ width: 8, height: 8, borderRadius: radius.full, background: isInactive ? T.actionRed : T.contactsTeal, display: "inline-block", cursor: "pointer", boxShadow: showStatusInfo ? `0 0 0 4px ${isInactive ? T.actionRed : T.contactsTeal}33` : "none" }} />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>
         {ratingEmoji && <span style={{ fontSize: 14 }}>{ratingEmoji}</span>}
         {/* Age — tuned this round to sit close in size to the name (was
@@ -1422,6 +1431,11 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
         {contact.linkedContactIds.length > 0 && <Link2 size={13} color={T.contactsTeal} />}
         {flaggedDontMeetAgain && <AlertTriangle size={13} color={T.actionRed} />}
       </div>
+      {showStatusInfo && (
+        <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 11, color: isInactive ? T.actionRed : T.contactsTeal, fontWeight: 600, marginLeft: 16, marginTop: -2, marginBottom: 4 }}>
+          {isInactive ? `Inactive — no encounter in over ${inactiveThresholdDays} days` : "Active — a recent encounter is logged"}
+        </div>
+      )}
       {contact.relationshipType.length > 0 && (
         <div style={{ display: "flex", gap: 4, marginLeft: 16, marginTop: 4, flexWrap: "wrap" }}>
           {contact.relationshipType.map((rt) => (
