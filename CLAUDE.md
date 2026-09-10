@@ -3188,16 +3188,81 @@ this date; summarized here for durability.
   not actual reading-order/announcement quality), and the broader
   `region`-landmark finding (every screen's own content not wrapped in
   semantic regions) — both genuinely bigger, separate undertakings.
-- **Spacing consistency — not yet audited.** A real live report (10 Sep
-  2026): Contacts' own "N active" count text sat right against the header
-  banner's bottom edge, zero top padding — fixed for that one site (now
-  matches its own existing bottom padding). No systematic sweep for the
-  same "sits flush against the header/banner above it" shape has been
-  done anywhere else in the app — worth a dedicated pass (grep for
-  content immediately following a `position: sticky`/banner header with
-  `padding-top: 0` or none at all, spot-check visually against a real
-  screenshot per module) rather than fixing sites one at a time as
-  they're individually reported.
+- **Spacing consistency — audited 10 Sep 2026, clean result, not a
+  gap anymore.** The real live report that started this (Contacts'
+  "N active" count sitting flush against the header banner's bottom
+  edge) was fixed the same day it was reported. The dedicated sweep
+  flagged as not-yet-done was completed as a follow-up: checked every
+  `position: "sticky"` element across all 18 module files (~40 sites)
+  for the same shape — a colored/accent-filled banner header
+  immediately followed by body content with zero or near-zero top
+  padding. Only 4 real colored-banner screen titles exist app-wide
+  (Contacts/Healthcare/Medication/Encounters) plus 3 sheet-title
+  banners (Testing/Clinic Visits/Encounters' own Add/Edit forms) —
+  every other sticky element in the app is a plain toolbar filled with
+  the page's own neutral background, not an accent color, so the
+  original bug's shape structurally can't recur there. Of the 4 real
+  banners: Contacts' and Medication's own sites are the two already
+  fixed (with their own code comments documenting exactly that);
+  Healthcare's next-content padding (14px) already exactly matches its
+  banner's own bottom padding; Testing's/Clinic Visits' sheet banners
+  are protected by their shared `SectionCard` component's own built-in
+  `marginTop: 14`. One soft, sub-threshold spot checked and
+  deliberately left alone: Encounters' search box uses `padding: "8px
+  16px 0"` under its own banner — real breathing room, not flush, just
+  smaller than Healthcare's exact-match 14px — but that exact `"8px
+  16px 0"` value is also the genuinely consistent, deliberate
+  convention already shared by Vaccinations/Testing/Clinic Visits/
+  Measurements/Symptom Log's own search boxes (all sitting under a
+  plain, non-colored header). Changing Encounters alone to 14px would
+  trade one inconsistency for a different one against that broader,
+  more-established pattern — left alone per this project's own
+  standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (10 Sep 2026, spacing consistency audit)
+
+Real ask: continue through the deferred backlog — picked the one item
+explicitly flagged as "not yet audited" in Known Issues (a systematic
+sweep for the same "content sits flush against the header/banner
+above it" shape that caused the Contacts "N active" bug fixed earlier
+the same day).
+
+Audited all `position: "sticky"` elements across the app's 18 module
+files (~40 sites) via a dedicated sub-agent sweep, verified directly
+against `designTokens.js`'s own type-token comments rather than
+assumed: only 4 real colored-banner SCREEN titles exist anywhere in
+the app (Contacts/Healthcare/Medication/Encounters) plus 3 colored
+sheet-title banners (Testing/Clinic Visits/Encounters' own Add/Edit
+forms) — every other sticky element across all 18 files is a plain
+toolbar filled with the page's own neutral background (`T.bg`/
+`NEUTRAL.bg`/`DARK.bg`), not an accent color, so the specific bug
+shape (a colored banner's own bottom edge feeling cramped) structurally
+cannot occur there at all.
+
+**Clean result — no new bug found, verified rather than assumed.**
+Checked all 4 real banners individually: Contacts' and Medication's
+sites are the two already-fixed cases (each with its own code comment
+documenting the fix); Healthcare's next-content padding (14px) already
+exactly matches its own banner's bottom padding; Testing's/Clinic
+Visits' sheet banners are protected by their shared `SectionCard`
+component's own built-in `marginTop: 14`, not flush at all. One real,
+sub-threshold spot checked and deliberately left alone rather than
+"fixed": Encounters' search box sits 8px below its own banner (real
+breathing room, not flush) instead of matching the banner's 14px
+bottom padding the way Healthcare does — but that exact `padding: "8px
+16px 0"` value is independently confirmed (via a direct grep, not
+trusted from a stale comment) to be the genuinely consistent,
+already-established convention shared by 5 other modules'
+(Vaccinations/Testing/Clinic Visits/Measurements/Symptom Log) own
+search boxes sitting under a plain header. Changing Encounters alone
+would trade one inconsistency for a different, broader one — left
+alone per this project's own standing "avoid over-normalisation" rule,
+not an oversight or half-finished fix.
+
+No code changes made this round — a genuine "audited, clean" result,
+the same honest outcome already established for the data-volume
+stress-testing backlog item earlier the same day, documented here
+rather than silently assumed complete.
 
 ## Recently shipped (10 Sep 2026, desktop-width-cap border consistency)
 
