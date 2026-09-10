@@ -2712,16 +2712,20 @@ this date; summarized here for durability.
   gated behind an already-unlocked, already-open app) — not revisited,
   not forgotten.
 - **Still near-zero real test coverage, though the one existing script
-  is now CI-gated and covers more than it used to.** `scripts/smoke-test.cjs`
-  got wired into a new `.github/workflows/smoke-test.yml` (4 Sep) — runs
-  the exact same script, unmodified, against a real `vite preview`
-  production build on every push, verified locally against that same
-  preview build before shipping. Still no linting, no type-checking —
-  this closes "nothing runs automatically" specifically, not "not
-  enough coverage" generally. The absence of any of this is very
-  likely why a real, four-subsystem-breaking bug (a Capacitor
-  plugin-proxy footgun affecting notifications/calendar-sync/
-  geolocation/file-export) shipped silently for weeks before live
+  is now CI-gated and covers more than it used to, and ESLint closed
+  the "no linting" half 10 Sep 2026 — see "Recently shipped" below.**
+  `scripts/smoke-test.cjs` got wired into a new
+  `.github/workflows/smoke-test.yml` (4 Sep) — runs the exact same
+  script, unmodified, against a real `vite preview` production build
+  on every push, verified locally against that same preview build
+  before shipping. Real type-checking (`tsc --checkJs`) exists as an
+  available `npm run typecheck` diagnostic but is deliberately NOT a
+  CI gate — see `tsconfig.json`'s own header for why (near-total
+  inference noise on this untyped JSX codebase, not real signal). The
+  absence of all of this for months is very likely why a real,
+  four-subsystem-breaking bug (a Capacitor plugin-proxy footgun
+  affecting notifications/calendar-sync/geolocation/file-export)
+  shipped silently for weeks before live
   device debugging caught it.
   Grew from 3 to 5 flows (9 Sep 2026) — the two new ones close the
   single biggest real gap Phase 4 shipped with: every encryption
@@ -3158,6 +3162,135 @@ this date; summarized here for durability.
   real shared UI component — used everywhere, keeping each module's own
   accent colour on the card's left stripe/Cancel button while the
   danger cues (border/background/confirm button) always stay red.
+
+## Recently shipped (10 Sep 2026, follow-up — see Notion for full detail)
+
+Real follow-up to the final pre-release pass below: a question about
+whether the active-status dot convention made sense app-wide, plus
+explicit direction to merge to `main`, add lint/type-checking, and add
+error reporting.
+
+**Active-status dot — fixed for real semantic consistency.** The one
+genuine status dot with a "good/bad" meaning (Contacts' active/inactive
+indicator) used `contactsTeal` for active — a module-identity colour,
+not a clear "this is good" signal. Changed to `ACTION.green` (red stays
+for inactive), matching the user's own explicit "if active then green,
+if not red" rule. Audited every other "active"-named dot in the
+codebase before touching anything: Symptom Log's own dot uses
+`severityColor()` while a symptom is ongoing and green once resolved —
+a deliberately different concept (an ongoing symptom is a concern, not
+a "good status," the inverse of what Contacts' dot means) — left
+alone, not a bug. Medication Dashboard's small bullet next to each
+med's name is pure decoration (always `medsBlue`, no active/inactive
+branching at all) — not a status dot, out of scope.
+
+**Merged to `main`.** A real gap found while answering "what haven't
+you checked": this entire multi-session effort (all of Phase 2-4
+encryption plus every session since) had only ever been pushed to a
+feature branch — `main` was 9 commits behind, meaning CI had never run
+and no real APK had ever been built with any of it. Fast-forwarded
+`main` to the branch head (a clean fast-forward, no merge commit
+needed) and confirmed all three workflows (Smoke Test, Build APK, Web
+Alpha) went green on the real push.
+
+**ESLint added — found 5 real, previously-invisible bugs on its first
+run.** `eslint.config.js`, scoped deliberately: `eslint-plugin-react-hooks`
+v7's own "recommended" config bundles several new, React-Compiler-
+aligned rules (`static-components`/`set-state-in-effect`/`immutability`/
+etc.) that flag long-standing, already-verified patterns this app uses
+on purpose (the "quick-add deep-link" effect pattern, Settings'
+`SettingsRow` helper defined per-screen) as hard errors — scoped down
+to just `rules-of-hooks` (a real correctness rule) and `exhaustive-deps`
+(the exact "stale closure from a missing effect dependency" bug class
+behind a large fraction of this project's own real regressions,
+documented at length elsewhere in this file). Real bugs found and
+fixed: (1) `SHOS_Testing_Prototype.jsx` called `findClosestMatch()`
+(the "did you mean?" typo-suggestion check) without ever importing
+it — every other module imports it correctly from `fuzzyMatch.js`; a
+real `ReferenceError` waiting on the first near-duplicate Organism/
+Result tag typed there, never triggered until now. (2) Encounters'
+kink-name search filter was missing `kinkNameById` (an async-resolved
+`useLoadedMemo`, starts as an empty fallback `Map()`) from its own
+`useMemo` deps — a kink-name search performed before the registry
+finished loading could silently keep returning stale/empty results
+until some other input happened to change. (3) Three dead-memoization
+bugs — `PATTERN_ORDER` (Medication Dashboard), `REDUNDANT_PLATFORM_SUGGESTIONS`
+(Contacts), and `TYPE_ORDER`/`TYPE_PLURAL` (Global Search) were all
+defined INSIDE the component body as plain literals, so the `useMemo`s
+depending on them were getting a fresh array/object identity every
+render — memoizing nothing. Hoisted to module scope. (4) Home's own
+Cycle/Contraception dashboard summary block lived inside a `[]`-deps
+mount-once effect, gated on `menstrualTrackingEnabled` — a preference
+that itself loads asynchronously and starts `false`. A user with
+tracking genuinely on could have this block skip forever, since the
+effect never re-ran once the real value resolved a tick later — split
+into its own effect keyed on the real value. (5) Timeline's resolved-
+episode "End date" field could initialize from the null-episode
+fallback ("today") before the real episode data resolved, and never
+self-correct — silently showing the wrong date AND incorrectly
+surfacing a "Save" (unsaved changes) button the instant the screen
+opened, before any real edit. Fixed with the same resync-if-untouched
+ref-guard pattern used throughout this app for exactly this async-load
+race. Every remaining `exhaustive-deps` warning (roughly a dozen) was
+individually reviewed, not blanket-suppressed — each is either a
+value/prop provably fixed for the effect's whole life (a `draftKey`
+derived once per record, a mount-once boot effect, `App.jsx`'s own
+back-button/notification-listener effects, which already list every
+real piece of state their own logic reads) — each left with a scoped
+`eslint-disable-next-line` and a one-line reason, not a bare suppression.
+Wired into CI as a new `Lint` step in `smoke-test.yml`, running before
+the heavier Playwright steps so a lint failure fails fast.
+
+**`tsc --checkJs` added as a diagnostic, deliberately NOT a CI gate.**
+`tsconfig.json`/`src/global.d.ts` — `npm run typecheck` is real and
+available, but `npx tsc --noEmit` reports ~450 findings on this
+codebase today, and every error category was individually spot-checked
+(not assumed): JSX `key`-prop "doesn't exist" errors on nearly every
+list-rendered component (React's `key`/`ref` are only recognized as
+universally-valid via `@types/react`'s own JSX mechanism — installing
+`@types/react` was tried and made this WORSE, 608 errors instead of
+454, on a codebase with no consistent JSDoc prop typing to anchor it,
+so reverted), `new Date(x) - new Date(y)` arithmetic flagged invalid on
+values TypeScript can't narrow past `any` without JSDoc (completely
+valid, working JS), and two individually-verified singleton findings
+(a bare `resolve()` call, the Web Notification API's real `renotify`
+option) both confirmed harmless. Real, achievable future value if this
+is ever pursued further: JSDoc types on the highest-traffic shared
+files (`medicationCalculations.js`, `dateInputHelpers.js`, the
+repository layer) rather than chasing all ~450 findings — not
+attempted this round, honestly documented in the config's own header
+rather than either hidden or forced into a noisy CI gate that would
+train everyone to ignore it.
+
+**Local, on-device error/crash logging.** New `errorLogRepository.js`
+(same `ensureLoaded()`/capped-log shape as `notificationHistoryRepository.js`,
+deliberately excluded from `backupService.js` for the same reason —
+diagnostic, not real user data) plus a new Settings > Developer Tools >
+"Error log" screen (view/export/clear, mirroring `NotificationHistoryScreen`'s
+own shape). Captures three real sources: `window.onerror`,
+`unhandledrejection`, and the existing `ErrorBoundary`'s own
+`componentDidCatch` — all via a dynamic `import()` inside a small
+`logErrorLocally()` helper in `main.jsx`, keeping the `ErrorBoundary`
+class itself import-free at module top exactly as it already was
+(its own stated design: it must never itself fail to render). Real
+architecture decision, not a default reached for reflexively: a
+genuine third-party crash-reporting SERVICE (Sentry or similar) was
+deliberately ruled out — this app's whole design is "nothing leaves
+the device unless the owner explicitly exports it" (see this file's
+own opening line), and silently phoning diagnostic data to a third
+party would cross that line quietly. Export produces a plain text
+file via the same `exportTextFile()` every other export in this app
+already uses — the owner decides if and when to share it himself, e.g.
+pasting it into a bug report.
+
+Verified live end-to-end via Playwright: a synthetic `window.onerror`
+event correctly lands in the encrypted local log with the right
+`source`/`message`, the real Settings UI row shows the correct count
+and opens to show it, and the Contacts status dot renders the exact
+`ACTION.green` value (confirmed via computed style, not assumed from
+the token name). Full 13-flow smoke-test suite passes. All three CI
+workflows (Smoke Test including the new Lint step, Build APK, Web
+Alpha) confirmed green on the real `main` push.
 
 ## Recently shipped (10 Sep 2026, final pre-release pass — see Notion for full detail)
 
