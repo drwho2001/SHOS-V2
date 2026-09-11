@@ -13,7 +13,7 @@
 
 // A small starting point so City isn't empty on day one — everything
 // typed afterwards (new or existing) joins this automatically.
-const STARTER_CITIES = ["Hull", "Sheffield", "Leeds", "Manchester", "Doncaster", "Driffield", "Beverley", "Brighton", "Bolton", "London"];
+const STARTER_CITIES = ["York", "Sheffield", "Leeds", "Manchester", "Doncaster", "Driffield", "Beverley", "Brighton", "Bolton", "London"];
 
 export function getKnownCities(contacts) {
   const used = contacts.map((c) => c.city).filter(Boolean);

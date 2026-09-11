@@ -1578,6 +1578,19 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   const [genderOptions, setGenderOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("gender"), [], []);
   const [pronounsOptions, setPronounsOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("pronouns"), [], []);
   const [contraceptionOptions, setContraceptionOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
+  // ADDED 11 Sep 2026 — real gap found (a demographics audit): the
+  // Contraception field's own gender gate below is an exact match
+  // against "female"/"trans-male" only, by deliberate design (see that
+  // gate's own comment — this app shouldn't presume either way for a
+  // non-binary gender) — but that left NO way at all for anyone typing
+  // a different gender to ever reveal the field, a real functional
+  // exclusion, not just wording, since Gender is free text. Same
+  // "never presume, but never structurally block" fix already used for
+  // the Pregnancy tab's own gender-based default (its own "Show
+  // pregnancy tracking anyway" link) — ephemeral, local-only state,
+  // not a new persisted field; defaults open if there's already real
+  // data to show.
+  const [revealContraceptionAnyway, setRevealContraceptionAnyway] = useState(false);
   // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
   // — resolved once here for the Stated kinks/Limits overlap-warning
   // check below.
@@ -1870,9 +1883,13 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
               MultiSelectChips, same toggle-multiple-on/off mechanism
               already proven for Cummer/PrEP-Doxy below, with its own
               onAddNew for a value not in the option list yet. */}
-          {["female", "trans-male"].includes((form.gender || "").trim().toLowerCase()) && (
+          {(["female", "trans-male"].includes((form.gender || "").trim().toLowerCase()) || (form.contraception && form.contraception.length > 0) || revealContraceptionAnyway) ? (
             <MultiSelectChips T={T} label="Contraception" value={form.contraception} onChange={set("contraception")} options={contraceptionOptions} listName="contraception"
               onAddNew={(v) => { CustomOptionListsRepository.add("contraception", v).then(setContraceptionOptions); }} />
+          ) : (
+            <div role="button" tabIndex={0} onClick={() => setRevealContraceptionAnyway(true)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRevealContraceptionAnyway(true); } }}
+              style={{ fontSize: 12, color: T.contactsTealText, cursor: "pointer", padding: "4px 0" }}>+ Track contraception anyway</div>
           )}
           <MultiSelectChips T={T} label="Known to be on" value={form.knownPrepDoxy} onChange={set("knownPrepDoxy")} options={PREP_DOXY_OPTIONS} />
           <TextField T={T} label="Last tested date (if known)" value={form.lastTestedDate} onChange={set("lastTestedDate")} type="date" helper="Often unknown — leave blank, no pressure." />
@@ -2233,7 +2250,18 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <ReadRow T={T} label="Cummer" value={hideFurther ? MASKED : contact.cummer} />
           </>
           )}
-          {["female", "trans-male"].includes((contact.gender || "").trim().toLowerCase()) && (
+          {/* CHANGED 11 Sep 2026 — real gap found (a demographics audit):
+              the exact "female"/"trans-male" gate below never shows for
+              a non-binary/custom-typed gender, with no way to override
+              it — a real functional exclusion, not just wording, since
+              Gender is free text. Widened to also show whenever real
+              data is already there (never hide an already-entered
+              answer), on top of the original gender check — the edit
+              sheet below is where a "show it anyway" option for anyone
+              else actually lives, matching this app's own "never
+              presume, but never structurally block" rule already used
+              for the Pregnancy tab's own gender-based default. */}
+          {(["female", "trans-male"].includes((contact.gender || "").trim().toLowerCase()) || (contact.contraception && contact.contraception.length > 0)) && (
             <ReadRow T={T} label="Contraception" value={contact.contraception} />
           )}
           <ReadRow T={T} label="Known to be on" value={contact.knownPrepDoxy} />

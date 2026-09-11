@@ -100,4 +100,14 @@ export const TrashRepository = {
   async emptyAll() {
     await saveRaw([]);
   },
+
+  // ADDED 11 Sep 2026 — real gap found: this repository was never wired
+  // into backupService.js at all, so a real Restore silently discarded
+  // anything sitting in Trash. A soft-deleted record is still real,
+  // recoverable user data (that's the whole point of Trash existing),
+  // not a diagnostic log — needs the same Replace All entry point every
+  // other repository already has.
+  async replaceAll(items) {
+    await saveRaw(Array.isArray(items) ? items : []);
+  },
 };

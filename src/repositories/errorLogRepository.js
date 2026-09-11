@@ -70,4 +70,19 @@ export const ErrorLogRepository = {
     entries = [];
     await persist();
   },
+
+  // ADDED 11 Sep 2026 — real ask: "means of submitting error
+  // notifications to developer." The log above already captures real
+  // crashes automatically, but there was no way to note something that
+  // ISN'T a JS-level crash — a confusing screen, a feature that seems
+  // broken but doesn't throw, a typo. This is that: a manually-typed
+  // entry, same shape and same capped/exportable log as a real crash,
+  // just tagged with its own source so it's clearly a human note, not
+  // an automatic capture.
+  async recordUserReport(message) {
+    await ensureLoaded();
+    entries = [{ source: "user-report", message: String(message || "").slice(0, 500), stack: "", occurredAt: new Date().toISOString() }, ...entries].slice(0, MAX_ENTRIES);
+    await persist();
+    return entries;
+  },
 };

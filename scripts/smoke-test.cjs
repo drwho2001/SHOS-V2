@@ -517,7 +517,7 @@ async function testEncryptionAppLockGatesVault(page) {
   assert((await page.getAttribute('[aria-label="App Lock"]', "aria-checked")) === "false", "App Lock turns back off cleanly, reverting to the always-works device slot");
 }
 
-// ADDED 9 Sep 2026 — real ask (18 Aug 2026, Kane — the "tab reorder"
+// ADDED 9 Sep 2026 — real ask (18 Aug 2026 — the "tab reorder"
 // part of the original Settings/Management ask): Settings > Preferences'
 // new tab-order control (App.jsx's getOrderedTabs()) lets the 4
 // non-Home bottom-nav tabs be reordered, Home always staying fixed in

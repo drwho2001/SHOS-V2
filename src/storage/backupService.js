@@ -83,6 +83,25 @@ import { CustomGroupsRepository } from "../repositories/customGroupsRepository.j
 import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository.js";
 import { ContraceptionRepository } from "../repositories/contraceptionRepository.js";
 import { PregnancyRepository } from "../repositories/pregnancyRepository.js";
+// ADDED 11 Sep 2026 — real gap found via a total-app audit: these four
+// were never wired into backup at all, despite CLAUDE.md's own standing
+// rule ("a new repository must be wired into backupService.js in the
+// same change"). AppPreferencesRepository was already imported above
+// but only ever used for the auto-export-due check, never included as
+// real backup DATA — meaning tab order, onboarding/tour-completion
+// flags, menstrualTrackingEnabled, showRoleOnContactCards, and
+// inactiveThresholdDays were all silently lost on a Restore. Same for
+// dose-reminder/snooze prefs, notification quiet-hours/master-switch
+// prefs, and per-module colour customisation — none of these are
+// "diagnostic" data (unlike errorLogRepository.js/
+// notificationHistoryRepository.js, deliberately excluded elsewhere in
+// this file) — they're real, meaningful settings a restore should bring
+// back. TrashRepository IS included too — a "recently deleted" item is
+// real, recoverable user data, not a diagnostic log.
+import { MedicationPreferencesRepository } from "../repositories/medicationPreferencesRepository.js";
+import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository.js";
+import { ModuleColorRepository } from "../repositories/moduleColorRepository.js";
+import { TrashRepository } from "../repositories/trashRepository.js";
 
 // Doc 5 §8: "Every export/backup file stamps: schema version, migration
 // version, app version." Schema version bumps only when a backup file's
@@ -283,6 +302,11 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
       : await PrivacySettingsRepository.getSettings(),
     resources: await ResourcesRepository.getAllForBackup(),
     partnerNotifications: await PartnerNotificationRepository.getAll(),
+    appPreferences: await AppPreferencesRepository.getPreferences(),
+    medicationPreferences: await MedicationPreferencesRepository.getPreferences(),
+    notificationPreferences: await NotificationPreferencesRepository.getPreferences(),
+    moduleColorOverrides: await ModuleColorRepository.getOverrides(),
+    trash: await TrashRepository.getAll(),
   };
   const keySet = includeKeys ? new Set(includeKeys) : null;
   let data = keySet
@@ -410,7 +434,7 @@ function sanitizeBackupData(data) {
 // wiping everything with no confirmation was a real gap on its own,
 // separate from merge existing at all.
 export async function restoreBackup(parsedBackup) {
-  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies } = parsedBackup.data;
+  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies, appPreferences, medicationPreferences, notificationPreferences, moduleColorOverrides, trash } = parsedBackup.data;
   if (Array.isArray(contacts)) await ContactRepository.replaceAll(contacts);
   if (Array.isArray(medications)) await MedicationRepository.replaceAll(medications);
   if (Array.isArray(logs)) await LogRepository.replaceAll(logs);
@@ -454,6 +478,25 @@ export async function restoreBackup(parsedBackup) {
   if (myProfile && typeof myProfile === "object" && !Array.isArray(myProfile)) {
     await MyProfileRepository.replaceAll(myProfile);
   }
+  // ADDED 11 Sep 2026 — real gap found via a total-app audit: these five
+  // were never restored at all (see this file's own import comment for
+  // the full reasoning). Older backups (from before this fix) simply
+  // won't have these keys, same graceful no-op pattern as myProfile
+  // above — an old backup still restores everything it always did, it
+  // just doesn't also bring back settings it never captured.
+  if (appPreferences && typeof appPreferences === "object" && !Array.isArray(appPreferences)) {
+    await AppPreferencesRepository.update(appPreferences);
+  }
+  if (medicationPreferences && typeof medicationPreferences === "object" && !Array.isArray(medicationPreferences)) {
+    await MedicationPreferencesRepository.updatePreferences(medicationPreferences);
+  }
+  if (notificationPreferences && typeof notificationPreferences === "object" && !Array.isArray(notificationPreferences)) {
+    await NotificationPreferencesRepository.update(notificationPreferences);
+  }
+  if (moduleColorOverrides && typeof moduleColorOverrides === "object" && !Array.isArray(moduleColorOverrides)) {
+    await ModuleColorRepository.replaceAll(moduleColorOverrides);
+  }
+  if (Array.isArray(trash)) await TrashRepository.replaceAll(trash);
 }
 
 // ADDED — real ask: "ask if replace all data or merge — placeholder/
@@ -538,6 +581,15 @@ export async function mergeBackup(parsedBackup) {
     }
     await ResourcesRepository.replaceAll(merged);
   }
+  // ADDED 11 Sep 2026 — Trash is a real, recoverable list of records
+  // (not a settings singleton), same shape as every other append()'d
+  // list above.
+  await append(TrashRepository, data.trash);
+  // appPreferences/medicationPreferences/notificationPreferences/
+  // moduleColorOverrides are deliberately excluded from Merge, same
+  // reasoning as myProfile/privacySettings above — they're settings
+  // singletons, not lists, so "combine both sets" doesn't apply.
+  // Replace All is the only way to bring those in from a backup.
 }
 
 // ---------------------------------------------------------------------

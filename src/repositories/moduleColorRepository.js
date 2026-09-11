@@ -219,4 +219,15 @@ export const ModuleColorRepository = {
     for (const key of Object.keys(CVD_SAFE_PALETTE)) delete rest[key];
     await storage.save(STORAGE_KEY, rest);
   },
+
+  // ADDED 11 Sep 2026 — real gap found: backupService.js never included
+  // this repository's own overrides in a backup file at all, so a
+  // Restore silently reverted every real colour customisation to
+  // defaults. This is a genuine REPLACE (backupService's own restore
+  // path), not a merge like setOverride() — a restored snapshot should
+  // exactly match what was exported, not layer onto whatever's
+  // currently set.
+  async replaceAll(overrides) {
+    await storage.save(STORAGE_KEY, overrides && typeof overrides === "object" && !Array.isArray(overrides) ? overrides : {});
+  },
 };

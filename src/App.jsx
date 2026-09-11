@@ -776,7 +776,7 @@ export default function App() {
   // effect's comment for why a naive fail-open/fail-closed default
   // here isn't good enough on its own.
   const [locked, setLocked] = useState(false);
-  // ADDED 9 Sep 2026 — real ask (18 Aug 2026, Kane — "tab reorder" part
+  // ADDED 9 Sep 2026 — real ask (18 Aug 2026 — "tab reorder" part
   // of the original Settings/Management ask). Read once at boot
   // (finishBootAfterUnlock below), applied via getOrderedTabs() at
   // render time — same "loaded once into session state, changed via

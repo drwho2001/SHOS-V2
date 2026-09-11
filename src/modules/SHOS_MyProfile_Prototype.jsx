@@ -883,6 +883,13 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   // presume either way for. Own section (not inside "Physical" below)
   // since that whole section is hidden for Female.
   const showsContraception = ["female", "trans-male"].includes((form.gender || "").trim().toLowerCase());
+  // ADDED 11 Sep 2026 — real gap found (a demographics audit): the
+  // exact match above never shows for a non-binary/custom-typed
+  // gender, with no way to override it — the same "never presume, but
+  // never structurally block" fix already used for the Pregnancy tab's
+  // own gender-based default (its own "Show pregnancy tracking anyway"
+  // link) and for the same field on a Contact's own edit sheet.
+  const [revealContraceptionAnyway, setRevealContraceptionAnyway] = useState(false);
 
   return (
     <div tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, overflowY: "auto", zIndex: 200 }}>
@@ -984,12 +991,16 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
             interval/next-due, history) — this field would otherwise
             silently drift out of sync with it, the same problem "one
             room, three doors" was built to avoid for Measurements. */}
-        {showsContraception && (
+        {showsContraception || revealContraceptionAnyway ? (
         <SectionCard title="Contraception" T={T}>
           <div style={{ fontSize: 12, color: T.textSecondary, padding: "4px 0" }}>
             Now tracked under Healthcare → Menstrual & Contraception (enable it in Settings if you don't see that tab).
           </div>
         </SectionCard>
+        ) : (
+          <div role="button" tabIndex={0} onClick={() => setRevealContraceptionAnyway(true)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRevealContraceptionAnyway(true); } }}
+            style={{ fontSize: 12, color: T.contactsTealText, cursor: "pointer", padding: "4px 0 12px" }}>+ Track contraception anyway</div>
         )}
 
         <SectionCard title="Sexual health status" T={T}>
@@ -1165,7 +1176,12 @@ function ProfileDataView({ profile, T }) {
         <ReadRow label="Cummer" value={profile.cummer} T={T} />
       </SectionCard>
       )}
-      {["female", "trans-male"].includes((profile.gender || "").trim().toLowerCase()) && (
+      {/* CHANGED 11 Sep 2026 — real gap found (a demographics audit):
+          widened to also show whenever real active contraception data
+          already exists, on top of the original gender check — never
+          hide an already-entered answer just because Gender doesn't
+          match one of two exact strings. */}
+      {(["female", "trans-male"].includes((profile.gender || "").trim().toLowerCase()) || activeContraception.length > 0) && (
       <SectionCard title="Contraception" T={T}>
         <ReadRow label="Currently active" value={activeContraception.length ? activeContraception : "None logged"} T={T} />
       </SectionCard>

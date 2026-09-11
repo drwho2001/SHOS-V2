@@ -31,7 +31,7 @@ import {
   RulerIcon as Ruler, WifiHighIcon as WifiHigh, LinkBreakIcon as LinkBreak,
   FolderIcon as Folder, FunnelIcon as Filter, ClockIcon as Clock,
   ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass,
-  BugIcon as Bug,
+  BugIcon as Bug, PencilSimpleIcon as PencilSimple,
 } from "@phosphor-icons/react";
 // FIXED 1 Sep 2026 — real ask: "Managed lists crashes app on
 // attempting to open" / "Same for resources [crashes], in light [mode]
@@ -982,6 +982,20 @@ function resourceLinkHref(link) {
   return `https://${trimmed}`;
 }
 
+// CHANGED 11 Sep 2026 — real ask (a total-app audit): this row's own
+// default tap opened an EDIT form, with "open the real link" only
+// reachable as a small secondary snippet — backwards from this
+// screen's actual intent (a curated list of pre-provided links to
+// tap, not a self-edited list first and foremost; editing/adding is
+// still fully supported, just not the primary gesture anymore). When
+// a real link exists, tapping the row now opens it directly (a real
+// `<a>` wrapping the row's own content, so it's a genuine navigation,
+// not a JS-simulated one); editing moves to its own explicit pencil
+// icon. A blank entry still opens straight to edit, since there's
+// nothing to open yet. Also now shows an "Added by you" tag on
+// entries created via the "+ Add your own" field below (isCustom,
+// resourcesRepository.js's own addEntry()) so the curated list and a
+// user's own additions are visually distinguishable at a glance.
 function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
   const T = darkMode ? DARK : NEUTRAL;
   const [expanded, setExpanded] = useState(false);
@@ -997,18 +1011,43 @@ function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
     onChanged();
   };
 
+  const rowLabel = (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{entry.name}</span>
+        {entry.isCustom && (
+          <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, color: T.textDisabled, border: `1px solid ${T.border}`, borderRadius: 999, padding: "1px 6px" }}>Added by you</span>
+        )}
+      </div>
+      {!expanded && entry.link && (
+        <div style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 2, textDecoration: "underline" }}>{entry.link}</div>
+      )}
+      {!expanded && !entry.link && <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginTop: 2 }}>No link saved yet — tap the pencil to add one</div>}
+    </div>
+  );
+
   return (
     <div style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
-      <div onClick={() => setExpanded((e) => !e)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{entry.name}</div>
-          {!expanded && entry.link && (
-            <a href={resourceLinkHref(entry.link)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-              style={{ fontSize: 11, color: ACCENTS.healthcare, marginTop: 2, display: "inline-block", textDecoration: "underline" }}>{entry.link}</a>
-          )}
-          {!expanded && !entry.link && <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginTop: 2 }}>No link saved yet — tap to add one</div>}
-        </div>
-        <ChevronRight size={14} color={T.textDisabled} style={{ transform: expanded ? "rotate(90deg)" : "none" }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+        {!expanded && entry.link ? (
+          <a href={resourceLinkHref(entry.link)} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, textDecoration: "none", cursor: "pointer" }}>
+            {rowLabel}
+          </a>
+        ) : (
+          <div onClick={() => setExpanded((e) => !e)} style={{ flex: 1, minWidth: 0, cursor: "pointer" }}>
+            {rowLabel}
+          </div>
+        )}
+        <PencilSimple
+          size={16}
+          color={T.textDisabled}
+          style={{ cursor: "pointer", flexShrink: 0 }}
+          onClick={() => setExpanded((e) => !e)}
+          role="button"
+          tabIndex={0}
+          aria-label={`Edit ${entry.name}`}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded((v) => !v); } }}
+        />
       </div>
       {expanded && (
         <div style={{ marginTop: 10 }}>
@@ -2197,6 +2236,16 @@ function ErrorLogScreen({ darkMode, onClose }) {
   const [entries, setEntries] = useLoadedState(() => ErrorLogRepository.getAll(), [], []);
   const clear = async () => { await ErrorLogRepository.clear(); setEntries([]); };
   const [exportStatus, setExportStatus] = useState(null);
+  // ADDED 11 Sep 2026 — real ask: a way to note a real problem that
+  // isn't a JS crash (nothing here to auto-capture). Appends into the
+  // same log/export/share path a real crash already uses.
+  const [reportText, setReportText] = useState("");
+  const submitReport = async () => {
+    const trimmed = reportText.trim();
+    if (!trimmed) return;
+    setEntries(await ErrorLogRepository.recordUserReport(trimmed));
+    setReportText("");
+  };
   const exportLog = async () => {
     const text = entries.map((e) =>
       `[${e.occurredAt}] ${e.source}\n${e.message}${e.stack ? `\n${e.stack}` : ""}`
@@ -2227,6 +2276,28 @@ function ErrorLogScreen({ darkMode, onClose }) {
         <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 12 }}>
           On-device only — nothing here is ever sent anywhere automatically. Export produces a plain text file you can choose to share yourself, e.g. in a bug report.
         </div>
+        <div style={{ marginBottom: 16, padding: 12, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 6 }}>Report a problem</div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>
+            Not a crash, just something that seems off? Note it here — it's added to this same log so it's not forgotten.
+          </div>
+          <textarea
+            value={reportText}
+            onChange={(e) => setReportText(e.target.value)}
+            placeholder="What happened, and what did you expect instead?"
+            rows={2}
+            style={{ width: "100%", boxSizing: "border-box", fontFamily: "'Inter', sans-serif", fontSize: 13, padding: 8, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.bg : "#FFFFFF", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, resize: "vertical" }}
+          />
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={submitReport}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); submitReport(); } }}
+            style={{ marginTop: 8, display: "inline-block", fontSize: 12, fontWeight: 700, color: reportText.trim() ? ACCENTS.home : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled), cursor: reportText.trim() ? "pointer" : "default" }}
+          >
+            Save note
+          </div>
+        </div>
         {exportStatus && <div style={{ fontSize: 12, color: exportStatus.ok ? ACTION.green : ACTION.red, marginBottom: 12 }}>{exportStatus.msg}</div>}
         {entries.length === 0 ? (
           <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textAlign: "center", padding: "40px 16px" }}>
@@ -2235,7 +2306,7 @@ function ErrorLogScreen({ darkMode, onClose }) {
         ) : entries.map((e, i) => (
           <div key={i} style={{ padding: "10px 0", borderBottom: i < entries.length - 1 ? ("1px solid " + (darkMode ? DARK.border : NEUTRAL.border)) : "none" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontFamily: "'JetBrains Mono', monospace" }}>{e.source}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontFamily: "'JetBrains Mono', monospace" }}>{e.source === "user-report" ? "Your note" : e.source}</span>
               <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flexShrink: 0 }}>
                 {new Date(e.occurredAt).toLocaleDateString([], { day: "numeric", month: "short" })}, {new Date(e.occurredAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
               </span>

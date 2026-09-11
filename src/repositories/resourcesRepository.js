@@ -246,7 +246,11 @@ export const ResourcesRepository = {
     const trimmed = (name || "").trim();
     if (!trimmed) return [...(categories[categoryKey] || [])];
     const current = categories[categoryKey] || [];
-    categories = { ...categories, [categoryKey]: [...current, { id: generateEntryId(), name: trimmed, link, notes }] };
+    // ADDED 11 Sep 2026 — real ask: distinguish curated (seeded) entries
+    // from ones the user typed in themselves, so the UI can visually
+    // tell them apart. Only ever set here — every SEED_ENTRIES-derived
+    // entry has no isCustom key at all, which the UI treats as falsy.
+    categories = { ...categories, [categoryKey]: [...current, { id: generateEntryId(), name: trimmed, link, notes, isCustom: true }] };
     await persist();
     return categories[categoryKey];
   },

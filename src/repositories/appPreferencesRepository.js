@@ -130,7 +130,7 @@ export const DEFAULT_APP_PREFERENCES = {
   // and stops applying on its own once that happens, no cleanup
   // needed. null = nothing dismissed.
   doxyPepOverdueDismissedWindowStart: null,
-  // ADDED 9 Sep 2026 — real ask (18 Aug 2026, Kane — the "tab reorder"
+  // ADDED 9 Sep 2026 — real ask (18 Aug 2026 — the "tab reorder"
   // part of the original "adjust per-module accent colors, font, and
   // (low priority) tab reorder" Settings/Management ask). null = the
   // app's own built-in default order. A real value is an array of the
