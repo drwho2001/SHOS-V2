@@ -779,28 +779,35 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       {/* CHANGED 26 Aug 2026 — real ask: these two shortcuts live on
           Home, not inside Healthcare, so they should carry Home's own
           teal accent rather than borrowing Healthcare's green. */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        <div onClick={() => setShowClinicCard(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+      {/* CHANGED 15 Sep 2026 — real ask: on a wide (desktop) viewport
+          this used to leave Calendar stranded alone on its own
+          half-width row below Clinic Card/Episodes, with real empty
+          space either side of it. All 3 now live in one flex-wrap row
+          — `flex: "1 1 160px"` naturally keeps them one line wide on
+          desktop's now-much-wider content column while still wrapping
+          sensibly on a real phone-width screen (only 2 fit per line
+          under ~340px content width, matching roughly what the old
+          2-then-1 stacked layout already did there). Deliberately
+          self-organizing rather than a hardcoded "3 items = one row"
+          rule — a genuinely future 4th shortcut added here wraps into
+          a real 2x2 grid on its own once neither row fits 3, no layout
+          rewrite needed for that later. */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+        <div onClick={() => setShowClinicCard(true)} style={{ flex: "1 1 160px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
           <CreditCard size={20} color={homeColor} />
           <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Clinic Card</span>
         </div>
-        <div onClick={() => setShowTimeline(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+        <div onClick={() => setShowTimeline(true)} style={{ flex: "1 1 160px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
           <Stack size={20} color={homeColor} />
           <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Episodes</span>
         </div>
-      </div>
-      {/* ADDED 26 Aug 2026 — real ask: Calendar as a third button, its
-          own centered line below Clinic Card/Episodes — not a top-bar
-          icon (moved from there), not squeezed into the same row
-          (would make three unevenly-sized buttons). */}
-      {onOpenCalendar && (
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-          <div onClick={onOpenCalendar} style={{ width: "50%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+        {onOpenCalendar && (
+          <div onClick={onOpenCalendar} style={{ flex: "1 1 160px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
             <Calendar size={20} color={homeColor} />
             <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Calendar</span>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Quick add</div>
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 6 }}>Personal</div>
