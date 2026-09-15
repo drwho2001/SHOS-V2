@@ -135,7 +135,26 @@ export function formatRelativeDate(dateString) {
   const now = new Date();
   const diffMs = now - then;
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays < 0) return "in the future";
+  // CHANGED 15 Sep 2026 — real ask, true globally since every future-
+  // date display in the app (Clinic Card's "next due"/overdue rows,
+  // its PDF export, and anywhere else this shared function is called)
+  // routes through this one function: a predicted date used to just
+  // say "in the future" — technically true, not actually useful. Now
+  // gives the real calendar date plus a relative offset, symmetric
+  // with the past branches below ("3 months ago" becomes a real date
+  // "(in 3 months)").
+  if (diffDays < 0) {
+    const futureDays = -diffDays;
+    if (futureDays === 0) return "today";
+    if (futureDays === 1) return "tomorrow";
+    const calendarDate = then.toLocaleDateString(undefined, { month: "short", day: "numeric", year: then.getFullYear() === now.getFullYear() ? undefined : "numeric" });
+    let relative;
+    if (futureDays < 7) relative = `in ${futureDays} days`;
+    else if (futureDays < 30) { const weeks = Math.round(futureDays / 7); relative = `in ${weeks} week${weeks === 1 ? "" : "s"}`; }
+    else if (futureDays < 365) { const months = Math.round(futureDays / 30); relative = `in ${months} month${months === 1 ? "" : "s"}`; }
+    else { const years = Math.round(futureDays / 365); relative = `in ${years} year${years === 1 ? "" : "s"}`; }
+    return `${calendarDate} (${relative})`;
+  }
   if (diffDays === 0) return "today";
   if (diffDays === 1) return "yesterday";
   if (diffDays < 7) return `${diffDays} days ago`;
