@@ -46,6 +46,16 @@ export const DEFAULT_MEDICATION_PREFERENCES = {
   // their own keys rather than sharing one.
   snoozedDoseUntil: {},
   snoozedRefillUntil: {},
+  // ADDED 15 Sep 2026 — real ask: "thinking maybe remove the auto
+  // adjust, for reminder at same time." Default "adaptive" preserves
+  // the existing, intentional behavior for every current install
+  // unchanged (see medicationCalculations.js's own lockoutEndsAt/
+  // nextDoseEstimate comments) — a late dose shifting the next
+  // reminder forward by the same lateness. "fixed" anchors every
+  // future reminder to the very first dose ever logged for each
+  // medication, so one late/early dose doesn't drift every reminder
+  // after it, only that one day's own timing.
+  reminderTimingMode: "adaptive",
 };
 
 export function isSkippedToday(prefs, medicationId) {

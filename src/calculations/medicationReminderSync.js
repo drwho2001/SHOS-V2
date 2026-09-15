@@ -57,7 +57,7 @@ export async function getDailyMedsState() {
     if (!lastDose || !isDoseLockedOut(med, lastDose.date)) {
       due.push(med);
     } else {
-      const unlockAt = lockoutEndsAt(med, lastDose.date);
+      const unlockAt = lockoutEndsAt(med, lastDose.date, prefs.reminderTimingMode);
       if (unlockAt) upcoming.push({ med, unlockAt });
     }
   }

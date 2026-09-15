@@ -134,6 +134,21 @@ export function computeAdherence(med) {
   // streak/adherence at all — see computeExpectedDoseDays() above for
   // the full reasoning. Daily meds are completely unaffected (every
   // day was already "expected" before, still is).
+  // CHANGED 15 Sep 2026 — real report: the streak visibly dropped to 0
+  // every day BEFORE that day's own dose was logged (both loops below
+  // used to start at "today," i=0/cursor=today's own due slot — if
+  // today hadn't been logged yet, the very first check failed and the
+  // loop broke immediately, reporting 0 regardless of any real prior
+  // streak). Not what "streak" should mean: a dose that isn't overdue
+  // yet hasn't been missed. Real fix, matching the owner's own spec
+  // ("dose 1 taken, dose 2 missed... streak persists until dose 3 is
+  // due, then resets"): today's own slot no longer counts as a
+  // streak-breaking check — only days/slots that are ALREADY fully in
+  // the past can break the streak, with today's own dose (if already
+  // logged) added back on top afterward. A slot that's merely due
+  // today and not yet logged no longer zeroes the streak; it only
+  // actually breaks once the calendar/interval genuinely moves past it
+  // with no dose ever recorded.
   let streak = 0;
   if (med.usagePattern === "custom" && med.scheduleIntervalDays) {
     const sortedDoseDays = Array.from(doseDays).sort((a, b) => a - b);
@@ -142,10 +157,14 @@ export function computeAdherence(med) {
       const intervalMs = med.scheduleIntervalDays * 86400000;
       const stepsBack = Math.floor((today.getTime() - anchor) / intervalMs);
       let cursor = anchor + stepsBack * intervalMs;
+      const todayIsDueSlot = cursor === today.getTime();
+      if (todayIsDueSlot) cursor -= intervalMs;
       while (cursor >= anchor && doseDays.has(cursor)) { streak += 1; cursor -= intervalMs; }
+      if (todayIsDueSlot && doseDays.has(today.getTime())) streak += 1;
     }
   } else {
-    for (let i = 0; i < 365; i++) { const day = new Date(today); day.setDate(day.getDate() - i); if (doseDays.has(day.getTime())) streak += 1; else break; }
+    for (let i = 1; i < 365; i++) { const day = new Date(today); day.setDate(day.getDate() - i); if (doseDays.has(day.getTime())) streak += 1; else break; }
+    if (doseDays.has(today.getTime())) streak += 1;
   }
 
   const expected7 = computeExpectedDoseDays(med, doseDays, 7, today);
@@ -228,14 +247,61 @@ export function lockoutEndsEstimate(med, lastDoseDate) {
   return `~${Math.round(hoursLeft / 24)}d`;
 }
 
+// ADDED 15 Sep 2026 — real ask: "thinking maybe remove the auto
+// adjust, for reminder at same time." The existing behavior above
+// (lockoutEndsAt/nextDoseEstimate computing forward from the literal
+// last-logged dose timestamp) is real, intentional, and stays the
+// default ("adaptive") — a late dose shifting the next reminder
+// forward by the same lateness is correct for someone who's shifted
+// their whole day. But it also means one late dose permanently drifts
+// every future reminder, which isn't what everyone wants. "Fixed"
+// mode anchors to the very FIRST dose ever logged for this medication
+// (its own real clock time, held constant forever, never recomputed
+// off a later dose) and steps forward by whole dosing intervals to the
+// next occurrence still in the future — so a single late or early
+// dose only ever affects that one day's own reminder, not every
+// reminder after it. Returns null (falls back to adaptive math at the
+// call site) if no dose has ever been logged yet — there's no anchor
+// to hold fixed to before that.
+function firstDoseTimestamp(med) {
+  const doseLogs = med.logs.filter((l) => l.type === "dose" && !l.voided);
+  if (doseLogs.length === 0) return null;
+  return Math.min(...doseLogs.map((l) => realTimestampFromStored(l.date)));
+}
+
+function fixedModeDueSlot(med, intervalHours) {
+  const anchorMs = firstDoseTimestamp(med);
+  if (anchorMs == null) return null;
+  const intervalMs = intervalHours * 3600000;
+  const now = Date.now();
+  if (anchorMs > now) return anchorMs;
+  const stepsForward = Math.ceil((now - anchorMs) / intervalMs) || 1;
+  return anchorMs + stepsForward * intervalMs;
+}
+
 // ADDED 26 Aug 2026 — real ask: custom dose reminder notifications.
 // lockoutEndsEstimate() above only ever returns a display STRING
 // ("~5h"), not usable for actually scheduling a notification at the
 // real moment a dose becomes due. Same exact interval math, just
 // returns the raw Date instead of formatting it.
-export function lockoutEndsAt(med, lastDoseDate) {
+// CHANGED 15 Sep 2026 — real `timingMode` param, "adaptive" (default,
+// unchanged) or "fixed" (see firstDoseTimestamp/fixedModeDueSlot
+// above). This file stays I/O-free per its own header — callers read
+// MedicationPreferencesRepository.getPreferences().reminderTimingMode
+// themselves and pass it in, the same "pure function takes data as a
+// parameter" pattern already used elsewhere in this codebase.
+// Deliberately NOT applied to lockoutEndsEstimate() above — that one's
+// whole purpose is double-log prevention right after a real dose was
+// just taken, which has to stay anchored to the ACTUAL last dose
+// regardless of timing mode.
+export function lockoutEndsAt(med, lastDoseDate, timingMode = "adaptive") {
   const intervalHours = effectiveDoseIntervalHours(med);
-  if (!lastDoseDate || !intervalHours) return null;
+  if (!intervalHours) return null;
+  if (timingMode === "fixed") {
+    const dueMs = fixedModeDueSlot(med, intervalHours);
+    if (dueMs != null) return new Date(dueMs - intervalHours * 0.2 * 3600000);
+  }
+  if (!lastDoseDate) return null;
   return new Date(realTimestampFromStored(lastDoseDate) + intervalHours * 0.8 * 3600000);
 }
 
@@ -243,10 +309,20 @@ export function lockoutEndsAt(med, lastDoseDate) {
 // Estimated time until the next dose is due, from the last dose taken and
 // the medication's dosing frequency. Returns null for PRN (no schedule)
 // or when there's no last dose to count forward from yet.
-export function nextDoseEstimate(med, lastDoseDate) {
+// CHANGED 15 Sep 2026 — same real `timingMode` addition as lockoutEndsAt
+// above, same reasoning.
+export function nextDoseEstimate(med, lastDoseDate, timingMode = "adaptive") {
   const intervalHours = effectiveDoseIntervalHours(med);
-  if (!lastDoseDate || med.usagePattern === "prn" || !intervalHours) return null;
-  const next = new Date(realTimestampFromStored(lastDoseDate) + intervalHours * 3600000);
+  if (med.usagePattern === "prn" || !intervalHours) return null;
+  let next = null;
+  if (timingMode === "fixed") {
+    const dueMs = fixedModeDueSlot(med, intervalHours);
+    if (dueMs != null) next = new Date(dueMs);
+  }
+  if (!next) {
+    if (!lastDoseDate) return null;
+    next = new Date(realTimestampFromStored(lastDoseDate) + intervalHours * 3600000);
+  }
   const hoursLeft = Math.round((next.getTime() - Date.now()) / 3600000);
   if (hoursLeft <= 0) return "due now";
   if (hoursLeft < 24) return `~${hoursLeft}h`;

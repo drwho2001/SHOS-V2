@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, PillIcon as Pill, MagnifyingGlassIcon as Search, GearIcon as SettingsIcon, GearSixIcon as Settings2, XIcon as X, MoonIcon as Moon, SunIcon as Sun, TrashIcon as Trash2, FireIcon as Flame, PaperPlaneTiltIcon as Send, ClockIcon as Clock, DotsThreeVerticalIcon as MoreVertical, ListChecksIcon as ListChecks, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore, CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
+import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, PillIcon as Pill, MagnifyingGlassIcon as Search, GearIcon as SettingsIcon, GearSixIcon as Settings2, XIcon as X, MoonIcon as Moon, SunIcon as Sun, TrashIcon as Trash2, FireIcon as Flame, PaperPlaneTiltIcon as Send, ClockIcon as Clock, DotsThreeVerticalIcon as MoreVertical, ListChecksIcon as ListChecks, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore, CaretLeftIcon as ChevronLeft, InfoIcon } from "@phosphor-icons/react";
 // The dashboard no longer owns its own medication/log data — it reads and
 // writes through these two repositories instead. Nothing about how the UI
 // looks or behaves changes; this just moves WHERE the facts actually live.
@@ -214,7 +214,7 @@ function StatTile({ label, value, tint, subtitle, onClick, T }) {
 
 // Redesigned for more contrast per the user's ask: tinted background/border, fraction shown as the
 // primary value with the percentage as a secondary line, per the user's "give absolute value" request.
-function AdherencePill({ label, hit, expected, T }) {
+function AdherencePill({ label, hit, expected, T, info }) {
   // FIXED 10 Sep 2026 — real bug found live: with expected === 0 (a
   // real case — a custom-schedule medication with no dose logged yet
   // has no "expected" days in its window at all), this divided 0/0 and
@@ -223,15 +223,31 @@ function AdherencePill({ label, hit, expected, T }) {
   // this component just recomputed the percentage itself without the
   // same guard instead of using that already-correct value.
   const pct = expected > 0 ? Math.round((hit / expected) * 100) : 100;
+  // ADDED 15 Sep 2026 — real ask: "7 day adherence - add info dot -
+  // explain what it is." Same tap-to-reveal-caption pattern already
+  // established for Contacts' active-status dot — an info icon, not a
+  // hover-only tooltip, since this app targets touchscreens.
+  const [showInfo, setShowInfo] = useState(false);
   return (
     <div style={{ textAlign: "center" }}>
       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: T.medsBlue }}>{hit}/{expected}</div>
-      <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 1 }}>{label} · {pct}%</div>
+      <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
+        {label} · {pct}%
+        {info && (
+          <InfoIcon size={11} color={T.textDisabled} style={{ cursor: "pointer" }}
+            role="button" tabIndex={0} aria-label={`What does ${label} adherence mean?`}
+            onClick={(e) => { e.stopPropagation(); setShowInfo((v) => !v); }}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setShowInfo((v) => !v); } }} />
+        )}
+      </div>
+      {info && showInfo && (
+        <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 10, color: T.textSecondary, marginTop: 3, maxWidth: 90, lineHeight: 1.3 }}>{info}</div>
+      )}
     </div>
   );
 }
 
-function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStock, onMarkRequested, onOpenCorrection, onEditMedication, onUpdateDose, onMoveUp, onMoveDown, onArchive, onDelete, isFirst, isLast, justCompleted, T, darkMode, cardRef, highlighted, searchHighlighted, menuOpen, onToggleMenu, snoozedUntil }) {
+function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStock, onMarkRequested, onOpenCorrection, onEditMedication, onUpdateDose, onMoveUp, onMoveDown, onArchive, onDelete, isFirst, isLast, justCompleted, T, darkMode, cardRef, highlighted, searchHighlighted, menuOpen, onToggleMenu, snoozedUntil, reminderTimingMode = "adaptive" }) {
   // ADDED — real ask: local to this card, gated behind the menu
   // already being open for this specific medication — doesn't need
   // the app-wide single-open tracking `menuOpen` uses.
@@ -240,7 +256,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
   const adherence = computeAdherence(med);
   const lastDose = [...med.logs].filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
   const requested = !!med.refillRequestedAt;
-  const nextDose = lastDose ? nextDoseEstimate(med, lastDose.date) : null;
+  const nextDose = lastDose ? nextDoseEstimate(med, lastDose.date, reminderTimingMode) : null;
   // ADDED — real ask: "no where to see what time next alarm will
   // fire." nextDoseEstimate above only ever gives a relative string
   // ("~5h") — this is the actual clock time the reminder notification
@@ -250,7 +266,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
   // the real last-logged dose every render, same as nextDose itself —
   // so a late dose visibly shifts this forward by the same lateness,
   // it isn't pinned to a fixed clock time.
-  const nextReminderAt = lastDose ? lockoutEndsAt(med, lastDose.date) : null;
+  const nextReminderAt = lastDose ? lockoutEndsAt(med, lastDose.date, reminderTimingMode) : null;
   const nextReminderClock = nextReminderAt && nextReminderAt > new Date()
     ? nextReminderAt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
     : null;
@@ -446,7 +462,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
                 <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: T.medsBlue, display: "flex", alignItems: "center", gap: 3, justifyContent: "center" }}><Flame size={13} color={T.actionRed} />{adherence.streak}d</div>
                 <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 1 }}>streak</div>
               </div>
-              <AdherencePill T={T} label="7-day" hit={adherence.sevenDay.hit} expected={adherence.sevenDay.expected} />
+              <AdherencePill T={T} label="7-day" hit={adherence.sevenDay.hit} expected={adherence.sevenDay.expected} info="Based on your actual dose log from the last 7 days — hit vs. days a dose was actually due." />
               <AdherencePill T={T} label="this refill" hit={adherence.sinceRefill.hit} expected={adherence.sinceRefill.expected} />
             </div>
               );
@@ -1337,6 +1353,15 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
   // on/off. Snooze length matches TakeYourPills/Medisafe's own
   // default (30 min, confirmed via their store listings).
   const setSnoozeMinutes = async (mins) => setPrefs(await MedicationPreferencesRepository.updatePreferences({ snoozeMinutes: mins }));
+  // ADDED 15 Sep 2026 — real ask: "thinking maybe remove the auto
+  // adjust, for reminder at same time." See medicationCalculations.js's
+  // own lockoutEndsAt/nextDoseEstimate comments for the full reasoning
+  // behind what each mode actually does.
+  const setReminderTimingMode = async (mode) => {
+    const updated = await MedicationPreferencesRepository.updatePreferences({ reminderTimingMode: mode });
+    setPrefs(updated);
+    syncMedicationReminders();
+  };
 
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -1374,6 +1399,23 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
             </div>
           )}
         </div>
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", marginBottom: 20, padding: "14px 16px" }}>
+          <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 500, marginBottom: 2 }}>Reminder timing</div>
+          <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 10 }}>
+            {prefs.reminderTimingMode === "fixed"
+              ? "Reminders stay at the same time each day, even if a dose was logged late or early."
+              : "Reminders shift forward or back based on exactly when your last dose was actually logged."}
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            {[{ value: "adaptive", label: "Adjust to last dose" }, { value: "fixed", label: "Fixed same time" }].map((opt) => (
+              <div key={opt.value} onClick={() => setReminderTimingMode(opt.value)} role="radio" tabIndex={0} aria-checked={prefs.reminderTimingMode === opt.value}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setReminderTimingMode(opt.value); } }}
+                style={{ flex: 1, padding: "8px 10px", borderRadius: radius.md, fontSize: 12, fontWeight: 600, textAlign: "center", cursor: "pointer", border: `1px solid ${prefs.reminderTimingMode === opt.value ? T.medsBlue : T.border}`, color: prefs.reminderTimingMode === opt.value ? T.medsBlue : T.textSecondary, background: prefs.reminderTimingMode === opt.value ? `${T.medsBlue}15` : "transparent" }}>
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        </div>
         {/* CHANGED 26 Aug 2026 — real ask: every per-module settings
             screen ends with a link back to general/app Settings. */}
         <div onClick={onOpenGeneralSettings} style={{ textAlign: "center", fontSize: 13, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", padding: "12px 0" }}>
@@ -1392,6 +1434,11 @@ const PATTERN_ORDER = { daily: 0, custom: 1, prn: 2 };
 
 export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, registerModuleBackHandler } = {}) {
   const [meds, setMeds] = useLoadedState(() => loadMedications(), [], []);
+  // ADDED 15 Sep 2026 — real ask: cards need to know the current
+  // reminder-timing mode (adaptive/fixed, see medicationCalculations.js)
+  // to compute their own "next reminder" display consistently with
+  // what the real native notification is actually scheduled from.
+  const [reminderPrefs] = useLoadedState(() => MedicationPreferencesRepository.getPreferences(), [], DEFAULT_MEDICATION_PREFERENCES);
   // ADDED 19 Aug 2026 — real undo/redo for editing a medication's own
   // record (name/dose/route/etc.) — see editUndoHelpers.js. Separate
   // from the dose-log undo/redo just below (lastLoggedEntry/
@@ -1794,13 +1841,16 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
           desktop-appropriate width rather than stretching single-
           column cards absurdly wide (per the wider design review's
           own explicit caution against just stretching mobile layouts). */}
-      <div style={{ width: "100%", maxWidth: 600, background: T.bg, minHeight: "100vh", display: "flex", flexDirection: "column", borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }}>
+      <div style={{ width: "100%", background: T.bg, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
         {/* ADDED 26 Aug 2026 — real ask: page title on a sticky banner
             filled with the module's own colour, same pattern applied
             across every module. Was missed in the first banner pass. */}
         {/* CHANGED 26 Aug 2026 — real ask: icons moved into the
             banner, matching Contacts' treatment. */}
-        <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.medsBlue, borderBottom: "2px solid rgba(0,0,0,0.15)", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* CHANGED 15 Sep 2026 — real report: "too blocky / harsh/clashy" —
+            softened the sharp corners/stark border, same treatment as
+            Contacts'/Healthcare's own screen-title banners. */}
+        <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.medsBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Medication</h1>
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
             {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
@@ -2001,6 +2051,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
                         style={{ position: "absolute", inset: 0, zIndex: 5, cursor: "pointer" }} />
                     )}
                     <MedicationCard med={med} T={T} darkMode={darkMode} justCompleted={justCompleted?.id === med.id ? justCompleted.type : null} highlighted={highlightedId === med.id} searchHighlighted={searchHighlightedId === med.id}
+                      reminderTimingMode={reminderPrefs.reminderTimingMode}
                       cardRef={(el) => (cardRefs.current[med.id] = el)}
                       menuOpen={menuOpenId === med.id}
                       snoozedUntil={snoozedUntil[med.id]}
@@ -2066,7 +2117,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             the same way — a fixed 390px would leave the FAB stranded
             at the old width's right edge once the content column
             itself can go wider than that. */}
-        <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, maxWidth: 600, margin: "0 auto", display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
+        <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
           <div onClick={() => setAddingMed(true)} style={{ width: 56, height: 56, borderRadius: radius.full, background: T.fabBg, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "auto", boxShadow: "0 2px 8px rgba(0,0,0,.25)", cursor: "pointer" }}><Plus size={24} color={T.fabIcon} /></div>
         </div>
 
