@@ -216,8 +216,9 @@ this date; summarized here for durability.
     audit across list views.
   - **Group D — Clinic Card / Lists / Guide polish** (no strong
     dependency between them, smaller UI additions): #74 a Clinic Card
-    recent-contacts section; #75 Lists reassociation UX; #77
-    Interactive Guide overflow/shape fixes.
+    recent-contacts section; #75 Lists reassociation UX. #77
+    Interactive Guide overflow/shape fixes — DONE, see "Recently
+    shipped" below.
   - **Group E — bigger investigate/design items, each needing its own
     real scoping pass before implementation, not a quick patch**: #78
     Stats breakdowns (by organism/site, combined multi-site tests, a
@@ -3306,6 +3307,106 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (15 Sep 2026, continuing still further — Interactive Tour fixes, #77)
+
+Real ask: continue the backlog into Group D's #77 (Interactive Guide
+overflow/shape fixes). Three real bugs found and fixed, plus a fourth
+caught mid-verification from the code changes themselves, not a live
+report — the tour is a genuinely low-traffic surface (replayed rarely
+once onboarding is done), so bugs here can sit unnoticed a long time.
+
+**Circular spotlight for the Home tab and small icon targets, and a
+real vertical clamp for the card.** The spotlight always used a fixed
+16px corner radius, which reads fine against the other 4 rectangular
+nav tabs but visibly mismatched Home's own true 48x48 circle. Fixed
+with a `targetIsCircular` test (near-square, under 64px) rather than
+hardcoding "tab-home" specifically, so it also correctly covers the
+Search/Settings icon steps. The card's own vertical position used to
+pick "below the target" from a rough, hardcoded 140px height guess
+with no real clamp at all (unlike the horizontal position's own
+existing clamp) — a step near the top or bottom edge, or with a longer
+body than the guess assumed, could push the card partially off-screen.
+Fixed by measuring the card's own real rendered height via a
+`useLayoutEffect` + ref, used for both the below/above decision and a
+real vertical `Math.max`/`Math.min` clamp matching the horizontal
+one's own rigor.
+
+**Real, embarrassing bug in landing that first fix: a temporal-dead-zone
+crash on every single render.** The `useLayoutEffect` measuring card
+height referenced `step` in its own dependency array — but `step` was
+declared with `const` two lines BELOW that effect, not above it. This
+throws `ReferenceError: Cannot access 'step' before initialization` on
+every render, meaning the tour couldn't render AT ALL once this "fix"
+landed — caught only because a stale `vite preview` build (left over
+from before this exact edit) briefly made an early verification pass
+look fine, and a genuinely fresh rebuild + smoke-test run (forced by an
+unrelated container restart mid-session) caught the real crash
+immediately (`SMOKE TEST: FAILED` on test 11/15). Fixed by moving the
+`const step = ...` declaration above the effect that references it —
+the real lesson, consistent with several earlier entries in this file:
+a live-verification pass is only as good as the build it's actually
+running against; a stale preview server can make a broken change look
+shipped.
+
+**Three more real bugs found from the owner's own live screenshot
+report, after the above was already believed fixed and verified.**
+(1) *Font* — this file had zero `fontFamily` declarations anywhere
+(the card, both buttons), so the whole tour rendered in the browser's
+own default serif (`Times New Roman`) instead of the app's real Inter
+— confirmed via computed style, not eyeballed. Fixed by setting
+`fontFamily: "'Inter', sans-serif"` on the card (inherited by plain
+text children) — and, caught only by re-measuring after that fix, a
+SEPARATE explicit copy on both `<button>` elements, since `<button>` is
+a form control and does not inherit `font-family` from an ancestor
+`<div>` the way inline text does (verified live: both buttons stayed
+in `Arial` even after the card-level fix alone).
+(2) *Card overflowing the screen edge* — real root cause: `cardStyle`
+declared `padding: 20` with the browser's default `box-sizing:
+content-box`, meaning its `width: min(320px, ...)` was the CONTENT box
+only, with the 20px+20px padding added ON TOP — the card actually
+rendered 360px wide, not 320px, while every position/clamp calculation
+in the file assumed 320px was the true width. Confirmed live on the
+settings-icon step: the card's real right edge landed at x=418 on a
+390px-wide viewport, a genuine 28px overflow, not the "confirmed fine"
+verdict an earlier same-session check had wrongly reached (that check
+measured the card's *div* bounding box correctly but never compared it
+against `cardWidthPx`, the constant actually driving the clamp math —
+a real methodology gap, not a coincidence). Fixed with `boxSizing:
+"border-box"`, making the declared 320px the TRUE total width and
+bringing it back in line with `cardWidthPx`.
+(3) *The teal ring not centred on its own highlight* — real CSS
+box-model bug, most visible on the small icon-circle steps: the ring
+div shares the exact same `top`/`left`/`width`/`height` as the
+lightened-cutout div right next to it, but the cutout has no border
+while the ring has `border: 2px solid`, again under the default
+`box-sizing: content-box`. That border renders OUTSIDE the declared
+box, so the ring's own rendered box ends up 4px bigger in both
+dimensions than the cutout's, with the same top-left origin — shifting
+the ring's effective CENTER 2px down-right relative to the highlight
+it's meant to trace exactly. A 2px shift is a much bigger fraction of
+a ~31px icon-circle's own diameter than of the ~54px Home circle or
+the wide rectangular nav-tab spotlights, which is why it read as a
+real, visible problem specifically on the icon steps. Fixed the same
+way as (2) — `boxSizing: "border-box"` on the ring div — confirmed live
+via `getBoundingClientRect()` that the cutout and ring now report
+byte-for-byte identical rects at every one of the tour's 9 steps, not
+just visually close.
+
+Verified live via Playwright throughout, at each stage: computed
+`fontFamily` on the card and on a real `<button>` inside the overlay
+(not the due-meds banner's own "Take" button, an early false negative
+from an unscoped `document.querySelector('button')` picking up the
+wrong element); the card's real bounding rect at every step, confirmed
+to stay within the 390px viewport after the box-sizing fix; a pixel-
+level scan of the search-icon glyph's own rendered bounds against its
+spotlight's centre (ruled out a suspected icon-glyph asymmetry as the
+cause — the glyph itself really is centred in its own SVG viewBox,
+within antialiasing noise); and the final side-by-side cutout/ring
+rect comparison above. Full build, `npx eslint .` clean, and all
+15 smoke-test flows pass against a real `vite preview` production
+build, run twice (once after the font/overflow fix, once more after
+the ring fix) with no regressions either time.
 
 ## Recently shipped (15 Sep 2026, real physical-play-testing feedback batch)
 
