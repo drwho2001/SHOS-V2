@@ -1,10 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Status-bar notification icon for Medication-domain reminders (dose
-     due, refill due). See ic_stat_home.xml's own comment for why this
-     is plain white/alpha-only — the OS silhouettes it regardless, real
-     per-notification color comes from iconColor in
-     notificationService.js. A simple stadium/capsule shape: a rounded
-     rectangle with full semicircular ends. -->
+     due, refill due). CHANGED 15 Sep 2026 — real report: the previous
+     shape (a single filled stadium/capsule with no visible seam) read
+     as "just a circle with a line" at real status-bar size, not
+     recognizable as a pill. Replaced with a real two-tone capsule
+     silhouette — a diagonal pill body with a seam cut out along its
+     midline (evenodd fill) and a small diagonal highlight, matching
+     the same real Pill glyph (Phosphor PillIcon, "fill" weight) used
+     throughout the app's own UI for this exact module — rescaled from
+     its native 256x256 viewBox down to this file's existing 24x24
+     convention. Android renders status-bar icons as a flat monochrome
+     silhouette regardless of any fill color here (only the alpha
+     shape matters) — the per-notification COLOR comes from
+     LocalNotificationSchema's own iconColor field instead (see
+     notificationService.js), not from this file. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -13,5 +22,6 @@
     android:tint="#FFFFFF">
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M6,9H18A3,3 0 0,1 21,12A3,3 0 0,1 18,15H6A3,3 0 0,1 3,12A3,3 0 0,1 6,9Z" />
+        android:fillType="evenOdd"
+        android:pathData="M20.29,3.71a4.99,4.99 0,0 0,-7.06 0L3.71,13.23a4.99,4.99 0,0 0,7.06 7.06L20.29,10.77A5,5 0,0 0,20.29 3.71ZM19.23,9.77 L14.47,14.53 9.7,9.77 14.46,5.02a3.49,3.49 0,0 1,4.94 4.94ZM17.78,7.71a0.75,0.75 0,0 1,0 1.06L15.53,11 a0.75,0.75 0,1 1,-1.06 -1.06l2.25,-2.25a0.75,0.75 0,0 1,1.06 0Z" />
 </vector>

@@ -159,14 +159,17 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           Symptoms/Measurements/Menstrual & Contraception) inherits it
           automatically rather than needing its own copy — none of them
           are reachable except through this screen. */}
-      <div style={{ width: "100%", maxWidth: 600, borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }}>
+      <div style={{ width: "100%" }}>
       {/* ADDED 26 Aug 2026 — real ask: page title on a banner filled
           with the module's own colour, same pattern applied across
           every module this pass. Healthcare didn't have a title
           heading at all before this — starting straight with the
           stats card was the actual root of the "bland" complaint
           flagged earlier, not just styling. */}
-      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.healthcareBlue, borderBottom: "2px solid rgba(0,0,0,0.15)", padding: "16px 16px 14px" }}>
+      {/* CHANGED 15 Sep 2026 — real report: "too blocky / harsh/clashy" —
+          softened the sharp corners/stark border, same treatment as
+          Contacts'/Medication's own screen-title banners. */}
+      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px" }}>
         <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Healthcare</h1>
       </div>
       <div style={{ padding: "14px 16px 0", background: T.bg }}>
@@ -247,7 +250,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       )}
       {showTimeline && (
         <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 210, display: "flex", justifyContent: "center" }}>
-          <div style={{ width: "100%", maxWidth: 600, borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }}>
+          <div style={{ width: "100%" }}>
             <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>
         </div>

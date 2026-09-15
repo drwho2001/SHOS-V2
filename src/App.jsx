@@ -1873,9 +1873,19 @@ export default function App() {
       )}
 
       {(dueMeds.length > 0 || refillDue.length > 0 || testingDue || clinicVisitDue) && (
+        // CHANGED 15 Sep 2026 — real report: this stack read as "too
+        // blocky/harsh/clashy" sitting flush edge-to-edge against the
+        // screen with square corners. Wrapped the whole stack (not
+        // each banner individually — they still share flush borders
+        // between each other, only the outer silhouette needed
+        // softening) in one rounded, inset, shadowed card instead —
+        // same real content/behavior, a gentler shape. The shared
+        // boxShadow moved here from each individual banner div below
+        // (was per-banner, now one shadow for the whole stack).
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 100, fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ margin: "8px 10px 0", borderRadius: RADIUS.md, overflow: "hidden", boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
           {dueMeds.length > 0 && (
-            <div ref={dueBannerCallbackRef} style={{ background: ACCENTS.medication, boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
+            <div ref={dueBannerCallbackRef} style={{ background: ACCENTS.medication }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <Pill size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1928,7 +1938,7 @@ export default function App() {
               Medication Dashboard's own existing one-tap markRequested()
               — see handleMarkRefillRequested's own comment. */}
           {refillDue.length > 0 && (
-            <div ref={refillBannerCallbackRef} style={{ background: ACCENTS.medication, boxShadow: "0 4px 16px rgba(0,0,0,.2)", borderTop: "1px solid rgba(255,255,255,.25)" }}>
+            <div ref={refillBannerCallbackRef} style={{ background: ACCENTS.medication, borderTop: "1px solid rgba(255,255,255,.25)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <Pill size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1954,7 +1964,7 @@ export default function App() {
               — logging a real test needs a real result form, see
               onTestingLogTest's own comment above. */}
           {testingDue && (
-            <div ref={testingBannerCallbackRef} style={{ background: ACCENTS.healthcare, boxShadow: "0 4px 16px rgba(0,0,0,.2)", borderTop: "1px solid rgba(255,255,255,.25)" }}>
+            <div ref={testingBannerCallbackRef} style={{ background: ACCENTS.healthcare, borderTop: "1px solid rgba(255,255,255,.25)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <TestTube size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1974,7 +1984,7 @@ export default function App() {
               action — nothing to confirm ahead of the visit itself, see
               onClinicVisitView's own comment above. */}
           {clinicVisitDue && (
-            <div ref={clinicVisitBannerCallbackRef} style={{ background: ACCENTS.healthcare, boxShadow: "0 4px 16px rgba(0,0,0,.2)", borderTop: "1px solid rgba(255,255,255,.25)" }}>
+            <div ref={clinicVisitBannerCallbackRef} style={{ background: ACCENTS.healthcare, borderTop: "1px solid rgba(255,255,255,.25)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <Hospital size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1990,6 +2000,7 @@ export default function App() {
               </div>
             </div>
           )}
+        </div>
         </div>
       )}
 

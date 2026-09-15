@@ -2486,7 +2486,11 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           against the page background) and moved Search/Settings/
           Profile-type icons INTO the banner itself, white against the
           colour, instead of a separate plain row below it. */}
-      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.contactsTeal, borderBottom: "2px solid rgba(0,0,0,0.15)", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* CHANGED 15 Sep 2026 — real report: "too blocky / harsh/clashy" —
+          softened the sharp corners/stark border into a gentler shape
+          (bottom corners only — the top edge is flush with the
+          screen's own top edge, so rounding there is never visible). */}
+      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.contactsTeal, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Contacts</h1>
         {/* ADDED 18 Aug 2026 — My Profile and Import Shared Profile both
             live here now (Doc 1: My Profile isn't a primary-nav tab;
@@ -2769,7 +2773,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           effectively 0) rather than staying scoped to its own card.
           A star on a scrolled-past card could paint over the fixed Add
           button. Explicit zIndex here, well above any in-card value. */}
-      <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, maxWidth: 600, margin: "0 auto", display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none", zIndex: 20 }}>
+      <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none", zIndex: 20 }}>
         <div onClick={onAdd} style={{ width: 56, height: 56, borderRadius: radius.full, background: T.fabBg, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,.25)", cursor: "pointer", pointerEvents: "auto" }}>
           <Plus size={24} color={T.fabIcon} />
         </div>
@@ -2938,7 +2942,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
           larger screens, rather than stretching single-column cards
           absurdly wide. Outer wrapper already centers via
           justifyContent: "center", so this is a like-for-like swap. */}
-      <div style={{ width: "100%", maxWidth: 600, background: T.bg, minHeight: "100vh", borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }}>
+      <div style={{ width: "100%", background: T.bg, minHeight: "100vh" }}>
         {screen === "list" ? (
           <ContactsList contacts={contacts} T={T} onOpen={openProfile} onAdd={() => setEditingContact({})} sortBy={sortBy} setSortBy={setSortBy} query={query} setQuery={setQuery}
             onOpenMyProfile={() => setShowMyProfile(true)} onOpenImportProfile={() => setShowImportProfile(true)} refresh={refresh}

@@ -1096,12 +1096,15 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           desktop-width-cap treatment, but never rolled out to the rest
           of the app — inconsistent by omission, not by design. Same
           maxWidth: 600 + border pattern applied here. */}
-      <div style={{ width: "100%", maxWidth: 600, background: T.bg, minHeight: "100vh", borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}`, paddingBottom: 90 }}>
+      <div style={{ width: "100%", background: T.bg, minHeight: "100vh", paddingBottom: 90 }}>
       <div style={{ position: "sticky", top: 0, background: T.bg, zIndex: 5 }}>
         {/* ADDED 26 Aug 2026 — real ask: page title on a banner filled
             with the module's own colour, same pattern applied across
             every module this pass. */}
-        <div style={{ background: T.encountersPink, borderBottom: "2px solid rgba(0,0,0,0.15)", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* CHANGED 15 Sep 2026 — real report: "too blocky / harsh/clashy" —
+            softened the sharp corners/stark border, same treatment as
+            Contacts'/Healthcare's/Medication's own screen-title banners. */}
+        <div style={{ background: T.encountersPink, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* CHANGED — real accessibility gap found via a full axe
               scan (page-has-heading-one): Encounters was missed by the
               earlier heading pass, which only covered 6 named primary
@@ -1224,7 +1227,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           56x56 circle across all three screens using this pattern.
           CHANGED 26 Aug 2026 — real audit finding: same fix as
           Contacts, wrapped for wide-viewport centering. */}
-      <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, maxWidth: 600, margin: "0 auto", display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
+      <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
         <div onClick={onAdd} style={{ width: 56, height: 56, borderRadius: radius.full, background: T.fabBg, color: T.fabIcon, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
           <Plus size={24} />
         </div>
@@ -1288,7 +1291,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
     <div style={{ background: T.bg, minHeight: "100vh", display: "flex", justifyContent: "center" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to ActivityLanding above. */}
-      <div style={{ width: "100%", maxWidth: 600, background: T.bg, minHeight: "100vh", borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}`, paddingBottom: 40 }}>
+      <div style={{ width: "100%", background: T.bg, minHeight: "100vh", paddingBottom: 40 }}>
       {/* CHANGED — real ask: "Next to back button shows date, instead
           should show back, and centred on screen at top should be the
           encounter title." Real title (not date) now centered; date
@@ -1538,7 +1541,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }} data-encounter-sheet>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to this module's other screens. */}
-      <div style={{ width: "100%", maxWidth: 600, background: T.bg, minHeight: "100vh", borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }}>
+      <div style={{ width: "100%", background: T.bg, minHeight: "100vh" }}>
       {/* CHANGED 26 Aug 2026 — real ask: forms (Add/Edit Activity)
           should also have the module banner title, matching every
           other module screen. */}
