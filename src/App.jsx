@@ -1907,8 +1907,19 @@ export default function App() {
                     three real actions just to get it off screen. Reappears
                     on the next real check (visibilitychange, the 60s poll,
                     or a fresh notification) since it's not a persisted
-                    dismissal, just local UI state. */}
-                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setDueMeds([])} aria-label="Dismiss due medications banner" />
+                    dismissal, just local UI state.
+                    CHANGED 15 Sep 2026 — real report: this gave zero
+                    feedback, so tapping it could easily read as "I've
+                    cancelled/handled this dose" when nothing was actually
+                    recorded — it just silently comes back later with no
+                    warning it was ever temporary. Added the same toast
+                    confirmation Take/Snooze/Cancel already show, reusing
+                    the exact wording pattern, so the "this isn't done,
+                    just hidden" fact is stated plainly rather than left
+                    to be inferred. Applied to all four due-state banners'
+                    own X (medications/refill/testing/clinic visit) for
+                    the same reason, not just this one. */}
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => { setDueMeds([]); showNotifToast("Hidden for now — still due, will remind you again"); }} aria-label="Dismiss due medications banner" />
               </div>
             </div>
           )}
@@ -1934,7 +1945,7 @@ export default function App() {
                     <button onClick={onRefillSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
                   </div>
                 </div>
-                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setRefillDue([])} aria-label="Dismiss refill banner" />
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => { setRefillDue([]); showNotifToast("Hidden for now — still needs a refill, will remind you again"); }} aria-label="Dismiss refill banner" />
               </div>
             </div>
           )}
@@ -1954,7 +1965,7 @@ export default function App() {
                     <button onClick={onTestingSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
                   </div>
                 </div>
-                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setTestingDue(null)} aria-label="Dismiss testing banner" />
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => { setTestingDue(null); showNotifToast("Hidden for now — still due, will remind you again"); }} aria-label="Dismiss testing banner" />
               </div>
             </div>
           )}
@@ -1975,7 +1986,7 @@ export default function App() {
                     <button onClick={onClinicVisitSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
                   </div>
                 </div>
-                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setClinicVisitDue(null)} aria-label="Dismiss clinic visit banner" />
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => { setClinicVisitDue(null); showNotifToast("Hidden for now — will remind you again"); }} aria-label="Dismiss clinic visit banner" />
               </div>
             </div>
           )}

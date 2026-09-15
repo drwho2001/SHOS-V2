@@ -291,7 +291,11 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder })
     if (newIds.length > 0) onChange([...value, ...newIds]);
     setDraft("");
   };
-  const tapSuggestion = (entry) => { if (!value.includes(entry.id)) onChange([...value, entry.id]); };
+  // CHANGED 15 Sep 2026 — real report (Encounters' own copy of this
+  // picker): picking a suggestion chip left the search box showing
+  // whatever was typed instead of clearing, unlike commit()'s own
+  // setDraft(""). Same copy-pasted gap, fixed the same way here.
+  const tapSuggestion = (entry) => { if (!value.includes(entry.id)) onChange([...value, entry.id]); setDraft(""); };
   const acceptPendingSuggestion = async () => {
     const entry = await registry.findOrCreate(pendingSuggestion.suggestion);
     if (entry) tapSuggestion(entry);
