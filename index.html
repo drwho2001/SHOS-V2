@@ -30,6 +30,21 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="SHOS" />
+    <!-- ADDED 15 Sep 2026 — real bug found investigating a live report
+         ("mobile looks super narrow, nav bar doesn't match mobile
+         width"): the browser's own default UA stylesheet gives <body>
+         an 8px margin on every side. Every screen's real content sits
+         inside normal document flow (so it inherits that inset), while
+         the bottom nav bar and the due-state banner stack are both
+         `position: fixed` (positioned against the true viewport, not
+         body's own box) — so they were always 16px wider than every
+         screen's actual content, a mismatch that existed from day one
+         but read as more noticeable once the maxWidth:600 cap/border
+         framing (removed this same session) stopped visually absorbing
+         it. This app has no CSS files by design (see CLAUDE.md) — this
+         is a single-line override of a browser default, not a new
+         stylesheet convention. -->
+    <style>html, body { margin: 0; padding: 0; }</style>
   </head>
   <body>
     <div id="root"></div>

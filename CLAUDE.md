@@ -3502,6 +3502,68 @@ suite against a real `vite preview` production build — all 15/15 pass
 as of the final commit in this round, confirmed green in CI (Smoke
 Test, Build APK, Web Alpha all succeeded on the same push).
 
+## Recently shipped (15 Sep 2026, later still again — Home shortcuts on desktop, a real mobile-width regression and fix, and a body-margin bug found investigating it)
+
+Real ask, continuing the same-day backlog: on PC width, Home's Clinic
+Card/Episodes/Calendar shortcuts should sit in one line (2x2 with
+context grouping if a 4th is ever added), plus a lower-priority
+desktop font-sizing/empty-space pass and a request to group the
+remaining backlog for efficiency (see the "backlog grouping" entry
+above/below — same round).
+
+**Home shortcuts on desktop.** This app has never had a real
+`window.innerWidth`-driven responsive convention anywhere — every
+screen is hand-authored inline styles. Added the first one, narrowly
+scoped: `useIsDesktopWidth()` (a real `window.innerWidth >= 900` check
+with a resize listener, not a guessed pixel breakpoint) gates a
+desktop-only branch that merges Clinic Card/Episodes/(Calendar, when
+present) into one `flexWrap` row instead of the mobile 2-then-1
+stacked layout.
+
+**Real regression caught by the owner, not by this session's own
+testing**: the first version used a fixed `flex: "1 1 160px"` basis
+unconditionally, on both mobile and desktop — at real phone widths
+(320-360px) two buttons could no longer fit on one line at that fixed
+basis, breaking the original mobile layout. Owner's own correction:
+"Ensure mobile width not affected... remember generally relative
+positioning, not fixed values, to account for device variance." Fixed
+by keeping the mobile branch as the exact original markup (two
+`flex: 1` buttons + a separately centered 50%-width Calendar row) and
+only using the wider `flex: "1 1 260px"` merged row on the real,
+`useIsDesktopWidth()`-gated desktop branch. Verified live at
+320/360/390/414px (mobile, unchanged 2-then-1 layout, no wrap) and
+1600px (desktop, one merged row) via Playwright — no horizontal
+overflow at any width.
+
+**A second, real regression report followed immediately**: "Your
+mobile one now looks super narrow. And nav bar doesn't match mobile
+width." Investigated by direct DOM measurement (`getBoundingClientRect`
+on `<body>`, `<main>`, and the bottom nav) rather than guessing —
+found a genuine root cause, not related to the shortcuts fix above.
+The browser's own default UA stylesheet gives `<body>` an 8px margin
+on every side; this app's real content lives in normal document flow
+(inside `<main>`, so it inherits that inset), while the bottom nav bar
+and the due-state banner stack are both `position: fixed` (positioned
+against the true viewport, not body's own margin box) — so real
+content has always rendered 16px narrower than the nav bar/banners,
+on every screen, every session. This was never reported before because
+the (now-removed) `maxWidth: 600` cap + border-marker framing on every
+screen absorbed the gap visually; once that framing came off earlier
+the same day (see the desktop-full-width-layout entry above), the
+8px-per-side inset became a real, visible mismatch between content
+width and the nav bar's true full width — exactly matching both halves
+of the report. Fixed with a single-line UA-default override in
+`index.html` (`<style>html, body { margin: 0; padding: 0; }</style>`)
+— this app has no CSS files by design (see the architecture rules
+above); this is a browser-default reset, not a new stylesheet
+convention. Verified live via direct measurement at 320/360/390/414px
+and 1600px: `<body>`, `<main>`, and the nav bar all report identical
+`x`/`width` at every size, zero horizontal overflow, zero page errors.
+
+Every fix in this entry verified live via Playwright and the full
+15-flow smoke-test suite against a real `vite preview` production
+build — 15/15 pass.
+
 ## Recently shipped (15 Sep 2026, later still — meds timing/streak/adherence, global date format, banner styling, desktop width)
 
 Real ask, a follow-up batch on the same feedback session: reconsider
