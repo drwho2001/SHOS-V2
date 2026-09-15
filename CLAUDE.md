@@ -184,12 +184,12 @@ Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
 - **Active, in-progress: a large real physical-play-testing feedback
-  batch (~30 items, ~15 Sep 2026).** The real-bug items (#55-63) are
-  done — see "Recently shipped" above for the full detail. What's still
-  open, roughly grouped: a medication-notification-timing overhaul
-  (fixed default time + an optional dynamic-tracking mode — flagged as
-  needing real research into dosing-window logic, a design decision,
-  not a quick patch); several Settings/feature adds (editable
+  batch (~30+ items, ~15 Sep 2026).** The real-bug items (#55-63) and a
+  large follow-up round (medication reminder timing/streak/adherence,
+  global predicted-date formatting, banner/header styling, the native
+  notification icon, desktop full-width layout — #84-91) are done —
+  see "Recently shipped" above for the full detail. What's still open,
+  roughly grouped: several Settings/feature adds (editable
   automatic-backup save location, a force-check button for broken
   references, per-pair dismiss for possible Contacts duplicates, an
   allow-screenshots toggle); layout gaps (safe-area/status-bar
@@ -201,8 +201,17 @@ this date; summarized here for durability.
   tests, a clinical-impression field); Calendar dot-colour/sync/filter
   fixes; in-app error submission without needing an export/email step
   (flagged as needing an honest architecture conversation first, given
-  this app's no-backend design); and a Status-at-a-glance addition for
-  menstrual/contraceptive tracking when enabled. Not yet started.
+  this app's no-backend design); a Status-at-a-glance addition for
+  menstrual/contraceptive tracking when enabled; the 3 plain sheet-
+  title banners (Testing/Clinic Visits/Encounters' own Add/Edit forms)
+  still lacking the same corner-softening the 4 real screen-title
+  banners got; and the GitHub Releases page's public "Latest" badge —
+  confirmed again 15 Sep 2026 that the real `/releases/latest` API
+  endpoint already correctly serves the current build (verified
+  directly), the stale badge is purely the public Releases PAGE
+  showing an old test-a..h release instead, still needing the owner to
+  manually delete those (no delete-release tool available in this
+  session's GitHub MCP server). Not yet started, except where noted.
 
 - **Encryption at rest — RESOLVED 8 Sep 2026, see the full Phase 4
   implementation entry at the end of this same bullet.** Originally:
@@ -3435,6 +3444,123 @@ where visual confirmation mattered) and the full 15-flow smoke-test
 suite against a real `vite preview` production build — all 15/15 pass
 as of the final commit in this round, confirmed green in CI (Smoke
 Test, Build APK, Web Alpha all succeeded on the same push).
+
+## Recently shipped (15 Sep 2026, later still — meds timing/streak/adherence, global date format, banner styling, desktop width)
+
+Real ask, a follow-up batch on the same feedback session: reconsider
+medication reminders' auto-adjust behavior, explain 7-day adherence,
+investigate a daily-streak report, fix "in the future" phrasing
+globally, soften the due-meds banner/screen-title blocks, replace the
+native meds notification's icon, and expand module content to full
+width on desktop (was capped/centered like mobile, inconsistent with
+the notification banner's own already-full-width behavior).
+
+**Daily streak — real bug, not just a display quirk.** Report: "when I
+updated med it went from 0 to 3." Root cause: `computeAdherence()`'s
+streak loop started at "today" (`i=0`) and broke immediately if
+today's own dose hadn't been logged yet — meaning the streak showed 0
+for the entire day, every day, until that day's dose was actually
+logged, at which point it jumped back up to the real consecutive-day
+count. Not what "streak" should mean — a dose that isn't overdue yet
+hasn't been missed. Fixed per the owner's own spec ("dose 1 taken,
+dose 2 missed... streak persists until dose 3 is due, then resets"):
+today's own slot no longer counts as a streak-breaking check, only
+days/slots already fully in the past can break it, with today's own
+dose (if logged) added back on top. Applied to both the daily loop and
+the custom-interval (every-N-days) branch.
+
+**Medication reminder timing — new opt-in "fixed same time" mode.**
+Report: "thinking maybe remove the auto adjust, for reminder at same
+time." The existing behavior (`lockoutEndsAt`/`nextDoseEstimate`
+computing forward from the literal last-logged dose timestamp, so a
+late dose shifts every future reminder forward by the same lateness)
+is real and intentional, and stays the default ("adaptive") — changed
+for no one automatically. Added a real "fixed" mode instead: anchors
+every future reminder to the very first dose ever logged for that
+medication (held constant, never recomputed off a later dose), so one
+late/early dose only shifts that one day's own reminder, not every
+reminder after it. New `reminderTimingMode` preference
+(`medicationPreferencesRepository.js`, default `"adaptive"`), a new
+"Reminder timing" toggle in Medication Settings, threaded through to
+both the in-app card display and the real native-notification
+scheduling in `medicationReminderSync.js`. `medicationCalculations.js`
+stays I/O-free per its own architecture rule — callers load the
+preference and pass it in as a parameter, not read it internally.
+
+**7-day adherence — info dot added.** Report: "add info dot - explain
+what it is." A small tap-to-reveal info icon next to the "7-day" stat
+(same tap-to-reveal-caption pattern already established for Contacts'
+active-status dot), explaining it's based on the real dose log from
+the last 7 days, hit vs. days a dose was actually due.
+
+**Predicted/future dates — "in the future" was the only literal
+occurrence, fixed at its one shared source.** Report: Clinic Card's
+predicted dates (next due, overdue, pregnancy due date) should show
+the actual date, not vague "in the future" phrasing, "true globally."
+Traced to `encounterCalculations.js`'s `formatRelativeDate()` — used
+by Clinic Card (and its PDF export) for exactly these future-date
+rows, and by 5 other files for past-only dates. A full grep confirmed
+this was the ONLY place in the codebase producing that literal string,
+so fixing it here is genuinely global, not a partial patch. Future
+dates now show the real calendar date plus a relative offset,
+symmetric with the existing past-date phrasing ("3 months ago" becomes
+"Dec 6, 2026 (in 3 months)"); today/tomorrow stay as short words,
+matching the existing today/yesterday convention. Past-date behavior
+is completely unchanged.
+
+**Due-meds banner and screen-title blocks — softened.** Report: "feel
+too blocky... should have slightly perimeter gap, more rounded
+corners... too harsh/clashy." The floating due-state banner stack
+(medications/refill/testing/clinic-visit) was wrapped in one rounded,
+inset card (margin from the screen edges, `RADIUS.md` corners, one
+shared shadow) instead of sitting flush edge-to-edge with square
+corners — the individual banners inside the stack keep their existing
+flush borders against each other, only the outer silhouette needed
+softening. The 4 real colored screen-title banners (Contacts,
+Healthcare, Medication, Encounters) had their sharp bottom corners
+rounded and their stark `2px solid rgba(0,0,0,.15)` border lightened to
+a subtle `1px solid rgba(0,0,0,.08)` — top corners left square since
+they're flush with the screen's own top edge and rounding there is
+never visible. The 3 plain sheet-title banners (no harsh border to
+begin with) were left as a smaller, lower-priority gap for later.
+
+**Native meds-due notification icon — replaced with a real pill.**
+Report: "icon is just circle with line, change to pills icon." The
+existing `ic_stat_medication.xml` was a plain filled stadium/capsule
+with no visible seam — read as a blob at real status-bar size, not
+recognizable as a pill. Replaced with a real two-tone capsule
+silhouette (a diagonal pill body with a seam cut out along its midline
+via evenodd fill, plus a small diagonal highlight) — the same real
+Pill glyph (Phosphor `PillIcon`, "fill" weight) already used
+throughout the app's own UI for this exact module, rescaled from its
+native 256x256 viewBox down to this file's existing 24x24 convention.
+Verified by rendering the exact path in a browser before shipping —
+a real, recognizable capsule shape, not assumed correct from the
+coordinates alone.
+
+**Desktop full-width layout.** Report, from a desktop-width
+screenshot: module content still read narrow/centered like mobile
+while the notification banner already spanned the full width —
+inconsistent. Root cause: a `maxWidth: 600` + `borderLeft`/
+`borderRight` "centered card with grey margins" treatment had been
+rolled out across every primary module screen and overlay earlier this
+multi-session effort (see the 10 Sep 2026 "desktop-width-cap border
+consistency" entry) — a deliberate design choice at the time, now
+explicitly reversed by the owner. Removed the width cap and its
+accompanying border markers from all 14 real content-wrapper sites
+across 17 files, and from the 9 FAB-positioning divs that used the
+same cap to keep the floating "+" button aligned with the (previously
+narrower) content column — those now right-align to the real, full
+screen edge instead, matching the wider content. One separate
+`maxWidth: 560` toast/snackbar element was deliberately left alone —
+a floating confirmation toast shouldn't stretch edge-to-edge on a
+large monitor regardless of how wide the actual content column is.
+
+Every fix in this round verified live via Playwright (a rendered pill-
+icon screenshot; 1400px-viewport screenshots of Home/Encounters/
+Medication confirming full width and the softened banner corners with
+zero page errors) and the full 15-flow smoke-test suite against a real
+`vite preview` production build — 15/15 pass.
 
 ## Recently shipped (11 Sep 2026, full-team audit: features/demographics/bloat/longevity, plus real fixes)
 
