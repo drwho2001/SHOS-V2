@@ -178,10 +178,31 @@ oversight.
   for a change that "looks safe" — several real bugs this session
   only surfaced that way, not from reading the diff.
 
-## Known issues (as of 10 Sep 2026 — update this section as things change)
+## Known issues (as of 15 Sep 2026 — update this section as things change)
 
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
+
+- **Active, in-progress: a large real physical-play-testing feedback
+  batch (~30 items, ~15 Sep 2026).** The real-bug items (#55-63) are
+  done — see "Recently shipped" above for the full detail. What's still
+  open, roughly grouped: a medication-notification-timing overhaul
+  (fixed default time + an optional dynamic-tracking mode — flagged as
+  needing real research into dosing-window logic, a design decision,
+  not a quick patch); several Settings/feature adds (editable
+  automatic-backup save location, a force-check button for broken
+  references, per-pair dismiss for possible Contacts duplicates, an
+  allow-screenshots toggle); layout gaps (safe-area/status-bar
+  spacing in a few spots, an Episodes-screen scroll bug); Testing/
+  Measurements/Healthcare tab-order and classification requests; a
+  Clinic Card recent-contacts section; Lists reassociation UX; broader
+  icon/colour consistency in list views; Interactive Guide overflow/
+  shape fixes; Stats breakdowns (by organism/site, combined multi-site
+  tests, a clinical-impression field); Calendar dot-colour/sync/filter
+  fixes; in-app error submission without needing an export/email step
+  (flagged as needing an honest architecture conversation first, given
+  this app's no-backend design); and a Status-at-a-glance addition for
+  menstrual/contraceptive tracking when enabled. Not yet started.
 
 - **Encryption at rest — RESOLVED 8 Sep 2026, see the full Phase 4
   implementation entry at the end of this same bullet.** Originally:
@@ -3217,6 +3238,179 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (15 Sep 2026, real physical-play-testing feedback batch)
+
+Real ask: a large batch of live, real-device feedback from actually
+using the app day to day — ~30 distinct items, worked in priority order
+(real bugs first). Tracked as tasks #55-63; the rest (#64-81, feature
+adds and bigger investigate/design items) remain open, logged below.
+
+**Navigation/back-button fixes.** Settings' Data & Network screen was
+missing from `goBackOneLevel()`'s sub-screen if-chain — confirmed by
+enumerating all 20 real `show*` states in `SettingsScreen` against the
+handler, which only covered 19; the back button fell through to Home
+instead of returning to Settings. Fixed the one missing case.
+Clinic Card lost all its own state (section visibility, scroll
+position) the moment its own `onNavigateToRecord` handler fired,
+because App.jsx's tab switch is a genuine unmount/remount (a real
+ternary render, not a CSS-hide) and Clinic Card is independently
+mounted inside both Home and Healthcare — the back button then
+returned to the target module's own dashboard, not back to Clinic
+Card. Built a cross-cutting "remember where to return" mechanism:
+App.jsx's new `clinicCardReturnTab`/`markClinicCardReturn`, consumed
+by a new `openClinicCardOnMount`/`onConsumedClinicCardReopen` prop
+pair in both Home and Healthcare, following this app's own established
+"consumed once" prop idiom. Honest scope note: returning to Clinic
+Card can take two back presses (first popping the target module's own
+internal sheet, then a second press to actually return) rather than
+one — matches this app's already-established multi-level back-nav
+pattern elsewhere, not a new inconsistency.
+
+**Clinic Card fixes.** Emergency info/Allergies sections were only
+clickable-to-My-Profile in their EMPTY state — the populated versions
+had no `onClick` at all. Added the same handler to both. The
+"Positive" test-result subtitle stayed grey regardless of alert state
+— `Row`'s `alert` prop only coloured the dot/title, never the actual
+subtitle text carrying the word "Positive"; fixed to use
+`T.actionRedText` when `alert` is true.
+
+**Notification history was permanently blank on the real device — real
+root cause, not a UI bug.** Traced directly through the installed
+`@capacitor/local-notifications` plugin's own Android Kotlin source
+(not assumed from its JS type definitions, which this app's own
+comment had been trusting): the real alarm fires via
+`TimedNotificationPublisher`, a plain `BroadcastReceiver` Android runs
+independently of whether this app's own process is alive — routine,
+expected background-app behaviour on Android, not a bug in the OS.
+That receiver calls `LocalNotificationsPlugin.fireReceived()`, which
+resolves the plugin instance via `staticBridge?.webView` — `null` the
+instant the app's process has been killed, so the JS-side
+`localNotificationReceived` event is never dispatched at all (not even
+queued — Capacitor's own `retainUntilConsumed` only helps when
+`notifyListeners()` actually runs, which it doesn't here). The OS
+still shows the real notification in the shade (`notificationManager.
+notify()` runs unconditionally right after) — the user genuinely gets
+reminded — but nothing in this app's own JS ever learns it happened.
+Since every real reminder here fires hours-to-days after being
+scheduled, the app being dead by firing time is the COMMON case, not
+an edge case — explaining why the only entries ever recorded were ones
+that happened to fire while the app was already open (the 5s test
+notification). Real fix: a new `getDeliveredNotifications()` in
+`notificationService.js`, reading the OS's own notification tray
+directly (independent of whether this app's JS was alive when the
+notification actually fired) via the plugin's own
+`getDeliveredNotifications()` API. Reconciled against
+`NotificationHistoryRepository` (`recordIfNew()`, deduping against just
+the single most-recent entry — the log is "did anything fire
+recently," not a permanent audit trail, so a still-undismissed
+notification checked across several app opens shouldn't spam repeat
+entries) via the existing `checkDueMeds()` chokepoint (mount/
+visibility/60s poll), so anything still sitting in the tray gets
+backfilled the next time the app is actually opened. Native-only by
+design — web's own `showWebNotification()` already dispatches its real
+delivery event correctly, a different, already-documented web
+limitation.
+
+**Colour-blind-safe palette — real bug, far bigger than the one
+reported module.** The report was "doesn't apply to Encounters," but
+the actual root cause turned out to affect 10 of this app's module
+files, not one: `LIGHT`/`DARK` theme objects were plain module-level
+`const`s baking in `ACCENTS.*`/`ACTION.*` at IMPORT time — before
+App.jsx's own `bootReady` gate ever resolves the real
+`ModuleColorRepository` overrides (`applyRealAccentOverrides()`
+mutates `ACCENTS`/`ACTION` in place, but only AFTER these files'
+own top-level code had already run and captured the pre-override
+default value into a plain object literal, a value copy, not a live
+reference). This is the exact same bug class already found and fixed
+for Measurements/MenstrualHealth during the Phase 3 storageAdapter
+conversion (see that entry, elsewhere in this file) — that sweep's own
+"no other instances" conclusion was wrong. Found and fixed in
+Encounters, SymptomLog, Medication Dashboard, Clinic Card, My Profile,
+Clinic Visits, Testing, Contacts, Timeline, and Vaccinations —
+converting each to a `buildLight()`/`buildDark()` function pair called
+fresh per-render (matching how `T` itself is already recomputed every
+render), plus every stray direct `LIGHT.x`/`DARK.x` reference found in
+the same files (mostly a bulk-delete toolbar's red text, forced to
+always use the dark-mode-tuned red regardless of app theme since its
+own background is a fixed near-black bar). One deeper variant:
+Contacts' `MethodBadge` used `T === DARK` (reference equality) to
+detect dark mode — silently broke the same way the moment `DARK`
+became a function (a fresh object every call, never `===` anything);
+fixed by comparing `T.bg` against `NEUTRAL_DARK.bg` instead, a
+self-contained check needing no new prop threaded through. Verified
+live: applying the palette via the real repository call and reloading
+correctly renders Encounters' own real CVD-safe colour
+(`rgb(174, 66, 126)`), not the default.
+
+**Active-status dot colour.** The "old/archived, not currently
+relevant" test-result dot (`ACTION.gold`, previously `#B45309`, a
+burnt orange) read too close to `ACTION.red` (`#D93838`) at a glance —
+moved to a genuinely yellow hue (`#7A6500`, ~50°, vs. `ACTION.amber`'s
+own ~38° for "pending," kept apart by lightness/saturation the same
+way the two already were) while keeping real 4.5:1+ text contrast
+(this token is also used as literal text — Home's backup-reminder
+banner, Timeline's coverage status — not just a dot fill; verified
+5.69:1 on white, a real margin).
+
+**Due-state banners' dismiss (X) gave zero feedback.** Tapping X on
+any of the four due-state banners (medications/refill/testing/clinic
+visit) just hid it instantly with no confirmation — easily read as "handled"
+when nothing was actually recorded; the reminder just silently
+reappears on the next 60s poll or app resume with no warning it was
+ever temporary. Added the same toast confirmation Take/Snooze/Cancel
+already show ("Hidden for now — still due, will remind you again"),
+reusing the existing `showNotifToast` mechanism, applied to all four
+banners consistently.
+
+**Kink/organism/result picker — two real copy-pasted bugs, found once
+in the reported file (Encounters) and fixed in all 4 files sharing the
+same duplicated picker component (Encounters, Contacts, My Profile,
+Testing).** (1) Picking a suggestion chip while a search term was
+still typed left the search box showing the stale text instead of
+clearing — `tapSuggestion()` never called `setDraft("")`, unlike
+`commit()` (typing a full name + Enter), which already did. (2)
+New-kink Dom/sub / Top/bottom role assignment silently defaulted to
+the dominant/top pole on the very first tap of the "+ role" badge:
+`cycleRole()` treated an unset role as index -1, so tapping once
+landed straight on `optionsForThisKink[0]` — always "Dom" or "Top" in
+both real role lists — with no actual choice ever shown. Replaced the
+single cycle-through badge with three explicit per-option chips
+(rendered directly from `roleOptionsForThisKink`, a new `setRole(id,
+role)` toggling the tapped one on/off) so every assignment is a
+direct, deliberate tap — there's no implicit "first tap = Dom/Top"
+path left at all. Verified live via screenshot: the new Dom/sub/Switch
+chips render fully unselected immediately after picking a kink.
+
+**A genuine CI-blocking test bug found and fixed the same round, not
+an app bug.** The first two commits above both hit smoke-test flow 2
+(Testing<->Symptom Log link) failing and — after confirming it failed
+identically on the unmodified baseline before either change — logged
+it as "a pre-existing flake, not a regression" and shipped anyway.
+That framing turned out to be incomplete: CI's own red build on both
+pushes forced a real trace, which found the actual root cause is a
+STALE TEST, not a broken app feature. The app correctly links the
+symptom entry and moves it into the "Related symptom entries" list
+every single time; the test hardcoded `"· Aug"` as part of its
+expected post-link string, reading the seed entry's own real,
+calendar-fixed `dateStarted` — as real wall-clock time in this
+environment crossed from August into September, that entry's own
+correctly-displayed date became "Sep 4, 2026," permanently breaking
+the hardcoded assertion regardless of anything the app does. Fixed by
+deriving the expected string from the suggestion chip's own real text
+(captured before the click) instead of hardcoding a month — same
+"don't assume a relative-to-real-time seed value stays fixed"
+discipline this suite's own `medicationReminderClock` test already
+uses. Real lesson for next time: "confirmed identical on the
+unmodified baseline" rules out a NEW regression, but isn't the same as
+finding the actual root cause — a red CI run deserves being chased to
+ground, not just documented and shipped past.
+
+Every fix in this round verified live via Playwright (screenshots
+where visual confirmation mattered) and the full 15-flow smoke-test
+suite against a real `vite preview` production build — all 15/15 pass
+as of the final commit in this round, confirmed green in CI (Smoke
+Test, Build APK, Web Alpha all succeeded on the same push).
 
 ## Recently shipped (11 Sep 2026, full-team audit: features/demographics/bloat/longevity, plus real fixes)
 
