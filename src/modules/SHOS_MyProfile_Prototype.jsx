@@ -75,30 +75,41 @@ import { ContraceptionRepository } from "../repositories/contraceptionRepository
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
-const LIGHT = {
-  ...NEUTRAL,
-  contactsTeal: ACCENTS.contacts, actionRed: ACTION.red, actionGreen: ACTION.green,
-  // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker stand-ins
-  // for the accent-as-text-on-its-own-tint pattern only, not a redefine.
-  contactsTealText: ACCENT_TEXT_SAFE.contacts, actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
-  navActive: ACCENTS.contacts, fabBg: NEUTRAL.textPrimary, fabIcon: NEUTRAL.surface,
-};
+// CHANGED 15 Sep 2026 — real bug found: these were plain module-level
+// `const`s, baking in ACCENTS.contacts/ACTION.red/ACTION.green at
+// IMPORT time — before App.jsx's own bootReady gate ever resolves the
+// real ModuleColorRepository overrides (the colour-blind-safe palette
+// toggle included). Same bug already found and fixed for Measurements/
+// MenstrualHealth (and now several other module files) — converted to
+// functions, called fresh per-render, same fix.
+function buildLight() {
+  return {
+    ...NEUTRAL,
+    contactsTeal: ACCENTS.contacts, actionRed: ACTION.red, actionGreen: ACTION.green,
+    // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker stand-ins
+    // for the accent-as-text-on-its-own-tint pattern only, not a redefine.
+    contactsTealText: ACCENT_TEXT_SAFE.contacts, actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
+    navActive: ACCENTS.contacts, fabBg: NEUTRAL.textPrimary, fabIcon: NEUTRAL.surface,
+  };
+}
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
 // for the full reasoning. fabBg/fabIcon stay derived from the neutral
 // pair (not hardcoded) so the FAB keeps its inverted-contrast look in
 // both modes automatically — dark FAB on light bg, light FAB on dark bg.
-const DARK = {
-  ...NEUTRAL_DARK,
-  // CHANGED — real architecture fix, same as Contacts' own comment:
-  // resolveDarkAccent() keeps today's exact behaviour by default, only
-  // brightening once a real colour override exists.
-  contactsTeal: resolveDarkAccent("contacts", ACCENTS.contacts), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-  // Dark mode's resolved accents already have real contrast headroom
-  // against a near-black background — no separate darker text variant
-  // needed, so these just reuse the same values as above.
-  contactsTealText: resolveDarkAccent("contacts", ACCENTS.contacts), actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-  navActive: ACCENTS.contacts, fabBg: NEUTRAL_DARK.textPrimary, fabIcon: NEUTRAL_DARK.surface,
-};
+function buildDark() {
+  return {
+    ...NEUTRAL_DARK,
+    // CHANGED — real architecture fix, same as Contacts' own comment:
+    // resolveDarkAccent() keeps today's exact behaviour by default, only
+    // brightening once a real colour override exists.
+    contactsTeal: resolveDarkAccent("contacts", ACCENTS.contacts), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    // Dark mode's resolved accents already have real contrast headroom
+    // against a near-black background — no separate darker text variant
+    // needed, so these just reuse the same values as above.
+    contactsTealText: resolveDarkAccent("contacts", ACCENTS.contacts), actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    navActive: ACCENTS.contacts, fabBg: NEUTRAL_DARK.textPrimary, fabIcon: NEUTRAL_DARK.surface,
+  };
+}
 const radius = RADIUS;
 
 // ── Shared form primitives — same visual shape as Contacts', kept
@@ -1358,7 +1369,7 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
   // present.
   const [showShare, setShowShare] = useState(false);
   const [darkMode] = useDarkModePreference();
-  const T = darkMode ? DARK : LIGHT;
+  const T = darkMode ? buildDark() : buildLight();
 
   // ADDED — real ask: back should close the Share panel or exit editing
   // before closing My Profile itself, matching the pattern every other

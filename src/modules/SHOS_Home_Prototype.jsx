@@ -134,7 +134,7 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
   );
 }
 
-function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, registerModuleBackHandler, onLockNow }) {
+function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, registerModuleBackHandler, onLockNow, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen }) {
   const [darkMode] = useDarkModePreference();
   // Same convention as every other module's own DARK theme object —
   // reuses Medication's own hand-picked dark default ("#5B85F5") so
@@ -184,6 +184,18 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   const [adherence, setAdherence] = useState(null);
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showClinicCard, setShowClinicCard] = useState(false);
+  // ADDED 15 Sep 2026 — real report: back-navigation-to-Clinic-Card fix,
+  // see App.jsx's own clinicCardReturnTab comment for the full picture.
+  // This mount-once effect is the "reopen" half — App.jsx tells this
+  // screen (via a prop, since Home is a fresh mount every time `active`
+  // switches back to it) that Clinic Card should come straight back up.
+  useEffect(() => {
+    if (openClinicCardOnMount) {
+      setShowClinicCard(true);
+      onConsumedClinicCardReopen?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [showTimeline, setShowTimeline] = useState(false);
   // ADDED 19 Aug 2026 — next scheduled clinic visit, real data.
   const [nextVisit, setNextVisit] = useState(null);
@@ -914,7 +926,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} />
         </div>
       )}
-      {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={onNavigateToRecord} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}
+      {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={(tab, id, subTab) => { markClinicCardReturn?.(); onNavigateToRecord(tab, id, subTab); }} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}
       {showTimeline && (
         // FIXED — real bug: this wrapper had no overflowY, and
         // TimelineModule's own screens don't establish their own

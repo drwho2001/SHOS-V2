@@ -105,40 +105,51 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_S
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
-const LIGHT = {
-  ...NEUTRAL,
-  contactsTeal: ACCENTS.contacts, actionRed: ACTION.red, actionGreen: ACTION.green,
-  // ADDED 10 Sep 2026 — real accessibility fix: darker stand-ins used
-  // ONLY where the accent is literal text colour sitting on its own
-  // light self-tint background (e.g. active filter chips, status
-  // badges) — see designTokens.js's own comment on ACCENT_TEXT_SAFE/
-  // ACTION_TEXT_SAFE for why this isn't just contactsTeal/actionRed/
-  // actionGreen redefined outright.
-  contactsTealText: ACCENT_TEXT_SAFE.contacts, actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
-  navActive: ACCENTS.contacts, fabBg: ACCENTS.contacts, fabIcon: "#FFFFFF",
-};
+// CHANGED 15 Sep 2026 — real bug found: these were plain module-level
+// `const`s, baking in ACCENTS.contacts/ACTION.red/ACTION.green at
+// IMPORT time — before App.jsx's own bootReady gate ever resolves the
+// real ModuleColorRepository overrides (the colour-blind-safe palette
+// toggle included). Same bug already found and fixed for Measurements/
+// MenstrualHealth (and now several other module files) — converted to
+// functions, called fresh per-render, same fix.
+function buildLight() {
+  return {
+    ...NEUTRAL,
+    contactsTeal: ACCENTS.contacts, actionRed: ACTION.red, actionGreen: ACTION.green,
+    // ADDED 10 Sep 2026 — real accessibility fix: darker stand-ins used
+    // ONLY where the accent is literal text colour sitting on its own
+    // light self-tint background (e.g. active filter chips, status
+    // badges) — see designTokens.js's own comment on ACCENT_TEXT_SAFE/
+    // ACTION_TEXT_SAFE for why this isn't just contactsTeal/actionRed/
+    // actionGreen redefined outright.
+    contactsTealText: ACCENT_TEXT_SAFE.contacts, actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
+    navActive: ACCENTS.contacts, fabBg: ACCENTS.contacts, fabIcon: "#FFFFFF",
+  };
+}
 // Dark mode, built on Medication's own DARK object (the reference
 // implementation) — neutral chrome inverts via NEUTRAL_DARK,
 // actionRed/actionGreen reuse Medication's exact brightened values
 // (its own comment: richer, still readable against a dark surface).
 // contactsTeal is already vivid enough to read fine unchanged.
-const DARK = {
-  ...NEUTRAL_DARK,
-  // CHANGED — real architecture fix: a customised colour used to
-  // reach dark mode unbrightened (harmless while contactsTeal's own
-  // default was already light enough, but silently broken for anyone
-  // customising it TO something dark) and actionRed/actionGreen were
-  // fixed literals ignoring ACTION.red/green entirely. resolveDarkAccent()
-  // keeps today's exact behaviour by default, only brightening once a
-  // real override exists — see designTokens.js's own comment.
-  contactsTeal: resolveDarkAccent("contacts", ACCENTS.contacts), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-  // Dark mode's own resolved accents already read fine against a
-  // near-black background (real headroom, not just barely-passing) —
-  // no separate darker text variant needed there, so these just reuse
-  // the same values as above.
-  contactsTealText: resolveDarkAccent("contacts", ACCENTS.contacts), actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-  navActive: ACCENTS.contacts, fabBg: ACCENTS.contacts, fabIcon: "#FFFFFF",
-};
+function buildDark() {
+  return {
+    ...NEUTRAL_DARK,
+    // CHANGED — real architecture fix: a customised colour used to
+    // reach dark mode unbrightened (harmless while contactsTeal's own
+    // default was already light enough, but silently broken for anyone
+    // customising it TO something dark) and actionRed/actionGreen were
+    // fixed literals ignoring ACTION.red/green entirely. resolveDarkAccent()
+    // keeps today's exact behaviour by default, only brightening once a
+    // real override exists — see designTokens.js's own comment.
+    contactsTeal: resolveDarkAccent("contacts", ACCENTS.contacts), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    // Dark mode's own resolved accents already read fine against a
+    // near-black background (real headroom, not just barely-passing) —
+    // no separate darker text variant needed there, so these just reuse
+    // the same values as above.
+    contactsTealText: resolveDarkAccent("contacts", ACCENTS.contacts), actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    navActive: ACCENTS.contacts, fabBg: ACCENTS.contacts, fabIcon: "#FFFFFF",
+  };
+}
 const radius = RADIUS;
 
 function loadContacts() {
@@ -201,7 +212,16 @@ const SNAPCHAT_PATH = "M247.83,182.28a8,8,0,0,0-5.13-5.9c-.39-.14-28.95-10.88-43
 // anywhere). Sized as fractions of `size` so the same component works
 // at any inline scale, not just the 22px this was tuned against.
 function MethodBadge({ method, T, size }) {
-  const isDark = T === DARK;
+  // CHANGED 15 Sep 2026 — real bug found alongside the LIGHT/DARK
+  // module-scope fix above: `T === DARK` relied on DARK being a fixed
+  // object reference — broke the moment DARK became a function called
+  // fresh per-render (a new object every time, never `===` anything).
+  // T.bg is one of the few fields NEUTRAL/NEUTRAL_DARK contribute
+  // unmodified in both buildLight()/buildDark(), so comparing against
+  // NEUTRAL_DARK's own value is a reliable, self-contained way to tell
+  // which theme T actually came from without threading a new darkMode
+  // prop through MethodIcons/MethodBadge.
+  const isDark = T.bg === NEUTRAL_DARK.bg;
   const box = { width: size, height: size, borderRadius: Math.round(size * 0.27), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 };
   switch (method) {
     case "Phone/WhatsApp":
@@ -2551,7 +2571,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 was a native window.confirm() dialog, now the same shared
                 inline card every module uses. */}
             <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>
@@ -2765,7 +2785,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showImportProfile, setShowImportProfile] = useState(false);
   const [darkMode] = useDarkModePreference();
-  const T = darkMode ? DARK : LIGHT;
+  const T = darkMode ? buildDark() : buildLight();
   // CHANGED 26 Aug 2026 — real gap found and fixed: this used to live
   // only inside ContactsList (bulk delete), so a single-record delete
   // from ContactProfile wrote to Trash but showed no undo toast at

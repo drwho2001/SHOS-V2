@@ -65,27 +65,38 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 // throughout (JetBrains Mono retired 26 Aug 2026), same radius scale
 // applied from the start per the user's explicit instruction this session
 // — not something to retrofit later the way earlier modules had to be.
-const LIGHT = {
-  ...NEUTRAL,
-  healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
-  // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker
-  // stand-ins for actionRed/actionGreen-as-text-on-its-own-tint only.
-  actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
-  navActive: ACCENTS.healthcare,
-};
+// CHANGED 15 Sep 2026 — real bug found: these were plain module-level
+// `const`s, baking in ACCENTS.healthcare/ACTION.red/ACTION.green at
+// IMPORT time — before App.jsx's own bootReady gate ever resolves the
+// real ModuleColorRepository overrides (the colour-blind-safe palette
+// toggle included). Same bug already found and fixed for Measurements/
+// MenstrualHealth (and now several other module files) — converted to
+// functions, called fresh per-render, same fix.
+function buildLight() {
+  return {
+    ...NEUTRAL,
+    healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
+    // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker
+    // stand-ins for actionRed/actionGreen-as-text-on-its-own-tint only.
+    actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
+    navActive: ACCENTS.healthcare,
+  };
+}
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
 // for the full reasoning (same pattern, reused everywhere).
 // CHANGED — real architecture fix, same as Contacts' own comment:
 // resolveDarkAccent() keeps today's exact behaviour by default, only
 // brightening once a real colour override exists.
-const DARK = {
-  ...NEUTRAL_DARK,
-  healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-  // Dark mode's resolved actionRed/actionGreen already have real
-  // headroom against a near-black background — reuse as-is.
-  actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-  navActive: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"),
-};
+function buildDark() {
+  return {
+    ...NEUTRAL_DARK,
+    healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    // Dark mode's resolved actionRed/actionGreen already have real
+    // headroom against a near-black background — reuse as-is.
+    actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    navActive: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"),
+  };
+}
 const radius = RADIUS;
 
 function formatDate(iso) {
@@ -1166,7 +1177,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
             <span onClick={async () => { if (selectedIds.length > 0) { await TestingRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>
@@ -1283,7 +1294,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
 export default function TestingModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, prefillData, onConsumedPrefill, onNavigateToRecord, onDataChanged, registerModuleBackHandler } = {}) {
   const [screen, setScreen] = useState({ name: "landing" });
   const [darkMode] = useDarkModePreference();
-  const T = darkMode ? DARK : LIGHT;
+  const T = darkMode ? buildDark() : buildLight();
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // TestingLanding (see that component's own comment) — tests/
   // deletedRecent/undoDelete/triggerDelete now live at the real module

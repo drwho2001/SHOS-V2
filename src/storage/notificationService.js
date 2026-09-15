@@ -337,6 +337,59 @@ export async function addNotificationReceivedListener(handler) {
   return null;
 }
 
+// ADDED — real bug found investigating "notification history screen
+// stays blank" on the real installed app: addNotificationReceivedListener
+// above documents localNotificationReceived as firing "whether the app
+// is foregrounded, backgrounded, or locked" — true only while the app's
+// OWN PROCESS is still alive. Traced directly against the installed
+// plugin's own Android source (@capacitor/local-notifications
+// TimedNotificationPublisher.kt + LocalNotificationsPlugin.kt): the
+// actual alarm fires via a plain BroadcastReceiver that Android can (and
+// routinely does) run even after fully killing this app's process to
+// reclaim memory — completely normal background-app behaviour, not a
+// bug on Android's part. That receiver calls
+// LocalNotificationsPlugin.fireReceived(), which resolves the plugin
+// instance via `staticBridge?.webView` — null the moment the process is
+// dead, so the JS event is silently never dispatched at all (not even
+// queued for later — Capacitor's own retainUntilConsumed logic only
+// helps when notifyListeners() is actually called, which never happens
+// here). The OS still shows the real notification in the shade
+// (notificationManager.notify() runs unconditionally right after) — the
+// user genuinely gets reminded — but nothing in this app's own JS ever
+// learns it happened. Since every real reminder this app schedules
+// (medication, DoxyPEP, testing, clinic visit) fires hours-to-days
+// after being scheduled, the app's process being dead by firing time is
+// the COMMON case, not an edge case — which is exactly why history
+// looked blank: the only deliveries ever actually recorded were ones
+// that happened to fire while the app was already open (e.g. the 5s
+// test notification).
+// Real fix: reconcile against the OS's own notification tray instead of
+// relying solely on the live event, via the plugin's own
+// getDeliveredNotifications() — reads real StatusBarNotification state
+// directly from NotificationManager, independent of whether THIS app's
+// JS was alive when the notification actually fired. Called from
+// App.jsx's existing checkDueMeds() chokepoint (mount/visibility/poll),
+// so a real delivery that happened while the app was dead gets
+// backfilled into history the next time the app is actually opened —
+// not real-time, but a real, honest answer to "did anything fire
+// recently" the next time anyone would actually go looking. Web has no
+// equivalent tray to read (and needs none — showWebNotification()'s own
+// real-time dispatch already covers the different, already-documented
+// web limitation), so this is native-only by design, not an oversight.
+export async function getDeliveredNotifications() {
+  const platform = await getPlatform();
+  if (platform !== "native") return [];
+  const { plugin } = await getPlugin();
+  if (!plugin || !plugin.getDeliveredNotifications) return [];
+  try {
+    const result = await withTimeout(plugin.getDeliveredNotifications(), 8000, "getDeliveredNotifications()");
+    return result?.notifications || [];
+  } catch (err) {
+    console.warn("[notificationService] getDeliveredNotifications() failed:", err);
+    return [];
+  }
+}
+
 let LocalNotifications = null;
 let pluginLoadAttempted = false;
 let cachedPlatform = null;

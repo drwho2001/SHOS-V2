@@ -4353,6 +4353,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showPrivacy) { setShowPrivacy(false); return true; }
       if (showNotifications) { setShowNotifications(false); return true; }
       if (showUnits) { setShowUnits(false); return true; }
+      if (showDataNetwork) { setShowDataNetwork(false); return true; }
       if (showResources) { setShowResources(false); return true; }
       if (showGlossary) { setShowGlossary(false); return true; }
       if (showGuide) { setShowGuide(false); return true; }
@@ -4366,7 +4367,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showUnits, showManageLists, showAutoBackupSettings, showResources, showGlossary, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showUnits, showDataNetwork, showManageLists, showAutoBackupSettings, showResources, showGlossary, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.

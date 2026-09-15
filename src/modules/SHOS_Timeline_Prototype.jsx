@@ -25,25 +25,36 @@ import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 // reasoning and the real lifecycle this implements). Same self-
 // contained-module pattern, Healthcare blue, single Inter typeface
 // throughout (JetBrains Mono retired 26 Aug 2026).
-const LIGHT = {
-  ...NEUTRAL,
-  healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
-  // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker
-  // stand-ins for actionRed/actionGreen-as-text-on-its-own-tint only.
-  actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
-};
+// CHANGED 15 Sep 2026 — real bug found: these were plain module-level
+// `const`s, baking in ACCENTS.healthcare/ACTION.red/ACTION.green at
+// IMPORT time — before App.jsx's own bootReady gate ever resolves the
+// real ModuleColorRepository overrides (the colour-blind-safe palette
+// toggle included). Same bug already found and fixed for Measurements/
+// MenstrualHealth (and now several other module files) — converted to
+// functions, called fresh per-render, same fix.
+function buildLight() {
+  return {
+    ...NEUTRAL,
+    healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
+    // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker
+    // stand-ins for actionRed/actionGreen-as-text-on-its-own-tint only.
+    actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
+  };
+}
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
 // for the full reasoning.
 // CHANGED — real architecture fix, same as Contacts' own comment:
 // resolveDarkAccent() keeps today's exact behaviour by default, only
 // brightening once a real colour override exists.
-const DARK = {
-  ...NEUTRAL_DARK,
-  healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-  // Dark mode's resolved actionRed/actionGreen already have real
-  // headroom against a near-black background — reuse as-is.
-  actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-};
+function buildDark() {
+  return {
+    ...NEUTRAL_DARK,
+    healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    // Dark mode's resolved actionRed/actionGreen already have real
+    // headroom against a near-black background — reuse as-is.
+    actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+  };
+}
 const radius = RADIUS;
 
 function formatDate(iso) {
@@ -720,7 +731,7 @@ function DeleteUndoToast({ toast, onUndo, onRedo, T }) {
 
 export default function TimelineModule({ onClose, registerModuleBackHandler } = {}) {
   const [darkMode] = useDarkModePreference();
-  const T = darkMode ? DARK : LIGHT;
+  const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "list" });
   const [refreshKey, setRefreshKey] = useState(0);
   const backToList = () => setScreen({ name: "list" });

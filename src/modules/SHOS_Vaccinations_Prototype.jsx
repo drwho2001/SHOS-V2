@@ -24,19 +24,30 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 // ADDED 19 Aug 2026 — Vaccinations, real live Notion schema. Same
 // self-contained-module pattern, Healthcare blue, single Inter
 // typeface throughout (JetBrains Mono retired 26 Aug 2026).
-const LIGHT = {
-  ...NEUTRAL,
-  healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red,
-};
+// CHANGED 15 Sep 2026 — real bug found: these were plain module-level
+// `const`s, baking in ACCENTS.healthcare/ACTION.red at IMPORT time —
+// before App.jsx's own bootReady gate ever resolves the real
+// ModuleColorRepository overrides (the colour-blind-safe palette toggle
+// included). Same bug already found and fixed for Measurements/
+// MenstrualHealth (and now several other module files) — converted to
+// functions, called fresh per-render, same fix.
+function buildLight() {
+  return {
+    ...NEUTRAL,
+    healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red,
+  };
+}
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
 // for the full reasoning.
 // CHANGED — real architecture fix, same as Contacts' own comment:
 // resolveDarkAccent() keeps today's exact behaviour by default, only
 // brightening once a real colour override exists.
-const DARK = {
-  ...NEUTRAL_DARK,
-  healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
-};
+function buildDark() {
+  return {
+    ...NEUTRAL_DARK,
+    healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
+  };
+}
 const radius = RADIUS;
 
 function formatDate(iso) {
@@ -475,7 +486,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
             <span onClick={async () => { if (selectedIds.length > 0) { await VaccinationRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-              style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+              style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>
@@ -571,7 +582,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
 
 export default function VaccinationsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler } = {}) {
   const [darkMode] = useDarkModePreference();
-  const T = darkMode ? DARK : LIGHT;
+  const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "list" });
   // CHANGED — Phase 2 encryption groundwork: VaccinationRepository went
   // async, and VaccinationSheet's own `vaccination` prop is read only
@@ -675,7 +686,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
         <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
           role="button" tabIndex={0} aria-live="polite"
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo)(); } }}
-          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : LIGHT.healthcareBlue, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.healthcareBlue, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
           {editUndo.toast.mode === "undo" ? "Vaccination updated — tap to undo" : "Undone — tap to redo"}
         </div>

@@ -44,7 +44,15 @@ import { MyProfileRepository } from "../repositories/myProfileRepository";
 // deliberate light-on-dark inversion, not an accent at all).
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 
-const LIGHT = {
+// CHANGED 15 Sep 2026 — real bug found: these were plain module-level
+// `const`s, baking in ACCENTS.medication/ACTION.red/ACTION.green at
+// IMPORT time — before App.jsx's own bootReady gate ever resolves the
+// real ModuleColorRepository overrides (the colour-blind-safe palette
+// toggle included). Same bug already found and fixed for Measurements/
+// MenstrualHealth (and now Encounters/SymptomLog) — converted to
+// functions, called fresh per-render, same fix.
+function buildLight() {
+  return {
   // bg deepened from #FAFAFA — at that value it was nearly indistinguishable from surface (#FFFFFF),
   // so cards read as floating on the same white rather than visibly elevated. surfaceVariant
   // shifted slightly to stay a distinct third tone rather than collapsing into the new bg.
@@ -70,8 +78,10 @@ const LIGHT = {
   // elsewhere). A streak is neither — it's ongoing positive reinforcement,
   // so it gets its own warm amber, purely decorative.
   streakGlow: "#F59E0B26",
-};
-const DARK = {
+  };
+}
+function buildDark() {
+  return {
   ...NEUTRAL_DARK,
   // CHANGED — real architecture fix: these three used to be separate
   // hand-picked literals, completely ignoring a customised colour
@@ -102,7 +112,8 @@ const DARK = {
   // ("dark mode streak... slightly more striking") — light mode wasn't
   // flagged as a problem, so it stays subtle; dark gets more pop.
   streakGlow: "#F59E0B40",
-};
+  };
+}
 const radius = RADIUS;
 
 // Days-remaining, dropping to hours/minutes under 1 day — same idea as the Next Dose estimate,
@@ -1510,7 +1521,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   const [tab, setTab] = useState("Registry");
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
-  const T = darkMode ? DARK : LIGHT;
+  const T = darkMode ? buildDark() : buildLight();
   const cardRefs = useRef({});
   // ADDED 1 Sep 2026 — real fix: "Meds search toast does nothing." The
   // header Search icon (next to the working Settings gear) had no
@@ -1824,7 +1835,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
               <span onClick={async () => { if (selectedIds.length > 0) { await MedicationRepository.bulkArchive(selectedIds); refreshMeds(); exitSelectMode(); } }}
                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
               <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-                style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+                style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
               <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
             </div>
           </div>

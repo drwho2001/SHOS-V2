@@ -1005,6 +1005,23 @@ export default function App() {
   // fresh mount every time, which is what actually resets each
   // module's own internal screen state back to its default.
   const [navResetCount, setNavResetCount] = useState(0);
+  // ADDED 15 Sep 2026 — real report: pressing back after tapping a
+  // record link FROM Clinic Card (e.g. a medication) landed on that
+  // module's own default screen (the Medication Dashboard), not back
+  // on Clinic Card. Root cause: navigateToRecord() switches `active` to
+  // a different tab, and App.jsx's own tab render is a real ternary —
+  // switching away fully unmounts whichever tab Clinic Card was open
+  // inside (Home or Healthcare), taking Clinic Card down with it, with
+  // nothing recording that it should come back. `clinicCardReturnTab`
+  // records which tab to return to; markClinicCardReturn() is called
+  // (via a wrapped onNavigateToRecord — see Home/Healthcare's own
+  // <ClinicCardScreen> render) at the moment of tapping a record link,
+  // capturing `active` BEFORE navigateToRecord changes it. Consumed
+  // (cleared) by whichever tab actually reopens Clinic Card once it
+  // remounts — see openClinicCardOnMount below — same "consumed once"
+  // shape as pendingOpenRecordId/onConsumedRecordOpen.
+  const [clinicCardReturnTab, setClinicCardReturnTab] = useState(null);
+  const markClinicCardReturn = () => setClinicCardReturnTab(active);
   const [showSettings, setShowSettings] = useState(false);
   // ADDED 26 Aug 2026 — real ask: compact calendar entry point on
   // Home, landing directly on Settings' Calendar screen rather than
@@ -1185,7 +1202,24 @@ export default function App() {
     const clinicVisit = await getClinicVisitDueState();
     setClinicVisitDue(clinicVisit.due ? clinicVisit : null);
     const totalDue = due.length + refill.length + (testing.due ? 1 : 0) + (clinicVisit.due ? 1 : 0);
-    import("./storage/notificationService").then(({ updateAppBadge }) => updateAppBadge(totalDue));
+    const { updateAppBadge, getDeliveredNotifications } = await import("./storage/notificationService");
+    updateAppBadge(totalDue);
+    // ADDED — real bug found investigating "notification history screen
+    // is blank": the live addNotificationReceivedListener effect below
+    // structurally misses most real deliveries, since Android routinely
+    // kills this app's process in the hours/days between scheduling a
+    // reminder and it actually firing — see getDeliveredNotifications()'s
+    // own comment in notificationService.js for the full trace. Reusing
+    // this same mount/visibility/poll chokepoint to reconcile against
+    // the OS's own notification tray on every real app open closes that
+    // gap — a no-op on web/no-plugin (returns []).
+    const delivered = await getDeliveredNotifications();
+    if (delivered.length) {
+      const { NotificationHistoryRepository } = await import("./repositories/notificationHistoryRepository");
+      for (const n of delivered) {
+        await NotificationHistoryRepository.recordIfNew({ id: n.id, title: n.title, body: n.body });
+      }
+    }
   };
 
   useEffect(() => {
@@ -1324,6 +1358,14 @@ export default function App() {
     if (moduleBackHandlerRef.current && moduleBackHandlerRef.current()) return true;
     if (showSettings) { setShowSettings(false); return true; }
     if (showSearch) { setShowSearch(false); return true; }
+    // Real report fix (15 Sep 2026) — see clinicCardReturnTab's own
+    // comment above: once the record you were navigated to from Clinic
+    // Card has no further internal screen of its own left to pop
+    // (moduleBackHandlerRef already returned false above), go back to
+    // the tab Clinic Card was opened from instead of Home's default.
+    // Deliberately checked BEFORE the plain "not on Home" fallback below
+    // — clinicCardReturnTab is only ever set from that one real flow.
+    if (clinicCardReturnTab) { setActive(clinicCardReturnTab); setNavResetCount((c) => c + 1); return true; }
     if (active !== "home") { setActive("home"); setNavResetCount((c) => c + 1); return true; }
     return false;
   };
@@ -2002,12 +2044,14 @@ export default function App() {
           matches the `<div>` it replaces. */}
       <main style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + testingBannerHeight + clinicVisitBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
         {active === "home" ? (
-          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)} />
+          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)}
+            markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "home"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
         ) : ActiveModule ? (
           <ActiveModule key={`${active}-${navResetCount}`} openAddOnMount={quickAdd} onConsumedQuickAdd={() => { setQuickAdd(false); setQuickAddTarget(null); }} quickAddTarget={quickAddTarget}
             openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}
             prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
-            onOpenSettings={() => setShowSettings(true)} registerModuleBackHandler={registerModuleBackHandler} />
+            onOpenSettings={() => setShowSettings(true)} registerModuleBackHandler={registerModuleBackHandler}
+            markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "healthcare"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
         ) : (
           <div style={{ padding: 40, textAlign: "center", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontFamily: "'Inter', sans-serif" }}>
             <activeTab.icon size={32} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ marginBottom: 12 }} />

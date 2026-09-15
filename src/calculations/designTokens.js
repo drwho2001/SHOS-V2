@@ -210,7 +210,19 @@ export const ACTION = {
   red: overrides.actionRed || DEFAULT_ACTION_COLORS.red,
   green: overrides.actionGreen || DEFAULT_ACTION_COLORS.green,
   amber: "#F59E0B",
-  gold: "#B45309",
+  // CHANGED 15 Sep 2026 — real report: the old burnt-orange gold
+  // (#B45309, hue ~24°) read too close to ACTION.red (#D93838, hue
+  // ~2°) at a glance — exactly the confusion this "archive" tone
+  // (Testing's not-recent-test dot, per computeTestDotColor's own
+  // comment) exists to avoid, since it deliberately sits alongside a
+  // real red-for-positive state on the same screen. Moved to a
+  // genuinely yellow hue (~50°, vs amber's own ~38° for "pending" —
+  // kept apart by lightness/saturation, same relationship the two had
+  // before) while staying dark/saturated enough to clear 4.5:1 as TEXT
+  // (this token is also used as literal text colour, not just a dot
+  // fill — Home's backup-reminder banner, Timeline's coverage status)
+  // — verified 5.69:1 on white, real margin, not a razor-thin pass.
+  gold: "#7A6500",
 };
 
 // ADDED 10 Sep 2026 — real Known Issues follow-up: "every module's own
@@ -271,7 +283,7 @@ export function applyRealAccentOverrides(realOverrides) {
     red: realOverrides.actionRed || DEFAULT_ACTION_COLORS.red,
     green: realOverrides.actionGreen || DEFAULT_ACTION_COLORS.green,
     amber: "#F59E0B",
-    gold: "#B45309",
+    gold: "#7A6500",
   });
 }
 

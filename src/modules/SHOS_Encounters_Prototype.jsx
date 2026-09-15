@@ -63,15 +63,28 @@ import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../reposito
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 
-const LIGHT = {
-  ...NEUTRAL,
-  encountersPink: ACCENTS.encounters, actionRed: ACTION.red, actionGreen: ACTION.green,
-  // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker stand-ins
-  // for actionRed/actionGreen-as-text-on-its-own-tint only (encountersPink
-  // already clears 4.5:1 in that pattern and needs no variant).
-  actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
-  navActive: ACCENTS.encounters, fabBg: ACCENTS.encounters, fabIcon: "#FFFFFF",
-};
+// CHANGED 15 Sep 2026 — real bug found: these were plain module-level
+// `const`s, baking in ACCENTS.encounters/ACTION.red/ACTION.green at
+// IMPORT time — before App.jsx's own bootReady gate ever resolves the
+// real ModuleColorRepository overrides (the colour-blind-safe palette
+// toggle included). This is the exact same bug already found and fixed
+// for Measurements/MenstrualHealth during the Phase 3 storageAdapter
+// conversion (see CLAUDE.md's own "Phase 3" entry) — that sweep's own
+// "no other instances" conclusion turned out to be wrong; this file was
+// missed. Converted to functions, called fresh per-render (matching how
+// `T` itself is already recomputed every render), same fix as those two
+// files.
+function buildLight() {
+  return {
+    ...NEUTRAL,
+    encountersPink: ACCENTS.encounters, actionRed: ACTION.red, actionGreen: ACTION.green,
+    // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker stand-ins
+    // for actionRed/actionGreen-as-text-on-its-own-tint only (encountersPink
+    // already clears 4.5:1 in that pattern and needs no variant).
+    actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
+    navActive: ACCENTS.encounters, fabBg: ACCENTS.encounters, fabIcon: "#FFFFFF",
+  };
+}
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
 // for the full reasoning. encountersPink (#8D3B7A) is a dark, fairly
 // desaturated purple — good on white, too low-contrast as text/fills
@@ -88,16 +101,18 @@ const LIGHT = {
 // actually customises that colour — only then does dark mode switch
 // to a live-derived brightened variant of their real choice. See
 // designTokens.js's own comment for the full reasoning.
-const DARK = {
-  ...NEUTRAL_DARK,
-  encountersPink: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"),
-  actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-  // Dark mode's resolved actionRed/actionGreen already have real
-  // headroom against a near-black background — no separate darker text
-  // variant needed, so these just reuse the same values as above.
-  actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
-  navActive: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"), fabBg: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"), fabIcon: "#FFFFFF",
-};
+function buildDark() {
+  return {
+    ...NEUTRAL_DARK,
+    encountersPink: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"),
+    actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    // Dark mode's resolved actionRed/actionGreen already have real
+    // headroom against a near-black background — no separate darker text
+    // variant needed, so these just reuse the same values as above.
+    actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    navActive: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"), fabBg: resolveDarkAccent("encounters", ACCENTS.encounters, "#D370C7"), fabIcon: "#FFFFFF",
+  };
+}
 const radius = RADIUS;
 
 function loadEncounters() {
@@ -1097,7 +1112,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
               <span onClick={async () => { if (selectedIds.length > 0) { await EncounterRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
               <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-                style={{ fontSize: 13, color: selectedIds.length > 0 ? DARK.actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+                style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
               <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
             </div>
           </div>
@@ -1622,7 +1637,7 @@ function EditUndoToast({ toast, onUndo, onRedo, T }) {
 
 export default function EncountersModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, registerModuleBackHandler } = {}) {
   const [darkMode] = useDarkModePreference();
-  const T = darkMode ? DARK : LIGHT;
+  const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "landing" });
   // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
   // ActivityLanding (see that component's own comment for the full

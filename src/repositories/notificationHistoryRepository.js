@@ -84,4 +84,31 @@ export const NotificationHistoryRepository = {
     entries = [];
     await persist();
   },
+
+  // ADDED — real fix for "history stays blank": App.jsx now also
+  // backfills from the OS's own notification tray
+  // (notificationService.js's own getDeliveredNotifications(), see that
+  // function's comment for why the live listener alone can't be relied
+  // on) on every app open, not just the live delivery event. That tray
+  // read can genuinely see the SAME still-undismissed notification
+  // across many separate app opens before the user ever dismisses it —
+  // recording a fresh entry every single time would flood a 50-entry
+  // log meant to answer "did anything fire recently", not "how many
+  // times has this app been opened while X sat in the tray". Dedupes
+  // against just the single most-recent entry (not the whole log) —
+  // cheap, and correct for the common real case: a *different* real
+  // notification (of any type) coming in between two checks is exactly
+  // what should make an identical-content repeat (e.g. tomorrow's same
+  // medication reminder) count as new again, not get silently dropped
+  // forever the way deduping against the whole log would.
+  async recordIfNew({ id, title, body }) {
+    await ensureLoaded();
+    const mostRecent = entries[0];
+    if (mostRecent && mostRecent.id === id && mostRecent.title === title && mostRecent.body === body) {
+      return entries;
+    }
+    entries = [{ id, title, body, firedAt: new Date().toISOString() }, ...entries].slice(0, MAX_ENTRIES);
+    await persist();
+    return entries;
+  },
 };

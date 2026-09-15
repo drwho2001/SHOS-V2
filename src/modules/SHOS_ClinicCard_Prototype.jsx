@@ -27,22 +27,33 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE,
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
-const LIGHT = {
-  ...NEUTRAL,
-  healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red,
-  // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker stand-in
-  // for actionRed-as-text-on-its-own-tint only (the allergy chips).
-  actionRedText: ACTION_TEXT_SAFE.red,
-};
+// CHANGED 15 Sep 2026 — real bug found: these were plain module-level
+// `const`s, baking in ACCENTS.healthcare/ACTION.red at IMPORT time —
+// before App.jsx's own bootReady gate ever resolves the real
+// ModuleColorRepository overrides (the colour-blind-safe palette toggle
+// included). Same bug already found and fixed for Measurements/
+// MenstrualHealth (and now Encounters/SymptomLog/Medication Dashboard)
+// — converted to functions, called fresh per-render, same fix.
+function buildLight() {
+  return {
+    ...NEUTRAL,
+    healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red,
+    // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker stand-in
+    // for actionRed-as-text-on-its-own-tint only (the allergy chips).
+    actionRedText: ACTION_TEXT_SAFE.red,
+  };
+}
 // CHANGED — real architecture fix, same as Contacts' own comment:
 // resolveDarkAccent() keeps today's exact behaviour by default, only
 // brightening once a real colour override exists.
-const DARK = {
-  ...NEUTRAL_DARK,
-  healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
-  // Dark mode's resolved actionRed already has real headroom — reuse.
-  actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
-};
+function buildDark() {
+  return {
+    ...NEUTRAL_DARK,
+    healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
+    // Dark mode's resolved actionRed already has real headroom — reuse.
+    actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
+  };
+}
 
 // ADDED 19 Aug 2026 — Clinic Card. Real feature set built out over
 // several sessions since: all 9 sections (Identity, Medications,
@@ -122,7 +133,13 @@ function Row({ dot, title, subtitle, alert, color, onTap, T }) {
       <span style={{ width: 9, height: 9, borderRadius: 999, background: alert ? T.actionRed : (color || T.healthcareBlue), flexShrink: 0 }} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: alert ? T.actionRed : T.textPrimary }}>{title}</div>
-        {subtitle && <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 1 }}>{subtitle}</div>}
+        {/* CHANGED 15 Sep 2026 — real report: a positive test result
+            didn't actually read as red — the dot/title above did, but
+            the word "Positive" itself lives in the subtitle, which
+            always stayed the plain secondary colour regardless of
+            `alert`. Uses the already-established WCAG-safe red variant
+            (T.actionRedText), same as this screen's own allergy chips. */}
+        {subtitle && <div style={{ fontSize: 12, color: alert ? T.actionRedText : T.textSecondary, marginTop: 1 }}>{subtitle}</div>}
       </div>
     </div>
   );
@@ -143,7 +160,7 @@ function StubRow({ children, T }) {
 
 export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickAddWithPrefill, registerModuleBackHandler }) {
   const [darkMode] = useDarkModePreference();
-  const T = darkMode ? DARK : LIGHT;
+  const T = darkMode ? buildDark() : buildLight();
   const meds = useLoadedMemo(() => loadMedicationsWithLogs(), [], []);
   // FIXED — real pre-existing bug found while wiring MyProfileRepository:
   // TestingRepository went async in an earlier batch this session, but
@@ -475,7 +492,12 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         {profile.allergies.length === 0 ? (
           <EmptyRow T={T}>None recorded. <span onClick={() => setShowMyProfile(true)} style={{ color: T.healthcareBlue, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
         ) : (
-          <div style={{ padding: "12px 14px", display: "flex", flexWrap: "wrap", gap: 6 }}>
+          // CHANGED 15 Sep 2026 — real report: "allergies not clickable"
+          // — only the empty state opened My Profile; once real
+          // allergies existed there was no way back to edit them from
+          // here at all. Same target (My Profile's edit form) as the
+          // empty-state link right above.
+          <div onClick={() => setShowMyProfile(true)} style={{ padding: "12px 14px", display: "flex", flexWrap: "wrap", gap: 6, cursor: "pointer" }}>
             {profile.allergies.map((a) => (
               <span key={a} style={{ fontSize: 12, fontWeight: 700, color: T.actionRedText, background: `${T.actionRed}1A`, padding: "4px 10px", borderRadius: 999 }}>{a}</span>
             ))}
@@ -582,11 +604,13 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         {!profile.emergencyContactName && !profile.emergencyContactPhone && !profile.emergencyNotes ? (
           <EmptyRow T={T}>None recorded. <span onClick={() => setShowMyProfile(true)} style={{ color: T.healthcareBlue, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
         ) : (
+          // CHANGED 15 Sep 2026 — real report: "emergency info not
+          // clickable" — same gap and same fix as Allergies just above.
           <>
             {(profile.emergencyContactName || profile.emergencyContactPhone) && (
-              <Row T={T} title={profile.emergencyContactName || "Emergency contact"} subtitle={profile.emergencyContactPhone} />
+              <Row T={T} title={profile.emergencyContactName || "Emergency contact"} subtitle={profile.emergencyContactPhone} onTap={() => setShowMyProfile(true)} />
             )}
-            {profile.emergencyNotes && <Row T={T} title={profile.emergencyNotes} />}
+            {profile.emergencyNotes && <Row T={T} title={profile.emergencyNotes} onTap={() => setShowMyProfile(true)} />}
           </>
         )}
       </SectionCard>

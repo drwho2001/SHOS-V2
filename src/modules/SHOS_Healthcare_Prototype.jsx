@@ -25,7 +25,7 @@ import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import AttachmentsScreen from "./SHOS_Attachments_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
 
-function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, openRecordId, onConsumedRecordOpen, onNavigateToRecord, prefillData, onConsumedPrefill, onQuickAddWithPrefill, registerModuleBackHandler }) {
+function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, openRecordId, onConsumedRecordOpen, onNavigateToRecord, prefillData, onConsumedPrefill, onQuickAddWithPrefill, registerModuleBackHandler, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen }) {
   // CHANGED — real ask: "Symptom Log" > "Symptoms", swap its list
   // position with Vaccinations, ensure all six sit in two clean rows
   // of three. Order below now reads Testing/Clinic Visits/Vaccinations
@@ -56,6 +56,16 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   // shouldn't hijack that existing flow.
   const [pendingTestId, setPendingTestId] = useState(null);
   const [showClinicCard, setShowClinicCard] = useState(false);
+  // ADDED 15 Sep 2026 — real report: back-navigation-to-Clinic-Card fix,
+  // same "reopen" half already added to Home — see App.jsx's own
+  // clinicCardReturnTab comment for the full picture.
+  useEffect(() => {
+    if (openClinicCardOnMount) {
+      setShowClinicCard(true);
+      onConsumedClinicCardReopen?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [showAttachments, setShowAttachments] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   // CHANGED — real bugs found in the user's own device testing: (1) this
@@ -226,7 +236,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       ) : (
         <MenstrualHealthModule openAddOnMount={openAddOnMount && (quickAddTarget === "menstrualHealth" || quickAddTarget === "menstrualContraception")} quickAddTarget={quickAddTarget} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} />
       )}
-      {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={onNavigateToRecord} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}
+      {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={(tab, id, subTab) => { markClinicCardReturn?.(); onNavigateToRecord(tab, id, subTab); }} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}
       {showAttachments && (
         <AttachmentsScreen onClose={() => setShowAttachments(false)}
           onNavigateToSource={(sourceType, sourceId) => {
