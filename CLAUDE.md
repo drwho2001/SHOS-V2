@@ -184,34 +184,91 @@ Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
 - **Active, in-progress: a large real physical-play-testing feedback
-  batch (~30+ items, ~15 Sep 2026).** The real-bug items (#55-63) and a
-  large follow-up round (medication reminder timing/streak/adherence,
-  global predicted-date formatting, banner/header styling, the native
-  notification icon, desktop full-width layout — #84-91) are done —
-  see "Recently shipped" above for the full detail. What's still open,
-  roughly grouped: several Settings/feature adds (editable
-  automatic-backup save location, a force-check button for broken
-  references, per-pair dismiss for possible Contacts duplicates, an
-  allow-screenshots toggle); layout gaps (safe-area/status-bar
-  spacing in a few spots, an Episodes-screen scroll bug); Testing/
-  Measurements/Healthcare tab-order and classification requests; a
-  Clinic Card recent-contacts section; Lists reassociation UX; broader
-  icon/colour consistency in list views; Interactive Guide overflow/
-  shape fixes; Stats breakdowns (by organism/site, combined multi-site
-  tests, a clinical-impression field); Calendar dot-colour/sync/filter
-  fixes; in-app error submission without needing an export/email step
-  (flagged as needing an honest architecture conversation first, given
-  this app's no-backend design); a Status-at-a-glance addition for
-  menstrual/contraceptive tracking when enabled; the 3 plain sheet-
-  title banners (Testing/Clinic Visits/Encounters' own Add/Edit forms)
-  still lacking the same corner-softening the 4 real screen-title
-  banners got; and the GitHub Releases page's public "Latest" badge —
-  confirmed again 15 Sep 2026 that the real `/releases/latest` API
-  endpoint already correctly serves the current build (verified
-  directly), the stale badge is purely the public Releases PAGE
-  showing an old test-a..h release instead, still needing the owner to
-  manually delete those (no delete-release tool available in this
-  session's GitHub MCP server). Not yet started, except where noted.
+  batch (~30+ items, ~15 Sep 2026).** The real-bug items (#55-63) and
+  two large follow-up rounds (medication reminder timing/streak/
+  adherence, global predicted-date formatting, banner/header styling,
+  the native notification icon, desktop full-width layout, Home's
+  shortcut-row layout — #84-92) are done — see "Recently shipped"
+  above for the full detail. What's still open, **grouped by the
+  owner's own explicit ask** ("group for efficiency/similarity") for
+  whoever picks up the next batch, rather than left as one flat list:
+  - **Group A — small, contained Settings/Privacy adds** (same screen
+    area, similar shape/effort, good to batch in one sitting): #64
+    editable automatic-backup save location; #65 a force-check button
+    for broken references (Developer Tools); #66 per-pair dismiss for
+    possible Contacts duplicates; #67 an allow-screenshots toggle in
+    Privacy (default off).
+  - **Group B — layout/rendering investigations** (each needs real
+    on-device or viewport debugging before a fix, same methodology):
+    #68 safe-area/status-bar spacing gaps in a few spots; #69 the
+    Episodes-screen scroll bug (background scrolls instead of
+    foreground, content cut off); and the desktop font-size/empty-
+    space item scoped 15 Sep 2026 (see its own paragraph below —
+    deliberately not attempted this round, real architectural
+    precedent for why).
+  - **Group C — Healthcare-tab-family UI/data additions** (same tab
+    family, similar small-scope shape): #71 Testing — move result
+    date to top, add a pregnancy-test option; #72 Measurements —
+    normal/out-of-range classification; #73 Healthcare sub-tab
+    reorder; #76 Menstrual type/flow icons + a broader icon/colour
+    consistency audit across list views.
+  - **Group D — Clinic Card / Lists / Guide polish** (no strong
+    dependency between them, smaller UI additions): #74 a Clinic Card
+    recent-contacts section; #75 Lists reassociation UX; #77
+    Interactive Guide overflow/shape fixes.
+  - **Group E — bigger investigate/design items, each needing its own
+    real scoping pass before implementation, not a quick patch**: #78
+    Stats breakdowns (by organism/site, combined multi-site tests, a
+    clinical-impression field); #79 Calendar dot-colour/sync/filter
+    fixes; #80 in-app error submission without needing an export/
+    email step (flagged as needing an honest architecture conversation
+    first, given this app's no-backend design); #81 a Status-at-a-
+    glance addition for menstrual/contraceptive tracking when enabled.
+  - **Standing, not a batchable one-off**: #82, applying any future
+    fix's pattern consistently across other modules where relevant —
+    an ongoing discipline for every batch above, not its own task.
+  Also still open, smaller/already-scoped items not folded into the
+  groups above: the 3 plain sheet-title banners (Testing/Clinic
+  Visits/Encounters' own Add/Edit forms) still lacking the same
+  corner-softening the 4 real screen-title banners got; and the
+  GitHub Releases page's public "Latest" badge — confirmed again 15
+  Sep 2026 that the real `/releases/latest` API endpoint already
+  correctly serves the current build (verified directly), the stale
+  badge is purely the public Releases PAGE showing an old test-a..h
+  release instead, still needing the owner to manually delete those
+  (no delete-release tool available in this session's GitHub MCP
+  server). Not yet started, except where noted.
+
+- **Desktop font-size/empty-space — scoped 15 Sep 2026, deliberately
+  NOT attempted this round.** Real report, from a 1600px screenshot
+  taken right after the maxWidth:600 cap was removed: cards like
+  Home's "Status at a glance" (two small stat circles) and body-copy
+  paragraphs read as visually lost in the new, much wider column —
+  real empty space, not imagined. The literal ask ("font sizing to
+  reduce empty space") means scaling CONTENT up at wide viewports, not
+  narrowing the container back down (that would undo the full-width
+  fix just shipped) — which needs real width-aware responsive logic
+  this app has never had anywhere: every screen is hand-authored
+  inline styles with zero existing breakpoint/media-query convention.
+  This is the exact same class of problem as the font/text-size
+  scaling item resolved elsewhere in this file (18 Aug → 9 Sep 2026) —
+  two real implementation attempts (`zoom`, then `transform: scale()`)
+  each shipped a genuine regression (the bottom nav clipped off-screen,
+  then the nav anchored ~2000px below the real viewport) before both
+  were fully reverted, with the honest conclusion that this needs "an
+  actual design-system change... not a session to attempt
+  speculatively again without deciding on that real trade-off first."
+  Rather than risk repeating that exact mistake under the same time
+  pressure, this item is being handed forward scoped, not faked as
+  done: the real fix needs either (a) a first real `window.innerWidth`-
+  driven responsive convention introduced deliberately, with its own
+  regression testing across the app's full screen set, or (b)
+  targeted, low-risk fixes to the specific worst offenders (e.g.
+  enlarging Home's stat-circle widgets, capping flowing body-copy
+  paragraphs to a readable measure independent of the container's own
+  width) without inventing new infrastructure — a real decision the
+  owner should make, not one to guess at speculatively. Folded into
+  Group B above.
 
 - **Encryption at rest — RESOLVED 8 Sep 2026, see the full Phase 4
   implementation entry at the end of this same bullet.** Originally:
