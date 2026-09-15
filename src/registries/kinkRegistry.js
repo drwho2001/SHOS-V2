@@ -415,15 +415,28 @@ export const KINK_ROLE_STYLE = {
 
 const DYNAMIC_ROLE_OPTIONS = ["Dom", "sub", "Switch"];
 
-// The real function Contacts/Encounters/My Profile now call instead of
-// always using the one fixed KINK_ROLE_OPTIONS constant. Returns the
-// right role set for a given kink NAME (not id — matches how role
-// selection already works, resolved before the kink is necessarily a
-// real registry entry yet), or null for a "mutual" kink, meaning no
-// role picker should show at all.
+// CHANGED 15 Sep 2026 — real correction from the owner: an unclassified
+// kink name (typed fresh, not one of the ~90 entries above with a real
+// KINK_ROLE_STYLE) used to fall back to "anatomical" unconditionally —
+// silently locking a brand-new kink onto the Top/bottom/Vers axis even
+// when it's really a power-dynamic one, with no way to reach Dom/sub/
+// Switch at all. The real ask was never "show every option at once"
+// (the picker's own cycling badge already handles that one tap at a
+// time) — it's that a genuinely new kink shouldn't be pre-committed to
+// one axis before the owner has ever actually used it. Unclassified
+// kinks now get the two real pools concatenated into one combined
+// cycle (Top → bottom → Vers → Dom → sub → Switch → none) — cycling
+// through both, same "+ role" tap-to-advance control as every
+// classified kink already uses, just with a wider pool. "Learning from
+// what the user settles on" is exactly what that cycle already does on
+// its own: whichever option the owner stops tapping at IS the picked
+// role, no separate persisted classification needed. A kink already
+// classified above keeps its own single, narrower pool — this widening
+// only ever applies to a name KINK_ROLE_STYLE has no real entry for.
 export function getKinkRoleOptions(kinkName) {
-  const style = KINK_ROLE_STYLE[kinkName] || "anatomical";
+  const style = KINK_ROLE_STYLE[kinkName];
   if (style === "dynamic") return DYNAMIC_ROLE_OPTIONS;
   if (style === "mutual") return null;
-  return KINK_ROLE_OPTIONS;
+  if (style === "anatomical") return KINK_ROLE_OPTIONS;
+  return [...KINK_ROLE_OPTIONS, ...DYNAMIC_ROLE_OPTIONS];
 }

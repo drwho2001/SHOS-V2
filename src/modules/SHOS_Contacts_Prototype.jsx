@@ -818,20 +818,29 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
     if (getRoleOptionsForKink) return getRoleOptionsForKink(nameFor(id));
     return roleOptions;
   };
-  // CHANGED 15 Sep 2026 — real report: "new-kink Dom/sub + Top/bottom
-  // shouldn't default". The old cycleRole() treated an unset role
-  // (null) as index -1, so the very FIRST tap on the "+ role" badge
-  // silently landed on optionsForThisKink[0] — always "Dom" or "Top",
-  // the dominant/giving-coded pole in both real lists — with no real
-  // choice shown, reading as a silent default rather than something
-  // the user actually picked. Replaced the single cycle-through badge
-  // with explicit per-option chips below (setRole, not cycleRole) so
-  // every assignment is a direct tap on the real option meant, and
-  // tapping the already-selected one clears it back to no role —
-  // there's no implicit "first tap = Dom/Top" path left at all.
-  const setRole = (id, role) => {
+  // CHANGED 15 Sep 2026, then corrected same day — real report was
+  // "new-kink Dom/sub + Top/bottom shouldn't default", which an
+  // earlier pass over-corrected into 3 always-visible chips per kink.
+  // Owner's own follow-up clarified the actual ask: not a request to
+  // show every option at once, just that a brand-new/unclassified kink
+  // shouldn't be locked to only ONE axis (Top/bottom OR Dom/sub) —
+  // "allow cycling through both, learning from what the user settles
+  // on." Back to a single cycling badge, one tap = one step forward
+  // through resolveRoleOptions(id)'s own list (now the combined
+  // Top/bottom/Vers + Dom/sub/Switch pool for any kink
+  // getKinkRoleOptions() doesn't recognize — see kinkRegistry.js) —
+  // cycling past the last option lands back on "no role" rather than
+  // wrapping straight to the first again, so leaving a kink unset is
+  // always one more tap away, not lost once you've started cycling.
+  const cycleRole = (id) => {
     if (!trackRole) return;
-    onChange(value.map((v) => (v.kinkId === id ? { ...v, role: v.role === role ? null : role } : v)));
+    onChange(value.map((v) => {
+      if (v.kinkId !== id) return v;
+      const options = resolveRoleOptions(id);
+      if (!options) return v;
+      const nextIdx = options.indexOf(v.role) + 1;
+      return { ...v, role: nextIdx >= options.length ? null : options[nextIdx] };
+    }));
   };
 
   // CHANGED 18 Aug 2026 — real bug fix: typing "fisting, gooning, piss"
@@ -975,15 +984,11 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
                   {nameFor(sel.kinkId)} <X size={11} />
                 </div>
                 {trackRole && roleOptionsForThisKink && (
-                  <div style={{ display: "flex", borderLeft: `1px solid ${T.border}` }}>
-                    {roleOptionsForThisKink.map((opt) => (
-                      <div key={opt} onClick={() => setRole(sel.kinkId, opt)} role="button" tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRole(sel.kinkId, opt); } }}
-                        aria-pressed={sel.role === opt}
-                        style={{ padding: "4px 6px", fontSize: 11, fontWeight: 600, cursor: "pointer", color: sel.role === opt ? T.contactsTeal : T.textDisabled }}>
-                        {opt}
-                      </div>
-                    ))}
+                  <div onClick={() => cycleRole(sel.kinkId)} role="button" tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); cycleRole(sel.kinkId); } }}
+                    aria-label={`Cycle role for ${nameFor(sel.kinkId)}`}
+                    style={{ padding: "4px 8px", fontSize: 11, fontWeight: 600, cursor: "pointer", borderLeft: `1px solid ${T.border}`, color: sel.role ? T.contactsTeal : T.textDisabled }}>
+                    {sel.role || "+ role"}
                   </div>
                 )}
               </div>

@@ -3374,13 +3374,37 @@ New-kink Dom/sub / Top/bottom role assignment silently defaulted to
 the dominant/top pole on the very first tap of the "+ role" badge:
 `cycleRole()` treated an unset role as index -1, so tapping once
 landed straight on `optionsForThisKink[0]` — always "Dom" or "Top" in
-both real role lists — with no actual choice ever shown. Replaced the
-single cycle-through badge with three explicit per-option chips
-(rendered directly from `roleOptionsForThisKink`, a new `setRole(id,
-role)` toggling the tapped one on/off) so every assignment is a
-direct, deliberate tap — there's no implicit "first tap = Dom/Top"
-path left at all. Verified live via screenshot: the new Dom/sub/Switch
-chips render fully unselected immediately after picking a kink.
+both real role lists — with no actual choice ever shown. First fix
+replaced the single cycle-through badge with three explicit per-option
+chips, always shown — **corrected the same day, see below, once the
+owner's own follow-up clarified this over-corrected the actual ask.**
+
+**Correction, same day**: the owner's own follow-up made the real ask
+explicit — not "show every option at once" (the 3-chip fix), but "don't
+lock a brand-new kink to only ONE axis (Top/bottom OR Dom/sub); allow
+cycling through both, learning from what the user settles on." Reverted
+back to a single cycling "+ role" badge in all 3 files (`cycleRole(id)`,
+one tap = one step through `resolveRoleOptions(id)`'s list, wrapping
+past the last option back to "no role" rather than straight to the
+first — so leaving a kink unset stays reachable, not lost mid-cycle) —
+and fixed the REAL bug underneath the original report:
+`getKinkRoleOptions()` in `kinkRegistry.js` had an `|| "anatomical"`
+fallback, silently locking any kink NOT in `KINK_ROLE_STYLE` (i.e. any
+genuinely new/custom one) onto the Top/bottom/Vers axis only, with no
+way to ever reach Dom/sub/Switch. Unclassified kinks now get both real
+pools concatenated into one combined cycle (Top → bottom → Vers → Dom →
+sub → Switch → none) — cycling through both, on the same control every
+classified kink already uses, just a wider pool; a kink already
+classified in `KINK_ROLE_STYLE` keeps its own single, narrower pool
+unchanged. Deliberately did NOT build a persistent "learned axis" per
+kink (a new registry field, remembering which pole a kink settled into
+across future picks) — the cycle's own "wherever you stop tapping is
+what you picked" behavior already IS the learning the owner described;
+a persistence layer on top of that wasn't asked for and would be
+speculative scope. Verified live via Playwright end-to-end: adding a
+brand-new, never-before-seen kink and tapping its role badge 8 times in
+a row produced exactly `+ role → Top → bottom → Vers → Dom → sub →
+Switch → + role → Top`, zero page errors.
 
 **A genuine CI-blocking test bug found and fixed the same round, not
 an app bug.** The first two commits above both hit smoke-test flow 2
