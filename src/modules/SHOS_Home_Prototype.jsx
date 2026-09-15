@@ -615,7 +615,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
-      <div style={{ width: "100%", maxWidth: 600, borderLeft: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, borderRight: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, padding: "20px 16px", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}>
+      <div style={{ width: "100%", padding: "20px 16px", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}>
       <h1 style={{ ...TYPE.screenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         {profileName ? `${profileName}'s dashboard` : "Your dashboard"}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -936,7 +936,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         // way to scroll to it at all. Matches every other module's
         // overlay wrapper elsewhere in this file.
         <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }}>
-          <div style={{ width: "100%", maxWidth: 600, borderLeft: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, borderRight: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}` }}>
+          <div style={{ width: "100%" }}>
             <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>
         </div>

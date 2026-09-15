@@ -1429,7 +1429,7 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
           on mobile and caps at a real desktop-appropriate width on
           larger screens. Outer wrapper already centers via
           justifyContent: "center", so this is a like-for-like swap. */}
-      <div style={{ width: "100%", maxWidth: 600, background: T.bg, minHeight: "100vh", borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }}>
+      <div style={{ width: "100%", background: T.bg, minHeight: "100vh" }}>
         {/* CHANGED — real ask: "My Profile and back button should
             remain at top even when scrolling" — was not sticky at all
             before, unlike the Edit sheet's own header just below,

@@ -322,7 +322,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
-      <div style={{ width: "100%", maxWidth: 600, display: "flex", flexDirection: "column", borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }}>
+      <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, borderBottom: `1px solid ${T.border}`, background: T.surface }}>
         <Search size={18} color={T.textDisabled} style={{ flexShrink: 0 }} />
         <input

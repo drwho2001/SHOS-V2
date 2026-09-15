@@ -4419,7 +4419,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
-      <div style={{ width: "100%", maxWidth: 600, borderLeft: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, borderRight: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}` }}>
+      <div style={{ width: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px", position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Settings</span>

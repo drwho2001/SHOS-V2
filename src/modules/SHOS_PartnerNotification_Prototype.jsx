@@ -308,7 +308,7 @@ export default function PartnerNotificationSheet({ testId, onClose }) {
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
-      <div style={{ width: "100%", maxWidth: 600, borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }}>
+      <div style={{ width: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {editing && list ? (
