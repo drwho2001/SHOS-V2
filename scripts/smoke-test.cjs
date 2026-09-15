@@ -149,9 +149,23 @@ async function testSymptomTestTwoWayLink(page) {
   await page.waitForTimeout(400);
   const chip = page.locator("text=+ Discharge + discomfort");
   if (await chip.count() > 0) {
+    // CHANGED 15 Sep 2026 — real bug found in the TEST itself, not the
+    // app: this hardcoded "· Aug" as part of the expected post-link
+    // string, but the seed SymptomLog entry's own dateStarted is a
+    // real, fixed calendar date — as real wall-clock time moves past
+    // that date's own month boundary (confirmed live: the actual
+    // rendered date is now "Sep 4, 2026", correctly showing the entry
+    // moved into the linked list, just not in August anymore), this
+    // assertion would keep failing forever despite the app behaving
+    // correctly. Derive the expected string from the chip's own real
+    // text instead of hardcoding a month — same "don't assume a
+    // relative-to-real-time value stays fixed" lesson already applied
+    // elsewhere in this suite (see medicationReminderClock's own
+    // comment).
+    const chipLabel = (await chip.first().textContent()).replace(/^\+\s*/, "");
     await chip.click({ timeout: 5000 });
     await page.waitForTimeout(400);
-    assert((await page.evaluate(() => document.body.innerText)).includes("Discharge + discomfort · Aug"), "linked chip moves into the linked-entries list");
+    assert((await page.evaluate(() => document.body.innerText)).includes(chipLabel), "linked chip moves into the linked-entries list");
   } else {
     console.log("  skip — already linked from a previous run (idempotent state, not a failure)");
   }
