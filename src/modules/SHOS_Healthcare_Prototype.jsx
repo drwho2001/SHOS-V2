@@ -249,7 +249,19 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           registerModuleBackHandler={registerModuleBackHandler} />
       )}
       {showTimeline && (
-        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 210, display: "flex", justifyContent: "center" }}>
+        // FIXED — real bug found investigating a live report ("Episodes
+        // screen scroll — background scrolls instead of foreground,
+        // content cut off"): this wrapper had no overflowY, and
+        // TimelineModule's own screens don't establish their own scroll
+        // container either — a populated Episode (several SectionCards,
+        // possibly the "Mark resolved" buttons near the bottom) taller
+        // than the viewport was simply unreachable, no way to scroll to
+        // it at all. This exact same fix was already applied to Home's
+        // own separate TimelineModule wrapper (see that file's own
+        // comment) but never carried over here — Healthcare is the
+        // OTHER real entry point into Episodes, so it had the identical
+        // gap independently.
+        <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", zIndex: 210, overflowY: "auto", display: "flex", justifyContent: "center" }}>
           <div style={{ width: "100%" }}>
             <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>

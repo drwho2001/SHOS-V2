@@ -28,7 +28,7 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
@@ -546,10 +546,71 @@ function displayReading(m, prefs) {
   return `${m.value} ${m.unit}`;
 }
 
+// ADDED — real ask: "normal/out-of-range, high/low" classification.
+// Deliberately compares against a real, user-SET range
+// (MeasurementPreferencesRepository's own normalRangeByType — see that
+// file's comment for why this is never a hardcoded clinical threshold)
+// rather than the app deciding what's "normal" for anyone — no range
+// set for a type means no classification shown at all, not a guessed
+// default. `m.value` is always the canonical value, and the range is
+// stored in that same canonical unit, so this needs no unit conversion
+// of its own. Blood Pressure is out of scope for this pass — its own
+// two-value (systolic/diastolic) reading doesn't reduce to one
+// low/high comparison the way every other measurement type here does.
+function classifyMeasurement(m, prefs) {
+  if (m.type === BLOOD_PRESSURE_TYPE || m.value == null) return null;
+  const range = prefs.normalRangeByType?.[m.type];
+  if (!range || range.low == null || range.high == null) return null;
+  if (m.value < range.low) return "low";
+  if (m.value > range.high) return "high";
+  return "normal";
+}
+
+function RangeBadge({ status, T }) {
+  if (!status) return null;
+  const config = {
+    normal: { label: "Normal", color: ACTION_TEXT_SAFE.green, bg: `${ACTION.green}15` },
+    low: { label: "Low", color: ACTION.gold, bg: `${ACTION.amber}15` },
+    high: { label: "High", color: ACTION_TEXT_SAFE.red, bg: `${ACTION.red}15` },
+  }[status];
+  return (
+    <span style={{ fontSize: 11, fontWeight: 700, color: config.color, background: config.bg, borderRadius: radius.full, padding: "2px 8px", marginLeft: 8 }}>
+      {config.label}
+    </span>
+  );
+}
+
 function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, refresh }) {
   const m = useLoadedMemo(() => MeasurementRepository.getById(measurementId), [measurementId], null);
-  const prefs = useLoadedMemo(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
+  // CHANGED — real ask: normal-range editing (below) needs to write
+  // back and see the update reflected immediately, so this is now
+  // useLoadedState rather than a read-only useLoadedMemo.
+  const [prefs, setPrefs] = useLoadedState(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // ADDED — real ask: editing a type's own normal range right where a
+  // real reading in its real (canonical) unit is already on screen,
+  // rather than a separate preferences screen that would need to solve
+  // "what unit is this arbitrary type even in" from scratch.
+  const [editingRange, setEditingRange] = useState(false);
+  const existingRange = m ? prefs.normalRangeByType?.[m.type] : null;
+  const [rangeLow, setRangeLow] = useState("");
+  const [rangeHigh, setRangeHigh] = useState("");
+  const startEditingRange = () => {
+    setRangeLow(existingRange?.low ?? "");
+    setRangeHigh(existingRange?.high ?? "");
+    setEditingRange(true);
+  };
+  const saveRange = async () => {
+    const low = parseFloat(rangeLow);
+    const high = parseFloat(rangeHigh);
+    if (Number.isNaN(low) || Number.isNaN(high) || low > high) return;
+    setPrefs(await MeasurementPreferencesRepository.setNormalRange(m.type, { low, high }));
+    setEditingRange(false);
+  };
+  const clearRange = async () => {
+    setPrefs(await MeasurementPreferencesRepository.clearNormalRange(m.type));
+    setEditingRange(false);
+  };
   // CHANGED — Phase 2 encryption groundwork: TestingRepository went
   // async — hoisted above the guard (hooks-before-guard rule), guarded
   // with `m?.` since it's genuinely null for one render.
@@ -594,8 +655,45 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
             <ReadRow label="Blood pressure" value={`${m.systolic}/${m.diastolic} mmHg`} T={T} />
           ) : (
             <>
-              <ReadRow label="Value" value={displayReading(m, prefs)} T={T} />
+              {/* CHANGED — real ask: a normal/out-of-range, high/low
+                  classification next to the value, when a range has
+                  been set for this type (see classifyMeasurement's own
+                  comment — nothing shown at all if none has). ReadRow
+                  itself only renders a plain string, so this one row is
+                  hand-built to fit the badge in alongside it, same
+                  visual shape otherwise. */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
+                <span style={{ fontSize: 12, color: T.textSecondary, flexShrink: 0 }}>Value</span>
+                <span style={{ display: "flex", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, color: T.textPrimary, fontWeight: 500, textAlign: "right" }}>{displayReading(m, prefs)}</span>
+                  <RangeBadge status={classifyMeasurement(m, prefs)} T={T} />
+                </span>
+              </div>
               {showsConversion && <ReadRow label="As entered" value={`${m.enteredValue} ${m.enteredUnit}`} T={T} />}
+              {/* ADDED — real ask: set/edit/clear this type's own
+                  normal range right here, in its real canonical unit
+                  (m.unit) — see MeasurementPreferencesRepository's own
+                  comment on why this is a real, user-set range, never a
+                  hardcoded clinical threshold. */}
+              {editingRange ? (
+                <div style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}` }}>
+                  <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 6 }}>Normal range for {m.type} ({m.unit})</div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input type="number" value={rangeLow} onChange={(e) => setRangeLow(e.target.value)} placeholder="Low"
+                      style={{ width: 70, padding: "6px 8px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
+                    <span style={{ color: T.textSecondary }}>–</span>
+                    <input type="number" value={rangeHigh} onChange={(e) => setRangeHigh(e.target.value)} placeholder="High"
+                      style={{ width: 70, padding: "6px 8px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
+                    <span onClick={saveRange} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", marginLeft: 4 }}>Save</span>
+                    <span onClick={() => setEditingRange(false)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>Cancel</span>
+                    {existingRange && <span onClick={clearRange} style={{ fontSize: 12, color: T.actionRed, cursor: "pointer" }}>Clear</span>}
+                  </div>
+                </div>
+              ) : (
+                <div onClick={startEditingRange} style={{ padding: "7px 0", fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>
+                  {existingRange ? `Edit normal range (${existingRange.low}–${existingRange.high} ${m.unit})` : "+ Set a normal range for this type"}
+                </div>
+              )}
             </>
           )}
           <ReadRow label="Location" value={m.locationType === "Clinic" ? (m.clinicName ? `Clinic — ${m.clinicName}` : "Clinic") : m.locationType} T={T} />

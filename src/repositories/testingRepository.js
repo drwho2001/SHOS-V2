@@ -47,7 +47,12 @@ export const SETTING_OPTIONS = ["🏥😎 Clinic - Routine", "🏥🤢 Clinic - 
 // The user's exact wording, to be clearer this covers a symptomatic
 // culture-and-sensitivity test too, not only a scheduled treatment
 // follow-up.
-export const TESTING_FOR_OPTIONS = ["Gonorrhoea", "HIV", "Syphilis", "Chlamydia", "Hepatitis A", "Hepatitis B", "Hepatitis C", "Mpox", "MGen", "HPV", "Herpes (HSV)", "Trichomoniasis", "Bacterial vaginosis", "C&S (symptomatic/treatment)", "Other"];
+// ADDED — real ask: a pregnancy test is a real, common reason to log a
+// test in this app (already supported as its own workflow via
+// PregnancyRepository once a positive result exists) but had no way to
+// be recorded as the reason FOR testing in the first place. "Other"
+// stays last per this list's own established convention above.
+export const TESTING_FOR_OPTIONS = ["Gonorrhoea", "HIV", "Syphilis", "Chlamydia", "Hepatitis A", "Hepatitis B", "Hepatitis C", "Mpox", "MGen", "HPV", "Herpes (HSV)", "Trichomoniasis", "Bacterial vaginosis", "C&S (symptomatic/treatment)", "Pregnancy", "Other"];
 
 export const DEFAULT_TEST = {
   title: "",

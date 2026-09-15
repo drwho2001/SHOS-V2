@@ -944,11 +944,16 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>{formatDate(test.date)}</div>
 
         <SectionCard title="Overview" T={T}>
+          {/* MOVED — real ask: Result date should read near the top,
+              matching the edit form's own field order (Date, then
+              Result date, ahead of Setting/Sample type/etc.) — this
+              read view had it at the very bottom instead, the one real
+              inconsistency between the two. */}
+          <ReadRow label="Result date" value={test.resultDate ? formatDate(test.resultDate) : ""} T={T} />
           <ReadRow label="Setting" value={test.setting} T={T} />
           <ReadRow label="Sample type" value={test.sampleType} T={T} />
           <ReadRow label="Testing for?" value={test.testingFor} T={T} />
           <ReadRow label="Most recent" value={test.mostRecent ? "Yes" : ""} T={T} />
-          <ReadRow label="Result date" value={test.resultDate ? formatDate(test.resultDate) : ""} T={T} />
         </SectionCard>
 
         <SectionCard title="Result" T={T}>

@@ -184,34 +184,36 @@ Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
 - **Active, in-progress: a large real physical-play-testing feedback
-  batch (~30+ items, ~15 Sep 2026).** The real-bug items (#55-63) and
-  two large follow-up rounds (medication reminder timing/streak/
-  adherence, global predicted-date formatting, banner/header styling,
-  the native notification icon, desktop full-width layout, Home's
-  shortcut-row layout — #84-92) are done — see "Recently shipped"
-  above for the full detail. What's still open, **grouped by the
-  owner's own explicit ask** ("group for efficiency/similarity") for
-  whoever picks up the next batch, rather than left as one flat list:
-  - **Group A — small, contained Settings/Privacy adds** (same screen
-    area, similar shape/effort, good to batch in one sitting): #64
-    editable automatic-backup save location; #65 a force-check button
-    for broken references (Developer Tools); #66 per-pair dismiss for
-    possible Contacts duplicates; #67 an allow-screenshots toggle in
-    Privacy (default off).
+  batch (~30+ items, ~15 Sep 2026).** The real-bug items (#55-63), two
+  large follow-up rounds (medication reminder timing/streak/adherence,
+  global predicted-date formatting, banner/header styling, the native
+  notification icon, desktop full-width layout, Home's shortcut-row
+  layout — #84-92), the mobile-width/body-margin fix, and Group A
+  (#64-67) are done — see "Recently shipped" above for the full detail.
+  Also done from Group B/C: #69 (Episodes scroll — see its own entry
+  below) and Group C's #71/#72 (Testing result-date/pregnancy-option,
+  Measurements normal-range classification — see their own entry
+  below). What's still open, **grouped by the owner's own explicit
+  ask** ("group for efficiency/similarity") for whoever picks up the
+  next batch, rather than left as one flat list:
   - **Group B — layout/rendering investigations** (each needs real
     on-device or viewport debugging before a fix, same methodology):
-    #68 safe-area/status-bar spacing gaps in a few spots; #69 the
-    Episodes-screen scroll bug (background scrolls instead of
-    foreground, content cut off); and the desktop font-size/empty-
-    space item scoped 15 Sep 2026 (see its own paragraph below —
-    deliberately not attempted this round, real architectural
+    #68 safe-area/status-bar spacing gaps in a few spots — genuinely
+    not reproducible in this sandboxed environment (`env(safe-area-
+    inset-*)` resolves to 0 with no notch/status-bar to simulate here;
+    this one really does need a real device); and the desktop font-
+    size/empty-space item scoped 15 Sep 2026 (see its own paragraph
+    below — deliberately not attempted this round, real architectural
     precedent for why).
-  - **Group C — Healthcare-tab-family UI/data additions** (same tab
-    family, similar small-scope shape): #71 Testing — move result
-    date to top, add a pregnancy-test option; #72 Measurements —
-    normal/out-of-range classification; #73 Healthcare sub-tab
-    reorder; #76 Menstrual type/flow icons + a broader icon/colour
-    consistency audit across list views.
+  - **Group C — Healthcare-tab-family UI/data additions, remaining**:
+    #73 Healthcare sub-tab reorder — checked directly against the
+    code, and the exact reorder this item's own title describes
+    (Testing/Clinic Visits/Vaccinations then Symptoms/Measurements/
+    Menstrual, two rows of three) already happened in an earlier
+    session (see that file's own comment) — nothing left to do here
+    unless a different, more specific reorder was actually meant; #76
+    Menstrual type/flow icons + a broader icon/colour consistency
+    audit across list views.
   - **Group D — Clinic Card / Lists / Guide polish** (no strong
     dependency between them, smaller UI additions): #74 a Clinic Card
     recent-contacts section; #75 Lists reassociation UX; #77
@@ -3502,7 +3504,123 @@ suite against a real `vite preview` production build — all 15/15 pass
 as of the final commit in this round, confirmed green in CI (Smoke
 Test, Build APK, Web Alpha all succeeded on the same push).
 
-## Recently shipped (15 Sep 2026, later still again — Home shortcuts on desktop, a real mobile-width regression and fix, and a body-margin bug found investigating it)
+## Recently shipped (15 Sep 2026, continuing the backlog — Group A, then Episodes scroll fix, then Testing/Measurements additions)
+
+Real ask: "continue rest of backlog" — worked Group A in full, then moved
+to Group B/C, checking each item's real current state rather than
+assuming the compressed backlog title alone was still accurate.
+
+**Group A (#64-67), all four shipped together.** Automatic backups can
+now save to a chosen folder instead of always the public Documents
+folder — a new `pickAutoExportFolder()`/`writeTextFileToFolder()` pair
+in `fileExportHelper.js`, using the scoped-storage plugin's own
+`pickFolder()` directly (a real persistable Android SAF URI, confirmed
+by reading the plugin's own Android source for
+`takePersistableUriPermission()` — safe to store and reuse across app
+restarts, not a one-shot handle) rather than the existing pick-and-
+write-immediately export flow, since auto-export needs to pick once
+and write silently later with no prompt. Developer Tools' "Broken
+references" check gained a manual "Check again" button (a
+`refreshKey`-driven re-run of `findOrphanReferences()`, same pattern
+already used elsewhere in this file) — previously only ran once per
+screen-open. Contacts' duplicate-checker panel gained a per-pair "Not
+a duplicate — dismiss" action, stored as an order-independent pair key
+in `AppPreferencesRepository` (`dismissedContactDuplicatePairs`), not
+keyed by field content — a genuinely different person sharing a name/
+field stops reappearing every time the panel opens. A new "Allow
+screenshots" toggle in Settings > Privacy, default off (matching the
+app's existing always-on FLAG_SECURE) — the one custom Capacitor
+plugin this app has ever needed (`ScreenSecurityPlugin.java`, every
+other native integration here is a third-party package): FLAG_SECURE
+can be added/cleared on the real Window at any time, so toggling takes
+effect immediately with no activity recreation; registered via
+`registerPlugin()` in `MainActivity.onCreate()`, bound on the JS side
+via Capacitor's own `registerPlugin(name)` (no npm package, no
+generated wrapper). Verified: full build, eslint clean, 15/15
+smoke-test flows pass locally; a manually-triggered Build APK CI run
+against this branch confirmed the new Java plugin actually compiles
+(the sandboxed environment here has no real Android device to verify
+runtime behavior on, so a green CI build is the compile-correctness
+confirmation, per this project's established practice for native-only
+changes) — the first dispatch attempt failed at checkout (a short SHA
+on a non-default branch isn't reliably resolvable by a shallow
+checkout), fixed by dispatching against the branch ref directly instead
+of a separate `checkout_sha` input.
+
+**Episodes screen scroll bug (#69) — a real, findable root cause, not
+a fresh investigation.** Home's own wrapper around `TimelineModule`
+had already been fixed for exactly this bug in an earlier session (a
+missing `overflowY: "auto"`/`tabIndex` — a populated Episode taller
+than the viewport was simply unreachable) — but Healthcare has its own
+SEPARATE wrapper around the same `TimelineModule` component, and never
+got the same fix. Applied the identical fix there. This is the real
+lesson: `TimelineModule` is invoked from two independent call sites,
+and a fix at one doesn't reach the other without being applied twice —
+exactly the kind of gap the standing #82 "apply any future fix's
+pattern consistently across other modules" discipline exists to catch.
+
+**Testing (#71) — Result date moved to the top of the read view;
+"Pregnancy" added to Testing-for.** The edit form already had Result
+date positioned right after the specimen Date (ahead of Setting/
+Sample type/etc.) — only the READ-ONLY `TestDetail` view had it at the
+very bottom of the Overview section instead, the one real
+inconsistency between the two. Moved it to match. Added "Pregnancy" to
+`TESTING_FOR_OPTIONS` (before "Other", which stays last per this
+list's own established convention) — checked every real caller of
+`testingFor` first to confirm this is purely descriptive everywhere
+(display-only `.join()` calls) except `exposureWindows.js`'s own
+STI-exposure-window lookup, which simply skips any entry not in its
+own fixed table (Mpox/Other/etc. already do the same) — so a
+pregnancy-test entry can't be mistaken for an STI exposure needing a
+retest window.
+
+**Measurements (#72) — a real normal/out-of-range, high/low
+classification, deliberately NOT a hardcoded clinical threshold.**
+This app's own standing rule is no diagnosis engine/automated clinical
+risk scoring, and a fixed "normal blood pressure" or "normal CD4
+count" table would edge into exactly that (a CD4 count under 200 is
+literally AIDS-defining — not a judgment call this app should make
+unprompted). Built instead as a real, user-SET low/high range per
+measurement type (`MeasurementPreferencesRepository`'s new
+`normalRangeByType`, stored in the type's own canonical unit) — the
+same "you decide, the app just tracks" spirit as every other
+preference here. No range set for a type means no classification
+shown at all, never a guessed default. Editable right on
+`MeasurementDetail`, next to a real reading already in its own
+canonical unit — avoids needing to solve "what unit is this arbitrary
+type even in" from a separate preferences screen. Blood Pressure is
+out of scope for this pass — its own two-value systolic/diastolic
+reading doesn't reduce to one low/high comparison the way every other
+type here does. Verified live end-to-end: setting a 60-75kg range on a
+real 67.5kg seed entry showed "Normal"; tightening it to 40-50kg
+correctly showed "High" with the real, contrast-safe `ACTION_TEXT_SAFE.red`
+color (`#C52626`, confirmed via computed style — the raw `ACTION.amber`
+this badge's own "Low" state might have reached for by default would
+have failed 4.5:1 on its own light tint, same contrast-sweep lesson
+already learned once for `ACTION.gold`/red/green elsewhere in this
+file, so the pre-vetted `ACTION.gold` was used for "Low" instead, not
+raw amber); clearing the range correctly reverted to "+ Set a normal
+range for this type".
+
+**Checked, not fixed — real findings worth recording, not silent
+skips.** #73 (Healthcare sub-tab reorder) — the exact reorder this
+item's own compressed title describes (Testing/Clinic Visits/
+Vaccinations, then Symptoms/Measurements/Menstrual, two rows of three)
+already happened in an earlier session, confirmed by that file's own
+comment; nothing left to do unless a different, more specific reorder
+was actually meant — flagged rather than guessed at. #68 (safe-area/
+status-bar spacing gaps) — genuinely not reproducible in this
+sandboxed browser environment (`env(safe-area-inset-*)` always
+resolves to `0px` with no real notch/status-bar to simulate), so
+guessing at a fix here risked shipping something unverifiable or
+wrong; left for real on-device debugging, per Group B's own stated
+methodology.
+
+Verified live throughout via Playwright (Measurements' range-editing
+flow end-to-end with computed-style contrast checks; Testing's Result-
+date reorder and the new Pregnancy option in a fresh Add-test form)
+and the full 15-flow smoke-test suite against a real `vite preview`
+production build — 15/15 pass. Full build and `npx eslint .` clean.
 
 Real ask, continuing the same-day backlog: on PC width, Home's Clinic
 Card/Episodes/Calendar shortcuts should sit in one line (2x2 with
