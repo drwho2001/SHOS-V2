@@ -109,6 +109,17 @@ export const DEFAULT_PRIVACY_SETTINGS = {
   // getSettings()/update() below always resolve the real value through
   // cryptoService, never from whatever's actually stored under this key.
   duressPin: "",
+  // ADDED — real ask: an "allow screenshots" toggle, default OFF
+  // (screenshots/screen-recording blocked) — matches this app's own
+  // existing always-on FLAG_SECURE default (see MainActivity.java's own
+  // comment on why that's the baseline). Turning this ON is a genuine,
+  // deliberate opt-out of that protection, same "off by default, real
+  // choice to turn on" framing as every other privacy-relaxing toggle
+  // in this app. Native (Android) only — there's no equivalent
+  // screenshot-blocking mechanism to toggle on the web/PWA build in the
+  // first place, so this stays inert there; see
+  // screenSecurityService.js for the real native bridge.
+  allowScreenshots: false,
 };
 
 export const PrivacySettingsRepository = {

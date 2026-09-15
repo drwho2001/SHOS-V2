@@ -15,7 +15,7 @@
 // know backup/restore exists.
 
 import { ContactRepository } from "../repositories/contactRepository.js";
-import { exportTextFile, writeTextFileSilently, exportTextFileToChosenFolder, isChooseFolderExportAvailable } from "./fileExportHelper.js";
+import { exportTextFile, writeTextFileSilently, writeTextFileToFolder, exportTextFileToChosenFolder, isChooseFolderExportAvailable } from "./fileExportHelper.js";
 // ADDED — real ask: scheduled auto-export reads its own on/off toggle
 // and interval from here (Settings -> Preferences), same repository
 // every other real app preference already lives in.
@@ -745,13 +745,20 @@ export async function isAutoExportDue() {
 // behalf would be a real, surprising data-loss risk, not a convenience.
 // Writes straight to the public Documents folder with no share sheet
 // (writeTextFileSilently) — see that function's own comment for why a
-// popup dialog on app load would be the wrong UX here.
+// popup dialog on app load would be the wrong UX here. If the owner has
+// picked a custom save location (Settings > Automatic backups), writes
+// there instead via the persisted folder reference — same silent, no-
+// dialog contract either way.
 export async function runAutoExportIfDue() {
   if (!(await isAutoExportDue())) return { ran: false };
   const backup = await buildBackup(null);
   const json = JSON.stringify(backup, null, 2);
   const dateStamp = new Date().toISOString().slice(0, 10);
-  const ok = await writeTextFileSilently(`shos-backup-${dateStamp}-auto.json`, json, "application/json");
+  const filename = `shos-backup-${dateStamp}-auto.json`;
+  const { autoExportFolder } = await AppPreferencesRepository.getPreferences();
+  const ok = autoExportFolder
+    ? await writeTextFileToFolder(autoExportFolder, filename, json, "application/json")
+    : await writeTextFileSilently(filename, json, "application/json");
   if (ok) await storage.save(LAST_BACKUP_KEY, new Date().toISOString());
   return { ran: ok };
 }

@@ -17,6 +17,7 @@ import GlobalSearchScreen from "./modules/SHOS_GlobalSearch_Prototype";
 import TourOverlay from "./modules/InteractiveTour";
 import { PrivacySettingsRepository } from "./repositories/privacySettingsRepository";
 import { checkBiometryAvailable, authenticateWithBiometrics } from "./storage/biometricAuthService";
+import { setScreenshotsAllowed } from "./storage/screenSecurityService";
 // ADDED — Phase 4 (Sep 2026): the real vault-unlock entry points — see
 // cryptoService.js's own header for the full design. bootUnlock() is
 // this file's own new cold-boot gate (replacing shouldRelock() there —
@@ -907,6 +908,17 @@ export default function App() {
       ]);
       applyRealAccentOverrides(colorOverrides);
       await syncDarkModePreferenceFromStorage();
+      // ADDED — real ask: an "allow screenshots" toggle. FLAG_SECURE is
+      // always set again at every real app launch (MainActivity's own
+      // onCreate, before this code ever runs), regardless of what was
+      // saved last session — this is what re-applies a real, previously
+      // saved "allowed" choice on top of that default, so the setting
+      // doesn't silently reset itself on every cold start. A no-op on
+      // web/most sessions (see screenSecurityService.js's own header) —
+      // deliberately fire-and-forget, same as the other real device-
+      // side effects in this boot step; nothing else here depends on
+      // its completion timing.
+      if (settings.allowScreenshots) setScreenshotsAllowed(true);
       setAppLockEnabled(settings.appLockEnabled);
       setTabOrder(prefs.tabOrder);
       setShowOnboarding(!prefs.hasCompletedOnboarding);

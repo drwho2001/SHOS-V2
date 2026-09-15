@@ -53,7 +53,7 @@ import {
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedMemo, useLoadedState } from "../calculations/loadedRepositoryState";
 import { exportBackup, exportEncryptedBackup, exportBackupToChosenFolder, exportEncryptedBackupToChosenFolder, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
-import { isChooseFolderExportAvailable, exportTextFile } from "../storage/fileExportHelper";
+import { isChooseFolderExportAvailable, exportTextFile, isCustomAutoExportFolderAvailable, pickAutoExportFolder } from "../storage/fileExportHelper";
 // ADDED 10 Sep 2026 — real ask: "allow error reporting." See
 // errorLogRepository.js's own header for why this is a local,
 // on-device log rather than a real third-party crash-reporting
@@ -98,6 +98,7 @@ import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
 import { checkBiometryAvailable } from "../storage/biometricAuthService";
+import { isScreenSecurityAvailable, setScreenshotsAllowed } from "../storage/screenSecurityService";
 import { checkCalendarAvailable, syncClinicVisitsToCalendar, removeAllSyncedEvents, removeSyncedEventsFrom, listAvailableCalendars, SHOS_CALENDAR_NAME } from "../storage/calendarSyncService";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../repositories/appPreferencesRepository";
 import { EpisodeRepository } from "../repositories/episodeRepository";
@@ -583,8 +584,27 @@ function DeveloperToolsScreen({ onClose }) {
   // once per screen-open, the data's small enough" judgment already
   // applied to Global Search's own index and the Registry duplicate
   // checker.
-  const orphans = useLoadedMemo(() => findOrphanReferences(), [], []);
+  // ADDED — real ask: a manual "check now" trigger, since a real fix
+  // (deleting a record another one still references) can happen in the
+  // very same session this screen is open, and there was previously no
+  // way to see that reflected without leaving and reopening Developer
+  // Tools. Same refreshKey/useLoadedMemo re-run pattern already used
+  // elsewhere in this file (see notifPrefs/medPrefs above).
+  const [orphanCheckKey, setOrphanCheckKey] = useState(0);
+  const [orphanChecking, setOrphanChecking] = useState(false);
+  const orphans = useLoadedMemo(() => findOrphanReferences(), [orphanCheckKey], []);
   const [showOrphans, setShowOrphans] = useState(false);
+  const recheckOrphans = async (e) => {
+    e.stopPropagation();
+    setOrphanChecking(true);
+    setOrphanCheckKey((k) => k + 1);
+    // findOrphanReferences() runs synchronously fast even at this app's
+    // largest realistic data volumes (see this session's own data-
+    // volume stress-testing entry in CLAUDE.md) — this is purely a
+    // "did tapping it do something" affordance, not a real progress
+    // indicator for a slow operation.
+    setTimeout(() => setOrphanChecking(false), 400);
+  };
   // ADDED — real ask: "allow error reporting" — see ErrorLogScreen's
   // own header for the full reasoning (a local, on-device log, not a
   // real third-party crash reporter).
@@ -709,6 +729,11 @@ function DeveloperToolsScreen({ onClose }) {
         <div onClick={() => orphans.length > 0 && setShowOrphans((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: orphans.length > 0 ? "pointer" : "default" }}>
           <LinkBreak size={15} color={orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} />
           <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>Broken references</span>
+          <span onClick={recheckOrphans} role="button" tabIndex={0} aria-label="Check again"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); recheckOrphans(e); } }}
+            style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.home, cursor: "pointer", padding: "2px 4px" }}>
+            {orphanChecking ? "Checking…" : "Check again"}
+          </span>
           <span style={{ fontSize: 13, color: orphans.length > 0 ? ACTION.red : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>
             {orphans.length === 0 ? "None found" : `${orphans.length}${showOrphans ? " ▲" : " ▼"}`}
           </span>
@@ -1216,10 +1241,28 @@ function PrivacyScreen({ onClose }) {
   // the pattern used elsewhere on the web. Shared across every PIN
   // field on this screen.
   const [showPins, setShowPins] = useState(false);
+  // ADDED — real ask: an "allow screenshots" toggle, native-only (see
+  // screenSecurityService.js's own header) — checked once on mount, not
+  // every render, same pattern as the existing folder-picker/notification-
+  // availability checks elsewhere in this file.
+  const [screenshotsToggleAvailable, setScreenshotsToggleAvailable] = useState(false);
+  const [screenshotsToggleError, setScreenshotsToggleError] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    isScreenSecurityAvailable().then((available) => { if (!cancelled) setScreenshotsToggleAvailable(available); });
+    return () => { cancelled = true; };
+  }, []);
 
   const refresh = async () => setSettings(await PrivacySettingsRepository.getSettings());
 
   const activate = async () => { await PrivacySettingsRepository.activate(); refresh(); };
+  const toggleScreenshots = async () => {
+    setScreenshotsToggleError("");
+    const nextAllowed = !settings.allowScreenshots;
+    const ok = await setScreenshotsAllowed(nextAllowed);
+    if (!ok) { setScreenshotsToggleError("Couldn't change this — please try again."); return; }
+    setSettings(await PrivacySettingsRepository.update({ allowScreenshots: nextAllowed }));
+  };
   const attemptDeactivate = async () => {
     const result = await PrivacySettingsRepository.deactivate(pinEntry);
     if (result.ok) { setPinEntry(""); setPinError(""); refresh(); }
@@ -1689,6 +1732,25 @@ function PrivacyScreen({ onClose }) {
           </div>
         )}
 
+        {/* ADDED — real ask: an "allow screenshots" toggle, native-only —
+            see screenSecurityService.js's own header for why there's
+            nothing for it to control on the web/PWA build. */}
+        {screenshotsToggleAvailable && (
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Allow screenshots</span>
+              <div onClick={toggleScreenshots} role="switch" tabIndex={0} aria-checked={settings.allowScreenshots} aria-label="Allow screenshots"
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleScreenshots(); } }}
+                style={{ width: 44, height: 26, borderRadius: 999, background: settings.allowScreenshots ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", cursor: "pointer", transition: "background 0.15s", flexShrink: 0 }}>
+                <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", boxShadow: "0 1px 2px rgba(0,0,0,.4)", position: "absolute", top: 3, left: settings.allowScreenshots ? 21 : 3, transition: "left 0.15s" }} />
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
+              Off by default — SHOS blocks screenshots, screen recording, and casting on every screen, and hides its own content from the recent-apps switcher. Turning this on is a real, deliberate trade for convenience (e.g. capturing a result to show a clinician) — it takes effect immediately, everywhere in the app, until you turn it back off.
+            </div>
+            {screenshotsToggleError && <div style={{ fontSize: 11, color: ACTION.red, marginTop: 8 }}>{screenshotsToggleError}</div>}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2469,12 +2531,39 @@ const AUTO_EXPORT_INTERVAL_OPTIONS = [
 function AutomaticBackupsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
   const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  // ADDED — real ask: an editable save location, previously stuck on
+  // the public Documents folder with no way to change it. Native-only —
+  // checked once on mount, not every render, same pattern as the
+  // existing isChooseFolderExportAvailable() check elsewhere in this file.
+  const [folderPickerAvailable, setFolderPickerAvailable] = useState(false);
+  const [pickerBusy, setPickerBusy] = useState(false);
+  const [pickerError, setPickerError] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    isCustomAutoExportFolderAvailable().then((available) => { if (!cancelled) setFolderPickerAvailable(available); });
+    return () => { cancelled = true; };
+  }, []);
 
   const toggleAutoExport = async () => {
     setPrefs(await AppPreferencesRepository.update({ autoExportEnabled: !prefs.autoExportEnabled }));
   };
   const setAutoExportInterval = async (days) => {
     setPrefs(await AppPreferencesRepository.update({ autoExportIntervalDays: days }));
+  };
+  const chooseFolder = async () => {
+    setPickerError("");
+    setPickerBusy(true);
+    const result = await pickAutoExportFolder();
+    setPickerBusy(false);
+    if (result.ok) {
+      setPrefs(await AppPreferencesRepository.update({ autoExportFolder: result.folder }));
+    } else if (result.reason !== "cancelled") {
+      setPickerError("Couldn't set that folder — please try again.");
+    }
+  };
+  const resetFolder = async () => {
+    setPickerError("");
+    setPrefs(await AppPreferencesRepository.update({ autoExportFolder: null }));
   };
 
   return (
@@ -2494,7 +2583,7 @@ function AutomaticBackupsScreen({ onClose }) {
             </div>
           </div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: prefs.autoExportEnabled ? 12 : 0 }}>
-            Writes a full backup straight to your phone's Documents folder on its own, on
+            Writes a full backup {prefs.autoExportFolder ? "to your chosen folder" : "straight to your phone's Documents folder"} on its own, on
             whatever schedule you pick below — no need to remember to tap Export. Only
             runs when there's something new since the last backup. Nothing leaves this
             device; it's the same local file the manual Export button produces.
@@ -2515,6 +2604,35 @@ function AutomaticBackupsScreen({ onClose }) {
             </div>
           )}
         </div>
+        {/* ADDED — real ask: an editable save location. Native-only —
+            the plugin behind this (a persisted Android SAF folder
+            reference) has no web equivalent, so this card simply isn't
+            offered there. */}
+        {folderPickerAvailable && (
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginTop: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Save location</div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 12 }}>
+              {prefs.autoExportFolder
+                ? `Currently saving to "${prefs.autoExportFolder.name || "the chosen folder"}".`
+                : "Currently saving to your phone's Documents folder (the default). Pick a different folder if you'd rather it went somewhere else — a synced cloud folder, for example."}
+            </div>
+            {pickerError && <div style={{ fontSize: 11, color: ACTION.red, marginBottom: 8 }}>{pickerError}</div>}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span onClick={pickerBusy ? undefined : chooseFolder} role="button" tabIndex={0}
+                onKeyDown={(e) => { if (!pickerBusy && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); chooseFolder(); } }}
+                style={{ padding: "8px 14px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: pickerBusy ? "default" : "pointer", opacity: pickerBusy ? 0.6 : 1, background: ACCENTS.home, color: "#FFFFFF" }}>
+                {pickerBusy ? "Choosing…" : prefs.autoExportFolder ? "Change folder" : "Choose a folder…"}
+              </span>
+              {prefs.autoExportFolder && (
+                <span onClick={resetFolder} role="button" tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); resetFolder(); } }}
+                  style={{ padding: "8px 14px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
+                  Reset to default
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

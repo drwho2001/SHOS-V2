@@ -68,7 +68,7 @@ import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../reposito
 // this just toggles membership in it, never a second copy here).
 import { MyProfileRepository } from "../repositories/myProfileRepository";
 // ADDED 19 Aug 2026 — real ask: configurable inactive-contact threshold.
-import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
+import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../repositories/appPreferencesRepository";
 // New 18 Aug 2026: Encounters module now exists, so the Timeline
 // section below can read real data instead of showing the "not built
 // yet" stub. Read-only from Contacts' side — Contacts never writes to
@@ -2388,7 +2388,23 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // the confidence-tier reasoning. Same "compute once, the data's
   // small enough" judgment as the shared-registry duplicate checker
   // this is modeled on.
-  const duplicateCandidates = useMemo(() => findContactDuplicateCandidates(activeContacts), [activeContacts]);
+  const allDuplicateCandidates = useMemo(() => findContactDuplicateCandidates(activeContacts), [activeContacts]);
+  // ADDED — real ask: a per-pair dismiss, so a pair that's genuinely
+  // two different people (a shared name, a coincidental phone-number
+  // typo, whatever the real signal was) stops reappearing every time
+  // this panel is opened — see AppPreferencesRepository's own comment
+  // on the stored key shape.
+  const [dupPrefs, setDupPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  const dismissedPairKey = (idA, idB) => [idA, idB].sort().join("_");
+  const dismissedPairSet = useMemo(() => new Set(dupPrefs.dismissedContactDuplicatePairs || []), [dupPrefs.dismissedContactDuplicatePairs]);
+  const duplicateCandidates = useMemo(
+    () => allDuplicateCandidates.filter(({ a, b }) => !dismissedPairSet.has(dismissedPairKey(a.id, b.id))),
+    [allDuplicateCandidates, dismissedPairSet]
+  );
+  const dismissDuplicatePair = async (idA, idB) => {
+    const key = dismissedPairKey(idA, idB);
+    setDupPrefs(await AppPreferencesRepository.update({ dismissedContactDuplicatePairs: [...(dupPrefs.dismissedContactDuplicatePairs || []), key] }));
+  };
   const [showDuplicates, setShowDuplicates] = useState(false);
   // ADDED 26 Aug 2026 — real ask: long-press a card to enter multi-
   // select mode, then bulk delete/archive/edit. "Edit" deliberately
@@ -2562,6 +2578,18 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                       )}
                     </div>
                   ))}
+                  {/* ADDED — real ask: a per-pair dismiss, for a pair
+                      that's genuinely two different people rather than
+                      a real duplicate. Doesn't merge or change either
+                      record — just stops flagging this specific pair
+                      again. */}
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
+                    <span onClick={() => dismissDuplicatePair(a.id, b.id)} role="button" tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); dismissDuplicatePair(a.id, b.id); } }}
+                      style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>
+                      Not a duplicate — dismiss
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>

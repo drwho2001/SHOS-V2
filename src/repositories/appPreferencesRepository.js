@@ -68,6 +68,26 @@ export const DEFAULT_APP_PREFERENCES = {
   // no dialog).
   autoExportEnabled: false,
   autoExportIntervalDays: 30,
+  // ADDED — real ask: an editable save location for automatic backups,
+  // which always silently wrote to the public Documents folder with no
+  // way to change that. A persisted Android SAF tree reference
+  // (fileExportHelper.js's pickAutoExportFolder(), which takes a real
+  // persistable URI permission on pick — safe to keep across app
+  // restarts, not a one-shot handle) — {id, name} or null for the
+  // original Documents-folder default. Web has no equivalent silent-
+  // write capability at all (see writeTextFileSilently's own comment),
+  // so this stays null there regardless — the UI only offers the
+  // picker where it can actually be honoured.
+  autoExportFolder: null,
+  // ADDED — real ask: per-pair dismiss for the Contacts duplicate
+  // checker (findContactDuplicateCandidates in fuzzyMatch.js) — a pair
+  // that's genuinely two different people shouldn't keep reappearing in
+  // the "Possible duplicates" panel every time it's opened. Stores each
+  // dismissed pair as a stable, order-independent key
+  // (`${idA}_${idB}` with the two ids sorted, so dismissing A-then-B or
+  // B-then-A dismisses the same pair) — deliberately NOT keyed by name/
+  // field content, since two real different people can share a name.
+  dismissedContactDuplicatePairs: [],
   // ADDED — real ask: "opening back to last page" instead of always
   // landing on Home. NOT a user-facing setting shown anywhere in
   // Settings — automatically maintained navigation state, same

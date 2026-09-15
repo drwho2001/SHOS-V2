@@ -226,6 +226,61 @@ export async function exportTextFileToChosenFolder(filename, contents, mimeType 
   }
 }
 
+// ADDED — real ask: an editable save location for the automatic
+// (unattended) backup, distinct from exportTextFileToChosenFolder
+// above — that one both PICKS and immediately WRITES in one call, for
+// a manual export happening right now. Automatic export needs the pick
+// and the write to happen at different times (pick once in Settings,
+// write silently on every later app open with no picker prompt), which
+// is only possible because the scoped-storage plugin's pickFolder()
+// takes a real persistable URI permission (see this file's own history
+// above) — the returned {id, name} is genuinely safe to store in
+// AppPreferencesRepository and reuse across app restarts, not a
+// one-shot handle. Native-only, deliberately: web has no equivalent
+// no-dialog silent-write path at all (see writeTextFileSilently's own
+// comment on why), so there's nothing for a saved folder to be used
+// for there.
+export async function isCustomAutoExportFolderAvailable() {
+  const { Capacitor } = await import("@capacitor/core");
+  if (!Capacitor.isNativePlatform()) return false;
+  const { plugin } = await getScopedStoragePlugin();
+  return !!plugin;
+}
+
+export async function pickAutoExportFolder() {
+  const { plugin: ScopedStoragePlugin } = await getScopedStoragePlugin();
+  if (!ScopedStoragePlugin) return { ok: false, reason: "unavailable" };
+  try {
+    const { folder } = await ScopedStoragePlugin.pickFolder();
+    if (!folder) return { ok: false, reason: "cancelled" };
+    return { ok: true, folder };
+  } catch (err) {
+    // Same "a cancelled system picker can throw rather than resolve
+    // with nothing" handling as exportTextFileToChosenFolder above.
+    console.warn("[fileExportHelper] Auto-export folder picker did not complete:", err);
+    return { ok: false, reason: "cancelled" };
+  }
+}
+
+// Writes into a previously-picked, persisted folder — used by
+// runAutoExportIfDue() in place of writeTextFileSilently's Documents-
+// folder default once a custom folder has been chosen. Same silent,
+// no-dialog contract: returns a plain boolean, never a browser-download
+// fallback, for the same "an unexpected popup/download on app open
+// would be the startling interruption this whole silent path exists to
+// avoid" reasoning as writeTextFileSilently itself.
+export async function writeTextFileToFolder(folder, filename, contents, mimeType = "text/plain") {
+  const { plugin: ScopedStoragePlugin } = await getScopedStoragePlugin();
+  if (!ScopedStoragePlugin) return false;
+  try {
+    await ScopedStoragePlugin.writeFile({ folder, path: filename, data: contents, encoding: "utf8", mimeType });
+    return true;
+  } catch (err) {
+    console.warn("[fileExportHelper] Auto-export into the chosen folder failed:", err);
+    return false;
+  }
+}
+
 // Lets the UI decide whether to even show a "Choose a folder…" button
 // — checked once, cheaply, rather than every render.
 export async function isChooseFolderExportAvailable() {

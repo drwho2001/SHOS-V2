@@ -30,8 +30,15 @@ public class MainActivity extends BridgeActivity {
   // works via an explicit export/share action, not by showing the live
   // screen). Set before super.onCreate() so it applies to the very
   // first frame drawn, not just frames after some later point.
+  // CHANGED — real ask: an "allow screenshots" toggle in Settings >
+  // Privacy (default off, matching this exact starting flag). The
+  // toggle's own real effect happens later, at runtime, via
+  // ScreenSecurityPlugin — registered here, before super.onCreate() per
+  // Capacitor's own plugin-registration contract, so it's available the
+  // moment the WebView can reach it.
   @Override
   public void onCreate(Bundle savedInstanceState) {
+    registerPlugin(ScreenSecurityPlugin.class);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
     super.onCreate(savedInstanceState);
   }
