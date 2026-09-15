@@ -860,7 +860,17 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
           const masked = isMasked(p);
           return (
             <ListRow key={p.id} T={T} onClick={() => masked ? setRevealedIds((ids) => [...ids, p.id]) : setScreen({ name: "detail", id: p.id })} label={summaryLabel(p)}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {/* FIXED — real gap: Cycle's own list row shows a Drop
+                    icon and Contraception's shows a ContraceptionIcon,
+                    but this list never got the equivalent — its OWN
+                    detail view already has this same Baby icon, it
+                    just never made it into the list row. Kept
+                    unconditional even when masked, matching the detail
+                    view's own header (Baby + date shown regardless of
+                    masking — only the result/status is what masking
+                    actually hides). */}
+                <Baby size={14} color={T.healthcareBlue} weight="fill" />
                 {masked && <EyeSlash size={13} color={T.textSecondary} />}
                 <span style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary, fontStyle: masked ? "italic" : "normal" }}>{summaryLabel(p)}</span>
               </div>

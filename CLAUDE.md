@@ -211,9 +211,8 @@ this date; summarized here for durability.
     (Testing/Clinic Visits/Vaccinations then Symptoms/Measurements/
     Menstrual, two rows of three) already happened in an earlier
     session (see that file's own comment) — nothing left to do here
-    unless a different, more specific reorder was actually meant; #76
-    Menstrual type/flow icons + a broader icon/colour consistency
-    audit across list views.
+    unless a different, more specific reorder was actually meant. #76
+    — DONE, see "Recently shipped" below.
   - **Group D — Clinic Card / Lists / Guide polish** (no strong
     dependency between them, smaller UI additions): #74 a Clinic Card
     recent-contacts section; #75 Lists reassociation UX. #77
@@ -3307,6 +3306,46 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (15 Sep 2026, continuing still further again — Pregnancy list icon, #76)
+
+Real ask: continue the backlog into #76 (Menstrual type/flow missing
+icons in lists; icon consistency/colour audit across list views).
+
+**Checked first, not assumed**: Cycle's own list already shows a Drop
+icon and Contraception's own list already shows a `ContraceptionIcon`
+(both added 2 Sep 2026) — the "flow" half of this item's title was
+already done. The real, remaining gap was Pregnancy: its own DETAIL
+view already had a Baby icon next to the date, but the LIST view never
+got the same treatment — every row showed plain text only, the one
+real inconsistency within this module's own three tabs.
+
+**Fixed**: added the same Baby icon (matching the detail view's own
+size/colour) to Pregnancy's list rows, kept unconditional even for a
+masked entry — mirroring the detail view's own header, where the Baby
+icon + date show regardless of masking and only the result/status
+itself is what masking actually hides.
+
+**Broader audit — checked, no other gap found.** Searched every other
+module for the same "icon in detail view, missing from its own list"
+shape, and more generally for any per-record-type icon in a list row
+at all: none of Vaccinations/Symptom Log/Testing/Clinic Visits/
+Measurements use a domain icon in either their list OR detail views —
+a consistent, deliberate choice already documented elsewhere in this
+file (Test Results' own "no icon, to avoid clutter/alarm on sensitive
+health data" reasoning). Menstrual Health is the only module using
+this icon-per-record pattern at all, because it's the only one with
+multiple visually-distinct sub-types (Cycle/Contraception/Pregnancy)
+needing a way to tell them apart at a glance — so this really was a
+one-file, one-tab gap, not a wider pattern needing app-wide work.
+
+Verified live via Playwright end-to-end: enabled Menstrual &
+contraception tracking via Settings > Preferences, opened Healthcare's
+new sub-tab, revealed the gender-gated Pregnancy tab via its own
+"Show pregnancy tracking anyway" link, and confirmed the Baby icon now
+renders on both a real "Negative" entry and a masked "Tap to reveal"
+entry. Full build, `npx eslint .` clean, and all 15 smoke-test flows
+pass against a real `vite preview` production build.
 
 ## Recently shipped (15 Sep 2026, continuing still further — Interactive Tour fixes, #77)
 
