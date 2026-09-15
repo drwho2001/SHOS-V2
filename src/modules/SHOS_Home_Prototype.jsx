@@ -134,7 +134,36 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
   );
 }
 
+// ADDED 15 Sep 2026 — real ask, a correction to the same day's earlier
+// flex-wrap attempt: that version used a fixed `flex-basis` in px to
+// decide when the Clinic Card/Episodes/Calendar shortcuts wrap, and a
+// real mobile-width check caught it changing the already-correct
+// mobile layout too — at a genuine 320-360px phone width, 2 buttons
+// at that basis no longer fit on one line the way the original
+// `flex: 1` (no minimum) row always did, wrapping to 1-per-line
+// instead of the intended, unaffected 2-then-1. Real fix: an actual
+// measured-width check, not a guessed pixel threshold doing double
+// duty as both "should this wrap" and "is this small phone or a
+// desktop." Below 900px (comfortably above any real phone, including
+// landscape/large phones, comfortably below any real desktop browser
+// window) renders the exact original 2-then-1 markup, unchanged.
+// 900px+ renders the merged one-row layout. Both variants already use
+// relative sizing internally (`flex: 1`/`width: "50%"` before, `flex:
+// 1` again in the 3-up row) — only the trigger for WHICH layout to
+// use is a real, live-updating width check, not a magic number
+// standing in for it.
+function useIsDesktopWidth() {
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== "undefined" && window.innerWidth >= 900);
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 900);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return isDesktop;
+}
+
 function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, registerModuleBackHandler, onLockNow, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen }) {
+  const isDesktopWidth = useIsDesktopWidth();
   const [darkMode] = useDarkModePreference();
   // Same convention as every other module's own DARK theme object —
   // reuses Medication's own hand-picked dark default ("#5B85F5") so
@@ -780,34 +809,62 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           Home, not inside Healthcare, so they should carry Home's own
           teal accent rather than borrowing Healthcare's green. */}
       {/* CHANGED 15 Sep 2026 — real ask: on a wide (desktop) viewport
-          this used to leave Calendar stranded alone on its own
-          half-width row below Clinic Card/Episodes, with real empty
-          space either side of it. All 3 now live in one flex-wrap row
-          — `flex: "1 1 160px"` naturally keeps them one line wide on
-          desktop's now-much-wider content column while still wrapping
-          sensibly on a real phone-width screen (only 2 fit per line
-          under ~340px content width, matching roughly what the old
-          2-then-1 stacked layout already did there). Deliberately
-          self-organizing rather than a hardcoded "3 items = one row"
-          rule — a genuinely future 4th shortcut added here wraps into
-          a real 2x2 grid on its own once neither row fits 3, no layout
-          rewrite needed for that later. */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-        <div onClick={() => setShowClinicCard(true)} style={{ flex: "1 1 160px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
-          <CreditCard size={20} color={homeColor} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Clinic Card</span>
-        </div>
-        <div onClick={() => setShowTimeline(true)} style={{ flex: "1 1 160px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
-          <Stack size={20} color={homeColor} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Episodes</span>
-        </div>
-        {onOpenCalendar && (
-          <div onClick={onOpenCalendar} style={{ flex: "1 1 160px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
-            <Calendar size={20} color={homeColor} />
-            <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Calendar</span>
+          Calendar was stranded alone on its own half-width row below
+          Clinic Card/Episodes, with real empty space either side of
+          it. CORRECTED same day: the first fix merged all 3 into one
+          flex-wrap row keyed off a fixed `flex-basis` in px — a real
+          mobile-width check then caught that this changed the
+          already-correct mobile layout too (at a genuine 320-360px
+          phone width, 2 buttons at that basis no longer fit one line
+          the way the original `flex: 1`, no-minimum row always did,
+          wrapping to 1-per-line instead of the intended, unaffected
+          2-then-1). Real fix: branch on an actual measured viewport
+          width (`useIsDesktopWidth()` above), not a guessed pixel
+          threshold standing in for both "should this wrap" and "is
+          this a small phone or a desktop" at once. Below 900px this
+          renders the exact original 2-then-1 markup, byte-for-byte
+          unchanged from before this whole round of changes — mobile
+          is genuinely unaffected, not just "should still work."
+          900px+ renders the merged one-row-of-3. */}
+      {isDesktopWidth ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+          <div onClick={() => setShowClinicCard(true)} style={{ flex: "1 1 260px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+            <CreditCard size={20} color={homeColor} />
+            <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Clinic Card</span>
           </div>
-        )}
-      </div>
+          <div onClick={() => setShowTimeline(true)} style={{ flex: "1 1 260px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+            <Stack size={20} color={homeColor} />
+            <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Episodes</span>
+          </div>
+          {onOpenCalendar && (
+            <div onClick={onOpenCalendar} style={{ flex: "1 1 260px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+              <Calendar size={20} color={homeColor} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Calendar</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+            <div onClick={() => setShowClinicCard(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+              <CreditCard size={20} color={homeColor} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Clinic Card</span>
+            </div>
+            <div onClick={() => setShowTimeline(true)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+              <Stack size={20} color={homeColor} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Episodes</span>
+            </div>
+          </div>
+          {onOpenCalendar && (
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+              <div onClick={onOpenCalendar} style={{ width: "50%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px 12px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}`, background: `${homeColor}22`, cursor: "pointer" }}>
+                <Calendar size={20} color={homeColor} />
+                <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Calendar</span>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Quick add</div>
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 6 }}>Personal</div>
