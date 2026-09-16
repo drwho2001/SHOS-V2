@@ -8,6 +8,7 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { OrganismRegistry } from "../registries/organismRegistry";
 import { ResultsRegistry } from "../registries/resultsRegistry";
 import { EncounterRepository } from "../repositories/encounterRepository";
+import { ContactRepository } from "../repositories/contactRepository";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { computeStock } from "../calculations/medicationCalculations";
 import { formatRelativeDate, sortByDateDesc } from "../calculations/encounterCalculations";
@@ -240,7 +241,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // rest stay always-visible, since they're either already compact
   // (Identity, Allergies) or genuinely time-sensitive/likely-to-be-
   // acted-on (Testing, Treatment, Symptoms), not "routinely unused."
-  const [collapsed, setCollapsed] = useState({ medications: true, vaccinations: true, encounters: true });
+  const [collapsed, setCollapsed] = useState({ medications: true, vaccinations: true, encounters: true, recentContacts: true });
   const toggleCollapsed = (key) => setCollapsed((c) => ({ ...c, [key]: !c[key] }));
 
   // ADDED — real ask: back should close whichever overlay is actually on
@@ -336,6 +337,32 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
     title: e.title || e.encounterType || "Encounter",
     subtitle: e.date ? formatRelativeDate(e.date) : "",
   }));
+
+  // ADDED 16 Sep 2026 — real ask: a "recent contacts" section distinct
+  // from "Recent encounters" above (which links to the Encounter
+  // record, not the person). Derived from the same already-loaded
+  // `encounters`/`contacts` data — each real Contact who attended a
+  // recent encounter, deduped, most-recent-encounter-first, capped the
+  // same way `recentPartners` is. No new repository read needed beyond
+  // `contacts` itself.
+  const contactsRaw = useLoadedMemo(() => ContactRepository.getAll(), [], []);
+  const recentContacts = useMemo(() => {
+    const contactsById = new Map(contactsRaw.map((c) => [c.id, c]));
+    const seen = new Set();
+    const out = [];
+    for (const e of sortByDateDesc(encounters.filter((e) => withinTimeframe(e.date)))) {
+      for (const cid of e.attendeeIds || []) {
+        if (seen.has(cid) || !contactsById.has(cid)) continue;
+        seen.add(cid);
+        const c = contactsById.get(cid);
+        out.push({ id: c.id, title: c.nickname || c.name || "Unnamed contact", subtitle: `Last encounter ${formatRelativeDate(e.date)}` });
+        if (out.length >= 8) break;
+      }
+      if (out.length >= 8) break;
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- withinTimeframe closes over cutoffDate, depend on that directly instead of a function recreated every render
+  }, [contactsRaw, encounters, cutoffDate]);
 
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
@@ -591,6 +618,19 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         <SectionCard T={T}>
           {recentPartners.length === 0 ? <EmptyRow T={T}>No encounters logged yet.</EmptyRow> : recentPartners.map((p) => (
             <Row T={T} key={p.id} title={p.title} subtitle={p.subtitle} color={ACCENTS.encounters} onTap={() => setPendingNav({ tab: "activity", recordId: p.id, label: p.title, moduleLabel: "Encounter" })} />
+          ))}
+        </SectionCard>
+      )}
+        </>
+      )}
+
+      {visibility.recentContacts && (
+        <>
+      <CollapsibleSectionHeader T={T} onTap={() => goTo("contacts")} count={recentContacts.length} collapsed={collapsed.recentContacts} onToggleCollapse={() => toggleCollapsed("recentContacts")}>Recent contacts</CollapsibleSectionHeader>
+      {!collapsed.recentContacts && (
+        <SectionCard T={T}>
+          {recentContacts.length === 0 ? <EmptyRow T={T}>No encounters logged yet.</EmptyRow> : recentContacts.map((c) => (
+            <Row T={T} key={c.id} title={c.title} subtitle={c.subtitle} color={ACCENTS.contacts} onTap={() => setPendingNav({ tab: "contacts", recordId: c.id, label: c.title, moduleLabel: "Contact" })} />
           ))}
         </SectionCard>
       )}

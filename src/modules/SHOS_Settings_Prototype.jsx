@@ -3143,6 +3143,34 @@ const CALENDAR_MODULE_TARGETS = {
   medications: { tab: "medication", subTab: null },
 };
 
+// FIXED 16 Sep 2026 — real bug: every dot/chip/list-row colour below
+// used `ACCENTS[moduleKey]` directly, but `moduleKey` values here are
+// "testing"/"clinicVisits"/"vaccinations"/"symptomLog"/"medications" —
+// none of which are real ACCENTS keys (only the 5 top-level module
+// colours are: contacts/encounters/medication/healthcare/home). Every
+// Healthcare sub-type and every medication event was silently falling
+// back to the generic grey default, indistinguishable from each other
+// — only Encounters ever showed its real colour. Maps each real
+// moduleKey to the same accent that module's own screens already use
+// elsewhere in the app (the 4 Healthcare sub-tabs all already render
+// under ACCENTS.healthcare everywhere else; "medications" plural here
+// was simply missing the singular `medication` key). A plain FUNCTION,
+// not a baked-in-at-module-load object — ACCENTS' own values can be
+// overridden by the user (Colour scheme screen) and this file's
+// module-load timing can't assume that override has already applied,
+// the exact bug class already found and fixed twice this session for
+// Measurements/MenstrualHealth's own LIGHT/DARK constants.
+function calendarModuleAccent(moduleKey) {
+  return {
+    encounters: ACCENTS.encounters,
+    testing: ACCENTS.healthcare,
+    clinicVisits: ACCENTS.healthcare,
+    vaccinations: ACCENTS.healthcare,
+    symptomLog: ACCENTS.healthcare,
+    medications: ACCENTS.medication,
+  }[moduleKey] || "#656568";
+}
+
 // ADDED 1 Sep 2026 — real ask, item 2 of the follow-up feature list: a
 // lightweight glossary for the clinical shorthand used throughout this
 // app (DoxyPEP, TOC, C&S, PEP...) without assuming everyone already
@@ -3660,8 +3688,8 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
               // theme — nearly invisible against DARK.bg, unlike the
               // active chip (module accent, already theme-agnostic).
               <div key={key} onClick={() => toggleModule(key)}
-                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? ACCENTS[key] : (darkMode ? DARK.border : NEUTRAL.border)}`, color: active ? ACCENTS[key] : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled), background: active ? `${ACCENTS[key]}15` : "transparent" }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: active ? ACCENTS[key] : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) }} />
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? calendarModuleAccent(key) : (darkMode ? DARK.border : NEUTRAL.border)}`, color: active ? calendarModuleAccent(key) : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled), background: active ? `${calendarModuleAccent(key)}15` : "transparent" }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: active ? calendarModuleAccent(key) : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled) }} />
                 {TRASH_MODULE_LABELS[key]}
               </div>
             );
@@ -3692,7 +3720,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
             const dayEvents = grouped[key] || [];
             const isToday = key === todayKey;
             const isSelected = selectedDay === day;
-            const moduleColorsPresent = [...new Set(dayEvents.map((e) => e.moduleKey))].map((k) => ACCENTS[k] || "#656568");
+            const moduleColorsPresent = [...new Set(dayEvents.map((e) => e.moduleKey))].map((k) => calendarModuleAccent(k));
             return (
               <div key={i} onClick={() => setSelectedDay(isSelected ? null : day)}
                 style={{ aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 8, cursor: "pointer", background: isSelected ? "#1B1B1F" : isToday ? (darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant) : "transparent", gap: 2 }}>
@@ -3725,7 +3753,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
                 {selectedEvents.map((ev, i) => (
                   <div key={i} onClick={() => goToEvent(ev)}
                     style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: i < selectedEvents.length - 1 ? `1px solid ${darkMode ? DARK.border : NEUTRAL.border}` : "none", cursor: "pointer" }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: ACCENTS[ev.moduleKey] || "#656568", flexShrink: 0 }} />
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: calendarModuleAccent(ev.moduleKey), flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
                       <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>{TRASH_MODULE_LABELS[ev.moduleKey] || ev.moduleKey}</div>

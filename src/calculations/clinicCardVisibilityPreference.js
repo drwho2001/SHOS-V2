@@ -35,6 +35,10 @@ export const CLINIC_CARD_SECTIONS = [
   { key: "menstrualContraception", label: "Menstrual & contraception" },
   { key: "symptoms", label: "Active symptoms" },
   { key: "encounters", label: "Recent encounters" },
+  // ADDED 16 Sep 2026 — real ask: a separate "recent contacts" section
+  // — links to a Contact's own profile, not the Encounter record the
+  // section above already covers.
+  { key: "recentContacts", label: "Recent contacts" },
   { key: "emergency", label: "Emergency information" },
 ];
 

@@ -246,6 +246,10 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   const [menstrualTrackingEnabled] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.menstrualTrackingEnabled), [], false);
   const [lastPeriod, setLastPeriod] = useState(null);
   const [contraceptionDue, setContraceptionDue] = useState(null);
+  // ADDED — real ask: a Status-at-a-glance ring for Cycle, matching
+  // the existing Testing/Adherence rings' own "days elapsed / a real
+  // interval" shape rather than a new pattern.
+  const [avgCycleLength, setAvgCycleLength] = useState(null);
   // ADDED 19 Aug 2026 — real ask: a backup reminder. Read once on
   // mount, same pattern as everything else on Home — see
   // backupService.js's getLastBackupInfo() for how "due" is computed.
@@ -510,6 +514,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       const cycles = (await MenstrualCycleRepository.getAll()).filter((c) => !c.isArchived);
       const sortedCycles = [...cycles].sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
       setLastPeriod(sortedCycles[0] || null);
+      setAvgCycleLength(await MenstrualCycleRepository.getAverageCycleLengthDays());
 
       // "Contraception due" mirrors "Next clinic visit" exactly — the
       // soonest upcoming date across currently-active methods, not
@@ -615,6 +620,29 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       </div>
     );
   };
+
+  // ADDED — real ask: Cycle/Contraception rings alongside Testing/
+  // Adherence, same "days elapsed / a real interval" shape, gated on
+  // real data existing (no ring on a fresh install or a method with no
+  // logged interval). Cycle compares against the person's OWN average
+  // (getAverageCycleLengthDays()) rather than a fixed external
+  // benchmark — same "descriptive, not predictive" precedent as
+  // testingTrend elsewhere in this app. Contraception's pct is
+  // genuinely universal across method types (a 3-week patch and a
+  // 12-week injection both correctly read as "% of the way from your
+  // last dose to the next one due") since it's computed from the
+  // record's OWN startDate→nextDueDate span, not a hardcoded interval
+  // — this is exactly why methods with no real interval (a continuous
+  // pill, a multi-year IUD) correctly get no ring at all rather than a
+  // guessed one, same "not enough data" honesty as every other ring.
+  const cycleDaysSince = lastPeriod?.startDate ? Math.round((new Date() - new Date(lastPeriod.startDate)) / 86400000) : null;
+  const cycleOverdue = avgCycleLength != null && cycleDaysSince != null && cycleDaysSince > avgCycleLength;
+  const contraSpanDays = contraceptionDue?.startDate && contraceptionDue?.nextDueDate
+    ? Math.round((new Date(contraceptionDue.nextDueDate) - new Date(contraceptionDue.startDate)) / 86400000)
+    : null;
+  const contraDaysSince = contraceptionDue?.startDate ? Math.round((new Date() - new Date(contraceptionDue.startDate)) / 86400000) : null;
+  const contraDaysUntilDue = contraceptionDue?.nextDueDate ? Math.round((new Date(contraceptionDue.nextDueDate) - new Date()) / 86400000) : null;
+  const contraOverdue = contraDaysUntilDue != null && contraDaysUntilDue < 0;
 
   const SummaryRow = ({ label, value, onClick, moduleColor }) => (
     <div onClick={onClick} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: onClick ? "pointer" : "default" }}>
@@ -745,10 +773,10 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           once there's real data for at least one ring (same "not
           enough data" honesty as everywhere else in this app — no
           empty/zero rings on a fresh install). */}
-      {(testingStats?.testCount > 0 || adherence != null) && (
+      {(testingStats?.testCount > 0 || adherence != null || (menstrualTrackingEnabled && ((cycleDaysSince != null && avgCycleLength != null) || contraSpanDays != null))) && (
         <>
           <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Status at a glance</div>
-          <div style={{ display: "flex", gap: 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "16px 8px", marginBottom: 24 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "16px 8px", marginBottom: 24 }}>
             {testingStats?.testCount > 0 && testingStats.daysSinceLast != null && (
               <StatusRing
                 pct={(testingStats.daysSinceLast / BASHH_TESTING_INTERVAL_DAYS) * 100}
@@ -767,6 +795,24 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 on this screen. */}
             {adherence != null && (
               <StatusRing pct={adherence} color={medsBlue} centerText={`${adherence}%`} caption="7-day adherence" onClick={() => onNavigateToRecord("medication")} />
+            )}
+            {menstrualTrackingEnabled && cycleDaysSince != null && avgCycleLength != null && (
+              <StatusRing
+                pct={(cycleDaysSince / avgCycleLength) * 100}
+                color={cycleOverdue ? actionRedColor : menstrualColor}
+                centerText={`${cycleDaysSince}d`}
+                caption={cycleOverdue ? "Cycle — late" : "Cycle day"}
+                onClick={() => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth")}
+              />
+            )}
+            {menstrualTrackingEnabled && contraSpanDays != null && (
+              <StatusRing
+                pct={(contraDaysSince / contraSpanDays) * 100}
+                color={contraOverdue ? actionRedColor : medsBlue}
+                centerText={contraOverdue ? "Due" : `${contraDaysUntilDue}d`}
+                caption={contraOverdue ? "Contraception overdue" : "Contraception due"}
+                onClick={() => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth")}
+              />
             )}
           </div>
         </>
