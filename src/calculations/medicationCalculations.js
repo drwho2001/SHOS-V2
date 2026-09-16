@@ -21,6 +21,45 @@
 // reasoned about on their own.
 import { realTimestampFromStored } from "./dateInputHelpers";
 
+// ADDED 16 Sep 2026 — real gap: a combination product (PrEP —
+// Emtricitabine 200mg/Tenofovir DP 245mg; co-codamol — Paracetamol
+// 500mg/Codeine 30mg) has more than one active ingredient at its own
+// strength, but the medication record only ever had one dose-strength
+// value+unit — real accounts were jamming both numbers into one string
+// ("200 , 245"), which isn't a real number, so anywhere that multiplied
+// it by unitsPerDose (the Update-dose sheet's own description, dose
+// history) silently rendered "NaN". `doseComponents` (an array of
+// {label, value, unit}, one entry per active ingredient) is now the
+// real source of truth; `getDoseComponents()` wraps the OLD singular
+// doseStrengthValue/doseStrengthUnit fields as a single unlabeled
+// component for any medication never touched since — deliberately
+// never auto-splits an existing combined string like "200 , 245" into
+// separate components, since guessing which number belongs to which
+// ingredient could silently corrupt a real dose (the same caution
+// backupMigrations.js's own dosePerUnit-rename entry already applied).
+export function getDoseComponents(med) {
+  if (med.doseComponents && med.doseComponents.length > 0) return med.doseComponents;
+  if (med.doseStrengthValue) return [{ label: "", value: med.doseStrengthValue, unit: med.doseStrengthUnit || "" }];
+  return [];
+}
+
+// Formats a dose-components list for display, one "Label 245mg"-style
+// segment per ingredient joined by " / ", each scaled by unitsPerDose
+// (taking 2 tablets doubles each ingredient's own dose, same as the
+// old single-value multiply this replaces). A non-numeric legacy value
+// (the "200 , 245" case above, already saved before this fix existed)
+// is shown as-is rather than as "NaN" — an honest display of what was
+// actually typed, not a guess at the real number.
+export function formatDoseComponents(components, unitsPerDose = 1) {
+  if (!components || components.length === 0) return null;
+  return components.map((c) => {
+    const numeric = Number(c.value);
+    const total = Number.isFinite(numeric) && c.value !== "" ? +(numeric * unitsPerDose).toFixed(2) : c.value;
+    const amount = `${total}${c.unit || ""}`;
+    return c.label ? `${c.label} ${amount}` : amount;
+  }).join(" / ");
+}
+
 // Days-remaining, dropping to hours/minutes under 1 day — so the display
 // keeps counting down meaningfully right as stock actually runs low,
 // instead of flooring to "0d remaining" and going silent.

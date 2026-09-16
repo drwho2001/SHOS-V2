@@ -256,6 +256,12 @@ const DEFAULT_MEDICATION = {
   inventoryTracked: true, unitsPerContainer: 0,
   refillThreshold: 0, defaultRefillQuantity: 0,
   usualSupplier: "", refillRequestedAt: null,
+  // ADDED 16 Sep 2026 — real ask: a "Cancel" refill-banner action,
+  // distinct from refillRequestedAt (which implies a real order was
+  // placed). Same suppression mechanism (see refillReminderSync.js's
+  // getRefillDueMedications()), cleared the same way — the next real
+  // logged refill for this medication.
+  refillCancelledAt: null,
   isArchived: false, sortOrder: 0,
   route: "", medicationType: "",
   // CHANGED 19 Aug 2026 — dosePerUnit (one free-text string) replaced
@@ -265,6 +271,13 @@ const DEFAULT_MEDICATION = {
   // restructuring, so replacing it outright rather than keeping the
   // old shape around for compatibility it never really needed.
   doseStrengthValue: "", doseStrengthUnit: "",
+  // ADDED 16 Sep 2026 — real gap: a combination product (PrEP, co-
+  // codamol) has more than one active ingredient at its own strength —
+  // see medicationCalculations.js's getDoseComponents()/
+  // formatDoseComponents() for the real reasoning and why the old
+  // singular fields above are kept as a read-only fallback, never
+  // migrated automatically. One entry per ingredient: {label, value, unit}.
+  doseComponents: [],
   // ADDED 19 Aug 2026 — real gap: Medicines Registry's own Category
   // field, fetched live from Notion this session, never ported until
   // now. Multi-select, matching Notion (a medication can genuinely be
@@ -381,7 +394,7 @@ export const MedicationRepository = {
   // superseded, then the current fields update to the new dose.
   // Stock/adherence/log history all stay attached to this same
   // record's id throughout, genuinely continuous.
-  async updateDose(id, { doseStrengthValue, doseStrengthUnit, unitsPerDose, note }) {
+  async updateDose(id, { doseStrengthValue, doseStrengthUnit, doseComponents, unitsPerDose, note }) {
     await ensureLoaded();
     let updatedMedication = null;
     medications = medications.map((m) => {
@@ -389,13 +402,14 @@ export const MedicationRepository = {
       const historyEntry = {
         doseStrengthValue: m.doseStrengthValue,
         doseStrengthUnit: m.doseStrengthUnit,
+        doseComponents: m.doseComponents,
         unitsPerDose: m.unitsPerDose,
         supersededAt: new Date().toISOString(),
         note: note || "",
       };
       updatedMedication = {
         ...m,
-        doseStrengthValue, doseStrengthUnit, unitsPerDose,
+        doseStrengthValue, doseStrengthUnit, doseComponents, unitsPerDose,
         doseHistory: [...(m.doseHistory || []), historyEntry],
         updatedAt: new Date().toISOString(),
       };

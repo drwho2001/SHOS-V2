@@ -46,7 +46,7 @@ import { getDailyMedsState, handleTakeAll, handleSkipToday, handleSnooze } from 
 // parity" — same static-import reasoning as medicationReminderSync
 // above: these are now also called directly from in-app due-state
 // banner buttons, not just background listeners.
-import { getRefillDueMedications, handleMarkRefillRequested, handleSnoozeRefill } from "./calculations/refillReminderSync";
+import { getRefillDueMedications, handleMarkRefillRequested, handleCancelRefill, handleSnoozeRefill } from "./calculations/refillReminderSync";
 import { getTestingDueState, handleSnoozeTesting } from "./calculations/testingReminderSync";
 import { getVaccinationDueState, handleSnoozeVaccination } from "./calculations/vaccinationReminderSync";
 import { getClinicVisitDueState, handleSnoozeClinicVisit } from "./calculations/clinicVisitReminderSync";
@@ -1295,14 +1295,28 @@ export default function App() {
   // parity." Refill's "Requested" mirrors Medication Dashboard's own
   // existing markRequested() one-tap action — see
   // handleMarkRefillRequested's own comment in refillReminderSync.js.
-  const onRefillRequested = async () => {
-    const result = await handleMarkRefillRequested();
+  // CHANGED 16 Sep 2026 — real ask: a fuller action set
+  // (Requested/Snooze 2h/Snooze 1 day/Cancel), scoped to repeating
+  // (daily/custom) medications only — a PRN medication due at the same
+  // moment keeps the simpler original set (Requested/one Snooze). Both
+  // handlers now take an optional `ids` subset (see
+  // handleMarkRefillRequested's own comment) so the two groups never
+  // act on each other.
+  const onRefillRequested = async (ids) => {
+    const result = await handleMarkRefillRequested(ids);
     showNotifToast(result.medications.length ? `${result.medications.join(", ")} marked as requested` : "Marked as requested");
     checkDueMeds();
   };
-  const onRefillSnooze = async () => {
-    const result = await handleSnoozeRefill();
-    showNotifToast(`Snoozed ${result.minutes} min`);
+  const onRefillCancel = async (ids) => {
+    const result = await handleCancelRefill(ids);
+    showNotifToast(result.medications.length ? `${result.medications.join(", ")} — refill cancelled for now` : "Refill cancelled for now");
+    checkDueMeds();
+  };
+  const onRefillSnooze = async (minutes = 30, ids) => {
+    const result = await handleSnoozeRefill(minutes, ids);
+    const m = result.minutes;
+    const label = m >= 1440 ? `${Math.round(m / 1440)} day${m >= 2880 ? "s" : ""}` : m >= 60 ? `${Math.round(m / 60)}h` : `${m} min`;
+    showNotifToast(`Snoozed ${label}`);
     checkDueMeds();
   };
   // No one-tap "log a test" action — logging a real test needs a real
@@ -1968,8 +1982,18 @@ export default function App() {
 
           {/* ADDED — real ask: Refill parity. "Requested" mirrors
               Medication Dashboard's own existing one-tap markRequested()
-              — see handleMarkRefillRequested's own comment. */}
-          {refillDue.length > 0 && (
+              — see handleMarkRefillRequested's own comment.
+              CHANGED 16 Sep 2026 — real ask: a fuller action set
+              (Requested/Snooze 2h/Snooze 1 day/Cancel) for repeating
+              (daily/custom) medications, scoped via `ids` so it never
+              touches a PRN medication due at the same time — which
+              keeps the original, simpler set (Requested/one Snooze)
+              instead. A mixed banner (both kinds due at once) shows
+              both action rows, each acting only on its own group. */}
+          {refillDue.length > 0 && (() => {
+            const repeatingRefillDue = refillDue.filter((m) => m.usagePattern !== "prn");
+            const prnRefillDue = refillDue.filter((m) => m.usagePattern === "prn");
+            return (
             <div ref={refillBannerCallbackRef} style={{ background: ACCENTS.medication, borderTop: "1px solid rgba(255,255,255,.25)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <Pill size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -1982,15 +2006,26 @@ export default function App() {
                       {refillDue.map((m) => <li key={m.id}>{m.name}</li>)}
                     </ul>
                   )}
-                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <button onClick={onRefillRequested} style={{ padding: "6px 14px", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.medication, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Requested</button>
-                    <button onClick={onRefillSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
-                  </div>
+                  {repeatingRefillDue.length > 0 && (
+                    <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                      <button onClick={() => onRefillRequested(repeatingRefillDue.map((m) => m.id))} style={{ padding: "6px 14px", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.medication, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Requested</button>
+                      <button onClick={() => onRefillSnooze(120, repeatingRefillDue.map((m) => m.id))} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 2h</button>
+                      <button onClick={() => onRefillSnooze(1440, repeatingRefillDue.map((m) => m.id))} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 1 day</button>
+                      <button onClick={() => onRefillCancel(repeatingRefillDue.map((m) => m.id))} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Cancel</button>
+                    </div>
+                  )}
+                  {prnRefillDue.length > 0 && (
+                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                      <button onClick={() => onRefillRequested(prnRefillDue.map((m) => m.id))} style={{ padding: "6px 14px", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.medication, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Requested</button>
+                      <button onClick={() => onRefillSnooze(30, prnRefillDue.map((m) => m.id))} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
+                    </div>
+                  )}
                 </div>
                 <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => { setRefillDue([]); showNotifToast("Hidden for now — still needs a refill, will remind you again"); }} aria-label="Dismiss refill banner" />
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* ADDED — real ask: Testing parity. No one-tap "done" action
               — logging a real test needs a real result form, see

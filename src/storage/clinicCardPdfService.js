@@ -27,7 +27,7 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { ResultsRegistry } from "../registries/resultsRegistry";
 import { EncounterRepository } from "../repositories/encounterRepository";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
-import { computeStock } from "../calculations/medicationCalculations";
+import { computeStock, getDoseComponents, formatDoseComponents } from "../calculations/medicationCalculations";
 import { formatRelativeDate, sortByDateDesc } from "../calculations/encounterCalculations";
 import { MyProfileRepository } from "../repositories/myProfileRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
@@ -114,8 +114,8 @@ async function assembleClinicCardData() {
     ].filter(Boolean),
     medications: meds.map((m) => {
       const stock = computeStock(m);
-      const totalDoseValue = m.doseStrengthValue ? m.doseStrengthValue * (m.unitsPerDose || 1) : null;
-      const title = totalDoseValue && m.doseStrengthUnit ? `${m.name} ${totalDoseValue}${m.doseStrengthUnit}` : m.name;
+      const doseText = formatDoseComponents(getDoseComponents(m), m.unitsPerDose || 1);
+      const title = doseText ? `${m.name} ${doseText}` : m.name;
       const lastDose = m.logs.filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
       const subtitleParts = [m.medicationType, m.route].filter(Boolean);
       if (lastDose) subtitleParts.push(`last taken ${formatRelativeDate(lastDose.date)}`);

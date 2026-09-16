@@ -21,7 +21,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../repositories/medicationPreferencesRepository";
 import { LogRepository, REASON_OPTIONS, SIDE_EFFECT_OPTIONS } from "../repositories/logRepository";
-import { computeStock, computeAdherence, nextDoseEstimate, isDoseLockedOut, lockoutEndsEstimate, lockoutEndsAt, effectiveDoseIntervalHours } from "../calculations/medicationCalculations";
+import { computeStock, computeAdherence, nextDoseEstimate, isDoseLockedOut, lockoutEndsEstimate, lockoutEndsAt, effectiveDoseIntervalHours, getDoseComponents, formatDoseComponents } from "../calculations/medicationCalculations";
 // ADDED — real ask: Correction Sheet needs to change WHEN a dose was
 // logged, not just how much, for the "forgot to log at the time, adding
 // it after" case. Same shared "Now" helper and plain-string-slicing
@@ -1033,42 +1033,79 @@ function MultiSelectRow({ label, value, onChange, options, T, onAddNew, listName
 // one free-text field ("245mg", easy to typo the unit). Number + a
 // real dropdown (see DOSE_UNIT_OPTIONS) instead — µg renders correctly
 // now too, not the "ug" approximation free text tended toward.
-function DoseStrengthField({ value, unit, onChangeValue, onChangeUnit, T }) {
+// CHANGED 16 Sep 2026 — real gap: a combination product (PrEP, co-
+// codamol) has more than one active ingredient at its own strength —
+// see medicationCalculations.js's own getDoseComponents() comment for
+// the full reasoning. One row per ingredient now, an optional label
+// (only shown once there's more than one row — a single-ingredient
+// medication doesn't need to re-name what its own `name` field already
+// says), each with its own value+unit, add/remove freely. A medication
+// with just one ingredient behaves exactly like the old single-field
+// version — same inputs, same styling, just wrapped in a length-1 array.
+function DoseComponentsField({ value, onChange, T }) {
+  const components = value && value.length > 0 ? value : [{ label: "", value: "", unit: "" }];
+  const setRow = (i, patch) => onChange(components.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+  const addRow = () => onChange([...components, { label: "", value: "", unit: "" }]);
+  const removeRow = (i) => onChange(components.filter((_, idx) => idx !== i));
+
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Dose strength</div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <input value={value} onChange={(e) => onChangeValue(e.target.value)} placeholder="e.g. 245" inputMode="decimal"
-          style={{ flex: 1, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
-        <select value={unit} onChange={(e) => onChangeUnit(e.target.value)}
-          style={{ width: 90, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}>
-          <option value="">—</option>
-          {DOSE_UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
-        </select>
+      {components.map((c, i) => (
+        <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "center" }}>
+          {components.length > 1 && (
+            <input value={c.label} onChange={(e) => setRow(i, { label: e.target.value })} placeholder="Ingredient"
+              style={{ flex: "1 1 40%", minWidth: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+          )}
+          <input value={c.value} onChange={(e) => setRow(i, { value: e.target.value })} placeholder="e.g. 245" inputMode="decimal"
+            style={{ flex: 1, minWidth: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+          <select value={c.unit} onChange={(e) => setRow(i, { unit: e.target.value })}
+            style={{ width: 90, flexShrink: 0, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}>
+            <option value="">—</option>
+            {DOSE_UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
+          </select>
+          {components.length > 1 && (
+            <X size={16} color={T.textSecondary} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => removeRow(i)} aria-label="Remove ingredient" />
+          )}
+        </div>
+      ))}
+      <div onClick={addRow} style={{ fontSize: 12, color: T.medsBlue, fontWeight: 600, cursor: "pointer" }}>
+        + Add another active ingredient (e.g. combination products like PrEP or co-codamol)
       </div>
     </div>
   );
 }
 
 // ADDED 26 Aug 2026 — real ask: dose change as its own real action.
-// Reuses DoseStrengthField above (same input, no new pattern
+// Reuses DoseComponentsField above (same input, no new pattern
 // invented) and the same real LogRepository stock-adjustment pattern
 // already proven in correctStock() — "update stock at that point" is
 // optional, off by default, only writes a log entry if actually used.
+// CHANGED 16 Sep 2026 — real bug fix: the "old dose" description below
+// used to multiply doseStrengthValue directly, which rendered a real,
+// reported "NaNmg" for any combination product whose dose had been
+// jammed into one non-numeric string (see getDoseComponents()'s own
+// comment) — now goes through formatDoseComponents(), which shows the
+// raw stored text instead of NaN for that exact legacy case.
 function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
-  const [doseStrengthValue, setDoseStrengthValue] = useState(med.doseStrengthValue || "");
-  const [doseStrengthUnit, setDoseStrengthUnit] = useState(med.doseStrengthUnit || "");
+  const [doseComponents, setDoseComponents] = useState(getDoseComponents(med));
   const [unitsPerDose, setUnitsPerDose] = useState(med.unitsPerDose || 1);
   const [updateStockToo, setUpdateStockToo] = useState(false);
   const [stockDelta, setStockDelta] = useState("");
   const [note, setNote] = useState("");
 
-  const doseActuallyChanged = String(doseStrengthValue) !== String(med.doseStrengthValue) || doseStrengthUnit !== med.doseStrengthUnit || Number(unitsPerDose) !== med.unitsPerDose;
+  const doseActuallyChanged = JSON.stringify(doseComponents) !== JSON.stringify(getDoseComponents(med)) || Number(unitsPerDose) !== med.unitsPerDose;
 
   const confirm = () => {
     if (!doseActuallyChanged) { onClose(); return; }
+    const cleanComponents = doseComponents.filter((c) => c.value !== "");
     onConfirm({
-      doseStrengthValue, doseStrengthUnit, unitsPerDose: Number(unitsPerDose) || 1, note,
+      doseComponents: cleanComponents,
+      // legacy fields kept in sync for a single-ingredient medication only,
+      // so nothing older that still reads them directly goes stale
+      doseStrengthValue: cleanComponents.length === 1 ? cleanComponents[0].value : "",
+      doseStrengthUnit: cleanComponents.length === 1 ? cleanComponents[0].unit : "",
+      unitsPerDose: Number(unitsPerDose) || 1, note,
       stockDelta: updateStockToo && stockDelta !== "" ? Number(stockDelta) : null,
     });
   };
@@ -1082,9 +1119,9 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
         </div>
         <div style={{ padding: "8px 20px 20px" }}>
           <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 12, lineHeight: 1.5 }}>
-            This stays the same medication/course — the old dose ({med.doseStrengthValue ? med.doseStrengthValue * (med.unitsPerDose || 1) : "—"}{med.doseStrengthUnit}) is kept in this record's dose history, not lost or split into a separate entry.
+            This stays the same medication/course — the old dose ({formatDoseComponents(getDoseComponents(med), med.unitsPerDose || 1) || "—"}) is kept in this record's dose history, not lost or split into a separate entry.
           </div>
-          <DoseStrengthField value={doseStrengthValue} unit={doseStrengthUnit} onChangeValue={setDoseStrengthValue} onChangeUnit={setDoseStrengthUnit} T={T} />
+          <DoseComponentsField value={doseComponents} onChange={setDoseComponents} T={T} />
           <div style={{ padding: "8px 0" }}>
             <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Units per dose</div>
             <input type="number" min="1" value={unitsPerDose} onChange={(e) => setUnitsPerDose(e.target.value)}
@@ -1135,7 +1172,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
   const [form, setForm] = useState({
     name: med.name, route: med.route || "", medicationType: med.medicationType || "",
     category: med.category || [],
-    doseStrengthValue: med.doseStrengthValue || "", doseStrengthUnit: med.doseStrengthUnit || "",
+    doseComponents: getDoseComponents(med),
     usagePattern: med.usagePattern, scheduleIntervalDays: med.scheduleIntervalDays || 2,
     dosesPerDay: med.dosesPerDay || 1, unitsPerDose: med.unitsPerDose, refillThreshold: med.refillThreshold,
     scheduledTimes: med.scheduledTimes || [],
@@ -1154,7 +1191,15 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const save = () => {
     const { defaultRefillContainers, ...rest } = form;
-    onSave({ ...rest, defaultRefillQuantity: defaultRefillContainers * (form.unitsPerContainer || 0) });
+    const doseComponents = form.doseComponents.filter((c) => c.value !== "");
+    onSave({
+      ...rest, doseComponents,
+      // legacy fields kept in sync for a single-ingredient medication only —
+      // see getDoseComponents()'s own comment for why nothing here auto-splits
+      doseStrengthValue: doseComponents.length === 1 ? doseComponents[0].value : "",
+      doseStrengthUnit: doseComponents.length === 1 ? doseComponents[0].unit : "",
+      defaultRefillQuantity: defaultRefillContainers * (form.unitsPerContainer || 0),
+    });
   };
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
@@ -1183,7 +1228,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
         <SelectRow T={T} label="Medication type" value={form.medicationType} onChange={set("medicationType")} options={medicationTypeOptions} listName="medicationType" />
         <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions} listName="medicationCategory"
           onAddNew={(v) => { CustomOptionListsRepository.add("medicationCategory", v).then(setCategoryOptions); }} />
-        <DoseStrengthField T={T} value={form.doseStrengthValue} unit={form.doseStrengthUnit} onChangeValue={set("doseStrengthValue")} onChangeUnit={set("doseStrengthUnit")} />
+        <DoseComponentsField T={T} value={form.doseComponents} onChange={set("doseComponents")} />
         <SelectRow T={T} label="Route" value={form.route} onChange={set("route")} options={routeOptions} listName="route" />
 
         {/* CHANGED 19 Aug 2026 — real custom-scheduling support: Custom
@@ -1244,7 +1289,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
             <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>Dose history</div>
             {[...med.doseHistory].reverse().map((h, i) => (
               <div key={i} style={{ padding: "6px 0", borderBottom: i < med.doseHistory.length - 1 ? `1px solid ${T.border}` : "none" }}>
-                <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{h.doseStrengthValue ? h.doseStrengthValue * (h.unitsPerDose || 1) : "—"}{h.doseStrengthUnit}</div>
+                <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{formatDoseComponents(getDoseComponents(h), h.unitsPerDose || 1) || "—"}</div>
                 <div style={{ fontSize: 11, color: T.textDisabled }}>
                   Until {new Date(h.supersededAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
                   {h.note ? ` · ${h.note}` : ""}
@@ -1282,7 +1327,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
   const routeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("route"), [], []);
   const [categoryOptions, setCategoryOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("medicationCategory"), [], []);
   const [form, setForm] = useState({
-    name: "", route: "", medicationType: "", category: [], doseStrengthValue: "", doseStrengthUnit: "",
+    name: "", route: "", medicationType: "", category: [], doseComponents: [],
     usagePattern: "daily", scheduleIntervalDays: 2, unitsPerDose: 1, dosesPerDay: 1,
     scheduledTimes: [],
     inventoryTracked: true, unitsPerContainer: 30, refillThreshold: 7, defaultRefillContainers: 1, usualSupplier: "",
@@ -1292,7 +1337,13 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
   const canCreate = form.name.trim().length > 0;
   const create = () => {
     const { defaultRefillContainers, ...rest } = form;
-    onCreate({ ...rest, defaultRefillQuantity: defaultRefillContainers * (form.unitsPerContainer || 0) });
+    const doseComponents = form.doseComponents.filter((c) => c.value !== "");
+    onCreate({
+      ...rest, doseComponents,
+      doseStrengthValue: doseComponents.length === 1 ? doseComponents[0].value : "",
+      doseStrengthUnit: doseComponents.length === 1 ? doseComponents[0].unit : "",
+      defaultRefillQuantity: defaultRefillContainers * (form.unitsPerContainer || 0),
+    });
   };
 
   // ADDED 1 Sep 2026 — real ask: a dedupe nudge on the name field, same
@@ -1354,7 +1405,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
         <SelectRow T={T} label="Medication type" value={form.medicationType} onChange={set("medicationType")} options={medicationTypeOptions} listName="medicationType" />
         <MultiSelectRow T={T} label="Category" value={form.category} onChange={set("category")} options={categoryOptions} listName="medicationCategory"
           onAddNew={(v) => { CustomOptionListsRepository.add("medicationCategory", v).then(setCategoryOptions); }} />
-        <DoseStrengthField T={T} value={form.doseStrengthValue} unit={form.doseStrengthUnit} onChangeValue={set("doseStrengthValue")} onChangeUnit={set("doseStrengthUnit")} />
+        <DoseComponentsField T={T} value={form.doseComponents} onChange={set("doseComponents")} />
         <SelectRow T={T} label="Route" value={form.route} onChange={set("route")} options={routeOptions} listName="route" />
 
         <div style={{ display: "flex", background: T.surfaceVariant, borderRadius: radius.full, padding: 3, marginBottom: 12 }}>
@@ -1743,7 +1794,8 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     await LogRepository.create({ medicationId: sheet.med.id, type, delta, date: nowAsStoredDateTime() });
     // Logging a real refill clears any pending "requested" flag — matches
     // the original behavior, which only cleared it on the refill branch.
-    if (isRefill) await MedicationRepository.update(sheet.med.id, { refillRequestedAt: null });
+    // ADDED 16 Sep 2026 — refillCancelledAt clears the same way.
+    if (isRefill) await MedicationRepository.update(sheet.med.id, { refillRequestedAt: null, refillCancelledAt: null });
     syncRefillReminder();
     refreshMeds();
     flashComplete(sheet.med.id);
@@ -1757,8 +1809,8 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     setSheet(null);
   };
   // ADDED 26 Aug 2026 — real ask: dose change as its own real action.
-  const confirmDoseUpdate = async ({ doseStrengthValue, doseStrengthUnit, unitsPerDose, note, stockDelta }) => {
-    await MedicationRepository.updateDose(updatingDose.id, { doseStrengthValue, doseStrengthUnit, unitsPerDose, note });
+  const confirmDoseUpdate = async ({ doseStrengthValue, doseStrengthUnit, doseComponents, unitsPerDose, note, stockDelta }) => {
+    await MedicationRepository.updateDose(updatingDose.id, { doseStrengthValue, doseStrengthUnit, doseComponents, unitsPerDose, note });
     if (stockDelta !== null && stockDelta !== 0) {
       await LogRepository.create({ medicationId: updatingDose.id, type: stockDelta > 0 ? "refill" : "waste", delta: stockDelta, date: nowAsStoredDateTime(), notes: `Stock update alongside dose change${note ? `: ${note}` : ""}` });
     }

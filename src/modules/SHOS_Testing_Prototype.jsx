@@ -1280,7 +1280,16 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
               {resultPending ? (
                 <div style={{ fontSize: 12, color: T.textDisabled, marginLeft: 16, marginTop: 2, fontStyle: "italic" }}>Pending — expected {formatDate(t.resultDate)}</div>
               ) : resultNames.length > 0 && (
-                <div style={{ fontSize: 12, color: isPositive ? T.actionRed : T.textSecondary, marginLeft: 16, marginTop: 2, fontWeight: isPositive ? 700 : 400 }}>{resultNames.join(", ")}</div>
+                // CHANGED 16 Sep 2026 — real ask: "as positive is red, negative
+                // should be green too" — plus anything that's neither (a
+                // registry is free text, so this deliberately covers any
+                // value at all — Inconclusive/Not tested/a custom "Haemolysed"
+                // or "Lost sample" entry alike) reads as an amber "needs a
+                // look, not a clean result" tone, not the same flat grey as
+                // pending. Positive/Negative are both bold (a definitive
+                // result); the amber "other" case isn't, matching its own
+                // lower-certainty meaning.
+                <div style={{ fontSize: 12, color: isPositive ? T.actionRed : isNegative ? T.actionGreenText : ACTION.gold, marginLeft: 16, marginTop: 2, fontWeight: isPositive || isNegative ? 700 : 400 }}>{resultNames.join(", ")}</div>
               )}
               </div>
             </div>
