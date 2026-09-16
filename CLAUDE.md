@@ -269,14 +269,19 @@ this date; summarized here for durability.
   Also still open, smaller/already-scoped items not folded into the
   groups above: the 3 plain sheet-title banners (Testing/Clinic
   Visits/Encounters' own Add/Edit forms) — RESOLVED 16 Sep 2026, see
-  "Recently shipped" below (#82); and the
-  GitHub Releases page's public "Latest" badge — confirmed again 15
-  Sep 2026 that the real `/releases/latest` API endpoint already
-  correctly serves the current build (verified directly), the stale
-  badge is purely the public Releases PAGE showing an old test-a..h
-  release instead, still needing the owner to manually delete those
-  (no delete-release tool available in this session's GitHub MCP
-  server). Not yet started, except where noted.
+  "Recently shipped" below (#82). The GitHub Releases page's stale
+  "Latest" badge — RESOLVED 16 Sep 2026, see "Recently shipped" below:
+  the owner manually deleted the stale `test-a`..`test-h` releases
+  (confirmed clean — only the real `latest` release remains), and a
+  real, deeper bug behind it was found and fixed in the same round:
+  `build-apk.yml`'s `latest` git TAG itself was frozen at its original
+  27 Aug creation commit for 3 weeks — `softprops/action-gh-release`
+  updates an existing release's body/assets in place but never moves
+  the underlying tag if it already exists, so the release page's own
+  text kept correctly naming the newest commit while `git checkout
+  latest` would have silently handed out 3-week-old code. Fixed with a
+  new `git tag -f`/`git push --force` step right before the publish
+  step. Not yet started, except where noted.
 
 - **Desktop font-size/empty-space (#93) — scoped 15 Sep 2026,
   re-scoped into a real, concrete design 16 Sep 2026, the 2 named
@@ -3400,6 +3405,14 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (16 Sep 2026, latest of all yet again still — GitHub Releases tag/badge fix)
+
+Real report, from the owner's own read of the live Releases page: "latest may be behind?" — the page showed "released this 3 weeks ago · 364 commits to main since this release" directly under a body claiming to be built from the just-pushed commit. Confirmed via the GitHub API rather than guessed: the release's body/APK asset genuinely were current (correctly named the newest commit, asset `updated_at` matched the latest push), but the git tag `latest` itself (`refs/tags/latest`) was still pointing at the commit from 27 Aug — 3 weeks and 364 commits stale. Root cause: `softprops/action-gh-release@v2` updates an existing release's body/assets in place on every run, but never moves the underlying git tag once it already exists — so the page's own text kept silently updating to describe newer and newer commits while `git checkout latest`/anyone pulling the tag directly would have gotten 3-week-old code the whole time.
+
+Fixed in `.github/workflows/build-apk.yml`: a new step right before the publish step force-moves the tag (`git tag -f "$TAG"` / `git push origin "$TAG" --force`) to the exact commit just checked out — using `checkout_sha` when set (so a manual historical-bisect build via `workflow_dispatch` tags its own commit correctly too), not just `github.sha`.
+
+Also confirmed clean, not part of this fix: the owner separately deleted the stale `test-a`..`test-h` releases that were cluttering the public Releases page — checked via the API afterward and confirmed only the real `latest` release remains, nothing important was removed.
 
 ## Recently shipped (16 Sep 2026, latest of all still again — Guide/Glossary title icons, Guide/Glossary desktop balance, My Profile Guide-text fix, Registry Management sort, month-grouped desktop grids across 7 date-based lists)
 

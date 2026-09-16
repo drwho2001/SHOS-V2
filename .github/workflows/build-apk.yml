@@ -79,6 +79,21 @@ jobs:
       - name: Rename APK for the release
         run: cp android/app/build/outputs/apk/debug/app-debug.apk SHOS-debug.apk
 
+      # FIXED — real bug found 16 Sep 2026: softprops/action-gh-release
+      # updates an existing release's body/assets in place but never
+      # moves the underlying git tag if it already exists — so `latest`
+      # sat frozen at its original 27 Aug creation commit for weeks while
+      # the release notes/APK kept silently updating to newer commits.
+      # Force-moving the tag to the exact commit just checked out (not
+      # just github.sha, so a workflow_dispatch checkout_sha build tags
+      # correctly too) keeps `git checkout latest` honest with what the
+      # release page actually claims.
+      - name: Force-update the release tag to this commit
+        run: |
+          TAG="${{ github.event.inputs.release_tag || 'latest' }}"
+          git tag -f "$TAG"
+          git push origin "$TAG" --force
+
       - name: Publish APK to release
         uses: softprops/action-gh-release@v2
         with:
