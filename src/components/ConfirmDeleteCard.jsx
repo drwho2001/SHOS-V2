@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useId, useRef } from "react";
 import { RADIUS } from "../calculations/designTokens";
 
 // Shared delete-confirmation UI, extracted from a real live audit finding
@@ -27,8 +27,31 @@ export default function ConfirmDeleteCard({
   onConfirm,
 }) {
   const accent = moduleColor || T.actionRed;
+  // ADDED — real gap found via a follow-up axe-core scan on a live
+  // sheet interaction (16 Sep 2026): this card, used for every real
+  // destructive delete across ~15 sites app-wide, had no dialog
+  // semantics and never moved focus when it appeared — a keyboard or
+  // screen-reader user got no signal a destructive confirmation had
+  // just opened, unlike the undo/redo toasts an earlier pass already
+  // fixed for the same class of gap. role="alertdialog" plus
+  // aria-describedby (not aria-live alone) is the standard pattern for
+  // a real Yes/No confirmation — it also solves "where am I now" by
+  // moving focus onto Cancel (the safer default action) the moment
+  // this mounts, not just announcing it. One fix here reaches every
+  // call site automatically, since this is the app's one shared
+  // delete-confirmation component.
+  const cancelRef = useRef(null);
+  // useId(), not a static string — this component is mounted at ~15
+  // sites, and a static id would collide if two instances were ever
+  // rendered at once (a bulk-toolbar delete alongside a single-item
+  // one, for instance).
+  const messageId = useId();
+  useEffect(() => { cancelRef.current?.focus(); }, []);
   return (
     <div
+      role="alertdialog"
+      aria-label={confirmLabel}
+      aria-describedby={messageId}
       style={{
         margin,
         padding: 14,
@@ -38,9 +61,10 @@ export default function ConfirmDeleteCard({
         background: `${T.actionRed}11`,
       }}
     >
-      <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 10, lineHeight: 1.5 }}>{message}</div>
+      <div id={messageId} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 10, lineHeight: 1.5 }}>{message}</div>
       <div style={{ display: "flex", gap: 8 }}>
         <button
+          ref={cancelRef}
           onClick={onCancel}
           style={{ flex: 1, padding: 10, borderRadius: 999, border: `1px solid ${accent}`, background: "transparent", color: accent, fontWeight: 600, cursor: "pointer" }}
         >

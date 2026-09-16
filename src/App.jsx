@@ -1928,7 +1928,16 @@ export default function App() {
         // same real content/behavior, a gentler shape. The shared
         // boxShadow moved here from each individual banner div below
         // (was per-banner, now one shadow for the whole stack).
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 100, fontFamily: "'Inter', sans-serif" }}>
+        // ADDED — real gap found via a follow-up axe-core scan: this
+        // whole stack (and the SW-update banner below) render as direct
+        // App.jsx-level overlays, the same "sits outside every landmark"
+        // shape the earlier region-landmark pass fixed for Settings/
+        // Global Search/the 3 small dialogs — just never checked here,
+        // since that pass's own scan didn't happen to have a due
+        // reminder or pending update active at the time. role="region"
+        // (not "alert" — this persists across a session, not a one-shot
+        // announcement) matches this project's own established pattern.
+        <div role="region" aria-label="Due reminders" style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 100, fontFamily: "'Inter', sans-serif" }}>
         <div style={{ margin: "8px 10px 0", borderRadius: RADIUS.md, overflow: "hidden", boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
           {dueMeds.length > 0 && (
             <div ref={dueBannerCallbackRef} style={{ background: ACCENTS.medication }}>
@@ -2116,7 +2125,11 @@ export default function App() {
           toast firing while an update is pending). Bumped 60px higher
           so the two stack instead of collide. */}
       {swUpdateAvailable && (
-        <div style={{ position: "fixed", bottom: "calc(150px + env(safe-area-inset-bottom))", left: 16, right: 16, display: "flex", alignItems: "center", gap: 10, background: "#1B1B1F", color: "#FFFFFF", padding: "10px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, fontFamily: "'Inter', sans-serif" }}>
+        // ADDED — same region-landmark gap as the due-reminders stack
+        // above; role="status" (not "region") since notifToast right
+        // above already uses that role for the same "persistent,
+        // non-urgent notice" shape.
+        <div role="status" style={{ position: "fixed", bottom: "calc(150px + env(safe-area-inset-bottom))", left: 16, right: 16, display: "flex", alignItems: "center", gap: 10, background: "#1B1B1F", color: "#FFFFFF", padding: "10px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 300, fontFamily: "'Inter', sans-serif" }}>
           <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>A new version of SHOS is ready — may include notification fixes.</span>
           {/* FIXED — real accessibility finding (10 Sep 2026, automated
               axe-core scan): ACCENTS.healthcare (#09582E, a dark green)

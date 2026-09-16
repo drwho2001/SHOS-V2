@@ -3372,9 +3372,15 @@ this date; summarized here for durability.
   sites across 11 files were mouse/touch-only with no live-region
   announcement — both fixed and verified live (real Tab/Enter-key
   navigation, a real keyboard-triggered undo restoring a deleted
-  contact). Still genuinely out of scope, a bigger undertaking: a full
+  contact). One more real, bounded gap closed 16 Sep 2026 — see
+  "Recently shipped" below: the due-reminders banner stack and the
+  SW-update banner were both unlandmarked, same shape as the earlier
+  Settings/Global Search fix, just missed since neither happened to
+  be visible during that pass's own scan. Still genuinely out of
+  scope, a bigger undertaking with no fixed end date: a full
   screen-reader reading-order/announcement-quality audit beyond the
-  specific gaps found here.
+  specific gaps found so far — each real gap keeps surfacing one
+  scoped scan at a time, not in one exhaustive pass.
 - **Spacing consistency — audited 10 Sep 2026, clean result, not a
   gap anymore.** The real live report that started this (Contacts'
   "N active" count sitting flush against the header banner's bottom
@@ -3405,6 +3411,18 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (16 Sep 2026, latest of all yet again still — due-reminders/SW-update banner landmark gap closed)
+
+Real, scoped follow-up on the "full screen-reader reading-order/announcement-quality audit" item flagged in Known Issues as never done as its own pass. Ran a fresh, targeted `axe-core` scan against a live sheet interaction (opening Add Contact) rather than attempting the full undefined-scope audit in one sitting, and found one genuine, bounded gap: the due-reminders banner stack (medications/refill/testing/clinic-visit/vaccination) and the SW-update banner both render as direct `App.jsx`-level overlays — the same "sits outside every landmark" shape the earlier region-landmark pass already fixed for Settings/Global Search/3 small dialogs, just never caught there since that pass's own scan didn't happen to have a due reminder or pending update active at the time.
+
+Fixed with `role="region" aria-label="Due reminders"` on the due-banner stack's outer wrapper (persists across a session rather than a one-shot announcement, so `region` fits better than `alert`) and `role="status"` on the SW-update banner (matching `notifToast` right above it, which already uses that role for the same "persistent, non-urgent notice" shape). Re-ran the same axe scan afterward: 0 violations, down from 5 flagged nodes.
+
+Also checked, not acted on: a sheet's first input field doesn't receive focus automatically when it opens (confirmed via `document.activeElement` immediately after open). A real, lower-confidence finding — genuinely debatable rather than a clear bug, since this app targets touchscreens primarily and unsolicited `autoFocus` can pop the on-screen keyboard unexpectedly; the app already uses `autoFocus` selectively in 4 real places (Global Search's own input included) rather than never. Logged here rather than blanket-applied across every Add/Edit sheet without a real ask driving it.
+
+**A second, higher-leverage gap found the same scan, fixed the same round**: `src/components/ConfirmDeleteCard.jsx` — the one shared destructive-delete confirmation used at ~15 real sites app-wide (Contacts, Encounters, ClinicVisits, Testing, Vaccinations, SymptomLog, Measurements, Medication Dashboard, MenstrualHealth, Timeline, PartnerNotification, Settings' Trash screen) — had no dialog semantics and never moved focus when it appeared, unlike the undo/redo toasts an earlier pass already fixed for the same class of gap. Added `role="alertdialog"` with a real `aria-describedby` (via `useId()`, not a static id — this component can in principle mount more than once, e.g. a bulk-toolbar delete alongside a single-item one) linking to the confirmation message, plus a mount-time `useEffect` that moves focus onto the Cancel button — the safer default action, and the standard WCAG pattern for a real Yes/No confirmation (stronger than `aria-live` alone, since it also answers "where am I now" for a keyboard user). One fix at the shared component reaches every call site automatically. Verified live end-to-end against a real seed Encounter's own delete flow: `role="alertdialog"`/`aria-describedby` resolve correctly, focus lands on Cancel the instant the card mounts, and a fresh axe scan with the card open comes back at 0 violations.
+
+Verified live via Playwright (0 axe violations post-fix, both fixes) and the full 15-flow smoke-test suite against a real `vite preview` production build. `npx eslint .` clean.
 
 ## Recently shipped (16 Sep 2026, latest of all yet again — Global Search coverage gap closed, Encounters icon re-checked)
 
