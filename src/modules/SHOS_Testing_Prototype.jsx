@@ -688,7 +688,11 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
           module banner title, matching every other module screen. */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.healthcareBlue, zIndex: 1 }}>
+      {/* ADDED 16 Sep 2026 — real ask (#82, cross-module consistency
+          pass): match the rounded-bottom-corner/subtle-border treatment
+          the 4 real screen-title banners already got, so a sheet-title
+          banner reads as the same family of UI element. */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", zIndex: 1 }}>
         <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "New test" : "Edit test"}</span>
         <div onClick={() => canSave && save()}

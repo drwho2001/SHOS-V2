@@ -1552,9 +1552,14 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
       {/* CHANGED 26 Aug 2026 — real ask: forms (Add/Edit Activity)
           should also have the module banner title, matching every
           other module screen. */}
-      <div style={{ position: "sticky", top: 0, background: T.encountersPink, padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {/* ADDED 16 Sep 2026 — real ask (#82, cross-module consistency
+          pass): match the rounded-bottom-corner/subtle-border treatment
+          the 4 real screen-title banners already got, and the shared
+          TYPE.sheetTitle token instead of a hand-typed duplicate of it
+          (matching Testing/Clinic Visits' own sheet-title banners). */}
+      <div style={{ position: "sticky", top: 0, background: T.encountersPink, padding: 16, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <X size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
-        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16, color: "#FFFFFF" }}>{isNew ? "Add Encounter" : "Edit Encounter"}</span>
+        <span style={{ ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "Add Encounter" : "Edit Encounter"}</span>
         <div onClick={save}
           style={{ padding: "6px 14px", borderRadius: radius.full, background: "#FFFFFF", color: T.encountersPink, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
           Save

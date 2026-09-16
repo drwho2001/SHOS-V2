@@ -268,8 +268,8 @@ this date; summarized here for durability.
     always-reachable regardless of the module's own on/off state.
   Also still open, smaller/already-scoped items not folded into the
   groups above: the 3 plain sheet-title banners (Testing/Clinic
-  Visits/Encounters' own Add/Edit forms) still lacking the same
-  corner-softening the 4 real screen-title banners got; and the
+  Visits/Encounters' own Add/Edit forms) — RESOLVED 16 Sep 2026, see
+  "Recently shipped" below (#82); and the
   GitHub Releases page's public "Latest" badge — confirmed again 15
   Sep 2026 that the real `/releases/latest` API endpoint already
   correctly serves the current build (verified directly), the stale
@@ -3343,6 +3343,16 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (16 Sep 2026, latest of all yet again — sheet-title banner corner-softening, #82)
+
+Real ask (#82, the standing "apply a recent fix's pattern consistently across other modules" discipline): picked the one already-documented, concrete gap this discipline had flagged — the 3 plain sheet-title banners (Testing's/Clinic Visits' "New/Edit test"/"New/Edit visit", Encounters' "Add/Edit Encounter") never got the rounded-bottom-corner/subtle-border treatment the "banner styling" round gave the app's 4 real screen-title banners (Contacts/Healthcare/Medication/Encounters' own landing screens), left as an explicitly lower-priority gap at the time.
+
+Applied the identical `borderRadius: "0 0 16px 16px"` + `borderBottom: "1px solid rgba(0,0,0,0.08)"` treatment to all 3 sheet-title banners — top corners stay square (flush with the sheet's own top edge, same reasoning as the screen-title banners). Deliberately did NOT also apply the separate status-bar `top: calc(env(safe-area-inset-top) + 8px)` fix from that same round — checked first, not assumed: these 3 sheet banners already sit inside a `position: fixed` overlay whose own `paddingTop: env(safe-area-inset-top)` never scrolls away (unlike the screen-title banners' case, where the safe-area padding lived on a scrolling ancestor), so the status-bar bug that fix targeted structurally cannot occur here.
+
+**A second, related drift fixed in the same pass, found while touching Encounters' own banner**: its title span used a hand-typed `fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16` instead of the shared `TYPE.sheetTitle` token (`fontSize: 18, fontWeight: 700`) that Testing's and Clinic Visits' own sheet banners already use — the exact "duplicated an existing TYPE token instead of referencing it" pattern already found and fixed at several other sites in an earlier font/colour consistency audit, just missed here. Converted to `TYPE.sheetTitle`, which also means Encounters' own Add/Edit title now reads at 18px like its two siblings instead of a smaller, inconsistent 16px — a deliberate visual correction, not just a token rename.
+
+Verified live via Playwright: Encounters' "Add Encounter" title renders at the real, computed 18px/700/white; all 3 banners' own computed `borderRadius`/`borderBottom` confirmed as `0px 0px 16px 16px` / `1px rgba(0, 0, 0, 0.08)`. Full build, `npx eslint .` clean, and the full 15-flow smoke-test suite against a real `vite preview` production build — 15/15 pass, no regressions.
 
 ## Recently shipped (16 Sep 2026, latest of all still — Stats organism/site breakdown + clinical-impression field, #78)
 
