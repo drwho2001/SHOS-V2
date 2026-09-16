@@ -46,6 +46,7 @@ import { syncClinicVisitsToCalendar } from "../storage/calendarSyncService";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
+import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 
 // Same Healthcare blue + font conventions as Testing — applied from
 // creation, not retrofitted, per the user's standing instruction.
@@ -1124,45 +1125,38 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
       {/* FIXED 16 Sep 2026 — real report: same "mobile-width content
           stretched into a wide row" gap fixed on Contacts/Encounters/
           Testing — see Contacts' own comment for the full reasoning. */}
-      <div style={isDesktopWidth ? { padding: "12px 16px 100px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 } : { padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
-        {sorted.length === 0 && (
-          <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-            No clinic visits logged yet. Tap + to add one.
-          </div>
-        )}
-        {sorted.map((v) => (
-          <div key={v.id} onClick={() => selectMode ? toggleSelected(v.id) : onOpen(v.id)}
-            onMouseDown={() => startPress(v.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(v.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
-            role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selectedIds.includes(v.id) : undefined} aria-label={v.title || "Untitled visit"} tabIndex={0}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? toggleSelected(v.id) : onOpen(v.id); } }}
-            style={{ background: selectedIds.includes(v.id) ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${selectedIds.includes(v.id) ? T.healthcareBlue : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
-            {selectMode && (
-              <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selectedIds.includes(v.id) ? T.healthcareBlue : T.border}`, background: selectedIds.includes(v.id) ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
-                {selectedIds.includes(v.id) && <Check size={13} color="#FFFFFF" />}
+      {isDesktopWidth ? (
+        <div style={{ padding: "12px 16px 100px" }}>
+          {sorted.length === 0 && (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
+              No clinic visits logged yet. Tap + to add one.
+            </div>
+          )}
+          {/* ADDED — real ask: desktop grid grouped consecutively by
+              month, see dateGrouping.js. */}
+          {groupConsecutive(sorted, (v) => monthLabel(v.date)).map((group) => (
+            <div key={group.key} style={{ marginBottom: 16 }}>
+              <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{group.key}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>
+                {group.items.map((v) => (
+                  <VisitRow key={v.id} v={v} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
+                ))}
               </div>
-            )}
-            <div style={{ flex: 1, minWidth: 0 }}>
-            {/* REMOVED — real ask: this dot was flat/always the same
-                color, no real meaning ("looks pointless") — unlike
-                Testing's, there's no active/warning/archived-type
-                state for a clinic visit to actually convey (the
-                Calendar icon already covers "upcoming"). */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{v.title || "Untitled visit"}</span>
-              {v.isFutureAppointment && <Calendar size={13} color={T.healthcareBlue} />}
             </div>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(v.date)}</div>
-            {/* CHANGED — real bug caught before shipping: clinician is
-                now an array (multiple clinicians support), rendering
-                it directly would either show nothing (empty array is
-                truthy but has no content) or concatenate names with
-                no separator. */}
-            {v.clinician.length > 0 && <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.clinician.join(", ")}</div>}
-            {v.location && <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.location}</div>}
+          ))}
+        </div>
+      ) : (
+        <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
+          {sorted.length === 0 && (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
+              No clinic visits logged yet. Tap + to add one.
             </div>
-          </div>
-        ))}
-      </div>
+          )}
+          {sorted.map((v) => (
+            <VisitRow key={v.id} v={v} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
+          ))}
+        </div>
+      )}
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
         <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
@@ -1179,6 +1173,34 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+// ADDED — pulled out of VisitsLanding's own inline .map() body so the
+// desktop-grid month-grouping pass and the mobile flat list both render
+// the exact same row markup, unchanged.
+function VisitRow({ v, T, selectMode, selectedIds, toggleSelected, onOpen, startPress, cancelPress, handleTouchMove }) {
+  return (
+    <div onClick={() => selectMode ? toggleSelected(v.id) : onOpen(v.id)}
+      onMouseDown={() => startPress(v.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(v.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
+      role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selectedIds.includes(v.id) : undefined} aria-label={v.title || "Untitled visit"} tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? toggleSelected(v.id) : onOpen(v.id); } }}
+      style={{ background: selectedIds.includes(v.id) ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${selectedIds.includes(v.id) ? T.healthcareBlue : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
+      {selectMode && (
+        <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selectedIds.includes(v.id) ? T.healthcareBlue : T.border}`, background: selectedIds.includes(v.id) ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
+          {selectedIds.includes(v.id) && <Check size={13} color="#FFFFFF" />}
+        </div>
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{v.title || "Untitled visit"}</span>
+        {v.isFutureAppointment && <Calendar size={13} color={T.healthcareBlue} />}
+      </div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(v.date)}</div>
+      {v.clinician.length > 0 && <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.clinician.join(", ")}</div>}
+      {v.location && <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.location}</div>}
+      </div>
     </div>
   );
 }

@@ -63,6 +63,7 @@ import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../reposito
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
+import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.encounters/ACTION.red/ACTION.green at
@@ -1092,6 +1093,10 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
     // async-resolved value" bug class this app's own history has found
     // and fixed many times over.
   }, [encounters, showArchived, dateFilter, query, contacts, lastTestDate, kinkNameById]);
+  // ADDED — real ask: desktop grid grouped consecutively by month, since
+  // "visible" is already newest-first this is a plain contiguous grouping,
+  // see dateGrouping.js.
+  const visibleGroups = isDesktopWidth ? groupConsecutive(visible, (e) => monthLabel(e.date)) : null;
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", display: "flex", justifyContent: "center" }}>
@@ -1216,12 +1221,17 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             (grid, its own gap) is additive — mobile's plain in-flow
             stacking is completely untouched. */}
         {isDesktopWidth ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>
-            {visible.map((e) => (
-              <EncounterCard key={e.id} encounter={e} contacts={contacts} T={T} onClick={() => onOpenEncounter(e.id)}
-                selectMode={selectMode} selected={selectedIds.includes(e.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }} anonymise={anonymise} />
-            ))}
-          </div>
+          visibleGroups.map((group) => (
+            <div key={group.key} style={{ marginBottom: 16 }}>
+              <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{group.key}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>
+                {group.items.map((e) => (
+                  <EncounterCard key={e.id} encounter={e} contacts={contacts} T={T} onClick={() => onOpenEncounter(e.id)}
+                    selectMode={selectMode} selected={selectedIds.includes(e.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }} anonymise={anonymise} />
+                ))}
+              </div>
+            </div>
+          ))
         ) : visible.map((e) => (
           <EncounterCard key={e.id} encounter={e} contacts={contacts} T={T} onClick={() => onOpenEncounter(e.id)}
             selectMode={selectMode} selected={selectedIds.includes(e.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }} anonymise={anonymise} />

@@ -9,6 +9,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, TYPE } from "../calculations/designToke
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../calculations/responsive";
+import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 
 const TYPE_OPTIONS = ["Test result", "Prescription", "ID", "Photo", "Other"];
 
@@ -110,28 +111,46 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
           <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
             {all.length === 0 ? "No attachments yet — add one from a Test or Clinic Visit." : "Nothing matches this filter."}
           </div>
-        ) : (
-          <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 } : {}}>
-            {filtered.map((a) => (
-              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 12, marginBottom: isDesktopWidth ? 0 : 8 }}>
-                {isImage(a.fileDataUrl) ? (
-                  <img src={a.fileDataUrl} alt={a.title} style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
-                ) : (
-                  <div style={{ width: 40, height: 40, borderRadius: 8, background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <FileText size={18} color={T.textSecondary} />
-                  </div>
-                )}
-                <div onClick={() => onNavigateToSource?.(a.sourceType, a.sourceId)} style={{ flex: 1, minWidth: 0, cursor: onNavigateToSource ? "pointer" : "default" }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</div>
-                  <div style={{ fontSize: 11, color: T.textSecondary }}>{a.type} · {formatDate(a.date)} · {a.sourceTitle}</div>
-                </div>
-                <Trash2 size={15} color={T.textDisabled} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => handleDelete(a)} aria-label="Remove attachment" title="Remove attachment" />
+        ) : isDesktopWidth ? (
+          // ADDED — real ask: desktop grid grouped consecutively by
+          // month, see dateGrouping.js.
+          groupConsecutive(filtered, (a) => monthLabel(a.date)).map((group) => (
+            <div key={group.key} style={{ marginBottom: 16 }}>
+              <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{group.key}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 }}>
+                {group.items.map((a) => <AttachmentRow key={a.id} a={a} T={T} onNavigateToSource={onNavigateToSource} handleDelete={handleDelete} marginBottom={0} />)}
               </div>
-            ))}
+            </div>
+          ))
+        ) : (
+          <div>
+            {filtered.map((a) => <AttachmentRow key={a.id} a={a} T={T} onNavigateToSource={onNavigateToSource} handleDelete={handleDelete} marginBottom={8} />)}
           </div>
         )}
       </div>
       </div>
+    </div>
+  );
+}
+
+// ADDED — pulled out of AttachmentsScreen's own inline .map() body so
+// the desktop-grid month-grouping pass and the mobile flat list both
+// render the exact same row markup, unchanged.
+function AttachmentRow({ a, T, onNavigateToSource, handleDelete, marginBottom }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 12, marginBottom }}>
+      {isImage(a.fileDataUrl) ? (
+        <img src={a.fileDataUrl} alt={a.title} style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+      ) : (
+        <div style={{ width: 40, height: 40, borderRadius: 8, background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <FileText size={18} color={T.textSecondary} />
+        </div>
+      )}
+      <div onClick={() => onNavigateToSource?.(a.sourceType, a.sourceId)} style={{ flex: 1, minWidth: 0, cursor: onNavigateToSource ? "pointer" : "default" }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</div>
+        <div style={{ fontSize: 11, color: T.textSecondary }}>{a.type} · {formatDate(a.date)} · {a.sourceTitle}</div>
+      </div>
+      <Trash2 size={15} color={T.textDisabled} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => handleDelete(a)} aria-label="Remove attachment" title="Remove attachment" />
     </div>
   );
 }

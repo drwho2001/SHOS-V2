@@ -3401,6 +3401,24 @@ this date; summarized here for durability.
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
 
+## Recently shipped (16 Sep 2026, latest of all still again — Guide/Glossary title icons, Guide/Glossary desktop balance, My Profile Guide-text fix, Registry Management sort, month-grouped desktop grids across 7 date-based lists)
+
+Real asks, six items in one message: Guide/Glossary titles missing their icons; the desktop card grid should order chronologically with month subheadings (clarified via AskUserQuestion to mean "all date-based grids," not just one); Guide's tour button/search bar/description reading janky/uneven on desktop; a factual correction that My Profile is reachable via a dashboard shortcut, not only through Settings; Kink Registry needs A-Z/most-used/least-used sort; and a CI-status check for commit `0e1c754` on `main`.
+
+**Guide/Glossary title icons.** Added a `Compass` icon before "Guide" and a `BookOpen` icon before "Glossary" in their own header spans (`SHOS_Settings_Prototype.jsx`) — both icons were already imported, just never placed next to their own screen title.
+
+**Guide/Glossary desktop balance.** `GuideScreen`'s intro paragraph and "Take the interactive tour" button, and `GlossaryScreen`'s intro paragraph and search input, were each two separately full-width-capped stacked blocks on desktop, reading uneven. Both now sit side by side on desktop only (`isDesktopWidth ? flex row : unchanged mobile stack`), with the button/input sized to content instead of stretching. Mobile markup untouched.
+
+**My Profile text fix.** The Guide's own "Getting around" bullet claiming "My Profile isn't a tab — it's inside Settings" was factually incomplete — Home's own dashboard has always had a profile-icon shortcut next to the gear icon. Reworded to name both paths.
+
+**Kink Registry (and the 6 other registries sharing `RegistryManagementScreen`) sort.** Added an A-Z / Most used / Least used sort-chip row, reusing Contacts' own existing sort-chip styling and each registry's own accent colour for the active state — "most/least used" reads real per-entry usage counts already computed by `registryUsage.js`, not a guess.
+
+**Month-grouped desktop grids, all 7 date-based record lists.** New shared `src/calculations/dateGrouping.js` (`groupConsecutive`/`monthLabel`) — deliberately a CONSECUTIVE grouping by a computed key, not a full re-bucket, so it respects each list's own existing primary sort (Episodes' open-before-resolved ordering, Symptom Log's Active/Resolved split) instead of forcing pure chronological order across the whole list. Applied, desktop-only, to Episodes, Encounters, Testing, Clinic Visits, Vaccinations, Symptom Log (both Active and Resolved sections, each grouped by its own relevant date field), and Attachments — each gets a month subheading (`TYPE.sectionLabel`, or a smaller subordinate style for Symptom Log's nested subheadings, since `sectionLabel` was already used one level up there) above its existing desktop grid. Six of the seven files had their row markup fully inline inside a `.map()` callback — extracted into a small dedicated component (`EpisodeCard`/`TestRow`/`VisitRow`/`VaccinationRow`/`AttachmentRow`) so the exact same JSX renders for both the new grouped-desktop path and the untouched flat-mobile path, no markup duplicated. Episodes' own "open episodes always sort first" behaviour is preserved by collapsing every unresolved episode into one "Open" group (already contiguous at the top of the sort) and only real month labels apply to resolved ones.
+
+**CI check on `0e1c754`.** Confirmed all three workflows (Smoke Test, Build APK, Web Alpha) ran green on `main` for that commit via the GitHub Actions API.
+
+Verified live via Playwright screenshots throughout (Guide/Glossary icons and side-by-side balance at desktop width; Kink Registry's "Most used" sort against real usage counts; Encounters'/Testing's real month subheadings against genuine seed-data dates; Encounters at 390px mobile width confirmed byte-for-byte the original flat single-column list, zero subheadings). Full build, `npx eslint .` clean, and the full 15-flow smoke-test suite against a real `vite preview` production build — 15/15 pass, no regressions.
+
 ## Recently shipped (16 Sep 2026, latest of all — desktop grid sweep extended to Episodes/Registry Management/Attachments/Partner Notification, plus 2 real consistency-audit findings fixed)
 
 Real ask, direct follow-up to the desktop-layout round below: "Similarly in desktop all screens should be full width, is this guide page error a symptom of a wider issue? On desktop don't want narrow mobile width, but mobile layout still should not change" — confirming the prior round's own honest scope note (Timeline/Episodes, Registry Management, Attachments, Partner Notification, Global Search flagged as not-yet-covered) was real, not closed.

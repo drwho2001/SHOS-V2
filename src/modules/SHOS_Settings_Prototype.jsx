@@ -3430,7 +3430,7 @@ const GUIDE_SECTIONS = [
       "Home is your dashboard — recent activity, quick-add buttons, and 3 extra shortcuts: Clinic Card, Episodes, Calendar.",
       "Clinic Card is a read-only summary you can show a clinician.",
       "Episodes groups related encounters and tests together (e.g. \"this test relates to these encounters\").",
-      "My Profile isn't a tab — it's inside Settings (tap the gear icon on Home).",
+      "My Profile isn't a tab — reach it via the profile icon next to the gear on Home, or from inside Settings.",
     ],
   },
   {
@@ -3498,27 +3498,37 @@ function GuideScreen({ onClose, onStartTour }) {
           full-width). */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        {/* ADDED — real ask: this screen's own title had no icon, even
+            though its Settings-menu row already has one (Compass) —
+            carried through for a consistent identity between the row
+            and the screen it opens. */}
+        <Compass size={19} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Guide</span>
       </div>
       <div style={{ padding: 16 }}>
-        {/* CHANGED 16 Sep 2026, later still — capped for a real reading
-            measure (still genuinely narrower text reads better) but no
-            longer centered — `margin: "0 auto"` was what made this
-            read as a floating box; a plain maxWidth with no auto
-            margin just sits flush at the page's own left edge, the
-            way real full-width pages cap a lead paragraph. */}
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4, maxWidth: isDesktopWidth ? 640 : undefined }}>
-          Where things live and what the less-obvious features do — not a feature-by-feature walkthrough, just answers to "where do I find X."
+        {/* CHANGED — real report: capped-width elements (this intro,
+            the tour button) sitting above an unconstrained full-width
+            grid read as "janky/uneven," not balanced. On desktop, the
+            intro and button now sit side by side in one row instead
+            of two separately-capped full-width blocks — the intro
+            takes the flexible remaining space (still capped at a
+            readable measure) and the button sits to its right, both
+            genuinely using the row's width the way the grid below
+            does. Mobile keeps the exact prior stacked markup. */}
+        <div style={isDesktopWidth ? { display: "flex", alignItems: "center", gap: 16, marginBottom: 16 } : {}}>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.4, maxWidth: isDesktopWidth ? 520 : undefined, marginBottom: isDesktopWidth ? 0 : 16, flex: isDesktopWidth ? "1 1 auto" : undefined }}>
+            Where things live and what the less-obvious features do — not a feature-by-feature walkthrough, just answers to "where do I find X."
+          </div>
+          {/* ADDED 9 Sep 2026 — real ask: a genuine spotlight-overlay
+              tour, not just this written reference. Replayable here
+              anytime, regardless of whether the one-time post-onboarding
+              offer was already taken or skipped. */}
+          {onStartTour && (
+            <button onClick={onStartTour} style={{ width: isDesktopWidth ? "auto" : "100%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 20px", borderRadius: RADIUS.md, border: "none", background: "#008585", color: "#FFFFFF", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: isDesktopWidth ? 0 : 16, whiteSpace: "nowrap" }}>
+              Take the interactive tour
+            </button>
+          )}
         </div>
-        {/* ADDED 9 Sep 2026 — real ask: a genuine spotlight-overlay
-            tour, not just this written reference. Replayable here
-            anytime, regardless of whether the one-time post-onboarding
-            offer was already taken or skipped. */}
-        {onStartTour && (
-          <button onClick={onStartTour} style={{ width: "100%", maxWidth: isDesktopWidth ? 640 : undefined, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 16px", borderRadius: RADIUS.md, border: "none", background: "#008585", color: "#FFFFFF", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 16 }}>
-            Take the interactive tour
-          </button>
-        )}
         {/* CHANGED 16 Sep 2026, later still — real ask: "module contents
             still mobile width" — a single-column card list at a wide
             desktop viewport is exactly that same complaint, just
@@ -3566,18 +3576,24 @@ function GlossaryScreen({ onClose }) {
           that screen's own comment for the full reasoning. */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        {/* ADDED — real ask: same as GuideScreen above, carrying this
+            screen's own Settings-menu row icon (BookOpen) through into
+            its title bar. */}
+        <BookOpen size={19} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Glossary</span>
       </div>
       <div style={{ padding: 16 }}>
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4, maxWidth: isDesktopWidth ? 640 : undefined }}>
-          Plain-language explanations of the clinical shorthand used elsewhere in this app — informational, not personalised medical advice.
+        {/* CHANGED — real report: same "capped elements read janky
+            above an unconstrained grid" fix as GuideScreen — the
+            intro and search box now sit side by side on desktop
+            instead of two separately-capped stacked blocks. */}
+        <div style={isDesktopWidth ? { display: "flex", alignItems: "center", gap: 16, marginBottom: 16 } : {}}>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.4, maxWidth: isDesktopWidth ? 520 : undefined, marginBottom: isDesktopWidth ? 0 : 16, flex: isDesktopWidth ? "1 1 auto" : undefined }}>
+            Plain-language explanations of the clinical shorthand used elsewhere in this app — informational, not personalised medical advice.
+          </div>
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search terms"
+            style={{ width: isDesktopWidth ? 300 : "100%", flexShrink: 0, padding: "10px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", marginBottom: isDesktopWidth ? 0 : 16 }} />
         </div>
-        {/* CHANGED 16 Sep 2026, later still — real ask: a search box
-            stretching to a full desktop-width row looks broken, not
-            "full width used well" — capped to a sane input width on
-            desktop, same reasoning as the intro paragraph above. */}
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search terms"
-          style={{ width: "100%", maxWidth: isDesktopWidth ? 420 : undefined, padding: "10px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", marginBottom: 16 }} />
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>No terms match your search.</div>
         ) : (

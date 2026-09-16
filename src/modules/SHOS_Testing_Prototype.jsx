@@ -59,6 +59,7 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
+import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 
 // ADDED 19 Aug 2026 — Healthcare blue (#4A80F0), per Doc 2's design
 // system exactly: "Healthcare & Clinical (blue — unified) ... Testing,
@@ -1252,73 +1253,39 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
           full reasoning. Each row here is an inline div, not a
           separate card component, but the fix is identical: only the
           CONTAINER's own display mode changes on desktop. */}
-      <div style={isDesktopWidth ? { padding: "12px 16px 100px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 } : { padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
-        {sorted.length === 0 && (
-          <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-            No tests logged yet. Tap + to add one.
-          </div>
-        )}
-        {sorted.map((t) => {
-          const resultNames = (t.resultIds || []).map((id) => resultNameById.get(id)).filter(Boolean);
-          const resultPending = t.resultDate && new Date(t.resultDate) > new Date();
-          const isPositive = !resultPending && resultNames.some((r) => r.toLowerCase() === "positive");
-          const isNegative = !resultPending && resultNames.some((r) => r.toLowerCase() === "negative");
-          const dotColor = computeTestDotColor(t, tests, T, resultNameById);
-          // CHANGED 16 Sep 2026 — real ask, reworked from an earlier
-          // approach: the dot itself no longer fades for an old test
-          // (see computeTestDotColor's own comment) — instead the
-          // record's own title/date/setting text fades, so a genuinely
-          // old positive is still unmistakably red, just visually
-          // lighter-weight than a fresh one. `tests` (not the search-
-          // filtered `sorted`) is passed so rank-based recency isn't
-          // skewed by an active search query.
-          const isArchived = !isRecentTest(t, tests);
-          return (
-            <div key={t.id} onClick={() => selectMode ? toggleSelected(t.id) : onOpen(t.id)}
-              onMouseDown={() => startPress(t.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(t.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
-              role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selectedIds.includes(t.id) : undefined} aria-label={t.title || "Untitled test"} tabIndex={0}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? toggleSelected(t.id) : onOpen(t.id); } }}
-              style={{ background: selectedIds.includes(t.id) ? `${T.healthcareBlue}10` : isArchived ? T.surfaceVariant : T.surface, border: `1px solid ${selectedIds.includes(t.id) ? T.healthcareBlue : isPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
-              {selectMode && (
-                <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selectedIds.includes(t.id) ? T.healthcareBlue : T.border}`, background: selectedIds.includes(t.id) ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
-                  {selectedIds.includes(t.id) && <Check size={13} color="#FFFFFF" />}
-                </div>
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 8, height: 8, borderRadius: radius.full, background: dotColor, display: "inline-block" }} />
-                <span style={{ fontSize: 15, fontWeight: 600, color: isArchived ? T.textSecondary : T.textPrimary }}>{t.title || "Untitled test"}</span>
-                {t.mostRecent && <Check size={13} color={T.healthcareBlue} />}
-              </div>
-              <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(t.date)}</div>
-              {/* ADDED — real ask: "state on card location of test
-                  (home/clinic)" — was only ever shown on the detail
-                  screen before, never the list card itself. */}
-              {t.setting && (
-                <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2 }}>{t.setting}</div>
-              )}
-              {/* CHANGED — real ask: "hide result until result date" —
-                  the list card was leaking the real result before the
-                  detail screen's own masking even applied. */}
-              {resultPending ? (
-                <div style={{ fontSize: 12, color: T.textDisabled, marginLeft: 16, marginTop: 2, fontStyle: "italic" }}>Pending — expected {formatDate(t.resultDate)}</div>
-              ) : resultNames.length > 0 && (
-                // CHANGED 16 Sep 2026 — real ask: "as positive is red, negative
-                // should be green too" — plus anything that's neither (a
-                // registry is free text, so this deliberately covers any
-                // value at all — Inconclusive/Not tested/a custom "Haemolysed"
-                // or "Lost sample" entry alike) reads as an amber "needs a
-                // look, not a clean result" tone, not the same flat grey as
-                // pending. Positive/Negative are both bold (a definitive
-                // result); the amber "other" case isn't, matching its own
-                // lower-certainty meaning.
-                <div style={{ fontSize: 12, color: isPositive ? T.actionRed : isNegative ? T.actionGreenText : ACTION.gold, marginLeft: 16, marginTop: 2, fontWeight: isPositive || isNegative ? 700 : 400 }}>{resultNames.join(", ")}</div>
-              )}
+      {isDesktopWidth ? (
+        <div style={{ padding: "12px 16px 100px" }}>
+          {sorted.length === 0 && (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
+              No tests logged yet. Tap + to add one.
+            </div>
+          )}
+          {/* ADDED — real ask: desktop grid grouped consecutively by
+              month, see dateGrouping.js — `sorted` is already newest-
+              first, so this is a plain contiguous grouping. */}
+          {groupConsecutive(sorted, (t) => monthLabel(t.date)).map((group) => (
+            <div key={group.key} style={{ marginBottom: 16 }}>
+              <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{group.key}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>
+                {group.items.map((t) => (
+                  <TestRow key={t.id} t={t} tests={tests} resultNameById={resultNameById} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
+                ))}
               </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
+          {sorted.length === 0 && (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
+              No tests logged yet. Tap + to add one.
+            </div>
+          )}
+          {sorted.map((t) => (
+            <TestRow key={t.id} t={t} tests={tests} resultNameById={resultNameById} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
+          ))}
+        </div>
+      )}
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
         <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
@@ -1335,6 +1302,47 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+// ADDED — pulled out of TestingLanding's own inline .map() body so the
+// desktop-grid month-grouping pass above and the mobile flat list can
+// both render the exact same row markup, unchanged.
+function TestRow({ t, tests, resultNameById, T, selectMode, selectedIds, toggleSelected, onOpen, startPress, cancelPress, handleTouchMove }) {
+  const resultNames = (t.resultIds || []).map((id) => resultNameById.get(id)).filter(Boolean);
+  const resultPending = t.resultDate && new Date(t.resultDate) > new Date();
+  const isPositive = !resultPending && resultNames.some((r) => r.toLowerCase() === "positive");
+  const isNegative = !resultPending && resultNames.some((r) => r.toLowerCase() === "negative");
+  const dotColor = computeTestDotColor(t, tests, T, resultNameById);
+  const isArchived = !isRecentTest(t, tests);
+  return (
+    <div onClick={() => selectMode ? toggleSelected(t.id) : onOpen(t.id)}
+      onMouseDown={() => startPress(t.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(t.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
+      role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selectedIds.includes(t.id) : undefined} aria-label={t.title || "Untitled test"} tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? toggleSelected(t.id) : onOpen(t.id); } }}
+      style={{ background: selectedIds.includes(t.id) ? `${T.healthcareBlue}10` : isArchived ? T.surfaceVariant : T.surface, border: `1px solid ${selectedIds.includes(t.id) ? T.healthcareBlue : isPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
+      {selectMode && (
+        <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selectedIds.includes(t.id) ? T.healthcareBlue : T.border}`, background: selectedIds.includes(t.id) ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
+          {selectedIds.includes(t.id) && <Check size={13} color="#FFFFFF" />}
+        </div>
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ width: 8, height: 8, borderRadius: radius.full, background: dotColor, display: "inline-block" }} />
+        <span style={{ fontSize: 15, fontWeight: 600, color: isArchived ? T.textSecondary : T.textPrimary }}>{t.title || "Untitled test"}</span>
+        {t.mostRecent && <Check size={13} color={T.healthcareBlue} />}
+      </div>
+      <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(t.date)}</div>
+      {t.setting && (
+        <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2 }}>{t.setting}</div>
+      )}
+      {resultPending ? (
+        <div style={{ fontSize: 12, color: T.textDisabled, marginLeft: 16, marginTop: 2, fontStyle: "italic" }}>Pending — expected {formatDate(t.resultDate)}</div>
+      ) : resultNames.length > 0 && (
+        <div style={{ fontSize: 12, color: isPositive ? T.actionRed : isNegative ? T.actionGreenText : ACTION.gold, marginLeft: 16, marginTop: 2, fontWeight: isPositive || isNegative ? 700 : 400 }}>{resultNames.join(", ")}</div>
+      )}
+      </div>
     </div>
   );
 }

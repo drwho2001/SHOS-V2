@@ -20,6 +20,7 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
+import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 
 // ADDED 19 Aug 2026 — Symptom Log (Symptoms Tracker in Notion — see
 // symptomLogRepository.js's header for the deliberate naming decision
@@ -675,14 +676,28 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
         {active.length === 0 ? (
           <div style={{ textAlign: "center", padding: "24px 20px", color: T.textDisabled, fontSize: 13 }}>Nothing active. Tap + to log a symptom.</div>
         ) : isDesktopWidth ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>{active.map(Row)}</div>
+          // ADDED — real ask: desktop grid grouped consecutively by
+          // month (of dateStarted), see dateGrouping.js.
+          groupConsecutive(active, (e) => monthLabel(e.dateStarted)).map((group) => (
+            <div key={group.key} style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: T.textDisabled, marginBottom: 6 }}>{group.key}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>{group.items.map(Row)}</div>
+            </div>
+          ))
         ) : active.map(Row)}
 
         {resolved.length > 0 && (
           <>
             <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, margin: "16px 0 6px" }}>Resolved ({resolvedCount})</div>
             {isDesktopWidth ? (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>{resolved.map(Row)}</div>
+              // ADDED — same month-grouping, keyed on dateResolved since
+              // that's what this section is actually sorted by.
+              groupConsecutive(resolved, (e) => monthLabel(e.dateResolved)).map((group) => (
+                <div key={group.key} style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: T.textDisabled, marginBottom: 6 }}>{group.key}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>{group.items.map(Row)}</div>
+                </div>
+              ))
             ) : resolved.map(Row)}
           </>
         )}

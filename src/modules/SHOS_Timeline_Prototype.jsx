@@ -19,6 +19,7 @@ import { getEncounterCoverage } from "../calculations/exposureWindows";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
+import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 // ADDED 19 Aug 2026 — Timeline (the nav-facing name; "Episode" is the
@@ -672,6 +673,12 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
     return Object.fromEntries(entries);
   }, [episodes, resultNameById], {});
   const isDesktopWidth = useIsDesktopWidth();
+  // ADDED — real ask: desktop's multi-column grid read as cluttered
+  // once episode counts grew, so group consecutively by month — "Open"
+  // episodes (sorted first, see `sorted`'s own comparator above) stay
+  // their own single group rather than being scattered by date, since
+  // that priority ordering is deliberate, not chronological.
+  const episodeGroups = isDesktopWidth ? groupConsecutive(sorted, (e) => (e.resolvedDate ? monthLabel(e._date) : "Open")) : null;
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -693,24 +700,36 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
             No episodes yet. An episode groups a possible exposure together with everything relevant to it — the encounter(s), and any tests or treatment that followed — so you can see the whole thing at a glance instead of hunting across separate records. Tap + to start one from an existing Encounter.
           </div>
         )}
-        <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 } : { display: "flex", flexDirection: "column", gap: 10 }}>
-          {sorted.map((e) => {
-            const hasPositive = hasPositiveByEpisodeId[e.id] || false;
-            const isOpen = !e.resolvedDate;
-            return (
-              <div key={e.id} onClick={() => onOpen(e.id)}
-                style={{ background: T.surface, border: `1px solid ${isOpen && hasPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcareBlue : T.actionGreen, display: "inline-block" }} />
-                  <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{e.title}</span>
-                </div>
-                <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
-                  {e.triggerReason || "—"} · {isOpen ? "Open" : `Resolved ${formatDate(e.resolvedDate)}`}
-                </div>
+        {isDesktopWidth ? (
+          episodeGroups.map((group) => (
+            <div key={group.key} style={{ marginBottom: 16 }}>
+              <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{group.key}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>
+                {group.items.map((e) => <EpisodeCard key={e.id} e={e} onOpen={onOpen} hasPositive={hasPositiveByEpisodeId[e.id] || false} T={T} radius={radius} formatDate={formatDate} />)}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          ))
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {sorted.map((e) => <EpisodeCard key={e.id} e={e} onOpen={onOpen} hasPositive={hasPositiveByEpisodeId[e.id] || false} T={T} radius={radius} formatDate={formatDate} />)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EpisodeCard({ e, onOpen, hasPositive, T, radius, formatDate }) {
+  const isOpen = !e.resolvedDate;
+  return (
+    <div onClick={() => onOpen(e.id)}
+      style={{ background: T.surface, border: `1px solid ${isOpen && hasPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ width: 8, height: 8, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcareBlue : T.actionGreen, display: "inline-block" }} />
+        <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{e.title}</span>
+      </div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
+        {e.triggerReason || "—"} · {isOpen ? "Open" : `Resolved ${formatDate(e.resolvedDate)}`}
       </div>
     </div>
   );

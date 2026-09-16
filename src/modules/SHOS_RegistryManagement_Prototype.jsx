@@ -99,8 +99,6 @@ export default function RegistryManagementScreen({ registry, label, color, compu
   const [showDuplicates, setShowDuplicates] = useState(false);
 
   const allEntries = useLoadedMemo(() => registry.getAll(), [refreshKey], []);
-  const active = allEntries.filter((e) => !e.isArchived).sort((a, b) => a.name.localeCompare(b.name));
-  const archived = allEntries.filter((e) => e.isArchived).sort((a, b) => a.name.localeCompare(b.name));
   const duplicatePairs = useMemo(() => findDuplicatePairs(allEntries), [allEntries]);
   // ADDED — real perf/redundancy fix: computeUsage (each of these scans
   // 1-3 full repositories — see registryUsage.js) was being called once
@@ -119,6 +117,19 @@ export default function RegistryManagementScreen({ registry, label, color, compu
     async () => new Map(await Promise.all(allEntries.map(async (e) => [e.id, await computeUsage(e.id)]))),
     [allEntries, computeUsage], new Map()
   );
+  // ADDED — real ask: sort by name (A-Z, the prior fixed behaviour) or
+  // by real usage count (most/least records referencing this entry) —
+  // moved above active/archived since both now read usageMap to sort.
+  const [sortMode, setSortMode] = useState("az");
+  const sortEntries = (list) => {
+    const sorted = [...list];
+    if (sortMode === "mostUsed") sorted.sort((a, b) => (usageMap.get(b.id) ?? 0) - (usageMap.get(a.id) ?? 0) || a.name.localeCompare(b.name));
+    else if (sortMode === "leastUsed") sorted.sort((a, b) => (usageMap.get(a.id) ?? 0) - (usageMap.get(b.id) ?? 0) || a.name.localeCompare(b.name));
+    else sorted.sort((a, b) => a.name.localeCompare(b.name));
+    return sorted;
+  };
+  const active = sortEntries(allEntries.filter((e) => !e.isArchived));
+  const archived = sortEntries(allEntries.filter((e) => e.isArchived));
 
   // CHANGED — Phase 2 encryption groundwork: real pre-existing bug
   // found while converting the six simpleRegistry.js-based registries
@@ -220,6 +231,22 @@ export default function RegistryManagementScreen({ registry, label, color, compu
           </button>
         </div>
         <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>Tap a name to rename it. Renaming updates everywhere it's used, immediately.</div>
+        {/* ADDED — real ask: sort A-Z (the prior fixed order) or by real
+            usage count, most or least referenced first — same chip-row
+            pattern Contacts' own sort-by row already uses. */}
+        <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+          {[
+            { key: "az", label: "A–Z" },
+            { key: "mostUsed", label: "Most used" },
+            { key: "leastUsed", label: "Least used" },
+          ].map((opt) => (
+            <div key={opt.key} onClick={() => setSortMode(opt.key)} role="button" tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSortMode(opt.key); } }}
+              style={{ padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${sortMode === opt.key ? color : T.border}`, color: sortMode === opt.key ? color : T.textSecondary, background: sortMode === opt.key ? `${color}15` : "transparent" }}>
+              {opt.label}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "8px 16px 0", overflow: "hidden", columnCount: isDesktopWidth && active.length > 0 ? 2 : undefined, columnGap: 0 }}>

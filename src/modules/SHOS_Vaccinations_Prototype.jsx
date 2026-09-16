@@ -22,6 +22,7 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
+import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 
 // ADDED 19 Aug 2026 — Vaccinations, real live Notion schema. Same
 // self-contained-module pattern, Healthcare blue, single Inter
@@ -539,42 +540,38 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
           stretched into a wide row" gap fixed on Contacts/Encounters/
           Testing/Clinic Visits — see Contacts' own comment for the
           full reasoning. */}
-      <div style={isDesktopWidth ? { padding: "12px 16px 100px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 } : { padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
-        {sorted.length === 0 && (
-          <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-            No vaccinations logged yet. Tap + to add one.
-          </div>
-        )}
-        {sorted.map((v) => {
-          const overdue = isOverdue(v.nextDue);
-          const isSelected = selectedIds.includes(v.id);
-          return (
-            <div key={v.id} onClick={() => selectMode ? toggleSelected(v.id) : onOpen(v.id)}
-              onMouseDown={() => startPress(v.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(v.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
-              role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? isSelected : undefined} aria-label={v.title} tabIndex={0}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? toggleSelected(v.id) : onOpen(v.id); } }}
-              style={{ background: isSelected ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${isSelected ? T.healthcareBlue : overdue ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
-              {selectMode && (
-                <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${isSelected ? T.healthcareBlue : T.border}`, background: isSelected ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
-                  {isSelected && <Check size={13} color="#FFFFFF" />}
-                </div>
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 8, height: 8, borderRadius: radius.full, background: overdue ? T.actionRed : T.healthcareBlue, display: "inline-block" }} />
-                <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{v.title}</span>
-              </div>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(v.date)}</div>
-              {v.nextDue && (
-                <div style={{ fontSize: 12, color: overdue ? T.actionRed : T.textSecondary, marginLeft: 16, marginTop: 2, fontWeight: overdue ? 700 : 400 }}>
-                  {overdue ? "Overdue since" : "Next due"} {formatDate(v.nextDue)}
-                </div>
-              )}
+      {isDesktopWidth ? (
+        <div style={{ padding: "12px 16px 100px" }}>
+          {sorted.length === 0 && (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
+              No vaccinations logged yet. Tap + to add one.
+            </div>
+          )}
+          {/* ADDED — real ask: desktop grid grouped consecutively by
+              month, see dateGrouping.js. */}
+          {groupConsecutive(sorted, (v) => monthLabel(v.date)).map((group) => (
+            <div key={group.key} style={{ marginBottom: 16 }}>
+              <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{group.key}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>
+                {group.items.map((v) => (
+                  <VaccinationRow key={v.id} v={v} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
+                ))}
               </div>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
+          {sorted.length === 0 && (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
+              No vaccinations logged yet. Tap + to add one.
+            </div>
+          )}
+          {sorted.map((v) => (
+            <VaccinationRow key={v.id} v={v} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
+          ))}
+        </div>
+      )}
       {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
         <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
@@ -591,6 +588,39 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+// ADDED — pulled out of VaccinationsLanding's own inline .map() body so
+// the desktop-grid month-grouping pass and the mobile flat list both
+// render the exact same row markup, unchanged.
+function VaccinationRow({ v, T, selectMode, selectedIds, toggleSelected, onOpen, startPress, cancelPress, handleTouchMove }) {
+  const overdue = isOverdue(v.nextDue);
+  const isSelected = selectedIds.includes(v.id);
+  return (
+    <div onClick={() => selectMode ? toggleSelected(v.id) : onOpen(v.id)}
+      onMouseDown={() => startPress(v.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(v.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
+      role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? isSelected : undefined} aria-label={v.title} tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? toggleSelected(v.id) : onOpen(v.id); } }}
+      style={{ background: isSelected ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${isSelected ? T.healthcareBlue : overdue ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
+      {selectMode && (
+        <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${isSelected ? T.healthcareBlue : T.border}`, background: isSelected ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
+          {isSelected && <Check size={13} color="#FFFFFF" />}
+        </div>
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ width: 8, height: 8, borderRadius: radius.full, background: overdue ? T.actionRed : T.healthcareBlue, display: "inline-block" }} />
+        <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{v.title}</span>
+      </div>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(v.date)}</div>
+      {v.nextDue && (
+        <div style={{ fontSize: 12, color: overdue ? T.actionRed : T.textSecondary, marginLeft: 16, marginTop: 2, fontWeight: overdue ? 700 : 400 }}>
+          {overdue ? "Overdue since" : "Next due"} {formatDate(v.nextDue)}
+        </div>
+      )}
+      </div>
     </div>
   );
 }
