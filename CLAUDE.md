@@ -229,20 +229,19 @@ this date; summarized here for durability.
   - **Standing, not a batchable one-off**: #82, applying any future
     fix's pattern consistently across other modules where relevant —
     an ongoing discipline for every batch above, not its own task.
-  - **Global-settings-reorg, a new open thread (15 Sep 2026)**: a real
-    ask to move global-Settings items into each module's own settings
-    screen where that fits better — Contacts done (see "Recently
-    shipped" below), Menstrual/Contraception's tracking toggle
-    deliberately excluded (has to stay always-reachable in global
-    Settings, since turning the module off would make an in-module
-    screen unreachable). Two bigger, real candidates identified but not
-    yet acted on: Measurements' Units screen (mixes a
-    Measurements-specific unit preference with the genuinely-global
-    `weekStartsOn` setting — needs a real split decision, not a quick
-    move) and Settings' Notifications screen (bundles 5 per-module
-    reminder toggles — medication/DoxyPEP/testing/refill/clinic-visit —
-    that could each arguably live in their own module, a bigger,
-    5-module undertaking).
+  - **Global-settings-reorg — RESOLVED 16 Sep 2026, see "Recently
+    shipped" below.** Real ask to move global-Settings items into each
+    module's own settings screen where that fits better. Contacts
+    done first; the owner's own follow-up call resolved the two
+    remaining candidates explicitly: Measurements' old Units screen is
+    gone (its Weight/Height/Temperature preference now sets from
+    Measurements' own gear-icon settings sheet, `weekStartsOn` moved
+    into Settings' own CalendarScreen — the one screen it actually
+    affects), and Notifications stays global on purpose, not split
+    per-module. Menstrual/Contraception's tracking toggle stays
+    excluded too — turning the module off would make an in-module
+    settings screen unreachable, so it has to live somewhere
+    always-reachable regardless of the module's own on/off state.
   Also still open, smaller/already-scoped items not folded into the
   groups above: the 3 plain sheet-title banners (Testing/Clinic
   Visits/Encounters' own Add/Edit forms) still lacking the same
@@ -3320,6 +3319,54 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (16 Sep 2026, global-settings reorg — finishing the last two candidates)
+
+Real ask, resolving the two "bigger, not yet acted on" candidates the
+Contacts-settings entry below flagged: "Notifications keep as global.
+Week starts on move to calendar, units to measurements?"
+
+**Units — the global Settings > Units screen (added 3 Sep 2026) is
+gone entirely.** Its real content splits cleanly along the exact line
+the owner's own instruction drew: the Weight/Height/Temperature
+Metric/Imperial toggle + per-type unit chips are a genuine
+Measurements preference (`MeasurementPreferencesRepository`), so they
+moved into Measurements' own `MeasurementPreferencesSheet` — already
+the in-module home for its other unit dropdowns (Testosterone/
+Estradiol), reachable via that module's own gear icon — rather than a
+new screen. `weekStartsOn` is a genuinely different, Calendar-display
+setting (`AppPreferencesRepository`), so it moved into Settings' own
+`CalendarScreen` instead — the one screen it actually affects — as a
+real setter (was previously a read-only `useLoadedMemo`, since the old
+Units screen was the only place that ever changed it).
+
+**Notifications stays global, on purpose — not a candidate after
+all.** The owner's own explicit call: its 5 per-module reminder
+toggles (medication/DoxyPEP/testing/refill/clinic-visit) aren't being
+split into each module's own settings — this screen is already the
+one place to see and control every real reminder at a glance, and
+splitting it would scatter that back across 5 files for no real gain
+the owner asked for.
+
+**A separate, unrelated CI fix landed in the same round**: GitHub's
+own deprecation notice flagged `actions/setup-java@v4` specifically as
+no longer receiving updates (unlike `actions/upload-artifact@v5`/
+`softprops/action-gh-release@v2`, already on their current major — the
+"forced to run on Node 24" note for those two is normal runner-level
+compatibility shimming for actions that don't hard-pin a Node runtime,
+not something needing a version bump). Bumped to `actions/setup-java@v5`
+— a drop-in swap, same `distribution`/`java-version` inputs.
+
+Verified live via Playwright: the Metric/Imperial toggle and per-type
+chips render and persist correctly from Measurements' own gear icon;
+Calendar's new Week-starts-on chips persist and correctly reshuffle
+the weekday header/grid offset; full build, `npx eslint .` clean
+(caught and removed the now-fully-dead `UNIT_SYSTEM_TYPES`/
+`detectUnitSystem`/`getAvailableUnits`/`getDefaultUnit` imports the old
+screen left behind), and the full 15-flow smoke-test suite against a
+real `vite preview` production build — 15/15 pass. Confirmed green in
+CI on both the feature branch and, after a clean fast-forward, on
+`main` (Smoke Test, Build APK, Web Alpha all triggered).
 
 ## Recently shipped (15 Sep 2026, continuing still further yet again — Contacts settings screen, global-settings reorg)
 
