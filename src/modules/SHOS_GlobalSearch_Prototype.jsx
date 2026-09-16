@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { MagnifyingGlassIcon as Search, XIcon as X, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HeartbeatIcon as HeartPulse, CaretRightIcon as ChevronRight } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon as Search, XIcon as X, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, CaretRightIcon as ChevronRight, TestTubeIcon as TestTube, StethoscopeIcon as Stethoscope, ThermometerIcon as Thermometer, SyringeIcon as Syringe } from "@phosphor-icons/react";
 import { ContactRepository } from "../repositories/contactRepository";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { EncounterRepository } from "../repositories/encounterRepository";
@@ -63,10 +63,10 @@ const RESULT_META = {
   contact: { label: "Contact", icon: Users, color: ACCENTS.contacts, tab: "contacts" },
   encounter: { label: "Encounter", icon: Activity, color: ACCENTS.encounters, tab: "activity" },
   medication: { label: "Medication", icon: Pill, color: ACCENTS.medication, tab: "medication" },
-  test: { label: "Test", icon: HeartPulse, color: ACCENTS.healthcare, tab: "healthcare", subTab: "testing" },
-  clinicVisit: { label: "Clinic Visit", icon: HeartPulse, color: ACCENTS.healthcare, tab: "healthcare", subTab: "clinicVisits" },
-  symptomLog: { label: "Symptom Log", icon: HeartPulse, color: ACCENTS.healthcare, tab: "healthcare", subTab: "symptomLog" },
-  vaccination: { label: "Vaccination", icon: HeartPulse, color: ACCENTS.healthcare, tab: "healthcare", subTab: "vaccinations" },
+  test: { label: "Test", icon: TestTube, color: ACCENTS.healthcare, tab: "healthcare", subTab: "testing" },
+  clinicVisit: { label: "Clinic Visit", icon: Stethoscope, color: ACCENTS.healthcare, tab: "healthcare", subTab: "clinicVisits" },
+  symptomLog: { label: "Symptom Log", icon: Thermometer, color: ACCENTS.healthcare, tab: "healthcare", subTab: "symptomLog" },
+  vaccination: { label: "Vaccination", icon: Syringe, color: ACCENTS.healthcare, tab: "healthcare", subTab: "vaccinations" },
 };
 
 function norm(v) {

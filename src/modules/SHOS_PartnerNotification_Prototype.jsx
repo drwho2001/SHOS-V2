@@ -23,6 +23,7 @@ import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { exportTextFile } from "../storage/fileExportHelper";
 import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACTION, RADIUS, TYPE } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useIsDesktopWidth } from "../calculations/responsive";
 
 const radius = RADIUS;
 
@@ -84,6 +85,7 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
   const [query, setQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState(() => new Set(initialSelectedIds));
   const [clinical, setClinical] = useState(initialClinical);
+  const isDesktopWidth = useIsDesktopWidth();
 
   const queryTrimmed = query.trim();
   const visible = queryTrimmed
@@ -129,7 +131,7 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
           style={{ width: "100%", padding: "10px 12px 10px 34px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
       </div>
 
-      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden" }}>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", columnCount: isDesktopWidth && visible.length > 0 ? 2 : undefined, columnGap: 0 }}>
         {visible.length === 0 ? (
           <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>No contacts match.</div>
         ) : visible.map((c) => {
@@ -137,7 +139,7 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
           return (
             <div key={c.id} onClick={() => toggle(c.id)} role="checkbox" tabIndex={0} aria-checked={isSelected}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(c.id); } }}
-              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: `1px solid ${T.border}`, cursor: "pointer" }}>
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: `1px solid ${T.border}`, cursor: "pointer", breakInside: isDesktopWidth ? "avoid" : undefined }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 500, color: T.textPrimary }}>{contactDisplayName(c)}</div>
                 {summarizeContactMethods(c) && <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{summarizeContactMethods(c)}</div>}

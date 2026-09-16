@@ -10,6 +10,7 @@ import { NEUTRAL, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculation
 // duplicates using fuzzy matching... so user doesn't have to dig."
 import { findDuplicatePairs } from "../calculations/fuzzyMatch";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { useIsDesktopWidth } from "../calculations/responsive";
 
 // ADDED 19 Aug 2026 — Registry Management, per the user's priority order.
 // ONE shared screen for all 6 registries (Kink/Chems/Protection/
@@ -43,10 +44,10 @@ import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 // caller here, `renderExtra` is an optional per-caller escape hatch —
 // undefined for the other 5 registries, so nothing changes for them —
 // rendered only in edit mode, below the name row.
-function RegistryRow({ entry, usage, isEditing, editingName, setEditingName, startEdit, commitEdit, setEditingId, toggleArchive, refresh, RenderExtra, T, color }) {
+function RegistryRow({ entry, usage, isEditing, editingName, setEditingName, startEdit, commitEdit, setEditingId, toggleArchive, refresh, RenderExtra, T, color, isDesktopWidth }) {
   const [showExtra, setShowExtra] = useState(false);
   return (
-    <div style={{ borderBottom: `1px solid ${T.border}` }}>
+    <div style={{ borderBottom: `1px solid ${T.border}`, breakInside: isDesktopWidth ? "avoid" : undefined }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
         {isEditing ? (
           <input autoFocus value={editingName} onChange={(e) => setEditingName(e.target.value)}
@@ -82,6 +83,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   const actionRed = darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red;
+  const isDesktopWidth = useIsDesktopWidth();
 
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
@@ -162,7 +164,8 @@ export default function RegistryManagementScreen({ registry, label, color, compu
     <RegistryRow key={entry.id} entry={entry} usage={usageMap.get(entry.id) ?? 0}
       isEditing={editingId === entry.id} editingName={editingName} setEditingName={setEditingName}
       startEdit={startEdit} commitEdit={commitEdit} setEditingId={setEditingId}
-      toggleArchive={toggleArchive} refresh={refresh} RenderExtra={RenderExtra} T={T} color={color} />
+      toggleArchive={toggleArchive} refresh={refresh} RenderExtra={RenderExtra} T={T} color={color}
+      isDesktopWidth={isDesktopWidth} />
   );
 
   return (
@@ -219,7 +222,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
         <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>Tap a name to rename it. Renaming updates everywhere it's used, immediately.</div>
       </div>
 
-      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "8px 16px 0", overflow: "hidden" }}>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "8px 16px 0", overflow: "hidden", columnCount: isDesktopWidth && active.length > 0 ? 2 : undefined, columnGap: 0 }}>
         {active.length === 0 ? (
           <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>No entries yet.</div>
         ) : active.map(Row)}
@@ -231,7 +234,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
             {showArchived ? "Hide" : "Show"} archived ({archived.length})
           </div>
           {showArchived && (
-            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
+            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden", columnCount: isDesktopWidth && archived.length > 0 ? 2 : undefined, columnGap: 0 }}>
               {archived.map(Row)}
             </div>
           )}

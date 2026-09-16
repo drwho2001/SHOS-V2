@@ -18,6 +18,7 @@ import { getEncounterCoverage } from "../calculations/exposureWindows";
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 // ADDED 19 Aug 2026 — Timeline (the nav-facing name; "Episode" is the
@@ -670,6 +671,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
     }));
     return Object.fromEntries(entries);
   }, [episodes, resultNameById], {});
+  const isDesktopWidth = useIsDesktopWidth();
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -685,28 +687,30 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
       <div onClick={onAdd} style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", right: 20, width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", zIndex: 20 }}>
         <Plus size={24} />
       </div>
-      <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ padding: "12px 16px 100px" }}>
         {sorted.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
             No episodes yet. An episode groups a possible exposure together with everything relevant to it — the encounter(s), and any tests or treatment that followed — so you can see the whole thing at a glance instead of hunting across separate records. Tap + to start one from an existing Encounter.
           </div>
         )}
-        {sorted.map((e) => {
-          const hasPositive = hasPositiveByEpisodeId[e.id] || false;
-          const isOpen = !e.resolvedDate;
-          return (
-            <div key={e.id} onClick={() => onOpen(e.id)}
-              style={{ background: T.surface, border: `1px solid ${isOpen && hasPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 8, height: 8, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcareBlue : T.actionGreen, display: "inline-block" }} />
-                <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{e.title}</span>
+        <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 } : { display: "flex", flexDirection: "column", gap: 10 }}>
+          {sorted.map((e) => {
+            const hasPositive = hasPositiveByEpisodeId[e.id] || false;
+            const isOpen = !e.resolvedDate;
+            return (
+              <div key={e.id} onClick={() => onOpen(e.id)}
+                style={{ background: T.surface, border: `1px solid ${isOpen && hasPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcareBlue : T.actionGreen, display: "inline-block" }} />
+                  <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{e.title}</span>
+                </div>
+                <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
+                  {e.triggerReason || "—"} · {isOpen ? "Open" : `Resolved ${formatDate(e.resolvedDate)}`}
+                </div>
               </div>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
-                {e.triggerReason || "—"} · {isOpen ? "Open" : `Resolved ${formatDate(e.resolvedDate)}`}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

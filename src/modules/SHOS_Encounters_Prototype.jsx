@@ -1122,7 +1122,7 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
               screens — this is a 7th. Same real <h1> treatment, same
               margin:0 to avoid the browser's own default heading
               margin adding unwanted spacing. */}
-          <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 22, color: "#FFFFFF", margin: 0 }}>Encounter</h1>
+          <h1 style={{ ...TYPE.screenTitle, color: "#FFFFFF", margin: 0 }}>Encounter</h1>
           {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
               matching Medication's pattern — long-press stays as an
               additional quick entry. */}
