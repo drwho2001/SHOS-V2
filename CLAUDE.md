@@ -278,36 +278,87 @@ this date; summarized here for durability.
   (no delete-release tool available in this session's GitHub MCP
   server). Not yet started, except where noted.
 
-- **Desktop font-size/empty-space — scoped 15 Sep 2026, deliberately
-  NOT attempted this round.** Real report, from a 1600px screenshot
-  taken right after the maxWidth:600 cap was removed: cards like
-  Home's "Status at a glance" (two small stat circles) and body-copy
-  paragraphs read as visually lost in the new, much wider column —
-  real empty space, not imagined. The literal ask ("font sizing to
-  reduce empty space") means scaling CONTENT up at wide viewports, not
-  narrowing the container back down (that would undo the full-width
-  fix just shipped) — which needs real width-aware responsive logic
-  this app has never had anywhere: every screen is hand-authored
-  inline styles with zero existing breakpoint/media-query convention.
-  This is the exact same class of problem as the font/text-size
-  scaling item resolved elsewhere in this file (18 Aug → 9 Sep 2026) —
-  two real implementation attempts (`zoom`, then `transform: scale()`)
-  each shipped a genuine regression (the bottom nav clipped off-screen,
-  then the nav anchored ~2000px below the real viewport) before both
-  were fully reverted, with the honest conclusion that this needs "an
-  actual design-system change... not a session to attempt
-  speculatively again without deciding on that real trade-off first."
-  Rather than risk repeating that exact mistake under the same time
-  pressure, this item is being handed forward scoped, not faked as
-  done: the real fix needs either (a) a first real `window.innerWidth`-
-  driven responsive convention introduced deliberately, with its own
-  regression testing across the app's full screen set, or (b)
-  targeted, low-risk fixes to the specific worst offenders (e.g.
-  enlarging Home's stat-circle widgets, capping flowing body-copy
-  paragraphs to a readable measure independent of the container's own
-  width) without inventing new infrastructure — a real decision the
-  owner should make, not one to guess at speculatively. Folded into
-  Group B above.
+- **Desktop font-size/empty-space (#93) — scoped 15 Sep 2026,
+  re-scoped into a real, concrete design 16 Sep 2026, still
+  deliberately NOT attempted — code review only this round, per the
+  owner's own explicit instruction not to touch anything and risk
+  mobile again.** Real report, from a 1600px screenshot taken right
+  after the maxWidth:600 cap was removed: Home's "Status at a glance"
+  ring row and flowing body-copy screens (Guide/Glossary) read as
+  visually lost in the new, much wider column — real empty space, not
+  imagined. Option (a) from the original scoping (a first-ever
+  app-wide `window.innerWidth`-driven responsive convention/rem
+  type-scale conversion) is explicitly REJECTED as the mechanism —
+  that's the same shape of change as the two already-reverted `zoom`/
+  `transform: scale()` attempts (see the font/text-size entry below):
+  both broke because they touched code the MOBILE path also executes.
+  Option (b) — targeted, additive, desktop-only fixes to the two named
+  offenders, using the ALREADY-PROVEN, ALREADY-SHIPPED
+  `useIsDesktopWidth()` hook (`window.innerWidth >= 900`, live
+  resize-aware, currently defined in `SHOS_Home_Prototype.jsx` around
+  line 156, proven safe by the "Home shortcuts on desktop" round — see
+  "Recently shipped" — where the exact same pattern kept mobile's
+  markup byte-for-byte unchanged) — is the real design, not (a).
+
+  **Absolute rule for implementation, non-negotiable given the two
+  prior regressions**: every fix is an ADDITIVE `isDesktopWidth ? X :
+  Y` branch where `Y` is the CURRENT mobile markup, untouched, byte-
+  for-byte. Nothing shared/global gets modified — no app-shell scale,
+  no rem conversion, no touching a style any mobile-width render path
+  also executes. If a change can't be expressed as "add a new branch,
+  leave the old one exactly alone," it's out of scope for this pass.
+
+  **Target 1 — Home's Status-at-a-glance rings**
+  (`SHOS_Home_Prototype.jsx`, `StatusRing` component ~line 626, its
+  container ~line 811). Currently fixed `size=64, stroke=6`, ring
+  wrapper `maxWidth:100`, container `padding:"16px 8px", gap:8` — at a
+  1600px viewport these sit as tiny widgets in a mostly-empty card.
+  Proposed: thread a `large` boolean into `StatusRing`, set from
+  `isDesktopWidth` (already computed once at the top of `HomeScreen`,
+  just needs passing down — no new hook instance). When `large`:
+  `size→96, stroke→8`, wrapper `maxWidth→140`, `centerText` font
+  14→18, caption font 11→13; container `padding→"24px 16px", gap→16`
+  so the card doesn't just gain more dead space between now-bigger
+  rings. Mobile path: identical defaults to today, zero visual change.
+
+  **Target 2 — flowing body-copy screens (Guide/Glossary named
+  explicitly)** (`SHOS_Settings_Prototype.jsx`, `GuideScreen`/
+  `GlossaryScreen` ~lines 3476-3540). Currently `padding:16` outer
+  container, cards at implicit full width (no `maxWidth` at all), body
+  text 12-13px — at 1600px this means ~13px lines running the full
+  screen width, both a poor reading measure and the literal "empty
+  space around sparse content" complaint. Proposed: NOT a font-size
+  bump (that's global-type-scale risk, exactly what's deferred to a
+  real design-system pass) — a desktop-only **measure cap** instead:
+  wrap the existing card list in `isDesktopWidth ? {maxWidth:640,
+  margin:"0 auto"} : {}`, so the same text simply wraps at a readable
+  ~75-90 characters instead of stretching edge-to-edge. This is
+  exactly the safer of the two options this item's own earlier
+  scoping already named. Mobile path: no wrapper, exact current
+  markup.
+
+  **Real, still-open judgment calls this design does NOT resolve —
+  need a decision, or a build-and-eyeball pass, before implementing**:
+  (1) the specific numbers above (96px ring, 640px measure) are a
+  reasonable starting proposal, not verified against a real render —
+  worth a quick visual check once built, may want adjusting. (2) scope
+  of Target 2: Guide/Glossary are the two explicitly reported screens;
+  a full grep for every other screen sharing the identical
+  "`padding:16`, unconstrained-width card, flowing body text" shape
+  (Resources, onboarding step bodies, About) hasn't been run yet —
+  real choice between fixing only the 2 reported screens now, or
+  sweeping and applying the same measure-cap consistently in one pass
+  (matching this project's own #82 "apply a fix's pattern consistently"
+  discipline). (3) `useIsDesktopWidth()` currently lives only inside
+  `SHOS_Home_Prototype.jsx`; using it in `SHOS_Settings_Prototype.jsx`
+  too means promoting it to a shared export (e.g. `designTokens.js` or
+  a small new `responsive.js`) rather than copy-pasting a second copy
+  — a genuinely safe move (relocating already-working code, no
+  behavior change) but still a real edit to the existing Home file,
+  worth confirming before doing it. (4) the original report named
+  exactly these two targets; any other desktop-empty-space complaint
+  (Medication Dashboard's stock display, Contacts' own stat rows,
+  etc.) is out of this round's scope unless separately reported.
 
 - **Encryption at rest — RESOLVED 8 Sep 2026, see the full Phase 4
   implementation entry at the end of this same bullet.** Originally:
