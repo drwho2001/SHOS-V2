@@ -4145,72 +4145,10 @@ function DesignScreen({ onClose }) {
   );
 }
 
-function InactiveThresholdCard({ T }) {
-  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
-  const [draftValue, setDraftValue] = useState(() => String(prefs.inactiveThresholdDays));
-  // ADDED 4 Sep 2026 — encryption groundwork: prefs now loads via an
-  // effect instead of synchronously, so draftValue's own initializer
-  // (which reads prefs.inactiveThresholdDays at mount) would otherwise
-  // freeze on DEFAULT_APP_PREFERENCES' value forever once the real
-  // prefs loads a tick later — same regression class as MyProfile's
-  // form earlier in this audit. Resyncing on every prefs change is
-  // safe here: the only thing that ever changes prefs while this card
-  // is mounted is the user's own save() below, and resyncing to the
-  // value they just saved is a no-op, not a clobber.
-  useEffect(() => { setDraftValue(String(prefs.inactiveThresholdDays)); }, [prefs]);
-
-  const save = async () => {
-    const parsed = parseInt(draftValue, 10);
-    if (!Number.isFinite(parsed) || parsed < 1) return;
-    setPrefs(await AppPreferencesRepository.update({ inactiveThresholdDays: parsed }));
-  };
-
-  return (
-    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>Inactive contact threshold</div>
-      <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 12 }}>
-        Days since a Contact's last Encounter before it shows the red "inactive" flag. A specific contact can also be excluded from this entirely (edit that contact → "One-off / never expect to recur").
-      </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <input value={draftValue} onChange={(e) => setDraftValue(e.target.value)} type="number" min="1"
-          style={{ width: 90, padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box", background: T.surfaceVariant, color: T.textPrimary }} />
-        <span style={{ fontSize: 13, color: T.textSecondary }}>days</span>
-        <button onClick={save} style={{ marginLeft: "auto", padding: "10px 18px", borderRadius: 999, border: "none", background: ACCENTS.healthcare, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
-          Save
-        </button>
-      </div>
-      <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 10 }}>Currently: {prefs.inactiveThresholdDays} days.</div>
-    </div>
-  );
-}
-
-// ADDED 10 Sep 2026 — real ask: "option to show Dom/sub, top/bottom
-// info" on the Contacts list card — both fields (bdsmRole/
-// sexualPosition) already existed and were already shown on the
-// profile detail view; this only controls the LIST card, which is
-// glanceable the instant the list renders, not one tap in. Off by
-// default, same "opt-in for anything more exposing than the
-// relationship-type chips already on the card" reasoning as App
-// Lock/calendar sync elsewhere in this file.
-function ShowRoleOnCardsToggleCard({ T }) {
-  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
-  const toggle = async () => setPrefs(await AppPreferencesRepository.update({ showRoleOnContactCards: !prefs.showRoleOnContactCards }));
-  return (
-    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
-      <div onClick={toggle} role="switch" tabIndex={0} aria-checked={prefs.showRoleOnContactCards} aria-label="Show Dom/sub and Top/bottom on contact cards"
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
-        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
-        <div style={{ flex: 1, paddingRight: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Show Dom/sub & Top/bottom on cards</div>
-          <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Already shown on a contact's own profile — this adds it to the list view too, visible at a glance. Off by default.</div>
-        </div>
-        <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.showRoleOnContactCards ? ACCENTS.home : T.border, position: "relative", flexShrink: 0 }}>
-          <div style={{ position: "absolute", top: 2, left: prefs.showRoleOnContactCards ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
-        </div>
-      </div>
-    </div>
-  );
-}
+// REMOVED 15 Sep 2026 — InactiveThresholdCard/ShowRoleOnCardsToggleCard
+// moved to SHOS_Contacts_Prototype.jsx (now reachable via a real
+// in-module Contacts settings screen) — see this file's own real
+// audit entry in CLAUDE.md's Recently shipped for the full reasoning.
 
 // ADDED — real ask: Menstrual/Contraception/Pregnancy tracking, gated
 // behind this toggle rather than gender (menopause HRT/TRT tracking
@@ -4347,10 +4285,22 @@ function PreferencesScreen({ onClose }) {
         )}
         <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>Navigation</div>
         <div style={{ marginBottom: 20 }}><TabOrderCard T={T} onChanged={() => setChanged(true)} /></div>
-        <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>Contacts</div>
-        <div style={{ marginBottom: 12 }}><InactiveThresholdCard T={T} /></div>
-        <div style={{ marginBottom: 20 }}><ShowRoleOnCardsToggleCard T={T} /></div>
+        {/* REMOVED 15 Sep 2026 — real ask: audit whether global-Settings
+            items would fit better in each module's own settings.
+            Inactive contact threshold / Show Dom-sub-Top-bottom on
+            cards moved into a new ContactsSettingsScreen (reachable via
+            a gear icon in Contacts' own header), matching
+            MedicationSettingsScreen's already-established pattern —
+            same reasoning that screen was never duplicated back into
+            this Preferences screen either. */}
         <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>Healthcare</div>
+        {/* CHANGED 15 Sep 2026 — real exception, stated explicitly by
+            the owner: this toggle can NOT move into a Menstrual Health
+            settings screen the way Contacts' own settings did, since
+            when it's off there IS no module screen to reach it from —
+            it has to live somewhere always-reachable regardless of the
+            module's own on/off state. Stays here on purpose, not an
+            oversight. */}
         <MenstrualTrackingToggleCard T={T} />
       </div>
     </div>

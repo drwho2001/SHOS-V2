@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import {
-  PlusIcon as Plus, MagnifyingGlassIcon as Search, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, GearSixIcon as Settings2, UsersIcon as Users,
+  PlusIcon as Plus, MagnifyingGlassIcon as Search, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, GearSixIcon as Settings2, GearIcon as SettingsIcon, UsersIcon as Users,
   ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2,
   UploadSimpleIcon as Upload, DownloadSimpleIcon as Download, CheckIcon as Check, UserIcon as User, HouseIcon as Home, MapPinIcon as MapPin, EyeSlashIcon as EyeOff, EyeIcon as Eye, ArrowsClockwiseIcon as RefreshCcw, StarIcon as Star,
   CrosshairIcon as Crosshair,
@@ -2351,7 +2351,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
 }
 
 // ── Contacts List ──
-function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, setQuery, onOpenMyProfile, onOpenImportProfile, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
+function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, setQuery, onOpenMyProfile, onOpenImportProfile, onOpenContactsSettings, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
   // ADDED 19 Aug 2026 — Anonymise mode. Read once per mount, same
   // pattern as every other cross-module settings read in this app —
   // toggling it in Settings and switching back to Contacts (a fresh
@@ -2543,6 +2543,10 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               CHANGED 26 Aug 2026 — moved into the banner, white. */}
           {onOpenImportProfile && <Download size={19} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onOpenImportProfile} />}
           {onOpenMyProfile && <User size={19} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onOpenMyProfile} />}
+          {/* ADDED 15 Sep 2026 — real ask: a real in-module settings
+              screen (see ContactsSettingsScreen's own comment above),
+              matching Medication Dashboard's own gear-icon placement. */}
+          {onOpenContactsSettings && <SettingsIcon size={19} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onOpenContactsSettings} title="Contacts settings" />}
         </div>
       </div>
 
@@ -2810,7 +2814,89 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   );
 }
 
-export default function ContactsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, registerModuleBackHandler } = {}) {
+// ADDED 15 Sep 2026 — real ask: audit whether global-Settings items
+// would fit better living in each module's own settings, creating one
+// where a module doesn't have one yet (but not for a single lone
+// setting — keep it in global Settings then), with a consistent
+// placement/appearance, following the exact pattern
+// MedicationSettingsScreen already established (26 Aug 2026): a gear
+// icon in the module's own banner, opening a screen with the same
+// sticky-header/back-chevron shape, ending in a "Go to general app
+// settings" link. Contacts had 2 real settings sitting in global
+// Settings > Preferences with no in-module home of their own —
+// exactly the "2+ settings, no existing screen" case worth a new one.
+function InactiveThresholdCard({ T }) {
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  const [draftValue, setDraftValue] = useState(() => String(prefs.inactiveThresholdDays));
+  useEffect(() => { setDraftValue(String(prefs.inactiveThresholdDays)); }, [prefs]);
+
+  const save = async () => {
+    const parsed = parseInt(draftValue, 10);
+    if (!Number.isFinite(parsed) || parsed < 1) return;
+    setPrefs(await AppPreferencesRepository.update({ inactiveThresholdDays: parsed }));
+  };
+
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>Inactive contact threshold</div>
+      <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 12 }}>
+        Days since a Contact's last Encounter before it shows the red "inactive" flag. A specific contact can also be excluded from this entirely (edit that contact → "One-off / never expect to recur").
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input value={draftValue} onChange={(e) => setDraftValue(e.target.value)} type="number" min="1"
+          style={{ width: 90, padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box", background: T.surfaceVariant, color: T.textPrimary }} />
+        <span style={{ fontSize: 13, color: T.textSecondary }}>days</span>
+        <button onClick={save} style={{ marginLeft: "auto", padding: "10px 18px", borderRadius: 999, border: "none", background: T.contactsTeal, color: "#FFFFFF", fontWeight: 700, cursor: "pointer" }}>
+          Save
+        </button>
+      </div>
+      <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 10 }}>Currently: {prefs.inactiveThresholdDays} days.</div>
+    </div>
+  );
+}
+
+function ShowRoleOnCardsToggleCard({ T }) {
+  const [prefs, setPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  const toggle = async () => setPrefs(await AppPreferencesRepository.update({ showRoleOnContactCards: !prefs.showRoleOnContactCards }));
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 16 }}>
+      <div onClick={toggle} role="switch" tabIndex={0} aria-checked={prefs.showRoleOnContactCards} aria-label="Show Dom/sub and Top/bottom on contact cards"
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+        <div style={{ flex: 1, paddingRight: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>Show Dom/sub & Top/bottom on cards</div>
+          <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>Already shown on a contact's own profile — this adds it to the list view too, visible at a glance. Off by default.</div>
+        </div>
+        <div style={{ width: 40, height: 24, borderRadius: 999, background: prefs.showRoleOnContactCards ? T.contactsTeal : T.border, position: "relative", flexShrink: 0 }}>
+          <div style={{ position: "absolute", top: 2, left: prefs.showRoleOnContactCards ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
+  return (
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Contacts settings</span>
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={{ marginBottom: 12 }}><InactiveThresholdCard T={T} /></div>
+        <div style={{ marginBottom: 20 }}><ShowRoleOnCardsToggleCard T={T} /></div>
+        {/* CHANGED 15 Sep 2026 — matches MedicationSettingsScreen's own
+            established convention: every per-module settings screen
+            ends with a link back to general/app Settings. */}
+        <div onClick={onOpenGeneralSettings} style={{ textAlign: "center", fontSize: 13, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", padding: "12px 0" }}>
+          Go to general app settings
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ContactsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, onOpenSettings, registerModuleBackHandler } = {}) {
   const [contacts, setContacts] = useLoadedState(() => loadContacts(), [], []);
   // FIXED — real crash found via a live bulk-delete/bulk-archive audit:
   // loadContacts() returns ContactRepository.getAll(), async since this
@@ -2836,6 +2922,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
   // from here now (see the header icons in ContactsList above).
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showImportProfile, setShowImportProfile] = useState(false);
+  const [showContactsSettings, setShowContactsSettings] = useState(false);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   // CHANGED 26 Aug 2026 — real gap found and fixed: this used to live
@@ -2919,6 +3006,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
     if (!registerModuleBackHandler) return;
     registerModuleBackHandler(() => {
       if (editingContact !== null) { setEditingContact(null); return true; }
+      if (showContactsSettings) { setShowContactsSettings(false); return true; }
       if (showMyProfile) { setShowMyProfile(false); return true; }
       if (showImportProfile) { setShowImportProfile(false); return true; }
       if (screen === "profile") { backToList(); return true; }
@@ -2930,7 +3018,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
     // of which render's closure gets called; every real dependency its
     // own condition (screen === "profile") reads is already listed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingContact, showMyProfile, showImportProfile, screen, registerModuleBackHandler]);
+  }, [editingContact, showContactsSettings, showMyProfile, showImportProfile, screen, registerModuleBackHandler]);
 
   const saveEdit = async (form) => {
     if (editingContact && editingContact.id) {
@@ -2973,7 +3061,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
       <div style={{ width: "100%", background: T.bg, minHeight: "100vh" }}>
         {screen === "list" ? (
           <ContactsList contacts={contacts} T={T} onOpen={openProfile} onAdd={() => setEditingContact({})} sortBy={sortBy} setSortBy={setSortBy} query={query} setQuery={setQuery}
-            onOpenMyProfile={() => setShowMyProfile(true)} onOpenImportProfile={() => setShowImportProfile(true)} refresh={refresh}
+            onOpenMyProfile={() => setShowMyProfile(true)} onOpenImportProfile={() => setShowImportProfile(true)} onOpenContactsSettings={() => setShowContactsSettings(true)} refresh={refresh}
             deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />
         ) : (
           <ContactProfile contactId={activeContactId} T={T} onBack={backToList} onEdit={async (id) => setEditingContact(await ContactRepository.getById(id))} onOpenContact={openProfile} refresh={refresh} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} />
@@ -2995,6 +3083,9 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
         )}
         {showImportProfile && (
           <ImportSharedProfileSheet T={T} onClose={() => setShowImportProfile(false)} onImported={refresh} />
+        )}
+        {showContactsSettings && (
+          <ContactsSettingsScreen T={T} onClose={() => setShowContactsSettings(false)} onOpenGeneralSettings={() => { setShowContactsSettings(false); onOpenSettings?.(); }} />
         )}
       </div>
     </div>
