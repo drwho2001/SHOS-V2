@@ -48,6 +48,7 @@ import { getDailyMedsState, handleTakeAll, handleSkipToday, handleSnooze } from 
 // banner buttons, not just background listeners.
 import { getRefillDueMedications, handleMarkRefillRequested, handleSnoozeRefill } from "./calculations/refillReminderSync";
 import { getTestingDueState, handleSnoozeTesting } from "./calculations/testingReminderSync";
+import { getVaccinationDueState, handleSnoozeVaccination } from "./calculations/vaccinationReminderSync";
 import { getClinicVisitDueState, handleSnoozeClinicVisit } from "./calculations/clinicVisitReminderSync";
 // ADDED — real ask: "standardise UI/appearance." Shared design tokens,
 // the actual foundation — see designTokens.js for full reasoning and
@@ -1097,6 +1098,11 @@ export default function App() {
   const [testingBannerHeight, testingBannerCallbackRef] = useMeasuredBannerHeight();
   const [clinicVisitDue, setClinicVisitDue] = useState(null);
   const [clinicVisitBannerHeight, clinicVisitBannerCallbackRef] = useMeasuredBannerHeight();
+  // ADDED 16 Sep 2026 — real gap found auditing notifications end to
+  // end: Vaccinations had no due-state awareness at all, unlike every
+  // other real reminder type. Same shape as testingDue above.
+  const [vaccinationDue, setVaccinationDue] = useState(null);
+  const [vaccinationBannerHeight, vaccinationBannerCallbackRef] = useMeasuredBannerHeight();
   // ADDED 3 Sep 2026 — real bug found live-testing this feature: the
   // banner is `position: fixed` at the very top, which meant it simply
   // OVERLAID whatever was already there — including Home's own header
@@ -1213,7 +1219,9 @@ export default function App() {
     setTestingDue(testing.due ? testing : null);
     const clinicVisit = await getClinicVisitDueState();
     setClinicVisitDue(clinicVisit.due ? clinicVisit : null);
-    const totalDue = due.length + refill.length + (testing.due ? 1 : 0) + (clinicVisit.due ? 1 : 0);
+    const vaccination = await getVaccinationDueState();
+    setVaccinationDue(vaccination.due ? vaccination : null);
+    const totalDue = due.length + refill.length + (testing.due ? 1 : 0) + (clinicVisit.due ? 1 : 0) + (vaccination.due ? 1 : 0);
     const { updateAppBadge, getDeliveredNotifications } = await import("./storage/notificationService");
     updateAppBadge(totalDue);
     // ADDED — real bug found investigating "notification history screen
@@ -1317,6 +1325,17 @@ export default function App() {
   };
   const onClinicVisitSnooze = async () => {
     const result = await handleSnoozeClinicVisit();
+    showNotifToast(`Snoozed ${result.minutes} min`);
+    checkDueMeds();
+  };
+  // Same reasoning as clinic visit/testing above: logging a real
+  // vaccination dose needs a real form, so this opens the actual
+  // record instead of a fake one-tap "done" action.
+  const onVaccinationView = () => {
+    if (vaccinationDue?.vaccination) navigateToRecord("healthcare", vaccinationDue.vaccination.id, "vaccinations");
+  };
+  const onVaccinationSnooze = async () => {
+    const result = await handleSnoozeVaccination();
     showNotifToast(`Snoozed ${result.minutes} min`);
     checkDueMeds();
   };
@@ -1522,7 +1541,7 @@ export default function App() {
   useEffect(() => {
     let listenerHandle = null;
     (async () => {
-      const { addNotificationActionListener, MEDICATION_ACTIONS, DOXYPEP_ACTIONS, REFILL_ACTIONS, TESTING_ACTIONS, CLINIC_VISIT_ACTIONS } = await import("./storage/notificationService");
+      const { addNotificationActionListener, MEDICATION_ACTIONS, DOXYPEP_ACTIONS, REFILL_ACTIONS, TESTING_ACTIONS, CLINIC_VISIT_ACTIONS, VACCINATION_ACTIONS } = await import("./storage/notificationService");
       const { handleTakeDoxyDose, handleSnoozeDoxy } = await import("./calculations/doxyPepSync");
       // CHANGED 3 Sep 2026 — real ask: "clear notification awareness" —
       // tapping an action button used to silently change state with
@@ -1545,6 +1564,7 @@ export default function App() {
         else if (action.actionId === REFILL_ACTIONS.snooze) onRefillSnooze();
         else if (action.actionId === TESTING_ACTIONS.snooze) onTestingSnooze();
         else if (action.actionId === CLINIC_VISIT_ACTIONS.snooze) onClinicVisitSnooze();
+        else if (action.actionId === VACCINATION_ACTIONS.snooze) onVaccinationSnooze();
       });
     })();
     return () => { listenerHandle?.remove(); };
@@ -1884,7 +1904,7 @@ export default function App() {
         </div>
       )}
 
-      {(dueMeds.length > 0 || refillDue.length > 0 || testingDue || clinicVisitDue) && (
+      {(dueMeds.length > 0 || refillDue.length > 0 || testingDue || clinicVisitDue || vaccinationDue) && (
         // CHANGED 15 Sep 2026 — real report: this stack read as "too
         // blocky/harsh/clashy" sitting flush edge-to-edge against the
         // screen with square corners. Wrapped the whole stack (not
@@ -2012,6 +2032,28 @@ export default function App() {
               </div>
             </div>
           )}
+
+          {/* ADDED 16 Sep 2026 — real gap found auditing notifications:
+              Vaccinations had no in-app due-state banner at all, unlike
+              every other real reminder type. No one-tap "done" action
+              — see onVaccinationView's own comment above. */}
+          {vaccinationDue && (
+            <div ref={vaccinationBannerCallbackRef} style={{ background: ACCENTS.healthcare, borderTop: "1px solid rgba(255,255,255,.25)" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
+                <Syringe size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>
+                    {vaccinationDue.vaccination?.vaccine || vaccinationDue.vaccination?.title || "Vaccination"} — due
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <button onClick={onVaccinationView} style={{ padding: "6px 14px", borderRadius: 999, border: "none", background: "#FFFFFF", color: ACCENTS.healthcare, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>View</button>
+                    <button onClick={onVaccinationSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
+                  </div>
+                </div>
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => { setVaccinationDue(null); showNotifToast("Hidden for now — still due, will remind you again"); }} aria-label="Dismiss vaccination banner" />
+              </div>
+            </div>
+          )}
         </div>
         </div>
       )}
@@ -2076,7 +2118,7 @@ export default function App() {
           is active, so it's the correct, single place for the
           landmark — no layout change, `<main>`'s own default display
           matches the `<div>` it replaces. */}
-      <main style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + testingBannerHeight + clinicVisitBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
+      <main style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
         {active === "home" ? (
           <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)}
             markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "home"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />

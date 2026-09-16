@@ -89,6 +89,13 @@ export const NOTIFICATION_IDS = {
   // arbitrary offset.
   clinicVisitReminderA: 9005,
   clinicVisitReminderB: 9006,
+  // ADDED 16 Sep 2026 — real gap found auditing the notification
+  // system end to end: every other reminder type had its own fixed
+  // id/sync file; Vaccinations never got one despite
+  // vaccinationRepository.js's own real `nextDue` field already being
+  // exactly the kind of date this app's other reminders alert on. See
+  // vaccinationReminderSync.js.
+  vaccinationReminder: 9007,
 };
 
 // ADDED 26 Aug 2026 — real ask: custom medication reminder
@@ -154,6 +161,14 @@ export const CLINIC_VISIT_ACTIONS = {
   snooze: "SNOOZE_CLINIC_VISIT_30",
 };
 
+// ADDED 16 Sep 2026 — see vaccinationReminderSync.js. Snooze only, same
+// reasoning as Testing/Clinic-visit above — logging a real vaccination
+// dose needs a real form (vaccine/site/date), not a single tap.
+export const VACCINATION_ACTION_TYPE_ID = "VACCINATION_REMINDER_ACTIONS";
+export const VACCINATION_ACTIONS = {
+  snooze: "SNOOZE_VACCINATION_30",
+};
+
 const ACTION_TYPE_DEFS = {
   [MEDICATION_ACTION_TYPE_ID]: [
     { id: MEDICATION_ACTIONS.takeAll, title: "Take" },
@@ -170,6 +185,7 @@ const ACTION_TYPE_DEFS = {
   ],
   [TESTING_ACTION_TYPE_ID]: [{ id: TESTING_ACTIONS.snooze, title: "Snooze 30 min" }],
   [CLINIC_VISIT_ACTION_TYPE_ID]: [{ id: CLINIC_VISIT_ACTIONS.snooze, title: "Snooze 30 min" }],
+  [VACCINATION_ACTION_TYPE_ID]: [{ id: VACCINATION_ACTIONS.snooze, title: "Snooze 30 min" }],
 };
 
 export async function registerNotificationActionTypes() {

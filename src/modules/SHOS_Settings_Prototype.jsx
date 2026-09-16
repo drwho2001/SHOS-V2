@@ -96,6 +96,7 @@ import { syncMedicationReminders } from "../calculations/medicationReminderSync"
 import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
+import { syncVaccinationReminders } from "../calculations/vaccinationReminderSync";
 import { checkBiometryAvailable } from "../storage/biometricAuthService";
 import { isScreenSecurityAvailable, setScreenshotsAllowed } from "../storage/screenSecurityService";
 import { checkCalendarAvailable, syncClinicVisitsToCalendar, removeAllSyncedEvents, removeSyncedEventsFrom, listAvailableCalendars, SHOS_CALENDAR_NAME } from "../storage/calendarSyncService";
@@ -2110,6 +2111,7 @@ function NotificationsScreen({ onClose }) {
     if (key === "doxyPepAlertEnabled") syncDoxyPepAlert();
     else if (key === "testingReminderEnabled") syncTestingReminder();
     else if (key === "refillReminderEnabled") syncRefillReminder();
+    else if (key === "vaccinationReminderEnabled") syncVaccinationReminders();
     else syncClinicVisitReminders();
     refresh();
   };
@@ -2124,6 +2126,7 @@ function NotificationsScreen({ onClose }) {
     syncTestingReminder();
     syncRefillReminder();
     syncClinicVisitReminders();
+    syncVaccinationReminders();
   };
 
   const toggleMaster = async () => { await NotificationPreferencesRepository.update({ masterEnabled: !notifPrefs.masterEnabled }); resyncAll(); refresh(); };
@@ -2223,6 +2226,8 @@ function NotificationsScreen({ onClose }) {
           description="Alert as the 72-hour DoxyPEP window approaches after a qualifying activity." />
         <NotificationToggleRow darkMode={darkMode} label="Testing due reminder" enabled={notifPrefs.testingReminderEnabled} onToggle={() => toggleNotif("testingReminderEnabled")}
           description="Reminder around your suggested routine retest date (3 months after a negative test)." />
+        <NotificationToggleRow darkMode={darkMode} label="Vaccination due reminder" enabled={notifPrefs.vaccinationReminderEnabled} onToggle={() => toggleNotif("vaccinationReminderEnabled")}
+          description="Reminder on a vaccination record's own 'Next due' date (e.g. the second dose of a multi-dose course)." />
         <NotificationToggleRow darkMode={darkMode} label="Clinic appointment reminder A" enabled={notifPrefs.clinicVisitReminderAEnabled} onToggle={() => toggleNotif("clinicVisitReminderAEnabled")}
           description="First reminder before a booked clinic appointment. Defaults to 24 hours.">
           {hoursInput(notifPrefs.clinicVisitReminderAHours, async (v) => { await NotificationPreferencesRepository.update({ clinicVisitReminderAHours: v }); syncClinicVisitReminders(); refresh(); })}
@@ -3720,7 +3725,19 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
             const dayEvents = grouped[key] || [];
             const isToday = key === todayKey;
             const isSelected = selectedDay === day;
-            const moduleColorsPresent = [...new Set(dayEvents.map((e) => e.moduleKey))].map((k) => calendarModuleAccent(k));
+            // CHANGED 16 Sep 2026 — real ask: keep different-module dots
+            // side by side (still capped at 3 columns, same as before,
+            // so a busy day can't take over the cell), but when a
+            // SINGLE module has multiple events that day (e.g. several
+            // Encounters), stack that module's own dots vertically
+            // instead of collapsing them into one dot — capped at 3
+            // per column, same reasoning.
+            const moduleEventGroups = Object.entries(
+              dayEvents.reduce((acc, e) => {
+                (acc[e.moduleKey] ||= []).push(e);
+                return acc;
+              }, {})
+            ).slice(0, 3);
             return (
               <div key={i} onClick={() => setSelectedDay(isSelected ? null : day)}
                 style={{ aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 8, cursor: "pointer", background: isSelected ? "#1B1B1F" : isToday ? (darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant) : "transparent", gap: 2 }}>
@@ -3731,9 +3748,18 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
                     accident (its own light highlight background gave
                     the dark text something to contrast against). */}
                 <span style={{ fontSize: 12, color: isSelected ? "#FFFFFF" : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: isToday ? 700 : 400 }}>{day}</span>
-                {moduleColorsPresent.length > 0 && (
-                  <div style={{ display: "flex", gap: 2 }}>
-                    {moduleColorsPresent.slice(0, 3).map((c, j) => <div key={j} style={{ width: 4, height: 4, borderRadius: "50%", background: c }} />)}
+                {moduleEventGroups.length > 0 && (
+                  <div style={{ display: "flex", gap: 3, alignItems: "flex-end" }}>
+                    {moduleEventGroups.map(([moduleKey, events]) => {
+                      const color = calendarModuleAccent(moduleKey);
+                      return (
+                        <div key={moduleKey} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                          {Array.from({ length: Math.min(events.length, 3) }).map((_, j) => (
+                            <div key={j} style={{ width: 4, height: 4, borderRadius: "50%", background: color }} />
+                          ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

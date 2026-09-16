@@ -77,6 +77,12 @@ export const DEFAULT_NOTIFICATION_PREFERENCES = {
   // not snoozed.
   testingSnoozedUntil: null,
   clinicVisitSnoozedUntil: null,
+  // ADDED 16 Sep 2026 — real gap found auditing the notification
+  // system end to end: Vaccinations had no reminder toggle at all,
+  // unlike every other real reminder type. Same shape as testing/
+  // clinic-visit above. See vaccinationReminderSync.js.
+  vaccinationReminderEnabled: true,
+  vaccinationSnoozedUntil: null,
 };
 
 // ADDED 3 Sep 2026 — real ask: quiet hours. Real, correct handling of
@@ -127,6 +133,10 @@ export function isTestingSnoozed(prefs) {
 
 export function isClinicVisitSnoozed(prefs) {
   return !!prefs.clinicVisitSnoozedUntil && new Date() < new Date(prefs.clinicVisitSnoozedUntil);
+}
+
+export function isVaccinationSnoozed(prefs) {
+  return !!prefs.vaccinationSnoozedUntil && new Date() < new Date(prefs.vaccinationSnoozedUntil);
 }
 
 // ADDED 3 Sep 2026 — real ask: master switch checked before any

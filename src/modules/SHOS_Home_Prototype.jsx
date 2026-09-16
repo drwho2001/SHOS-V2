@@ -53,7 +53,7 @@ import {
   TestTubeIcon as TestTube, FireIcon as Flame, StethoscopeIcon as Stethoscope,
   SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CalendarCheckIcon as CalendarCheck, StackIcon as Stack, DropIcon as Drop,
   IdentificationBadgeIcon as CreditCard, DownloadSimpleIcon as Download, LockIcon as Lock,
-  BellIcon as Bell, XIcon as X,
+  BellIcon as Bell, XIcon as X, InfoIcon,
 } from "@phosphor-icons/react";
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
 import { ContactRepository } from "../repositories/contactRepository";
@@ -79,6 +79,7 @@ import { syncMedicationReminders } from "../calculations/medicationReminderSync"
 import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
+import { syncVaccinationReminders } from "../calculations/vaccinationReminderSync";
 import { syncClinicVisitsToCalendar } from "../storage/calendarSyncService";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
@@ -385,6 +386,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     syncClinicVisitReminders();
   }, []);
 
+  // ADDED 16 Sep 2026 — real gap found auditing notifications end to
+  // end: Vaccinations had no reminder sync at all. Same catch-up-on-
+  // mount reasoning as every sync above. Also re-synced right after a
+  // vaccination is saved — see SHOS_Vaccinations_Prototype.jsx's own
+  // comment.
+  useEffect(() => {
+    syncVaccinationReminders();
+  }, []);
+
   // ADDED — real ask: calendar sync, "kept separate/private". Self-
   // gated inside syncClinicVisitsToCalendar() on whether the feature
   // is actually turned on (Settings -> Privacy) — safe to call
@@ -603,20 +613,42 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // red convention for testing, staying in the module's own identity
   // colour unconditionally for adherence) — this component itself
   // stays a plain, neutral rendering of a percentage.
-  const StatusRing = ({ pct, color, centerText, caption, onClick }) => {
+  // CHANGED 16 Sep 2026 — real ask: "Status at a glance have
+  // informational i button to explain what each thing is" — same
+  // tap-to-reveal-caption pattern already established for Medication
+  // Dashboard's 7-day adherence dot and Contacts' active-status dot,
+  // applied here so every ring (not just adherence) can explain its
+  // own calculation basis. An info icon, not a hover-only tooltip,
+  // since this app targets touchscreens. Standing rule going forward,
+  // not just this screen: icon-only UI needs an explanatory affordance
+  // unless the icon is a truly universal standard (a gear for
+  // settings, a person for a profile) — see CLAUDE.md.
+  const StatusRing = ({ pct, color, centerText, caption, info, onClick }) => {
     const size = 64, stroke = 6, r = (size - stroke) / 2, c = 2 * Math.PI * r;
     const clamped = Math.max(0, Math.min(100, pct));
     const offset = c * (1 - clamped / 100);
+    const [showInfo, setShowInfo] = useState(false);
     return (
-      <div onClick={onClick} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, cursor: onClick ? "pointer" : "default", flex: 1 }}>
-        <div style={{ position: "relative", width: size, height: size }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: 1, maxWidth: 100 }}>
+        <div onClick={onClick} style={{ position: "relative", width: size, height: size, cursor: onClick ? "pointer" : "default" }}>
           <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={stroke} />
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 300ms ease" }} />
           </svg>
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{centerText}</div>
         </div>
-        <span style={{ fontSize: 11, fontWeight: 600, color: color, textAlign: "center" }}>{caption}</span>
+        <span onClick={onClick} style={{ fontSize: 11, fontWeight: 600, color: color, textAlign: "center", cursor: onClick ? "pointer" : "default", display: "flex", alignItems: "center", gap: 3 }}>
+          {caption}
+          {info && (
+            <InfoIcon size={11} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ cursor: "pointer", flexShrink: 0 }}
+              role="button" tabIndex={0} aria-label={`What does "${caption}" mean?`}
+              onClick={(e) => { e.stopPropagation(); setShowInfo((v) => !v); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setShowInfo((v) => !v); } }} />
+          )}
+        </span>
+        {info && showInfo && (
+          <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textAlign: "center", lineHeight: 1.3 }}>{info}</div>
+        )}
       </div>
     );
   };
@@ -783,6 +815,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 color={testingStats.withinBashhInterval === false ? actionRedColor : healthcareColor}
                 centerText={`${testingStats.daysSinceLast}d`}
                 caption={testingStats.withinBashhInterval === false ? "Testing — overdue" : "Last test"}
+                info={`Days since your last test, out of the ${BASHH_TESTING_INTERVAL_DAYS}-day routine retest interval (BASHH guidance).`}
                 onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined}
               />
             )}
@@ -794,7 +827,9 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 behind this number" intent as every other tap target
                 on this screen. */}
             {adherence != null && (
-              <StatusRing pct={adherence} color={medsBlue} centerText={`${adherence}%`} caption="7-day adherence" onClick={() => onNavigateToRecord("medication")} />
+              <StatusRing pct={adherence} color={medsBlue} centerText={`${adherence}%`} caption="7-day adherence"
+                info="Doses actually logged vs. doses due, across every tracked medication, over the last 7 days."
+                onClick={() => onNavigateToRecord("medication")} />
             )}
             {menstrualTrackingEnabled && cycleDaysSince != null && avgCycleLength != null && (
               <StatusRing
@@ -802,6 +837,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 color={cycleOverdue ? actionRedColor : menstrualColor}
                 centerText={`${cycleDaysSince}d`}
                 caption={cycleOverdue ? "Cycle — late" : "Cycle day"}
+                info="Days since your last logged period started, compared to your own average cycle length — not a fixed external benchmark."
                 onClick={() => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth")}
               />
             )}
@@ -811,6 +847,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
                 color={contraOverdue ? actionRedColor : medsBlue}
                 centerText={contraOverdue ? "Due" : `${contraDaysUntilDue}d`}
                 caption={contraOverdue ? "Contraception overdue" : "Contraception due"}
+                info="How far you are through your current contraception method's own logged interval, from its last dose/application to its next one due."
                 onClick={() => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth")}
               />
             )}

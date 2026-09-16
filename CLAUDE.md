@@ -149,6 +149,21 @@ oversight.
   new structure — auto-logging, cross-module history, a schema editor,
   and similar have all been explicitly rejected on this ground before.
   Apply it to new feature proposals before building them.
+- **Icon-only UI needs an explanatory affordance** (16 Sep 2026, real
+  ask) — an icon with no adjacent text label needs a tap-to-reveal info
+  icon explaining what it means/how it's calculated, unless the icon is
+  a truly universal standard (a gear for Settings, a person for a
+  profile, a magnifying glass for Search — icons a user already knows
+  without this app teaching them). Same tap-to-reveal-caption pattern
+  established for Contacts' active-status dot and Medication
+  Dashboard's 7-day adherence dot (a small `InfoIcon`, `role="button"`,
+  toggles a short caption on tap — not a hover-only tooltip, since this
+  app targets touchscreens). Applied to all 4 of Home's Status-at-a-
+  glance rings 16 Sep 2026 (each explains its own calculation basis,
+  not just adherence). Apply this on sight to new icon-only UI; a full
+  retroactive audit of every existing icon in the app hasn't been done
+  as its own pass — flag a genuine icon-only gap if one is found later,
+  don't assume this is exhaustive yet.
 - **Verify a write actually landed** — don't trust a tool call's success
   alone; confirm state changed for anything that matters (this applies
   to Notion edits and to code changes alike).
@@ -3338,6 +3353,20 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (16 Sep 2026, even later still — notification audit, vaccination reminders, Calendar dot stacking, info icons)
+
+Real ask: run through medication notifications to confirm they genuinely work, ensure testing/vaccine reminder logic is at least basically correct (simpler than medication's is fine), fix Calendar's same-day multi-event dot display, update Notion, and add explanatory info icons to Status at a glance.
+
+**Notification audit — read every reminder sync file and the shared scheduling chokepoint directly, not from memory.** Confirmed `medicationReminderSync.js` is correct and complete: quiet hours, the master switch, and vacation pause are all enforced once, at `notificationService.js`'s shared `scheduleNotification()` chokepoint every real reminder type calls through — so they apply uniformly without needing separate implementations per type — and per-type toggles/skip/snooze state/the fixed-vs-adaptive timing mode are all correctly respected in `getDailyMedsState()`. `testingReminderSync.js`/`refillReminderSync.js`/`clinicVisitReminderSync.js` are built to the same real standard, deliberately simpler (single or two fixed slots, no streak/adherence concept) — appropriate given what they represent, not a shortfall.
+
+**Real, confirmed gap found: Vaccinations had zero reminder logic anywhere in the codebase.** No `vaccinationReminderSync.js`, no `NOTIFICATION_IDS` entry, no preference toggle — confirmed via direct grep, not assumed from this file's own file inventory (which never named one, itself a hint). A real gap, not a design choice, given `vaccinationRepository.js`'s own `nextDue` field (already used for multi-dose courses like Hepatitis A/B) is exactly the kind of date every other reminder type here already alerts on. Built `src/calculations/vaccinationReminderSync.js` mirroring `testingReminderSync.js`'s single-fixed-slot shape: `nextDue` is a plain `YYYY-MM-DD` calendar date with no time-of-day (unlike this app's fake-UTC full-datetime convention), so a due reminder schedules at a fixed 9am local on that date — an honest "sometime that day" reminder, not a claim of precision the data doesn't have. Snooze-only action, no "done" tap, same reasoning Testing/Clinic-visit already use — logging a real vaccination dose needs a real form. Wired in fully: `NOTIFICATION_IDS.vaccinationReminder`/`VACCINATION_ACTION_TYPE_ID` in `notificationService.js`; `vaccinationReminderEnabled`/`vaccinationSnoozedUntil`/`isVaccinationSnoozed()` in `notificationPreferencesRepository.js`; a due-state banner in `App.jsx` matching the existing Testing/Clinic-visit banners exactly (state, measured height, padding calc, action dispatch, visibility condition); sync calls on Home mount, right after a Vaccinations save, and in Settings' Notifications screen toggle/master-switch/quiet-hours resync paths. Verified live: full build, `npx eslint .` clean, full 15-flow smoke-test suite green.
+
+**Calendar dots — real UI refinement, not a bug fix.** Real ask: "if multiple encounters, stack encounter dots vertically in line... say 3 max." The just-shipped dot-colour fix's own dedup logic (`[...new Set(dayEvents.map(e => e.moduleKey))]`) collapsed multiple same-day events of the same module type into a single dot — a day with 3 Encounters looked identical to a day with 1. Changed to group events by `moduleKey` first, then render each present module as its own vertical stack of up to 3 dots (still capped at 3 module-type columns side by side, unchanged from before) — a busy day now shows both facts at once (which modules, and roughly how many events per module) without the cell growing unbounded.
+
+**Status at a glance — info icons on all 4 rings, plus a new standing design rule.** Real ask: "Status at a glance have informational i button to explain what each thing is. Consider this rule for anything globally that is just icon only, unless truly universal standard." Extended `StatusRing` (`SHOS_Home_Prototype.jsx`) with an optional `info` prop rendering the same tap-to-reveal `InfoIcon` pattern already established for Medication Dashboard's 7-day-adherence dot and Contacts' active-status dot — applied to all 4 rings (Testing, Adherence, Cycle, Contraception), each explaining its own real calculation basis, not just the one that already had it. Documented the broader rule as a standing architecture note (see "Working conventions" above) rather than attempting a full retroactive audit of every icon in the app this round — that's real, separate scope, flagged for whoever picks it up next, not assumed done.
+
+**Notion Development log — updated from a real 6-day gap.** The log's most recent entry before this round was dated 10 Sep 2026; everything shipped 11-16 Sep (the full-team audit, the real physical-play-testing batch, the Interactive Tour/meds-timing/desktop-layout round, the Contacts-settings + global-settings-reorg rounds, the Calendar/rings/Clinic-Card round, and this round itself) was missing. Appended 8 dated entries covering all of it, verified by re-fetching the page afterward and confirming its own `page_last_edited_at` timestamp moved and the new content is actually there — not just trusting the write call's return value.
 
 ## Recently shipped (16 Sep 2026, later still — Calendar dot-colour bug, Home rings, Clinic Card recent contacts)
 

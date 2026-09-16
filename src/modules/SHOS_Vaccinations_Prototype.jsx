@@ -8,6 +8,7 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 // now live here, real in-app editable option lists.
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
+import { syncVaccinationReminders } from "../calculations/vaccinationReminderSync";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
@@ -656,7 +657,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
     return () => registerModuleBackHandler(null);
   }, [screen, registerModuleBackHandler]);
 
-  const createVaccination = async (data) => { await VaccinationRepository.create(data); onDataChanged?.(); backToList(); };
+  const createVaccination = async (data) => { await VaccinationRepository.create(data); onDataChanged?.(); syncVaccinationReminders(); backToList(); };
   const saveVaccination = async (data) => {
     // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited, and
     // now VaccinationRepository itself (Phase 2 encryption groundwork),
@@ -665,6 +666,10 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
     await VaccinationRepository.update(screen.id, data);
     await editUndo.notifyEdited(screen.id);
     onDataChanged?.();
+    // ADDED 16 Sep 2026 — real gap found auditing notifications: a
+    // saved nextDue change never re-synced the reminder, same as
+    // Testing's own onSaved comment for syncTestingReminder.
+    syncVaccinationReminders();
     setScreen({ name: "detail", id: screen.id });
   };
 
