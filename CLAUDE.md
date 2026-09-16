@@ -229,6 +229,20 @@ this date; summarized here for durability.
   - **Standing, not a batchable one-off**: #82, applying any future
     fix's pattern consistently across other modules where relevant —
     an ongoing discipline for every batch above, not its own task.
+  - **Global-settings-reorg, a new open thread (15 Sep 2026)**: a real
+    ask to move global-Settings items into each module's own settings
+    screen where that fits better — Contacts done (see "Recently
+    shipped" below), Menstrual/Contraception's tracking toggle
+    deliberately excluded (has to stay always-reachable in global
+    Settings, since turning the module off would make an in-module
+    screen unreachable). Two bigger, real candidates identified but not
+    yet acted on: Measurements' Units screen (mixes a
+    Measurements-specific unit preference with the genuinely-global
+    `weekStartsOn` setting — needs a real split decision, not a quick
+    move) and Settings' Notifications screen (bundles 5 per-module
+    reminder toggles — medication/DoxyPEP/testing/refill/clinic-visit —
+    that could each arguably live in their own module, a bigger,
+    5-module undertaking).
   Also still open, smaller/already-scoped items not folded into the
   groups above: the 3 plain sheet-title banners (Testing/Clinic
   Visits/Encounters' own Add/Edit forms) still lacking the same
@@ -3306,6 +3320,78 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (15 Sep 2026, continuing still further yet again — Contacts settings screen, global-settings reorg)
+
+Real ask: "consider if anything in global settings would do better in
+modules own settings. If that module doesn't have settings, consider
+creating it. Maybe not if only one setting, but have consistent
+placement appearance etc... can maybe duplicate/link to same place...
+(doesn't work for menstrual or contraceptive, as if module is off then
+no settings to be accessible to be toggled), so toggle must live
+outside module for this."
+
+**Replicated an already-established in-app pattern rather than
+inventing a new one.** `MedicationSettingsScreen`
+(`SHOS_Medication_Dashboard_Prototype.jsx`) already exists as the
+template for exactly this shape: a gear icon in the module's own
+colored header banner opens a full-screen settings sub-screen, sticky
+header with a back-chevron, settings cards, ending in a "Go to general
+app settings" link back to global Preferences — that file's own
+26 Aug 2026 comment already documents this as the intended convention.
+Contacts was the clearest, lowest-risk candidate matching the owner's
+own stated rule (2+ real settings, no existing in-module settings
+screen): moved `InactiveThresholdCard`/`ShowRoleOnCardsToggleCard` out
+of global Preferences' "Contacts" section into a new
+`ContactsSettingsScreen`, reachable via a new gear icon in
+`ContactsList`'s own header (recolored to `T.contactsTeal`, matching
+the module's own accent — the two cards kept their exact existing
+logic, only their home screen and colour changed). Wired into
+`ContactsModule`'s existing `registerModuleBackHandler` priority chain
+so the hardware/UI back button closes it correctly, and into
+`App.jsx`'s already-generic `onOpenSettings` prop (passed to every tab
+module at one shared render site — Contacts just hadn't been
+destructuring/using it until now). Global Preferences' old "Contacts"
+section removed cleanly — verified via grep that
+`AppPreferencesRepository`/`DEFAULT_APP_PREFERENCES` imports are still
+used 32 other times in that file (TabOrderCard, MenstrualTrackingToggleCard,
+etc.), so nothing went orphaned.
+
+**The Menstrual/Contraception toggle is the one deliberate exception,
+per the owner's own explicit call-out.** `MenstrualTrackingToggleCard`
+stays in global Settings, not moved into a Menstrual Health settings
+screen the way Contacts' own settings did — turning that toggle off
+would make an in-module settings screen structurally unreachable, so
+it has to live somewhere always-reachable regardless of the module's
+own on/off state. Same reasoning applies to Contraception (gated by
+the same toggle) — noted inline in `PreferencesScreen`'s own comment,
+not just here.
+
+**Two bigger, real candidates for the same treatment identified but
+deliberately NOT acted on this round** — flagged rather than
+guessed at, consistent with this project's own standing discipline for
+bigger design decisions: Measurements' own Units screen currently mixes
+Measurements-specific unit preferences with a genuinely-global
+`weekStartsOn` setting (a real split decision, not a quick move); and
+Settings' Notifications screen bundles 5 per-module reminder toggles
+(medication/DoxyPEP/testing/refill/clinic-visit) that could each
+arguably live in their own module instead — a bigger undertaking
+touching 5 different modules' own settings surfaces at once, not a
+single-module move like Contacts.
+
+Verified live via Playwright end-to-end: the gear icon renders in
+Contacts' own header and opens the new screen; both settings
+(Inactive contact threshold, Show Dom/sub & Top/bottom on cards) read
+and write correctly and persist across reload (confirmed via the
+real UI, since a `vite preview` production build doesn't support the
+dynamic `import()` trick used earlier in this session to check
+repository state directly — verified via the on-screen "Currently: N
+days" text staying correct after a reload instead); the "Go to general
+app settings" link correctly closes this screen and opens global
+Settings; global Preferences' Navigation/Healthcare sections render
+cleanly with no leftover Contacts section. Full build, and the full
+15-flow smoke-test suite against a real `vite preview` production
+build — 15/15 pass.
 
 ## Recently shipped (15 Sep 2026, continuing still further again — Pregnancy list icon, #76)
 
