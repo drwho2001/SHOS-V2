@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { MagnifyingGlassIcon as Search, XIcon as X, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, CaretRightIcon as ChevronRight, TestTubeIcon as TestTube, StethoscopeIcon as Stethoscope, ThermometerIcon as Thermometer, SyringeIcon as Syringe } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon as Search, XIcon as X, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, CaretRightIcon as ChevronRight, TestTubeIcon as TestTube, StethoscopeIcon as Stethoscope, ThermometerIcon as Thermometer, SyringeIcon as Syringe, RulerIcon as Ruler, DropIcon as Drop, ShieldIcon as Shield, BabyIcon as Baby } from "@phosphor-icons/react";
 import { ContactRepository } from "../repositories/contactRepository";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { EncounterRepository } from "../repositories/encounterRepository";
@@ -7,6 +7,16 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
+// ADDED 16 Sep 2026 — real gap found in a consistency-audit round:
+// Measurements and Menstrual Health (Cycle/Contraception/Pregnancy)
+// were the only two record-bearing modules never wired into Global
+// Search at all — this file's own header comment already documents
+// keeping search coverage "honest against actual app state," which
+// this silently violated once both modules shipped.
+import { MeasurementRepository } from "../repositories/measurementRepository";
+import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository";
+import { ContraceptionRepository } from "../repositories/contraceptionRepository";
+import { PregnancyRepository } from "../repositories/pregnancyRepository";
 import { formatRelativeDate } from "../calculations/encounterCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
@@ -67,6 +77,17 @@ const RESULT_META = {
   clinicVisit: { label: "Clinic Visit", icon: Stethoscope, color: ACCENTS.healthcare, tab: "healthcare", subTab: "clinicVisits" },
   symptomLog: { label: "Symptom Log", icon: Thermometer, color: ACCENTS.healthcare, tab: "healthcare", subTab: "symptomLog" },
   vaccination: { label: "Vaccination", icon: Syringe, color: ACCENTS.healthcare, tab: "healthcare", subTab: "vaccinations" },
+  // ADDED 16 Sep 2026 — closing the real Global Search coverage gap.
+  // All three menstrual-health record types share one subTab
+  // ("menstrualHealth") — MenstrualHealthModule resolves which of its
+  // own Cycle/Contraception/Pregnancy tabs to open from the record id's
+  // own prefix (see its own tabForRecordId(), reused here as-is), so
+  // no separate subTab per type is needed the way Healthcare's other
+  // sub-modules need one each.
+  measurement: { label: "Measurement", icon: Ruler, color: ACCENTS.healthcare, tab: "healthcare", subTab: "measurements" },
+  cycle: { label: "Cycle", icon: Drop, color: ACCENTS.healthcare, tab: "healthcare", subTab: "menstrualHealth" },
+  contraception: { label: "Contraception", icon: Shield, color: ACCENTS.healthcare, tab: "healthcare", subTab: "menstrualHealth" },
+  pregnancy: { label: "Pregnancy", icon: Baby, color: ACCENTS.healthcare, tab: "healthcare", subTab: "menstrualHealth" },
 };
 
 function norm(v) {
@@ -200,6 +221,58 @@ async function buildIndex() {
     });
   });
 
+  // ADDED 16 Sep 2026 — closing the real coverage gap named above.
+  (await MeasurementRepository.getAll()).filter((m) => !m.isArchived).forEach((m) => {
+    const searchText = [m.type, m.note].join(" ");
+    results.push({
+      type: "measurement", id: m.id,
+      title: m.type || "Measurement",
+      subtitle: m.date ? formatRelativeDate(m.date) : "",
+      searchText,
+      date: m.date || null,
+    });
+  });
+
+  (await MenstrualCycleRepository.getAll()).filter((c) => !c.isArchived).forEach((c) => {
+    const searchText = [c.flow, c.notes].join(" ");
+    results.push({
+      type: "cycle", id: c.id,
+      title: c.flow ? `${c.flow} flow` : "Cycle",
+      subtitle: c.startDate ? formatRelativeDate(c.startDate) : "",
+      searchText,
+      date: c.startDate || null,
+    });
+  });
+
+  (await ContraceptionRepository.getAll()).filter((e) => !e.isArchived).forEach((e) => {
+    const searchText = [e.method, e.formulation, e.notes].join(" ");
+    results.push({
+      type: "contraception", id: e.id,
+      title: e.method || "Contraception",
+      subtitle: e.startDate ? formatRelativeDate(e.startDate) : "",
+      searchText,
+      date: e.startDate || null,
+    });
+  });
+
+  // A `sensitive` pregnancy entry is masked behind a per-session "tap
+  // to reveal" in Menstrual Health's own list/detail views (ephemeral
+  // component state, never persisted, so it can't be resolved here) —
+  // showing its real status/notes in a search result would defeat that
+  // masking. Matches the module's own masked summaryLabel() exactly:
+  // a generic placeholder, findable by browsing but not by its content.
+  (await PregnancyRepository.getAll()).filter((p) => !p.isArchived).forEach((p) => {
+    const masked = !!p.sensitive;
+    const searchText = masked ? "pregnancy" : [p.testResult, p.status, p.notes].join(" ");
+    results.push({
+      type: "pregnancy", id: p.id,
+      title: masked ? "Tap to reveal" : (p.status || p.testResult || "Pregnancy test"),
+      subtitle: p.testDate ? formatRelativeDate(p.testDate) : "",
+      searchText,
+      date: p.testDate || null,
+    });
+  });
+
   return results;
 }
 
@@ -240,11 +313,12 @@ function ResultRow({ result, onSelect }) {
 // memoization was a no-op, recomputing on every render regardless of
 // whether `results` actually changed. Hoisted to module scope (pure
 // literals, no dependency on props/state) so the memo is real again.
-const TYPE_ORDER = ["contact", "encounter", "medication", "test", "clinicVisit", "symptomLog", "vaccination"];
+const TYPE_ORDER = ["contact", "encounter", "medication", "test", "clinicVisit", "symptomLog", "vaccination", "measurement", "cycle", "contraception", "pregnancy"];
 const TYPE_PLURAL = {
   contact: "Contacts", encounter: "Encounters", medication: "Medications",
   test: "Tests", clinicVisit: "Clinic Visits", symptomLog: "Symptom Log",
-  vaccination: "Vaccinations",
+  vaccination: "Vaccinations", measurement: "Measurements", cycle: "Cycle",
+  contraception: "Contraception", pregnancy: "Pregnancy",
 };
 
 export default function GlobalSearchScreen({ onClose, onNavigate }) {
@@ -329,7 +403,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search contacts, medications, activities, tests, clinic visits..."
+          placeholder="Search contacts, medications, activities, tests, and more..."
           style={{ flex: 1, border: "none", outline: "none", fontSize: 15, background: "transparent", color: T.textPrimary, fontFamily: FONT_FAMILY }}
         />
         <X size={20} color={T.textSecondary} style={{ cursor: "pointer", flexShrink: 0 }} onClick={onClose} aria-label="Close search" />
@@ -350,7 +424,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
       <div tabIndex={0} style={{ flex: 1, overflowY: "auto" }}>
         {query.trim().length === 0 && (
           <div style={{ padding: "40px 24px", textAlign: "center", color: T.textDisabled, fontSize: 13 }}>
-            Start typing to search across Contacts, Medications, Activities, Tests, and Clinic Visits.
+            Start typing to search across every record in SHOS — Contacts, Encounters, Medications, Testing, Clinic Visits, Symptom Log, Vaccinations, Measurements, and Menstrual Health.
           </div>
         )}
         {query.trim().length > 0 && results.length === 0 && (
