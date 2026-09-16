@@ -28,7 +28,7 @@ import {
   CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck,
   LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen,
   SlidersHorizontalIcon as SlidersHorizontal, MapPinIcon as MapPin, XIcon as X,
-  RulerIcon as Ruler, WifiHighIcon as WifiHigh, LinkBreakIcon as LinkBreak,
+  WifiHighIcon as WifiHigh, LinkBreakIcon as LinkBreak,
   FolderIcon as Folder, FunnelIcon as Filter, ClockIcon as Clock,
   ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass,
   BugIcon as Bug, PencilSimpleIcon as PencilSimple,
@@ -74,8 +74,7 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
-import { MeasurementRepository, getAvailableUnits, getDefaultUnit } from "../repositories/measurementRepository";
-import { MeasurementPreferencesRepository, DEFAULT_MEASUREMENT_PREFERENCES } from "../repositories/measurementPreferencesRepository";
+import { MeasurementRepository } from "../repositories/measurementRepository";
 import { TrashRepository, MODULE_LABELS as TRASH_MODULE_LABELS } from "../repositories/trashRepository";
 import { getCalendarEvents, groupEventsByDay } from "../calculations/calendarCalculations";
 import { LocationsRepository } from "../repositories/locationsRepository";
@@ -2381,120 +2380,15 @@ function ErrorLogScreen({ darkMode, onClose }) {
   );
 }
 
-// ADDED 3 Sep 2026 — real ask: "can we add a global default units
-// settings? ie temp, height, weight... international standards.
-// convert automatically if user puts a value in with units on a
-// different scale." The real per-type conversion machinery already
-// existed (measurementRepository.js's UNIT_CONFIG) with a preferred-
-// unit preference (measurementPreferencesRepository.js) — but it was
-// only ever reachable from Measurements' own gear icon, not from
-// Settings, and Height/Temperature weren't even offered there yet
-// (Temperature had no measurement type at all — added alongside this).
-// This screen is the same underlying preference, made genuinely
-// global and discoverable, plus a one-tap Metric/Imperial switch that
-// sets Weight/Height/Temperature together — the individual per-type
-// chips underneath still let anyone mix, e.g. metric weight with an
-// imperial temperature.
-// EXPLICITLY DOES NOT touch time or timezone — the user's own repeated,
-// explicit instruction ("never change time zones/recorded times as
-// described in last and this message"). A recorded date/time isn't a
-// "unit" in the sense this screen means, and a timezone control here
-// risks reintroducing exactly the BST/GMT display bug fixed elsewhere
-// in this app (see dateInputHelpers.js).
-const UNIT_SYSTEM_TYPES = ["Weight", "Height", "Temperature"];
-const METRIC_UNITS = { Weight: "kg", Height: "cm", Temperature: "°C" };
-const IMPERIAL_UNITS = { Weight: "lb", Height: "in", Temperature: "°F" };
-
-function detectUnitSystem(prefs) {
-  const isImperial = UNIT_SYSTEM_TYPES.every((t) => (prefs.preferredUnitByType[t] || getDefaultUnit(t, prefs)) === IMPERIAL_UNITS[t]);
-  return isImperial ? "imperial" : "metric";
-}
-
-function UnitsScreen({ onClose }) {
-  const [darkMode] = useDarkModePreference();
-  const [prefs, setPrefs] = useLoadedState(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
-  const system = detectUnitSystem(prefs);
-
-  const setPreferred = async (type, unit) => setPrefs(await MeasurementPreferencesRepository.setPreferredUnit(type, unit));
-  const setSystem = async (target) => {
-    const units = target === "imperial" ? IMPERIAL_UNITS : METRIC_UNITS;
-    let updated = prefs;
-    for (const type of UNIT_SYSTEM_TYPES) updated = await MeasurementPreferencesRepository.setPreferredUnit(type, units[type]);
-    setPrefs(updated);
-  };
-
-  // ADDED — real ask: first day of week preference (Sunday/Monday,
-  // default Monday). A different repository (AppPreferencesRepository,
-  // not measurement units) but this screen is the closest existing
-  // "how things display" home rather than a new near-empty screen —
-  // same reasoning as InactiveThresholdCard folding into DesignScreen.
-  const [appPrefs, setAppPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
-  const setWeekStartsOn = async (value) => setAppPrefs(await AppPreferencesRepository.update({ weekStartsOn: value }));
-
-  return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Units</span>
-      </div>
-
-      <div style={{ padding: 16 }}>
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
-          Sets the default unit new entries start on, and how existing readings are displayed. Nothing already saved is rewritten — the value you originally entered is always kept too, alongside the converted one.
-        </div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-          {["metric", "imperial"].map((opt) => (
-            <div key={opt} onClick={() => setSystem(opt)}
-              style={{ flex: 1, textAlign: "center", padding: "10px 0", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                border: `1px solid ${system === opt ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`,
-                color: system === opt ? "#FFFFFF" : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary),
-                background: system === opt ? ACCENTS.healthcare : "transparent" }}>
-              {opt === "metric" ? "Metric" : "Imperial"}
-            </div>
-          ))}
-        </div>
-
-        {UNIT_SYSTEM_TYPES.map((type) => {
-          const units = getAvailableUnits(type, prefs.typeKinds[type]);
-          const current = prefs.preferredUnitByType[type] || units[0];
-          return (
-            <div key={type} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-              <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{type}</span>
-              <div style={{ display: "flex", gap: 6 }}>
-                {units.map((u) => (
-                  <div key={u} onClick={() => setPreferred(type, u)}
-                    style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: current === u ? 700 : 400, cursor: "pointer",
-                      border: `1px solid ${current === u ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`,
-                      color: current === u ? "#FFFFFF" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary),
-                      background: current === u ? ACCENTS.healthcare : "transparent" }}>
-                    {u}
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-
-        <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginTop: 24, marginBottom: 8 }}>Calendar</div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0" }}>
-          <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Week starts on</span>
-          <div role="radiogroup" aria-label="Week starts on" style={{ display: "flex", gap: 6 }}>
-            {[{ value: "monday", label: "Monday" }, { value: "sunday", label: "Sunday" }].map((opt) => (
-              <div key={opt.value} onClick={() => setWeekStartsOn(opt.value)} role="radio" tabIndex={0} aria-checked={appPrefs.weekStartsOn === opt.value}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setWeekStartsOn(opt.value); } }}
-                style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: appPrefs.weekStartsOn === opt.value ? 700 : 400, cursor: "pointer",
-                  border: `1px solid ${appPrefs.weekStartsOn === opt.value ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`,
-                  color: appPrefs.weekStartsOn === opt.value ? "#FFFFFF" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary),
-                  background: appPrefs.weekStartsOn === opt.value ? ACCENTS.healthcare : "transparent" }}>
-                {opt.label}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// REMOVED 16 Sep 2026 — real ask: audit whether global-Settings items
+// would do better in each module's own settings. The global Units
+// screen (a 3 Sep 2026 addition — Metric/Imperial toggle + per-type
+// unit chips for Weight/Height/Temperature) is gone; that same
+// preference (measurementPreferencesRepository.js) is now set from
+// Measurements' own gear icon instead — see
+// MeasurementPreferencesSheet's own comment, in that module's file.
+// Its weekStartsOn control moved into CalendarScreen, the one screen
+// it actually affects — see that function's own comment.
 
 // ADDED 19 Aug 2026 — Preferences, real now. Deliberately small — one
 // real, concrete setting (the user's own ask), not speculative toggles
@@ -3680,13 +3574,16 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   // default Monday). getDay() is always 0=Sun..6=Sat regardless of
   // preference — when the week starts Monday, shift it so Monday
   // lands in column 0 instead.
-  // CHANGED — Phase 2 encryption groundwork: this screen is opened
-  // fresh each time from Settings and nothing inside it changes
-  // weekStartsOn itself (set from the Units screen instead), so a
-  // once-per-mount load matches the old plain-call-every-render
-  // behavior closely enough — same reasoning as DesignScreen's own
-  // mostly-read-once sites.
-  const weekStartsOn = useLoadedMemo(() => AppPreferencesRepository.getPreferences().then((p) => p.weekStartsOn), [], "monday");
+  // MOVED 16 Sep 2026 — real ask: this is a Calendar-display setting,
+  // not a Measurements unit preference, so it belongs on the screen it
+  // actually affects rather than the global Units screen (now removed
+  // — see MeasurementPreferencesSheet's own comment for where the
+  // remaining unit prefs went instead). Now a real setter, not a
+  // read-only useLoadedMemo, since this screen is the one place that
+  // changes it.
+  const [appPrefsForWeek, setAppPrefsForWeek] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
+  const weekStartsOn = appPrefsForWeek.weekStartsOn;
+  const setWeekStartsOn = async (value) => setAppPrefsForWeek(await AppPreferencesRepository.update({ weekStartsOn: value }));
   const weekStartsMonday = weekStartsOn !== "sunday";
   const WEEKDAY_LABELS = weekStartsMonday
     ? ["M", "T", "W", "T", "F", "S", "S"]
@@ -3734,6 +3631,21 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
           <span onClick={() => setShowFilters((s) => !s)} style={{ fontSize: 12, fontWeight: 600, color: activeModules.length < ALL_MODULE_KEYS.length ? "#3D63C9" : (darkMode ? DARK.textDisabled : "#5B5B62"), cursor: "pointer" }}>
             Filter{activeModules.length < ALL_MODULE_KEYS.length ? ` (${activeModules.length})` : ""}
           </span>
+        </div>
+      </div>
+      <div style={{ padding: "10px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Week starts on</span>
+        <div role="radiogroup" aria-label="Week starts on" style={{ display: "flex", gap: 6 }}>
+          {[{ value: "monday", label: "Mon" }, { value: "sunday", label: "Sun" }].map((opt) => (
+            <div key={opt.value} onClick={() => setWeekStartsOn(opt.value)} role="radio" tabIndex={0} aria-checked={weekStartsOn === opt.value}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setWeekStartsOn(opt.value); } }}
+              style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: weekStartsOn === opt.value ? 700 : 400, cursor: "pointer",
+                border: `1px solid ${weekStartsOn === opt.value ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`,
+                color: weekStartsOn === opt.value ? "#FFFFFF" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary),
+                background: weekStartsOn === opt.value ? ACCENTS.healthcare : "transparent" }}>
+              {opt.label}
+            </div>
+          ))}
         </div>
       </div>
       {showFilters && (
@@ -4357,7 +4269,6 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // turn each real reminder type on/off rather than each one being
   // invisible/buried in its own module.
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showUnits, setShowUnits] = useState(false);
   // ADDED — real ask: an explicit "choose exactly where this goes"
   // export, alongside the one-tap Share-sheet "Export backup" row
   // below — see backupService.js's exportBackupToChosenFolder for the
@@ -4420,7 +4331,6 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showPreferences) { setShowPreferences(false); return true; }
       if (showPrivacy) { setShowPrivacy(false); return true; }
       if (showNotifications) { setShowNotifications(false); return true; }
-      if (showUnits) { setShowUnits(false); return true; }
       if (showDataNetwork) { setShowDataNetwork(false); return true; }
       if (showResources) { setShowResources(false); return true; }
       if (showGlossary) { setShowGlossary(false); return true; }
@@ -4435,7 +4345,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showUnits, showDataNetwork, showManageLists, showAutoBackupSettings, showResources, showGlossary, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showResources, showGlossary, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.
@@ -4601,10 +4511,10 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         {/* ADDED — real ask: unified notifications management, one
             place to turn each real reminder type on/off. */}
         <SettingsRow icon={Bell} label="Notifications" onClick={() => setShowNotifications(true)} />
-        {/* ADDED 3 Sep 2026 — real ask: a discoverable, global default-
-            units setting (Weight/Height/Temperature), not buried inside
-            Measurements' own gear icon. */}
-        <SettingsRow icon={Ruler} label="Units" onClick={() => setShowUnits(true)} />
+        {/* REMOVED 16 Sep 2026 — real ask: audit whether global-Settings
+            items would do better in each module's own settings. Units
+            moved into Measurements' own gear-icon settings sheet — see
+            MeasurementPreferencesSheet's own comment. */}
       </div>
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Appearance</div>
@@ -4681,9 +4591,6 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showNotifications && (
         <NotificationsScreen onClose={() => setShowNotifications(false)} />
-      )}
-      {showUnits && (
-        <UnitsScreen onClose={() => setShowUnits(false)} />
       )}
       {showAutoBackupSettings && (
         <AutomaticBackupsScreen onClose={() => setShowAutoBackupSettings(false)} />

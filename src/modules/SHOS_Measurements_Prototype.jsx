@@ -997,14 +997,33 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
 // the 3 types with real conversion (Weight/Testosterone/Estradiol —
 // see UNIT_CONFIG in measurementRepository.js) plus the entry point
 // into group management above.
+// MOVED 16 Sep 2026 — real ask: audit whether global-Settings items
+// would do better in each module's own settings. The global Settings
+// > Units screen (Metric/Imperial quick toggle + Weight/Height/
+// Temperature chips) is gone — this sheet is now the one place that
+// sets these, alongside the per-type dropdowns it already had.
+const UNIT_SYSTEM_TYPES = ["Weight", "Height", "Temperature"];
+const METRIC_UNITS = { Weight: "kg", Height: "cm", Temperature: "°C" };
+const IMPERIAL_UNITS = { Weight: "lb", Height: "in", Temperature: "°F" };
+function detectUnitSystem(prefs) {
+  const isImperial = UNIT_SYSTEM_TYPES.every((t) => (prefs.preferredUnitByType[t] || getDefaultUnit(t, prefs)) === IMPERIAL_UNITS[t]);
+  return isImperial ? "imperial" : "metric";
+}
+
 function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
   const [prefs, setPrefs] = useLoadedState(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
   // CHANGED 3 Sep 2026 — Height and Temperature both got real
   // UNIT_CONFIG conversion but were never added to this list, so their
-  // default unit was never settable here (also now settable app-wide
-  // via Settings > Units, which writes to this same preference).
+  // default unit was never settable here.
   const CONVERTIBLE_TYPES = ["Weight", "Height", "Temperature", "Testosterone", "Estradiol"];
   const setPreferred = async (type, unit) => setPrefs(await MeasurementPreferencesRepository.setPreferredUnit(type, unit));
+  const system = detectUnitSystem(prefs);
+  const setSystem = async (target) => {
+    const units = target === "imperial" ? IMPERIAL_UNITS : METRIC_UNITS;
+    let updated = prefs;
+    for (const type of UNIT_SYSTEM_TYPES) updated = await MeasurementPreferencesRepository.setPreferredUnit(type, units[type]);
+    setPrefs(updated);
+  };
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 215 }} onClick={onClose}>
@@ -1015,6 +1034,21 @@ function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
         </div>
         <div tabIndex={0} style={{ overflowY: "auto", padding: "16px 20px 24px", flex: 1 }}>
           <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, marginBottom: 8 }}>Default units</div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {["metric", "imperial"].map((opt) => (
+              <div key={opt} onClick={() => setSystem(opt)} role="radio" tabIndex={0} aria-checked={system === opt}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSystem(opt); } }}
+                style={{ flex: 1, textAlign: "center", padding: "8px 0", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  border: `1px solid ${system === opt ? T.healthcareBlue : T.border}`,
+                  color: system === opt ? "#FFFFFF" : T.textPrimary,
+                  background: system === opt ? T.healthcareBlue : "transparent" }}>
+                {opt === "metric" ? "Metric" : "Imperial"}
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 12 }}>
+            Sets Weight/Height/Temperature together — the per-type dropdowns below still let you mix, e.g. metric weight with an imperial temperature. Nothing already saved is rewritten.
+          </div>
           {CONVERTIBLE_TYPES.map((type) => {
             const units = getAvailableUnits(type, prefs.typeKinds[type]);
             const current = prefs.preferredUnitByType[type] || units[0];
