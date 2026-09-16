@@ -783,6 +783,16 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
         </SectionCard>
 
         <SectionCard title="Notes" T={T}>
+          {/* ADDED 16 Sep 2026 — real ask (#78): a short, scannable
+              working impression/diagnosis, distinct from the longer
+              Clinical notes narrative below — see
+              clinicVisitsRepository.js's own field comment. */}
+          <div style={{ padding: "8px 0" }}>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Clinical impression</div>
+            <input value={form.clinicalImpression || ""} onChange={(e) => set("clinicalImpression")(e.target.value)}
+              placeholder="e.g. Symptomatic urethritis, likely Gonorrhoea pending culture"
+              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+          </div>
           <div style={{ padding: "8px 0" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Clinical notes</div>
             <textarea value={form.clinicalNotes} onChange={(e) => set("clinicalNotes")(e.target.value)} rows={3}
@@ -952,6 +962,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
         </SectionCard>
 
         <SectionCard title="Notes" T={T}>
+          {visit.clinicalImpression && <ReadRow label="Clinical impression" value={visit.clinicalImpression} T={T} />}
           <ReadRow label="Clinical notes" value={visit.clinicalNotes} T={T} />
         </SectionCard>
 

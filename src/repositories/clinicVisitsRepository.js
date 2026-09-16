@@ -100,6 +100,14 @@ export const DEFAULT_CLINIC_VISIT = {
   // ADDED 19 Aug 2026 — pairs with nextReviewDate above: WHAT KIND of
   // follow-up is arranged, not just when. See FOLLOW_UP_TYPE_OPTIONS.
   followUpType: "",
+  // ADDED 16 Sep 2026 — real ask (#78): a short, scannable working
+  // impression/diagnosis, distinct from clinicalNotes' own longer
+  // free-form narrative below — the real ask named this as its own
+  // field, not something to bury in prose. Clinic Visit, not Testing,
+  // per the scoping note: an impression is a clinician's read of the
+  // whole visit (symptoms + exam + any point-of-care result), not a
+  // specific lab test's own result.
+  clinicalImpression: "",
   clinicalNotes: "",
   linkedTestIds: [],       // → TestingRepository, real and wired (two-way — see testingRepository.js)
   medicationsGivenIds: [], // → MedicationRepository, real and wired — meds the user already tracks (e.g. DoxyPEP given here)
@@ -166,6 +174,7 @@ let seedVisits = [
     location: "56 Dean Street",
     clinician: ["Hayley"],
     reasonForVisit: ["Treatment"],
+    clinicalImpression: "Symptomatic urethritis, confirmed Gonorrhoea",
     clinicalNotes: "Confirmed Gonorrhoea on symptomatic screen. Single-dose antibiotic given in clinic. TOC (test of cure) advised in 2 weeks. Partner notification checklist started.",
     linkedTestIds: ["test_001", "test_002"],
     adHocMedicationsGiven: [{ id: "adhocmed_seed_001", name: "Ceftriaxone 1g IM", notes: "Single dose, given in clinic." }],

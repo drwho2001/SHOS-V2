@@ -240,17 +240,11 @@ this date; summarized here for durability.
     recent-contacts section and #77 Interactive Guide overflow/shape
     fixes — DONE, see "Recently shipped" below.
   - **Group E — bigger investigate/design items, each needing its own
-    real scoping pass before implementation, not a quick patch**: #78
-    Stats breakdowns (by organism/site, combined multi-site tests, a
-    clinical-impression field — scoped 16 Sep 2026, genuinely unbuilt,
-    not just stalled: the data already supports it, `organismIds`/
-    `sampleType` are real wired fields, and same-day same-organism
-    records genuinely can be separate entries per the repository's own
-    `_supersedeOlderMostRecent` comment, so "combine multi-site
-    same-event tests" is a real double-counting risk worth fixing in
-    the same pass; "clinical-impression field" needs a decision on
-    which record type it belongs to, Clinic Visit fits more naturally
-    than Testing); #80 — RESOLVED 16 Sep 2026, see "Recently shipped"
+    real scoping pass before implementation, not a quick patch**: #78 —
+    RESOLVED 16 Sep 2026, see "Recently shipped" below: Stats gained a
+    deduped by-organism positive-result breakdown and a by-sample-site
+    tally, and Clinic Visits gained a real `clinicalImpression` field.
+    #80 — RESOLVED 16 Sep 2026, see "Recently shipped"
     below: the owner's own explicit follow-up re-scoped and authorized
     a real outbound Send, the same disclosed-exception model as
     Nominatim/GitHub. #79 Calendar dot-colours and #81 Status-at-a-
@@ -3349,6 +3343,18 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (16 Sep 2026, latest of all still — Stats organism/site breakdown + clinical-impression field, #78)
+
+Real ask (#78), scoped earlier the same day: a positive-test breakdown by organism and by sample site on the Stats screen, with a real fix for the double-counting risk the scoping itself flagged (`testingRepository.js`'s own `_supersedeOlderMostRecent` comment documents that same-day tests for different sample sites are legitimately stored as separate records — a naive per-test tally would double-count one real diagnosis event), plus a clinical-impression field, with the placement decision (Clinic Visit vs. Testing) resolved by the scoping text's own stated lean ("Clinic Visit fits more naturally than Testing").
+
+**`src/calculations/statsCalculations.js`** — two new pure functions, following the file's own established resolver-callback pattern (never reading a registry directly): `getPositiveTestsByOrganism(tests, resolveOrganismName, resolveResultName, topN)` dedupes on a `${date}|${organismId}` key — collapsing exactly the same-day-different-site scenario `_supersedeOlderMostRecent` warns about into one count per real diagnosis — while `getTestsBySite(tests, topN)` deliberately does NOT dedupe, since each `sampleType` entry represents a genuinely separate physical sample, an additive fact rather than a diagnosis count.
+
+**`SHOS_Settings_Prototype.jsx`'s `StatsScreen`** — both wired in via the same `useLoadedMemo` lookup-Map pattern already used for `kinkNameById`/`symptomNameById` (`organismNameById`/`resultNameById`, resolved from the already-imported `OrganismRegistry`/`ResultsRegistry`). Rendered as two new list blocks in the existing Healthcare stats card, right after the testing-trend insight: "Positive results by organism" (with a tap-to-reveal `InfoIcon` explaining the same-day dedup rule, per this file's own standing icon-only-UI convention) and "Tests by sample site" (a plain list, no info icon needed — the tally itself is self-explanatory).
+
+**`clinicVisitsRepository.js`** — added `clinicalImpression: ""` to `DEFAULT_CLINIC_VISIT`, positioned right before the existing `clinicalNotes` field — a short, scannable working impression/diagnosis, distinct from `clinicalNotes`' longer narrative. Wired into `SHOS_ClinicVisits_Prototype.jsx`'s edit form (a new input right before "Clinical notes") and detail view (a new `ReadRow`, conditionally rendered only when non-empty so an older record with nothing set shows no extra row). Seed record `visit_001` given a real value ("Symptomatic urethritis, confirmed Gonorrhoea") to exercise the field against real data.
+
+Verified live via Playwright against real seed data: Stats correctly shows "Gonorrhoea 1 / Chlamydia 1" (the two real positive seed tests, `test_001`/`test_006`, on different dates — no double-counting) and "Urine 7 / Blood 4 / Rectal swab 3" for sample sites; `visit_001`'s detail view shows "Clinical impression: Symptomatic urethritis, confirmed Gonorrhoea" directly above "Clinical notes"; its Edit sheet's own Clinical impression input correctly loads that same real value (confirmed via the input's actual `.value` property, not `innerText`). Full build, `npx eslint .` clean, and the full 15-flow smoke-test suite against a real `vite preview` production build — 15/15 pass, no regressions.
 
 ## Recently shipped (16 Sep 2026, latest of all — Lists reassociation UX, #75)
 

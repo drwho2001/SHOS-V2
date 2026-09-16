@@ -246,6 +246,54 @@ export function getTopSymptoms(symptomEntries, resolveSymptomName, topN = 5) {
   return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, topN).map(([name, count]) => ({ name, count }));
 }
 
+// ADDED 16 Sep 2026 — real ask (#78): "positive-test counts by
+// organism/site." Real double-counting risk found while scoping this:
+// testingRepository.js's own `_supersedeOlderMostRecent()` comment
+// documents that two tests on the SAME DAY, for different sample
+// sites, are stored as separate records ("same-day tests can coexist
+// as most recent... different sample sites, same visit") — a naive
+// per-record tally of positive results would count one real clinical
+// event as 2+ positives if it happened to be logged as 2 site-specific
+// records. Deduped below by grouping on (date, organismId), so a
+// same-day multi-site positive for one organism counts once — matching
+// what "how many times have I tested positive for X" actually means.
+// `resolveOrganismName` mirrors getTopKinks()/getTopSymptoms()'s own
+// resolver-callback pattern — this file stays I/O-free, the caller
+// resolves ids via whichever registry it already has loaded.
+export function getPositiveTestsByOrganism(tests, resolveOrganismName, resolveResultName, topN = 8) {
+  const real = tests.filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+  const seenEvents = new Set(); // `${date}|${organismId}`
+  const counts = {};
+  for (const t of real) {
+    const isPositive = (t.resultIds || []).some((id) => resolveResultName(id)?.toLowerCase() === "positive");
+    if (!isPositive) continue;
+    const day = t.date.slice(0, 10);
+    for (const organismId of t.organismIds || []) {
+      const eventKey = `${day}|${organismId}`;
+      if (seenEvents.has(eventKey)) continue;
+      seenEvents.add(eventKey);
+      const name = resolveOrganismName(organismId);
+      if (name) counts[name] = (counts[name] || 0) + 1;
+    }
+  }
+  return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, topN).map(([name, count]) => ({ name, count }));
+}
+
+// ADDED 16 Sep 2026 — real ask (#78): "...and site." A tally of how
+// many times each sample type has actually been taken — genuinely
+// additive (one real swab/draw per array entry per record), so unlike
+// the organism breakdown above this needs no event-level dedup: two
+// records from the same visit with different sampleType entries really
+// are two different physical samples, not a double-count of one fact.
+export function getTestsBySite(tests, topN = 8) {
+  const real = tests.filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+  const counts = {};
+  for (const t of real) {
+    for (const site of t.sampleType || []) counts[site] = (counts[site] || 0) + 1;
+  }
+  return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, topN).map(([name, count]) => ({ name, count }));
+}
+
 // ── Clinic Visits ──
 
 // Only PAST, real visits — a future booked appointment isn't something

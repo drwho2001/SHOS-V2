@@ -49,6 +49,7 @@ import {
   getActivitiesPerMonth, getTopKinks, getTestingFrequencyStats, BASHH_TESTING_INTERVAL_DAYS, BASHH_TESTING_SOURCE_URL,
   getOverallAdherence, getDoxyPepComplianceRate, getContactsAddedPerMonth, getTestingIntervalTrend,
   getAdherenceTrend, getTopSymptoms, getClinicVisitStats, getClinicVisitsPerMonth,
+  getPositiveTestsByOrganism, getTestsBySite,
 } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedMemo, useLoadedState } from "../calculations/loadedRepositoryState";
@@ -2821,6 +2822,12 @@ function TrendInsight({ text, tone, T }) {
 // guidance where relevant (BASHH), not just internal app logic.
 function StatsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
+  // ADDED 16 Sep 2026 — real ask (#78): tap-to-reveal explanation for
+  // the organism-breakdown's own same-day dedup rule, same InfoIcon
+  // pattern already used everywhere else this app explains a
+  // calculation basis (see the "Icon-only UI needs an explanatory
+  // affordance" standing convention).
+  const [showOrganismInfo, setShowOrganismInfo] = useState(false);
 
   const encounters = useLoadedMemo(() => EncounterRepository.getAll(), [], []);
   const contacts = useLoadedMemo(() => ContactRepository.getAll(), [], []);
@@ -2838,6 +2845,11 @@ function StatsScreen({ onClose }) {
   // synchronous, I/O-free calculation functions — see statsCalculations.js).
   const kinkNameById = useLoadedMemo(async () => new Map((await KinkRegistry.getAll()).map((k) => [k.id, k.name])), [], new Map());
   const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
+  // ADDED 16 Sep 2026 — real ask (#78): positive-test-by-organism
+  // breakdown, same resolver-callback pattern as kinkNameById/
+  // symptomNameById above.
+  const organismNameById = useLoadedMemo(async () => new Map((await OrganismRegistry.getAll()).map((o) => [o.id, o.name])), [], new Map());
+  const resultNameById = useLoadedMemo(async () => new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name])), [], new Map());
 
   const activityMonths = useMemo(() => getActivitiesPerMonth(encounters, 6), [encounters]);
   const topKinks = useMemo(() => getTopKinks(encounters, contacts, (id) => kinkNameById.get(id), 5), [encounters, contacts, kinkNameById]);
@@ -2847,6 +2859,11 @@ function StatsScreen({ onClose }) {
   // benchmark above), see getTestingIntervalTrend's own comment for
   // the two distinct comparisons this covers.
   const testingTrend = useMemo(() => getTestingIntervalTrend(tests), [tests]);
+  // ADDED 16 Sep 2026 — real ask (#78): "positive-test counts by
+  // organism/site" — see statsCalculations.js's own comment on the
+  // real same-day-multi-site double-counting risk this dedupes.
+  const positiveByOrganism = useMemo(() => getPositiveTestsByOrganism(tests, (id) => organismNameById.get(id), (id) => resultNameById.get(id), 8), [tests, organismNameById, resultNameById]);
+  const testsBySite = useMemo(() => getTestsBySite(tests, 8), [tests]);
   const adherence = useMemo(() => getOverallAdherence(medications, computeAdherence), [medications]);
   // CHANGED — Phase 2 encryption groundwork: LogRepository went async
   // — this used to be a plain useMemo directly calling
@@ -2935,6 +2952,38 @@ function StatsScreen({ onClose }) {
               tone={testingTrend.recentTrend.direction === "up" ? "alert" : "neutral"}
               text={`Your testing interval has been trending ${testingTrend.recentTrend.direction === "up" ? "longer" : "shorter"} lately — recently averaging ${testingTrend.recentTrend.recentAvgDays} days between tests, vs. ${testingTrend.recentTrend.earlierAvgDays} days earlier on (${testingTrend.recentTrend.percent}% ${testingTrend.recentTrend.direction === "up" ? "slower" : "faster"}).`} />
           )}
+          {/* ADDED 16 Sep 2026 — real ask (#78): positive-test-by-
+              organism and by-sample-site breakdowns. */}
+          <div style={{ padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Positive results by organism</span>
+              <InfoIcon onClick={() => setShowOrganismInfo((s) => !s)} />
+            </div>
+            {showOrganismInfo && (
+              <div style={{ marginBottom: 8, padding: "8px 10px", borderRadius: 8, background: darkMode ? DARK.bg : NEUTRAL.bg, fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5 }}>
+                Counts a real, positive test result per organism, once per day — two same-day tests for different sample sites (e.g. urine + rectal swab at one visit) count as one real event, not two.
+              </div>
+            )}
+            {positiveByOrganism.length === 0 ? (
+              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>None logged yet.</div>
+            ) : positiveByOrganism.map((o) => (
+              <div key={o.name} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+                <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{o.name}</span>
+                <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{o.count}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: "12px 16px", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+            <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>Tests by sample site</div>
+            {testsBySite.length === 0 ? (
+              <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontStyle: "italic" }}>None logged yet.</div>
+            ) : testsBySite.map((s) => (
+              <div key={s.name} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+                <span style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{s.name}</span>
+                <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600 }}>{s.count}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* ADDED — real ask: "expand stats". Symptoms had no stats
