@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CaretLeftIcon as ChevronLeft, CaretDownIcon as ChevronDown, PlusIcon as Plus, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, XIcon as X, PillIcon as Pill, ArrowCircleRightIcon as ArrowRightCircle, ClipboardTextIcon as ClipboardList, CalendarIcon as CalendarClock, TestTubeIcon as TestTube, SyringeIcon as Syringe, CalendarCheckIcon as CalendarCheck, MapPinIcon as MapPin, PlayCircleIcon as PlayCircle, TagIcon as Tag, HeartIcon as Heart, UserIcon as User, ArrowUUpLeftIcon as RestoreIcon, ArrowsLeftRightIcon as SwapIcon } from "@phosphor-icons/react";
+import { CaretLeftIcon as ChevronLeft, CaretDownIcon as ChevronDown, PlusIcon as Plus, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, XIcon as X, PillIcon as Pill, ArrowCircleRightIcon as ArrowRightCircle, ClipboardTextIcon as ClipboardList, CalendarIcon as CalendarClock, TestTubeIcon as TestTube, SyringeIcon as Syringe, CalendarCheckIcon as CalendarCheck, MapPinIcon as MapPin, PlayCircleIcon as PlayCircle, TagIcon as Tag, HeartIcon as Heart, UserIcon as User, DropIcon as Drop, RulerIcon as Ruler, ArrowUUpLeftIcon as RestoreIcon, ArrowsLeftRightIcon as SwapIcon } from "@phosphor-icons/react";
 import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } from "../repositories/customOptionListsRepository";
 import { findRecordsUsingOptionValue, reassociateOptionValue } from "../calculations/optionListUsage";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
@@ -28,7 +28,17 @@ import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE } from "../calculations/designTo
 // this component and ICON_COMPONENTS below are exported so that
 // switcher can reuse this exact detail screen/icon set unchanged
 // rather than a second copy.
-export const ICON_COMPONENTS = { Pill, ArrowRightCircle, ClipboardList, CalendarClock, TestTube, Syringe, CalendarCheck, MapPin, PlayCircle, Tag, Heart, User };
+// FIXED 16 Sep 2026 — real bug found live: menstrualFlow's/
+// measurementType's own OPTION_LIST_ICONS entries ("Drop"/"Ruler",
+// added 19 Aug 2026) were never registered here — IconComponent
+// silently resolved to undefined for both, so their rows rendered
+// with no icon at all while every other list's icon showed correctly.
+// Drop matches the Menstrual Health module's own Cycle-tab icon
+// (see the #76 "Pregnancy list icon" entry, CLAUDE.md); Ruler is a
+// new, first icon reference for Measurements — no existing in-module
+// icon to match since Measurements doesn't use a domain icon on its
+// own records (a deliberate choice, see its own list-icon audit).
+export const ICON_COMPONENTS = { Pill, ArrowRightCircle, ClipboardList, CalendarClock, TestTube, Syringe, CalendarCheck, MapPin, PlayCircle, Tag, Heart, User, Drop, Ruler };
 
 // ADDED 19 Aug 2026 — the "idiot-proof" editor the user asked for, for the
 // simple flat option lists (see customOptionListsRepository.js for the

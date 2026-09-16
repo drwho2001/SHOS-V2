@@ -946,7 +946,15 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ position: "sticky", top: 62, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}` }}>
+      {/* FIXED 16 Sep 2026 — real bug: same as Testing/Clinic Visits/
+          Vaccinations/Symptom Log/Measurements' own sticky
+          sub-headings — the sticky-header status-bar fix moved
+          Healthcare's banner from top:0 to
+          calc(env(safe-area-inset-top) + 8px), leaving this bar's own
+          bare top:62 stuck at the OLD position, overlapping the
+          banner's new, lower bottom edge. Carries the identical
+          offset so it always sits flush beneath it. */}
+      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 70px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}` }}>
         <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Menstrual & Contraception</span>
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
           {tabs.map((t) => (

@@ -1169,7 +1169,16 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
           y:0. top:62 sticks it directly beneath Healthcare's banner
           instead — same measured height Contacts already uses for its
           own second sticky bar under an identical banner shape. */}
-      <div style={{ position: "sticky", top: 62, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* FIXED 16 Sep 2026 — real bug: the sticky-header status-bar
+          fix moved Healthcare's own banner from top:0 to
+          calc(env(safe-area-inset-top) + 8px), but this bar's own
+          top stayed a bare 62 — so once the banner's own stick
+          position shifted down by that extra offset, this bar (still
+          locking at the OLD position) overlapped the banner's new
+          bottom edge instead of sitting flush beneath it. Carries the
+          identical offset now, so it always sticks exactly where the
+          banner's own real bottom edge is, on any device. */}
+      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 70px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Testing</span>
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
             matching Medication's pattern — long-press stays as an

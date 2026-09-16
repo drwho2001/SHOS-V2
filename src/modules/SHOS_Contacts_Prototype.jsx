@@ -2615,7 +2615,13 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar, shown while
           in multi-select mode (entered via long-press on a card). */}
       {selectMode && (
-        <div style={{ position: "sticky", top: 62, zIndex: 6, background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        // FIXED 16 Sep 2026 — real bug: same class as Healthcare's own
+        // sub-tab sticky headers — the sticky-header status-bar fix
+        // moved Contacts' own banner from top:0 to
+        // calc(env(safe-area-inset-top) + 8px), leaving this bar's own
+        // bare top:62 stuck at the OLD position, overlapping the
+        // banner's new, lower bottom edge.
+        <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 70px)", zIndex: 6, background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
             {/* ADDED 1 Sep 2026 — real ask: "option to select all... rather

@@ -461,7 +461,13 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
           in the same shared scroll container, instead of stacking
           beneath it. top:62 matches Contacts' own established offset
           for a second sticky bar under an identical banner shape. */}
-      <div style={{ position: "sticky", top: 62, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* FIXED 16 Sep 2026 — real bug, same as Testing's own: the
+          sticky-header status-bar fix moved Healthcare's banner from
+          top:0 to calc(env(safe-area-inset-top) + 8px), leaving this
+          bar's own bare top:62 stuck at the OLD position — now
+          overlapping the banner's new, lower bottom edge. Carries the
+          identical offset so it always sits flush beneath it. */}
+      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 70px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Vaccinations</span>
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle. */}
         <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>

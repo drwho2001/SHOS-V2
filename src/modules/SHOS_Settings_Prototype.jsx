@@ -3487,9 +3487,22 @@ function GuideScreen({ onClose, onStartTour }) {
 
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Guide</span>
+      {/* FIXED 16 Sep 2026 — real report: "Guide in desktop mode doesn't
+          seem full screen." The screen IS genuinely full-viewport
+          (position:fixed, inset:0) — the actual issue was a visual
+          mismatch: this header bar spanned the full width while the
+          body below sat capped/centered at 640px, so the two read as
+          disconnected pieces (a full-width chrome bar over a narrow
+          floating column) rather than one deliberate screen. The
+          header's own background band stays full-width (so it still
+          reads as real chrome, not another floating widget) — only
+          its inner content (chevron + title) is capped/centered to
+          match the body's own column on desktop. */}
+      <div style={{ padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <div style={isDesktopWidth ? { display: "flex", alignItems: "center", gap: 10, maxWidth: 640, margin: "0 auto" } : { display: "flex", alignItems: "center", gap: 10 }}>
+          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+          <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Guide</span>
+        </div>
       </div>
       <div style={isDesktopWidth ? { padding: 16, maxWidth: 640, margin: "0 auto" } : { padding: 16 }}>
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4 }}>
@@ -3536,9 +3549,14 @@ function GlossaryScreen({ onClose }) {
 
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
-        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Glossary</span>
+      {/* FIXED 16 Sep 2026 — same header/body centering mismatch fixed
+          on GuideScreen above; see that screen's own comment for the
+          full reasoning. */}
+      <div style={{ padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <div style={isDesktopWidth ? { display: "flex", alignItems: "center", gap: 10, maxWidth: 640, margin: "0 auto" } : { display: "flex", alignItems: "center", gap: 10 }}>
+          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+          <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Glossary</span>
+        </div>
       </div>
       <div style={isDesktopWidth ? { padding: 16, maxWidth: 640, margin: "0 auto" } : { padding: 16 }}>
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4 }}>

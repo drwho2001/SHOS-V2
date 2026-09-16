@@ -53,7 +53,7 @@ import {
   TestTubeIcon as TestTube, FireIcon as Flame, StethoscopeIcon as Stethoscope,
   SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CalendarCheckIcon as CalendarCheck, StackIcon as Stack, DropIcon as Drop,
   IdentificationBadgeIcon as CreditCard, DownloadSimpleIcon as Download, LockIcon as Lock,
-  BellIcon as Bell, XIcon as X, InfoIcon,
+  BellIcon as Bell, XIcon as X,
 } from "@phosphor-icons/react";
 import { PrivacySettingsRepository } from "../repositories/privacySettingsRepository";
 import { ContactRepository } from "../repositories/contactRepository";
@@ -600,42 +600,42 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // Dashboard's 7-day adherence dot and Contacts' active-status dot,
   // applied here so every ring (not just adherence) can explain its
   // own calculation basis. An info icon, not a hover-only tooltip,
-  // since this app targets touchscreens. Standing rule going forward,
-  // not just this screen: icon-only UI needs an explanatory affordance
-  // unless the icon is a truly universal standard (a gear for
-  // settings, a person for a profile) — see CLAUDE.md.
+  // since this app targets touchscreens.
   // ADDED 16 Sep 2026 — real ask (#93, desktop empty-space): these
   // rings read as tiny/lost at wide desktop viewports. Desktop-only,
   // additive — mobile's own size/spacing is completely untouched
   // (isDesktopWidth is already computed once at the top of
   // HomeScreen, threaded down as a prop rather than a second hook
   // instance). See CLAUDE.md's #93 entry for the full design.
+  // CHANGED 16 Sep 2026, later still — real ask: "consider if the
+  // information button contents can actually just be given next to
+  // the circle - will use some of the free space without adding
+  // unnecessary filler." Reworked from a vertical stack (ring, then
+  // caption, then a tap-to-reveal info line below) into a horizontal
+  // layout (ring on the left, caption + info text stacked to its
+  // right) — the info text is now always visible, no tap required,
+  // and fills the row's own free horizontal space instead of leaving
+  // it empty. This is a real improvement on the standing "icon-only
+  // UI needs an explanatory affordance" rule (see CLAUDE.md), not a
+  // regression of it — always-visible text is strictly more
+  // accessible than an icon gating the same text behind a tap.
   const StatusRing = ({ pct, color, centerText, caption, info, onClick }) => {
     const size = isDesktopWidth ? 96 : 64, stroke = isDesktopWidth ? 8 : 6, r = (size - stroke) / 2, c = 2 * Math.PI * r;
     const clamped = Math.max(0, Math.min(100, pct));
     const offset = c * (1 - clamped / 100);
-    const [showInfo, setShowInfo] = useState(false);
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: 1, maxWidth: isDesktopWidth ? 140 : 100 }}>
-        <div onClick={onClick} style={{ position: "relative", width: size, height: size, cursor: onClick ? "pointer" : "default" }}>
+      <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 12, flex: "1 1 220px", maxWidth: isDesktopWidth ? 340 : 260, cursor: onClick ? "pointer" : "default" }}>
+        <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
           <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={stroke} />
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 300ms ease" }} />
           </svg>
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: isDesktopWidth ? 18 : 14, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{centerText}</div>
         </div>
-        <span onClick={onClick} style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 600, color: color, textAlign: "center", cursor: onClick ? "pointer" : "default", display: "flex", alignItems: "center", gap: 3 }}>
-          {caption}
-          {info && (
-            <InfoIcon size={11} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ cursor: "pointer", flexShrink: 0 }}
-              role="button" tabIndex={0} aria-label={`What does "${caption}" mean?`}
-              onClick={(e) => { e.stopPropagation(); setShowInfo((v) => !v); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setShowInfo((v) => !v); } }} />
-          )}
-        </span>
-        {info && showInfo && (
-          <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textAlign: "center", lineHeight: 1.3 }}>{info}</div>
-        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+          <span style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 700, color: color }}>{caption}</span>
+          {info && <span style={{ fontSize: 10, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.3 }}>{info}</span>}
+        </div>
       </div>
     );
   };
@@ -795,7 +795,17 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       {(testingStats?.testCount > 0 || adherence != null || (menstrualTrackingEnabled && ((cycleDaysSince != null && avgCycleLength != null) || contraSpanDays != null))) && (
         <>
           <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Status at a glance</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: isDesktopWidth ? 16 : 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: isDesktopWidth ? "24px 16px" : "16px 8px", marginBottom: 24 }}>
+          {/* FIXED 16 Sep 2026 — real report: "not evenly centred/
+              spaced, dead space on RHS." Each ring's own maxWidth cap
+              (needed so it doesn't stretch absurdly wide when only 1-2
+              of the 4 possible rings are present) meant the row's
+              default justifyContent:flex-start packed items against
+              the left edge, leaving any leftover width as a single
+              block of empty space on the right rather than distributed
+              evenly. centered instead — with 4 rings the row still
+              reads full either way, with fewer it now reads as a
+              deliberately compact, centered set. */}
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: isDesktopWidth ? 16 : 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: isDesktopWidth ? "24px 16px" : "16px 8px", marginBottom: 24 }}>
             {testingStats?.testCount > 0 && testingStats.daysSinceLast != null && (
               <StatusRing
                 pct={(testingStats.daysSinceLast / BASHH_TESTING_INTERVAL_DAYS) * 100}
