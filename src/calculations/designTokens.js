@@ -452,7 +452,7 @@ export const TYPE = {
   bodyEmphasis: { fontSize: 14, fontWeight: 600 },
   caption: { fontSize: 12, fontWeight: 400 },
   captionEmphasis: { fontSize: 12, fontWeight: 600 },
-  monoLabel: { fontSize: 12, fontFamily: "'Inter', sans-serif" },
+  monoLabel: { fontSize: 12, fontFamily: "'JetBrains Mono', monospace" },
 };
 
 // CHANGED — real tuning per GPT's design review: cards read as
@@ -469,4 +469,4 @@ export const RADIUS = { sm: 8, md: 13, lg: 24, full: 999 };
 // should set this explicitly rather than assume it inherits correctly
 // from a parent.
 export const FONT_FAMILY = "'Inter', sans-serif";
-export const FONT_FAMILY_MONO = "'Inter', sans-serif";
+export const FONT_FAMILY_MONO = "'JetBrains Mono', monospace";

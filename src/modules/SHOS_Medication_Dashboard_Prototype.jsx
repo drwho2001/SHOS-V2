@@ -8,6 +8,15 @@ import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { findClosestMatch } from "../calculations/fuzzyMatch";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
+// ADDED — real audit finding: this was the one module still missing the
+// in-progress-edit autosave every sibling record form already has (see
+// draftStorage.js for the full reasoning). Both Add/Edit sheets already
+// receive a fully-loaded object as a prop (no async id-fetch race like
+// Testing/ClinicVisits/Encounters), so this uses the same simpler
+// isFirstRender-guarded pattern already proven for SymptomLog/
+// Vaccinations/Measurements, not the isDirty-ref variant those three
+// need for their own async load effect.
+import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 // ADDED 19 Aug 2026 — MEDICATION_TYPE_OPTIONS/ROUTE_OPTIONS now live
 // here, real in-app editable option lists — see
 // customOptionListsRepository.js for the full reasoning.
@@ -1171,27 +1180,45 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
   const medicationTypeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("medicationType"), [], []);
   const routeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("route"), [], []);
   const [categoryOptions, setCategoryOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("medicationCategory"), [], []);
-  const [form, setForm] = useState({
-    name: med.name, route: med.route || "", medicationType: med.medicationType || "",
-    category: med.category || [],
-    doseComponents: getDoseComponents(med),
-    usagePattern: med.usagePattern, scheduleIntervalDays: med.scheduleIntervalDays || 2,
-    dosesPerDay: med.dosesPerDay || 1, unitsPerDose: med.unitsPerDose, refillThreshold: med.refillThreshold,
-    scheduledTimes: med.scheduledTimes || [],
-    unitsPerContainer: med.unitsPerContainer || 0,
-    // Default refill qty is edited in containers, stored in units — the user's ask, matches how
-    // people actually think about a refill ("one box"), not a raw unit count.
-    defaultRefillContainers: med.unitsPerContainer ? Math.round((med.defaultRefillQuantity || 0) / med.unitsPerContainer) : 1,
-    inventoryTracked: med.inventoryTracked, usualSupplier: med.usualSupplier || "",
-    // ADDED — real bug found: some real medications (e.g. PrEP) already
-    // carried a `notes` value visible in a raw backup export, but this
-    // form never read or wrote that field at all, and the card never
-    // displayed it either — a real note existed with no UI surface
-    // anywhere. Genuinely wired up now, not just carried through.
-    notes: med.notes || "",
+  // ADDED — real audit finding: this form had no in-progress-edit
+  // autosave, unlike 7 sibling forms — see draftStorage.js.
+  const draftKey = `medEdit_${med.id}`;
+  const [form, setForm] = useState(() => {
+    const draft = loadDraft(draftKey);
+    if (draft) return draft.data;
+    return {
+      name: med.name, route: med.route || "", medicationType: med.medicationType || "",
+      category: med.category || [],
+      doseComponents: getDoseComponents(med),
+      usagePattern: med.usagePattern, scheduleIntervalDays: med.scheduleIntervalDays || 2,
+      dosesPerDay: med.dosesPerDay || 1, unitsPerDose: med.unitsPerDose, refillThreshold: med.refillThreshold,
+      scheduledTimes: med.scheduledTimes || [],
+      unitsPerContainer: med.unitsPerContainer || 0,
+      // Default refill qty is edited in containers, stored in units — the user's ask, matches how
+      // people actually think about a refill ("one box"), not a raw unit count.
+      defaultRefillContainers: med.unitsPerContainer ? Math.round((med.defaultRefillQuantity || 0) / med.unitsPerContainer) : 1,
+      inventoryTracked: med.inventoryTracked, usualSupplier: med.usualSupplier || "",
+      // ADDED — real bug found: some real medications (e.g. PrEP) already
+      // carried a `notes` value visible in a raw backup export, but this
+      // form never read or wrote that field at all, and the card never
+      // displayed it either — a real note existed with no UI surface
+      // anywhere. Genuinely wired up now, not just carried through.
+      notes: med.notes || "",
+    };
   });
+  const [draftRestored] = useState(() => !!loadDraft(draftKey));
+  // Skips the initial mount so just opening and closing this sheet with
+  // zero real edits doesn't leave a phantom draft behind — same fix
+  // already proven for SymptomLog/Vaccinations/Measurements.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    saveDraft(draftKey, form);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const save = () => {
+    clearDraft(draftKey);
     const { defaultRefillContainers, ...rest } = form;
     const doseComponents = form.doseComponents.filter((c) => c.value !== "");
     onSave({
@@ -1218,6 +1245,11 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
           <X size={18} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, padding: "0 20px 12px", flexShrink: 0 }}>Changes how stock/adherence are calculated going forward — doesn't touch past log entries.</div>
+        {draftRestored && (
+          <div style={{ margin: "0 20px 10px", fontSize: 11, color: T.actionGreenText, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px", flexShrink: 0 }}>
+            Restored unsaved changes from earlier.
+          </div>
+        )}
 
         <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
         <div style={{ padding: "6px 0 10px" }}>
@@ -1328,16 +1360,31 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
   const medicationTypeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("medicationType"), [], []);
   const routeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("route"), [], []);
   const [categoryOptions, setCategoryOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("medicationCategory"), [], []);
-  const [form, setForm] = useState({
-    name: "", route: "", medicationType: "", category: [], doseComponents: [],
-    usagePattern: "daily", scheduleIntervalDays: 2, unitsPerDose: 1, dosesPerDay: 1,
-    scheduledTimes: [],
-    inventoryTracked: true, unitsPerContainer: 30, refillThreshold: 7, defaultRefillContainers: 1, usualSupplier: "",
-    notes: "",
+  // ADDED — real audit finding: same draftStorage.js autosave as
+  // MedicationEditSheet above — a fixed key since there's only ever one
+  // in-progress "new medication" draft at a time.
+  const draftKey = "medAdd_new";
+  const [form, setForm] = useState(() => {
+    const draft = loadDraft(draftKey);
+    if (draft) return draft.data;
+    return {
+      name: "", route: "", medicationType: "", category: [], doseComponents: [],
+      usagePattern: "daily", scheduleIntervalDays: 2, unitsPerDose: 1, dosesPerDay: 1,
+      scheduledTimes: [],
+      inventoryTracked: true, unitsPerContainer: 30, refillThreshold: 7, defaultRefillContainers: 1, usualSupplier: "",
+      notes: "",
+    };
   });
+  const [draftRestored] = useState(() => !!loadDraft(draftKey));
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    saveDraft(draftKey, form);
+  }, [form]);
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const canCreate = form.name.trim().length > 0;
   const create = () => {
+    clearDraft(draftKey);
     const { defaultRefillContainers, ...rest } = form;
     const doseComponents = form.doseComponents.filter((c) => c.value !== "");
     onCreate({
@@ -1384,6 +1431,11 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Add medication</span>
           <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         </div>
+        {draftRestored && (
+          <div style={{ margin: "10px 20px 0", fontSize: 11, color: T.actionGreenText, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px", flexShrink: 0 }}>
+            Restored unsaved changes from earlier.
+          </div>
+        )}
 
         <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
         <div style={{ padding: "6px 0 10px" }}>

@@ -464,12 +464,6 @@ export const MeasurementRepository = {
     for (const id of ids) await this.archive(id);
   },
 
-  async bulkDelete(ids) {
-    await ensureLoaded();
-    measurements = measurements.filter((m) => !ids.includes(m.id));
-    await persist();
-  },
-
   async restore(record) {
     await ensureLoaded();
     if (measurements.some((m) => m.id === record.id)) return;

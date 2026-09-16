@@ -65,8 +65,8 @@ export const DEFAULT_PROFILE = {
   // Poly needs more than one. Deliberately NOT the same field as
   // Contacts' own relationshipType, and linking here never touches
   // it — see relationshipContactIds' own removal reasoning in
-  // contactRepository.js's delete()/bulkDelete() (unlink, don't
-  // cascade). Single source of truth lives HERE, not duplicated on
+  // contactRepository.js's delete() (unlink, don't cascade). Single
+  // source of truth lives HERE, not duplicated on
   // the Contact record — a Contact's own screen can add/remove itself
   // from this same array, but there's only one real array.
   relationshipContactIds: [],

@@ -155,12 +155,6 @@ export const MenstrualCycleRepository = {
     for (const id of ids) await this.archive(id);
   },
 
-  async bulkDelete(ids) {
-    await ensureLoaded();
-    cycles = cycles.filter((c) => !ids.includes(c.id));
-    await persist();
-  },
-
   async restore(record) {
     await ensureLoaded();
     if (cycles.some((c) => c.id === record.id)) return;

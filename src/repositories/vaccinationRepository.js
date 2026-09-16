@@ -270,13 +270,6 @@ export const VaccinationRepository = {
     for (const id of ids) await this.archive(id);
   },
 
-  async bulkDelete(ids) {
-    await ensureLoaded();
-    vaccinations = vaccinations.filter((v) => !ids.includes(v.id));
-    await persist();
-    for (const id of ids) ClinicVisitsRepository.unlinkVaccination(id);
-  },
-
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.
   async restore(record) {
     await ensureLoaded();

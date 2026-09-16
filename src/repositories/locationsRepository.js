@@ -180,12 +180,10 @@ export const LocationsRepository = {
   // the CONTACT it points at is hard-deleted elsewhere — same "only
   // clears the link" role as measurementRepository.js's own
   // unlinkClinicVisit()/unlinkTest(), called by contactRepository.js's
-  // own delete(). CHANGED — contactRepository.js's own delete()/
-  // bulkDelete() call this WITHOUT awaiting it (deliberately — they're
-  // still fully synchronous themselves, part of this same 22-file hard
-  // bucket, not yet converted) — safe as fire-and-forget since nothing
-  // in those callers depends on this write's completion timing, same
-  // reasoning already used for App.jsx's notification-history record().
+  // own delete(). Called WITHOUT awaiting it (deliberately) — safe as
+  // fire-and-forget since nothing in that caller depends on this
+  // write's completion timing, same reasoning already used for
+  // App.jsx's notification-history record().
   async unlinkContact(contactId) {
     await ensureLoaded();
     locations = locations.map((l) => (l.relatedContactId === contactId ? { ...l, relatedContactId: "" } : l));

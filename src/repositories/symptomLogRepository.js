@@ -255,13 +255,6 @@ export const SymptomLogRepository = {
     for (const id of ids) await this.archive(id);
   },
 
-  async bulkDelete(ids) {
-    await ensureLoaded();
-    entries = entries.filter((e) => !ids.includes(e.id));
-    await persist();
-    for (const id of ids) { ClinicVisitsRepository.unlinkSymptomLog(id); EpisodeRepository.unlinkSymptomLog(id); }
-  },
-
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.
   async restore(record) {
     await ensureLoaded();

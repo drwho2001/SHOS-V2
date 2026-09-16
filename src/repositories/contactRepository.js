@@ -750,24 +750,6 @@ export const ContactRepository = {
     for (const id of ids) await this.archive(id);
   },
 
-  async bulkDelete(ids) {
-    await ensureLoaded();
-    const records = contacts.filter((c) => ids.includes(c.id));
-    contacts = contacts.filter((c) => !ids.includes(c.id));
-    await persist();
-    ids.forEach((id) => MyProfileRepository.unlinkRelationshipContact(id));
-    // Same dangling-link cleanup as delete() above, per contact —
-    // awaited for the same same-repo-correctness reason.
-    for (const record of records) {
-      for (const otherId of record.linkedContactIds || []) await this.unlinkContacts(record.id, otherId);
-    }
-    ids.forEach((id) => {
-      EncounterRepository.unlinkContact(id);
-      LocationsRepository.unlinkContact(id);
-      PartnerNotificationRepository.unlinkContact(id);
-    });
-  },
-
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.
   // Reinserts the exact record as it was — same id, same createdAt —
   // unlike create() which always generates a fresh id. Only usable

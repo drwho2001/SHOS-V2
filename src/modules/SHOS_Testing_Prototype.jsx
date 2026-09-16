@@ -455,6 +455,10 @@ function RegistryMultiResultPicker({ label, value, onChange, T, registry, placeh
 function AttachmentManager({ testId, attachments, onChanged, T }) {
   const inputRef = useRef(null);
   const [pendingType, setPendingType] = useState("Other");
+  // ADDED — real audit finding: this deleted an attachment on a single
+  // tap with zero confirmation, unlike ~15 other real destructive
+  // deletes app-wide that all go through the shared ConfirmDeleteCard.
+  const [pendingRemove, setPendingRemove] = useState(null);
 
   const handleFile = (e) => {
     const file = e.target.files?.[0];
@@ -471,6 +475,7 @@ function AttachmentManager({ testId, attachments, onChanged, T }) {
   const remove = async (attachmentId) => {
     await TestingRepository.removeAttachment(testId, attachmentId);
     onChanged();
+    setPendingRemove(null);
   };
 
   return (
@@ -487,10 +492,21 @@ function AttachmentManager({ testId, attachments, onChanged, T }) {
                   <div style={{ fontSize: 10, color: T.textDisabled }}>{a.type} · {formatDate(a.date)}</div>
                 </div>
               </div>
-              <Trash2 size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => remove(a.id)} aria-label="Remove attachment" />
+              <Trash2 size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => setPendingRemove(a)} aria-label="Remove attachment" />
             </div>
           ))}
         </div>
+      )}
+      {pendingRemove && (
+        <ConfirmDeleteCard
+          T={T}
+          moduleColor={T.healthcareBlue}
+          message={`Remove "${pendingRemove.title}"? There's no getting it back.`}
+          confirmLabel="Remove"
+          margin="0 0 12px"
+          onCancel={() => setPendingRemove(null)}
+          onConfirm={() => remove(pendingRemove.id)}
+        />
       )}
       <div style={{ display: "flex", gap: 8 }}>
         <select value={pendingType} onChange={(e) => setPendingType(e.target.value)}

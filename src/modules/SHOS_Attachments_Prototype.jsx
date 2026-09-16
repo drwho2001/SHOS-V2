@@ -5,11 +5,15 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, TYPE } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
+// ADDED — real audit finding: this screen deleted an attachment on a
+// single tap with zero confirmation, unlike ~15 other real destructive
+// deletes app-wide that all go through this one shared component.
+import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 
 const TYPE_OPTIONS = ["Test result", "Prescription", "ID", "Photo", "Other"];
 
@@ -57,10 +61,15 @@ function isImage(dataUrl) {
 
 export default function AttachmentsScreen({ onClose, onNavigateToSource, registerModuleBackHandler }) {
   const [darkMode] = useDarkModePreference();
-  const T = { ...(darkMode ? NEUTRAL_DARK : NEUTRAL), healthcareBlue: ACCENTS.healthcare };
+  const T = {
+    ...(darkMode ? NEUTRAL_DARK : NEUTRAL),
+    healthcareBlue: ACCENTS.healthcare,
+    actionRed: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red,
+  };
   const [refreshKey, setRefreshKey] = useState(0);
   const [filterType, setFilterType] = useState("");
   const isDesktopWidth = useIsDesktopWidth();
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   // ADDED — real ask: back should close Attachments (a flat, single-
   // screen overlay — no internal navigation depth to step back
@@ -77,6 +86,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
     if (a.sourceType === "test") await TestingRepository.removeAttachment(a.sourceId, a.id);
     else await ClinicVisitsRepository.removeAttachment(a.sourceId, a.id);
     setRefreshKey((k) => k + 1);
+    setPendingDelete(null);
   };
 
   return (
@@ -106,6 +116,17 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
         ))}
       </div>
 
+      {pendingDelete && (
+        <ConfirmDeleteCard
+          T={T}
+          moduleColor={T.healthcareBlue}
+          message={`Remove "${pendingDelete.title}"? It'll also disappear from its original ${pendingDelete.sourceType === "test" ? "Test" : "Clinic Visit"} record — there's no getting it back.`}
+          confirmLabel="Remove"
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={() => handleDelete(pendingDelete)}
+        />
+      )}
+
       <div style={{ padding: "0 16px 24px" }}>
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
@@ -118,13 +139,13 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
             <div key={group.key} style={{ marginBottom: 16 }}>
               <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{group.key}</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 }}>
-                {group.items.map((a) => <AttachmentRow key={a.id} a={a} T={T} onNavigateToSource={onNavigateToSource} handleDelete={handleDelete} marginBottom={0} />)}
+                {group.items.map((a) => <AttachmentRow key={a.id} a={a} T={T} onNavigateToSource={onNavigateToSource} requestDelete={setPendingDelete} marginBottom={0} />)}
               </div>
             </div>
           ))
         ) : (
           <div>
-            {filtered.map((a) => <AttachmentRow key={a.id} a={a} T={T} onNavigateToSource={onNavigateToSource} handleDelete={handleDelete} marginBottom={8} />)}
+            {filtered.map((a) => <AttachmentRow key={a.id} a={a} T={T} onNavigateToSource={onNavigateToSource} requestDelete={setPendingDelete} marginBottom={8} />)}
           </div>
         )}
       </div>
@@ -136,7 +157,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
 // ADDED — pulled out of AttachmentsScreen's own inline .map() body so
 // the desktop-grid month-grouping pass and the mobile flat list both
 // render the exact same row markup, unchanged.
-function AttachmentRow({ a, T, onNavigateToSource, handleDelete, marginBottom }) {
+function AttachmentRow({ a, T, onNavigateToSource, requestDelete, marginBottom }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 12, marginBottom }}>
       {isImage(a.fileDataUrl) ? (
@@ -150,7 +171,7 @@ function AttachmentRow({ a, T, onNavigateToSource, handleDelete, marginBottom })
         <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</div>
         <div style={{ fontSize: 11, color: T.textSecondary }}>{a.type} · {formatDate(a.date)} · {a.sourceTitle}</div>
       </div>
-      <Trash2 size={15} color={T.textDisabled} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => handleDelete(a)} aria-label="Remove attachment" title="Remove attachment" />
+      <Trash2 size={15} color={T.textDisabled} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => requestDelete(a)} aria-label="Remove attachment" title="Remove attachment" />
     </div>
   );
 }

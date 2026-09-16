@@ -167,12 +167,6 @@ export const ContraceptionRepository = {
     for (const id of ids) await this.archive(id);
   },
 
-  async bulkDelete(ids) {
-    await ensureLoaded();
-    entries = entries.filter((e) => !ids.includes(e.id));
-    await persist();
-  },
-
   async restore(record) {
     await ensureLoaded();
     if (entries.some((e) => e.id === record.id)) return;

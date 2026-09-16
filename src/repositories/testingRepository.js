@@ -441,19 +441,6 @@ export const TestingRepository = {
     for (const id of ids) await this.archive(id);
   },
 
-  async bulkDelete(ids) {
-    await ensureLoaded();
-    tests = tests.filter((t) => !ids.includes(t.id));
-    await persist();
-    for (const id of ids) {
-      MeasurementRepository.unlinkTest(id);
-      ClinicVisitsRepository.unlinkTest(id);
-      SymptomLogRepository.unlinkTest(id);
-      EpisodeRepository.unlinkTest(id);
-      PartnerNotificationRepository.deleteForTest(id);
-    }
-  },
-
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.
   async restore(record) {
     await ensureLoaded();

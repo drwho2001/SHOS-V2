@@ -672,13 +672,6 @@ export const EncounterRepository = {
     for (const id of ids) await this.archive(id);
   },
 
-  async bulkDelete(ids) {
-    await ensureLoaded();
-    encounters = encounters.filter((e) => !ids.includes(e.id));
-    await persist();
-    for (const id of ids) { SymptomLogRepository.unlinkEncounter(id); EpisodeRepository.unlinkEncounter(id); }
-  },
-
   // ADDED 26 Aug 2026 — real ask: undo for delete, not just archive.
   // Reinserts the exact record (same id, same timestamps), unlike
   // create() which always generates a fresh id.

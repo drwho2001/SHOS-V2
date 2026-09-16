@@ -220,12 +220,6 @@ export const PregnancyRepository = {
     for (const id of ids) await this.archive(id);
   },
 
-  async bulkDelete(ids) {
-    await ensureLoaded();
-    pregnancies = pregnancies.filter((p) => !ids.includes(p.id));
-    await persist();
-  },
-
   async restore(record) {
     await ensureLoaded();
     if (pregnancies.some((p) => p.id === record.id)) return;

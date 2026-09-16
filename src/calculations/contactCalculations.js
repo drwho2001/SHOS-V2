@@ -28,17 +28,6 @@ export function getKnownValues(contacts, fieldName) {
   return Array.from(new Set(all)).sort((a, b) => a.localeCompare(b));
 }
 
-// Address autocomplete — SAME pattern as getKnownCities: suggests
-// addresses already typed for other contacts. This is NOT real
-// geocoding/Places autocomplete (still needs a live API key this
-// sandbox and this prototype don't have) — it's "have I typed this
-// before", which at least stops re-typing the same address for a
-// contact met at the same place as someone else.
-export function getKnownAddresses(contacts) {
-  const used = contacts.map((c) => c.address).filter(Boolean);
-  return Array.from(new Set(used)).sort((a, b) => a.localeCompare(b));
-}
-
 // Quick, low-risk standardization for kink/limit-style tags, per the user's
 // "standardise kinks" ask. This does NOT solve true synonyms ("Impact
 // play" vs "Percussion play" still won't match) — that needs a real

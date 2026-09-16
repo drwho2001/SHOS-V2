@@ -513,6 +513,10 @@ function StartTestInline({ visitDate, onCreated, T }) {
 function AttachmentManager({ visitId, attachments, onChanged, T }) {
   const inputRef = useRef(null);
   const [pendingType, setPendingType] = useState("Other");
+  // ADDED — real audit finding: this deleted an attachment on a single
+  // tap with zero confirmation, unlike ~15 other real destructive
+  // deletes app-wide that all go through the shared ConfirmDeleteCard.
+  const [pendingRemove, setPendingRemove] = useState(null);
   const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -524,7 +528,7 @@ function AttachmentManager({ visitId, attachments, onChanged, T }) {
     reader.readAsDataURL(file);
     e.target.value = "";
   };
-  const remove = async (id) => { await ClinicVisitsRepository.removeAttachment(visitId, id); onChanged(); };
+  const remove = async (id) => { await ClinicVisitsRepository.removeAttachment(visitId, id); onChanged(); setPendingRemove(null); };
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>Attachments</div>
@@ -536,10 +540,21 @@ function AttachmentManager({ visitId, attachments, onChanged, T }) {
                 <Paperclip size={13} color={T.textSecondary} />
                 <div style={{ fontSize: 12, color: T.textPrimary, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
               </div>
-              <Trash2 size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => remove(a.id)} aria-label="Remove attachment" title="Remove attachment" />
+              <Trash2 size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => setPendingRemove(a)} aria-label="Remove attachment" title="Remove attachment" />
             </div>
           ))}
         </div>
+      )}
+      {pendingRemove && (
+        <ConfirmDeleteCard
+          T={T}
+          moduleColor={T.healthcareBlue}
+          message={`Remove "${pendingRemove.title}"? There's no getting it back.`}
+          confirmLabel="Remove"
+          margin="0 0 12px"
+          onCancel={() => setPendingRemove(null)}
+          onConfirm={() => remove(pendingRemove.id)}
+        />
       )}
       <div style={{ display: "flex", gap: 8 }}>
         <select value={pendingType} onChange={(e) => setPendingType(e.target.value)}
