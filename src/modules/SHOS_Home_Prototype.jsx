@@ -85,6 +85,7 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { useIsDesktopWidth } from "../calculations/responsive";
 
 // ADDED 3 Sep 2026 — real ask: fix the Safari/iOS gesture-gated
 // permission bug (see this file's own comment on notifPermStatus
@@ -135,33 +136,13 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
   );
 }
 
-// ADDED 15 Sep 2026 — real ask, a correction to the same day's earlier
-// flex-wrap attempt: that version used a fixed `flex-basis` in px to
-// decide when the Clinic Card/Episodes/Calendar shortcuts wrap, and a
-// real mobile-width check caught it changing the already-correct
-// mobile layout too — at a genuine 320-360px phone width, 2 buttons
-// at that basis no longer fit on one line the way the original
-// `flex: 1` (no minimum) row always did, wrapping to 1-per-line
-// instead of the intended, unaffected 2-then-1. Real fix: an actual
-// measured-width check, not a guessed pixel threshold doing double
-// duty as both "should this wrap" and "is this small phone or a
-// desktop." Below 900px (comfortably above any real phone, including
-// landscape/large phones, comfortably below any real desktop browser
-// window) renders the exact original 2-then-1 markup, unchanged.
-// 900px+ renders the merged one-row layout. Both variants already use
-// relative sizing internally (`flex: 1`/`width: "50%"` before, `flex:
-// 1` again in the 3-up row) — only the trigger for WHICH layout to
-// use is a real, live-updating width check, not a magic number
-// standing in for it.
-function useIsDesktopWidth() {
-  const [isDesktop, setIsDesktop] = useState(() => typeof window !== "undefined" && window.innerWidth >= 900);
-  useEffect(() => {
-    const onResize = () => setIsDesktop(window.innerWidth >= 900);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-  return isDesktop;
-}
+// `useIsDesktopWidth()` (a real, live-updating `window.innerWidth >=
+// 900` check — see that hook's own header for why, and the "Home
+// shortcuts on desktop" entry in CLAUDE.md for the mobile-regression
+// this exact pattern was built to avoid) moved to
+// `../calculations/responsive.js` 16 Sep 2026, once Settings' Guide/
+// Glossary screens needed the same check for #93 — relocating
+// already-working code, no behavior change here.
 
 function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, registerModuleBackHandler, onLockNow, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen }) {
   const isDesktopWidth = useIsDesktopWidth();
@@ -623,21 +604,27 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // not just this screen: icon-only UI needs an explanatory affordance
   // unless the icon is a truly universal standard (a gear for
   // settings, a person for a profile) — see CLAUDE.md.
+  // ADDED 16 Sep 2026 — real ask (#93, desktop empty-space): these
+  // rings read as tiny/lost at wide desktop viewports. Desktop-only,
+  // additive — mobile's own size/spacing is completely untouched
+  // (isDesktopWidth is already computed once at the top of
+  // HomeScreen, threaded down as a prop rather than a second hook
+  // instance). See CLAUDE.md's #93 entry for the full design.
   const StatusRing = ({ pct, color, centerText, caption, info, onClick }) => {
-    const size = 64, stroke = 6, r = (size - stroke) / 2, c = 2 * Math.PI * r;
+    const size = isDesktopWidth ? 96 : 64, stroke = isDesktopWidth ? 8 : 6, r = (size - stroke) / 2, c = 2 * Math.PI * r;
     const clamped = Math.max(0, Math.min(100, pct));
     const offset = c * (1 - clamped / 100);
     const [showInfo, setShowInfo] = useState(false);
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: 1, maxWidth: 100 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: 1, maxWidth: isDesktopWidth ? 140 : 100 }}>
         <div onClick={onClick} style={{ position: "relative", width: size, height: size, cursor: onClick ? "pointer" : "default" }}>
           <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant} strokeWidth={stroke} />
             <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 300ms ease" }} />
           </svg>
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{centerText}</div>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: isDesktopWidth ? 18 : 14, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{centerText}</div>
         </div>
-        <span onClick={onClick} style={{ fontSize: 11, fontWeight: 600, color: color, textAlign: "center", cursor: onClick ? "pointer" : "default", display: "flex", alignItems: "center", gap: 3 }}>
+        <span onClick={onClick} style={{ fontSize: isDesktopWidth ? 13 : 11, fontWeight: 600, color: color, textAlign: "center", cursor: onClick ? "pointer" : "default", display: "flex", alignItems: "center", gap: 3 }}>
           {caption}
           {info && (
             <InfoIcon size={11} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ cursor: "pointer", flexShrink: 0 }}
@@ -808,7 +795,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       {(testingStats?.testCount > 0 || adherence != null || (menstrualTrackingEnabled && ((cycleDaysSince != null && avgCycleLength != null) || contraSpanDays != null))) && (
         <>
           <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Status at a glance</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "16px 8px", marginBottom: 24 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: isDesktopWidth ? 16 : 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: isDesktopWidth ? "24px 16px" : "16px 8px", marginBottom: 24 }}>
             {testingStats?.testCount > 0 && testingStats.daysSinceLast != null && (
               <StatusRing
                 pct={(testingStats.daysSinceLast / BASHH_TESTING_INTERVAL_DAYS) * 100}

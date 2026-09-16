@@ -53,6 +53,7 @@ import {
 } from "../calculations/statsCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedMemo, useLoadedState } from "../calculations/loadedRepositoryState";
+import { useIsDesktopWidth } from "../calculations/responsive";
 import { exportBackup, exportEncryptedBackup, exportBackupToChosenFolder, exportEncryptedBackupToChosenFolder, EXPORT_GROUPS, getLastBackupInfo, hasUnbackedChanges } from "../storage/backupService";
 import { isChooseFolderExportAvailable, exportTextFile, isCustomAutoExportFolderAvailable, pickAutoExportFolder } from "../storage/fileExportHelper";
 // ADDED 10 Sep 2026 — real ask: "allow error reporting." See
@@ -3476,6 +3477,13 @@ const GUIDE_SECTIONS = [
 function GuideScreen({ onClose, onStartTour }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
+  // ADDED 16 Sep 2026 — real ask (#93, desktop empty-space): at a wide
+  // desktop viewport this screen's flowing body copy used to stretch
+  // edge-to-edge (no maxWidth at all), both a poor reading measure and
+  // the literal "empty space around sparse content" complaint. A
+  // desktop-only measure cap, not a font-size bump — mobile's own
+  // markup is untouched. See CLAUDE.md's #93 entry for the full design.
+  const isDesktopWidth = useIsDesktopWidth();
 
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -3483,7 +3491,7 @@ function GuideScreen({ onClose, onStartTour }) {
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Guide</span>
       </div>
-      <div style={{ padding: 16 }}>
+      <div style={isDesktopWidth ? { padding: 16, maxWidth: 640, margin: "0 auto" } : { padding: 16 }}>
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4 }}>
           Where things live and what the less-obvious features do — not a feature-by-feature walkthrough, just answers to "where do I find X."
         </div>
@@ -3522,6 +3530,9 @@ function GlossaryScreen({ onClose }) {
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
   const filtered = q ? GLOSSARY_TERMS.filter((t) => t.term.toLowerCase().includes(q) || t.body.toLowerCase().includes(q)) : GLOSSARY_TERMS;
+  // Same #93 desktop measure-cap treatment as GuideScreen above — see
+  // that function's own comment for the full reasoning.
+  const isDesktopWidth = useIsDesktopWidth();
 
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -3529,7 +3540,7 @@ function GlossaryScreen({ onClose }) {
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Glossary</span>
       </div>
-      <div style={{ padding: 16 }}>
+      <div style={isDesktopWidth ? { padding: 16, maxWidth: 640, margin: "0 auto" } : { padding: 16 }}>
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4 }}>
           Plain-language explanations of the clinical shorthand used elsewhere in this app — informational, not personalised medical advice.
         </div>

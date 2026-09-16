@@ -279,10 +279,11 @@ this date; summarized here for durability.
   server). Not yet started, except where noted.
 
 - **Desktop font-size/empty-space (#93) — scoped 15 Sep 2026,
-  re-scoped into a real, concrete design 16 Sep 2026, still
-  deliberately NOT attempted — code review only this round, per the
-  owner's own explicit instruction not to touch anything and risk
-  mobile again.** Real report, from a 1600px screenshot taken right
+  re-scoped into a real, concrete design 16 Sep 2026, the 2 named
+  targets IMPLEMENTED AND SHIPPED 16 Sep 2026 (see "Recently shipped"
+  below) — genuinely NOT the full "app-wide refinement" the owner's
+  own later ask named, see that entry for the honest scope split.**
+  Real report, from a 1600px screenshot taken right
   after the maxWidth:600 cap was removed: Home's "Status at a glance"
   ring row and flowing body-copy screens (Guide/Glossary) read as
   visually lost in the new, much wider column — real empty space, not
@@ -339,26 +340,29 @@ this date; summarized here for durability.
 
   **Real, still-open judgment calls this design does NOT resolve —
   need a decision, or a build-and-eyeball pass, before implementing**:
-  (1) the specific numbers above (96px ring, 640px measure) are a
-  reasonable starting proposal, not verified against a real render —
-  worth a quick visual check once built, may want adjusting. (2) scope
-  of Target 2: Guide/Glossary are the two explicitly reported screens;
-  a full grep for every other screen sharing the identical
-  "`padding:16`, unconstrained-width card, flowing body text" shape
-  (Resources, onboarding step bodies, About) hasn't been run yet —
-  real choice between fixing only the 2 reported screens now, or
-  sweeping and applying the same measure-cap consistently in one pass
-  (matching this project's own #82 "apply a fix's pattern consistently"
-  discipline). (3) `useIsDesktopWidth()` currently lives only inside
-  `SHOS_Home_Prototype.jsx`; using it in `SHOS_Settings_Prototype.jsx`
-  too means promoting it to a shared export (e.g. `designTokens.js` or
-  a small new `responsive.js`) rather than copy-pasting a second copy
-  — a genuinely safe move (relocating already-working code, no
-  behavior change) but still a real edit to the existing Home file,
-  worth confirming before doing it. (4) the original report named
-  exactly these two targets; any other desktop-empty-space complaint
-  (Medication Dashboard's stock display, Contacts' own stat rows,
-  etc.) is out of this round's scope unless separately reported.
+  (1) RESOLVED — see "Recently shipped" below: the proposed numbers
+  shipped as-is, verified against a real 1600px render (screenshot
+  reviewed before shipping). (2) scope of Target 2: Guide/Glossary are
+  the two explicitly reported, now-shipped screens; a full grep for
+  every other screen sharing the identical "`padding:16`,
+  unconstrained-width card, flowing body text" shape (Resources,
+  onboarding step bodies, About) still hasn't been run — real choice
+  between stopping at the 2 shipped screens or sweeping the same
+  measure-cap consistently in one pass (matching this project's own
+  #82 "apply a fix's pattern consistently" discipline), still open,
+  not decided. (3) RESOLVED — see "Recently shipped" below:
+  `useIsDesktopWidth()` promoted to `src/calculations/responsive.js`.
+  (4) the original report named exactly these two targets, both now
+  shipped; any other desktop-empty-space complaint (Medication
+  Dashboard's stock display, Contacts' own stat rows, etc.) is still
+  out of scope unless separately reported. (5) NEW, found while
+  reviewing the shipped Target 1's own screenshot, not in the
+  original scoping: enlarging the rings themselves didn't address the
+  "Status at a glance" CARD's own layout when fewer than 4 rings
+  render (e.g. menstrual tracking off, so only 2 of 4 possible rings
+  show) — real blank space remains to the right of a short ring row
+  at desktop width. A real, not-yet-scoped follow-on gap, not fixed by
+  this round.
 
 - **Encryption at rest — RESOLVED 8 Sep 2026, see the full Phase 4
   implementation entry at the end of this same bullet.** Originally:
@@ -3394,6 +3398,22 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (16 Sep 2026, latest of all yet again again — desktop Status rings + Guide/Glossary measure cap, #93)
+
+Real ask: implement the 2 targets #93's own 16 Sep design doc already scoped (see Known Issues above for the full design reasoning) as real, additive code — Home's Status-at-a-glance rings reading as tiny widgets in a mostly-empty card at desktop width, and Guide/Glossary's body text stretching edge-to-edge at ~13px across a 1600px viewport.
+
+**`src/calculations/responsive.js` (new file)** — `useIsDesktopWidth()` promoted out of `SHOS_Home_Prototype.jsx` into a shared export, per the design doc's own judgment call #3 (relocating already-working code, no behavior change) — the same live, resize-aware `window.innerWidth >= 900` check, now importable from Settings too without a second copy.
+
+**Target 1 — Home's `StatusRing`.** Reads `isDesktopWidth` from `HomeScreen`'s own already-computed value (no new hook instance per ring). Desktop branch: `size` 64→96, `stroke` 6→8, ring wrapper `maxWidth` 100→140, `centerText` font 14→18, caption font 11→13; the "Status at a glance" container's own `gap` 8→16 and `padding` "16px 8px"→"24px 16px". Mobile branch is the exact prior markup, untouched.
+
+**Target 2 — Settings' `GuideScreen`/`GlossaryScreen`.** Desktop-only measure cap on the body wrapper: `{padding: 16, maxWidth: 640, margin: "0 auto"}` instead of the mobile-only `{padding: 16}` — same text, same font size, just wrapped at a readable ~75-90 characters instead of stretching edge-to-edge. No other markup inside either screen changed.
+
+**A real, honest gap found while screenshotting the result, not fixed this round**: enlarging the rings alone doesn't address the surrounding card's own layout when fewer than 4 rings render (this seed profile has menstrual tracking off, so only Testing/Adherence show) — real blank space remains to the right of a short 2-ring row at desktop width. Logged in Known Issues above as judgment call #5, not silently closed.
+
+Verified via screenshots at 390×844 (mobile) and 1600×1000 (desktop) for both targets before shipping: mobile confirmed byte-for-byte visually identical to pre-change (64px rings, unchanged Guide/Glossary full-width layout); desktop confirmed the rings visibly enlarge and the Guide/Glossary body settles into a clean ~640px centered column rather than reading lost in the wide viewport. Full build, `npx eslint .` clean, and the full 15-flow smoke-test suite against a real `vite preview` production build — 15/15 pass, no regressions.
+
+**Honest scope note**: this closes the 2 originally-reported targets, not the broader "full thorough global app-wide refinement" later separately requested — see judgment call #2 above (whether to sweep Resources/onboarding/About for the same measure-cap treatment) and the not-yet-scoped wider UX-quality audit (ease of use, intuitiveness, clarity, standardised styling) discussed in chat the same round, neither attempted here.
 
 ## Recently shipped (16 Sep 2026, latest of all yet again — sheet-title banner corner-softening, #82)
 
