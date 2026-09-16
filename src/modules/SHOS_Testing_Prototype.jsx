@@ -105,15 +105,22 @@ function formatDate(iso) {
 }
 
 // ADDED — real ask: the status dot ("looks pointless") needed real
-// recency awareness, not just result colour — an old test's dot
-// shouldn't read with the same weight as a fresh one. "Recent" is
-// either of the two most recent tests on file BY DATE (so someone who
-// only tests every few months still gets a current-looking dot for
-// their latest result) OR anything within the last 4 weeks (so a
-// cluster of recent tests all read as current, not just the single
-// newest one). `allTests` should be the FULL unfiltered set (not a
-// search-filtered list) so rank is computed correctly.
-const RECENT_TEST_WINDOW_MS = 28 * 24 * 60 * 60 * 1000;
+// recency awareness, not just result colour.
+// CHANGED 16 Sep 2026 — real ask: reworked the actual approach. The dot
+// swapping to ACTION.gold for an old test worked, but the owner's own
+// follow-up call was that this loses real information (a genuinely old
+// positive shouldn't read with the same visual weight as a fresh
+// negative, but it should still clearly BE positive at a glance) — same
+// "archived/old" vibe should instead keep the dot's real red/green/blue
+// meaning and fade the surrounding record (see below) to imply age.
+// "Recent" is either of the two most recent tests on file BY DATE (so
+// someone who only tests every few months still gets a current-looking
+// record for their latest result) OR anything within the routine UK
+// STI-retesting window (3 months/~90 days, matching BASHH's own routine
+// interval — the owner's own suggested threshold, not guessed). `allTests`
+// should be the FULL unfiltered set (not a search-filtered list) so
+// rank is computed correctly.
+const RECENT_TEST_WINDOW_MS = 90 * 24 * 60 * 60 * 1000;
 function isRecentTest(test, allTests) {
   if (!test.date) return false;
   const withinWindow = Date.now() - new Date(test.date).getTime() <= RECENT_TEST_WINDOW_MS;
@@ -126,10 +133,11 @@ function isRecentTest(test, allTests) {
 // row and the detail screen's title dot (previously only the list row
 // had real logic — the detail dot was still a flat red-if-positive/
 // else-blue leftover). Pending stays amber regardless of recency (a
-// missing result is its own urgent state). An OLD test (not recent)
-// reads as ACTION.gold — the "archive" tone this app's own design
-// tokens already set aside for exactly this, previously unused —
-// rather than a full-strength red/green that implies current status.
+// missing result is its own urgent state). Deliberately does NOT fade
+// to a separate "archive" tone for an old test anymore (see
+// isRecentTest's own comment above) — the dot always carries the
+// record's real positive/negative/pending/inconclusive meaning; age is
+// shown separately, on the surrounding record, via isRecentTest itself.
 // CHANGED — Phase 2 encryption groundwork: ResultsRegistry is now
 // async — this used to call it directly on every render for every
 // test row, which breaks once getById returns a Promise. Now takes a
@@ -140,7 +148,6 @@ function computeTestDotColor(test, allTests, T, resultNameById, revealEarly = fa
   const resultNames = (test.resultIds || []).map((id) => resultNameById.get(id)).filter(Boolean);
   const resultPending = test.resultDate && new Date(test.resultDate) > new Date() && !revealEarly;
   if (resultPending) return ACTION.amber;
-  if (!isRecentTest(test, allTests)) return ACTION.gold;
   const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
   if (isPositive) return T.actionRed;
   const isNegative = resultNames.some((r) => r.toLowerCase() === "negative");
@@ -1233,21 +1240,22 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
           const resultPending = t.resultDate && new Date(t.resultDate) > new Date();
           const isPositive = !resultPending && resultNames.some((r) => r.toLowerCase() === "positive");
           const isNegative = !resultPending && resultNames.some((r) => r.toLowerCase() === "negative");
-          // CHANGED — real ask: red/green/amber alone still read as
-          // "pointless" once a test was old — an old negative kept
-          // glowing green as if still current. computeTestDotColor
-          // adds real recency: only a recent result gets the full red/
-          // green treatment, an old one reads as the archive tone
-          // instead. `tests` (not the search-filtered `sorted`) is
-          // passed so rank-based recency isn't skewed by an active
-          // search query.
           const dotColor = computeTestDotColor(t, tests, T, resultNameById);
+          // CHANGED 16 Sep 2026 — real ask, reworked from an earlier
+          // approach: the dot itself no longer fades for an old test
+          // (see computeTestDotColor's own comment) — instead the
+          // record's own title/date/setting text fades, so a genuinely
+          // old positive is still unmistakably red, just visually
+          // lighter-weight than a fresh one. `tests` (not the search-
+          // filtered `sorted`) is passed so rank-based recency isn't
+          // skewed by an active search query.
+          const isArchived = !isRecentTest(t, tests);
           return (
             <div key={t.id} onClick={() => selectMode ? toggleSelected(t.id) : onOpen(t.id)}
               onMouseDown={() => startPress(t.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(t.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
               role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selectedIds.includes(t.id) : undefined} aria-label={t.title || "Untitled test"} tabIndex={0}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? toggleSelected(t.id) : onOpen(t.id); } }}
-              style={{ background: selectedIds.includes(t.id) ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${selectedIds.includes(t.id) ? T.healthcareBlue : isPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
+              style={{ background: selectedIds.includes(t.id) ? `${T.healthcareBlue}10` : isArchived ? T.surfaceVariant : T.surface, border: `1px solid ${selectedIds.includes(t.id) ? T.healthcareBlue : isPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
               {selectMode && (
                 <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selectedIds.includes(t.id) ? T.healthcareBlue : T.border}`, background: selectedIds.includes(t.id) ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
                   {selectedIds.includes(t.id) && <Check size={13} color="#FFFFFF" />}
@@ -1256,15 +1264,15 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
               <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 8, height: 8, borderRadius: radius.full, background: dotColor, display: "inline-block" }} />
-                <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{t.title || "Untitled test"}</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: isArchived ? T.textSecondary : T.textPrimary }}>{t.title || "Untitled test"}</span>
                 {t.mostRecent && <Check size={13} color={T.healthcareBlue} />}
               </div>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(t.date)}</div>
+              <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(t.date)}</div>
               {/* ADDED — real ask: "state on card location of test
                   (home/clinic)" — was only ever shown on the detail
                   screen before, never the list card itself. */}
               {t.setting && (
-                <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2 }}>{t.setting}</div>
+                <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2 }}>{t.setting}</div>
               )}
               {/* CHANGED — real ask: "hide result until result date" —
                   the list card was leaking the real result before the

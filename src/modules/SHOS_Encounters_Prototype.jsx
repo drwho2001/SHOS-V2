@@ -1097,7 +1097,14 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           of the app — inconsistent by omission, not by design. Same
           maxWidth: 600 + border pattern applied here. */}
       <div style={{ width: "100%", background: T.bg, minHeight: "100vh", paddingBottom: 90 }}>
-      <div style={{ position: "sticky", top: 0, background: T.bg, zIndex: 5 }}>
+      {/* CHANGED 16 Sep 2026 — real report: `top: 0` only respected the
+          status bar before the first scroll. Same fix as Contacts/
+          Healthcare/Medication's own screen-title banners — this
+          outer wrapper's own `top` now carries the safe-area offset
+          plus a real ~8px white gap (half the inner banner's own 16px
+          top padding), revealing this wrapper's own T.bg background
+          above the colour border once stuck, not just before. */}
+      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 8px)", background: T.bg, zIndex: 5 }}>
         {/* ADDED 26 Aug 2026 — real ask: page title on a banner filled
             with the module's own colour, same pattern applied across
             every module this pass. */}

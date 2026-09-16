@@ -213,13 +213,20 @@ this date; summarized here for durability.
   next batch, rather than left as one flat list:
   - **Group B — layout/rendering investigations** (each needs real
     on-device or viewport debugging before a fix, same methodology):
-    #68 safe-area/status-bar spacing gaps in a few spots — genuinely
-    not reproducible in this sandboxed environment (`env(safe-area-
-    inset-*)` resolves to 0 with no notch/status-bar to simulate here;
-    this one really does need a real device); and the desktop font-
-    size/empty-space item scoped 15 Sep 2026 (see its own paragraph
-    below — deliberately not attempted this round, real architectural
-    precedent for why).
+    #68 safe-area/status-bar spacing gaps — one real, specific spot
+    RESOLVED 16 Sep 2026 (see "Recently shipped" above: the 4 real
+    screen-title banners lost their own status-bar protection once
+    stuck via `position: sticky`, root-caused via pure CSS reasoning —
+    `env()` resolving to 0px in this sandboxed environment doesn't
+    block reasoning about `position: sticky`'s own `top`-value
+    semantics, which is what the bug actually was). Any OTHER spot
+    this item's own "a few spots" plural was describing remains
+    unconfirmed/unfixed — genuinely not reproducible without a real
+    notch/status-bar to check against; flag a specific remaining
+    report if one surfaces, don't assume this item is now fully closed.
+    Desktop font-size/empty-space item scoped 15 Sep 2026 (see its own
+    paragraph below — deliberately not attempted this round, real
+    architectural precedent for why).
   - **Group C — Healthcare-tab-family UI/data additions, remaining**:
     #73 Healthcare sub-tab reorder — checked directly against the
     code, and the exact reorder this item's own title describes
@@ -3353,6 +3360,18 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (16 Sep 2026, latest — sticky-header status-bar fix, medication dose-time capture, Testing archived-record fade)
+
+Real ask, three distinct items: fix the 4 real screen-title banners so the white gap above the colour border survives scrolling/sticking (previously only correct before the first scroll), build a real interface for capturing a medication's actual dose time(s) of day, and rework Testing's "old/archived" visual treatment from a dot-colour swap to a fade on the surrounding record.
+
+**Sticky-header status-bar fix.** Real report: the white gap above a screen-title banner's colour border (Contacts/Healthcare/Medication/Encounters) looked right before the first scroll, then vanished — the banner started sitting flush against the device's own status bar once stuck. Root cause: `App.jsx`'s `<main>` carries the real `env(safe-area-inset-top)` padding, but that's normal document flow, so it scrolls away with everything else — a `position: sticky; top: 0` banner loses that protection the moment it locks, since `top`'s own value (not an ancestor's one-time padding) is the only thing that persists across scroll. Fixed at each of the 4 banners' own `top` value directly: `top: calc(env(safe-area-inset-top) + 8px)` instead of `top: 0` — carries the real safe-area offset itself (protecting the status bar at every scroll position, not just before the first one) plus a deliberate ~8px white gap (half each banner's own 16px top padding, per the exact ask) that now survives being stuck. Applied identically to Contacts/Healthcare/Medication (each IS the sticky element) and Encounters (a separate outer sticky wrapper around a non-sticky inner colour banner — same fix, one level up).
+
+**Medication dose-time capture — a real gap, not a bug fix.** Confirmed via grep that no field anywhere captured an actual wall-clock dose time ("8am and 8pm") — the existing reminder system (`lockoutEndsAt()`/`nextDoseEstimate()`) is purely elapsed-time-based, computed forward from the last/first logged dose's real timestamp, never anchored to a time the user actually set. New `scheduledTimes: []` field (`medicationRepository.js`'s `DEFAULT_MEDICATION`) — one `"HH:mm"` string per daily dose slot. New `ScheduledTimesField` component (`SHOS_Medication_Dashboard_Prototype.jsx`), wired into both the Add and Edit medication sheets right after "Doses per day": once-daily shows a single "Dose time" input; multiple-doses-a-day shows the first time plus one input per remaining slot, auto-suggested at even spacing across 24h (e.g. 12h apart for twice-daily) — but each slot can be manually overridden, and once touched, an edit to the first time never re-clobbers it. Same "resync-if-untouched" pattern (a `touchedRef` Set, not a persisted flag) already established elsewhere in this app for auto-suggested-but-overridable values (e.g. MeasurementSheet's remembered-unit resync). Deliberately scoped to data capture + a plain "Scheduled: 8:00 AM, 8:00 PM" display line on the medication card — NOT wired into the adaptive/fixed lockout-calculation math this round, which stays genuinely elapsed-time-based; integrating a real wall-clock anchor into that calculation is a bigger, separate architectural decision, not attempted speculatively here (documented as such in the repository's own field comment). Verified live via Playwright: once-daily correctly shows one "Dose time" input defaulting to 8:00 AM; bumping Doses per day to 2 correctly adds a second input auto-suggested at 20:00 (12h spacing); changing the first time to 06:00 correctly re-suggests the still-untouched second slot to 18:00; manually setting the second slot to 22:30 and then changing the first again correctly leaves the manually-set slot alone.
+
+**Testing's "old/archived" treatment — reworked from a dot-colour swap to a record fade, per the owner's own explicit design call.** The existing approach (an old test's dot swapping to `ACTION.gold`, a separate "archive" tone) worked but lost real information — a genuinely old positive read with the same visual weight as an old negative, both flattened to the same gold dot. New approach: the dot always keeps its real, true meaning (red/green/amber/blue) regardless of age; age is shown instead by fading the surrounding record — title text and date/setting text step down from `T.textPrimary`/`T.textSecondary` to `T.textSecondary`/`T.textDisabled`, and the card's own background steps from `T.surface` to `T.surfaceVariant` — for anything outside the "recent" window. Also widened that window itself from 4 weeks to 3 months (90 days), matching the owner's own suggested threshold (BASHH's real routine-STI-retest interval) — still with the existing "or one of the 2 most recent tests on file" carve-out, so someone testing only every few months doesn't see their own latest result read as archived. The positive/negative result label and the red border for a positive result are both left untouched by the fade — only the title/date/setting text and the card background step down, so a genuinely old positive is still unmistakably positive, just visually lower-weight than a fresh one. Checked whether this same "dot fades to a separate archive tone" pattern exists anywhere else in the app before scoping a wider rollout, per the owner's own "similar vibes for any other active dot type record" ask — it doesn't; every other `ACTION.gold` use in the codebase (Timeline's coverage status, Home's backup-reminder banner, Measurements' "Low" classification) is an unrelated meaning, so this was a one-file change, not a partial rollout of a wider pattern. Verified live via Playwright against real seed data: 3 tests from the last 3 months (Sep 7/13/14) render at full weight; 4 older tests (Jun 8, May 26, Apr 9, Mar 4) render with the faded background/text treatment, while a March 4 "Symptomatic screen — Chlamydia positive" among them still shows a red dot, a red border, and red "Positive" text — exactly the intended split.
+
+Verified live throughout: full build, `npx eslint .` clean, and the full 15-flow smoke-test suite against a real `vite preview` production build — 15/15 pass, no regressions from any of the three changes.
 
 ## Recently shipped (16 Sep 2026, later again — nav/Settings buffer, Backup & Export consolidation, app-wide copy pass)
 

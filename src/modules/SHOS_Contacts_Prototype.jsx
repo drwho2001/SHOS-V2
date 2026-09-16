@@ -2506,7 +2506,18 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           softened the sharp corners/stark border into a gentler shape
           (bottom corners only — the top edge is flush with the
           screen's own top edge, so rounding there is never visible). */}
-      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.contactsTeal, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* CHANGED 16 Sep 2026 — real report: a plain `top: 0` respected
+          the device status bar only before the first scroll (the
+          safe-area padding lives on App.jsx's own <main>, which is
+          normal document flow — it scrolls away with everything else,
+          so a stuck `top: 0` banner then sits at the true viewport
+          top, over the status bar). `top` on the sticky element itself
+          now carries its own safe-area offset, so it re-parks below
+          the status bar every time it locks, not just on first paint —
+          plus a real ~8px white gap above the colour border (half this
+          banner's own 16px top padding), which the old edge-to-edge
+          `top: 0` never had at all. */}
+      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 8px)", zIndex: 6, background: T.contactsTeal, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Contacts</h1>
         {/* ADDED 18 Aug 2026 — My Profile and Import Shared Profile both
             live here now (Doc 1: My Profile isn't a primary-nav tab;

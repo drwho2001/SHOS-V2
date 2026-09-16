@@ -270,6 +270,16 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
   const nextReminderClock = nextReminderAt && nextReminderAt > new Date()
     ? nextReminderAt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
     : null;
+  // ADDED 16 Sep 2026 — real user-set dose times ("scheduledTimes",
+  // see medicationRepository.js's own comment on the field) shown
+  // as plain reference text — display-only, not what the reminder
+  // above is actually scheduled from.
+  const scheduledTimesLabel = med.scheduledTimes && med.scheduledTimes.length > 0
+    ? med.scheduledTimes.map((t) => {
+        const [h, m] = t.split(":").map(Number);
+        return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      }).join(", ")
+    : null;
   const doseLocked = lastDose ? isDoseLockedOut(med, lastDose.date) : false;
   // ADDED 18 Aug 2026 — real feedback: a native `disabled` button blocks
   // the click entirely, so the `title` tooltip explaining the lockout
@@ -418,6 +428,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
             <span style={{ textDecoration: lastDose ? "underline dotted" : "none", textUnderlineOffset: 3 }}>Last dose: {formatLastDose(lastDose?.date)}</span>
             {nextDose && <span> · Next dose {nextDose}{nextReminderClock ? ` (reminder ~${nextReminderClock})` : ""}</span>}
           </div>
+          {scheduledTimesLabel && <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>Scheduled: {scheduledTimesLabel}</div>}
           {snoozedUntil && new Date(snoozedUntil) > new Date() && (
             <div style={{ fontSize: 11, color: T.medsBlue, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}><Clock size={11} /> Snoozed until {new Date(snoozedUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</div>
           )}
@@ -475,6 +486,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
             Last dose: {formatLastDose(lastDose?.date)}
           </span>
           {nextDose && <span> · Next dose {nextDose}{nextReminderClock ? ` (reminder ~${nextReminderClock})` : ""}</span>}
+          {scheduledTimesLabel && <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>Scheduled: {scheduledTimesLabel}</div>}
           <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginTop: 2 }}>Not inventory-tracked</div>
         </div>
       )}
@@ -863,6 +875,79 @@ function ToggleRow({ label, value, onChange, T }) {
   );
 }
 
+// ADDED 16 Sep 2026 — real ask: "where does the user add a default
+// medication time... maybe if once a day select one time, if twice a
+// day select first time then give options for other time with auto
+// suggested spacing (IE every 12h for BD meds), but can be manually
+// overwritten." Wraps around midnight, minute-precision.
+function addHoursToTime(time, hoursToAdd) {
+  const [h, m] = time.split(":").map(Number);
+  const total = (((h * 60 + m + Math.round(hoursToAdd * 60)) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+// One time slot per daily dose — a single "Dose time" for once-daily,
+// or a first time + auto-suggested (evenly spaced across 24h) times
+// for every dose after it. Same "resync-if-untouched" pattern used
+// elsewhere in this app for auto-suggested-but-overridable values
+// (e.g. MeasurementSheet's remembered-unit resync): a `touchedRef`
+// tracks which slots the user has actually edited, so re-spacing off
+// a changed first time — or a changed doses-per-day count — never
+// clobbers a slot someone already set deliberately. Deliberately
+// display/planning data only — see medicationRepository.js's own
+// `scheduledTimes` comment for why this isn't wired into the
+// elapsed-time-based lockout/reminder math this round.
+function ScheduledTimesField({ dosesPerDay, value, onChange, T }) {
+  const touchedRef = useRef(new Set());
+  const count = Math.max(1, dosesPerDay || 1);
+
+  useEffect(() => {
+    const first = value[0] || "08:00";
+    const spacingHours = 24 / count;
+    const next = Array.from({ length: count }, (_, i) => {
+      if (i === 0) return first;
+      if (touchedRef.current.has(i) && value[i]) return value[i];
+      return addHoursToTime(first, spacingHours * i);
+    });
+    const changed = next.length !== value.length || next.some((t, i) => t !== value[i]);
+    if (changed) onChange(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-derive when the slot count changes; value/onChange would refire this every keystroke
+  }, [count]);
+
+  const setSlot = (i, time) => {
+    touchedRef.current.add(i);
+    const next = [...value];
+    next[i] = time;
+    if (i === 0) {
+      const spacingHours = 24 / count;
+      for (let j = 1; j < count; j++) {
+        if (!touchedRef.current.has(j)) next[j] = addHoursToTime(time, spacingHours * j);
+      }
+    }
+    onChange(next);
+  };
+
+  return (
+    <div style={{ padding: "8px 0" }}>
+      <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{count === 1 ? "Dose time" : "Dose times"}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {Array.from({ length: count }).map((_, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {count > 1 && <span style={{ fontSize: 12, color: T.textSecondary, width: 56, flexShrink: 0 }}>Dose {i + 1}</span>}
+            <input type="time" value={value[i] || ""} onChange={(e) => setSlot(i, e.target.value)}
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: T.textPrimary, border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, padding: "8px 10px" }} />
+          </div>
+        ))}
+      </div>
+      {count > 1 && (
+        <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 6, lineHeight: 1.4 }}>
+          Later doses auto-suggest evenly spaced from the first — edit any of them to override.
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ADDED 19 Aug 2026 — for Route, a real gap found in the Notion-vs-app
 // audit. No select component existed in this file yet (NumberField/
 // ToggleRow cover number/boolean fields only) — this is the plain
@@ -1053,6 +1138,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
     doseStrengthValue: med.doseStrengthValue || "", doseStrengthUnit: med.doseStrengthUnit || "",
     usagePattern: med.usagePattern, scheduleIntervalDays: med.scheduleIntervalDays || 2,
     dosesPerDay: med.dosesPerDay || 1, unitsPerDose: med.unitsPerDose, refillThreshold: med.refillThreshold,
+    scheduledTimes: med.scheduledTimes || [],
     unitsPerContainer: med.unitsPerContainer || 0,
     // Default refill qty is edited in containers, stored in units — the user's ask, matches how
     // people actually think about a refill ("one box"), not a raw unit count.
@@ -1125,6 +1211,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
             → inventory (tracked toggle + its own dependent fields,
             grouped together) → supplier → notes. */}
         {form.usagePattern === "daily" && <NumberField T={T} label="Doses per day" value={form.dosesPerDay} onChange={set("dosesPerDay")} min={1} />}
+        {form.usagePattern === "daily" && <ScheduledTimesField T={T} dosesPerDay={form.dosesPerDay} value={form.scheduledTimes} onChange={set("scheduledTimes")} />}
         <NumberField T={T} label={`Units per dose (${med.unit}s)`} value={form.unitsPerDose} onChange={set("unitsPerDose")} min={1} />
         <ToggleRow T={T} label="Track stock & refills" value={form.inventoryTracked} onChange={set("inventoryTracked")} />
         {form.inventoryTracked && (
@@ -1197,6 +1284,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
   const [form, setForm] = useState({
     name: "", route: "", medicationType: "", category: [], doseStrengthValue: "", doseStrengthUnit: "",
     usagePattern: "daily", scheduleIntervalDays: 2, unitsPerDose: 1, dosesPerDay: 1,
+    scheduledTimes: [],
     inventoryTracked: true, unitsPerContainer: 30, refillThreshold: 7, defaultRefillContainers: 1, usualSupplier: "",
     notes: "",
   });
@@ -1287,6 +1375,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
             tracked's own toggle + dependent fields, instead of the
             toggle interrupting the dosing group partway through. */}
         {form.usagePattern === "daily" && <NumberField T={T} label="Doses per day" value={form.dosesPerDay} onChange={set("dosesPerDay")} min={1} />}
+        {form.usagePattern === "daily" && <ScheduledTimesField T={T} dosesPerDay={form.dosesPerDay} value={form.scheduledTimes} onChange={set("scheduledTimes")} />}
         <NumberField T={T} label="Units per dose" value={form.unitsPerDose} onChange={set("unitsPerDose")} min={1} />
         <ToggleRow T={T} label="Track stock & refills" value={form.inventoryTracked} onChange={set("inventoryTracked")} />
         {form.inventoryTracked && (
@@ -1850,7 +1939,12 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
         {/* CHANGED 15 Sep 2026 — real report: "too blocky / harsh/clashy" —
             softened the sharp corners/stark border, same treatment as
             Contacts'/Healthcare's own screen-title banners. */}
-        <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.medsBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* CHANGED 16 Sep 2026 — real report: `top: 0` only respected
+            the status bar before the first scroll. Same fix as
+            Contacts/Healthcare/Encounters — the sticky element's own
+            `top` carries the safe-area offset plus a real ~8px white
+            gap (half this banner's own 16px top padding). */}
+        <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 8px)", zIndex: 6, background: T.medsBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Medication</h1>
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
             {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,

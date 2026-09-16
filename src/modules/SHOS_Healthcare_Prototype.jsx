@@ -169,7 +169,13 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       {/* CHANGED 15 Sep 2026 — real report: "too blocky / harsh/clashy" —
           softened the sharp corners/stark border, same treatment as
           Contacts'/Medication's own screen-title banners. */}
-      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px" }}>
+      {/* CHANGED 16 Sep 2026 — real report: `top: 0` only respected the
+          status bar before the first scroll (App.jsx's own safe-area
+          padding is normal-flow, on <main>, so it scrolls away). Same
+          fix as Contacts/Medication/Encounters — the sticky element's
+          own `top` carries the safe-area offset plus a real ~8px white
+          gap (half this banner's own 16px top padding). */}
+      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 8px)", zIndex: 6, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px" }}>
         <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Healthcare</h1>
       </div>
       <div style={{ padding: "14px 16px 0", background: T.bg }}>

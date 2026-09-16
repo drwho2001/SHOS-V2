@@ -295,6 +295,19 @@ const DEFAULT_MEDICATION = {
   // unchanged in shape. See MedicationRepository.updateDose() for how
   // entries actually get added — never write to this array directly.
   doseHistory: [],
+  // ADDED 16 Sep 2026 — real gap: no field anywhere captured an actual
+  // wall-clock dose time ("8am and 8pm"), only elapsed-time-since-last-
+  // dose (see medicationCalculations.js's lockoutEndsAt()/
+  // nextDoseEstimate()). This is display/planning data only for now —
+  // one "HH:mm" 24-hour string per daily dose slot, index-matched to
+  // dosesPerDay (e.g. ["08:00","20:00"] for a twice-daily medication).
+  // Deliberately NOT wired into the lockout/reminder timing math this
+  // round — that's still genuinely elapsed-time-based (adaptive: from
+  // the last dose; fixed: from the first-ever dose), a bigger, separate
+  // architectural decision left for later, not attempted speculatively
+  // here. Empty array means "no preferred times set" — nothing reads
+  // this as a hard requirement.
+  scheduledTimes: [],
 };
 
 export const MedicationRepository = {
