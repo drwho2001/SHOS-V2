@@ -250,14 +250,10 @@ this date; summarized here for durability.
     same-event tests" is a real double-counting risk worth fixing in
     the same pass; "clinical-impression field" needs a decision on
     which record type it belongs to, Clinic Visit fits more naturally
-    than Testing); #80 in-app error submission without needing an
-    export/email step (a means to do this already exists —
-    `ErrorLogRepository.recordUserReport()` + the Error log screen,
-    11 Sep — the actual ask, true automatic submission with no export
-    step, means data leaving the device to a real server, a straight
-    reversal of this app's core "no backend, nothing leaves unless you
-    export it" design; a real product decision for the owner, not an
-    engineering gap). #79 Calendar dot-colours and #81 Status-at-a-
+    than Testing); #80 — RESOLVED 16 Sep 2026, see "Recently shipped"
+    below: the owner's own explicit follow-up re-scoped and authorized
+    a real outbound Send, the same disclosed-exception model as
+    Nominatim/GitHub. #79 Calendar dot-colours and #81 Status-at-a-
     glance menstrual/contraceptive rings — DONE, see "Recently shipped"
     below. #75's own real scope, found while auditing it: option-list
     values (custom Encounter Types, Location types, etc.) are stored as
@@ -3360,6 +3356,14 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (16 Sep 2026, latest of all — real problem-report Send, #80)
+
+Real ask, a direct follow-up to #80's own "product decision, not an engineering gap" scoping above: the owner's own explicit re-authorization — "not automatic, but doesn't need to open in email, user can write in text field then click send — accept this, like maps service is an exception to sharing data. Don't need users info except what they write in box." This is a real, deliberate instruction to build a genuine outbound Send for the existing "Report a problem" box (Settings > Support > Developer tools > Error log — see its own 11 Sep 2026 entry), pre-empting the exact objection #80 was scoped around by drawing an explicit parallel to the already-disclosed Nominatim address-lookup call (Settings > Data & network) — a real, accepted exception to "nothing leaves the device," not a reversal of it.
+
+**New `errorReportEndpoint` preference (`appPreferencesRepository.js`, default `""`).** This app has no backend of its own to receive a report — unlike Nominatim/GitHub, there's no real built-in destination — so rather than guess at or fabricate a third-party service, the destination is a URL the owner sets himself in Settings > Data & network's own screen (a third disclosed-exception row, alongside Address lookup/Check for app updates, same card layout, a plain `<input type="url">` committed on blur). Blank (the default) means the feature is genuinely off — the "Report a problem" box behaves exactly as it did before this change, local-only. Once a real URL is set, the same box's button relabels from "Save note" to "Send," and tapping it does both: saves the note into the local Error log (unchanged) AND fires one `fetch(endpoint, { method: "POST", body: JSON.stringify({ message: trimmed }) })` — deliberately the ONLY field in that body, matching the owner's own explicit "don't need users info except what they write in box" constraint word for word. A failed send (network error, non-2xx) shows a clear "saved here, but sending failed" status rather than losing the note — the local save always succeeds first, the network call is additive, never a precondition.
+
+Verified live via Playwright end-to-end: the endpoint field persists correctly across a reload; with a real endpoint set, the Error log screen's button correctly reads "Send" and its own copy correctly explains what happens; intercepting the real outbound request confirmed the captured POST body is exactly `{"message":"Test report: the widget does not widget."}` — no device info, no app version, no timestamp, nothing beyond the literal typed text — and the UI correctly shows "Sent, and saved to this log." afterward. Full build, `npx eslint .` clean, and the full 15-flow smoke-test suite against a real `vite preview` production build — 15/15 pass, no regressions.
 
 ## Recently shipped (16 Sep 2026, even later still — combination-drug doses, refill-banner actions, Testing result colours, main sync)
 

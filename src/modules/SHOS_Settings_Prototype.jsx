@@ -2306,11 +2306,35 @@ function ErrorLogScreen({ darkMode, onClose }) {
   // isn't a JS crash (nothing here to auto-capture). Appends into the
   // same log/export/share path a real crash already uses.
   const [reportText, setReportText] = useState("");
+  // ADDED 16 Sep 2026 — real ask: a genuine Send, not just a local
+  // note — see appPreferencesRepository.js's own errorReportEndpoint
+  // comment for the full reasoning (the disclosed-exception model,
+  // "only what you write in the box"). Read once on mount; Settings'
+  // own Data & network screen is where it's actually set.
+  const endpoint = useLoadedMemo(() => AppPreferencesRepository.getPreferences().then((p) => p.errorReportEndpoint), [], "");
+  const [sendStatus, setSendStatus] = useState(null);
   const submitReport = async () => {
     const trimmed = reportText.trim();
     if (!trimmed) return;
     setEntries(await ErrorLogRepository.recordUserReport(trimmed));
     setReportText("");
+    setSendStatus(null);
+    if (endpoint) {
+      try {
+        // Deliberately the ONLY thing in this body — no device info, no
+        // app version, no timestamp beyond what the server itself sees
+        // from the request — matching the user's own explicit "don't
+        // need users info except what they write in box."
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: trimmed }),
+        });
+        setSendStatus(res.ok ? { ok: true, msg: "Sent, and saved to this log." } : { ok: false, msg: "Saved here, but sending failed — try again later." });
+      } catch {
+        setSendStatus({ ok: false, msg: "Saved here, but sending failed — check your connection." });
+      }
+    }
   };
   const exportLog = async () => {
     const text = entries.map((e) =>
@@ -2345,7 +2369,9 @@ function ErrorLogScreen({ darkMode, onClose }) {
         <div style={{ marginBottom: 16, padding: 12, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 6 }}>Report a problem</div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>
-            Not a crash, just something that seems off? Note it here — it's added to this same log so it's not forgotten.
+            {endpoint
+              ? "Not a crash, just something that seems off? Write it below and tap Send — it's saved here AND sent, just this text, to the address set in Settings > Data & network."
+              : "Not a crash, just something that seems off? Note it here — it's added to this same log so it's not forgotten. Set an address in Settings > Data & network to also send it directly."}
           </div>
           <textarea
             value={reportText}
@@ -2361,8 +2387,9 @@ function ErrorLogScreen({ darkMode, onClose }) {
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); submitReport(); } }}
             style={{ marginTop: 8, display: "inline-block", fontSize: 12, fontWeight: 700, color: reportText.trim() ? ACCENTS.home : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled), cursor: reportText.trim() ? "pointer" : "default" }}
           >
-            Save note
+            {endpoint ? "Send" : "Save note"}
           </div>
+          {sendStatus && <div style={{ marginTop: 6, fontSize: 11, color: sendStatus.ok ? ACTION.green : ACTION.red }}>{sendStatus.msg}</div>}
         </div>
         {exportStatus && <div style={{ fontSize: 12, color: exportStatus.ok ? ACTION.green : ACTION.red, marginBottom: 12 }}>{exportStatus.msg}</div>}
         {entries.length === 0 ? (
@@ -2651,6 +2678,18 @@ function DataNetworkScreen({ onClose }) {
   const toggleUpdateCheck = async () => {
     setPrefs(await AppPreferencesRepository.update({ updateCheckEnabled: !prefs.updateCheckEnabled }));
   };
+  // ADDED 16 Sep 2026 — real ask: a third disclosed exception, see
+  // appPreferencesRepository.js's own errorReportEndpoint comment.
+  // Local-only draft state so every keystroke doesn't write to
+  // storage — committed onBlur, same pattern as every other free-text
+  // preference field in this file.
+  const [endpointDraft, setEndpointDraft] = useState(prefs.errorReportEndpoint);
+  useEffect(() => { setEndpointDraft(prefs.errorReportEndpoint); }, [prefs.errorReportEndpoint]);
+  const commitEndpoint = async () => {
+    const trimmed = endpointDraft.trim();
+    if (trimmed === prefs.errorReportEndpoint) return;
+    setPrefs(await AppPreferencesRepository.update({ errorReportEndpoint: trimmed }));
+  };
 
   const row = (label, enabled, onToggle, description) => (
     <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
@@ -2688,6 +2727,20 @@ function DataNetworkScreen({ onClose }) {
           toggleUpdateCheck,
           "On the installed Android app only, checks GitHub's public API on launch for a newer build. Reveals your IP address to GitHub, nothing else. Off: you can still check manually from the About screen."
         )}
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>Send problem reports</div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>
+            Settings &gt; Developer tools &gt; Error log's own "Report a problem" box always saves your note on-device. If you set a URL here, tapping Send there ALSO sends just that typed text to it directly — no export step, no email client, and nothing else about you or your device. Leave blank to keep it local-only.
+          </div>
+          <input
+            type="url"
+            value={endpointDraft}
+            onChange={(e) => setEndpointDraft(e.target.value)}
+            onBlur={commitEndpoint}
+            placeholder="https://…"
+            style={{ width: "100%", boxSizing: "border-box", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, padding: 8, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.bg : "#FFFFFF", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}
+          />
+        </div>
       </div>
     </div>
   );

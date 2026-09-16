@@ -173,6 +173,23 @@ export const DEFAULT_APP_PREFERENCES = {
   // in), same "opt-in for anything more exposing" precedent as App
   // Lock/calendar sync/encrypted export elsewhere in this file.
   showRoleOnContactCards: false,
+  // ADDED 16 Sep 2026 — real ask: "Report a problem" (Settings >
+  // Developer tools > Error log) should be able to genuinely send the
+  // typed text, not just log it on-device requiring a manual export —
+  // "not automatic, but doesn't need to open in email... accept this,
+  // like maps service is an exception to sharing data. Don't need
+  // users info except what they write in box." Same disclosed-
+  // exception model as addressLookupEnabled/updateCheckEnabled above,
+  // not a reversal of the no-backend design: an explicit user action
+  // (typing + tapping Send) transmits ONLY the literal text typed, to
+  // a URL the owner configures himself (Settings > Data & network) —
+  // this app has no backend of its own to receive it, so unlike
+  // Nominatim/GitHub there's no built-in default; empty means the
+  // feature is off and Send only saves the note locally, same as
+  // before this field existed. No device/user metadata is ever
+  // attached — see ErrorLogScreen's submitReport() for the one fetch
+  // call this ever triggers.
+  errorReportEndpoint: "",
 };
 
 export const AppPreferencesRepository = {
