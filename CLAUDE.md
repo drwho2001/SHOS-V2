@@ -355,14 +355,16 @@ this date; summarized here for durability.
   (4) the original report named exactly these two targets, both now
   shipped; any other desktop-empty-space complaint (Medication
   Dashboard's stock display, Contacts' own stat rows, etc.) is still
-  out of scope unless separately reported. (5) NEW, found while
-  reviewing the shipped Target 1's own screenshot, not in the
-  original scoping: enlarging the rings themselves didn't address the
-  "Status at a glance" CARD's own layout when fewer than 4 rings
-  render (e.g. menstrual tracking off, so only 2 of 4 possible rings
-  show) — real blank space remains to the right of a short ring row
-  at desktop width. A real, not-yet-scoped follow-on gap, not fixed by
-  this round.
+  out of scope unless separately reported. (5) RESOLVED, later the same
+  day — see "Recently shipped" below (the sticky-overlap/Status-rings
+  round): the real live report ("dead space on RHS of box") confirmed
+  this was exactly the gap flagged here — the card's own row used
+  `justifyContent: flex-start` by default, so a short ring set (fewer
+  than 4) packed left with the leftover width dumped as one block of
+  empty space on the right rather than read as a deliberately compact,
+  centered set. Fixed with `justifyContent: "center"` on the row,
+  alongside reworking each ring's own layout from a vertical stack to
+  a horizontal ring+text one (see that entry for the full reasoning).
 
 - **Encryption at rest — RESOLVED 8 Sep 2026, see the full Phase 4
   implementation entry at the end of this same bullet.** Originally:
