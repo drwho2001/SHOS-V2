@@ -923,7 +923,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   const [revealContraceptionAnyway, setRevealContraceptionAnyway] = useState(false);
 
   return (
-    <div tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, overflowY: "auto", zIndex: 200 }}>
+    <div tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: T.bg, overflowY: "auto", zIndex: 200 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onCancel} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Edit My Profile</span>
@@ -1010,9 +1010,9 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
           {/* ADDED — parity with the same descriptor already added to
               Contacts' Chastity field. */}
           <div style={{ fontSize: 11, color: T.textDisabled, marginTop: -6, marginBottom: 6 }}>Only relevant if chastity is something you're genuinely into — leave as N/A otherwise.</div>
-          <MultiSelectChips label="Cummer — frequency" value={form.cummer} onChange={set("cummer")} options={CUMMER_FREQUENCY_OPTIONS} T={T} />
-          <MultiSelectChips label="Cummer — volume" value={form.cummer} onChange={set("cummer")} options={CUMMER_VOLUME_OPTIONS} T={T} />
-          <MultiSelectChips label="Cummer — style" value={form.cummer} onChange={set("cummer")} options={CUMMER_STYLE_OPTIONS} T={T} />
+          <MultiSelectChips label="Ejaculation — frequency" value={form.cummer} onChange={set("cummer")} options={CUMMER_FREQUENCY_OPTIONS} T={T} />
+          <MultiSelectChips label="Ejaculation — volume" value={form.cummer} onChange={set("cummer")} options={CUMMER_VOLUME_OPTIONS} T={T} />
+          <MultiSelectChips label="Ejaculation — style" value={form.cummer} onChange={set("cummer")} options={CUMMER_STYLE_OPTIONS} T={T} />
         </SectionCard>
         )}
 
@@ -1204,7 +1204,7 @@ function ProfileDataView({ profile, T }) {
         <ReadRow label="Foreskin" value={profile.foreskin} T={T} />
         <ReadRow label="Foreskin fit" value={profile.foreskinDetail} T={T} />
         <ReadRow label="Chastity status" value={profile.chastityStatus} T={T} />
-        <ReadRow label="Cummer" value={profile.cummer} T={T} />
+        <ReadRow label="Ejaculation" value={profile.cummer} T={T} />
       </SectionCard>
       )}
       {/* CHANGED 11 Sep 2026 — real gap found (a demographics audit):
@@ -1423,7 +1423,7 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
     // correct (`position: fixed, inset: 0, overflowY: auto`, entirely
     // self-contained) — applying the exact same pattern here instead
     // of depending on App.jsx's wrapper to provide it.
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", overflowY: "auto", fontFamily: "'Inter', sans-serif", background: T.bg, display: "flex", justifyContent: "center" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", overflowY: "auto", fontFamily: "'Inter', sans-serif", background: T.bg, display: "flex", justifyContent: "center" }}>
       {/* CHANGED 26 Aug 2026 — same fix already shipped in Medication:
           was a fixed 390px regardless of viewport; now fills the screen
           on mobile and caps at a real desktop-appropriate width on

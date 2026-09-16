@@ -688,7 +688,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
       <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
         {sorted.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-            No episodes yet. Tap + to start one from an existing Encounter.
+            No episodes yet. An episode groups a possible exposure together with everything relevant to it — the encounter(s), and any tests or treatment that followed — so you can see the whole thing at a glance instead of hunting across separate records. Tap + to start one from an existing Encounter.
           </div>
         )}
         {sorted.map((e) => {

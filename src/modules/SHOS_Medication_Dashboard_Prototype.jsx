@@ -1107,7 +1107,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
         <div style={{ display: "flex", background: T.surfaceVariant, borderRadius: radius.full, padding: 3, marginBottom: 12 }}>
           {["daily", "custom", "prn"].map((p) => (
             <div key={p} onClick={() => set("usagePattern")(p)} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: radius.full, cursor: "pointer", fontSize: 13, fontWeight: 600, background: form.usagePattern === p ? T.surface : "transparent", color: form.usagePattern === p ? T.medsBlue : T.textSecondary }}>
-              {p === "daily" ? "Daily" : p === "custom" ? "Custom" : "PRN"}
+              {p === "daily" ? "Daily" : p === "custom" ? "Custom" : "As needed"}
             </div>
           ))}
         </div>
@@ -1126,7 +1126,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
             grouped together) → supplier → notes. */}
         {form.usagePattern === "daily" && <NumberField T={T} label="Doses per day" value={form.dosesPerDay} onChange={set("dosesPerDay")} min={1} />}
         <NumberField T={T} label={`Units per dose (${med.unit}s)`} value={form.unitsPerDose} onChange={set("unitsPerDose")} min={1} />
-        <ToggleRow T={T} label="Inventory tracked" value={form.inventoryTracked} onChange={set("inventoryTracked")} />
+        <ToggleRow T={T} label="Track stock & refills" value={form.inventoryTracked} onChange={set("inventoryTracked")} />
         {form.inventoryTracked && (
           <>
             <NumberField T={T} label={`Units per container (${med.unit}s)`} value={form.unitsPerContainer} onChange={set("unitsPerContainer")} min={0} />
@@ -1272,7 +1272,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
         <div style={{ display: "flex", background: T.surfaceVariant, borderRadius: radius.full, padding: 3, marginBottom: 12 }}>
           {["daily", "custom", "prn"].map((p) => (
             <div key={p} onClick={() => set("usagePattern")(p)} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: radius.full, cursor: "pointer", fontSize: 13, fontWeight: 600, background: form.usagePattern === p ? T.surface : "transparent", color: form.usagePattern === p ? T.medsBlue : T.textSecondary }}>
-              {p === "daily" ? "Daily" : p === "custom" ? "Custom" : "PRN"}
+              {p === "daily" ? "Daily" : p === "custom" ? "Custom" : "As needed"}
             </div>
           ))}
         </div>
@@ -1288,7 +1288,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
             toggle interrupting the dosing group partway through. */}
         {form.usagePattern === "daily" && <NumberField T={T} label="Doses per day" value={form.dosesPerDay} onChange={set("dosesPerDay")} min={1} />}
         <NumberField T={T} label="Units per dose" value={form.unitsPerDose} onChange={set("unitsPerDose")} min={1} />
-        <ToggleRow T={T} label="Inventory tracked" value={form.inventoryTracked} onChange={set("inventoryTracked")} />
+        <ToggleRow T={T} label="Track stock & refills" value={form.inventoryTracked} onChange={set("inventoryTracked")} />
         {form.inventoryTracked && (
           <>
             <NumberField T={T} label="Units per container" value={form.unitsPerContainer} onChange={set("unitsPerContainer")} min={0} />
@@ -1364,7 +1364,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Medication settings</span>

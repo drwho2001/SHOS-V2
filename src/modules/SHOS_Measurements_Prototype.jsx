@@ -931,7 +931,7 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto" }}>
       <div style={{ background: T.healthcareBlue, display: "flex", alignItems: "center", gap: 12, padding: "16px 20px 14px" }}>
         <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onBack} />
         <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Manage groups</span>

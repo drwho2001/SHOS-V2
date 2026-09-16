@@ -2160,7 +2160,7 @@ export default function App() {
           missing a landmark). role="navigation"+aria-label closes the
           landmark gap; each tab below gets tabIndex/onKeyDown/
           aria-current to actually be operable, not just labeled. */}
-      <div role="navigation" aria-label="Main navigation" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: darkMode ? DARK.surface : NEUTRAL.surface, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "10px 0 calc(14px + env(safe-area-inset-bottom))", zIndex: 10, fontFamily: "'Inter', sans-serif" }}>
+      <div role="navigation" aria-label="Main navigation" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: darkMode ? DARK.surface : NEUTRAL.surface, borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), display: "flex", justifyContent: "space-around", alignItems: "flex-end", padding: "10px 0 calc(7px + env(safe-area-inset-bottom))", zIndex: 10, fontFamily: "'Inter', sans-serif" }}>
         {getOrderedTabs(tabOrder).map((tab) => {
           const isActive = tab.key === active;
           const isBuilt = tab.component !== null || tab.key === "home";

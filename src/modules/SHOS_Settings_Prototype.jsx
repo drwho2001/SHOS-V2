@@ -672,7 +672,7 @@ function DeveloperToolsScreen({ onClose }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Developer tools</span>
@@ -903,7 +903,7 @@ function ManageListsScreen({ onClose }) {
   }, [], {});
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Manage lists</span>
@@ -1195,7 +1195,7 @@ function ResourcesScreen({ onClose }) {
   // as before (only recomputes when `query` changes) via useLoadedMemo.
   const hasMatch = useLoadedMemo(() => hasAnyResourceMatch(query), [query], true);
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Resources</span>
@@ -1426,7 +1426,7 @@ function PrivacyScreen({ onClose }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Privacy & Security</span>
@@ -1505,7 +1505,7 @@ function PrivacyScreen({ onClose }) {
               <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Also hide kinks & physical attributes</div>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>
                 {settings.anonymiseModeActive
-                  ? "Stated kinks, limits, length/girth, and Cummer stats — hidden in addition to the base fields above, only while Anonymise mode is on."
+                  ? "Stated kinks, limits, length/girth, and ejaculation stats — hidden in addition to the base fields above, only while Anonymise mode is on."
                   : "Turn on Anonymise mode above first — this only ever applies on top of it."}
               </div>
             </div>
@@ -2153,7 +2153,7 @@ function NotificationsScreen({ onClose }) {
   );
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Notifications</span>
@@ -2228,11 +2228,11 @@ function NotificationsScreen({ onClose }) {
           description="Reminder around your suggested routine retest date (3 months after a negative test)." />
         <NotificationToggleRow darkMode={darkMode} label="Vaccination due reminder" enabled={notifPrefs.vaccinationReminderEnabled} onToggle={() => toggleNotif("vaccinationReminderEnabled")}
           description="Reminder on a vaccination record's own 'Next due' date (e.g. the second dose of a multi-dose course)." />
-        <NotificationToggleRow darkMode={darkMode} label="Clinic appointment reminder A" enabled={notifPrefs.clinicVisitReminderAEnabled} onToggle={() => toggleNotif("clinicVisitReminderAEnabled")}
+        <NotificationToggleRow darkMode={darkMode} label="Clinic appointment — first reminder" enabled={notifPrefs.clinicVisitReminderAEnabled} onToggle={() => toggleNotif("clinicVisitReminderAEnabled")}
           description="First reminder before a booked clinic appointment. Defaults to 24 hours.">
           {hoursInput(notifPrefs.clinicVisitReminderAHours, async (v) => { await NotificationPreferencesRepository.update({ clinicVisitReminderAHours: v }); syncClinicVisitReminders(); refresh(); })}
         </NotificationToggleRow>
-        <NotificationToggleRow darkMode={darkMode} label="Clinic appointment reminder B" enabled={notifPrefs.clinicVisitReminderBEnabled} onToggle={() => toggleNotif("clinicVisitReminderBEnabled")}
+        <NotificationToggleRow darkMode={darkMode} label="Clinic appointment — second reminder" enabled={notifPrefs.clinicVisitReminderBEnabled} onToggle={() => toggleNotif("clinicVisitReminderBEnabled")}
           description="Second, closer reminder before a booked clinic appointment. Defaults to 2 hours.">
           {hoursInput(notifPrefs.clinicVisitReminderBHours, async (v) => { await NotificationPreferencesRepository.update({ clinicVisitReminderBHours: v }); syncClinicVisitReminders(); refresh(); })}
         </NotificationToggleRow>
@@ -2260,7 +2260,7 @@ function NotificationHistoryScreen({ darkMode, onClose }) {
   const clear = async () => { await NotificationHistoryRepository.clear(); setEntries([]); };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
@@ -2325,7 +2325,7 @@ function ErrorLogScreen({ darkMode, onClose }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
@@ -2466,7 +2466,7 @@ function AutomaticBackupsScreen({ onClose }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Automatic backups</span>
@@ -2537,6 +2537,103 @@ function AutomaticBackupsScreen({ onClose }) {
   );
 }
 
+// ADDED 16 Sep 2026 — real ask: "other apps don't have the export/
+// backup options as separated as we do." The 7 rows below (Export
+// backup/to a folder/Selective/CSV/Encrypted/Restore/Automatic
+// backups) used to sit directly on the main Settings list; each was
+// added for a real, separate reason (see each row's own comment,
+// unchanged below), so none of them could be dropped or merged into
+// "single functions" without losing something a real request asked
+// for — but there's no reason all 7 need their own top-level row.
+// Consolidated behind one "Backup & Export" entry, same sub-screen
+// pattern as every other multi-control settings area in this file.
+function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFolder, chooseFolderAvailable, plainExportStatus, plainFolderExportStatus, onImportClick, onSelectiveExport, onCSVExport, onEncryptedExport, onAutoBackupSettings }) {
+  const [darkMode] = useDarkModePreference();
+  // Local copy of SettingsScreen's own SettingsRow — that one is
+  // defined inside SettingsScreen's own closure (over its darkMode),
+  // not at module scope, so it isn't reachable from this standalone
+  // component. Same exact markup/styling, closing over this
+  // component's own darkMode instead.
+  const SettingsRow = ({ icon: Icon, label, onClick }) => (
+    <div onClick={onClick} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <Icon size={17} weight="regular" color={darkMode ? DARK.textDisabled : "#5B5B62"} />
+        <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>{label}</span>
+      </div>
+      <ChevronRight size={16} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} />
+    </div>
+  );
+  return (
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Backup &amp; Export</span>
+      </div>
+      <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "12px 16px 4px" }}>
+        Everything here makes a copy of your data or brings one back in — nothing here ever leaves this device unless you choose to send it somewhere yourself.
+      </div>
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "12px 16px 8px", overflow: "hidden" }}>
+        {/* CHANGED — real bug found in the user's own testing: passing
+            `exportBackup` directly meant the DOM click's SyntheticEvent
+            got passed as `includeKeys`, which buildBackup() then tried
+            to iterate as a selective-key Set and threw. Selective
+            export never hit this because its own button already
+            wrapped the call in an arrow function that discards the
+            event. Wrapping this one the same way. */}
+        <SettingsRow icon={Upload} label="Export backup" onClick={doPlainExport} />
+        {/* ADDED — real ask: real confirmation for this button — it
+            fires the OS share sheet with no feedback of its own, and
+            round-trip verification (backupService.js's own
+            verifyBackupJson()) now genuinely can fail here, which
+            deserves to be visible, not swallowed. Same status-row
+            pattern already used for Export backup to a folder/
+            Encrypted export below — this exact row just never had one. */}
+        {plainExportStatus && (
+          <div style={{ fontSize: 12, color: plainExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), padding: "0 16px 10px", textAlign: "center" }}>{plainExportStatus.msg}</div>
+        )}
+        {/* ADDED — real ask: an explicit "choose exactly where this
+            goes" alternative to the row above, which opens the Share
+            sheet (send it somewhere) rather than a real folder picker.
+            Only shown once actually available — see
+            fileExportHelper.js's isChooseFolderExportAvailable. */}
+        {chooseFolderAvailable && (
+          <SettingsRow icon={Folder} label="Export backup to a folder…" onClick={doPlainExportToFolder} />
+        )}
+        {/* FIXED — real bug found in the same pass as the round-trip
+            verification above: this status was tracked (set on every
+            export attempt) but never actually rendered anywhere —
+            silently dead state, the failure branches included. */}
+        {plainFolderExportStatus && (
+          <div style={{ fontSize: 12, color: plainFolderExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), padding: "0 16px 10px", textAlign: "center" }}>{plainFolderExportStatus.msg}</div>
+        )}
+        {/* ADDED 19 Aug 2026 — real ask: default export stays one tap
+            (the row above, unchanged), this is the opt-in "choose what
+            to include" path. */}
+        {/* CHANGED 26 Aug 2026 — real fix: these icons were backwards,
+            same Download/Upload direction confusion the user corrected for
+            Contacts' Import earlier this session, mirrored here —
+            Export (data leaving) reads as Upload, Restore (data coming
+            back in) reads as Download. */}
+        <SettingsRow icon={Filter} label="Selective export…" onClick={onSelectiveExport} />
+        {/* ADDED — real ask: CSV export, for reading data elsewhere
+            (Excel/Sheets), separate from the JSON backup above (which
+            is for restoring into SHOS, not for opening as a
+            spreadsheet). */}
+        <SettingsRow icon={FileCsv} label="Export as CSV…" onClick={onCSVExport} />
+        {/* ADDED — real ask: password-protected backup, for storing or
+            sending a backup somewhere less trusted than this device. */}
+        <SettingsRow icon={Lock} label="Export encrypted backup…" onClick={onEncryptedExport} />
+        <SettingsRow icon={Download} label="Restore from backup" onClick={onImportClick} />
+        {/* MOVED 1 Sep 2026 from Preferences — a backup-scheduling
+            setting belongs next to the other backup controls, not
+            bundled with an unrelated Contacts-display setting under a
+            generic "Preferences" label. */}
+        <SettingsRow icon={Clock} label="Automatic backups" onClick={onAutoBackupSettings} />
+      </div>
+    </div>
+  );
+}
+
 // ADDED — real ask, from a build audit: two real network calls in this
 // app (Nominatim address lookup, GitHub update checks) were previously
 // undisclosed anywhere in the UI and had no way to turn off — worth
@@ -2570,7 +2667,7 @@ function DataNetworkScreen({ onClose }) {
   );
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Data & network</span>
@@ -2722,7 +2819,7 @@ function StatsScreen({ onClose }) {
   const maxClinicVisits = Math.max(1, ...clinicVisitMonths.map((b) => b.count));
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Stats</span>
@@ -3189,7 +3286,7 @@ function calendarModuleAccent(moduleKey) {
 const GLOSSARY_TERMS = [
   { term: "PrEP", body: "Pre-exposure prophylaxis — medication taken regularly (daily, or event-based around sex) before an exposure, to reduce the chance of getting HIV." },
   { term: "PEP", body: "Post-exposure prophylaxis — a course of HIV medication started within 72 hours after a potential HIV exposure, to reduce the chance of infection taking hold." },
-  { term: "DoxyPEP", body: "Doxycycline post-exposure prophylaxis — a single dose of the antibiotic doxycycline, taken within 72 hours after condomless oral, vaginal, or anal sex, shown to reduce the chance of some bacterial STIs (see Resources → Sexual health for the full guidance)." },
+  { term: "DoxyPEP", body: "Doxycycline post-exposure prophylaxis. A single dose of the antibiotic doxycycline, taken within 72 hours after condomless oral, vaginal, or anal sex. Shown to reduce the chance of some bacterial STIs (see Resources → Sexual health for the full guidance)." },
   { term: "Doxy", body: "Shorthand for doxycycline, the antibiotic used in DoxyPEP." },
   { term: "TOC (Test of cure)", body: "A follow-up test done after treatment for an infection, to confirm it's actually cleared rather than assuming the treatment worked." },
   { term: "C&S (Culture & sensitivity)", body: "A lab test that grows a sample to identify exactly which bacteria are present and which antibiotics will treat it — used when a standard test isn't specific enough, e.g. for an antibiotic-resistant infection." },
@@ -3215,26 +3312,62 @@ const GLOSSARY_TERMS = [
 // things live and WHAT the less-obvious toggles do, not a feature-by-
 // feature walkthrough — the real, repeated confusion this was built
 // for is "where do I find X," not "how do I use X once I'm there."
+// CHANGED 16 Sep 2026 — real ask: this whole screen used to be 5 dense,
+// single-paragraph blocks — casual and scannable was the actual ask,
+// not academic prose. Each section is now a short intro line plus a
+// few bullets; also fixed a real, stale inaccuracy that had crept in
+// from an earlier reorg: "General" no longer includes Units (moved to
+// Measurements' own settings — see that reorg's own commit), and this
+// screen still said it did.
 const GUIDE_SECTIONS = [
   {
     heading: "Getting around",
-    body: "The bottom bar has 5 tabs: Contacts, Encounter, Home (centre), Medication, and Healthcare. Home is your dashboard — recent activity, quick-add buttons, and 3 extra shortcuts above Quick Add that aren't tabs of their own: Clinic Card (a read-only summary for showing a clinician), Episodes (grouped exposure windows, e.g. \"this test result relates to these encounters\"), and Calendar. My Profile lives inside Settings, not the bottom bar — tap the gear icon on Home to reach it.",
+    intro: "5 tabs along the bottom: Contacts, Encounter, Home (centre), Medication, Healthcare.",
+    bullets: [
+      "Home is your dashboard — recent activity, quick-add buttons, and 3 extra shortcuts: Clinic Card, Episodes, Calendar.",
+      "Clinic Card is a read-only summary you can show a clinician.",
+      "Episodes groups related encounters and tests together (e.g. \"this test relates to these encounters\").",
+      "My Profile isn't a tab — it's inside Settings (tap the gear icon on Home).",
+    ],
   },
   {
     heading: "Where the Settings sections are",
-    body: "Tap the gear icon on Home. Backup & Data is every way to export/restore your data. Security & Privacy covers App Lock, the PIN, Anonymise mode, and what third-party network calls (if any) this app makes. General covers cross-cutting behaviour — Preferences (inactive-contact threshold, tracking toggles), Notifications, and Units. Appearance is per-module colour customisation. Content & Lists is where you edit the picker options used across the app (Manage lists), plus Resources (support links) and this Guide. Insights has Stats, Calendar, and Trash. Support has Developer tools and About.",
+    intro: "Tap the gear icon on Home to get here.",
+    bullets: [
+      "Backup & Data — every way to export or restore your data.",
+      "Security & Privacy — App Lock, your PIN, Anonymise mode, and any network calls this app makes.",
+      "General — Preferences and Notifications.",
+      "Appearance — per-module colours.",
+      "Content & Lists — Manage lists, Resources, and this Guide.",
+      "Insights — Stats, Calendar, and Trash.",
+      "Support — Developer tools and About.",
+    ],
   },
   {
     heading: "Menstrual, Contraception & Pregnancy tracking",
-    body: "Off by default, and not a tab of its own — it lives inside the Healthcare tab's own internal sub-nav, alongside Testing/Clinic Visits/Vaccinations/Symptoms. Turn it on in Settings → General → Preferences → \"Menstrual & contraception tracking.\" It stays opt-in regardless of gender — nothing in this app assumes who does or doesn't want it.",
+    intro: "Off by default, and not its own tab — it lives inside Healthcare's own sub-nav, next to Testing/Clinic Visits/Vaccinations/Symptoms.",
+    bullets: [
+      "Turn it on: Settings → General → Preferences → \"Menstrual & contraception tracking.\"",
+      "It's opt-in regardless of gender — nothing here assumes who does or doesn't want it.",
+    ],
   },
   {
     heading: "Privacy & security features, plainly",
-    body: "App Lock (Settings → Security & Privacy → Privacy) adds a PIN/biometric gate on top of this device's own encryption — off by default, since most people rely on their phone's own lock screen. A duress PIN, if you set one, opens a decoy version of the app with fabricated data instead of your real records — a real, working safety feature, not a demo. Anonymise mode (same screen) masks attendee names on Contacts and Encounters with a hidden placeholder, useful if someone else might glance at your screen. None of this replaces your device's own lock screen — it's an extra layer, not a substitute.",
+    intro: "A few layers, each doing a different job:",
+    bullets: [
+      "App Lock (Security & Privacy → Privacy) — a PIN/biometric gate on top of your device's own encryption. Off by default, since most people already lock their phone.",
+      "Duress PIN — if you set one, it opens a decoy version of the app with fake data instead of your real records. A real safety feature, not a demo.",
+      "Anonymise mode — masks attendee names on Contacts and Encounters, useful if someone might glance at your screen.",
+      "None of this replaces your phone's own lock screen — think of it as an extra layer.",
+    ],
   },
   {
     heading: "A few things worth knowing",
-    body: "Nothing in this app ever leaves your device on its own — there's no account, no cloud, no server. Deleting something usually archives it first (recoverable in Trash under Insights) rather than deleting outright — a genuine \"delete permanently\" option exists on most screens when you actually mean it. Most numbers you see (adherence %, active/inactive, most recent test) are calculated live from what you've logged, not something you type in directly.",
+    bullets: [
+      "Nothing leaves your device on its own — no account, no cloud, no server.",
+      "Deleting something usually archives it first — recoverable in Trash (under Insights). A real \"delete permanently\" option exists too, for when you mean it.",
+      "Most numbers you see (adherence %, active/inactive, most recent test) are calculated live from what you've logged — not something you type in.",
+    ],
   },
 ];
 
@@ -3243,7 +3376,7 @@ function GuideScreen({ onClose, onStartTour }) {
   const T = darkMode ? DARK : NEUTRAL;
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Guide</span>
@@ -3265,7 +3398,14 @@ function GuideScreen({ onClose, onStartTour }) {
           {GUIDE_SECTIONS.map((s) => (
             <div key={s.heading} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 14 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary, marginBottom: 6 }}>{s.heading}</div>
-              <div style={{ fontSize: 13, color: T.textSecondary, lineHeight: 1.5 }}>{s.body}</div>
+              {s.intro && <div style={{ fontSize: 13, color: T.textSecondary, lineHeight: 1.5, marginBottom: s.bullets ? 6 : 0 }}>{s.intro}</div>}
+              {s.bullets && (
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  {s.bullets.map((b, i) => (
+                    <li key={i} style={{ fontSize: 13, color: T.textSecondary, lineHeight: 1.5, marginBottom: i < s.bullets.length - 1 ? 4 : 0 }}>{b}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           ))}
         </div>
@@ -3282,7 +3422,7 @@ function GlossaryScreen({ onClose }) {
   const filtered = q ? GLOSSARY_TERMS.filter((t) => t.term.toLowerCase().includes(q) || t.body.toLowerCase().includes(q)) : GLOSSARY_TERMS;
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Glossary</span>
@@ -3319,7 +3459,7 @@ function AboutScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>About</span>
@@ -3644,7 +3784,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
@@ -3853,7 +3993,7 @@ function TrashScreen({ onClose }) {
   const recordLabel = (entry) => entry.record.title || entry.record.name || entry.record.displayName || "Untitled";
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
@@ -4007,7 +4147,7 @@ function DesignScreen({ onClose }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Colour scheme</span>
@@ -4232,7 +4372,7 @@ function PreferencesScreen({ onClose }) {
   // screen for the exact same reason (a colour override).
   const [changed, setChanged] = useState(false);
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Preferences</span>
@@ -4294,6 +4434,15 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   const [darkMode] = useDarkModePreference();
 
   const [showMyProfile, setShowMyProfile] = useState(false);
+  // ADDED 16 Sep 2026 — real ask: Backup & Data had 7 separate rows
+  // (Export backup/to a folder/Selective/CSV/Encrypted/Restore/
+  // Automatic backups) directly on the main Settings list — "other
+  // apps don't have export options this separated." Consolidated
+  // behind one row into its own sub-screen, same pattern already used
+  // for every other multi-control settings area (Privacy, Preferences,
+  // Notifications, etc.) — no functionality removed, just one entry
+  // point instead of seven.
+  const [showBackupExport, setShowBackupExport] = useState(false);
   const [showSelectiveExport, setShowSelectiveExport] = useState(false);
   const [showCSVExport, setShowCSVExport] = useState(false);
   const [showEncryptedExport, setShowEncryptedExport] = useState(false);
@@ -4395,11 +4544,15 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showSelectiveExport) { setShowSelectiveExport(false); return true; }
       if (showCSVExport) { setShowCSVExport(false); return true; }
       if (showEncryptedExport) { setShowEncryptedExport(false); return true; }
+      // CHECKED AFTER the three export sheets/Automatic backups above —
+      // they can be open "on top of" this screen (its own rows open
+      // them), so a back press has to close the topmost one first.
+      if (showBackupExport) { setShowBackupExport(false); return true; }
       if (showMyProfile) { setShowMyProfile(false); return true; }
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showResources, showGlossary, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showBackupExport, showResources, showGlossary, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.
@@ -4447,7 +4600,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
     // styling — was ever inside any landmark at all. One role="region"
     // here covers the whole tree; confirmed live via axe-core before
     // and after, not assumed from the DOM shape alone.
-    <div tabIndex={0} role="region" aria-label="Settings" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+    <div tabIndex={0} role="region" aria-label="Settings" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
@@ -4480,62 +4633,10 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
           22 rows, same onClick handlers, just regrouped and re-iconed. */}
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Backup &amp; Data</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
-        {/* CHANGED — real bug found in the user's own testing: passing
-            `exportBackup` directly meant the DOM click's SyntheticEvent
-            got passed as `includeKeys`, which buildBackup() then tried
-            to iterate as a selective-key Set and threw. Selective
-            export never hit this because its own button already
-            wrapped the call in an arrow function that discards the
-            event. Wrapping this one the same way. */}
-        <SettingsRow icon={Upload} label="Export backup" onClick={doPlainExport} />
-        {/* ADDED — real ask: real confirmation for this button — it
-            fires the OS share sheet with no feedback of its own, and
-            round-trip verification (backupService.js's own
-            verifyBackupJson()) now genuinely can fail here, which
-            deserves to be visible, not swallowed. Same status-row
-            pattern already used for Export backup to a folder/
-            Encrypted export below — this exact row just never had one. */}
-        {plainExportStatus && (
-          <div style={{ fontSize: 12, color: plainExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), padding: "0 16px 10px", textAlign: "center" }}>{plainExportStatus.msg}</div>
-        )}
-        {/* ADDED — real ask: an explicit "choose exactly where this
-            goes" alternative to the row above, which opens the Share
-            sheet (send it somewhere) rather than a real folder picker.
-            Only shown once actually available — see
-            fileExportHelper.js's isChooseFolderExportAvailable. */}
-        {chooseFolderAvailable && (
-          <SettingsRow icon={Folder} label="Export backup to a folder…" onClick={doPlainExportToFolder} />
-        )}
-        {/* FIXED — real bug found in the same pass as the round-trip
-            verification above: this status was tracked (set on every
-            export attempt) but never actually rendered anywhere —
-            silently dead state, the failure branches included. */}
-        {plainFolderExportStatus && (
-          <div style={{ fontSize: 12, color: plainFolderExportStatus.ok === false ? ACTION.red : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), padding: "0 16px 10px", textAlign: "center" }}>{plainFolderExportStatus.msg}</div>
-        )}
-        {/* ADDED 19 Aug 2026 — real ask: default export stays one tap
-            (the row above, unchanged), this is the opt-in "choose what
-            to include" path. */}
-        {/* CHANGED 26 Aug 2026 — real fix: these icons were backwards,
-            same Download/Upload direction confusion the user corrected for
-            Contacts' Import earlier this session, mirrored here —
-            Export (data leaving) reads as Upload, Restore (data coming
-            back in) reads as Download. */}
-        <SettingsRow icon={Filter} label="Selective export…" onClick={() => setShowSelectiveExport(true)} />
-        {/* ADDED — real ask: CSV export, for reading data elsewhere
-            (Excel/Sheets), separate from the JSON backup above (which
-            is for restoring into SHOS, not for opening as a
-            spreadsheet). */}
-        <SettingsRow icon={FileCsv} label="Export as CSV…" onClick={() => setShowCSVExport(true)} />
-        {/* ADDED — real ask: password-protected backup, for storing or
-            sending a backup somewhere less trusted than this device. */}
-        <SettingsRow icon={Lock} label="Export encrypted backup…" onClick={() => setShowEncryptedExport(true)} />
-        <SettingsRow icon={Download} label="Restore from backup" onClick={onImportClick} />
-        {/* MOVED 1 Sep 2026 from Preferences — a backup-scheduling
-            setting belongs next to the other backup controls, not
-            bundled with an unrelated Contacts-display setting under a
-            generic "Preferences" label. */}
-        <SettingsRow icon={Clock} label="Automatic backups" onClick={() => setShowAutoBackupSettings(true)} />
+        {/* CHANGED 16 Sep 2026 — real ask: the 7 export/restore/backup
+            rows that used to sit directly here are consolidated behind
+            this one row now — see BackupExportScreen below. */}
+        <SettingsRow icon={Upload} label="Backup &amp; Export" onClick={() => setShowBackupExport(true)} />
       </div>
       {status && (
         <div style={{ margin: "0 16px 20px", padding: "10px 14px", borderRadius: 12, background: "#FFF4CE", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 12 }}>{status}</div>
@@ -4621,6 +4722,21 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 210 }}>
           <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} />
         </div>
+      )}
+      {showBackupExport && (
+        <BackupExportScreen
+          onClose={() => setShowBackupExport(false)}
+          doPlainExport={doPlainExport}
+          doPlainExportToFolder={doPlainExportToFolder}
+          chooseFolderAvailable={chooseFolderAvailable}
+          plainExportStatus={plainExportStatus}
+          plainFolderExportStatus={plainFolderExportStatus}
+          onImportClick={onImportClick}
+          onSelectiveExport={() => setShowSelectiveExport(true)}
+          onCSVExport={() => setShowCSVExport(true)}
+          onEncryptedExport={() => setShowEncryptedExport(true)}
+          onAutoBackupSettings={() => setShowAutoBackupSettings(true)}
+        />
       )}
       {showSelectiveExport && (
         <SelectiveExportSheet onClose={() => setShowSelectiveExport(false)} />

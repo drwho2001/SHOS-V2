@@ -261,7 +261,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         // comment) but never carried over here — Healthcare is the
         // OTHER real entry point into Episodes, so it had the identical
         // gap independently.
-        <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", zIndex: 210, overflowY: "auto", display: "flex", justifyContent: "center" }}>
+        <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", zIndex: 210, overflowY: "auto", display: "flex", justifyContent: "center" }}>
           <div style={{ width: "100%" }}>
             <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>

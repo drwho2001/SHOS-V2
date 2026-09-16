@@ -699,7 +699,7 @@ async function testBackupMigratesOldFieldShape(page) {
   const fileContent = JSON.stringify(oldShapedBackup);
 
   await goHomeThenOpenSettings(page);
-  await page.locator("text=Backup & Data", { exact: true }).first().click({ timeout: 5000 });
+  await page.locator("text=Backup & Export", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
   await page.locator("text=Restore from backup", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(400);
@@ -782,7 +782,7 @@ async function testBackupImportDropsGarbageRecords(page) {
   await dismissTransientBanners(page);
 
   await goHomeThenOpenSettings(page);
-  await page.locator("text=Backup & Data", { exact: true }).first().click({ timeout: 5000 });
+  await page.locator("text=Backup & Export", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
   await page.locator("text=Restore from backup", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(400);

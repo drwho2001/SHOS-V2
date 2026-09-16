@@ -324,7 +324,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 200, overflowY: "auto" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16, color: T.textPrimary }}>Import shared profile</span>
@@ -1907,9 +1907,9 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           {/* ADDED — real ask: a short descriptor, since "N/A" alone
               doesn't explain the choice being made. */}
           <div style={{ fontSize: 11, color: T.textDisabled, marginTop: -6, marginBottom: 6 }}>Only relevant if chastity is something they're genuinely into — leave as N/A otherwise.</div>
-          <MultiSelectChips T={T} label="Cummer — frequency" value={form.cummer} onChange={set("cummer")} options={CUMMER_FREQUENCY_OPTIONS} />
-          <MultiSelectChips T={T} label="Cummer — volume" value={form.cummer} onChange={set("cummer")} options={CUMMER_VOLUME_OPTIONS} />
-          <MultiSelectChips T={T} label="Cummer — style" value={form.cummer} onChange={set("cummer")} options={CUMMER_STYLE_OPTIONS} />
+          <MultiSelectChips T={T} label="Ejaculation — frequency" value={form.cummer} onChange={set("cummer")} options={CUMMER_FREQUENCY_OPTIONS} />
+          <MultiSelectChips T={T} label="Ejaculation — volume" value={form.cummer} onChange={set("cummer")} options={CUMMER_VOLUME_OPTIONS} />
+          <MultiSelectChips T={T} label="Ejaculation — style" value={form.cummer} onChange={set("cummer")} options={CUMMER_STYLE_OPTIONS} />
           </>
           )}
           {/* ADDED — real ask: contraception, shown when Gender is
@@ -2213,7 +2213,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               second copy of it. See myProfileRepository.js. */}
           {myProfile.relationshipStatus && (
             <div onClick={toggleLinkedToMe} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0 2px", cursor: "pointer" }}>
-              <span style={{ fontSize: 12, color: T.textSecondary }}>Linked in My Profile as: {myProfile.relationshipStatus}</span>
+              <span style={{ fontSize: 12, color: T.textSecondary }}>Linked to My Profile's relationship status ({myProfile.relationshipStatus})</span>
               <div style={{ width: 36, height: 21, borderRadius: 999, background: isLinkedToMe ? T.contactsTeal : "#DCDCE1", position: "relative", flexShrink: 0 }}>
                 <div style={{ position: "absolute", top: 2, left: isLinkedToMe ? 17 : 2, width: 17, height: 17, borderRadius: 999, background: "#FFFFFF" }} />
               </div>
@@ -2287,7 +2287,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <ReadRow T={T} label="Foreskin" value={contact.foreskin} />
           <ReadRow T={T} label="Foreskin fit" value={contact.foreskinDetail} />
           <ReadRow T={T} label="Chastity status" value={contact.chastityStatus} />
-          <ReadRow T={T} label="Cummer" value={hideFurther ? MASKED : contact.cummer} />
+          <ReadRow T={T} label="Ejaculation" value={hideFurther ? MASKED : contact.cummer} />
           </>
           )}
           {/* CHANGED 11 Sep 2026 — real gap found (a demographics audit):
@@ -2877,7 +2877,7 @@ function ShowRoleOnCardsToggleCard({ T }) {
 
 function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Contacts settings</span>
