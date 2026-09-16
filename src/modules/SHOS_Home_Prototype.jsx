@@ -48,6 +48,7 @@ import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService"
 import { checkForUpdate, RELEASE_APK_URL } from "../storage/updateCheckService";
 import {
   HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill,
+  ShieldIcon as Shield,
   HeartbeatIcon as HeartPulse, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon,
   UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database,
   TestTubeIcon as TestTube, FireIcon as Flame, StethoscopeIcon as Stethoscope,
@@ -1032,7 +1033,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         {menstrualTrackingEnabled && (
           <>
             <QuickAddButton icon={Drop} label="Log period" color={menstrualColor} onClick={() => onQuickAdd("healthcare", "menstrualHealth")} />
-            <QuickAddButton icon={Pill} label="Log contraception" color={medsBlue} onClick={() => onQuickAdd("healthcare", "menstrualContraception")} />
+            <QuickAddButton icon={Shield} label="Log contraception" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "menstrualContraception")} />
           </>
         )}
       </div>

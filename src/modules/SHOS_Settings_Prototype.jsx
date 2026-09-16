@@ -252,12 +252,12 @@ function SelectiveExportSheet({ onClose, onExported }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
                 <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
                 <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
             </div>
             {(dateFrom || dateTo) && (
@@ -333,12 +333,12 @@ function CSVExportSheet({ onClose }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
                 <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
                 <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
             </div>
             {(dateFrom || dateTo) && (
@@ -514,12 +514,12 @@ function EncryptedExportSheet({ onClose }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
                 <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
                 <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
             </div>
             {(dateFrom || dateTo) && (
@@ -1595,7 +1595,7 @@ function PrivacyScreen({ onClose }) {
                   <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Grace period:</span>
                   <input type="number" min={1} max={120} value={settings.appLockGraceMinutes}
                     onChange={async (e) => { const v = Math.max(1, Math.min(120, Number(e.target.value) || 1)); await PrivacySettingsRepository.update({ appLockGraceMinutes: v }); refresh(); }}
-                    style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13, textAlign: "center" }} />
+                    style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13, textAlign: "center" }} />
                   <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>minutes</span>
                 </div>
               )}
@@ -1941,7 +1941,7 @@ function NotificationPermissionBanner({ darkMode }) {
         <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 8 }}>
           The check itself failed rather than returning a real answer — this is worth reporting as a bug.
           {statusDetail && (
-            <div style={{ marginTop: 6, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, wordBreak: "break-word", whiteSpace: "pre-line" }}>
+            <div style={{ marginTop: 6, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, wordBreak: "break-word", whiteSpace: "pre-line" }}>
               {statusDetail}
             </div>
           )}
@@ -1953,7 +1953,7 @@ function NotificationPermissionBanner({ darkMode }) {
           {bridgeHealth && (
             <div style={{ marginTop: 6, fontSize: 11, color: bridgeHealth.ok ? ACTION.green : ACTION.red }}>
               {bridgeHealth.ok ? "Bridge check: other native calls work fine — this looks specific to notifications." : "Bridge check: a totally unrelated native call also failed — this looks like a broader native bridge issue, not just notifications."}
-              <div style={{ marginTop: 4, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, wordBreak: "break-word", whiteSpace: "pre-line", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
+              <div style={{ marginTop: 4, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, wordBreak: "break-word", whiteSpace: "pre-line", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
                 {bridgeHealth.detail}
               </div>
             </div>
@@ -1974,7 +1974,7 @@ function NotificationPermissionBanner({ darkMode }) {
           see this component's own header comment. Native-only banner
           above (exact alarms) stays exactly as it was. */}
       {isGranted && !isNative && (
-        <div style={{ marginBottom: 8, padding: "8px 10px", borderRadius: 10, background: darkMode ? DARK.surfaceVariant : "#F0F0F3" }}>
+        <div style={{ marginBottom: 8, padding: "8px 10px", borderRadius: 10, background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg }}>
           <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
             Running as a web app: reminders fire while SHOS is open or recently backgrounded, and for anything already due the moment you next open it — but can't reliably wake you up hours later if it's been fully closed. For that, install the Android app instead.
           </span>
@@ -2005,7 +2005,7 @@ function NotificationPermissionBanner({ darkMode }) {
             )}
           </div>
           {exactAlarmStatus === "error" && exactAlarmDetail && (
-            <div style={{ marginTop: 6, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : "#F0F0F3", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, wordBreak: "break-word" }}>
+            <div style={{ marginTop: 6, padding: "6px 8px", borderRadius: 8, background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, wordBreak: "break-word" }}>
               {exactAlarmDetail}
             </div>
           )}
@@ -2150,7 +2150,7 @@ function NotificationsScreen({ onClose }) {
       <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Hours before:</span>
       <input type="number" min={1} max={168} value={value}
         onChange={(e) => onChange(Math.max(1, Math.min(168, Number(e.target.value) || 1)))}
-        style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13, textAlign: "center" }} />
+        style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13, textAlign: "center" }} />
     </div>
   );
 
@@ -2210,12 +2210,12 @@ function NotificationsScreen({ onClose }) {
             <div>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
               <input type="time" value={notifPrefs.quietHoursStart} onChange={(e) => setQuietHours({ quietHoursStart: e.target.value })}
-                style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13 }} />
+                style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13 }} />
             </div>
             <div>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
               <input type="time" value={notifPrefs.quietHoursEnd} onChange={(e) => setQuietHours({ quietHoursEnd: e.target.value })}
-                style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13 }} />
+                style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13 }} />
             </div>
           </div>
         </NotificationToggleRow>
@@ -2258,8 +2258,16 @@ function NotificationsScreen({ onClose }) {
 // the full reasoning. Read-only besides a Clear action; this is a
 // diagnostic/awareness view, not something with its own settings.
 function NotificationHistoryScreen({ darkMode, onClose }) {
+  // Local T-shaped object for the shared ConfirmDeleteCard — same
+  // pattern as TrashScreen's own, this screen otherwise reads
+  // NEUTRAL/DARK directly rather than a per-module T.
+  const T = { ...(darkMode ? DARK : NEUTRAL), actionRed: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red };
   const [entries, setEntries] = useLoadedState(() => NotificationHistoryRepository.getAll(), [], []);
-  const clear = async () => { await NotificationHistoryRepository.clear(); setEntries([]); };
+  // CHANGED — real audit finding: this used to clear the whole log on
+  // a direct tap, no confirmation, unlike every other permanent-delete
+  // action in the app.
+  const [confirmClear, setConfirmClear] = useState(false);
+  const clear = async () => { await NotificationHistoryRepository.clear(); setEntries([]); setConfirmClear(false); };
 
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -2269,9 +2277,18 @@ function NotificationHistoryScreen({ darkMode, onClose }) {
           <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Notification history</span>
         </div>
         {entries.length > 0 && (
-          <span onClick={clear} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Clear</span>
+          <span onClick={() => setConfirmClear(true)} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Clear</span>
         )}
       </div>
+      {confirmClear && (
+        <ConfirmDeleteCard
+          T={T}
+          message="This clears the whole notification history — there's no getting it back."
+          confirmLabel="Clear"
+          onCancel={() => setConfirmClear(false)}
+          onConfirm={clear}
+        />
+      )}
       <div style={{ padding: 16 }}>
         {entries.length === 0 ? (
           <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textAlign: "center", padding: "40px 16px" }}>
@@ -2301,8 +2318,16 @@ function NotificationHistoryScreen({ darkMode, onClose }) {
 // himself decides if and when to share it, e.g. pasting it into a bug
 // report — nothing here ever leaves the device on its own.
 function ErrorLogScreen({ darkMode, onClose }) {
+  // Local T-shaped object for the shared ConfirmDeleteCard — same
+  // pattern as TrashScreen's own, this screen otherwise reads
+  // NEUTRAL/DARK directly rather than a per-module T.
+  const T = { ...(darkMode ? DARK : NEUTRAL), actionRed: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red };
   const [entries, setEntries] = useLoadedState(() => ErrorLogRepository.getAll(), [], []);
-  const clear = async () => { await ErrorLogRepository.clear(); setEntries([]); };
+  // CHANGED — real audit finding: this used to clear the whole log on
+  // a direct tap, no confirmation, unlike every other permanent-delete
+  // action in the app.
+  const [confirmClear, setConfirmClear] = useState(false);
+  const clear = async () => { await ErrorLogRepository.clear(); setEntries([]); setConfirmClear(false); };
   const [exportStatus, setExportStatus] = useState(null);
   // ADDED 11 Sep 2026 — real ask: a way to note a real problem that
   // isn't a JS crash (nothing here to auto-capture). Appends into the
@@ -2360,10 +2385,19 @@ function ErrorLogScreen({ darkMode, onClose }) {
         {entries.length > 0 && (
           <div style={{ display: "flex", gap: 14 }}>
             <span onClick={exportLog} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>Export</span>
-            <span onClick={clear} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Clear</span>
+            <span onClick={() => setConfirmClear(true)} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Clear</span>
           </div>
         )}
       </div>
+      {confirmClear && (
+        <ConfirmDeleteCard
+          T={T}
+          message="This clears the whole error log — there's no getting it back."
+          confirmLabel="Clear"
+          onCancel={() => setConfirmClear(false)}
+          onConfirm={clear}
+        />
+      )}
       <div style={{ padding: 16 }}>
         <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 12 }}>
           On-device only — nothing here is ever sent anywhere automatically. Export produces a plain text file you can choose to share yourself, e.g. in a bug report.
@@ -2523,7 +2557,7 @@ function AutomaticBackupsScreen({ onClose }) {
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setAutoExportInterval(opt.days); } }}
                   style={{
                     padding: "8px 14px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                    background: prefs.autoExportIntervalDays === opt.days ? ACCENTS.healthcare : (darkMode ? DARK.surfaceVariant : "#F0F0F3"),
+                    background: prefs.autoExportIntervalDays === opt.days ? ACCENTS.healthcare : (darkMode ? DARK.surfaceVariant : NEUTRAL.bg),
                     color: prefs.autoExportIntervalDays === opt.days ? "#FFFFFF" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary),
                   }}>
                   {opt.label}
@@ -2554,7 +2588,7 @@ function AutomaticBackupsScreen({ onClose }) {
               {prefs.autoExportFolder && (
                 <span onClick={resetFolder} role="button" tabIndex={0}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); resetFolder(); } }}
-                  style={{ padding: "8px 14px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer", background: darkMode ? DARK.surfaceVariant : "#F0F0F3", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
+                  style={{ padding: "8px 14px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
                   Reset to default
                 </span>
               )}
@@ -2790,7 +2824,7 @@ function StatRow({ label, value, explanation, sourceUrl }) {
           {explanation}
           {sourceUrl && (
             <div style={{ marginTop: 4 }}>
-              <a href={sourceUrl} target="_blank" rel="noreferrer" style={{ color: "#3D63C9", fontSize: 11 }}>View source guidance →</a>
+              <a href={sourceUrl} target="_blank" rel="noreferrer" style={{ color: ACCENTS.medication, fontSize: 11 }}>View source guidance →</a>
             </div>
           )}
         </div>
@@ -3271,7 +3305,7 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
               "feel v dated" (see ColorWheelPicker's own comment) — this
               button was a second, redundant entry point to that same
               native picker the app already moved away from. */}
-          <span onClick={() => setExpanded((e) => !e)} style={{ fontSize: 11, color: "#3D63C9", fontWeight: 600, cursor: "pointer" }}>{expanded ? "Hide" : "Customise"}</span>
+          <span onClick={() => setExpanded((e) => !e)} style={{ fontSize: 11, color: ACCENTS.medication, fontWeight: 600, cursor: "pointer" }}>{expanded ? "Hide" : "Customise"}</span>
         </div>
       </div>
       {expanded && (
@@ -3281,8 +3315,8 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
               <span key={mode} onClick={() => setPanelMode(mode)}
                 style={{
                   fontSize: 12, fontWeight: 700, cursor: "pointer", paddingBottom: 4,
-                  color: panelMode === mode ? "#3D63C9" : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled),
-                  borderBottom: panelMode === mode ? "2px solid #3D63C9" : "2px solid transparent",
+                  color: panelMode === mode ? ACCENTS.medication : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled),
+                  borderBottom: panelMode === mode ? `2px solid ${ACCENTS.medication}` : "2px solid transparent",
                 }}>
                 {tabLabel}
               </span>
@@ -3665,7 +3699,7 @@ function AboutScreen({ onClose }) {
               builds/releases now come from is SHOS-V2. */}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Repository</span>
-            <a href="https://github.com/drwho2001/SHOS-V2" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#3D63C9", fontWeight: 600 }}>
+            <a href="https://github.com/drwho2001/SHOS-V2" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
               GitHub →
             </a>
           </div>
@@ -3674,7 +3708,7 @@ function AboutScreen({ onClose }) {
               or a computer who can't install the APK. */}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px" }}>
             <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Web app (iPhone / computer)</span>
-            <a href="https://drwho2001.github.io/SHOS-V2/" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#3D63C9", fontWeight: 600 }}>
+            <a href="https://drwho2001.github.io/SHOS-V2/" target="_blank" rel="noreferrer" style={{ fontSize: 13, color: ACCENTS.medication, fontWeight: 600 }}>
               Open →
             </a>
           </div>
@@ -3836,8 +3870,8 @@ function CalendarSyncSheet({ onClose }) {
             {appPrefs.calendarSyncTargetName && (
               <div style={{ marginTop: 10, padding: 12, borderRadius: 10, background: darkMode ? "#3A2A1080" : "#FFF7ED", border: `1px solid ${darkMode ? "#5A3E1080" : "#F59E0B40"}` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                  <AlertTriangle size={14} color="#B45309" />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#B45309" }}>Not private by default</span>
+                  <AlertTriangle size={14} color={ACTION.gold} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: ACTION.gold }}>Not private by default</span>
                 </div>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5 }}>
                   This app can't control whether "{appPrefs.calendarSyncTargetName}" is shared with anyone else — that's entirely up to how that calendar's own account is set up. If it's a Google Calendar, check it isn't set to "Make available to public" and isn't shared under its own sharing settings. If it's Outlook, check Calendar settings → Shared calendars. If it's Apple/iCloud, check Calendar → Edit → Shared With. When in doubt, switch back to the private "SHOS (private)" calendar above.
@@ -3868,7 +3902,7 @@ function CalendarSyncSheet({ onClose }) {
                 onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !calendarSyncing) { e.preventDefault(); selectCalendarTarget(cal.name); } }}
                 style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${appPrefs.calendarSyncTargetName === cal.name ? ACCENTS.healthcare : (darkMode ? DARK.border : NEUTRAL.border)}`, background: appPrefs.calendarSyncTargetName === cal.name ? `${ACCENTS.healthcare}10` : "transparent", cursor: "pointer", marginBottom: 8 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{cal.displayName || cal.name}</div>
-                <div style={{ fontSize: 11, color: "#B45309", marginTop: 2 }}>Not private by default — its own sharing settings apply.</div>
+                <div style={{ fontSize: 11, color: ACTION.gold, marginTop: 2 }}>Not private by default — its own sharing settings apply.</div>
               </div>
             ))}
           </div>
@@ -3972,7 +4006,7 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
               ? <CloudCheck size={20} weight="fill" color={ACCENTS.healthcare} />
               : <CloudArrowUp size={20} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} />}
           </div>
-          <span onClick={() => setShowFilters((s) => !s)} style={{ fontSize: 12, fontWeight: 600, color: activeModules.length < ALL_MODULE_KEYS.length ? "#3D63C9" : (darkMode ? DARK.textDisabled : "#5B5B62"), cursor: "pointer" }}>
+          <span onClick={() => setShowFilters((s) => !s)} style={{ fontSize: 12, fontWeight: 600, color: activeModules.length < ALL_MODULE_KEYS.length ? ACCENTS.medication : (darkMode ? DARK.textDisabled : "#5B5B62"), cursor: "pointer" }}>
             Filter{activeModules.length < ALL_MODULE_KEYS.length ? ` (${activeModules.length})` : ""}
           </span>
         </div>
@@ -4171,7 +4205,7 @@ function TrashScreen({ onClose }) {
           <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Trash</span>
         </div>
         {items.length > 0 && (
-          <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#3D63C9", cursor: "pointer" }}>
+          <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: ACCENTS.medication, cursor: "pointer" }}>
             {selectMode ? "Done" : "Select"}
           </span>
         )}
@@ -4209,7 +4243,7 @@ function TrashScreen({ onClose }) {
                 select mode. */}
             {!selectMode && (
               <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
-                <span onClick={restoreAll} style={{ fontSize: 13, fontWeight: 600, color: "#3D63C9", cursor: "pointer" }}>Restore all</span>
+                <span onClick={restoreAll} style={{ fontSize: 13, fontWeight: 600, color: ACCENTS.medication, cursor: "pointer" }}>Restore all</span>
                 <span onClick={() => setConfirmDeleteAll(true)} style={{ fontSize: 13, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Delete all</span>
               </div>
             )}
@@ -4233,7 +4267,7 @@ function TrashScreen({ onClose }) {
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: i < items.length - 1 ? "1px solid #DCDCE1" : "none", cursor: selectMode ? "pointer" : "default" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
                     {selectMode && (
-                      <div style={{ width: 20, height: 20, borderRadius: 999, border: `2px solid ${selectedIds.includes(entry.trashId) ? "#3D63C9" : "#DCDCE1"}`, background: selectedIds.includes(entry.trashId) ? "#3D63C9" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <div style={{ width: 20, height: 20, borderRadius: 999, border: `2px solid ${selectedIds.includes(entry.trashId) ? ACCENTS.medication : "#DCDCE1"}`, background: selectedIds.includes(entry.trashId) ? ACCENTS.medication : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         {selectedIds.includes(entry.trashId) && <Check size={12} color="#FFFFFF" />}
                       </div>
                     )}
@@ -4244,7 +4278,7 @@ function TrashScreen({ onClose }) {
                   </div>
                   {!selectMode && (
                     <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
-                      <span onClick={() => restoreItem(entry)} style={{ fontSize: 12, fontWeight: 700, color: "#3D63C9", cursor: "pointer" }}>Restore</span>
+                      <span onClick={() => restoreItem(entry)} style={{ fontSize: 12, fontWeight: 700, color: ACCENTS.medication, cursor: "pointer" }}>Restore</span>
                       <span onClick={() => setConfirmDeleteEntry(entry)} style={{ fontSize: 12, fontWeight: 700, color: ACTION.red, cursor: "pointer" }}>Delete</span>
                     </div>
                   )}

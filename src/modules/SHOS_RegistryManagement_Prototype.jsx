@@ -5,7 +5,22 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
-import { NEUTRAL, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, ACTION, RADIUS, TYPE, resolveDarkAccent, ACCENT_TEXT_SAFE } from "../calculations/designTokens";
+
+// ADDED 16 Sep 2026 — real bug found via a consistency audit: the sort
+// chips below render `color` as literal text on an ~8% tint of itself
+// (`color: color, background: \`${color}15\``) — the exact
+// text-on-self-tint contrast pattern ACCENT_TEXT_SAFE exists to fix,
+// just never applied here since this component receives a raw hex
+// string, not a registry key, from Settings.jsx's REGISTRIES config.
+// A small reverse lookup by the known unsafe raw hex values (rather
+// than threading a new prop through that config) keeps this a local,
+// contained fix — only the sort chips' own text colour changes, the
+// registry's real border/background/icon colour is untouched.
+const TEXT_SAFE_BY_HEX = {
+  "#E5484D": ACCENT_TEXT_SAFE.kink,
+  "#E24E9C": ACCENT_TEXT_SAFE.protection,
+};
 // ADDED — real ask: "add button to check through registries... for
 // duplicates using fuzzy matching... so user doesn't have to dig."
 import { findDuplicatePairs } from "../calculations/fuzzyMatch";
@@ -84,6 +99,11 @@ export default function RegistryManagementScreen({ registry, label, color, compu
   const T = darkMode ? DARK : NEUTRAL;
   const actionRed = darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red;
   const isDesktopWidth = useIsDesktopWidth();
+  // Dark mode already has plenty of contrast headroom against a
+  // near-black surface (same reasoning ACCENT_TEXT_SAFE's own header
+  // comment gives for every other site using it) — only light mode
+  // needs the safe stand-in.
+  const chipTextColor = darkMode ? color : (TEXT_SAFE_BY_HEX[color] || color);
 
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
@@ -242,7 +262,7 @@ export default function RegistryManagementScreen({ registry, label, color, compu
           ].map((opt) => (
             <div key={opt.key} onClick={() => setSortMode(opt.key)} role="button" tabIndex={0}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSortMode(opt.key); } }}
-              style={{ padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${sortMode === opt.key ? color : T.border}`, color: sortMode === opt.key ? color : T.textSecondary, background: sortMode === opt.key ? `${color}15` : "transparent" }}>
+              style={{ padding: "5px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${sortMode === opt.key ? color : T.border}`, color: sortMode === opt.key ? chipTextColor : T.textSecondary, background: sortMode === opt.key ? `${color}15` : "transparent" }}>
               {opt.label}
             </div>
           ))}

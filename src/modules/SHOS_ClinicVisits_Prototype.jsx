@@ -1129,7 +1129,7 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
         <div style={{ padding: "12px 16px 100px" }}>
           {sorted.length === 0 && (
             <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-              No clinic visits logged yet. Tap + to add one.
+              {query.trim() ? "No clinic visits match your search." : "No clinic visits logged yet. Tap + to add one."}
             </div>
           )}
           {/* ADDED — real ask: desktop grid grouped consecutively by
@@ -1149,7 +1149,7 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
         <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
           {sorted.length === 0 && (
             <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-              No clinic visits logged yet. Tap + to add one.
+              {query.trim() ? "No clinic visits match your search." : "No clinic visits logged yet. Tap + to add one."}
             </div>
           )}
           {sorted.map((v) => (

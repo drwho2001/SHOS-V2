@@ -861,7 +861,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
 }
 
 // ── Detail view ──
-function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDelete, refresh, allTests }) {
+function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDelete, refresh, allTests, registerModuleBackHandler }) {
   const [test, setTest] = useLoadedState(() => TestingRepository.getById(testId), [testId], null);
   // ADDED — real ask: "hide result until result date... similar to
   // Dom/sub half-toggle." Soft-masked by default rather than fully
@@ -875,6 +875,26 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   // ADDED 1 Sep 2026 — real ask: partner notification checklist. See
   // partnerNotificationRepository.js's own header for the full scope.
   const [showPartnerNotify, setShowPartnerNotify] = useState(false);
+  // FIXED — real bug: the module-level back handler (registered by
+  // TestingModule, keyed only on `screen.name`) has no visibility into
+  // this LOCAL sheet state — pressing back while the Partner
+  // Notification sheet was open used to jump straight to the Testing
+  // landing screen instead of just closing the sheet. This effect
+  // re-registers a more specific handler whenever showPartnerNotify
+  // changes (a child effect, so it always runs after — and therefore
+  // wins over — the parent's own registration for the "detail" screen)
+  // and falls back to the parent's own "detail → landing" behavior via
+  // onBack when nothing local is open, so this component's presence
+  // never silently breaks that existing behavior.
+  useEffect(() => {
+    if (!registerModuleBackHandler) return;
+    registerModuleBackHandler(() => {
+      if (showPartnerNotify) { setShowPartnerNotify(false); return true; }
+      onBack();
+      return true;
+    });
+    return () => registerModuleBackHandler(null);
+  }, [showPartnerNotify, registerModuleBackHandler, onBack]);
   // Bumped on close so the "Generate" vs "View list" state below
   // re-reads from the repository — PartnerNotificationRepository isn't
   // itself reactive state, so nothing else here would trigger a
@@ -1257,7 +1277,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
         <div style={{ padding: "12px 16px 100px" }}>
           {sorted.length === 0 && (
             <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-              No tests logged yet. Tap + to add one.
+              {query.trim() ? "No tests match your search." : "No tests logged yet. Tap + to add one."}
             </div>
           )}
           {/* ADDED — real ask: desktop grid grouped consecutively by
@@ -1278,7 +1298,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
         <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
           {sorted.length === 0 && (
             <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-              No tests logged yet. Tap + to add one.
+              {query.trim() ? "No tests match your search." : "No tests logged yet. Tap + to add one."}
             </div>
           )}
           {sorted.map((t) => (
@@ -1444,7 +1464,7 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
   if (screen.name === "landing") {
     screenContent = <TestingLanding T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "edit", id: null })} tests={tests} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />;
   } else if (screen.name === "detail") {
-    screenContent = <TestDetail T={T} testId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} refresh={refresh} allTests={tests} />;
+    screenContent = <TestDetail T={T} testId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} refresh={refresh} allTests={tests} registerModuleBackHandler={registerModuleBackHandler} />;
   } else if (screen.name === "edit") {
     screenContent = (
       <TestEditSheet T={T} testId={screen.id} prefillData={!screen.id ? addPrefill : null}

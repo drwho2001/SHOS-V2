@@ -484,20 +484,21 @@ const DECOY_HEALTH = [
   { title: "Clinic visit — routine", sub: "6 weeks ago" },
 ];
 
-function DecoyHome({ onLockNow }) {
+function DecoyHome({ onLockNow, darkMode }) {
   const [tab, setTab] = useState("home");
+  const N = darkMode ? DARK : NEUTRAL;
 
   const Row = ({ title, sub }) => (
-    <div style={{ padding: "12px 14px", background: "#FFFFFF", border: "1px solid #DCDCE1", borderRadius: 12, marginBottom: 8 }}>
-      <div style={{ fontSize: 14, fontWeight: 600, color: "#1B1B1F" }}>{title}</div>
-      <div style={{ fontSize: 12, color: "#656568", marginTop: 2 }}>{sub}</div>
+    <div style={{ padding: "12px 14px", background: N.surface, border: `1px solid ${N.border}`, borderRadius: 12, marginBottom: 8 }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: N.textPrimary }}>{title}</div>
+      <div style={{ fontSize: 12, color: N.textDisabled, marginTop: 2 }}>{sub}</div>
     </div>
   );
 
   const tabContent = {
     home: (
       <>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#656568", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Recent activity</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: N.textDisabled, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Recent activity</div>
         <Row title="Coffee date" sub="3 weeks ago" />
         <Row title="Vitamin D3 logged" sub="Today" />
       </>
@@ -509,10 +510,10 @@ function DecoyHome({ onLockNow }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "#F0F0F3", display: "flex", flexDirection: "column", fontFamily: "'Inter', sans-serif", zIndex: 999 }}>
+    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: N.bg, display: "flex", flexDirection: "column", fontFamily: "'Inter', sans-serif", zIndex: 999 }}>
       <div style={{ padding: "20px 20px 12px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ ...TYPE.recordTitle, color: "#1B1B1F" }}>SHOS</div>
-        {onLockNow && <Lock size={19} weight="bold" color="#1B1B1F" style={{ cursor: "pointer" }} onClick={onLockNow} title="Lock now" />}
+        <div style={{ ...TYPE.recordTitle, color: N.textPrimary }}>SHOS</div>
+        {onLockNow && <Lock size={19} weight="bold" color={N.textPrimary} style={{ cursor: "pointer" }} onClick={onLockNow} title="Lock now" />}
       </div>
       <div tabIndex={0} style={{ flex: 1, overflowY: "auto", padding: "8px 16px 20px" }}>
         {tabContent[tab]}
@@ -530,10 +531,10 @@ function DecoyHome({ onLockNow }) {
           real security feature — no real ask to match tab order here,
           same "don't guess past what was asked" restraint already
           applied elsewhere in this codebase. */}
-      <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", padding: "10px 0 calc(10px + env(safe-area-inset-bottom))", borderTop: "1px solid #DCDCE1", background: "#FFFFFF", flexShrink: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", padding: "10px 0 calc(10px + env(safe-area-inset-bottom))", borderTop: `1px solid ${N.border}`, background: N.surface, flexShrink: 0 }}>
         {TABS.map((t) => (
           <div key={t.key} onClick={() => setTab(t.key)}
-            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", color: tab === t.key ? t.accent : "#656568" }}>
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", color: tab === t.key ? t.accent : N.textDisabled }}>
             <t.icon size={22} weight={tab === t.key ? "fill" : "regular"} />
             <span style={{ fontSize: 10, fontWeight: 600 }}>{t.label}</span>
           </div>
@@ -1389,13 +1390,11 @@ export default function App() {
   // ref is how the currently-mounted module can register its own
   // "can I go back one step, and if so do it" function, checked
   // FIRST, before any of the shell-level fallbacks below.
-  // HONEST ROLLOUT STATE: only Testing has actually registered a
-  // real handler so far (built as the reference implementation) — the
-  // other modules still fall through to the old jump-to-Home
-  // behaviour until the same registration is added to each. Not a
-  // silent gap: modules that haven't registered simply never call
-  // this ref, so goBackOneLevel's existing fallback logic runs
-  // exactly as it did before, unchanged.
+  // HONEST ROLLOUT STATE: most modules with real multi-screen
+  // navigation have since registered their own handler (Testing was
+  // the original reference implementation) — a module that hasn't
+  // simply never calls this ref, so goBackOneLevel's existing
+  // fallback logic runs exactly as it did before, unchanged.
   const moduleBackHandlerRef = useRef(null);
   const registerModuleBackHandler = (fn) => { moduleBackHandlerRef.current = fn; };
 
@@ -1810,7 +1809,7 @@ export default function App() {
   // gate below (once decoyActive, there's no lock screen to show or
   // bypass — this is the entire rest of the session).
   if (decoyActive) {
-    return <DecoyHome onLockNow={() => { setDecoyActive(false); setLocked(true); }} />;
+    return <DecoyHome darkMode={darkMode} onLockNow={() => { setDecoyActive(false); setLocked(true); }} />;
   }
 
   // ADDED 19 Aug 2026 — App Lock gate: shown INSTEAD of everything

@@ -18,9 +18,12 @@
 // (Photos apps, most email clients). Enforced on READ (getAll filters
 // out anything past the window) rather than a destructive background
 // sweep — nothing is ever silently, permanently deleted by a timer
-// running invisibly; getAll() simply stops returning it once expired,
-// and purgeExpired() is available to actually clear that space if the
-// user wants it, called explicitly, not automatically.
+// running invisibly; getAll() simply stops returning it once expired.
+// purgeExpired() exists to actually reclaim that space, but — CORRECTED
+// 16 Sep 2026, real audit finding — nothing in the app currently calls
+// it; there's no UI action wired up to trigger it. It's dead code
+// today, not a called-on-demand feature, honestly noted here rather
+// than left implying a real entry point exists.
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 
 const STORAGE_KEY = "shos_trash";

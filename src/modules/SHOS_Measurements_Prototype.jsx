@@ -851,7 +851,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
       <div style={{ padding: "12px 16px 100px" }}>
         {byTypeGroups.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-            No measurements logged yet. Tap + to add one.
+            {query.trim() ? "No measurements match your search." : "No measurements logged yet. Tap + to add one."}
           </div>
         )}
         {(() => {

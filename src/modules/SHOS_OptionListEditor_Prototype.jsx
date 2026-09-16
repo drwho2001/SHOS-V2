@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { CaretLeftIcon as ChevronLeft, CaretDownIcon as ChevronDown, PlusIcon as Plus, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, XIcon as X, PillIcon as Pill, ArrowCircleRightIcon as ArrowRightCircle, ClipboardTextIcon as ClipboardList, CalendarIcon as CalendarClock, TestTubeIcon as TestTube, SyringeIcon as Syringe, CalendarCheckIcon as CalendarCheck, MapPinIcon as MapPin, PlayCircleIcon as PlayCircle, TagIcon as Tag, HeartIcon as Heart, UserIcon as User, DropIcon as Drop, RulerIcon as Ruler, ArrowUUpLeftIcon as RestoreIcon, ArrowsLeftRightIcon as SwapIcon } from "@phosphor-icons/react";
+import { CaretLeftIcon as ChevronLeft, CaretDownIcon as ChevronDown, PlusIcon as Plus, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, XIcon as X, PillIcon as Pill, ArrowCircleRightIcon as ArrowRightCircle, ClipboardTextIcon as ClipboardList, CalendarIcon as CalendarClock, TestTubeIcon as TestTube, SyringeIcon as Syringe, CalendarCheckIcon as CalendarCheck, MapPinIcon as MapPin, PlayCircleIcon as PlayCircle, TagIcon as Tag, HeartIcon as Heart, UserIcon as User, DropIcon as Drop, RulerIcon as Ruler, ArrowUUpLeftIcon as RestoreIcon, ArrowsLeftRightIcon as SwapIcon, LockIcon as Lock } from "@phosphor-icons/react";
 import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } from "../repositories/customOptionListsRepository";
 import { findRecordsUsingOptionValue, reassociateOptionValue } from "../calculations/optionListUsage";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
+import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
@@ -92,6 +93,12 @@ export function OptionListDetail({ listName, onClose }) {
   // archived value (if any) currently has its picker open.
   const [reassociatingValue, setReassociatingValue] = useState(null);
   const [reassociateStatus, setReassociateStatus] = useState(null);
+  // ADDED — real audit finding: permanent delete on an archived value
+  // used to fire directly off the X icon tap with zero confirmation,
+  // the app's only "delete a saved value forever" action lacking the
+  // safety net every other permanent-delete site (Settings' own Trash
+  // screen included) already has.
+  const [confirmDeleteForever, setConfirmDeleteForever] = useState(null);
 
   const options = useLoadedMemo(() => CustomOptionListsRepository.get(listName), [listName, refreshKey], []);
   const archivedValues = useLoadedMemo(() => CustomOptionListsRepository.getArchived(listName), [listName, refreshKey], []);
@@ -163,12 +170,19 @@ export function OptionListDetail({ listName, onClose }) {
           </button>
         </div>
         <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>Tap a value to rename it. Arrows reorder — order here is the order shown throughout the app. Removing archives it (below), rather than deleting it outright.</div>
+        {options.some((opt) => CustomOptionListsRepository.isProtected(listName, opt)) && (
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: T.textDisabled, marginTop: 4 }}>
+            <Lock size={11} /> A value marked with a lock can't be renamed or removed — the app depends on its exact text.
+          </div>
+        )}
       </div>
 
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "8px 16px 24px", overflow: "hidden" }}>
         {options.length === 0 ? (
           <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>No options — add one above.</div>
-        ) : options.map((opt, i) => (
+        ) : options.map((opt, i) => {
+          const protectedValue = CustomOptionListsRepository.isProtected(listName, opt);
+          return (
           <div key={opt} style={{ padding: "10px 14px", borderBottom: i < options.length - 1 ? `1px solid ${T.border}` : "none" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {editingIndex === i ? (
@@ -176,20 +190,29 @@ export function OptionListDetail({ listName, onClose }) {
                   onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditingIndex(null); }}
                   onBlur={commitEdit}
                   style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: `1px solid ${ACCENTS.healthcare}`, fontSize: 14, fontFamily: "'Inter', sans-serif" }} />
+              ) : protectedValue ? (
+                <span style={{ flex: 1, fontSize: 14, color: T.textPrimary, cursor: "default" }}>{opt}</span>
               ) : (
                 <span onClick={() => startEdit(i)} style={{ flex: 1, fontSize: 14, color: T.textPrimary, cursor: "pointer" }}>{opt}</span>
               )}
               <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                <ArrowUp size={14} color={i === 0 ? T.textDisabled : T.textSecondary} style={{ cursor: i === 0 ? "default" : "pointer" }} onClick={() => i > 0 && move(i, -1)} title="Move up" />
-                <ArrowDown size={14} color={i === options.length - 1 ? T.textDisabled : T.textSecondary} style={{ cursor: i === options.length - 1 ? "default" : "pointer" }} onClick={() => i < options.length - 1 && move(i, 1)} title="Move down" />
-                <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => remove(opt)} title="Remove this option (archives it)" aria-label="Remove this option (archives it)" />
+                {protectedValue ? (
+                  <Lock size={14} color={T.textDisabled} title="Protected — the app relies on this exact value, so it can't be renamed or removed" aria-label="Protected — the app relies on this exact value, so it can't be renamed or removed" />
+                ) : (
+                  <>
+                    <ArrowUp size={14} color={i === 0 ? T.textDisabled : T.textSecondary} style={{ cursor: i === 0 ? "default" : "pointer" }} onClick={() => i > 0 && move(i, -1)} title="Move up" />
+                    <ArrowDown size={14} color={i === options.length - 1 ? T.textDisabled : T.textSecondary} style={{ cursor: i === options.length - 1 ? "default" : "pointer" }} onClick={() => i < options.length - 1 && move(i, 1)} title="Move down" />
+                    <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => remove(opt)} title="Remove this option (archives it)" aria-label="Remove this option (archives it)" />
+                  </>
+                )}
               </div>
             </div>
             <div style={{ marginTop: 4 }}>
               <UsageDisclosure listName={listName} value={opt} T={T} />
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ADDED 16 Sep 2026 — real ask (#75): archived values stay
@@ -214,12 +237,18 @@ export function OptionListDetail({ listName, onClose }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
                     <SwapIcon size={14} color={ACCENTS.healthcare} style={{ cursor: "pointer" }} onClick={() => setReassociatingValue(reassociatingValue === value ? null : value)} title="Reassociate its records with a different value" aria-label="Reassociate its records with a different value" />
                     <RestoreIcon size={14} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => restoreArchived(value)} title="Restore to the live list" aria-label="Restore to the live list" />
-                    <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => deleteArchivedForever(value)} title="Delete permanently — cannot be undone" aria-label="Delete permanently — cannot be undone" />
+                    <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => setConfirmDeleteForever(value)} title="Delete permanently — cannot be undone" aria-label="Delete permanently — cannot be undone" />
                   </div>
                 </div>
                 <div style={{ marginTop: 4 }}>
                   <UsageDisclosure listName={listName} value={value} T={T} />
                 </div>
+                {confirmDeleteForever === value && (
+                  <ConfirmDeleteCard T={T} moduleColor={ACCENTS.healthcare}
+                    message={`This permanently deletes "${value}" — unlike archiving, there's no getting it back.`}
+                    onCancel={() => setConfirmDeleteForever(null)}
+                    onConfirm={async () => { await deleteArchivedForever(value); setConfirmDeleteForever(null); }} />
+                )}
                 {reassociatingValue === value && (
                   <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {options.length === 0 ? (

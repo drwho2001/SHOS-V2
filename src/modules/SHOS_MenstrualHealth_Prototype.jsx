@@ -193,7 +193,7 @@ function ReadRow({ label, value, T, alert }) {
     </div>
   );
 }
-function RelationPicker({ label, value, onChange, T, items, placeholder }) {
+function RelationPicker({ label, value, onChange, T, items, placeholder, searchPlaceholder = "Search…" }) {
   const [query, setQuery] = useState("");
   const queryLower = query.trim().toLowerCase();
   const available = items.filter((i) => !value.includes(i.id));
@@ -213,7 +213,7 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
         </div>
       )}
       {available.length > 0 && (
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search…"
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={searchPlaceholder}
           style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
       )}
       {visibleSuggestions.length > 0 ? (
@@ -361,7 +361,7 @@ function CycleSheet({ cycle, onSave, onClose, T }) {
       <TextField label="Start date" value={form.startDate} onChange={set("startDate")} T={T} type="date" />
       <TextField label="End date (optional — leave blank if ongoing)" value={form.endDate} onChange={set("endDate")} T={T} type="date" />
       <SelectField label="Flow" value={form.flow} onChange={set("flow")} options={flowOptions} listName="menstrualFlow" T={T} />
-      <RelationPicker label="Symptoms during this period" value={form.symptomIds} onChange={set("symptomIds")} T={T} items={symptoms} placeholder="No symptoms in registry" />
+      <RelationPicker label="Symptoms during this period" value={form.symptomIds} onChange={set("symptomIds")} T={T} items={symptoms} placeholder="No symptoms in registry" searchPlaceholder="Search symptoms" />
       <div style={{ padding: "8px 0 20px" }}>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
         <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3}
@@ -371,7 +371,7 @@ function CycleSheet({ cycle, onSave, onClose, T }) {
   );
 }
 
-function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen }) {
+function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, registerModuleBackHandler, onDataChanged }) {
   // ADDED 16 Sep 2026 — real report: "module contents still mobile
   // width" — same fix as Contacts/Testing/etc., see this file's own
   // list-wrapper comments below.
@@ -389,6 +389,16 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
   // recomputing the array itself, same "let the loader reload" shape
   // as PregnancyTab's own conversion.
   const [, force] = useState(0);
+  useEffect(() => {
+    if (!registerModuleBackHandler) return;
+    registerModuleBackHandler(() => {
+      if (screen.name === "add") { setScreen({ name: "list" }); return true; }
+      if (screen.name === "edit") { setScreen({ name: "detail", id: screen.id }); return true; }
+      if (screen.name === "detail") { setScreen({ name: "list" }); return true; }
+      return false;
+    });
+    return () => registerModuleBackHandler(null);
+  }, [screen, registerModuleBackHandler]);
   const refresh = () => force((v) => v + 1);
   const cycles = useLoadedMemo(
     () => MenstrualCycleRepository.getAll().then((all) => all.filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0))),
@@ -396,7 +406,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
   );
   const byId = useLoadedMemo(() => (screen.id ? MenstrualCycleRepository.getById(screen.id) : null), [screen.id, force], null);
   const deleteUndo = useDeleteUndo(MenstrualCycleRepository, "menstrualCycles");
-  const editUndo = useEditUndo(MenstrualCycleRepository);
+  const editUndo = useEditUndo(MenstrualCycleRepository, onDataChanged);
   const avgLength = useLoadedMemo(() => MenstrualCycleRepository.getAverageCycleLengthDays(), [cycles], null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
@@ -405,7 +415,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
   // by the detail view's symptomNames.
   const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
 
-  const create = async (data) => { await MenstrualCycleRepository.create(data); refresh(); setScreen({ name: "list" }); };
+  const create = async (data) => { await MenstrualCycleRepository.create(data); refresh(); onDataChanged?.(); setScreen({ name: "list" }); };
   const save = async (data) => {
     await editUndo.captureBeforeEdit(screen.id);
     await MenstrualCycleRepository.update(screen.id, data);
@@ -421,7 +431,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
     return (
       <div>
         <DetailHeader onBack={() => setScreen({ name: "list" })} onEdit={() => setScreen({ name: "edit", id: c.id })} onDelete={() => setConfirmDelete(true)} T={T} />
-        {confirmDelete && <ConfirmDeleteCard T={T} moduleColor={T.menstrualPurple} onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([c]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} />}
+        {confirmDelete && <ConfirmDeleteCard T={T} moduleColor={T.menstrualPurple} onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([c]); refresh(); onDataChanged?.(); setConfirmDelete(false); setScreen({ name: "list" }); }} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Drop size={16} color={T.menstrualPurple} weight="fill" />
@@ -605,7 +615,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
   );
 }
 
-function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen }) {
+function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, registerModuleBackHandler, onDataChanged }) {
   // ADDED 16 Sep 2026 — real report: "module contents still mobile
   // width" — see this file's own list-wrapper comments below.
   const isDesktopWidth = useIsDesktopWidth();
@@ -616,6 +626,16 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openRecordId, openAddOnMount]);
   const [, force] = useState(0);
+  useEffect(() => {
+    if (!registerModuleBackHandler) return;
+    registerModuleBackHandler(() => {
+      if (screen.name === "add") { setScreen({ name: "list" }); return true; }
+      if (screen.name === "edit") { setScreen({ name: "detail", id: screen.id }); return true; }
+      if (screen.name === "detail") { setScreen({ name: "list" }); return true; }
+      return false;
+    });
+    return () => registerModuleBackHandler(null);
+  }, [screen, registerModuleBackHandler]);
   const refresh = () => force((v) => v + 1);
   // CHANGED — Phase 2 encryption groundwork: ContraceptionRepository
   // went async — was a plain render-body call, kept working alongside
@@ -634,11 +654,11 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
   // keyed off byId's own linkedClinicVisitId).
   const linkedVisit = useLoadedMemo(() => (byId?.linkedClinicVisitId ? ClinicVisitsRepository.getById(byId.linkedClinicVisitId) : null), [byId], null);
   const deleteUndo = useDeleteUndo(ContraceptionRepository, "contraception");
-  const editUndo = useEditUndo(ContraceptionRepository);
+  const editUndo = useEditUndo(ContraceptionRepository, onDataChanged);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
 
-  const create = async (data) => { await ContraceptionRepository.create(data); refresh(); setScreen({ name: "list" }); };
+  const create = async (data) => { await ContraceptionRepository.create(data); refresh(); onDataChanged?.(); setScreen({ name: "list" }); };
   const save = async (data) => {
     await editUndo.captureBeforeEdit(screen.id);
     await ContraceptionRepository.update(screen.id, data);
@@ -654,7 +674,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
     return (
       <div>
         <DetailHeader onBack={() => setScreen({ name: "list" })} onEdit={() => setScreen({ name: "edit", id: e.id })} onDelete={() => setConfirmDelete(true)} T={T} />
-        {confirmDelete && <ConfirmDeleteCard T={T} moduleColor={T.menstrualPurple} onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([e]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} />}
+        {confirmDelete && <ConfirmDeleteCard T={T} moduleColor={T.menstrualPurple} onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([e]); refresh(); onDataChanged?.(); setConfirmDelete(false); setScreen({ name: "list" }); }} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <ContraceptionIcon formulation={e.formulation} size={16} color={T.healthcareBlue} />
@@ -768,7 +788,7 @@ function PregnancySheet({ pregnancy, onSave, onClose, T }) {
   );
 }
 
-function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
+function PregnancyTab({ T, openRecordId, onConsumedRecordOpen, registerModuleBackHandler, onDataChanged }) {
   // ADDED 16 Sep 2026 — real report: "module contents still mobile
   // width" — see this file's own list-wrapper comments above.
   const isDesktopWidth = useIsDesktopWidth();
@@ -782,6 +802,16 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
   // there, only on a deliberate "tap to reveal" each time.
   const [revealedIds, setRevealedIds] = useState([]);
   const [, force] = useState(0);
+  useEffect(() => {
+    if (!registerModuleBackHandler) return;
+    registerModuleBackHandler(() => {
+      if (screen.name === "add") { setScreen({ name: "list" }); return true; }
+      if (screen.name === "edit") { setScreen({ name: "detail", id: screen.id }); return true; }
+      if (screen.name === "detail") { setScreen({ name: "list" }); return true; }
+      return false;
+    });
+    return () => registerModuleBackHandler(null);
+  }, [screen, registerModuleBackHandler]);
   const refresh = () => force((v) => v + 1);
   // CHANGED — PregnancyRepository went async (ensureLoaded()); this used
   // to be a plain direct call re-run every render (safe only while the
@@ -798,10 +828,10 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
   // since they always read the same record.
   const byId = useLoadedMemo(() => (screen.id ? PregnancyRepository.getById(screen.id) : null), [screen.id, force], null);
   const deleteUndo = useDeleteUndo(PregnancyRepository, "pregnancies");
-  const editUndo = useEditUndo(PregnancyRepository);
+  const editUndo = useEditUndo(PregnancyRepository, onDataChanged);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const create = async (data) => { await PregnancyRepository.create(data); refresh(); setScreen({ name: "list" }); };
+  const create = async (data) => { await PregnancyRepository.create(data); refresh(); onDataChanged?.(); setScreen({ name: "list" }); };
   const save = async (data) => {
     await editUndo.captureBeforeEdit(screen.id);
     await PregnancyRepository.update(screen.id, data);
@@ -825,7 +855,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
     return (
       <div>
         <DetailHeader onBack={() => setScreen({ name: "list" })} onEdit={() => setScreen({ name: "edit", id: p.id })} onDelete={() => setConfirmDelete(true)} T={T} />
-        {confirmDelete && <ConfirmDeleteCard T={T} moduleColor={T.menstrualPurple} onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([p]); refresh(); setConfirmDelete(false); setScreen({ name: "list" }); }} />}
+        {confirmDelete && <ConfirmDeleteCard T={T} moduleColor={T.menstrualPurple} onCancel={() => setConfirmDelete(false)} onConfirm={async () => { await deleteUndo.trigger([p]); refresh(); onDataChanged?.(); setConfirmDelete(false); setScreen({ name: "list" }); }} />}
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Baby size={16} color={T.healthcareBlue} weight="fill" />
@@ -917,7 +947,7 @@ function tabForRecordId(id) {
   return null;
 }
 
-export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen } = {}) {
+export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler } = {}) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   // CHANGED — Phase 2 encryption groundwork: MyProfileRepository went
@@ -988,9 +1018,9 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
           <span onClick={() => setShowPregnancyAnyway(true)} style={{ fontSize: 11, color: T.textDisabled, cursor: "pointer", textDecoration: "underline" }}>Show pregnancy tracking anyway</span>
         </div>
       )}
-      {subTab === "cycle" && <CycleTab T={T} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && !wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "cycle" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} />}
-      {subTab === "contraception" && <ContraceptionTab T={T} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "contraception" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} />}
-      {subTab === "pregnancy" && <PregnancyTab T={T} openRecordId={deepLinkTab === "pregnancy" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} />}
+      {subTab === "cycle" && <CycleTab T={T} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && !wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "cycle" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}
+      {subTab === "contraception" && <ContraceptionTab T={T} isPregnant={!!activePregnancy} openAddOnMount={openAddOnMount && wantsContraceptionQuickAdd} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={deepLinkTab === "contraception" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}
+      {subTab === "pregnancy" && <PregnancyTab T={T} openRecordId={deepLinkTab === "pregnancy" ? openRecordId : null} onConsumedRecordOpen={onConsumedRecordOpen} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />}
     </div>
   );
 }

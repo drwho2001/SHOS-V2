@@ -1544,6 +1544,11 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   }, [form]);
   const set = (key) => (val) => { isDirty.current = true; setForm((f) => ({ ...f, [key]: val })); };
 
+  // ADDED — real audit finding: this form had zero required-field
+  // validation, unlike every sibling record form (ClinicVisits/
+  // Testing/SymptomLog/etc.), which all gate Save on a real field.
+  const canSave = form.title.trim().length > 0;
+
   const save = async () => {
     clearDraft(draftKey);
     if (isNew) {
@@ -1588,8 +1593,8 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
       <div style={{ position: "sticky", top: 0, background: T.encountersPink, padding: 16, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <X size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
         <span style={{ ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "Add Encounter" : "Edit Encounter"}</span>
-        <div onClick={save}
-          style={{ padding: "6px 14px", borderRadius: radius.full, background: "#FFFFFF", color: T.encountersPink, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+        <div onClick={() => canSave && save()}
+          style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.encountersPink : "rgba(255,255,255,0.7)", fontWeight: 700, fontSize: 13, cursor: canSave ? "pointer" : "default" }}>
           Save
         </div>
       </div>

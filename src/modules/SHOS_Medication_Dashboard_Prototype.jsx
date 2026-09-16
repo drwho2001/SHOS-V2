@@ -19,6 +19,7 @@ import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { localStorageAdapter } from "../storage/storageAdapter";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { useIsDesktopWidth } from "../calculations/responsive";
 import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../repositories/medicationPreferencesRepository";
 import { LogRepository, REASON_OPTIONS, SIDE_EFFECT_OPTIONS } from "../repositories/logRepository";
 import { computeStock, computeAdherence, nextDoseEstimate, isDoseLockedOut, lockoutEndsEstimate, lockoutEndsAt, effectiveDoseIntervalHours, getDoseComponents, formatDoseComponents } from "../calculations/medicationCalculations";
@@ -793,13 +794,14 @@ function LogTab({ meds, T, onOpenCorrection }) {
 // despite being the dedicated inventory screen -- every other
 // inventory-related command (refill status, edit) already lived here.
 function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
+  const isDesktopWidth = useIsDesktopWidth();
   return (
-    <div style={{ display: "flex", flexDirection: "column", padding: "0 16px 100px" }}>
+    <div style={isDesktopWidth ? { columnCount: 2, columnGap: 24, padding: "0 16px 100px" } : { display: "flex", flexDirection: "column", padding: "0 16px 100px" }}>
       {meds.map((m) => {
         const s = computeStock(m);
         const requested = !!m.refillRequestedAt;
         return (
-          <div key={m.id} style={{ padding: "12px 0", borderBottom: `1px solid ${T.border}` }}>
+          <div key={m.id} style={{ padding: "12px 0", borderBottom: `1px solid ${T.border}`, breakInside: "avoid" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 8, height: 8, borderRadius: radius.full, background: T.medsBlue }} />
@@ -2172,6 +2174,14 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
               </div>
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "0 16px 100px" }}>
+              {/* ADDED — real audit finding: this render block had no
+                  empty state at all — an empty list, or a search
+                  matching nothing, both silently rendered nothing. */}
+              {activeMeds.filter(matchesMedSearch).length === 0 && (
+                <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
+                  {medQuery.trim() ? "No medications match your search." : "No medications yet. Tap + to add one."}
+                </div>
+              )}
               {activeMeds.map((med, idx) => {
                 if (!matchesMedSearch(med)) return null;
                 return (

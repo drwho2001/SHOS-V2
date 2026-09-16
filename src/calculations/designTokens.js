@@ -240,6 +240,13 @@ export const ACTION = {
 // have zero real occurrences of this specific pattern anywhere in the
 // app today, so there's nothing to fix for them. encounters/healthcare/
 // medication already clear 4.5:1 comfortably and are untouched.
+// UPDATE 16 Sep 2026 — that "zero real occurrences" claim for kink/
+// protection stopped being true the moment Registry Management's own
+// sort-chip row shipped the same day, reusing Contacts' sort-chip
+// styling (text-on-its-own-tint) for these two colours without
+// carrying the safe-text fix along. `locations` shares protection's
+// exact raw hex (`#E24E9C`) in `REGISTRIES`' own config, so it reuses
+// the same safe stand-in — not a separate colour to compute.
 // Deliberately NOT darkening the base ACCENTS/ACTION exports themselves
 // — they're reused everywhere else in the app (filled buttons with
 // white text, borders, icons, tab highlights) where they already read
@@ -261,6 +268,15 @@ export const ACTION = {
 export const ACCENT_TEXT_SAFE = {
   contacts: "#9D5604",
   home: "#007373",
+  // ADDED 16 Sep 2026 — Registry Management's own sort-chip row (see
+  // above), computed the same way: darkened while preserving hue until
+  // clearing 4.5:1 with real margin (4.8:1+, not razor-thin) against a
+  // white/near-white background. `locations` reuses `protection`'s
+  // exact value since `REGISTRIES`' own config gives it the identical
+  // raw hex, not a separate colour.
+  kink: "#DF2026",
+  protection: "#D3237F",
+  locations: "#D3237F",
 };
 export const ACTION_TEXT_SAFE = {
   red: "#C52626",
