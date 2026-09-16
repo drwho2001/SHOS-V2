@@ -44,6 +44,7 @@ import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 // CHANGED 2 Sep 2026 — real ask: Menstrual gets its own dedicated
@@ -371,6 +372,10 @@ function CycleSheet({ cycle, onSave, onClose, T }) {
 }
 
 function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen }) {
+  // ADDED 16 Sep 2026 — real report: "module contents still mobile
+  // width" — same fix as Contacts/Testing/etc., see this file's own
+  // list-wrapper comments below.
+  const isDesktopWidth = useIsDesktopWidth();
   const [screen, setScreen] = useState(() => openRecordId ? { name: "detail", id: openRecordId } : openAddOnMount ? { name: "add" } : { name: "list" });
   useEffect(() => {
     if (openRecordId) { setScreen({ name: "detail", id: openRecordId }); onConsumedRecordOpen?.(); }
@@ -451,7 +456,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
           <Plus size={24} />
         </div>
       </div>
-      <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={isDesktopWidth ? { padding: "12px 16px 100px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 } : { padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 8 }}>
         {cycles.length === 0 && <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>No periods logged yet. Tap + to add one.</div>}
         {cycles.map((c) => (
           <ListRow key={c.id} T={T} onClick={() => setScreen({ name: "detail", id: c.id })} label={`${formatDate(c.startDate)}${c.endDate ? ` to ${formatDate(c.endDate)}` : " (ongoing)"}`}>
@@ -601,6 +606,9 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
 }
 
 function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen }) {
+  // ADDED 16 Sep 2026 — real report: "module contents still mobile
+  // width" — see this file's own list-wrapper comments below.
+  const isDesktopWidth = useIsDesktopWidth();
   const [screen, setScreen] = useState(() => openRecordId ? { name: "detail", id: openRecordId } : openAddOnMount ? { name: "add" } : { name: "list" });
   useEffect(() => {
     if (openRecordId) { setScreen({ name: "detail", id: openRecordId }); onConsumedRecordOpen?.(); }
@@ -682,7 +690,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
         {active.length > 0 && (
           <div style={{ marginBottom: 18 }}>
             <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, marginBottom: 6 }}>Currently active</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 } : { display: "flex", flexDirection: "column", gap: 8 }}>
               {active.map((e) => {
                 const overdue = e.nextDueDate && e.nextDueDate < today;
                 return (
@@ -703,7 +711,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
         {past.length > 0 && (
           <div>
             <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 6 }}>History</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 } : { display: "flex", flexDirection: "column", gap: 8 }}>
               {past.map((e) => (
                 <ListRow key={e.id} T={T} onClick={() => setScreen({ name: "detail", id: e.id })} label={e.method}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -761,6 +769,9 @@ function PregnancySheet({ pregnancy, onSave, onClose, T }) {
 }
 
 function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
+  // ADDED 16 Sep 2026 — real report: "module contents still mobile
+  // width" — see this file's own list-wrapper comments above.
+  const isDesktopWidth = useIsDesktopWidth();
   const [screen, setScreen] = useState(() => openRecordId ? { name: "detail", id: openRecordId } : { name: "list" });
   useEffect(() => {
     if (openRecordId) { setScreen({ name: "detail", id: openRecordId }); onConsumedRecordOpen?.(); }
@@ -854,7 +865,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen }) {
           <Plus size={24} />
         </div>
       </div>
-      <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={isDesktopWidth ? { padding: "12px 16px 100px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 } : { padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 8 }}>
         {all.length === 0 && <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>No pregnancy tests logged yet. Tap + to add one.</div>}
         {all.map((p) => {
           const masked = isMasked(p);

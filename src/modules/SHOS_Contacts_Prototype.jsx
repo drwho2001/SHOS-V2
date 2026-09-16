@@ -104,6 +104,7 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { useIsDesktopWidth } from "../calculations/responsive";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.contacts/ACTION.red/ACTION.green at
@@ -2370,6 +2371,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
   // gated behind an opt-in preference — see AppPreferencesRepository's
   // own showRoleOnContactCards comment for why this defaults off.
   const [showRoleOnCards] = useLoadedState(() => AppPreferencesRepository.getPreferences().then((p) => p.showRoleOnContactCards), [], false);
+  // ADDED 16 Sep 2026 — real report: "module contents still mobile
+  // width" — the list below rendered as one full-width stacked column
+  // regardless of viewport, so each card's own left-aligned content
+  // (name/badges/location, ~300-350px wide) sat inside a much wider
+  // row with a huge blank strip on the right, reading exactly like
+  // mobile content just stretched into a wide box. See the list
+  // container's own comment below for the fix.
+  const isDesktopWidth = useIsDesktopWidth();
   const activeContacts = useMemo(() => contacts.filter((c) => !c.isArchived), [contacts]);
   // ADDED 18 Aug 2026 — loaded once here rather than per-card, needed
   // for the card's active-status dot (see ContactCard below).
@@ -2775,7 +2784,15 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           {activeContacts.length === 0 ? "No contacts yet." : "No contacts match your search."}
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "0 16px 100px" }}>
+        /* FIXED 16 Sep 2026 — real report: cards read as mobile-width
+           content stretched into a wide row, all the empty width
+           wasted. A real CSS grid on desktop (each card keeping its
+           own natural ~360px+ width, 2-4 per row depending on
+           viewport) instead of one full-width stacked column —
+           ContactCard's own internal JSX is completely untouched,
+           only how many sit per row changes. Mobile keeps the exact
+           prior single-column flex list. */
+        <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10, padding: "0 16px 100px" } : { display: "flex", flexDirection: "column", gap: 10, padding: "0 16px 100px" }}>
           {filtered.map((c) => <ContactCard key={c.id} contact={c} onOpen={onOpen} T={T} summary={encounterSummaries.get(c.id) || EMPTY_ENCOUNTER_SUMMARY} anonymise={anonymise} inactiveThresholdDays={inactiveThresholdDays} showRoleOnCards={showRoleOnCards}
             activeFilters={activeFilterCount > 0 ? { roles: filterRoles, positions: filterPositions, hosts: filterHosts, drives: filterDrives } : null}
             selectMode={selectMode} selected={selectedIds.includes(c.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }}

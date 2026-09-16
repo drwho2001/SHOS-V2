@@ -62,6 +62,7 @@ import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../reposito
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useIsDesktopWidth } from "../calculations/responsive";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.encounters/ACTION.red/ACTION.green at
@@ -999,6 +1000,9 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   // Encounters' own attendee display. Same read pattern Contacts uses.
   const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const anonymise = privacy.anonymiseModeActive;
+  // ADDED 16 Sep 2026 — real report: "module contents still mobile
+  // width" — see the list container's own comment below for the fix.
+  const isDesktopWidth = useIsDesktopWidth();
   const [showArchived, setShowArchived] = useState(false);
   // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
   // to every module.
@@ -1204,7 +1208,21 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
             {query.trim() ? "No encounters match your search." : "No encounters logged yet."}
           </div>
         )}
-        {visible.map((e) => (
+        {/* FIXED 16 Sep 2026 — real report: same "cards read as mobile-
+            width content stretched into a wide row" gap already fixed
+            on Contacts — see that file's own comment. EncounterCard's
+            own root div already carries its own marginBottom for
+            mobile's implicit stacking, so wrapping ONLY on desktop
+            (grid, its own gap) is additive — mobile's plain in-flow
+            stacking is completely untouched. */}
+        {isDesktopWidth ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>
+            {visible.map((e) => (
+              <EncounterCard key={e.id} encounter={e} contacts={contacts} T={T} onClick={() => onOpenEncounter(e.id)}
+                selectMode={selectMode} selected={selectedIds.includes(e.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }} anonymise={anonymise} />
+            ))}
+          </div>
+        ) : visible.map((e) => (
           <EncounterCard key={e.id} encounter={e} contacts={contacts} T={T} onClick={() => onOpenEncounter(e.id)}
             selectMode={selectMode} selected={selectedIds.includes(e.id)} onToggleSelected={toggleSelected} onLongPress={(id) => { setSelectMode(true); toggleSelected(id); }} anonymise={anonymise} />
         ))}

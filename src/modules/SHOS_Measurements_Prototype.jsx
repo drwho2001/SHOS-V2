@@ -30,6 +30,7 @@ import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 // Domain key for CustomGroupsRepository — shared mechanism, this
@@ -720,6 +721,10 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
 }
 
 function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, measurements, refresh, deleteToast, undoDelete, redoDelete, triggerDelete, groupsVersion }) {
+  // ADDED 16 Sep 2026 — real report: "module contents still mobile
+  // width" — see renderTypeSection's own list-wrapper comment below
+  // for the fix.
+  const isDesktopWidth = useIsDesktopWidth();
   const prefs = useLoadedMemo(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
   const [query, setQuery] = useState("");
   const byTypeGroups = useMemo(() => {
@@ -859,7 +864,13 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
                     itself) so a recurring reading is one tap away. */}
                 <span onClick={() => onAddType(group.type)} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>+ Add another</span>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {/* FIXED 16 Sep 2026 — real report: same "mobile-width
+                  content stretched into a wide row" gap fixed on
+                  Contacts/Encounters/Testing/Clinic Visits/
+                  Vaccinations/Symptom Log — see Contacts' own comment
+                  for the full reasoning. Shared by both grouping modes,
+                  since both funnel through this one renderTypeSection. */}
+              <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8 } : { display: "flex", flexDirection: "column", gap: 8 }}>
                 {group.entries.map((m) => {
                   const isSelected = selectedIds.includes(m.id);
                   return (

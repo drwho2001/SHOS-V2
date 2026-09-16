@@ -19,6 +19,7 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useIsDesktopWidth } from "../calculations/responsive";
 
 // ADDED 19 Aug 2026 — Symptom Log (Symptoms Tracker in Notion — see
 // symptomLogRepository.js's header for the deliberate naming decision
@@ -498,6 +499,10 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
   // one-time load rather than adding lag to the live search box below),
   // used by both the search filter and each row's own symptomName.
   const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
+  // ADDED 16 Sep 2026 — real report: "module contents still mobile
+  // width" — see the Active/Resolved list containers' own comment
+  // below for the fix.
+  const isDesktopWidth = useIsDesktopWidth();
   // ADDED 26 Aug 2026 — real ask: search within module, rolled out to
   // every module that didn't already have it. Applied before the
   // active/resolved split, so both sections respect it.
@@ -660,15 +665,25 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
         </div>
       </div>
       <div style={{ padding: "12px 16px 100px" }}>
+        {/* FIXED 16 Sep 2026 — real report: same "mobile-width content
+            stretched into a wide row" gap fixed on Contacts/Encounters/
+            Testing/Clinic Visits/Vaccinations — see Contacts' own
+            comment for the full reasoning. Active/Resolved are two
+            separate sections with their own headers, so each gets its
+            own desktop-only grid wrapper rather than one shared one. */}
         <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 6 }}>Active ({activeCount})</div>
         {active.length === 0 ? (
           <div style={{ textAlign: "center", padding: "24px 20px", color: T.textDisabled, fontSize: 13 }}>Nothing active. Tap + to log a symptom.</div>
+        ) : isDesktopWidth ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>{active.map(Row)}</div>
         ) : active.map(Row)}
 
         {resolved.length > 0 && (
           <>
             <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, margin: "16px 0 6px" }}>Resolved ({resolvedCount})</div>
-            {resolved.map(Row)}
+            {isDesktopWidth ? (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>{resolved.map(Row)}</div>
+            ) : resolved.map(Row)}
           </>
         )}
       </div>

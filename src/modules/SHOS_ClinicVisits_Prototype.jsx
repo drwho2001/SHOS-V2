@@ -45,6 +45,7 @@ import { syncClinicVisitsToCalendar } from "../storage/calendarSyncService";
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useIsDesktopWidth } from "../calculations/responsive";
 
 // Same Healthcare blue + font conventions as Testing — applied from
 // creation, not retrofitted, per the user's standing instruction.
@@ -997,6 +998,9 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
 
 // ── List / landing view ──
 function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
+  // ADDED 16 Sep 2026 — real report: "module contents still mobile
+  // width" — see the list container's own comment below for the fix.
+  const isDesktopWidth = useIsDesktopWidth();
   // ADDED 26 Aug 2026 — real ask: search within module, rolled out to
   // every module that didn't already have it.
   const [query, setQuery] = useState("");
@@ -1117,7 +1121,10 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
         </div>
       </div>
 
-      <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* FIXED 16 Sep 2026 — real report: same "mobile-width content
+          stretched into a wide row" gap fixed on Contacts/Encounters/
+          Testing — see Contacts' own comment for the full reasoning. */}
+      <div style={isDesktopWidth ? { padding: "12px 16px 100px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 } : { padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
         {sorted.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
             No clinic visits logged yet. Tap + to add one.

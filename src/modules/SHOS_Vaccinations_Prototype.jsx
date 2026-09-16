@@ -21,6 +21,7 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useIsDesktopWidth } from "../calculations/responsive";
 
 // ADDED 19 Aug 2026 — Vaccinations, real live Notion schema. Same
 // self-contained-module pattern, Healthcare blue, single Inter
@@ -404,6 +405,9 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
 }
 
 function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
+  // ADDED 16 Sep 2026 — real report: "module contents still mobile
+  // width" — see the list container's own comment below for the fix.
+  const isDesktopWidth = useIsDesktopWidth();
   const allSorted = useMemo(() => [...vaccinations].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), [vaccinations]);
   const overdueCount = allSorted.filter((v) => isOverdue(v.nextDue)).length;
   // ADDED 26 Aug 2026 — real ask: search within module, rolled out to
@@ -531,7 +535,11 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
           <Plus size={24} />
         </div>
       </div>
-      <div style={{ padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* FIXED 16 Sep 2026 — real report: same "mobile-width content
+          stretched into a wide row" gap fixed on Contacts/Encounters/
+          Testing/Clinic Visits — see Contacts' own comment for the
+          full reasoning. */}
+      <div style={isDesktopWidth ? { padding: "12px 16px 100px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 } : { padding: "12px 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
         {sorted.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
             No vaccinations logged yet. Tap + to add one.

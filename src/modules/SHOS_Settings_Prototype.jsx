@@ -3487,25 +3487,27 @@ function GuideScreen({ onClose, onStartTour }) {
 
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      {/* FIXED 16 Sep 2026 — real report: "Guide in desktop mode doesn't
-          seem full screen." The screen IS genuinely full-viewport
-          (position:fixed, inset:0) — the actual issue was a visual
-          mismatch: this header bar spanned the full width while the
-          body below sat capped/centered at 640px, so the two read as
-          disconnected pieces (a full-width chrome bar over a narrow
-          floating column) rather than one deliberate screen. The
-          header's own background band stays full-width (so it still
-          reads as real chrome, not another floating widget) — only
-          its inner content (chevron + title) is capped/centered to
-          match the body's own column on desktop. */}
-      <div style={{ padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-        <div style={isDesktopWidth ? { display: "flex", alignItems: "center", gap: 10, maxWidth: 640, margin: "0 auto" } : { display: "flex", alignItems: "center", gap: 10 }}>
-          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
-          <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Guide</span>
-        </div>
+      {/* CHANGED 16 Sep 2026, later still — real report: "shouldn't be
+          narrow, should be full width page." The earlier 640px
+          centered-column cap (this same day's own prior fix, see
+          CLAUDE.md's #93 entry) was a real overcorrection — it solved
+          the reading-measure complaint by making the whole PAGE read
+          as a narrow floating box in a sea of blank margin, which is
+          the same complaint in a different shape. Reverted to a plain
+          full-width header, matching the body below (also reverted to
+          full-width). */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Guide</span>
       </div>
-      <div style={isDesktopWidth ? { padding: 16, maxWidth: 640, margin: "0 auto" } : { padding: 16 }}>
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4 }}>
+      <div style={{ padding: 16 }}>
+        {/* CHANGED 16 Sep 2026, later still — capped for a real reading
+            measure (still genuinely narrower text reads better) but no
+            longer centered — `margin: "0 auto"` was what made this
+            read as a floating box; a plain maxWidth with no auto
+            margin just sits flush at the page's own left edge, the
+            way real full-width pages cap a lead paragraph. */}
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4, maxWidth: isDesktopWidth ? 640 : undefined }}>
           Where things live and what the less-obvious features do — not a feature-by-feature walkthrough, just answers to "where do I find X."
         </div>
         {/* ADDED 9 Sep 2026 — real ask: a genuine spotlight-overlay
@@ -3513,11 +3515,21 @@ function GuideScreen({ onClose, onStartTour }) {
             anytime, regardless of whether the one-time post-onboarding
             offer was already taken or skipped. */}
         {onStartTour && (
-          <button onClick={onStartTour} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 16px", borderRadius: RADIUS.md, border: "none", background: "#008585", color: "#FFFFFF", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 16 }}>
+          <button onClick={onStartTour} style={{ width: "100%", maxWidth: isDesktopWidth ? 640 : undefined, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 16px", borderRadius: RADIUS.md, border: "none", background: "#008585", color: "#FFFFFF", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 16 }}>
             Take the interactive tour
           </button>
         )}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* CHANGED 16 Sep 2026, later still — real ask: "module contents
+            still mobile width" — a single-column card list at a wide
+            desktop viewport is exactly that same complaint, just
+            applied to this list instead of the whole page. A real CSS
+            grid on desktop, flowing 2-3 columns depending on available
+            width (each card keeping its own readable ~340px+ minimum,
+            never stretching absurdly wide) — genuinely using the space
+            rather than just letting one column stretch or capping the
+            whole page narrow. Mobile keeps the exact prior single-
+            column flex list, untouched. */}
+        <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 12 } : { display: "flex", flexDirection: "column", gap: 12 }}>
           {GUIDE_SECTIONS.map((s) => (
             <div key={s.heading} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: 14 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary, marginBottom: 6 }}>{s.heading}</div>
@@ -3549,27 +3561,39 @@ function GlossaryScreen({ onClose }) {
 
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      {/* FIXED 16 Sep 2026 — same header/body centering mismatch fixed
-          on GuideScreen above; see that screen's own comment for the
-          full reasoning. */}
-      <div style={{ padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-        <div style={isDesktopWidth ? { display: "flex", alignItems: "center", gap: 10, maxWidth: 640, margin: "0 auto" } : { display: "flex", alignItems: "center", gap: 10 }}>
-          <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
-          <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Glossary</span>
-        </div>
+      {/* CHANGED 16 Sep 2026, later still — same "full width page, not a
+          narrow centered column" reversal as GuideScreen above; see
+          that screen's own comment for the full reasoning. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+        <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Glossary</span>
       </div>
-      <div style={isDesktopWidth ? { padding: 16, maxWidth: 640, margin: "0 auto" } : { padding: 16 }}>
-        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4 }}>
+      <div style={{ padding: 16 }}>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.4, maxWidth: isDesktopWidth ? 640 : undefined }}>
           Plain-language explanations of the clinical shorthand used elsewhere in this app — informational, not personalised medical advice.
         </div>
+        {/* CHANGED 16 Sep 2026, later still — real ask: a search box
+            stretching to a full desktop-width row looks broken, not
+            "full width used well" — capped to a sane input width on
+            desktop, same reasoning as the intro paragraph above. */}
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search terms"
-          style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", marginBottom: 16 }} />
+          style={{ width: "100%", maxWidth: isDesktopWidth ? 420 : undefined, padding: "10px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", marginBottom: 16 }} />
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>No terms match your search.</div>
         ) : (
-          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
+          // CHANGED 16 Sep 2026, later still — real ask: "module
+          // contents still mobile width" — a single scrolling column
+          // of term/definition rows at a wide desktop viewport reads
+          // exactly like that. A real CSS multi-column flow on
+          // desktop (newspaper-style, not a grid — these are uneven-
+          // height text rows, not uniform cards) genuinely fills the
+          // width; `breakInside: "avoid"` on each row keeps a single
+          // term/definition pair from ever splitting across the
+          // column break. Mobile keeps the exact prior single-column
+          // list, untouched.
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden", columnCount: isDesktopWidth ? 2 : undefined, columnGap: 0 }}>
             {filtered.map((t) => (
-              <div key={t.term} style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}` }}>
+              <div key={t.term} style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}`, breakInside: "avoid" }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary, marginBottom: 3 }}>{t.term}</div>
                 <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.4 }}>{t.body}</div>
               </div>

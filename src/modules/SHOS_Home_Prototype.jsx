@@ -792,65 +792,89 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           once there's real data for at least one ring (same "not
           enough data" honesty as everywhere else in this app — no
           empty/zero rings on a fresh install). */}
-      {(testingStats?.testCount > 0 || adherence != null || (menstrualTrackingEnabled && ((cycleDaysSince != null && avgCycleLength != null) || contraSpanDays != null))) && (
-        <>
-          <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Status at a glance</div>
-          {/* FIXED 16 Sep 2026 — real report: "not evenly centred/
-              spaced, dead space on RHS." Each ring's own maxWidth cap
-              (needed so it doesn't stretch absurdly wide when only 1-2
-              of the 4 possible rings are present) meant the row's
-              default justifyContent:flex-start packed items against
-              the left edge, leaving any leftover width as a single
-              block of empty space on the right rather than distributed
-              evenly. centered instead — with 4 rings the row still
-              reads full either way, with fewer it now reads as a
-              deliberately compact, centered set. */}
-          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: isDesktopWidth ? 16 : 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: isDesktopWidth ? "24px 16px" : "16px 8px", marginBottom: 24 }}>
-            {testingStats?.testCount > 0 && testingStats.daysSinceLast != null && (
-              <StatusRing
-                pct={(testingStats.daysSinceLast / BASHH_TESTING_INTERVAL_DAYS) * 100}
-                color={testingStats.withinBashhInterval === false ? actionRedColor : healthcareColor}
-                centerText={`${testingStats.daysSinceLast}d`}
-                caption={testingStats.withinBashhInterval === false ? "Testing — overdue" : "Last test"}
-                info={`Days since your last test, out of the ${BASHH_TESTING_INTERVAL_DAYS}-day routine retest interval (BASHH guidance).`}
-                onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined}
-              />
+      {(testingStats?.testCount > 0 || adherence != null || (menstrualTrackingEnabled && ((cycleDaysSince != null && avgCycleLength != null) || contraSpanDays != null))) && (() => {
+        // ADDED — the 4 ring elements built once, referenced by both
+        // the mobile single-card layout and the desktop split-card
+        // layout below, so the two can never drift out of sync with
+        // each other (same props, same conditions, just arranged
+        // differently).
+        const testingRing = testingStats?.testCount > 0 && testingStats.daysSinceLast != null ? (
+          <StatusRing key="testing"
+            pct={(testingStats.daysSinceLast / BASHH_TESTING_INTERVAL_DAYS) * 100}
+            color={testingStats.withinBashhInterval === false ? actionRedColor : healthcareColor}
+            centerText={`${testingStats.daysSinceLast}d`}
+            caption={testingStats.withinBashhInterval === false ? "Testing — overdue" : "Last test"}
+            info={`Days since your last test, out of the ${BASHH_TESTING_INTERVAL_DAYS}-day routine retest interval (BASHH guidance).`}
+            onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined}
+          />
+        ) : null;
+        // ADDED — real ask: this ring wasn't clickable at all, unlike
+        // "Last test" right beside it. Adherence isn't tied to one
+        // specific dose entry the way a test result is, so there's no
+        // single record to open — goes to Medication itself instead,
+        // same "go see the detail behind this number" intent as every
+        // other tap target on this screen.
+        const adherenceRing = adherence != null ? (
+          <StatusRing key="adherence" pct={adherence} color={medsBlue} centerText={`${adherence}%`} caption="7-day adherence"
+            info="Doses actually logged vs. doses due, across every tracked medication, over the last 7 days."
+            onClick={() => onNavigateToRecord("medication")} />
+        ) : null;
+        const cycleRing = menstrualTrackingEnabled && cycleDaysSince != null && avgCycleLength != null ? (
+          <StatusRing key="cycle"
+            pct={(cycleDaysSince / avgCycleLength) * 100}
+            color={cycleOverdue ? actionRedColor : menstrualColor}
+            centerText={`${cycleDaysSince}d`}
+            caption={cycleOverdue ? "Cycle — late" : "Cycle day"}
+            info="Days since your last logged period started, compared to your own average cycle length — not a fixed external benchmark."
+            onClick={() => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth")}
+          />
+        ) : null;
+        const contraRing = menstrualTrackingEnabled && contraSpanDays != null ? (
+          <StatusRing key="contra"
+            pct={(contraDaysSince / contraSpanDays) * 100}
+            color={contraOverdue ? actionRedColor : medsBlue}
+            centerText={contraOverdue ? "Due" : `${contraDaysUntilDue}d`}
+            caption={contraOverdue ? "Contraception overdue" : "Contraception due"}
+            info="How far you are through your current contraception method's own logged interval, from its last dose/application to its next one due."
+            onClick={() => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth")}
+          />
+        ) : null;
+        const cardStyle = { display: "flex", flexWrap: "wrap", gap: 16, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "24px 20px" };
+        return (
+          <>
+            <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Status at a glance</div>
+            {isDesktopWidth ? (
+              // FIXED 16 Sep 2026, later still — real report: "desktop
+              // at a glance section still has lots of dead space left
+              // and right. Split into two side by side cards maybe?"
+              // The earlier justifyContent:center fix centered the
+              // CONTENT but the single card itself still stretched to
+              // whatever width the row happened to be, so its own
+              // background/border kept reading as one big mostly-empty
+              // box. Split into up to 2 real, independently-sized
+              // cards instead — general health (Testing/Adherence) and
+              // Menstrual & Contraception — each card's own width is
+              // now dictated purely by its own ring content, not a
+              // shared row, so 1 or 2 rings in a card reads as a
+              // deliberately compact card, not a mostly-empty wide one.
+              // Mobile is untouched below — the exact prior single-card
+              // markup, byte-for-byte.
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 16, marginBottom: 24 }}>
+                {(testingRing || adherenceRing) && (
+                  <div style={cardStyle}>{testingRing}{adherenceRing}</div>
+                )}
+                {(cycleRing || contraRing) && (
+                  <div style={cardStyle}>{cycleRing}{contraRing}</div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "16px 8px", marginBottom: 24 }}>
+                {testingRing}{adherenceRing}{cycleRing}{contraRing}
+              </div>
             )}
-            {/* ADDED — real ask: this ring wasn't clickable at all,
-                unlike "Last test" right beside it. Adherence isn't
-                tied to one specific dose entry the way a test result
-                is, so there's no single record to open — goes to
-                Medication itself instead, same "go see the detail
-                behind this number" intent as every other tap target
-                on this screen. */}
-            {adherence != null && (
-              <StatusRing pct={adherence} color={medsBlue} centerText={`${adherence}%`} caption="7-day adherence"
-                info="Doses actually logged vs. doses due, across every tracked medication, over the last 7 days."
-                onClick={() => onNavigateToRecord("medication")} />
-            )}
-            {menstrualTrackingEnabled && cycleDaysSince != null && avgCycleLength != null && (
-              <StatusRing
-                pct={(cycleDaysSince / avgCycleLength) * 100}
-                color={cycleOverdue ? actionRedColor : menstrualColor}
-                centerText={`${cycleDaysSince}d`}
-                caption={cycleOverdue ? "Cycle — late" : "Cycle day"}
-                info="Days since your last logged period started, compared to your own average cycle length — not a fixed external benchmark."
-                onClick={() => onNavigateToRecord("healthcare", lastPeriod.id, "menstrualHealth")}
-              />
-            )}
-            {menstrualTrackingEnabled && contraSpanDays != null && (
-              <StatusRing
-                pct={(contraDaysSince / contraSpanDays) * 100}
-                color={contraOverdue ? actionRedColor : medsBlue}
-                centerText={contraOverdue ? "Due" : `${contraDaysUntilDue}d`}
-                caption={contraOverdue ? "Contraception overdue" : "Contraception due"}
-                info="How far you are through your current contraception method's own logged interval, from its last dose/application to its next one due."
-                onClick={() => onNavigateToRecord("healthcare", contraceptionDue.id, "menstrualHealth")}
-              />
-            )}
-          </div>
-        </>
-      )}
+          </>
+        );
+      })()}
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Recent activity</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "0 14px", marginBottom: 24 }}>
