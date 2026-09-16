@@ -213,19 +213,38 @@ this date; summarized here for durability.
     session (see that file's own comment) — nothing left to do here
     unless a different, more specific reorder was actually meant. #76
     — DONE, see "Recently shipped" below.
-  - **Group D — Clinic Card / Lists / Guide polish** (no strong
-    dependency between them, smaller UI additions): #74 a Clinic Card
-    recent-contacts section; #75 Lists reassociation UX. #77
-    Interactive Guide overflow/shape fixes — DONE, see "Recently
-    shipped" below.
+  - **Group D — Clinic Card / Lists / Guide polish**: #75 Lists
+    reassociation UX (scoped 16 Sep 2026 — bigger than a UI tweak, see
+    below). #74 Clinic Card recent-contacts section and #77 Interactive
+    Guide overflow/shape fixes — DONE, see "Recently shipped" below.
   - **Group E — bigger investigate/design items, each needing its own
     real scoping pass before implementation, not a quick patch**: #78
     Stats breakdowns (by organism/site, combined multi-site tests, a
-    clinical-impression field); #79 Calendar dot-colour/sync/filter
-    fixes; #80 in-app error submission without needing an export/
-    email step (flagged as needing an honest architecture conversation
-    first, given this app's no-backend design); #81 a Status-at-a-
-    glance addition for menstrual/contraceptive tracking when enabled.
+    clinical-impression field — scoped 16 Sep 2026, genuinely unbuilt,
+    not just stalled: the data already supports it, `organismIds`/
+    `sampleType` are real wired fields, and same-day same-organism
+    records genuinely can be separate entries per the repository's own
+    `_supersedeOlderMostRecent` comment, so "combine multi-site
+    same-event tests" is a real double-counting risk worth fixing in
+    the same pass; "clinical-impression field" needs a decision on
+    which record type it belongs to, Clinic Visit fits more naturally
+    than Testing); #80 in-app error submission without needing an
+    export/email step (a means to do this already exists —
+    `ErrorLogRepository.recordUserReport()` + the Error log screen,
+    11 Sep — the actual ask, true automatic submission with no export
+    step, means data leaving the device to a real server, a straight
+    reversal of this app's core "no backend, nothing leaves unless you
+    export it" design; a real product decision for the owner, not an
+    engineering gap). #79 Calendar dot-colours and #81 Status-at-a-
+    glance menstrual/contraceptive rings — DONE, see "Recently shipped"
+    below. #75's own real scope, found while auditing it: option-list
+    values (custom Encounter Types, Location types, etc.) are stored as
+    plain strings directly on records, not ID references like the
+    Kink/Organism/Result registries, so there's no existing way to find
+    "which records use this value" the way `registryUsage.js` does for
+    real registries — "click to view associated records" needs a new
+    usage-scanner per list, and "reassociate an archived term" needs a
+    real rename/merge operation across every affected record.
   - **Standing, not a batchable one-off**: #82, applying any future
     fix's pattern consistently across other modules where relevant —
     an ongoing discipline for every batch above, not its own task.
@@ -3319,6 +3338,101 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (16 Sep 2026, later still — Calendar dot-colour bug, Home rings, Clinic Card recent contacts)
+
+Real ask: "prioritise fixing items which have visual payoff or partway
+done" from the grouped backlog — picked #79 (a real, confirmed bug,
+not just an investigation), #81 (a clean addition once actually
+scoped), and #74 (mechanically ready) over the two genuinely bigger
+Group E items (#78, #80 — both scoped, not attempted, see Known
+Issues above for why).
+
+**Calendar (#79) — real, confirmed bug, not a vague "investigate."**
+Every dot/chip/list-row colour in Settings' Calendar screen used
+`ACCENTS[moduleKey]` directly, but the real `moduleKey` values pushed
+by `calendarCalculations.js` are `"testing"`/`"clinicVisits"`/
+`"vaccinations"`/`"symptomLog"`/`"medications"` — none of which are
+real `ACCENTS` keys (only the 5 top-level module colours exist there:
+contacts/encounters/medication/healthcare/home). Every Healthcare
+sub-type and every medication event silently fell back to the generic
+grey default, indistinguishable from each other — only Encounters ever
+showed its real colour, confirmed live via `getComputedStyle` before
+touching anything. Fixed with a new `calendarModuleAccent(moduleKey)`
+function mapping each real key to the accent that module's own screens
+already use elsewhere (the 4 Healthcare sub-types all render under
+`ACCENTS.healthcare` everywhere else in the app; `"medications"` was
+simply missing the singular `medication` key). Deliberately a
+FUNCTION, not a module-level object literal — `ACCENTS`' own values
+can be overridden by the user via the Colour scheme screen, and baking
+them in at module-load time is the exact same bug class already found
+and fixed twice this session for Measurements/MenstrualHealth's own
+`LIGHT`/`DARK` theme constants. "Sync visibility/unsync" (also named
+in #79's original title) was checked and found already correct —
+turning sync off already calls `removeAllSyncedEvents()`, switching
+target calendars already calls `removeSyncedEventsFrom()` first — not
+a bug. "Filter UX bugs" was checked and nothing broken was found;
+would need a specific report to pin down further.
+
+**Home's Status at a glance (#81) — two new rings, Cycle and
+Contraception, alongside the existing Testing/Adherence pair.**
+Considered and rejected forcing both onto the exact same "days since /
+a fixed external benchmark" shape Testing uses, per the explicit ask
+to consider alternatives and what's actually consistent/desirable
+first. Cycle ring: `pct = daysSinceLastPeriodStart / averageCycleLength`,
+using `MenstrualCycleRepository.getAverageCycleLengthDays()` — the
+person's OWN average, not a fixed external number, the same
+"descriptive, not predictive, compare to your own baseline" precedent
+`testingTrend` already established elsewhere in this app; colour flips
+to red if the current gap has already passed that average, same
+"overdue" convention Testing's own ring uses. Contraception ring: a
+real, structural finding changed the plan mid-scoping — a single
+fixed-denominator ring can't represent every method type (a daily
+pill and a 12-week injection mean completely different things by
+"due"), but the record's OWN `startDate`→`nextDueDate` span
+(`contraceptionRepository.js`) makes the percentage genuinely
+universal regardless of method, since it's always "how far through
+THIS interval you are," not a guessed constant — this is also exactly
+why a pill/IUD/implant (no real `nextDueDate` logged) correctly shows
+no ring at all rather than a fabricated one, matching the "not enough
+data" honesty every other ring in this app already has. Both gated on
+`menstrualTrackingEnabled` plus real underlying data existing — the
+whole "Status at a glance" block's own visibility condition was
+widened so it still shows for a menstrual-tracking-only user with no
+test/adherence data logged yet, not just testing/medication users.
+
+**Clinic Card (#74) — a new "Recent contacts" section, distinct from
+the existing "Recent encounters."** The existing section (added
+earlier) links to the Encounter record; this is a genuinely different
+fact — which real Contacts have you actually seen recently — linking
+to the Contact's own profile instead. Derived from data already loaded
+for the encounters section (no new repository call beyond adding
+`ContactRepository`), deduped by attendee, most-recent-encounter-first,
+capped at 8 like its sibling. Added to `CLINIC_CARD_SECTIONS`
+(`clinicCardVisibilityPreference.js`) — the single source of truth
+both the visibility settings screen and the render logic already read
+from — so it's toggleable and defaults to visible like every other
+real section, no separate wiring needed.
+
+Verified live via Playwright throughout, working around a couple of
+this exact codebase's own previously-documented test-tooling gotchas
+along the way (not new ones): a dynamic `import('/src/...')` trick to
+flip a preference directly fails against a `vite preview` production
+build (dev-server-only), so the real Settings UI toggle was driven
+instead; the SW-update banner can intercept a click at certain scroll
+positions, same class of flakiness this suite's own
+`dismissTransientBanners()` already exists for. Confirmed via
+`getComputedStyle`, not just visual inspection: Calendar's day dots
+and filter chips render `rgb(127, 48, 166)` (`#7F30A6`, Encounters)
+and `rgb(9, 88, 46)` (`#09582E`, Healthcare) — real, distinct colours,
+not the pre-fix grey. Both new Home rings render with correct
+labels/colours in the same row as Testing/Adherence with no overflow
+(`flexWrap` added defensively for narrow-width safety). Clinic Card's
+Recent contacts section renders with a real, correct count in the
+right position in the section order. Full build, `npx eslint .` clean,
+and the full 15-flow smoke-test suite against a real `vite preview`
+production build — 15/15 pass. Confirmed green in CI on `main` (Smoke
+Test, Build APK, Web Alpha all triggered on the push).
 
 ## Recently shipped (16 Sep 2026, global-settings reorg — finishing the last two candidates)
 
