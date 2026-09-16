@@ -160,6 +160,7 @@ export const EXPORT_GROUPS = [
   // comment above for the full reasoning).
   { key: "appSettings", label: "App settings", items: [
     { dataKey: "customOptionLists", label: "Custom option lists (your own added/renamed options)" },
+    { dataKey: "customOptionListsArchived", label: "Archived option-list values (removed but recoverable)" },
     { dataKey: "privacySettings", label: "Privacy settings (Anonymise mode PIN + preference)" },
     { dataKey: "resources", label: "Resources (Settings → Resources links/notes)" },
     { dataKey: "measurementPreferences", label: "Measurement unit preferences" },
@@ -297,6 +298,12 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     measurementPreferences: await MeasurementPreferencesRepository.getPreferences(),
     customGroups: await CustomGroupsRepository.getAllForBackup(),
     customOptionLists: await CustomOptionListsRepository.getAllForBackup(),
+    // ADDED 16 Sep 2026 — real ask (#75): archived (removed-but-
+    // recoverable) option-list values are real, deliberately-kept user
+    // data now — see customOptionListsRepository.js's own remove()
+    // comment — same "wire a new repository field into backupService.js
+    // in the same change" standing rule as everything else here.
+    customOptionListsArchived: await CustomOptionListsRepository.getAllArchivedForBackup(),
     privacySettings: redactSecrets
       ? sanitizePrivacySettingsForPlainExport(await PrivacySettingsRepository.getSettings())
       : await PrivacySettingsRepository.getSettings(),
@@ -434,7 +441,7 @@ function sanitizeBackupData(data) {
 // wiping everything with no confirmation was a real gap on its own,
 // separate from merge existing at all.
 export async function restoreBackup(parsedBackup) {
-  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies, appPreferences, medicationPreferences, notificationPreferences, moduleColorOverrides, trash } = parsedBackup.data;
+  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, customOptionListsArchived, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies, appPreferences, medicationPreferences, notificationPreferences, moduleColorOverrides, trash } = parsedBackup.data;
   if (Array.isArray(contacts)) await ContactRepository.replaceAll(contacts);
   if (Array.isArray(medications)) await MedicationRepository.replaceAll(medications);
   if (Array.isArray(logs)) await LogRepository.replaceAll(logs);
@@ -467,6 +474,7 @@ export async function restoreBackup(parsedBackup) {
   if (measurementPreferences && typeof measurementPreferences === "object" && !Array.isArray(measurementPreferences)) await MeasurementPreferencesRepository.updatePreferences(measurementPreferences);
   if (customGroups && typeof customGroups === "object" && !Array.isArray(customGroups)) await CustomGroupsRepository.replaceAll(customGroups);
   if (customOptionLists && typeof customOptionLists === "object" && !Array.isArray(customOptionLists)) await CustomOptionListsRepository.replaceAll(customOptionLists);
+  if (customOptionListsArchived && typeof customOptionListsArchived === "object" && !Array.isArray(customOptionListsArchived)) await CustomOptionListsRepository.replaceAllArchived(customOptionListsArchived);
   if (privacySettings && typeof privacySettings === "object" && !Array.isArray(privacySettings)) await PrivacySettingsRepository.update(privacySettings);
   if (resources && typeof resources === "object" && !Array.isArray(resources)) await ResourcesRepository.replaceAll(resources);
   if (Array.isArray(partnerNotifications)) await PartnerNotificationRepository.replaceAll(partnerNotifications);
@@ -559,6 +567,17 @@ export async function mergeBackup(parsedBackup) {
       merged[key] = Array.from(new Set([...(current[key] || []), ...incoming]));
     }
     await CustomOptionListsRepository.replaceAll(merged);
+  }
+  // ADDED 16 Sep 2026 — real ask (#75): same union-merge shape as the
+  // live lists just above, applied to their archived values too.
+  if (data.customOptionListsArchived && typeof data.customOptionListsArchived === "object" && !Array.isArray(data.customOptionListsArchived)) {
+    const currentArchived = await CustomOptionListsRepository.getAllArchivedForBackup();
+    const mergedArchived = {};
+    for (const key of new Set([...Object.keys(currentArchived), ...Object.keys(data.customOptionListsArchived)])) {
+      const incoming = Array.isArray(data.customOptionListsArchived[key]) ? data.customOptionListsArchived[key] : [];
+      mergedArchived[key] = Array.from(new Set([...(currentArchived[key] || []), ...incoming]));
+    }
+    await CustomOptionListsRepository.replaceAllArchived(mergedArchived);
   }
   // FIXED — real gap found while converting CustomOptionListsRepository:
   // this was missing an await even though append() and

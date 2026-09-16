@@ -224,6 +224,22 @@ async function ensureListsLoaded() {
 }
 async function persist() { await storage.save(STORAGE_KEY, lists); }
 
+// ADDED 16 Sep 2026 — real ask (#75): a genuinely separate storage key
+// from `lists` above, same reasoning as `usageMeta`'s own separate key
+// — this is a different KIND of data (removed-but-recoverable values),
+// not part of the live, pickable option list itself.
+const ARCHIVE_STORAGE_KEY = "shos_custom_option_lists_archived";
+let archived = null;
+let archivedLoadPromise = null;
+async function ensureArchivedLoaded() {
+  if (archived === null) {
+    if (!archivedLoadPromise) archivedLoadPromise = storage.load(ARCHIVE_STORAGE_KEY, {});
+    archived = await archivedLoadPromise;
+  }
+  return archived;
+}
+async function persistArchived() { await storage.save(ARCHIVE_STORAGE_KEY, archived); }
+
 // ADDED 3 Sep 2026 — real ask: "newly added user data should be
 // suggested at top of any autofill/suggest as typing. balance that
 // with most frequently selected options shown first too." This file's
@@ -362,12 +378,70 @@ export const CustomOptionListsRepository = {
     return lists[name];
   },
 
+  // CHANGED 16 Sep 2026 — real ask (#75): "reassociate an archived
+  // term with entries." Removing a value used to delete it outright —
+  // any record already carrying that string as a plain-text field
+  // value (this whole file's own header explains why these lists are
+  // NOT id-referenced the way a real Registry is) kept showing the
+  // orphaned text forever, with no way to see which records were
+  // affected or move them onto a different value. `remove()` now
+  // ARCHIVES the value instead of deleting it — still gone from the
+  // live picker (`get()`), but recoverable and still findable, via the
+  // new `getArchived()`/`restore()`/`reassociate()`/
+  // `permanentlyDeleteArchived()` below.
   async remove(name, value) {
     if ((PROTECTED_VALUES[name] || []).includes(value)) return this.get(name);
     const current = await this.get(name);
     lists = { ...lists, [name]: current.filter((v) => v !== value) };
     await persist();
+    await ensureArchivedLoaded();
+    const forList = archived[name] || [];
+    if (!forList.includes(value)) {
+      archived = { ...archived, [name]: [...forList, value] };
+      await persistArchived();
+    }
     return lists[name];
+  },
+
+  async getArchived(name) {
+    await ensureArchivedLoaded();
+    return [...(archived[name] || [])];
+  },
+
+  // Moves an archived value back onto the live, pickable list — the
+  // exact reverse of remove() above. A no-op if it's somehow already
+  // live (e.g. re-added by hand via add() while archived).
+  async restore(name, value) {
+    await ensureArchivedLoaded();
+    archived = { ...archived, [name]: (archived[name] || []).filter((v) => v !== value) };
+    await persistArchived();
+    const current = await this.get(name);
+    if (!current.includes(value)) {
+      lists = { ...lists, [name]: [...current, value] };
+      await persist();
+    }
+    return lists[name];
+  },
+
+  // Drops an archived value for good — no record of it, no further
+  // recovery. Deliberately a SEPARATE action from remove() (which only
+  // archives) — this is the genuine, rarely-needed "actually delete
+  // it" the archive exists to make safe to defer.
+  async permanentlyDeleteArchived(name, value) {
+    await ensureArchivedLoaded();
+    archived = { ...archived, [name]: (archived[name] || []).filter((v) => v !== value) };
+    await persistArchived();
+  },
+
+  // For backupService.js, same bundled-object shape as getAllForBackup().
+  async getAllArchivedForBackup() {
+    await ensureArchivedLoaded();
+    return { ...archived };
+  },
+
+  async replaceAllArchived(newArchived) {
+    archived = { ...(newArchived || {}) };
+    await persistArchived();
   },
 
   isProtected(name, value) {

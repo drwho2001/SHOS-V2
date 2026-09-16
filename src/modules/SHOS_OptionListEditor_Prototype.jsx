@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { CaretLeftIcon as ChevronLeft, PlusIcon as Plus, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, XIcon as X, PillIcon as Pill, ArrowCircleRightIcon as ArrowRightCircle, ClipboardTextIcon as ClipboardList, CalendarIcon as CalendarClock, TestTubeIcon as TestTube, SyringeIcon as Syringe, CalendarCheckIcon as CalendarCheck, MapPinIcon as MapPin, PlayCircleIcon as PlayCircle, TagIcon as Tag, HeartIcon as Heart, UserIcon as User } from "@phosphor-icons/react";
+import { CaretLeftIcon as ChevronLeft, CaretDownIcon as ChevronDown, PlusIcon as Plus, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, XIcon as X, PillIcon as Pill, ArrowCircleRightIcon as ArrowRightCircle, ClipboardTextIcon as ClipboardList, CalendarIcon as CalendarClock, TestTubeIcon as TestTube, SyringeIcon as Syringe, CalendarCheckIcon as CalendarCheck, MapPinIcon as MapPin, PlayCircleIcon as PlayCircle, TagIcon as Tag, HeartIcon as Heart, UserIcon as User, ArrowUUpLeftIcon as RestoreIcon, ArrowsLeftRightIcon as SwapIcon } from "@phosphor-icons/react";
 import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } from "../repositories/customOptionListsRepository";
+import { findRecordsUsingOptionValue, reassociateOptionValue } from "../calculations/optionListUsage";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 
 import { useDarkModePreference } from "../calculations/darkModePreference";
@@ -34,6 +35,40 @@ export const ICON_COMPONENTS = { Pill, ArrowRightCircle, ClipboardList, Calendar
 // full reasoning on scope and safety). ONE generic screen reused for
 // every category — same "shared component once a shape repeats" rule
 // already applied to SHOS_RegistryManagement_Prototype.jsx.
+// ADDED 16 Sep 2026 — real ask (#75): "click entry to view associated
+// records." Expands in place to a real, grouped list of every record's
+// own label currently carrying this exact value — findRecordsUsingOptionValue()
+// (optionListUsage.js) is the one place that scan actually happens, so
+// this component stays a thin renderer over it, same "repository/
+// calculation split" this app applies everywhere else. Deliberately
+// read-only here — deep-linking to the record itself would need
+// onNavigateToRecord threaded all the way from App.jsx through
+// Settings' own multi-level nav, a bigger plumbing job than this pass
+// is scoped for; seeing WHICH records are affected before deciding to
+// rename/remove is the real, immediate need this closes.
+function UsageDisclosure({ listName, value, T }) {
+  const [open, setOpen] = useState(false);
+  const records = useLoadedMemo(() => (open ? findRecordsUsingOptionValue(listName, value) : Promise.resolve(null)), [listName, value, open], null);
+
+  return (
+    <div>
+      <div onClick={() => setOpen((o) => !o)} role="button" tabIndex={0}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen((o) => !o); } }}
+        style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: T.textDisabled, cursor: "pointer" }}>
+        <ChevronDown size={11} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+        {open && records === null ? "Checking…" : open ? `${records.length} record${records.length === 1 ? "" : "s"} use this` : "View associated records"}
+      </div>
+      {open && records && records.length > 0 && (
+        <div style={{ marginTop: 6, paddingLeft: 15 }}>
+          {records.map((r, i) => (
+            <div key={i} style={{ fontSize: 12, color: T.textSecondary, padding: "3px 0" }}>{r.recordLabel}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function OptionListDetail({ listName, onClose }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
@@ -42,9 +77,31 @@ export function OptionListDetail({ listName, onClose }) {
   const [addingValue, setAddingValue] = useState("");
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingValue, setEditingValue] = useState("");
+  // ADDED 16 Sep 2026 — real ask (#75): reassociating an archived value
+  // means picking a live one to move its records onto — tracks which
+  // archived value (if any) currently has its picker open.
+  const [reassociatingValue, setReassociatingValue] = useState(null);
+  const [reassociateStatus, setReassociateStatus] = useState(null);
 
   const options = useLoadedMemo(() => CustomOptionListsRepository.get(listName), [listName, refreshKey], []);
+  const archivedValues = useLoadedMemo(() => CustomOptionListsRepository.getArchived(listName), [listName, refreshKey], []);
   const refresh = () => setRefreshKey((k) => k + 1);
+
+  const restoreArchived = async (value) => {
+    await CustomOptionListsRepository.restore(listName, value);
+    refresh();
+  };
+  const deleteArchivedForever = async (value) => {
+    await CustomOptionListsRepository.permanentlyDeleteArchived(listName, value);
+    refresh();
+  };
+  const doReassociate = async (oldValue, newValue) => {
+    const count = await reassociateOptionValue(listName, oldValue, newValue);
+    await CustomOptionListsRepository.permanentlyDeleteArchived(listName, oldValue);
+    setReassociatingValue(null);
+    setReassociateStatus(`Moved ${count} record${count === 1 ? "" : "s"} from "${oldValue}" to "${newValue}".`);
+    refresh();
+  };
 
   const handleAdd = async () => {
     const trimmed = addingValue.trim();
@@ -95,30 +152,83 @@ export function OptionListDetail({ listName, onClose }) {
             <Plus size={16} /> Add
           </button>
         </div>
-        <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>Tap a value to rename it. Arrows reorder — order here is the order shown throughout the app.</div>
+        <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>Tap a value to rename it. Arrows reorder — order here is the order shown throughout the app. Removing archives it (below), rather than deleting it outright.</div>
       </div>
 
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, margin: "8px 16px 24px", overflow: "hidden" }}>
         {options.length === 0 ? (
           <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>No options — add one above.</div>
         ) : options.map((opt, i) => (
-          <div key={opt} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: i < options.length - 1 ? `1px solid ${T.border}` : "none" }}>
-            {editingIndex === i ? (
-              <input autoFocus value={editingValue} onChange={(e) => setEditingValue(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditingIndex(null); }}
-                onBlur={commitEdit}
-                style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: `1px solid ${ACCENTS.healthcare}`, fontSize: 14, fontFamily: "'Inter', sans-serif" }} />
-            ) : (
-              <span onClick={() => startEdit(i)} style={{ flex: 1, fontSize: 14, color: T.textPrimary, cursor: "pointer" }}>{opt}</span>
-            )}
-            <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-              <ArrowUp size={14} color={i === 0 ? T.textDisabled : T.textSecondary} style={{ cursor: i === 0 ? "default" : "pointer" }} onClick={() => i > 0 && move(i, -1)} title="Move up" />
-              <ArrowDown size={14} color={i === options.length - 1 ? T.textDisabled : T.textSecondary} style={{ cursor: i === options.length - 1 ? "default" : "pointer" }} onClick={() => i < options.length - 1 && move(i, 1)} title="Move down" />
-              <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => remove(opt)} title="Remove this option" aria-label="Remove this option" />
+          <div key={opt} style={{ padding: "10px 14px", borderBottom: i < options.length - 1 ? `1px solid ${T.border}` : "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {editingIndex === i ? (
+                <input autoFocus value={editingValue} onChange={(e) => setEditingValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditingIndex(null); }}
+                  onBlur={commitEdit}
+                  style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: `1px solid ${ACCENTS.healthcare}`, fontSize: 14, fontFamily: "'Inter', sans-serif" }} />
+              ) : (
+                <span onClick={() => startEdit(i)} style={{ flex: 1, fontSize: 14, color: T.textPrimary, cursor: "pointer" }}>{opt}</span>
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                <ArrowUp size={14} color={i === 0 ? T.textDisabled : T.textSecondary} style={{ cursor: i === 0 ? "default" : "pointer" }} onClick={() => i > 0 && move(i, -1)} title="Move up" />
+                <ArrowDown size={14} color={i === options.length - 1 ? T.textDisabled : T.textSecondary} style={{ cursor: i === options.length - 1 ? "default" : "pointer" }} onClick={() => i < options.length - 1 && move(i, 1)} title="Move down" />
+                <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => remove(opt)} title="Remove this option (archives it)" aria-label="Remove this option (archives it)" />
+              </div>
+            </div>
+            <div style={{ marginTop: 4 }}>
+              <UsageDisclosure listName={listName} value={opt} T={T} />
             </div>
           </div>
         ))}
       </div>
+
+      {/* ADDED 16 Sep 2026 — real ask (#75): archived values stay
+          visible and actionable here, not silently gone — see
+          customOptionListsRepository.js's own remove() comment for why
+          "remove" now archives instead of deleting outright. */}
+      {/* FIXED — real bug caught live: reassociateStatus used to render
+          only inside this "any archived values left" block, so
+          reassociating the LAST archived value made both it and its
+          own success message disappear in the same render, before it
+          could ever be read. Moved above the length gate so it survives
+          the archived section itself going empty. */}
+      {reassociateStatus && <div style={{ fontSize: 12, color: ACTION.green, margin: "0 16px 12px" }}>{reassociateStatus}</div>}
+      {archivedValues.length > 0 && (
+        <div style={{ margin: "0 16px 24px" }}>
+          <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, marginBottom: 8 }}>Archived</div>
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
+            {archivedValues.map((value, i) => (
+              <div key={value} style={{ padding: "10px 14px", borderBottom: i < archivedValues.length - 1 ? `1px solid ${T.border}` : "none" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ flex: 1, fontSize: 14, color: T.textSecondary, textDecoration: "line-through", textDecorationColor: T.textDisabled }}>{value}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                    <SwapIcon size={14} color={ACCENTS.healthcare} style={{ cursor: "pointer" }} onClick={() => setReassociatingValue(reassociatingValue === value ? null : value)} title="Reassociate its records with a different value" aria-label="Reassociate its records with a different value" />
+                    <RestoreIcon size={14} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => restoreArchived(value)} title="Restore to the live list" aria-label="Restore to the live list" />
+                    <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => deleteArchivedForever(value)} title="Delete permanently — cannot be undone" aria-label="Delete permanently — cannot be undone" />
+                  </div>
+                </div>
+                <div style={{ marginTop: 4 }}>
+                  <UsageDisclosure listName={listName} value={value} T={T} />
+                </div>
+                {reassociatingValue === value && (
+                  <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {options.length === 0 ? (
+                      <span style={{ fontSize: 11, color: T.textDisabled }}>No live values to reassociate with yet — add one above first.</span>
+                    ) : options.map((liveValue) => (
+                      <span key={liveValue} onClick={() => doReassociate(value, liveValue)} role="button" tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); doReassociate(value, liveValue); } }}
+                        style={{ fontSize: 12, padding: "4px 10px", borderRadius: 999, background: `${ACCENTS.healthcare}1A`, color: ACCENTS.healthcare, cursor: "pointer" }}>
+                        {liveValue}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 6 }}>Reassociate moves every record using the archived value onto the one you pick, then removes it from the archive for good. Restore just brings it back as a normal, live option.</div>
+        </div>
+      )}
     </div>
   );
 }

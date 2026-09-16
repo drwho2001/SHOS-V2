@@ -235,10 +235,10 @@ this date; summarized here for durability.
     session (see that file's own comment) — nothing left to do here
     unless a different, more specific reorder was actually meant. #76
     — DONE, see "Recently shipped" below.
-  - **Group D — Clinic Card / Lists / Guide polish**: #75 Lists
-    reassociation UX (scoped 16 Sep 2026 — bigger than a UI tweak, see
-    below). #74 Clinic Card recent-contacts section and #77 Interactive
-    Guide overflow/shape fixes — DONE, see "Recently shipped" below.
+  - **Group D — Clinic Card / Lists / Guide polish**: #75 — RESOLVED 16
+    Sep 2026, see "Recently shipped" below. #74 Clinic Card
+    recent-contacts section and #77 Interactive Guide overflow/shape
+    fixes — DONE, see "Recently shipped" below.
   - **Group E — bigger investigate/design items, each needing its own
     real scoping pass before implementation, not a quick patch**: #78
     Stats breakdowns (by organism/site, combined multi-site tests, a
@@ -255,14 +255,7 @@ this date; summarized here for durability.
     a real outbound Send, the same disclosed-exception model as
     Nominatim/GitHub. #79 Calendar dot-colours and #81 Status-at-a-
     glance menstrual/contraceptive rings — DONE, see "Recently shipped"
-    below. #75's own real scope, found while auditing it: option-list
-    values (custom Encounter Types, Location types, etc.) are stored as
-    plain strings directly on records, not ID references like the
-    Kink/Organism/Result registries, so there's no existing way to find
-    "which records use this value" the way `registryUsage.js` does for
-    real registries — "click to view associated records" needs a new
-    usage-scanner per list, and "reassociate an archived term" needs a
-    real rename/merge operation across every affected record.
+    below.
   - **Standing, not a batchable one-off**: #82, applying any future
     fix's pattern consistently across other modules where relevant —
     an ongoing discipline for every batch above, not its own task.
@@ -3356,6 +3349,20 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (16 Sep 2026, latest of all — Lists reassociation UX, #75)
+
+Real ask (#75), scoped 16 Sep 2026 earlier the same day: "click entry to view associated records" and "reassociate an archived term with entries" for the 17 custom option lists (Manage lists > Option lists) — these are plain strings stored directly on records, not id-references like a real Registry, so unlike Kink/Organism/Result there was no way to see which records used a value, or to move them onto a different value before/after removing one.
+
+**New `src/calculations/optionListUsage.js`** — the usage-scanner, same "scan every repository that can reference this" shape as `registryUsage.js`, applied to plain-string fields instead of ids. A `SOURCES` config maps each of the 17 list names to its real repository + field (confirmed by reading each repository's own `DEFAULT_*` shape directly, not guessed — e.g. `medicationType`/`route`/`category` on `MedicationRepository`, `gender`/`pronouns`/`contraception` split across BOTH `ContactRepository` and the `MyProfileRepository` singleton). `findRecordsUsingOptionValue(listName, value)` returns every real record's own label currently carrying that value; `reassociateOptionValue(listName, oldValue, newValue)` walks the same sources and calls each repository's own `update()`, swapping the value in place (deduping an array field so a record never ends up with two copies of the new value).
+
+**`remove()` now archives instead of deleting outright** (`customOptionListsRepository.js`) — a genuinely separate storage key (`shos_custom_option_lists_archived`, same pattern as `usageMeta`'s own separate key), with new `getArchived()`/`restore()`/`permanentlyDeleteArchived()` methods. A record already carrying the old string as a plain-text value used to show an orphaned, invisible-to-the-editor value forever; now it's recoverable and reassociable. Wired into `backupService.js` in the same change (build/restore/merge, plus its own Selective-export row) per this file's own standing rule.
+
+**`SHOS_OptionListEditor_Prototype.jsx`** — each live value gets a tap-to-expand "View associated records" disclosure (a thin renderer over `findRecordsUsingOptionValue()`, deliberately read-only this round — deep-linking to the record itself would need `onNavigateToRecord` threaded through Settings' whole multi-level nav, a bigger plumbing job left for later). A new "Archived" section lists removed values, each with Reassociate (pick a live value, moves every affected record onto it, then drops the archived entry for good), Restore (back to the live list), and a real permanent-delete action.
+
+**Real bug caught live while verifying, not by inspection**: the reassociation success message ("Moved N records from X to Y") was rendered INSIDE the "any archived values left" conditional block — reassociating the LAST archived value made the whole Archived section, message included, disappear in the same render before it could ever be read. Fixed by hoisting the status message above that gate. Verified live via Playwright against real seed data: Gender's "Non-binary" (2 real seeded contacts) correctly showed "2 records use this" before archiving, moved to Archived on remove, and reassociating to "Female" correctly showed "Moved 2 records from "Non-binary" to "Female"." with the archived entry gone afterward.
+
+Full build, `npx eslint .` clean, and the full 15-flow smoke-test suite against a real `vite preview` production build — 15/15 pass, no regressions.
 
 ## Recently shipped (16 Sep 2026, latest of all — real problem-report Send, #80)
 
