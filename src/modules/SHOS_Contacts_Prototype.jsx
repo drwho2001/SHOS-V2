@@ -273,11 +273,31 @@ function MethodBadge({ method, T, size }) {
       );
   }
 }
+// CHANGED — real audit finding (icon-only-UI affordance sweep): three
+// of these badges (Fabguys/Fabswingers/Recon) are original, invented
+// shapes with no public brand meaning at all (see MethodBadge's own
+// comment) — their only explanation was a native `title` attribute,
+// hover-only, exactly the anti-pattern this app's own rule exists to
+// avoid ("not a hover-only tooltip, since this app targets
+// touchscreens"). Added a real tap affordance: tapping the row toggles
+// a plain-text legend listing each method by name, same
+// toggle-a-caption shape as the active-status dot/icon cluster above.
 function MethodIcons({ methods, T, size = 22 }) {
+  const [showLegend, setShowLegend] = useState(false);
   if (!methods || methods.length === 0) return null;
   return (
-    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-      {methods.map((m) => <MethodBadge key={m} method={m} T={T} size={size} />)}
+    <div>
+      <div role="button" tabIndex={0} aria-label="Contact methods — tap for details"
+        onClick={(e) => { e.stopPropagation(); setShowLegend((v) => !v); }}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowLegend((v) => !v); } }}
+        style={{ display: "flex", gap: 6, alignItems: "center", cursor: "pointer" }}>
+        {methods.map((m) => <MethodBadge key={m} method={m} T={T} size={size} />)}
+      </div>
+      {showLegend && (
+        <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 11, color: T.textSecondary, fontWeight: 500, marginTop: 2 }}>
+          {methods.join(", ")}
+        </div>
+      )}
     </div>
   );
 }
@@ -1349,14 +1369,25 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
 // rank against the other four — still visible in the profile detail's
 // own full Travel mode list, just not promoted to a card icon.
 const TRANSPORT_TIERS = [
-  { test: (c) => c.drives === true || (c.travelMode || []).includes("Car"), Icon: Car },
-  { test: (c) => (c.travelMode || []).includes("Cycle"), Icon: Bicycle },
-  { test: (c) => (c.travelMode || []).includes("Public transport"), Icon: Bus },
-  { test: (c) => (c.travelMode || []).includes("Walk"), Icon: Walk },
+  { test: (c) => c.drives === true || (c.travelMode || []).includes("Car"), Icon: Car, label: "Drives" },
+  { test: (c) => (c.travelMode || []).includes("Cycle"), Icon: Bicycle, label: "Cycles" },
+  { test: (c) => (c.travelMode || []).includes("Public transport"), Icon: Bus, label: "Uses public transport" },
+  { test: (c) => (c.travelMode || []).includes("Walk"), Icon: Walk, label: "Walks" },
 ];
 function getTransportIcon(contact) {
   const tier = TRANSPORT_TIERS.find((t) => t.test(contact));
   return tier ? tier.Icon : null;
+}
+// ADDED — real audit finding (icon-only-UI affordance sweep): this
+// card's own transport/hosts/linked/flagged icon row had no title,
+// aria-label, or tap affordance at all, unlike the active-status dot
+// right next to it — the same "icon-only UI needs an explanatory
+// affordance" rule already applied to that dot, just never rolled out
+// to its immediate siblings. Reuses that dot's own showStatusInfo
+// toggle/caption rather than adding a separate toggle per icon.
+function getTransportLabel(contact) {
+  const tier = TRANSPORT_TIERS.find((t) => t.test(contact));
+  return tier ? tier.label : null;
 }
 
 function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, anonymise = false, inactiveThresholdDays = 90, showRoleOnCards = false, activeFilters = null, selectMode = false, selected = false, onToggleSelected, onLongPress, onToggleFavourite }) {
@@ -1505,10 +1536,21 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
         {/* ADDED 10 Sep 2026 — real ask: ONE icon for "how we'd meet
             up", the highest tier only (Car > Cycle > Public transport >
             Walk) — see getTransportIcon()'s own comment for the ranked
-            list and why `drives` folds into the Car tier. */}
+            list and why `drives` folds into the Car tier.
+            CHANGED — real audit finding: no title/aria-label/tap
+            affordance at all. Now tappable (toggles the same caption
+            panel as the active-status dot), plus a real title/aria-label
+            for a hover or screen-reader user. */}
         {(() => {
           const TransportIcon = getTransportIcon(contact);
-          return TransportIcon ? <TransportIcon size={13} color={T.textSecondary} /> : null;
+          if (!TransportIcon) return null;
+          const label = getTransportLabel(contact);
+          return (
+            <TransportIcon size={13} color={T.textSecondary} role="button" tabIndex={0} title={label} aria-label={`${label} — tap for details`}
+              onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
+              style={{ cursor: "pointer" }} />
+          );
         })()}
         {/* ADDED 18 Aug 2026 — hosts/travels indicator, the user's ask:
             "house or car icon" — House if they host, an icon if they'll
@@ -1520,20 +1562,49 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             `travels` (WILL they come to you). CHANGED 10 Sep 2026 —
             swapped from MapPin to NavigationArrow now that MapPin is
             the city pin above; two different pins on one row would
-            have read as the same fact twice. */}
+            have read as the same fact twice.
+            CHANGED — real audit finding: same tap/title/aria-label
+            treatment as the transport icon above. */}
         {contact.hosts === "Yes" ? (
-          <Home size={13} color={T.textSecondary} />
+          <Home size={13} color={T.textSecondary} role="button" tabIndex={0} title="Hosts meetups" aria-label="Hosts meetups — tap for details"
+            onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
+            style={{ cursor: "pointer" }} />
         ) : contact.travels === "Yes" ? (
-          <NavigationArrow size={13} color={T.textSecondary} />
+          <NavigationArrow size={13} color={T.textSecondary} role="button" tabIndex={0} title="Will travel to you" aria-label="Will travel to you — tap for details"
+            onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
+            style={{ cursor: "pointer" }} />
         ) : null}
-        {contact.linkedContactIds.length > 0 && <Link2 size={13} color={T.contactsTeal} />}
-        {flaggedDontMeetAgain && <AlertTriangle size={13} color={T.actionRed} />}
+        {contact.linkedContactIds.length > 0 && (
+          <Link2 size={13} color={T.contactsTeal} role="button" tabIndex={0} title="Linked to another contact" aria-label="Linked to another contact — tap for details"
+            onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
+            style={{ cursor: "pointer" }} />
+        )}
+        {flaggedDontMeetAgain && (
+          <AlertTriangle size={13} color={T.actionRed} role="button" tabIndex={0} title="Flagged: do not meet again" aria-label="Flagged: do not meet again — tap for details"
+            onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
+            style={{ cursor: "pointer" }} />
+        )}
       </div>
-      {showStatusInfo && (
-        <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 11, color: isInactive ? T.actionRed : T.actionGreen, fontWeight: 600, marginLeft: 16, marginTop: -2, marginBottom: 4 }}>
-          {isInactive ? `Inactive — no encounter in over ${inactiveThresholdDays} days` : "Active — a recent encounter is logged"}
-        </div>
-      )}
+      {showStatusInfo && (() => {
+        const transportLabel = getTransportLabel(contact);
+        const lines = [isInactive ? `Inactive — no encounter in over ${inactiveThresholdDays} days` : "Active — a recent encounter is logged"];
+        if (transportLabel) lines.push(transportLabel);
+        if (contact.hosts === "Yes") lines.push("Hosts meetups");
+        else if (contact.travels === "Yes") lines.push("Will travel to you");
+        if (contact.linkedContactIds.length > 0) lines.push("Linked to another contact");
+        if (flaggedDontMeetAgain) lines.push("Flagged: do not meet again");
+        return (
+          <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 11, color: isInactive ? T.actionRed : T.actionGreen, fontWeight: 600, marginLeft: 16, marginTop: -2, marginBottom: 4 }}>
+            {lines.map((l, i) => (
+              <div key={i} style={{ color: (l === "Flagged: do not meet again") ? T.actionRed : T.textSecondary, fontWeight: i === 0 ? 600 : 500 }}>{l}</div>
+            ))}
+          </div>
+        );
+      })()}
       {contact.relationshipType.length > 0 && (
         <div style={{ display: "flex", gap: 4, marginLeft: 16, marginTop: 4, flexWrap: "wrap" }}>
           {contact.relationshipType.map((rt) => (
@@ -1714,7 +1785,8 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
             right control for this screen's actual navigation model. */}
         <div style={{ background: T.contactsTeal, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "Add contact" : "Edit contact"}</span>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" />
+          <X size={20} color="#FFFFFF" role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClose(); } }} />
         </div>
         {draftRestored && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, margin: "0 20px 8px", fontSize: 11, color: T.actionGreenText, background: `${T.actionGreen}15`, borderRadius: radius.sm, padding: "6px 10px", flexShrink: 0 }}>
@@ -2526,7 +2598,15 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           plus a real ~8px white gap above the colour border (half this
           banner's own 16px top padding), which the old edge-to-edge
           `top: 0` never had at all. */}
-      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 8px)", zIndex: 6, background: T.contactsTeal, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* CHANGED — real edge-to-edge redesign (researched how other
+          apps handle colour under the notch/status bar): the banner's
+          own background now runs to the true screen edge with no
+          visible seam, instead of being offset down by env()+8px
+          (which left a permanent neutral gap behind the status bar).
+          The safe-area inset moved from `top` into the banner's own
+          top padding, so only the title/icons — not the colour — sit
+          below the notch. */}
+      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.contactsTeal, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Contacts</h1>
         {/* ADDED 18 Aug 2026 — My Profile and Import Shared Profile both
             live here now (Doc 1: My Profile isn't a primary-nav tab;
@@ -2630,7 +2710,10 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         // calc(env(safe-area-inset-top) + 8px), leaving this bar's own
         // bare top:62 stuck at the OLD position, overlapping the
         // banner's new, lower bottom edge.
-        <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 70px)", zIndex: 6, background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        // CHANGED — real edge-to-edge redesign: Contacts' own banner
+        // moved its safe-area inset from `top` into its own top
+        // padding, shrinking its net height by 8px, so 70 became 62.
+        <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 62px)", zIndex: 6, background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
             {/* ADDED 1 Sep 2026 — real ask: "option to select all... rather

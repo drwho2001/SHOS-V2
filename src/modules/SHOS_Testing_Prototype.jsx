@@ -1218,8 +1218,14 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
           locking at the OLD position) overlapped the banner's new
           bottom edge instead of sitting flush beneath it. Carries the
           identical offset now, so it always sticks exactly where the
-          banner's own real bottom edge is, on any device. */}
-      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 70px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          banner's own real bottom edge is, on any device.
+          CHANGED — real edge-to-edge redesign: Healthcare's banner
+          moved its own safe-area inset from `top` into its top
+          padding (so its colour now runs flush to the true screen
+          edge, no neutral gap behind the status bar) — its net
+          rendered height shrank by exactly the 8px this bar used to
+          add on top of it, so 70 became 62 to keep sitting flush. */}
+      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 62px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Testing</span>
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
             matching Medication's pattern — long-press stays as an

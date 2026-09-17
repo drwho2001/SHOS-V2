@@ -721,6 +721,14 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
 
 function EpisodeCard({ e, onOpen, hasPositive, T, radius, formatDate }) {
   const isOpen = !e.resolvedDate;
+  // CHANGED — real audit finding (icon-only-UI affordance sweep): this
+  // dot's color alone conveyed a positive-linked-test signal (red vs.
+  // blue for "Open") with no adjacent text at all — a bigger,
+  // un-reasoned-about version of the same sensitive-data-via-color
+  // problem Testing's own result dot deliberately avoids by never
+  // hiding "Positive" behind color alone. EpisodeDetail's own dot
+  // already says "positive result found" in adjacent text; this list
+  // row never did. Mirrored that same text here.
   return (
     <div onClick={() => onOpen(e.id)}
       style={{ background: T.surface, border: `1px solid ${isOpen && hasPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer" }}>
@@ -729,7 +737,7 @@ function EpisodeCard({ e, onOpen, hasPositive, T, radius, formatDate }) {
         <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{e.title}</span>
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
-        {e.triggerReason || "—"} · {isOpen ? "Open" : `Resolved ${formatDate(e.resolvedDate)}`}
+        {e.triggerReason || "—"} · {isOpen ? (hasPositive ? "Open · positive result found" : "Open") : `Resolved ${formatDate(e.resolvedDate)}`}
       </div>
     </div>
   );

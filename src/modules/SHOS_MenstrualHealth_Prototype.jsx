@@ -171,14 +171,24 @@ function getFlowIntensity(flow) {
   if (!flow) return null;
   return FLOW_INTENSITY_LEVELS[flow.trim().toLowerCase()] ?? null;
 }
+// CHANGED — real audit finding (icon-only-UI affordance sweep): the
+// drop count's only explanation was a native `title` attribute — a
+// hover tooltip, the exact anti-pattern this app's own rule exists to
+// avoid on a touchscreen-first app. Now always shows the real stored
+// text (e.g. "Heavy") right next to the drops, so the count is a
+// visual reinforcement of text already on screen, not the only way to
+// read the value.
 function FlowDrops({ flow, T, size = 11 }) {
   const level = getFlowIntensity(flow);
   if (level == null) return <span style={{ fontSize: 12, color: T.textSecondary }}>{flow || "Flow not set"}</span>;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 2 }} title={flow}>
-      {[1, 2, 3, 4].map((n) => (
-        <Drop key={n} size={size} weight="fill" color={n <= level ? T.menstrualPurple : T.border} />
-      ))}
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+        {[1, 2, 3, 4].map((n) => (
+          <Drop key={n} size={size} weight="fill" color={n <= level ? T.menstrualPurple : T.border} />
+        ))}
+      </div>
+      <span style={{ fontSize: 12, color: T.textSecondary }}>{flow}</span>
     </div>
   );
 }
@@ -995,7 +1005,10 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
           bare top:62 stuck at the OLD position, overlapping the
           banner's new, lower bottom edge. Carries the identical
           offset so it always sits flush beneath it. */}
-      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 70px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}` }}>
+      {/* CHANGED — real edge-to-edge redesign: Healthcare's banner
+          moved its safe-area inset from `top` into its own top
+          padding, shrinking its net height by 8px, so 70 became 62. */}
+      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 62px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}` }}>
         <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Menstrual & Contraception</span>
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
           {tabs.map((t) => (

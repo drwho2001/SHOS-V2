@@ -14,6 +14,7 @@ import { computeStock, getDoseComponents, formatDoseComponents } from "../calcul
 import { formatRelativeDate, sortByDateDesc } from "../calculations/encounterCalculations";
 import { nowAsStoredDate, inDaysAsStoredDate } from "../calculations/dateInputHelpers";
 import { useClinicCardVisibility, CLINIC_CARD_SECTIONS } from "../calculations/clinicCardVisibilityPreference";
+import { useIsDesktopWidth } from "../calculations/responsive";
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
@@ -162,6 +163,13 @@ function StubRow({ children, T }) {
 export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickAddWithPrefill, registerModuleBackHandler }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
+  // ADDED — real audit finding (desktop full-width sweep): this
+  // screen's Identity/Medications/Vaccinations/Testing/etc. sections
+  // are wildly uneven in row-count, so a uniform card grid (like
+  // MyProfile's own fix) would leave ragged gaps — matches the app's
+  // established CSS multi-column treatment instead (Registry
+  // Management/Glossary), applied per-section below.
+  const isDesktopWidth = useIsDesktopWidth();
   const meds = useLoadedMemo(() => loadMedicationsWithLogs(), [], []);
   // FIXED — real pre-existing bug found while wiring MyProfileRepository:
   // TestingRepository went async in an earlier batch this session, but
@@ -439,8 +447,14 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           explicit exclusion list). The one deliberate exception to
           this screen's "read-only" rule, since there's genuinely
           nowhere else these belong. */}
+      {/* ADDED — real audit finding (desktop full-width sweep): wraps
+          every section below in CSS multi-column flow on desktop only
+          (each section's own breakInside:"avoid" keeps its header and
+          card together) — mobile stays the exact same single stacked
+          column. */}
+      <div style={isDesktopWidth ? { columnCount: 2, columnGap: 16 } : undefined}>
       {visibility.identity && (
-        <>
+        <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
       <SectionHeader T={T}>Identity</SectionHeader>
       <SectionCard T={T}>
         {editingIdentity ? (
@@ -479,11 +493,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         )}
       </SectionCard>
 
-        </>
+        </div>
       )}
 
       {visibility.medications && (
-        <>
+        <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
       <CollapsibleSectionHeader T={T} onTap={() => goTo("medication")} count={meds.length} collapsed={collapsed.medications} onToggleCollapse={() => toggleCollapsed("medications")}>Current medications</CollapsibleSectionHeader>
       {!collapsed.medications && (
         <SectionCard T={T}>
@@ -509,11 +523,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           })}
         </SectionCard>
       )}
-        </>
+        </div>
       )}
 
       {visibility.allergies && (
-        <>
+        <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
       <SectionHeader T={T}>Allergies</SectionHeader>
       <SectionCard T={T}>
         {profile.allergies.length === 0 ? (
@@ -532,11 +546,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         )}
       </SectionCard>
 
-        </>
+        </div>
       )}
 
       {visibility.vaccinations && (
-        <>
+        <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
       <CollapsibleSectionHeader T={T} onTap={() => goTo("healthcare", "vaccinations")} count={vaccinations.length} collapsed={collapsed.vaccinations} onToggleCollapse={() => toggleCollapsed("vaccinations")}>Vaccinations</CollapsibleSectionHeader>
       {!collapsed.vaccinations && (
         <SectionCard T={T}>
@@ -548,11 +562,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           })}
         </SectionCard>
       )}
-        </>
+        </div>
       )}
 
       {visibility.testing && (
-        <>
+        <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
       <SectionHeader T={T} onTap={() => goTo("healthcare", "testing")}>Recent STI testing</SectionHeader>
       <SectionCard T={T}>
         {recentTests.length === 0 ? <EmptyRow T={T}>No tests logged yet.</EmptyRow> : recentTests.map((t) => (
@@ -560,11 +574,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         ))}
       </SectionCard>
 
-        </>
+        </div>
       )}
 
       {visibility.treatment && (
-        <>
+        <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
       <SectionHeader T={T} onTap={() => goTo("healthcare", "testing")}>Current treatment</SectionHeader>
       <SectionCard T={T}>
         {currentTreatment.length === 0 ? <EmptyRow T={T}>Nothing currently awaiting follow-up.</EmptyRow> : currentTreatment.map((t) => (
@@ -572,11 +586,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         ))}
       </SectionCard>
 
-        </>
+        </div>
       )}
 
       {visibility.menstrualContraception && menstrualTrackingEnabled && (
-        <>
+        <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
       <SectionHeader T={T} onTap={() => goTo("healthcare", "menstrualHealth")}>Menstrual & contraception</SectionHeader>
       <SectionCard T={T}>
         {activePregnancy && (
@@ -594,11 +608,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         )}
       </SectionCard>
 
-        </>
+        </div>
       )}
 
       {visibility.symptoms && (
-        <>
+        <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
       <SectionHeader T={T} onTap={() => goTo("healthcare", "symptomLog")}>Active symptoms</SectionHeader>
       <SectionCard T={T}>
         {activeSymptoms.length === 0 ? (
@@ -608,11 +622,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         ))}
       </SectionCard>
 
-        </>
+        </div>
       )}
 
       {visibility.encounters && (
-        <>
+        <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
       <CollapsibleSectionHeader T={T} onTap={() => goTo("activity")} count={recentPartners.length} collapsed={collapsed.encounters} onToggleCollapse={() => toggleCollapsed("encounters")}>Recent encounters</CollapsibleSectionHeader>
       {!collapsed.encounters && (
         <SectionCard T={T}>
@@ -621,11 +635,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           ))}
         </SectionCard>
       )}
-        </>
+        </div>
       )}
 
       {visibility.recentContacts && (
-        <>
+        <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
       <CollapsibleSectionHeader T={T} onTap={() => goTo("contacts")} count={recentContacts.length} collapsed={collapsed.recentContacts} onToggleCollapse={() => toggleCollapsed("recentContacts")}>Recent contacts</CollapsibleSectionHeader>
       {!collapsed.recentContacts && (
         <SectionCard T={T}>
@@ -634,11 +648,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           ))}
         </SectionCard>
       )}
-        </>
+        </div>
       )}
 
       {visibility.emergency && (
-        <>
+        <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
       <SectionHeader T={T}>Emergency information</SectionHeader>
       <SectionCard T={T}>
         {!profile.emergencyContactName && !profile.emergencyContactPhone && !profile.emergencyNotes ? (
@@ -655,8 +669,9 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         )}
       </SectionCard>
 
-        </>
+        </div>
       )}
+      </div>
 
       <div style={{ height: 24 }} />
 

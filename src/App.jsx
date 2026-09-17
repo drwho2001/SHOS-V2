@@ -55,6 +55,7 @@ import { getClinicVisitDueState, handleSnoozeClinicVisit } from "./calculations/
 // honest scope (this is a start, not a finished migration).
 import { NEUTRAL, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent, applyRealAccentOverrides } from "./calculations/designTokens";
 import { ModuleColorRepository } from "./repositories/moduleColorRepository";
+import { useIsDesktopWidth } from "./calculations/responsive";
 // ADDED — real ask: Home's title should read "[Name]'s dashboard".
 import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HeartbeatIcon as HeartPulse, HospitalIcon as Hospital, DownloadSimpleIcon as Download, UploadSimpleIcon as Upload, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon, CaretLeftIcon as ChevronLeft, UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database, TrashIcon as Trash2, WarningIcon as AlertTriangle, CheckIcon as Check, ClipboardTextIcon as ClipboardList, TreeStructureIcon as ListTree, PaperclipIcon as Paperclip, ClockCounterClockwiseIcon as History, EyeSlashIcon as EyeOff, EyeIcon as Eye, TestTubeIcon as TestTube, FireIcon as Flame, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MicroscopeIcon as Microscope, ListChecksIcon as ClipboardCheck, SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CreditCardIcon as CreditCard, FingerprintIcon as Fingerprint, LockIcon as Lock, XIcon as X } from "@phosphor-icons/react";
 // CHANGED — real Tier 1 decision: Phosphor, replacing lucide-react.
@@ -660,10 +661,15 @@ function OnboardingScreen({ onFinish }) {
   // App.jsx's own onFinish so it can tell the two paths apart.
   const advance = () => isLast ? onFinish(false) : setStep((s) => s + 1);
   const answer = async (yes) => { await slide.onAnswer(yes); advance(); };
+  // ADDED — real audit finding (desktop full-width sweep): this
+  // centered slide body had zero maxWidth, so its text wrapped
+  // edge-to-edge on a wide desktop viewport, the first screen a
+  // desktop user sees. Desktop-only cap, mobile untouched.
+  const isDesktopWidth = useIsDesktopWidth();
 
   return (
     <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: ACCENTS.home, display: "flex", flexDirection: "column", zIndex: 999, fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 32px", textAlign: "center" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 32px", textAlign: "center", ...(isDesktopWidth ? { maxWidth: 560, margin: "0 auto" } : {}) }}>
         {/* CHANGED — real ask: use the actual app icon here too, not
             the hand-drawn PulseLogo SVG — same real image
             (public/pwa-512.png) the favicon/PWA/Android icons were all

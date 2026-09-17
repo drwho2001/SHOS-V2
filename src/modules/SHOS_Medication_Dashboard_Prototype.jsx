@@ -2050,7 +2050,15 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             Contacts/Healthcare/Encounters — the sticky element's own
             `top` carries the safe-area offset plus a real ~8px white
             gap (half this banner's own 16px top padding). */}
-        <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 8px)", zIndex: 6, background: T.medsBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* CHANGED — real edge-to-edge redesign (researched how other
+            apps handle colour under the notch/status bar): the banner's
+            own background now runs to the true screen edge with no
+            visible seam, instead of being offset down by env()+8px
+            (which left a permanent neutral gap behind the status bar).
+            The safe-area inset moved from `top` into the banner's own
+            top padding, so only the title/icons — not the colour — sit
+            below the notch. */}
+        <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.medsBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Medication</h1>
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
             {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,

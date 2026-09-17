@@ -74,6 +74,7 @@ import { ContraceptionRepository } from "../repositories/contraceptionRepository
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useIsDesktopWidth } from "../calculations/responsive";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.contacts/ACTION.red/ACTION.green at
@@ -1109,6 +1110,14 @@ function ReadRow({ label, value, T }) {
 }
 
 function ProfileDataView({ profile, T }) {
+  // ADDED — real audit finding (desktop full-width sweep): this
+  // stack of ~14 SectionCards had no width cap or reflow at all, so
+  // it read as one long, narrow single column even at 1600px.
+  // Desktop-only grid, matching the Guide screen's own established
+  // pattern; mobile stays the exact same stacked column. Declared
+  // here, before the early return below, so the hook always runs in
+  // the same order regardless of anyFilled.
+  const isDesktopWidth = useIsDesktopWidth();
   // Real read-only summaries, single owner elsewhere — see each
   // repository's own comment for why this screen no longer edits
   // either of these directly.
@@ -1161,7 +1170,7 @@ function ProfileDataView({ profile, T }) {
   }
 
   return (
-    <div style={{ padding: "0 16px 8px" }}>
+    <div style={isDesktopWidth ? { padding: "0 16px 8px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8, alignItems: "start" } : { padding: "0 16px 8px" }}>
       <SectionCard title="Identity" T={T}>
         <ReadRow label="Nickname" value={profile.nickname} T={T} />
         <ReadRow label="Gender" value={profile.gender} T={T} />

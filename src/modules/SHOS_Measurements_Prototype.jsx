@@ -784,7 +784,10 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
           bar's own bare top:62 stuck at the OLD position, overlapping
           the banner's new, lower bottom edge. Carries the identical
           offset so it always sits flush beneath it. */}
-      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 70px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* CHANGED — real edge-to-edge redesign: Healthcare's banner
+          moved its safe-area inset from `top` into its own top
+          padding, shrinking its net height by 8px, so 70 became 62. */}
+      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 62px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Measurements</span>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {/* ADDED — real ask: default unit preferences + manage

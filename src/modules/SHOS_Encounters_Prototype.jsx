@@ -1106,21 +1106,24 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           of the app — inconsistent by omission, not by design. Same
           maxWidth: 600 + border pattern applied here. */}
       <div style={{ width: "100%", background: T.bg, minHeight: "100vh", paddingBottom: 90 }}>
-      {/* CHANGED 16 Sep 2026 — real report: `top: 0` only respected the
-          status bar before the first scroll. Same fix as Contacts/
-          Healthcare/Medication's own screen-title banners — this
-          outer wrapper's own `top` now carries the safe-area offset
-          plus a real ~8px white gap (half the inner banner's own 16px
-          top padding), revealing this wrapper's own T.bg background
-          above the colour border once stuck, not just before. */}
-      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 8px)", background: T.bg, zIndex: 5 }}>
+      {/* CHANGED — real edge-to-edge redesign (researched how other
+          apps handle colour under the notch/status bar): the earlier
+          env()+8px offset on this wrapper left a permanent neutral
+          (T.bg) gap behind the status bar at every scroll position.
+          Reverted `top` back to a plain 0 — the inner banner's own top
+          padding now carries the safe-area inset instead, so its
+          colour runs to the true screen edge with no visible seam,
+          while the title/icons stay safely below the notch. This
+          outer wrapper's T.bg background is now effectively unused
+          (zero height above the inner banner) but harmless to leave. */}
+      <div style={{ position: "sticky", top: 0, background: T.bg, zIndex: 5 }}>
         {/* ADDED 26 Aug 2026 — real ask: page title on a banner filled
             with the module's own colour, same pattern applied across
             every module this pass. */}
         {/* CHANGED 15 Sep 2026 — real report: "too blocky / harsh/clashy" —
             softened the sharp corners/stark border, same treatment as
             Contacts'/Healthcare's/Medication's own screen-title banners. */}
-        <div style={{ background: T.encountersPink, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ background: T.encountersPink, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* CHANGED — real accessibility gap found via a full axe
               scan (page-has-heading-one): Encounters was missed by the
               earlier heading pass, which only covered 6 named primary

@@ -706,16 +706,27 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               through. DecoyHome gets its own copy of this, wired to
               the same handler, so it works from inside a duress
               session too. */}
+          {/* CHANGED — real audit finding (exhaustive screen-reader
+              audit): these 4 header icons — Home's own primary entry
+              points to Lock/Search/My Profile/Settings — were 100%
+              unreachable via keyboard (confirmed via a real Tab-key
+              trace), unlike the bottom nav's own tabs, which already
+              got this exact treatment. Added role="button"/tabIndex/
+              onKeyDown/a real aria-label to all 4, matching that
+              precedent. */}
           {onLockNow && appLockEnabled && (
-            <Lock size={19} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onLockNow} title="Lock now" />
+            <Lock size={19} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={onLockNow} title="Lock now" aria-label="Lock now"
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onLockNow(); } }} />
           )}
           {/* ADDED 19 Aug 2026 — Global Search, canonical Home placement
               per Doc 1, same treatment as the Settings gear icon right
               next to it. */}
-          <Search data-tour="search-icon" size={19} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onOpenSearch} title="Search" />
+          <Search data-tour="search-icon" size={19} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={onOpenSearch} title="Search" aria-label="Search"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenSearch(); } }} />
           {/* ADDED 19 Aug 2026 — My Profile access on Home too, per
               the user's ask, alongside the existing Contacts shortcut. */}
-          <User size={19} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={() => setShowMyProfile(true)} title="My Profile" />
+          <User size={19} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={() => setShowMyProfile(true)} title="My Profile" aria-label="My Profile"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMyProfile(true); } }} />
           {/* ADDED 19 Aug 2026 — canonical Settings location per Doc 1:
               "gear icon in the Top App Bar, canonically on Home." */}
           {/* CHANGED 26 Aug 2026 — real ask: chrome-level icons
@@ -723,7 +734,8 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               lines, not too weighty — weight="bold" keeps this an
               outline icon (not a filled/solid one), just a heavier
               stroke, color darkened from grey to near-black. */}
-          <SettingsIcon data-tour="settings-icon" size={20} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onOpenSettings} title="Settings" />
+          <SettingsIcon data-tour="settings-icon" size={20} weight="bold" color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={onOpenSettings} title="Settings" aria-label="Settings"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenSettings(); } }} />
         </div>
       </h1>
       {/* ADDED — real ask: "dashboard needs teal header bar under

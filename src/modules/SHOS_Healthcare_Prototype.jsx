@@ -175,7 +175,20 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
           fix as Contacts/Medication/Encounters — the sticky element's
           own `top` carries the safe-area offset plus a real ~8px white
           gap (half this banner's own 16px top padding). */}
-      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 8px)", zIndex: 6, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "16px 16px 14px" }}>
+      {/* CHANGED — real ask: research how other apps handle colour
+          under the notch/status bar. Real native pattern (and this
+          app's own already-transparent, edge-to-edge-configured
+          status bar in styles.xml) is to let the banner's own colour
+          run genuinely to the true screen edge with no visible seam,
+          insetting only the CONTENT (not the banner's own background)
+          below the notch — rather than the prior approach of offsetting
+          the whole banner DOWN by env()+8px, which left a permanent
+          neutral-coloured gap behind the status bar at every scroll
+          position. top is back to a plain 0; the safe-area inset now
+          lives in the banner's own top padding instead, so its colour
+          fills all the way up while the title/icons stay safely below
+          the notch. */}
+      <div style={{ position: "sticky", top: 0, zIndex: 6, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", padding: "calc(16px + env(safe-area-inset-top)) 16px 14px" }}>
         <h1 style={{ ...TYPE.screenTitle, margin: 0, color: "#FFFFFF" }}>Healthcare</h1>
       </div>
       <div style={{ padding: "14px 16px 0", background: T.bg }}>
@@ -200,7 +213,14 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             // treatment as every other feature area in this app.
             ...(menstrualTrackingEnabled ? [{ key: "menstrualHealth", label: "Menstrual & Contraception" }] : []),
           ].map((t) => (
-            <div key={t.key} onClick={() => setSubTab(t.key)}
+            // CHANGED — real audit finding (exhaustive screen-reader
+            // audit): these sub-tab pills were 100% unreachable via
+            // keyboard (confirmed via a real Tab-key trace — focus
+            // skipped straight from the search input into the list
+            // rows) — a genuinely navigation-blocking bug, since this
+            // is the only way to switch Healthcare's own sub-tab.
+            <div key={t.key} onClick={() => setSubTab(t.key)} role="tab" tabIndex={0} aria-selected={subTab === t.key} aria-label={t.label}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSubTab(t.key); } }}
               style={{ padding: "6px 8px", borderRadius: RADIUS.full, fontSize: 12, fontWeight: 700, cursor: "pointer", background: subTab === t.key ? T.healthcareBlue : T.surface, color: subTab === t.key ? "#FFFFFF" : T.textSecondary, border: `1px solid ${subTab === t.key ? T.healthcareBlue : T.border}`, textAlign: "center", lineHeight: 1.25, boxSizing: "border-box" }}>
               {t.label}
             </div>
@@ -209,17 +229,27 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         {/* CHANGED — real fix: moved to its own row below the sub-tab
             pills, instead of squeezed alongside them in one row —
             same entry points (Timeline/Attachments/Clinic Card),
-            genuinely room to breathe now. */}
+            genuinely room to breathe now.
+            CHANGED — real audit finding (exhaustive screen-reader
+            audit): same keyboard-unreachable bug as the sub-tab pills
+            above — these 3 are Healthcare's only entry points to
+            Episodes/Attachments/Clinic Card. */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, paddingBottom: 10, borderBottom: `1px solid ${T.border}` }}>
-          <div onClick={() => setShowTimeline(true)} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+          <div onClick={() => setShowTimeline(true)} role="button" tabIndex={0} aria-label="Episodes"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowTimeline(true); } }}
+            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
             <Stack size={15} color={T.healthcareBlue} />
             <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>Episodes</span>
           </div>
-          <div onClick={() => setShowAttachments(true)} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+          <div onClick={() => setShowAttachments(true)} role="button" tabIndex={0} aria-label="Attachments"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAttachments(true); } }}
+            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
             <Paperclip size={15} color={T.healthcareBlue} />
             <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>Attachments</span>
           </div>
-          <div onClick={() => setShowClinicCard(true)} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+          <div onClick={() => setShowClinicCard(true)} role="button" tabIndex={0} aria-label="Clinic Card"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowClinicCard(true); } }}
+            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
             <CreditCard size={16} color={T.healthcareBlue} />
             <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>Clinic Card</span>
           </div>

@@ -160,10 +160,14 @@ oversight.
   toggles a short caption on tap — not a hover-only tooltip, since this
   app targets touchscreens). Applied to all 4 of Home's Status-at-a-
   glance rings 16 Sep 2026 (each explains its own calculation basis,
-  not just adherence). Apply this on sight to new icon-only UI; a full
-  retroactive audit of every existing icon in the app hasn't been done
-  as its own pass — flag a genuine icon-only gap if one is found later,
-  don't assume this is exhaustive yet.
+  not just adherence). Apply this on sight to new icon-only UI. A real,
+  delegated retroactive audit ran 17 Sep 2026 and found and fixed 3
+  genuine gaps (Contacts' transport/hosts/linked/flagged icon row and
+  `MethodIcons`, Timeline's `EpisodeCard` positive-result dot,
+  MenstrualHealth's `FlowDrops` hover-only title) — see "Recently
+  shipped" below for the full list. Still not claimed exhaustive
+  (the audit itself covered `src/modules/*.jsx` + `App.jsx`, not every
+  possible icon-only element) — flag a genuine gap if one surfaces.
 - **Verify a write actually landed** — don't trust a tool call's success
   alone; confirm state changed for anything that matters (this applies
   to Notion edits and to code changes alike).
@@ -3376,11 +3380,47 @@ this date; summarized here for durability.
   "Recently shipped" below: the due-reminders banner stack and the
   SW-update banner were both unlandmarked, same shape as the earlier
   Settings/Global Search fix, just missed since neither happened to
-  be visible during that pass's own scan. Still genuinely out of
-  scope, a bigger undertaking with no fixed end date: a full
-  screen-reader reading-order/announcement-quality audit beyond the
-  specific gaps found so far — each real gap keeps surfacing one
-  scoped scan at a time, not in one exhaustive pass.
+  be visible during that pass's own scan.
+  **The "full exhaustive audit" itself finally ran 17 Sep 2026** (a
+  genuinely exhaustive axe-core sweep across ~35 screen states plus
+  real keyboard-Tab traces, not another scoped scan) — see "Recently
+  shipped" below for the full report and the 2 most-severe,
+  genuinely-navigation-blocking fixes it led to (Home's 4 header
+  icons, Healthcare's sub-tab pills + shortcut row). **Real, confirmed,
+  still-open findings from that pass, each its own bounded follow-up**:
+  (1) the single biggest one — of ~610 real `cursor:"pointer"`
+  clickable elements app-wide, only ~55 carry `role="button"` and
+  ~148 carry `tabIndex`, meaning most of this app's interactive
+  elements (every module's own FAB "+" button, back chevron, sheet
+  close X, 3-dot menu, and more) are unreachable by keyboard — the
+  exact bottom-nav/undo-toast fix pattern already proven, just never
+  propagated past those two sites; a real, quantified, cross-cutting
+  remediation pass, not a per-screen patch. (2) Critical axe `label`/
+  `select-name` violations (missing accessible names) concentrated in
+  a handful of shared components — `SelectRow`/`SelectField`,
+  `DateTimeField`, `AgeField`, `SectionCard`'s Notes fields,
+  `hoursInput()`, the Colour-scheme RGB/Hex inputs — fixing each
+  component once would close most instances at once, the same
+  leverage `ConfirmDeleteCard` had. (3) No module-level bottom sheet
+  has real dialog semantics (`role="dialog"`, focus-on-open) — a
+  pattern `App.jsx`'s own top-level modals already use correctly,
+  never ported down to any module sheet. (4) Only ~7 of the app's
+  ~40+ screens/sheets have a real heading element — invisible to
+  axe's own document-scoped `page-has-heading-one` rule, since
+  whichever primary screen happens to be mounted underneath an
+  overlay still satisfies it even while the actually-visible sheet
+  has no heading at all. (5) A handful of new contrast violations
+  (Guide's tour button using a raw hex duplicate of `ACCENTS.home`
+  instead of the token; Medication Dashboard's outline button fading
+  to 50% opacity when a dose is locked; a few more not yet
+  individually pinned down). (6) Zero live-region announcement
+  anywhere a search/filter box's result count changes. (7) One
+  `nested-interactive` violation confirmed live on Contacts (fires
+  reproducibly, exact element not yet pinned down — flagged as real
+  but not fully triaged). None of these were attempted this round
+  given the genuine scale involved — logged here in full so the next
+  session can pick up any one of them without re-auditing from
+  scratch.
 - **Spacing consistency — audited 10 Sep 2026, clean result, not a
   gap anymore.** The real live report that started this (Contacts'
   "N active" count sitting flush against the header banner's bottom
@@ -3411,6 +3451,22 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (17 Sep 2026 — icon-only-UI affordance fixes, status-bar/notch edge-to-edge redesign, desktop full-width sweep, and a first real screen-reader-keyboard pass)
+
+Real ask, four items reordered/reframed from the standing backlog list: (4) icon-only-UI retroactive audit — done first, per the user's own explicit ordering; (2) desktop full-width — reframed from "measure-cap sweep" to "desktop should always be full width, never affecting mobile"; (1) status-bar/notch colour — research how other apps handle it, then design and implement a real approach; (3) screen-reader audit — "do exhaustive." Delegated 3 parallel background agents (icon-only-UI, desktop full-width, screen-reader) per this project's own established "delegate audits, verify and fix myself" pattern, worked item 1 directly in parallel, then triaged every finding against real code before touching anything.
+
+**Item 1 — status-bar/notch colour, researched and redesigned.** Two web searches confirmed the real, current best practice: Android's own edge-to-edge guidance (`SystemBarStyle.auto(Color.Transparent...)`) says let a header's background run genuinely to the true screen edge with the status bar drawn transparently over it, inset only the CONTENT below the notch — not the app's prior approach (this session's own earlier "sticky-header status-bar fix," which offset the whole banner DOWN by `env(safe-area-inset-top) + 8px`, leaving a permanent neutral-coloured gap/seam behind the status bar at every scroll position). `android/app/src/main/res/values/styles.xml` already has `android:statusBarColor`/`android:navigationBarColor` set to transparent (a 1 Sep 2026 fix) — the native layer was already ready for this, the web CSS just wasn't taking advantage of it. Redesigned all 4 real screen-title banners (Contacts/Healthcare/Medication Dashboard/Encounters) and their own 7 dependent sub-heading bars (Testing/Clinic Visits/Vaccinations/Symptom Log/Measurements/Menstrual Health's own sub-tab header, Contacts' bulk-select toolbar): each banner's `top` moved back to a plain `0`, with the safe-area inset relocated into the banner's own top padding (`calc(16px + env(safe-area-inset-top))` instead of a flat `16px`) — the banner's colour now fills all the way to the true edge with zero seam, while the title/icons still sit safely below the notch. The banner's own net height shrank by exactly the 8px it used to add on top, so each of the 7 dependent offsets moved from `+70px` to `+62px` to stay flush. The 3 sheet-title banners (Testing/Clinic Visits/Encounters' own Add/Edit forms) were deliberately left untouched — confirmed via direct code reading that they sit inside a genuinely different structural shape (their own `paddingTop: env()` lives on the same `position: fixed` element that also scrolls its own content, not a separate scrolling ancestor the way the screen-title banners' `<main>` did), so the earlier seam bug this redesign targets structurally cannot occur there — a real, checked exclusion, not an oversight.
+
+**Item 4 — icon-only-UI affordance audit, 3 real gaps fixed.** Delegated agent read the established precedent (Contacts' active-status dot, Medication's adherence dot — both `role="button"` + tap-to-reveal caption) and found 3 genuine gaps, none previously flagged: (1) Contacts' own transport/hosts-travels/linked/flagged icon row sat right next to the already-fixed status dot with none of its own affordance — fixed by reusing the same `showStatusInfo` toggle, with each icon now `role="button"`/`tabIndex`/a real `title`/`aria-label`, and the revealed caption panel now lists every active icon's own meaning (transport mode, hosting, linked-contact, the safety-relevant "flagged: do not meet again"). `MethodIcons` (the WhatsApp/Snapchat/Fabguys/Fabswingers/Recon badge row — 3 of which are original, invented marks with no public brand meaning) got the same tap-to-reveal treatment, listing each method by name. (2) Timeline's `EpisodeCard` list row conveyed a positive-linked-test signal through dot colour alone, with no adjacent text — unlike its own detail view, which already says "Open · positive result found." Mirrored that exact text into the list row. (3) MenstrualHealth's `FlowDrops` explained its 1-4 drop count via a hover-only `title` — the precise anti-pattern this app's own standing rule exists to avoid on a touchscreen-first app. Now always shows the real stored text (e.g. "Heavy") next to the drops, a permanent visual reinforcement rather than the only way to read the value.
+
+**Item 2 — desktop full-width sweep, genuine gaps closed across ~15 screens.** Delegated agent grepped every module for `isDesktopWidth` and confirmed a real, exhaustive gap list, then re-verified 2 already-documented exclusions (Global Search's proportional rows, Medication Dashboard's manually-reordered Registry tab) were still correct rather than assumed. Fixed, all additive `isDesktopWidth ? desktop : mobile` branches with mobile markup left byte-for-byte untouched (verified via screenshot at 390px): `App.jsx`'s `OnboardingScreen` (a `maxWidth` cap on the centered slide body); `MyProfile`'s `ProfileDataView` (~14 `SectionCard`s, previously one long column, now a real `minmax(340px,1fr)` grid — the same pattern proven on Guide); `ClinicCard` (11 sections, each wildly uneven in row-count — CSS multi-column flow via `columnCount:2`, matching Registry Management's own established precedent for this exact content shape, each section wrapped `breakInside:"avoid"`); and 8 Settings sub-screens — `ResourcesScreen` (grid per category), `DeveloperToolsScreen`/`StatsScreen` (columnCount per section block), `NotificationsScreen` (grid of toggle cards), `TrashScreen`/`NotificationHistoryScreen`/`ErrorLogScreen` (columnCount per log/list), `CalendarScreen` (a `maxWidth` cap on the whole month grid, which was already a real grid, just unconstrained), `AboutScreen` (`maxWidth` cap, genuinely minimal content), `DesignScreen` (grid for the 2 toggle cards, columnCount for the Module/Status colour row lists). `PrivacyScreen` deliberately got the safer `maxWidth`-cap treatment instead of a full card grid — its own App Lock/PIN/duress/recovery logic is security-sensitive with a real history of regressions in this exact file, and a measure cap avoids all risk to the nested toggle/reveal logic while still fixing the stretched-edge complaint.
+
+**Item 3 — exhaustive screen-reader audit, a first real pass on the highest-severity finding.** Delegated agent ran a genuinely exhaustive pass (never done before): a fresh axe-core sweep across ~35 screen states, real `page.keyboard.press("Tab")` traces, and direct source reading across every module file. Headline finding, quantified not anecdotal: of ~610 real `cursor:"pointer"` clickable elements app-wide, only ~55 have `role="button"`/~148 have `tabIndex` — meaning the large majority of this app's interactive elements are completely unreachable by keyboard or screen reader, the same gap already fixed once for the bottom nav and once for undo/redo toasts, but never propagated further. Given the genuine scale (600+ sites, correctly described by the audit itself as needing "a dedicated, cross-cutting remediation pass, not per-screen patches"), fixed the specific sites the audit flagged as **genuinely navigation-blocking** (not just inconvenient) in this pass: Home's own 4 header icons (Search/My Profile/Settings/Lock now — confirmed via a real 40-press Tab trace to be 100% unreachable, meaning a keyboard/screen-reader user could not open Settings, Search, or My Profile from Home at all) and Healthcare's own sub-tab pills + Episodes/Attachments/Clinic Card shortcut row (confirmed via a real 20-press Tab trace — a keyboard user could not switch Healthcare's sub-tab or reach any of its 3 shortcuts). All now `role="button"`/`role="tab"`/`tabIndex={0}`/a real `aria-label`/`onKeyDown` (Enter/Space), matching the bottom nav's own already-proven pattern. Also fixed the audit's own explicitly-flagged "smallest, cheapest fix" — Contacts' and Global Search's sheet-close `X` icons already had a real `aria-label` but weren't focusable at all; both now are. The remaining findings (critical missing form-field labels concentrated in a handful of shared components — `SelectRow`, `DateTimeField`, `SectionCard`'s Notes fields, `hoursInput()`; no dialog semantics/focus-on-open on any module-level sheet, unlike `App.jsx`'s own top-level modals; only ~7 of the app's ~40+ screens have a real heading element; several new contrast violations; zero live-region announcements on any search/filter box; one unresolved `nested-interactive` violation on Contacts) are real, confirmed, and logged in Known Issues below rather than silently dropped — each is its own bounded follow-up, not attempted this round given the genuine scale involved.
+
+**A real, non-deterministic test flake investigated and ruled out, not shipped past blind.** The full smoke suite failed intermittently on test 14 (PWA auto-update) twice in a row after these changes, then passed twice in a row on a third and fourth run — a real scare, chased to ground rather than assumed safe. Confirmed via `git diff` that none of this round's files touch `main.jsx`, `public/sw.js`, or `App.jsx`'s own service-worker/`swUpdateAvailable` code at all (the only `App.jsx` change was `OnboardingScreen`'s desktop cap, nowhere near the SW logic); confirmed via a standalone, isolated Playwright probe (a fresh browser launch, no preceding tests) that the real update-banner mechanism itself works correctly and near-instantly against this round's own build; and confirmed the same test also fails intermittently in exactly the same slot even against the unmodified baseline build under the same "13 heavy sequential tests deep in one shared page" load this specific test runs under (only `testEncryptionMigratesLegacyData`/`testInteractiveTour`/`testServiceWorkerAutoUpdate` get their own fresh browser context — everything else shares one long-lived page). Root-caused to resource/timing contention from being the 14th test in a long sequential run, not a functional regression — logged here for whoever next sees this exact test flake, so it isn't re-investigated as a mystery from scratch.
+
+Verified live throughout: full build, `npx eslint .` clean (including a real `react-hooks/rules-of-hooks` catch — `MyProfile`'s new `isDesktopWidth` hook was initially declared after an early `return`, moved above it), and the full 15-flow smoke-test suite against a real `vite preview` production build — 15/15 pass (twice consecutively, after the flake above was chased down). Screenshot-verified at both 1600×1000 (desktop — Contacts' banner now runs edge-to-edge with a real 4-column grid, My Profile's own SectionCards likewise) and 390×844 (mobile — confirmed byte-for-byte unchanged single-column layouts).
 
 ## Recently shipped (16 Sep 2026, later again yet — attachment delete confirmation, medication draft autosave, and 3 real dead-code/mismatch cleanups)
 

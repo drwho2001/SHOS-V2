@@ -570,6 +570,11 @@ function formatBytes(bytes) {
 
 function DeveloperToolsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
+  // ADDED — real audit finding (desktop full-width sweep): grid the
+  // Storage overview/Data integrity/Diagnostics/Danger zone section
+  // blocks on desktop, same multi-column treatment as this file's
+  // other log/list-heavy screens.
+  const isDesktopWidth = useIsDesktopWidth();
 
   const [resetStage, setResetStage] = useState("idle"); // idle -> confirming -> done
   // ADDED — real ask: a storage-usage indicator, cheap given this
@@ -689,6 +694,8 @@ function DeveloperToolsScreen({ onClose }) {
         Live record counts across every part of the app's local storage, mainly useful for confirming a backup/restore or migration went as expected.
       </div>
 
+      <div style={isDesktopWidth ? { columnCount: 2, columnGap: 0 } : undefined}>
+      <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "16px 16px 6px" }}>Storage overview</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
         <div onClick={() => setShowStorageBreakdown((s) => !s)} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), cursor: "pointer" }}>
@@ -719,7 +726,9 @@ function DeveloperToolsScreen({ onClose }) {
           </div>
         ))}
       </div>
+      </div>
 
+      <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
       {/* ADDED — real ask: surface dangling relation-by-ID references
           (e.g. an Encounter whose attendeeIds still names a Contact
           that's since been hard-deleted) — nothing else in the app
@@ -753,7 +762,9 @@ function DeveloperToolsScreen({ onClose }) {
           </div>
         )}
       </div>
+      </div>
 
+      <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
       {/* ADDED — real ask: "allow error reporting." See
           ErrorLogScreen's own header for the full reasoning (a local,
           on-device log, not a real third-party crash-reporting
@@ -771,7 +782,9 @@ function DeveloperToolsScreen({ onClose }) {
         </div>
       </div>
       {showErrorLog && <ErrorLogScreen darkMode={darkMode} onClose={() => setShowErrorLog(false)} />}
+      </div>
 
+      <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Danger zone</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: `1px solid ${ACTION.red}`, borderRadius: RADIUS.md, margin: "0 16px 20px", padding: 16 }}>
         {resetStage === "done" ? (
@@ -809,6 +822,8 @@ function DeveloperToolsScreen({ onClose }) {
             <span style={{ fontSize: 14, color: ACTION.red, fontWeight: 600 }}>Reset all app data</span>
           </div>
         )}
+      </div>
+      </div>
       </div>
     </div>
   );
@@ -1188,6 +1203,10 @@ function ClinicalJustificationsCategory({ darkMode }) {
 function ResourcesScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
+  // ADDED — real audit finding (desktop full-width sweep): each
+  // category (its own label + card) is a self-contained unit — grid
+  // them Guide-style on desktop instead of one long single column.
+  const isDesktopWidth = useIsDesktopWidth();
   const [query, setQuery] = useState("");
   // ADDED — real groundwork for encryption at rest: hasAnyResourceMatch()
   // is now async (see resourcesRepository.js's own comment), so this
@@ -1211,10 +1230,12 @@ function ResourcesScreen({ onClose }) {
             population pass. Matches name, link, or notes. */}
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search resources"
           style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", marginBottom: 16 }} />
-        {ResourcesRepository.getAllCategoryKeys().map((key) => (
-          <ResourceCategory key={key} categoryKey={key} darkMode={darkMode} query={query} />
-        ))}
-        {!query.trim() && <ClinicalJustificationsCategory darkMode={darkMode} />}
+        <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8, alignItems: "start" } : undefined}>
+          {ResourcesRepository.getAllCategoryKeys().map((key) => (
+            <ResourceCategory key={key} categoryKey={key} darkMode={darkMode} query={query} />
+          ))}
+          {!query.trim() && <ClinicalJustificationsCategory darkMode={darkMode} />}
+        </div>
         {query.trim() && !hasMatch && (
           <div style={{ textAlign: "center", padding: "24px 16px", color: T.textDisabled, fontSize: 13 }}>No resources match your search.</div>
         )}
@@ -1229,6 +1250,17 @@ function ResourcesScreen({ onClose }) {
 // and exact field-tier list.
 function PrivacyScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
+  // ADDED — real audit finding (desktop full-width sweep): a real
+  // multi-column grid was considered (the audit's own suggestion —
+  // grid top-level cards only, leaving nested sub-controls like
+  // biometric-inside-App-Lock alone) but deliberately NOT built this
+  // round — this screen's own App Lock/PIN/duress/recovery logic is
+  // security-sensitive and this app's own history has real regressions
+  // from structural changes here (see cryptoService.js's own
+  // Phase 4 entries). A maxWidth cap + center is the safer fix that
+  // still avoids the stretched-edge-to-edge complaint, with zero risk
+  // to the nested toggle/reveal logic below.
+  const isDesktopWidth = useIsDesktopWidth();
 
   const [settings, setSettings] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const [pinEntry, setPinEntry] = useState("");
@@ -1434,7 +1466,7 @@ function PrivacyScreen({ onClose }) {
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Privacy & Security</span>
       </div>
 
-      <div style={{ padding: "16px" }}>
+      <div style={isDesktopWidth ? { padding: "16px", maxWidth: 640, margin: "0 auto" } : { padding: "16px" }}>
         {/* ADDED — real ask, from a competitive-research finding: SHOS's
             "no cloud, no account" architecture was never actually
             stated anywhere in-app as a deliberate choice with real
@@ -2096,6 +2128,10 @@ function InstallPwaNudge({ darkMode }) {
 
 function NotificationsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
+  // ADDED — real audit finding (desktop full-width sweep): grid the
+  // master toggle/pause card/quiet hours/7 per-type toggles/history
+  // link on desktop, matching MyProfile's own SectionCard-grid fix.
+  const isDesktopWidth = useIsDesktopWidth();
   const [refreshKey, forceRefresh] = useState(0);
   const refresh = () => forceRefresh((n) => n + 1);
   const [showHistory, setShowHistory] = useState(false);
@@ -2165,6 +2201,7 @@ function NotificationsScreen({ onClose }) {
         <NotificationPermissionBanner darkMode={darkMode} />
         <InstallPwaNudge darkMode={darkMode} />
 
+        <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8, alignItems: "start" } : undefined}>
         {/* ADDED 3 Sep 2026 — real ask: a single master switch, distinct
             from the 5 independent per-type toggles below. Checked in
             notificationService.js's own scheduleNotification() before
@@ -2246,6 +2283,7 @@ function NotificationsScreen({ onClose }) {
           <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Notification history</span>
           <ChevronRight size={16} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} />
         </div>
+        </div>
       </div>
 
       {showHistory && <NotificationHistoryScreen darkMode={darkMode} onClose={() => setShowHistory(false)} />}
@@ -2262,6 +2300,9 @@ function NotificationHistoryScreen({ darkMode, onClose }) {
   // pattern as TrashScreen's own, this screen otherwise reads
   // NEUTRAL/DARK directly rather than a per-module T.
   const T = { ...(darkMode ? DARK : NEUTRAL), actionRed: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red };
+  // ADDED — real audit finding (desktop full-width sweep): uneven
+  // multi-line log entries — CSS multi-column flow, same as Trash.
+  const isDesktopWidth = useIsDesktopWidth();
   const [entries, setEntries] = useLoadedState(() => NotificationHistoryRepository.getAll(), [], []);
   // CHANGED — real audit finding: this used to clear the whole log on
   // a direct tap, no confirmation, unlike every other permanent-delete
@@ -2294,8 +2335,10 @@ function NotificationHistoryScreen({ darkMode, onClose }) {
           <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textAlign: "center", padding: "40px 16px" }}>
             Nothing's fired yet. Real reminders (and the test notification) show up here the moment they actually deliver.
           </div>
-        ) : entries.map((e, i) => (
-          <div key={i} style={{ padding: "10px 0", borderBottom: i < entries.length - 1 ? ("1px solid " + (darkMode ? DARK.border : NEUTRAL.border)) : "none" }}>
+        ) : (
+        <div style={isDesktopWidth ? { columnCount: 2, columnGap: 16 } : undefined}>
+        {entries.map((e, i) => (
+          <div key={i} style={isDesktopWidth ? { padding: "10px 0", breakInside: "avoid" } : { padding: "10px 0", borderBottom: i < entries.length - 1 ? ("1px solid " + (darkMode ? DARK.border : NEUTRAL.border)) : "none" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>{e.title}</span>
               <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flexShrink: 0 }}>
@@ -2305,6 +2348,8 @@ function NotificationHistoryScreen({ darkMode, onClose }) {
             {e.body && <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>{e.body}</div>}
           </div>
         ))}
+        </div>
+        )}
       </div>
     </div>
   );
@@ -2322,6 +2367,11 @@ function ErrorLogScreen({ darkMode, onClose }) {
   // pattern as TrashScreen's own, this screen otherwise reads
   // NEUTRAL/DARK directly rather than a per-module T.
   const T = { ...(darkMode ? DARK : NEUTRAL), actionRed: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red };
+  // ADDED — real audit finding (desktop full-width sweep): uneven
+  // multi-line log entries — CSS multi-column flow, same as Trash/
+  // Notification history. Only the entries list is columned; the
+  // "Report a problem" card above it stays full-width.
+  const isDesktopWidth = useIsDesktopWidth();
   const [entries, setEntries] = useLoadedState(() => ErrorLogRepository.getAll(), [], []);
   // CHANGED — real audit finding: this used to clear the whole log on
   // a direct tap, no confirmation, unlike every other permanent-delete
@@ -2432,8 +2482,10 @@ function ErrorLogScreen({ darkMode, onClose }) {
           <div style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, textAlign: "center", padding: "40px 16px" }}>
             No errors logged. A real uncaught error or crash will show up here automatically.
           </div>
-        ) : entries.map((e, i) => (
-          <div key={i} style={{ padding: "10px 0", borderBottom: i < entries.length - 1 ? ("1px solid " + (darkMode ? DARK.border : NEUTRAL.border)) : "none" }}>
+        ) : (
+        <div style={isDesktopWidth ? { columnCount: 2, columnGap: 16 } : undefined}>
+        {entries.map((e, i) => (
+          <div key={i} style={isDesktopWidth ? { padding: "10px 0", breakInside: "avoid" } : { padding: "10px 0", borderBottom: i < entries.length - 1 ? ("1px solid " + (darkMode ? DARK.border : NEUTRAL.border)) : "none" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontFamily: "'JetBrains Mono', monospace" }}>{e.source === "user-report" ? "Your note" : e.source}</span>
               <span style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flexShrink: 0 }}>
@@ -2443,6 +2495,8 @@ function ErrorLogScreen({ darkMode, onClose }) {
             <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, wordBreak: "break-word" }}>{e.message}</div>
           </div>
         ))}
+        </div>
+        )}
       </div>
     </div>
   );
@@ -2857,6 +2911,10 @@ function TrendInsight({ text, tone, T }) {
 // guidance where relevant (BASHH), not just internal app logic.
 function StatsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
+  // ADDED — real audit finding (desktop full-width sweep): grid the
+  // Encounter/Healthcare/Medication/Contacts section blocks on
+  // desktop, same multi-column treatment as Developer Tools.
+  const isDesktopWidth = useIsDesktopWidth();
   // ADDED 16 Sep 2026 — real ask (#78): tap-to-reveal explanation for
   // the organism-breakdown's own same-day dedup rule, same InfoIcon
   // pattern already used everywhere else this app explains a
@@ -2930,8 +2988,10 @@ function StatsScreen({ onClose }) {
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Stats</span>
       </div>
       <div style={{ padding: 16 }}>
+      <div style={isDesktopWidth ? { columnCount: 2, columnGap: 16 } : undefined}>
 
         {/* Activity */}
+        <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
         <div style={{ ...TYPE.sectionLabel, color: ACCENTS.encounters, padding: "0 0 6px" }}>Encounter</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
@@ -2964,7 +3024,9 @@ function StatsScreen({ onClose }) {
             ))}
           </div>
         </div>
+        </div>
 
+        <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
         {/* Healthcare */}
         <div style={{ ...TYPE.sectionLabel, color: ACCENTS.healthcare, padding: "0 0 6px" }}>Healthcare</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
@@ -3061,7 +3123,9 @@ function StatsScreen({ onClose }) {
           <StatRow label="Days since last visit" value={clinicVisitStats.daysSinceLast != null ? `${clinicVisitStats.daysSinceLast} days` : "No past visits logged"}
             explanation="Days since your most recent real (already happened, not a future booking) clinic visit." />
         </div>
+        </div>
 
+        <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
         {/* Medication */}
         <div style={{ ...TYPE.sectionLabel, color: ACCENTS.medication, padding: "0 0 6px" }}>Medication</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
@@ -3089,7 +3153,9 @@ function StatsScreen({ onClose }) {
             </div>
           </div>
         </div>
+        </div>
 
+        <div style={isDesktopWidth ? { breakInside: "avoid" } : undefined}>
         {/* Contacts */}
         <div style={{ ...TYPE.sectionLabel, color: ACCENTS.contacts, padding: "0 0 6px" }}>Contacts</div>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
@@ -3108,7 +3174,9 @@ function StatsScreen({ onClose }) {
             </div>
           </div>
         </div>
+        </div>
 
+      </div>
       </div>
     </div>
   );
@@ -3662,6 +3730,12 @@ function GlossaryScreen({ onClose }) {
 // build issue can be traced back to source.
 function AboutScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
+  // ADDED — real audit finding (desktop full-width sweep): this
+  // screen's minimal content (one short card + a couple of centered
+  // lines) has nothing to grid or column — a maxWidth cap + center is
+  // the appropriate treatment here, same as Guide/Glossary's own
+  // measure-cap precedent.
+  const isDesktopWidth = useIsDesktopWidth();
 
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
@@ -3669,7 +3743,7 @@ function AboutScreen({ onClose }) {
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>About</span>
       </div>
-      <div style={{ padding: 16 }}>
+      <div style={isDesktopWidth ? { padding: 16, maxWidth: 480, margin: "0 auto" } : { padding: 16 }}>
         <div style={{ textAlign: "center", padding: "24px 0" }}>
           <div style={{ ...TYPE.recordTitle, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>SHOS</div>
           <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled }}>Sexual Health Operating System</div>
@@ -3914,6 +3988,7 @@ function CalendarSyncSheet({ onClose }) {
 
 function CalendarScreen({ onClose, onNavigateToRecord }) {
   const [darkMode] = useDarkModePreference();
+  const isDesktopWidth = useIsDesktopWidth();
 
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [selectedDay, setSelectedDay] = useState(null);
@@ -4046,7 +4121,12 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
           })}
         </div>
       )}
-      <div style={{ padding: 16 }}>
+      {/* ADDED — real audit finding (desktop full-width sweep): the
+          month grid itself has no width cap, so at 1600px each day
+          cell becomes a huge, sparse square. Caps and centers the
+          whole calendar body on desktop — it's already a real grid,
+          just an unconstrained one — mobile untouched. */}
+      <div style={isDesktopWidth ? { padding: 16, maxWidth: 760, margin: "0 auto" } : { padding: 16 }}>
         {/* CHANGED — real ask: "doesn't have to exist in a settings
             menu, can exist as icon" — this used to be a dismissible
             hint banner pointing at Settings -> Privacy; now the header
@@ -4143,6 +4223,11 @@ function CalendarScreen({ onClose, onNavigateToRecord }) {
 
 function TrashScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
+  // ADDED — real audit finding (desktop full-width sweep): this
+  // screen's deleted-item rows have uneven title lengths, so CSS
+  // multi-column flow fits better than a uniform card grid — same
+  // treatment as Registry Management/Glossary's own row lists.
+  const isDesktopWidth = useIsDesktopWidth();
   // Local T-shaped object for the shared ConfirmDeleteCard — this screen
   // otherwise reads NEUTRAL/DARK directly rather than a per-module T,
   // but the card needs .actionRed/.textPrimary/etc. on one object.
@@ -4257,14 +4342,16 @@ function TrashScreen({ onClose }) {
                 onConfirm={deleteAll}
               />
             )}
-            <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
+            <div style={isDesktopWidth ? { columnCount: 2, columnGap: 16 } : { background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
               {items.map((entry, i) => (
                 <div key={entry.trashId} onClick={() => selectMode && toggleSelected(entry.trashId)}
                   {...(selectMode ? {
                     role: "checkbox", "aria-checked": selectedIds.includes(entry.trashId), "aria-label": recordLabel(entry), tabIndex: 0,
                     onKeyDown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSelected(entry.trashId); } },
                   } : {})}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: i < items.length - 1 ? "1px solid #DCDCE1" : "none", cursor: selectMode ? "pointer" : "default" }}>
+                  style={isDesktopWidth
+                    ? { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", breakInside: "avoid", marginBottom: 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, cursor: selectMode ? "pointer" : "default" }
+                    : { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: i < items.length - 1 ? "1px solid #DCDCE1" : "none", cursor: selectMode ? "pointer" : "default" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
                     {selectMode && (
                       <div style={{ width: 20, height: 20, borderRadius: 999, border: `2px solid ${selectedIds.includes(entry.trashId) ? ACCENTS.medication : "#DCDCE1"}`, background: selectedIds.includes(entry.trashId) ? ACCENTS.medication : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -4304,6 +4391,11 @@ function TrashScreen({ onClose }) {
 }
 
 function DesignScreen({ onClose }) {
+  // ADDED — real audit finding (desktop full-width sweep): grid the
+  // Dark-mode/CVD-palette toggle cards; multi-column flow (matching
+  // Registry Management's own row-list precedent) for the Module
+  // colours/Status colours row lists.
+  const isDesktopWidth = useIsDesktopWidth();
   const [overrides, setOverrides] = useLoadedState(() => ModuleColorRepository.getOverrides(), [], {});
   const [changed, setChanged] = useState(false);
   // ADDED 26 Aug 2026 — real ask: single global dark mode toggle here,
@@ -4375,6 +4467,7 @@ function DesignScreen({ onClose }) {
             </button>
           </div>
         )}
+        <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 8, alignItems: "start" } : undefined}>
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
             <span style={{ fontSize: 14, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 500 }}>Dark mode</span>
@@ -4418,8 +4511,9 @@ function DesignScreen({ onClose }) {
             </div>
           </div>
         </div>
+        </div>
         <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 0 6px" }}>Module colours</div>
-        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", ...(isDesktopWidth ? { columnCount: 2, columnGap: 0 } : {}) }}>
           {CUSTOMIZABLE_MODULE_KEYS.map((key) => {
             const isOverridden = key in overrides;
             const currentValue = overrides[key] || ACCENTS[key];
@@ -4436,7 +4530,7 @@ function DesignScreen({ onClose }) {
             dark mode included — see designTokens.js's ACTION export
             and resolveDarkAccent(). */}
         <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "20px 0 6px" }}>Status colours</div>
-        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden" }}>
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, overflow: "hidden", ...(isDesktopWidth ? { columnCount: 2, columnGap: 0 } : {}) }}>
           {CUSTOMIZABLE_ACTION_KEYS.map((key) => {
             const isOverridden = key in overrides;
             const currentValue = overrides[key] || ACTION[key === "actionRed" ? "red" : "green"];

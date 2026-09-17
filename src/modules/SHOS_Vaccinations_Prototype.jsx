@@ -472,7 +472,10 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
           bar's own bare top:62 stuck at the OLD position — now
           overlapping the banner's new, lower bottom edge. Carries the
           identical offset so it always sits flush beneath it. */}
-      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 70px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* CHANGED — real edge-to-edge redesign: Healthcare's banner
+          moved its safe-area inset from `top` into its own top
+          padding, shrinking its net height by 8px, so 70 became 62. */}
+      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 62px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Vaccinations</span>
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle. */}
         <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>
