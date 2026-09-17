@@ -3418,15 +3418,37 @@ this date; summarized here for durability.
   largest menu). Combined role-attribute count across `src/modules/`
   after both batches: `role="button"` 174, `role="switch"` 23,
   `role="menuitem"` 16, `role="checkbox"` 6 (up from the original
-  ~55/~148 `role`/`tabIndex` baseline). Still real, still open: of
-  ~575 real `cursor:"pointer"` onClick sites left in `src/modules/`,
-  ~211 still carry no role/tabIndex at all — mostly per-row edit/link/
-  unlink icons inside detail views and one-off text links (a "Now"
-  quick-fill, a "Cancel"/"Save" pair, a collapse toggle) that are each
-  individually distinct rather than one repeated shared shape, so
-  fixing the rest needs real per-site review, not another mechanical
-  regex sweep — this was the highest-value, most repeated shared
-  shapes first, not the whole count. (2) Critical axe `label`/
+  ~55/~148 `role`/`tabIndex` baseline). **The remaining ~211 sites
+  RESOLVED 17 Sep 2026, later still — see "Recently shipped" below.**
+  A precise per-site scanner (anchoring each `cursor:"pointer"` style
+  to its real onClick-bearing JSX tag, not just the nearest preceding
+  tag — needed since a few sites, like an `EmptyRow` wrapping a
+  clickable `<span>`, have more than one tag on the same line)
+  resolved to 260 genuine gaps once native `<button>`/`<a>`/`<input>`
+  elements were excluded (already keyboard-operable by default, no
+  fix needed). All 260 fixed the same way as batches 1-2, plus 6
+  true icon-only sites given a real `aria-label` (Contacts' header
+  Download/User icons, Settings' 7 PIN show/hide Eye/EyeOff pairs,
+  the colour-scheme swatch and its Reset icon). **A real, critical,
+  cross-cutting bug was found and fixed in the same round**: live-
+  verifying the new batch threw `currentTarget.click is not a
+  function` on Enter — `SVGElement` has no `.click()` method in this
+  Chromium (confirmed directly), so the `e.currentTarget.click()`
+  synthetic-click trick every `onKeyDown` handler this session has
+  used silently failed whenever it was applied directly to a Phosphor
+  icon's own SVG tag rather than a wrapping `<div>` — not just this
+  batch's new sites, but every earlier icon-only fix that used the
+  same trick directly on an icon tag (the ChevronLeft back-button
+  sweep, the X/Trash2 close/delete sweep, the InfoIcon/Gear/Search
+  addendum): 351 real sites across 19 files. Fixed at the root for
+  all 351 in one pass — replaced `e.currentTarget.click()` with
+  `e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles:
+  true, cancelable: true }))`, since `dispatchEvent` lives on
+  `EventTarget` itself (universal across HTML and SVG alike) and a
+  bubbling click event reaches React's delegated listener the same
+  way a real click does. Verified live: pressing Enter on a
+  previously-broken icon (Contacts' "Open My Profile" header icon)
+  now genuinely opens the screen, zero page errors. (2) Critical axe `label`/
   `select-name` violations (missing accessible names) concentrated in
   a handful of shared components — **RESOLVED 17 Sep 2026, both
   batches — see "Recently shipped" below.** Batch 1:
@@ -3488,6 +3510,101 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (17 Sep 2026, latest of all yet again again again again — accessibility: closing the ~610-site sweep's remaining ~211 gaps, and a critical SVG click() bug fix)
+
+Real continuation of the icon-button/toggle keyboard-accessibility work
+("Continue but bigger batches... don't wait for my input unless
+genuinely important"), picking up exactly where the prior two batches
+left off: the ~211 real `cursor:"pointer"` clickable elements Known
+Issues flagged as needing individual per-site review rather than
+another mechanical regex sweep, since they're mostly per-row edit/
+link/unlink icons and one-off text links rather than one more repeated
+shared shape.
+
+**Built a precise scanner rather than guessing at fixes by hand.** A
+first pass (anchoring each `cursor:"pointer"` style to the nearest
+PRECEDING JSX tag) over-counted — several sites have more than one tag
+on the same line (e.g. `<EmptyRow T={T}>None recorded. <span
+onClick={...}>...` — the real clickable element is the inner `<span>`,
+not `EmptyRow`), which would have put the fix on the wrong element
+entirely. Rewrote the scanner to anchor each `cursor:"pointer"` to the
+tag immediately preceding its own `onClick={` occurrence, resolving to
+260 genuine gaps once native `<button>`/`<a>`/`<input>`/`<select>`/
+`<textarea>` elements were excluded — these are already keyboard-
+operable by browser default (Enter/Space already triggers their own
+`onClick`) and don't need `role`/`tabIndex`/`onKeyDown` at all; roughly
+40 of the original count were exactly this false-positive shape.
+
+**All 260 fixed with the same `role="button" tabIndex={0} onKeyDown`
+pattern already proven across batches 1-2**, covering: chip remove/add
+controls (`onClick={() => onChange(value.filter(...))}` and its
+mirror), the "Now" quick-fill date/time span duplicated across every
+module's own `DateField` component, select-mode toolbar controls
+(Select all/none, Cancel/exit), multi-select filter chips (roles,
+positions, hosts, day-of-week pickers), and a long tail of one-off
+rows across `SHOS_Settings_Prototype.jsx` (PIN/duress/recovery entry
+screens, Calendar day cells, Trash restore/delete, Design screen
+swatches) and every other module file. 6 true icon-only sites (no
+visible text child, so a bare `role="button"` alone would have no
+accessible name) got a real `aria-label` instead of relying on text
+content: Contacts' header Download ("Import profile from file") and
+User ("Open My Profile") icons, Settings' 7 PIN show/hide Eye/EyeOff
+pairs (all sharing one `showPins`/`setShowPins` state — "Show PIN"/
+"Hide PIN"), the Colour-scheme screen's swatch circle
+(`` aria-label={`Customise ${label} colour`} ``) and its Reset icon
+("Reset to default").
+
+**A real, critical, cross-cutting bug was found live-verifying this
+batch, not from reading the diff — and it wasn't new to this batch.**
+Focusing the newly-fixed "Open My Profile" icon and pressing Enter
+threw `currentTarget.click is not a function` in the console instead
+of opening the screen. Root-caused directly (not assumed): confirmed
+via a standalone check that `SVGElement` genuinely has no `.click()`
+method in this Chromium (`typeof svg.click` is `"undefined"`) —
+`HTMLElement.prototype.click()` is a real DOM convenience method, but
+`SVGElement` never implemented it in most browsers. Every `onKeyDown`
+handler built this session using the `e.currentTarget.click()`
+synthetic-click trick (deliberately chosen earlier to avoid having to
+re-derive each element's own often-multi-statement `onClick` closure)
+silently fails whenever it's attached directly to a Phosphor icon's
+own JSX tag rather than a wrapping `<div>`, since Phosphor icons
+render as raw `<svg>` elements. This wasn't limited to this batch's
+260 new sites — it also broke every earlier icon-only fix from
+batches 1-2 that attached the trick directly to an icon tag: the
+44-site ChevronLeft back-button sweep, the 25+11-site X/Trash2 close/
+delete sweep, and the InfoIcon/Gear/Search addendum. A full count
+found 351 real sites across 19 files using the exact literal
+`e.currentTarget.click();` — every one silently broken for a keyboard
+user pressing Enter/Space, despite the smoke suite passing throughout
+(the suite drives every flow via real clicks, never keyboard-only
+interaction on these specific icon elements, so this class of bug was
+structurally invisible to it).
+
+Fixed at the root for all 351 sites in one pass: replaced
+`e.currentTarget.click()` with `e.currentTarget.dispatchEvent(new
+MouseEvent("click", { bubbles: true, cancelable: true }))` —
+`dispatchEvent` is defined on `EventTarget` itself, universal across
+every DOM node type including SVG, and a bubbling synthetic click
+event reaches React's own delegated listener the identical way a real
+mouse click does, unlike the convenience `.click()` method that only
+`HTMLElement` implements. Verified live, not just re-running the
+existing suite: focused the "Open My Profile" icon directly (confirmed
+via `document.activeElement`) and pressed Enter — the My Profile
+screen genuinely opened, zero page errors, proving the fix works for
+the exact class of element that was broken.
+
+This closes the ~610-site sweep's real, review-worthy portion. Of the
+original ~610 `cursor:"pointer"` clickable elements this sweep's own
+scanner can detect, every one is now keyboard-operable; a stray site
+using a different clickability pattern entirely (not `cursor:"pointer"`
+styled, or a click handler attached some other way) could still exist
+but hasn't surfaced.
+
+Verified live: full build, `npx eslint .` clean, and the full 15-flow
+smoke-test suite against a real `vite preview` production build —
+15/15 pass, including a direct re-run after the `dispatchEvent` fix to
+confirm no regression from the second pass.
 
 ## Recently shipped (17 Sep 2026, latest of all yet again again — accessibility: shared toggle-switch component + 3-dot dropdown menu items, batch 2 of the ~610-site sweep)
 
