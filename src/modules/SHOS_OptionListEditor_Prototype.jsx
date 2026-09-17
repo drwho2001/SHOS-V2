@@ -155,7 +155,7 @@ export function OptionListDetail({ listName, onClose }) {
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 230, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>{OPTION_LIST_LABELS[listName] || listName}</span>
       </div>
 
@@ -202,7 +202,7 @@ export function OptionListDetail({ listName, onClose }) {
                   <>
                     <ArrowUp size={14} color={i === 0 ? T.textDisabled : T.textSecondary} style={{ cursor: i === 0 ? "default" : "pointer" }} onClick={() => i > 0 && move(i, -1)} title="Move up" />
                     <ArrowDown size={14} color={i === options.length - 1 ? T.textDisabled : T.textSecondary} style={{ cursor: i === options.length - 1 ? "default" : "pointer" }} onClick={() => i < options.length - 1 && move(i, 1)} title="Move down" />
-                    <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => remove(opt)} title="Remove this option (archives it)" aria-label="Remove this option (archives it)" />
+                    <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => remove(opt)} title="Remove this option (archives it)" aria-label="Remove this option (archives it)" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
                   </>
                 )}
               </div>
@@ -237,7 +237,7 @@ export function OptionListDetail({ listName, onClose }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
                     <SwapIcon size={14} color={ACCENTS.healthcare} style={{ cursor: "pointer" }} onClick={() => setReassociatingValue(reassociatingValue === value ? null : value)} title="Reassociate its records with a different value" aria-label="Reassociate its records with a different value" />
                     <RestoreIcon size={14} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => restoreArchived(value)} title="Restore to the live list" aria-label="Restore to the live list" />
-                    <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => setConfirmDeleteForever(value)} title="Delete permanently — cannot be undone" aria-label="Delete permanently — cannot be undone" />
+                    <X size={14} color={ACTION.red} style={{ cursor: "pointer" }} onClick={() => setConfirmDeleteForever(value)} title="Delete permanently — cannot be undone" aria-label="Delete permanently — cannot be undone" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
                   </div>
                 </div>
                 <div style={{ marginTop: 4 }}>
@@ -289,7 +289,7 @@ export default function OptionListsScreen({ onClose }) {
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Option lists</span>
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, padding: "10px 16px 0" }}>

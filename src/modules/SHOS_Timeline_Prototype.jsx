@@ -490,10 +490,10 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          <Archive size={19} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={toggleArchive} title={episode.isArchived ? "Unarchive" : "Archive"} aria-label={episode.isArchived ? "Unarchive" : "Archive"} />
-          <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} title="Delete permanently" aria-label="Delete permanently" />
+          <Archive size={19} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={toggleArchive} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleArchive(); } }} title={episode.isArchived ? "Unarchive" : "Archive"} aria-label={episode.isArchived ? "Unarchive" : "Archive"} />
+          <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} title="Delete permanently" aria-label="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
         </div>
       </div>
       {episode.isArchived && (
@@ -683,7 +683,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary, flex: 1 }}>Episodes</span>
       </div>
       {/* CHANGED — real gap found: every other Healthcare-domain
@@ -691,7 +691,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
           this session — Timeline was the one left behind with the
           original bare inline icon (the exact "nearly hidden, make it
           clearer" pattern this whole standardization was fixing). */}
-      <div onClick={onAdd} style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", right: 20, width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", zIndex: 20 }}>
+      <div onClick={onAdd} role="button" tabIndex={0} aria-label="Add episode" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", right: 20, width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", zIndex: 20 }}>
         <Plus size={24} />
       </div>
       <div style={{ padding: "12px 16px 100px" }}>

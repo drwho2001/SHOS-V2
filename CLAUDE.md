@@ -3395,7 +3395,17 @@ this date; summarized here for durability.
   close X, 3-dot menu, and more) are unreachable by keyboard — the
   exact bottom-nav/undo-toast fix pattern already proven, just never
   propagated past those two sites; a real, quantified, cross-cutting
-  remediation pass, not a per-screen patch. (2) Critical axe `label`/
+  remediation pass, not a per-screen patch. **Batch 1 of that
+  remediation shipped 17 Sep 2026 — see "Recently shipped" below.**
+  Every FAB "+" button (12 sites across 10 modules), back-chevron
+  button (44 sites across 17 files), sheet-close X icon (25 sites),
+  Delete/Trash icon (11 sites), 3-dot "more options" menu (3 sites),
+  and Timeline's Archive icon (1 site) is now `role="button"`/
+  `tabIndex={0}`/keyboard-operable — `role="button"` count grew from
+  ~55 to ~166 in this pass alone. Still real, still open: the large
+  remainder of the ~610-site count (per-row edit/link/unlink icons,
+  chip-toggle rows, and more) — this was the highest-value, most
+  repeated shared shapes first, not the whole count. (2) Critical axe `label`/
   `select-name` violations (missing accessible names) concentrated in
   a handful of shared components — **RESOLVED 17 Sep 2026, both
   batches — see "Recently shipped" below.** Batch 1:
@@ -3457,6 +3467,89 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (17 Sep 2026, latest of all — accessibility: keyboard-operability for the app's most-repeated icon-button shapes, batch 1 of the ~610-site sweep)
+
+Real ask, continuing "Continue but bigger batches" with no further pause
+between shipped batches ("After push to main works just move onto next,
+don't wait for my input"): the biggest remaining accessibility finding —
+of ~610 real `cursor:"pointer"` clickable elements app-wide, only ~55
+carried `role="button"` and ~148 `tabIndex`, meaning most of this app's
+interactive elements were completely unreachable by keyboard or screen
+reader. Rather than attempt the full count in one unverifiable pass,
+picked the highest-value, most-repeated shared icon-button SHAPES first —
+the same "fix the pattern once, it reaches everywhere it's duplicated"
+approach already proven for the bottom nav and undo/redo toasts earlier
+this session — since these six shapes alone account for a large,
+well-defined fraction of the total and appear on nearly every screen.
+
+**FAB "+" buttons — 12 sites across 10 module files**, each getting
+`role="button"`/`tabIndex={0}`/a real context-specific `aria-label`
+("Add contact"/"Add encounter"/"Add medication"/etc.) and a real
+`onKeyDown` invoking the same handler on Enter/Space. Three of
+MenstrualHealth's own FABs (Cycle/Contraception/Pregnancy tabs) were
+byte-identical strings, so the `Edit` tool's uniqueness requirement
+couldn't disambiguate them — fixed via a direct Python line-number edit
+instead, giving each its own real label ("Log period"/"Add contraception
+method"/"Add pregnancy entry") rather than one generic string across all
+three.
+
+**Back-chevron buttons — 44 sites across 17 files.** Fixed via a Python
+regex sweep matching every `<ChevronLeft ... onClick={...} />` self-
+closing tag and inserting `role="button" tabIndex={0} aria-label="Back"
+onKeyDown={...}` before the closing `/>` — using `e.currentTarget.click()`
+inside the `onKeyDown` handler rather than trying to duplicate each
+tag's own `onClick` expression, since that sidesteps ever needing to
+know or reconstruct the handler (a bare reference like `onBack`, an
+inline arrow, or a multi-statement arrow body all just work identically
+via a real synthesized click). A first regex pass missed 2 of the 44 —
+both had an inline arrow handler containing `=>`, and the regex's
+`[^>]*` character class excluded `>` entirely, so it stopped matching at
+the arrow itself rather than the tag's real end. Fixed those 2 by hand;
+one (Settings' Calendar screen) turned out to be a paired
+Previous/Next-month nav, not a screen-back control at all, so it got
+real "Previous month"/"Next month" labels instead of the generic "Back"
+the regex sweep used everywhere else — caught by actually reading the
+surrounding JSX before assuming the generic label applied.
+
+**Sheet-close X icons (25 sites) and Delete/Trash icons (11 sites) —
+already had real `aria-label`s from an earlier accessibility pass, just
+never keyboard-focusable.** A second Python regex sweep (this one
+anchored to end-of-line via `re.MULTILINE`'s `$`, which correctly
+handles an arrow function's `=>` since the terminator condition is the
+literal end of the line, not "first `>` encountered" — the exact class
+of bug the ChevronLeft sweep hit) added `role="button" tabIndex={0}`
+plus the same `e.currentTarget.click()` `onKeyDown` pattern to every one
+without touching the aria-label already there.
+
+**3-dot "more options" menu triggers — 3 sites** (Contacts, Encounters,
+Medication Dashboard), each fixed by hand rather than regex since the
+correct semantics needed a real `aria-expanded={menuOpen}` bound to
+each file's own actual state variable, not just `role="button"` —
+`aria-haspopup="true"` added too, so a screen reader announces this is
+a menu trigger, not a plain button.
+
+**Timeline's Archive/Unarchive icon — 1 site**, found in the same sweep
+(already had a real `aria-label`/`title`, same keyboard gap as the X/
+Trash icons) — fixed the same way.
+
+**Verified live, not just via the smoke suite**: a fresh Playwright
+script confirmed the specific class of gap being closed — a real
+`page.keyboard.press("Enter")` on the newly-focused Contacts FAB (after
+`.focus()`, confirming `document.activeElement` matched) genuinely
+opened the real "Add contact" sheet, the same outcome a mouse click
+already produced, proving the fix is functionally real and not just a
+DOM attribute with no working keyboard path behind it.
+
+Not touched this round, honestly logged rather than silently rolled
+into "batch 1 done": the much larger remainder of the ~610-site count
+(per-row edit/link/unlink icons inside detail views, individual
+chip-toggle rows, and more) — this batch covers the shared, universal
+shapes; per-screen sweeps for the rest are real, separate future work.
+
+Verified live: full build, `npx eslint .` clean, and the full 15-flow
+smoke-test suite against a real `vite preview` production build —
+15/15 pass, no regressions from any of the 17 files touched.
 
 ## Recently shipped (17 Sep 2026, later again — accessibility: missing accessible names, batch 2, the Notes-textarea cluster)
 
