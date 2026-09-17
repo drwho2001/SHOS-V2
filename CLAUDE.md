@@ -3474,6 +3474,54 @@ this date; summarized here for durability.
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
 
+## Recently shipped (17 Sep 2026, latest of all yet again again — accessibility: shared toggle-switch component + 3-dot dropdown menu items, batch 2 of the ~610-site sweep)
+
+Real ask, continuing the same "don't wait, move batch to batch"
+instruction — the next well-defined, high-leverage shared shape after
+icon-only buttons: the app's shared toggle-switch component (a plain
+`<div onClick={() => onChange(!value)}>` with no semantics at all,
+defined identically in 5 files) and the 3-dot "more options" dropdown
+MENUS whose trigger got fixed in batch 1 but whose own ITEMS (Edit/
+Archive/Delete/Update dose/etc.) still had zero keyboard access.
+
+**`ToggleSwitch` — 5 files (ClinicVisits, Contacts, Medication
+Dashboard, MyProfile, Testing), one fix per file's own component
+definition, each reaching every real caller.** Added `role="switch"`,
+`aria-checked={value}`, `tabIndex={0}`, and a real `onKeyDown`
+(Enter/Space calls `onChange(!value)`) — the component takes no
+`label` prop today, so no `aria-label` was added; its accessible name
+still comes from whatever visible text a caller places next to it,
+same as before this fix, just now genuinely focusable and toggleable
+by keyboard rather than mouse-only.
+
+**3-dot dropdown menu items — Contacts, Encounters, and Medication
+Dashboard (the same 3 files whose menu TRIGGERS batch 1 already
+fixed).** Contacts' menu (3 items: Edit/Archive/Delete) and its
+separate show-blank-fields eye-icon toggle fixed by hand; Encounters'
+menu (3 items: Edit/Archive-or-Unarchive/Delete) fixed by hand.
+Medication Dashboard's own menu — the largest, 11 real items (Edit
+medication/Update dose/Request refill early/Log waste/Correct stock/
+Course completed/Archive/Delete/Move up/Move down, several
+conditionally rendered) — fixed via a targeted Python regex matching
+every menu-item `<div onClick={...}>` sharing the same
+`padding: "10px 14px", fontSize: 13` style shape and inserting
+`role="menuitem" tabIndex={0} onKeyDown={...}` before the recognized
+style literal; the `onKeyDown` calls `e.currentTarget.click()` rather
+than trying to re-derive each item's own often-multi-statement
+closure, the same technique already proven safe for the FAB/chevron
+sweep in batch 1. All 3 menu containers also got `role="menu"` on the
+dropdown wrapper itself.
+
+**Verified live, not just via the smoke suite**: opened Medication
+Dashboard's real 3-dot menu via a focused `Enter` keypress on the
+trigger, then confirmed the "Edit medication" `role="menuitem"` row is
+both visible and genuinely keyboard-focusable — the full open-menu→
+reach-an-item path works end to end, not just the trigger.
+
+Verified live: full build, `npx eslint .` clean, and the full 15-flow
+smoke-test suite against a real `vite preview` production build —
+15/15 pass, no regressions from any of the 6 files touched.
+
 ## Recently shipped (17 Sep 2026, latest of all yet again — accessibility: keyboard-operability addendum, batch 1's own leftover header-level icons)
 
 Small, same-day follow-up found while re-sweeping for other common

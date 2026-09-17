@@ -1090,7 +1090,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
 
 function ToggleSwitch({ value, onChange, T }) {
   return (
-    <div onClick={() => onChange(!value)} style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.contactsTeal : T.surfaceVariant, position: "relative", cursor: "pointer", transition: "background 150ms ease" }}>
+    <div onClick={() => onChange(!value)} role="switch" tabIndex={0} aria-checked={value} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(!value); } }} style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.contactsTeal : T.surfaceVariant, position: "relative", cursor: "pointer", transition: "background 150ms ease" }}>
       <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 20, height: 20, borderRadius: radius.full, background: "#FFFFFF", transition: "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
     </div>
   );
@@ -2125,7 +2125,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {/* ADDED — real ask: show-blank-fields toggle. */}
-          <div onClick={() => setShowBlankFields((v) => !v)} title={showBlankFields ? "Hide blank fields" : "Show blank fields"} style={{ cursor: "pointer" }}>
+          <div onClick={() => setShowBlankFields((v) => !v)} role="button" tabIndex={0} aria-pressed={showBlankFields} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowBlankFields((v) => !v); } }} title={showBlankFields ? "Hide blank fields" : "Show blank fields"} aria-label={showBlankFields ? "Hide blank fields" : "Show blank fields"} style={{ cursor: "pointer" }}>
             {showBlankFields ? <Eye size={19} color={T.contactsTeal} /> : <EyeOff size={19} color={T.textSecondary} />}
           </div>
           <div style={{ position: "relative" }}>
@@ -2133,14 +2133,14 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           {menuOpen && (
             <>
               <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 39 }} />
-              <div style={{ position: "absolute", top: 28, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, boxShadow: "0 4px 16px rgba(0,0,0,.15)", zIndex: 40, minWidth: 170, overflow: "hidden" }}>
-                <div onClick={() => { onEdit(contact.id); setMenuOpen(false); }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+              <div role="menu" style={{ position: "absolute", top: 28, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.sm, boxShadow: "0 4px 16px rgba(0,0,0,.15)", zIndex: 40, minWidth: 170, overflow: "hidden" }}>
+                <div onClick={() => { onEdit(contact.id); setMenuOpen(false); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEdit(contact.id); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
                   <Settings2 size={14} color={T.textSecondary} /> Edit contact
                 </div>
-                <div onClick={() => { setConfirmArchive(true); setMenuOpen(false); }} style={{ padding: "10px 14px", fontSize: 13, color: T.actionRed, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+                <div onClick={() => { setConfirmArchive(true); setMenuOpen(false); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setConfirmArchive(true); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.actionRed, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
                   <Archive size={14} /> Archive contact
                 </div>
-                <div onClick={() => { setConfirmDelete(true); setMenuOpen(false); }} style={{ padding: "10px 14px", fontSize: 13, color: T.actionRed, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
+                <div onClick={() => { setConfirmDelete(true); setMenuOpen(false); }} role="menuitem" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setConfirmDelete(true); setMenuOpen(false); } }} style={{ padding: "10px 14px", fontSize: 13, color: T.actionRed, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, borderTop: `1px solid ${T.border}` }}>
                   <Trash2 size={14} /> Delete permanently
                 </div>
               </div>
