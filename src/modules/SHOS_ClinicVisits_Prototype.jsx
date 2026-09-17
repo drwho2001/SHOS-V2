@@ -146,7 +146,7 @@ function DateTimeField({ label, value, onChange, T }) {
         <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
         <span onClick={() => onChange(`${nowAsDateTimeLocalString()}:00.000Z`)} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Now</span>
       </div>
-      <input type="datetime-local" value={inputVal}
+      <input type="datetime-local" value={inputVal} aria-label={label}
         onChange={(e) => onChange(e.target.value ? `${e.target.value}:00.000Z` : "")}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
     </div>
@@ -464,9 +464,9 @@ function AdHocMedicationsManager({ value, onChange, T }) {
           (matching every other text field in this app), Add sits
           below rather than fighting them for horizontal space. */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ceftriaxone 1g IM"
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ceftriaxone 1g IM" aria-label="Medication name"
           style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, boxSizing: "border-box" }} />
-        <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)"
+        <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" aria-label="Medication notes"
           style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, boxSizing: "border-box" }} />
         <div onClick={add} style={{ padding: "8px 12px", borderRadius: radius.sm, background: T.healthcareBlue, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>Add</div>
       </div>

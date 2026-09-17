@@ -2190,7 +2190,7 @@ function NotificationsScreen({ onClose }) {
   const hoursInput = (value, onChange) => (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
       <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Hours before:</span>
-      <input type="number" min={1} max={168} value={value}
+      <input type="number" min={1} max={168} value={value} aria-label="Hours before"
         onChange={(e) => onChange(Math.max(1, Math.min(168, Number(e.target.value) || 1)))}
         style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13, textAlign: "center" }} />
     </div>
@@ -3410,12 +3410,12 @@ function ColorInputRow({ colorKey, currentValue, isOverridden, onSetColor, onRes
           ) : (
             <>
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>Hex</div>
-              <input value={hexDraft} onChange={(e) => commitHex(e.target.value)} placeholder="#RRGGBB"
+              <input value={hexDraft} onChange={(e) => commitHex(e.target.value)} placeholder="#RRGGBB" aria-label="Hex colour value"
                 style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontFamily: "'JetBrains Mono', monospace", fontSize: 13, marginBottom: 10, boxSizing: "border-box" }} />
               <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>RGB</div>
               <div style={{ display: "flex", gap: 8 }}>
                 {["r", "g", "b"].map((channel) => (
-                  <input key={channel} type="number" min="0" max="255" value={rgb[channel]}
+                  <input key={channel} type="number" min="0" max="255" value={rgb[channel]} aria-label={`${channel.toUpperCase()} (0-255)`}
                     onChange={(e) => commitRgbChannel(channel, e.target.value)}
                     style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box" }} />
                 ))}

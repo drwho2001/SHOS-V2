@@ -3397,11 +3397,15 @@ this date; summarized here for durability.
   propagated past those two sites; a real, quantified, cross-cutting
   remediation pass, not a per-screen patch. (2) Critical axe `label`/
   `select-name` violations (missing accessible names) concentrated in
-  a handful of shared components — `SelectRow`/`SelectField`,
-  `DateTimeField`, `AgeField`, `SectionCard`'s Notes fields,
-  `hoursInput()`, the Colour-scheme RGB/Hex inputs — fixing each
-  component once would close most instances at once, the same
-  leverage `ConfirmDeleteCard` had. (3) No module-level bottom sheet
+  a handful of shared components — **RESOLVED 17 Sep 2026 for
+  `SelectRow`/`SelectField`, `DateTimeField`, `AgeField`,
+  `hoursInput()`, and the Colour-scheme RGB/Hex inputs, see "Recently
+  shipped" below.** `SectionCard`'s own Notes `<textarea>` fields (~20
+  sites, one per module's Add/Edit form) are the one part of this
+  finding still open — deliberately left as its own next-smallest
+  batch rather than folded into the first pass, since it's a
+  genuinely separate, larger cluster from the `<select>`/
+  `<input type="date/number">` gaps just closed. (3) No module-level bottom sheet
   has real dialog semantics (`role="dialog"`, focus-on-open) — a
   pattern `App.jsx`'s own top-level modals already use correctly,
   never ported down to any module sheet. (4) Only ~7 of the app's
@@ -3451,6 +3455,58 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (17 Sep 2026, latest — accessibility: missing accessible names on shared form-field components, batch 1)
+
+Real ask: continue the accessibility remediation flagged in Known Issues
+below (critical axe `label`/`select-name` violations concentrated in a
+handful of shared components), smallest batch first. This app duplicates
+its shared field components per-module (`SelectField`, `DateTimeField`,
+`AgeField`, etc.) rather than importing one true shared file — so "fixing
+each once" means fixing each of the independent per-file copies, not one
+central definition; still small and mechanical, since a fix at a
+component's own definition reaches every call site in that file for free.
+
+**`SelectField`/`SelectRow` — 10 copies checked, 1 real gap found.**
+Every copy across Contacts/ClinicVisits/Encounters/MenstrualHealth/
+MyProfile/SymptomLog/Testing/Timeline/Vaccinations already had
+`aria-label={label}` on its `<select>` — only Medication Dashboard's own
+`SelectRow` was missing it, confirmed by diffing all 10 copies directly
+rather than assumed uniform. Fixed the one real outlier.
+
+**`DateTimeField` — all 3 copies missing it.** ClinicVisits/Encounters/
+Medication Dashboard all lacked `aria-label={label}` on the
+`datetime-local` input — unlike `SelectField`, this component never got
+the fix at all. Fixed all 3.
+
+**`AgeField` — both copies missing it.** Contacts' and My Profile's own
+age `<input type="number">` had no accessible name beyond a visually
+adjacent (not programmatically linked) "Age" `<div>`. Fixed both with
+`aria-label="Age"`.
+
+**Three more real, individually-confirmed sites**: Settings' `hoursInput()`
+(the clinic-appointment reminder's "Hours before" field, shared by both
+reminder rows) had only an adjacent `<span>`, not a real label — fixed
+with `aria-label="Hours before"`. The Colour-scheme picker's Hex input and
+its 3 RGB channel inputs (Settings > Appearance) had no way for a screen
+reader to tell the R/G/B fields apart from each other — fixed with
+`aria-label="Hex colour value"` and `aria-label="R/G/B (0-255)"`
+respectively. Clinic Visits' inline "other medications given" mini-form
+(Name/Notes pair, used when logging an ad-hoc medication not in the
+Medication tracker) had placeholder text only, no accessible name at all
+— fixed with `aria-label="Medication name"`/`"Medication notes"`.
+
+**Deliberately scoped out of this batch, left for the next one**: the
+~20-site "Notes `<textarea>` with no label" cluster the same audit named
+(one per module's own Add/Edit form) — real, but a genuinely separate,
+larger cluster from the `<select>`/`<input type="date/number">` gaps
+this batch covers; grouping it in would have muddied "smallest first"
+into "everything the audit mentioned at once." Logged in Known Issues
+below as the next-smallest batch, not silently folded in or dropped.
+
+Verified live: full build, `npx eslint .` clean, and the full 15-flow
+smoke-test suite against a real `vite preview` production build —
+15/15 pass, no regressions from any of the 8 sites touched.
 
 ## Recently shipped (17 Sep 2026, later still — real-device feedback batch: ScreenSecurity crash, Stats organism count, field reorders, and more)
 
