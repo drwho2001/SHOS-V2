@@ -181,7 +181,7 @@ function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
             not a fresh new().toISOString() call that could reintroduce
             the exact shift bug just found and fixed in Encounters. */}
         {type === "date" && (
-          <span onClick={() => onChange(nowAsDateString())} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Now</span>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(nowAsDateString())} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Now</span>
         )}
       </div>
       <input type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} aria-label={label}
@@ -322,7 +322,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder })
       {value.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((id) => (
-            <div key={id} onClick={() => onChange(value.filter((v) => v !== id))}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={id} onClick={() => onChange(value.filter((v) => v !== id))}
               style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               {nameFor(id)} <X size={11} />
             </div>
@@ -332,14 +332,14 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder })
       {pendingSuggestion && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.healthcareBlue}15`, border: `1px solid ${T.healthcareBlue}`, marginBottom: 6, fontSize: 12 }}>
           <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}"? You typed "{pendingSuggestion.typedAs}".</span>
-          <div onClick={acceptPendingSuggestion} style={{ fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Yes, use it</div>
-          <div onClick={dismissPendingSuggestion} style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={acceptPendingSuggestion} style={{ fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Yes, use it</div>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={dismissPendingSuggestion} style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
         </div>
       )}
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((e) => (
-            <div key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
               + {e.name}
             </div>
@@ -417,7 +417,7 @@ function RegistryMultiResultPicker({ label, value, onChange, T, registry, placeh
       {value.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {value.map((id, i) => (
-            <div key={id} onClick={() => removeResult(id)}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={id} onClick={() => removeResult(id)}
               style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               {currentNames[i] || "?"} <X size={11} />
             </div>
@@ -427,7 +427,7 @@ function RegistryMultiResultPicker({ label, value, onChange, T, registry, placeh
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((e) => (
-            <div key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => onChange([...value, e.id])}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => onChange([...value, e.id])}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
               {e.name}
             </div>
@@ -492,7 +492,7 @@ function AttachmentManager({ testId, attachments, onChanged, T }) {
                   <div style={{ fontSize: 10, color: T.textDisabled }}>{a.type} · {formatDate(a.date)}</div>
                 </div>
               </div>
-              <Trash2 size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => setPendingRemove(a)} aria-label="Remove attachment" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+              <Trash2 size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => setPendingRemove(a)} aria-label="Remove attachment" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             </div>
           ))}
         </div>
@@ -546,7 +546,7 @@ function LinkPicker({ items, onPick, T, placeholder = "Search by name…" }) {
       {visible.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
           {visible.map((v) => (
-            <div key={v.id} onClick={() => onPick(v.id)}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={v.id} onClick={() => onPick(v.id)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
               + {v.name}
             </div>
@@ -711,7 +711,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
           the 4 real screen-title banners already got, so a sheet-title
           banner reads as the same family of UI element. */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.healthcareBlue, borderBottom: "1px solid rgba(0,0,0,0.08)", borderRadius: "0 0 16px 16px", zIndex: 1 }}>
-        <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+        <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <span style={{ ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "New test" : "Edit test"}</span>
         <div onClick={() => canSave && save()}
           style={{ padding: "6px 14px", borderRadius: radius.full, background: canSave ? "#FFFFFF" : "rgba(255,255,255,0.3)", color: canSave ? T.healthcareBlue : "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 700, cursor: canSave ? "pointer" : "default" }}>
@@ -772,7 +772,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
                     style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer", marginBottom: 6, gap: 8 }}>
                     <span style={{ fontSize: 13, color: T.healthcareBlue, fontWeight: 600 }}>{v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} · {formatDate(v.date)}</span>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                      <X size={14} color={T.healthcareBlue} onClick={(e) => { e.stopPropagation(); unlinkVisit(v.id); }} title="Remove link" aria-label="Remove link" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+                      <X size={14} color={T.healthcareBlue} onClick={(e) => { e.stopPropagation(); unlinkVisit(v.id); }} title="Remove link" aria-label="Remove link" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
                       <ChevronRight size={14} color={T.healthcareBlue} />
                     </div>
                   </div>
@@ -798,7 +798,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
                     style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer", marginBottom: 6, gap: 8 }}>
                     <span style={{ fontSize: 13, color: T.healthcareBlue, fontWeight: 600 }}>{s.title || "Symptom entry"} · {formatDate(s.dateStarted)}</span>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                      <X size={14} color={T.healthcareBlue} onClick={(e) => { e.stopPropagation(); unlinkSymptom(s.id); }} title="Remove link" aria-label="Remove link" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+                      <X size={14} color={T.healthcareBlue} onClick={(e) => { e.stopPropagation(); unlinkSymptom(s.id); }} title="Remove link" aria-label="Remove link" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
                       <ChevronRight size={14} color={T.healthcareBlue} />
                     </div>
                   </div>
@@ -962,10 +962,10 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => onEdit(testId)}>Edit</span>
-          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
 
@@ -1008,7 +1008,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
         <SectionCard title="Result" T={T}>
           {/* REORDERED — real ask: Result should come before Organism. */}
           {resultPending ? (
-            <div onClick={() => setRevealEarly(true)} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, cursor: "pointer" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setRevealEarly(true)} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, cursor: "pointer" }}>
               <span style={{ color: T.textSecondary }}>Result</span>
               <span style={{ color: T.textDisabled, fontStyle: "italic" }}>Pending — expected {formatDate(test.resultDate)}. Tap to reveal anyway.</span>
             </div>
@@ -1025,7 +1025,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
             <div style={{ padding: "6px 0" }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Linked clinic visit</div>
               {linkedVisits.map((v) => (
-                <div key={v.id} onClick={() => onNavigateToRecord?.("healthcare", v.id, "clinicVisits")}
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={v.id} onClick={() => onNavigateToRecord?.("healthcare", v.id, "clinicVisits")}
                   style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer", marginBottom: 6 }}>
                   <span style={{ fontSize: 13, color: T.healthcareBlue, fontWeight: 600 }}>{v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} · {formatDate(v.date)}</span>
                   <ChevronRight size={14} color={T.healthcareBlue} />
@@ -1038,7 +1038,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
               offered when a Result is actually recorded as Positive —
               this isn't relevant otherwise. */}
           {isPositive && (
-            <div onClick={() => setShowPartnerNotify(true)}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowPartnerNotify(true)}
               style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer", marginTop: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: T.healthcareBlue }}>
                 {partnerNotifyList ? `Contact list · ${partnerNotifyList.items.filter((i) => i.notified).length}/${partnerNotifyList.items.length} notified` : "Generate contact list"}
@@ -1063,7 +1063,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
           {measurements.map((m) => (
             <ReadRow key={m.id} label={m.type} value={m.type === "Blood pressure" ? `${m.systolic}/${m.diastolic} mmHg` : `${m.value} ${m.unit}`} T={T} />
           ))}
-          <div onClick={() => setShowAddMeasurement(true)} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", padding: "7px 0" }}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowAddMeasurement(true)} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", padding: "7px 0" }}>
             + Add measurement
           </div>
         </SectionCard>
@@ -1114,7 +1114,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
         {relatedSymptoms.length > 0 && (
           <SectionCard title="Related symptom entries" T={T}>
             {relatedSymptoms.map((s) => (
-              <div key={s.id} onClick={() => onNavigateToRecord?.("healthcare", s.id, "symptomLog")}
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={s.id} onClick={() => onNavigateToRecord?.("healthcare", s.id, "symptomLog")}
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: `1px solid ${T.border}`, cursor: "pointer" }}>
                 <div>
                   <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>{s.title || "Symptom entry"}</div>
@@ -1230,7 +1230,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
             matching Medication's pattern — long-press stays as an
             additional quick entry. */}
-        <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>
+        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>
           {selectMode ? "Done" : "Select"}
         </span>
       </div>
@@ -1242,7 +1242,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
             {/* ADDED 1 Sep 2026 — real ask: "option to select all...
                 rather than manual 1 by 1", scoped to whatever's
                 currently visible under the active search/filters. */}
-            <span onClick={() => setSelectedIds(selectedIds.length === sorted.length ? [] : sorted.map((t) => t.id))}
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setSelectedIds(selectedIds.length === sorted.length ? [] : sorted.map((t) => t.id))}
               style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>
               {selectedIds.length === sorted.length ? "Deselect all" : "Select all"}
             </span>
@@ -1254,7 +1254,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
-            <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>
       )}

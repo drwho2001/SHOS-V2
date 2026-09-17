@@ -283,7 +283,7 @@ function ResultRow({ result, onSelect }) {
   const meta = RESULT_META[result.type];
   const Icon = meta.icon;
   return (
-    <div onClick={() => onSelect(result)}
+    <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onSelect(result)}
       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: `1px solid ${T.border}`, cursor: "pointer", background: T.surface }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <div style={{ width: 34, height: 34, borderRadius: 999, background: `${meta.color}1A`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

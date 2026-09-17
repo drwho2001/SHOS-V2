@@ -136,7 +136,7 @@ function PartnerMessageHelper({ infectionNames, T }) {
 
   if (!open) {
     return (
-      <div onClick={() => setOpen(true)} style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: T.healthcareBlue, cursor: "pointer" }}>
+      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setOpen(true)} style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: T.healthcareBlue, cursor: "pointer" }}>
         <MessageSquare size={14} /> Draft a heads-up message
       </div>
     );
@@ -147,7 +147,7 @@ function PartnerMessageHelper({ infectionNames, T }) {
         A draft only — nothing sends automatically, and it never names who's being notified or who told you. Edit it however you like before sending it yourself.
       </div>
       {infectionNames.length > 0 && (
-        <div onClick={() => regenerate(!includeInfection)} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer" }}>
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => regenerate(!includeInfection)} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer" }}>
           <div style={{ width: 34, height: 20, borderRadius: radius.full, background: includeInfection ? T.healthcareBlue : T.border, position: "relative", flexShrink: 0 }}>
             <div style={{ width: 16, height: 16, borderRadius: radius.full, background: "#FFFFFF", position: "absolute", top: 2, left: includeInfection ? 16 : 2, transition: "left 120ms ease" }} />
           </div>
@@ -160,7 +160,7 @@ function PartnerMessageHelper({ infectionNames, T }) {
         <button onClick={copy} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 999, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
           <Copy size={13} /> Copy
         </button>
-        <span onClick={() => setOpen(false)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>Close</span>
+        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setOpen(false)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>Close</span>
         {status && <span style={{ fontSize: 11, color: status.ok ? T.actionGreen : T.actionRed }}>{status.msg}</span>}
       </div>
     </div>
@@ -231,7 +231,7 @@ function LinkedItemsSection({ label, linkedIds, onChange, candidates, nameFor, T
       {linkedIds.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {linkedIds.map((id) => (
-            <div key={id} onClick={() => onChange(linkedIds.filter((v) => v !== id))}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={id} onClick={() => onChange(linkedIds.filter((v) => v !== id))}
               style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: alertIds.includes(id) ? `${T.actionRed}18` : T.surfaceVariant, color: alertIds.includes(id) ? T.actionRedText : T.textPrimary, fontWeight: alertIds.includes(id) ? 700 : 400, cursor: "pointer" }}>
               {nameFor(id)} ✕
             </div>
@@ -241,7 +241,7 @@ function LinkedItemsSection({ label, linkedIds, onChange, candidates, nameFor, T
       {candidates.length > 0 ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
           {candidates.slice(0, 6).map((c) => (
-            <div key={c.id} onClick={() => onChange([...linkedIds, c.id])}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => onChange([...linkedIds, c.id])}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
               + {c.name}
             </div>
@@ -490,10 +490,10 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
           <Archive size={19} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={toggleArchive} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleArchive(); } }} title={episode.isArchived ? "Unarchive" : "Archive"} aria-label={episode.isArchived ? "Unarchive" : "Archive"} />
-          <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} title="Delete permanently" aria-label="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+          <Trash2 size={20} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} title="Delete permanently" aria-label="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
       {episode.isArchived && (
@@ -565,7 +565,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
               {episode.atRiskEncounterIds.map((id) => {
                 const notified = episode.notifiedEncounterIds.includes(id);
                 return (
-                  <div key={id} onClick={() => toggleNotified(id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", cursor: "pointer" }}>
+                  <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={id} onClick={() => toggleNotified(id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", cursor: "pointer" }}>
                     <div style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${notified ? T.actionGreen : T.textDisabled}`, background: notified ? T.actionGreen : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {notified && <Check size={12} color="#FFFFFF" weight="bold" />}
                     </div>
@@ -640,7 +640,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
                 <button onClick={saveResolvedDate} style={{ padding: "8px 14px", borderRadius: radius.sm, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Save</button>
               )}
             </div>
-            <div onClick={reopen} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: T.textSecondary, cursor: "pointer" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={reopen} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: T.textSecondary, cursor: "pointer" }}>
               <RefreshCcw size={13} /> Reopen this episode
             </div>
           </SectionCard>
@@ -683,7 +683,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary, flex: 1 }}>Episodes</span>
       </div>
       {/* CHANGED — real gap found: every other Healthcare-domain
@@ -730,7 +730,7 @@ function EpisodeCard({ e, onOpen, hasPositive, T, radius, formatDate }) {
   // already says "positive result found" in adjacent text; this list
   // row never did. Mirrored that same text here.
   return (
-    <div onClick={() => onOpen(e.id)}
+    <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onOpen(e.id)}
       style={{ background: T.surface, border: `1px solid ${isOpen && hasPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ width: 8, height: 8, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcareBlue : T.actionGreen, display: "inline-block" }} />

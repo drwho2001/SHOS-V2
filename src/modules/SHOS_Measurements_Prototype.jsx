@@ -82,7 +82,7 @@ function TextField({ label, value, onChange, T, placeholder, type = "text", read
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
         {type === "date" && !readOnly && (
-          <span onClick={() => onChange(nowAsDateString())} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Now</span>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(nowAsDateString())} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Now</span>
         )}
       </div>
       {readOnly ? (
@@ -158,14 +158,14 @@ function MeasurementTypeField({ value, onChange, options, rankedOptions, listNam
       {pendingSuggestion && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "6px 10px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11` }}>
           <span style={{ fontSize: 12, color: T.textPrimary, flex: 1 }}>Did you mean "{pendingSuggestion}"?</span>
-          <span onClick={() => { onChange(pendingSuggestion); setPendingSuggestion(null); }} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Use it</span>
-          <span onClick={() => { onAddNew(value.trim()); onNewTypeCreated?.(value.trim()); setPendingSuggestion(null); }} style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add new</span>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { onChange(pendingSuggestion); setPendingSuggestion(null); }} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Use it</span>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { onAddNew(value.trim()); onNewTypeCreated?.(value.trim()); setPendingSuggestion(null); }} style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add new</span>
         </div>
       )}
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((v) => (
-            <div key={v} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange(v); if (listName) CustomOptionListsRepository.recordUsage(listName, v); setPendingSuggestion(null); }}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={v} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange(v); if (listName) CustomOptionListsRepository.recordUsage(listName, v); setPendingSuggestion(null); }}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
               {v}
             </div>
@@ -192,12 +192,12 @@ function TypeKindPrompt({ typeName, onPick, onSkip, T }) {
       <div style={{ fontSize: 12, color: T.textPrimary, marginBottom: 8 }}>What kind of measurement is "{typeName}"? Helps suggest sensible units.</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {Object.entries(KIND_LABELS).map(([kind, label]) => (
-          <div key={kind} onClick={() => onPick(kind)}
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={kind} onClick={() => onPick(kind)}
             style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
             {label}
           </div>
         ))}
-        <div onClick={onSkip} style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, color: T.textSecondary, cursor: "pointer" }}>Skip</div>
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onSkip} style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, color: T.textSecondary, cursor: "pointer" }}>Skip</div>
       </div>
     </div>
   );
@@ -234,7 +234,7 @@ function ValueUnitFields({ type, value, unit, onValueChange, onUnitChange, T, ty
           {unitOptions.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
               {unitOptions.map((u) => (
-                <div key={u} onClick={() => onUnitChange(u)}
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={u} onClick={() => onUnitChange(u)}
                   style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, fontWeight: unit === u ? 700 : 400, border: `1px solid ${T.healthcareBlue}`, color: unit === u ? "#FFFFFF" : T.healthcareBlue, background: unit === u ? T.healthcareBlue : "transparent", cursor: "pointer" }}>
                   {u}
                 </div>
@@ -265,7 +265,7 @@ function LocationField({ locationType, clinicName, onLocationTypeChange, onClini
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Location</div>
       <div style={{ display: "flex", gap: 6, marginBottom: clinicName || locationType === "Clinic" ? 6 : 0 }}>
         {["Home", "Clinic"].map((opt) => (
-          <div key={opt} onClick={() => onLocationTypeChange(locationType === opt ? "" : opt)}
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={opt} onClick={() => onLocationTypeChange(locationType === opt ? "" : opt)}
             style={{ padding: "6px 14px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${locationType === opt ? T.healthcareBlue : T.border}`, color: locationType === opt ? T.healthcareBlue : T.textSecondary, background: locationType === opt ? `${T.healthcareBlue}15` : "transparent" }}>
             {opt}
           </div>
@@ -276,7 +276,7 @@ function LocationField({ locationType, clinicName, onLocationTypeChange, onClini
           {suggestions.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
               {suggestions.map((c) => (
-                <div key={c} onClick={() => onClinicNameChange(c)}
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c} onClick={() => onClinicNameChange(c)}
                   style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
                   {c}
                 </div>
@@ -448,7 +448,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
       <div style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "Add measurement" : "Edit measurement"}</span>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
           <MeasurementTypeField value={form.type} onChange={setType} options={editableOptions} rankedOptions={rankedEditableOptions} listName="measurementType"
@@ -491,7 +491,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
                   genuine canonical unit, not a re-pickable "kind". */}
               {form.type && !hasUnitConversion(form.type) && prefs.typeKinds[form.type] && (
                 <div style={{ padding: "0 0 8px" }}>
-                  <span onClick={() => setNewTypeNeedingKind(form.type)} style={{ fontSize: 11, color: T.textSecondary, cursor: "pointer", textDecoration: "underline" }}>
+                  <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setNewTypeNeedingKind(form.type)} style={{ fontSize: 11, color: T.textSecondary, cursor: "pointer", textDecoration: "underline" }}>
                     Wrong unit suggestions? Change what kind of measurement this is
                   </span>
                 </div>
@@ -629,10 +629,10 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => onEdit(measurementId)}>Edit</span>
-          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+          <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
       {confirmDelete && (
@@ -685,13 +685,13 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
                     <span style={{ color: T.textSecondary }}>–</span>
                     <input type="number" value={rangeHigh} onChange={(e) => setRangeHigh(e.target.value)} placeholder="High"
                       style={{ width: 70, padding: "6px 8px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
-                    <span onClick={saveRange} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", marginLeft: 4 }}>Save</span>
-                    <span onClick={() => setEditingRange(false)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>Cancel</span>
-                    {existingRange && <span onClick={clearRange} style={{ fontSize: 12, color: T.actionRed, cursor: "pointer" }}>Clear</span>}
+                    <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={saveRange} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", marginLeft: 4 }}>Save</span>
+                    <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setEditingRange(false)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>Cancel</span>
+                    {existingRange && <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={clearRange} style={{ fontSize: 12, color: T.actionRed, cursor: "pointer" }}>Clear</span>}
                   </div>
                 </div>
               ) : (
-                <div onClick={startEditingRange} style={{ padding: "7px 0", fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={startEditingRange} style={{ padding: "7px 0", fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>
                   {existingRange ? `Edit normal range (${existingRange.low}–${existingRange.high} ${m.unit})` : "+ Set a normal range for this type"}
                 </div>
               )}
@@ -813,7 +813,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
         <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
-            <span onClick={() => setSelectedIds(selectedIds.length === allVisibleIds.length ? [] : allVisibleIds)}
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setSelectedIds(selectedIds.length === allVisibleIds.length ? [] : allVisibleIds)}
               style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>
               {selectedIds.length === allVisibleIds.length ? "Deselect all" : "Select all"}
             </span>
@@ -823,7 +823,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
-            <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>
       )}
@@ -865,7 +865,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
                 {/* ADDED — real ask: "memory" quick-add, prefilling this
                     type (and its last-used unit, handled in the sheet
                     itself) so a recurring reading is one tap away. */}
-                <span onClick={() => onAddType(group.type)} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>+ Add another</span>
+                <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onAddType(group.type)} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>+ Add another</span>
               </div>
               {/* FIXED 16 Sep 2026 — real report: same "mobile-width
                   content stretched into a wide row" gap fixed on
@@ -954,7 +954,7 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto" }}>
       <div style={{ background: T.healthcareBlue, display: "flex", alignItems: "center", gap: 12, padding: "16px 20px 14px" }}>
-        <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+        <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Manage groups</span>
       </div>
       <div style={{ padding: "16px 20px 100px" }}>
@@ -969,7 +969,7 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
         )}
         {groups.map((g) => (
           <div key={g.id} style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, marginBottom: 10, overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 12, cursor: "pointer" }}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 12, cursor: "pointer" }}
               onClick={() => setExpandedId(expandedId === g.id ? null : g.id)}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary }}>{g.name}</div>
@@ -996,7 +996,7 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
                   {allMembers.map((member) => {
                     const inThisGroup = g.members.includes(member);
                     return (
-                      <div key={member} onClick={async () => { await CustomGroupsRepository.setMemberGroup(domain, member, inThisGroup ? null : g.id); await refresh(); }}
+                      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={member} onClick={async () => { await CustomGroupsRepository.setMemberGroup(domain, member, inThisGroup ? null : g.id); await refresh(); }}
                         style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${inThisGroup ? T.healthcareBlue : T.border}`, color: inThisGroup ? T.healthcareBlue : T.textSecondary, background: inThisGroup ? `${T.healthcareBlue}15` : "transparent" }}>
                         {member}
                       </div>
@@ -1051,7 +1051,7 @@ function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
       <div style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Measurement preferences</span>
-          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close measurement preferences" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+          <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close measurement preferences" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div tabIndex={0} style={{ overflowY: "auto", padding: "16px 20px 24px", flex: 1 }}>
           <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, marginBottom: 8 }}>Default units</div>
@@ -1083,7 +1083,7 @@ function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
               </div>
             );
           })}
-          <div onClick={onManageGroups} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 20, padding: "12px 14px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer" }}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onManageGroups} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 20, padding: "12px 14px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer" }}>
             <Folder size={16} color={T.healthcareBlue} />
             <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue }}>Manage groups</span>
           </div>

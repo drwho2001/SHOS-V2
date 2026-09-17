@@ -347,7 +347,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16, color: T.textPrimary }}>Import shared profile</span>
       </div>
       <div style={{ padding: 16 }}>
@@ -361,7 +361,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
               placeholder="Paste the JSON text someone sent you"
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box", resize: "vertical" }} />
           </div>
-          <div onClick={doImportPaste} style={{ textAlign: "center", padding: "10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", background: pasteText.trim() ? T.contactsTeal : T.surfaceVariant, color: pasteText.trim() ? "#FFFFFF" : T.textDisabled, marginBottom: 10 }}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={doImportPaste} style={{ textAlign: "center", padding: "10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", background: pasteText.trim() ? T.contactsTeal : T.surfaceVariant, color: pasteText.trim() ? "#FFFFFF" : T.textDisabled, marginBottom: 10 }}>
             Import from pasted text
           </div>
           <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: radius.full, border: `1px solid ${T.border}`, color: T.textPrimary, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
@@ -389,7 +389,7 @@ function TextField({ label, value, onChange, T, placeholder, type = "text", help
         <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
         {/* ADDED — real ask: "Now" quick-fill, device's real local date. */}
         {type === "date" && (
-          <span onClick={() => onChange(nowAsDateString())} style={{ fontSize: 11, fontWeight: 700, color: T.contactsTeal, cursor: "pointer" }}>Now</span>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(nowAsDateString())} style={{ fontSize: 11, fontWeight: 700, color: T.contactsTeal, cursor: "pointer" }}>Now</span>
         )}
       </div>
       <input type={type} value={value ?? ""} aria-label={label}
@@ -458,7 +458,7 @@ function ComboField({ label, value, onChange, T, options, placeholder }) {
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((opt) => (
-            <div key={opt} onClick={() => onChange(opt)}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={opt} onClick={() => onChange(opt)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
               {opt}
             </div>
@@ -711,7 +711,7 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
           {value.map((tag) => {
             const PlatformIcon = platformIconFor(tag);
             return (
-              <div key={tag} onClick={() => onChange(value.filter((t) => t !== tag))}
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={tag} onClick={() => onChange(value.filter((t) => t !== tag))}
                 style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                 {PlatformIcon && <PlatformIcon size={12} />} {tag} <X size={11} />
               </div>
@@ -722,9 +722,9 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
       {pendingSuggestion && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.contactsTeal}15`, border: `1px solid ${T.contactsTeal}`, marginBottom: 6, fontSize: 12 }}>
           <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}"? You typed "{pendingSuggestion.typedAs}".</span>
-          <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { tapSuggestion(pendingSuggestion.suggestion); setPendingSuggestion(null); }}
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { tapSuggestion(pendingSuggestion.suggestion); setPendingSuggestion(null); }}
             style={{ fontWeight: 700, color: T.contactsTealText, cursor: "pointer" }}>Yes, use it</div>
-          <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { if (!value.includes(pendingSuggestion.typedAs)) onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { if (!value.includes(pendingSuggestion.typedAs)) onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
             style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
         </div>
       )}
@@ -740,7 +740,7 @@ function TagInput({ label, value, onChange, T, placeholder, suggestions = [] }) 
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>
           {visibleSuggestions.map((s) => (
-            <div key={s} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(s)}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={s} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(s)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
               + {s}
             </div>
@@ -982,7 +982,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6, alignItems: "center" }}>
           <span style={{ fontSize: 11, color: T.textDisabled }}>Set all:</span>
           {ROLE_POLES.map((pole) => (
-            <div key={pole.label} onClick={() => setAllRoles(pole)}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={pole.label} onClick={() => setAllRoles(pole)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, fontWeight: 600, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
               {pole.label}
             </div>
@@ -1000,7 +1000,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
             return (
               <div key={sel.kinkId}
                 style={{ display: "flex", alignItems: "center", borderRadius: radius.full, background: T.surfaceVariant, overflow: "hidden" }}>
-                <div onClick={() => removeEntry(sel.kinkId)}
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => removeEntry(sel.kinkId)}
                   style={{ padding: "4px 8px", fontSize: 12, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                   {nameFor(sel.kinkId)} <X size={11} />
                 </div>
@@ -1025,7 +1025,7 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
       {visibleSuggestions.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
           {visibleSuggestions.map((e) => (
-            <div key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
               + {e.name}
             </div>
@@ -1054,12 +1054,12 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {pendingSuggestion.specific.map((entry) => (
-                  <div key={entry.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(entry.name, pendingSuggestion.role); setPendingSuggestion(null); }}
+                  <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={entry.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(entry.name, pendingSuggestion.role); setPendingSuggestion(null); }}
                     style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, background: ACCENTS.healthcare, color: "#FFFFFF", cursor: "pointer" }}>
                     Use "{entry.name}"
                   </div>
                 ))}
-                <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.typedAs, pendingSuggestion.role); setPendingSuggestion(null); }}
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.typedAs, pendingSuggestion.role); setPendingSuggestion(null); }}
                   style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer" }}>
                   Keep "{pendingSuggestion.typedAs}"
                 </div>
@@ -1071,11 +1071,11 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
                 Did you mean "{pendingSuggestion.suggestion}"? You typed "{pendingSuggestion.typedAs}".
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.suggestion, pendingSuggestion.role); setPendingSuggestion(null); }}
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.suggestion, pendingSuggestion.role); setPendingSuggestion(null); }}
                   style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, background: ACCENTS.healthcare, color: "#FFFFFF", cursor: "pointer" }}>
                   Yes, use "{pendingSuggestion.suggestion}"
                 </div>
-                <div onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.typedAs, pendingSuggestion.role); setPendingSuggestion(null); }}
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { finalizeEntry(pendingSuggestion.typedAs, pendingSuggestion.role); setPendingSuggestion(null); }}
                   style={{ padding: "4px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer" }}>
                   No, add "{pendingSuggestion.typedAs}" as new
                 </div>
@@ -1104,7 +1104,7 @@ function AgeField({ age, ageIsApprox, onChangeAge, onChangeApprox, T }) {
         <input type="number" value={age ?? ""} onChange={(e) => onChangeAge(e.target.value === "" ? null : Number(e.target.value))} aria-label="Age"
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextField(e.target); } }}
           style={{ width: 90, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
-        <div onClick={() => onChangeApprox(!ageIsApprox)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChangeApprox(!ageIsApprox)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
           <ToggleSwitch T={T} value={ageIsApprox} onChange={onChangeApprox} />
           <span style={{ fontSize: 12, color: T.textSecondary }}>Approximate</span>
         </div>
@@ -1129,7 +1129,7 @@ function PhotoPicker({ value, onChange, T }) {
   };
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "8px 0" }}>
-      <div onClick={() => inputRef.current?.click()}
+      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => inputRef.current?.click()}
         style={{ width: 64, height: 64, borderRadius: radius.full, background: T.surfaceVariant, border: `1px solid ${T.border}`, cursor: "pointer", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         {value ? (
           <img src={value} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -1138,12 +1138,12 @@ function PhotoPicker({ value, onChange, T }) {
         )}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div onClick={() => inputRef.current?.click()}
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => inputRef.current?.click()}
           style={{ fontSize: 12, fontWeight: 600, color: T.contactsTeal, cursor: "pointer" }}>
           {value ? "Change photo" : "Add photo"}
         </div>
         {value && (
-          <div onClick={() => onChange("")} style={{ fontSize: 12, color: T.actionRed, cursor: "pointer" }}>Remove</div>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange("")} style={{ fontSize: 12, color: T.actionRed, cursor: "pointer" }}>Remove</div>
         )}
       </div>
       <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} />
@@ -1205,7 +1205,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
           {rules.map((r) => (
             <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: radius.sm, background: T.surfaceVariant, fontSize: 12, color: T.textPrimary }}>
               <span>{describeRule(r)}</span>
-              <Trash2 size={13} color={T.textSecondary} style={{ cursor: "pointer", flexShrink: 0, marginLeft: 8 }} onClick={() => removeRule(r.id)} aria-label="Remove rule" title="Remove rule" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+              <Trash2 size={13} color={T.textSecondary} style={{ cursor: "pointer", flexShrink: 0, marginLeft: 8 }} onClick={() => removeRule(r.id)} aria-label="Remove rule" title="Remove rule" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             </div>
           ))}
         </div>
@@ -1223,7 +1223,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
           {DAYS_OF_WEEK.map((day) => (
-            <div key={day} onClick={() => toggleDay(day)}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={day} onClick={() => toggleDay(day)}
               style={{ width: 34, height: 28, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: radius.sm, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${draft.days.includes(day) ? T.contactsTeal : T.border}`, color: draft.days.includes(day) ? T.contactsTealText : T.textSecondary, background: draft.days.includes(day) ? `${T.contactsTeal}15` : T.surface }}>
               {day}
             </div>
@@ -1312,7 +1312,7 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
       {linked.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
           {linked.map((c) => (
-            <div key={c.id} onClick={() => removeLink(c.id)}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => removeLink(c.id)}
               style={{ padding: "6px 10px", borderRadius: radius.sm, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>{displayName(c)}{labels[c.id] ? ` — ${labels[c.id]}` : ""}</span>
               <X size={11} />
@@ -1336,7 +1336,7 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
               {labelSuggestions.filter((s) => s !== pendingLabel).length > 0 && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
                   {labelSuggestions.filter((s) => s !== pendingLabel).slice(0, 8).map((s) => (
-                    <div key={s} onClick={() => setPendingLabel(s)}
+                    <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={s} onClick={() => setPendingLabel(s)}
                       style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.contactsTeal}`, color: T.contactsTeal, cursor: "pointer" }}>
                       {s}
                     </div>
@@ -1513,7 +1513,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <span onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
+        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
           title={isInactive ? `No encounter in over ${inactiveThresholdDays} days` : "Active — a recent encounter is logged"}
           aria-label={isInactive ? "Inactive contact, tap for details" : "Active contact, tap for details"}
           style={{ width: 8, height: 8, borderRadius: radius.full, background: isInactive ? T.actionRed : T.actionGreen, display: "inline-block", cursor: "pointer", boxShadow: showStatusInfo ? `0 0 0 4px ${isInactive ? T.actionRed : T.actionGreen}33` : "none" }} />
@@ -2121,7 +2121,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 16px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+          <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {/* ADDED — real ask: show-blank-fields toggle. */}
@@ -2297,7 +2297,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               a status display, so it stays interactive rather than
               becoming static text. */}
           {myProfile.relationshipStatus && myProfile.relationshipStatus.trim().toLowerCase() !== "single" && (
-            <div onClick={toggleLinkedToMe} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0 2px", cursor: "pointer" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={toggleLinkedToMe} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0 2px", cursor: "pointer" }}>
               <span style={{ fontSize: 12, color: T.textSecondary }}>Linked to My Profile's relationship status ({myProfile.relationshipStatus})</span>
               <div style={{ width: 36, height: 21, borderRadius: 999, background: isLinkedToMe ? T.contactsTeal : "#DCDCE1", position: "relative", flexShrink: 0 }}>
                 <div style={{ position: "absolute", top: 2, left: isLinkedToMe ? 17 : 2, width: 17, height: 17, borderRadius: 999, background: "#FFFFFF" }} />
@@ -2415,7 +2415,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <SectionCard T={T} title="Linked contacts">
             {linkedContactProfiles
               .map((c) => (
-                <div key={c.id} onClick={() => onOpenContact(c.id)}
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => onOpenContact(c.id)}
                   style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, color: T.contactsTeal, fontWeight: 600, cursor: "pointer" }}>
                   {displayName(c)}
                 </div>
@@ -2644,11 +2644,11 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               that screen's red — this is a softer, scored signal, not
               a same-name exact flag. */}
           {duplicateCandidates.length > 0 && (
-            <div onClick={() => setShowDuplicates(true)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 999, background: "#FFF3C4", color: "#926100", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowDuplicates(true)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 999, background: "#FFF3C4", color: "#926100", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
               <AlertTriangle size={12} color="#926100" /> {duplicateCandidates.length}
             </div>
           )}
-          <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
+          <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
             {selectMode ? "Done" : "Select"}
           </span>
           {/* CHANGED 19 Aug 2026 — real icon confusion the user flagged:
@@ -2656,8 +2656,8 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               an action that brings someone else's shared profile IN.
               Download's arrow-into-tray matches the actual direction.
               CHANGED 26 Aug 2026 — moved into the banner, white. */}
-          {onOpenImportProfile && <Download size={19} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onOpenImportProfile} />}
-          {onOpenMyProfile && <User size={19} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onOpenMyProfile} />}
+          {onOpenImportProfile && <Download role="button" tabIndex={0} aria-label="Import profile from file" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={19} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onOpenImportProfile} />}
+          {onOpenMyProfile && <User role="button" tabIndex={0} aria-label="Open My Profile" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} size={19} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onOpenMyProfile} />}
           {/* ADDED 15 Sep 2026 — real ask: a real in-module settings
               screen (see ContactsSettingsScreen's own comment above),
               matching Medication Dashboard's own gear-icon placement. */}
@@ -2670,7 +2670,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", background: T.contactsTeal, borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
               <span style={{ ...TYPE.sheetTitle, color: "#FFFFFF" }}>Possible duplicates</span>
-              <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => setShowDuplicates(false)} aria-label="Close duplicates panel" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+              <X size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => setShowDuplicates(false)} aria-label="Close duplicates panel" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             </div>
             <div style={{ padding: "6px 20px 0", fontSize: 12, color: T.textSecondary }}>
               Flagged by name, phone, and social-handle matches — plus lighter signals (city, address, approximate age, shared notes wording) that only count once something else already put a pair in question. Higher confidence just means more of these line up — nothing is merged automatically; check each pair yourself.
@@ -2693,7 +2693,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                         {(entry.city || entry.phone) && <span style={{ fontSize: 11, fontWeight: 400, color: T.textDisabled }}> · {[entry.city, entry.phone].filter(Boolean).join(" · ")}</span>}
                       </span>
                       {!entry.isArchived && (
-                        <span onClick={async () => { await ContactRepository.archive(entry.id); refresh(); }} style={{ fontSize: 11, fontWeight: 700, color: T.actionRed, cursor: "pointer" }}>Archive this one</span>
+                        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { await ContactRepository.archive(entry.id); refresh(); }} style={{ fontSize: 11, fontWeight: 700, color: T.actionRed, cursor: "pointer" }}>Archive this one</span>
                       )}
                     </div>
                   ))}
@@ -2735,7 +2735,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 than manual 1 by 1", scoped to whatever's currently
                 visible (respects an active search/filter, same as
                 everything else this screen shows). */}
-            <span onClick={() => setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map((c) => c.id))}
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map((c) => c.id))}
               style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>
               {selectedIds.length === filtered.length ? "Deselect all" : "Select all"}
             </span>
@@ -2752,7 +2752,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 inline card every module uses. */}
             <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
-            <span onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
+            <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>
       )}
@@ -2794,7 +2794,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontFamily: "'Inter', sans-serif", fontSize: 14, color: T.textPrimary }} />
         {/* ADDED 26 Aug 2026 — real ask: filter by role/position, not
             just search. */}
-        <div onClick={() => setShowFilters((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 8px", borderRadius: radius.full, cursor: "pointer", border: `1px solid ${activeFilterCount > 0 ? T.contactsTeal : T.border}`, color: activeFilterCount > 0 ? T.contactsTeal : T.textSecondary, fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowFilters((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 8px", borderRadius: radius.full, cursor: "pointer", border: `1px solid ${activeFilterCount > 0 ? T.contactsTeal : T.border}`, color: activeFilterCount > 0 ? T.contactsTeal : T.textSecondary, fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
           Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
         </div>
       </div>
@@ -2806,7 +2806,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
             {BDSM_ROLE_OPTIONS.map((r) => {
               const active = filterRoles.includes(r);
               return (
-                <div key={r} onClick={() => setFilterRoles((f) => active ? f.filter((x) => x !== r) : [...f, r])}
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={r} onClick={() => setFilterRoles((f) => active ? f.filter((x) => x !== r) : [...f, r])}
                   style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>
                   {r}
                 </div>
@@ -2818,7 +2818,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
             {SEXUAL_POSITION_OPTIONS.map((p) => {
               const active = filterPositions.includes(p);
               return (
-                <div key={p} onClick={() => setFilterPositions((f) => active ? f.filter((x) => x !== p) : [...f, p])}
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={p} onClick={() => setFilterPositions((f) => active ? f.filter((x) => x !== p) : [...f, p])}
                   style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>
                   {p}
                 </div>
@@ -2832,19 +2832,19 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
             {HOSTS_OPTIONS.map((h) => {
               const active = filterHosts.includes(h);
               return (
-                <div key={h} onClick={() => setFilterHosts((f) => active ? f.filter((x) => x !== h) : [...f, h])}
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={h} onClick={() => setFilterHosts((f) => active ? f.filter((x) => x !== h) : [...f, h])}
                   style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.contactsTeal : T.border}`, color: active ? T.contactsTealText : T.textSecondary, background: active ? `${T.contactsTeal}15` : "transparent" }}>
                   {h}
                 </div>
               );
             })}
           </div>
-          <div onClick={() => setFilterDrives((d) => !d)}
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setFilterDrives((d) => !d)}
             style={{ display: "inline-flex", padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", marginBottom: 6, border: `1px solid ${filterDrives ? T.contactsTeal : T.border}`, color: filterDrives ? T.contactsTealText : T.textSecondary, background: filterDrives ? `${T.contactsTeal}15` : "transparent" }}>
             Drives
           </div>
           {activeFilterCount > 0 && (
-            <div onClick={() => { setFilterRoles([]); setFilterPositions([]); setFilterHosts([]); setFilterDrives(false); }} style={{ fontSize: 12, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", display: "block", marginTop: 6 }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { setFilterRoles([]); setFilterPositions([]); setFilterHosts([]); setFilterDrives(false); }} style={{ fontSize: 12, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", display: "block", marginTop: 6 }}>
               Clear filters
             </div>
           )}
@@ -3011,7 +3011,7 @@ function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
   return (
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Contacts settings</span>
       </div>
       <div style={{ padding: 16 }}>

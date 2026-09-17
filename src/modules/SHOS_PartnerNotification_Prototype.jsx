@@ -206,7 +206,7 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", marginBottom: 16 }}>
         {list.items.map((item, idx) => (
           <div key={item.contactId} style={{ padding: "14px", borderBottom: idx < list.items.length - 1 ? `1px solid ${T.border}` : "none" }}>
-            <div onClick={() => toggleNotified(item.contactId)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 8 }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => toggleNotified(item.contactId)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 8 }}>
               <div style={{ width: 22, height: 22, borderRadius: "50%", border: `1.5px solid ${item.notified ? ACTION.green : T.border}`, background: item.notified ? ACTION.green : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {item.notified && <Check size={14} color="#FFFFFF" weight="bold" />}
               </div>
@@ -247,7 +247,7 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
           onConfirm={onDelete}
         />
       ) : (
-        <div onClick={() => setConfirmDelete(true)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 8, fontSize: 12, color: ACTION.red, cursor: "pointer" }}>
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmDelete(true)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: 8, fontSize: 12, color: ACTION.red, cursor: "pointer" }}>
           <Trash2 size={13} /> Delete this list
         </div>
       )}
@@ -314,9 +314,9 @@ export default function PartnerNotificationSheet({ testId, onClose }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {editing && list ? (
-            <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={() => setEditing(false)} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+            <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={() => setEditing(false)} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
           ) : (
-            <X size={20} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+            <X size={20} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
           )}
           <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>{editing ? (list ? "Edit contacts" : "Contact list") : "Contact list"}</span>
         </div>

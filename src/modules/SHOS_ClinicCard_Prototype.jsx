@@ -117,7 +117,7 @@ function CollapsibleSectionHeader({ children, onTap, count, collapsed, onToggleC
         {children}
         {onTap && <ChevronRight size={12} color={T.textSecondary} />}
       </div>
-      <div onClick={onToggleCollapse} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", padding: "2px 4px" }}>
+      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onToggleCollapse} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", padding: "2px 4px" }}>
         {count != null && <span style={{ fontSize: 11, color: T.textDisabled }}>{count}</span>}
         <CaretDown size={13} color={T.textSecondary} style={{ transform: collapsed ? "none" : "rotate(180deg)", transition: "transform 150ms ease" }} />
       </div>
@@ -379,7 +379,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           Dashboard, rolled out here for consistency. */}
       <div style={{ width: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary, flex: 1 }}>{profile.nickname ? `${profile.nickname}'s clinic card` : "Clinic Card"}</span>
         {/* ADDED — real ask: a real PDF export, for handing this to (or
             printing for) a clinician rather than only reading it on
@@ -406,7 +406,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
             ["90days", "Last 90 days"],
             ["custom", "Custom date"],
           ].map(([key, label]) => (
-            <div key={key} onClick={() => setTimeframe(key)}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={key} onClick={() => setTimeframe(key)}
               style={{ padding: "5px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${timeframe === key ? T.healthcareBlue : T.border}`, color: timeframe === key ? T.healthcareBlue : T.textSecondary, background: timeframe === key ? `${T.healthcareBlue}15` : "transparent" }}>
               {label}
             </div>
@@ -426,15 +426,15 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           reuses the same quick-add-with-prefill mechanism the
           calendar/next-appointment flow will also build on. */}
       <div style={{ display: "flex", gap: 6, padding: "12px 16px 0", flexWrap: "wrap" }}>
-        <div onClick={() => quickAdd("healthcare", "testing", { date: inDaysAsStoredDate(14), title: "Scheduled TOC 2 weeks", testingFor: ["C&S (symptomatic/treatment)"] })}
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => quickAdd("healthcare", "testing", { date: inDaysAsStoredDate(14), title: "Scheduled TOC 2 weeks", testingFor: ["C&S (symptomatic/treatment)"] })}
           style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue }}>
           <Plus size={12} /> Test of cure · 2wk
         </div>
-        <div onClick={() => quickAdd("healthcare", "clinicVisits", { isFutureAppointment: true })}
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => quickAdd("healthcare", "clinicVisits", { isFutureAppointment: true })}
           style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue }}>
           <Plus size={12} /> Book appointment
         </div>
-        <div onClick={() => quickAdd("healthcare", "clinicVisits", { date: nowAsStoredDate(), reasonForVisit: ["Treatment"] })}
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => quickAdd("healthcare", "clinicVisits", { date: nowAsStoredDate(), reasonForVisit: ["Treatment"] })}
           style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue }}>
           <Plus size={12} /> Treatment given
         </div>
@@ -478,7 +478,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
             </div>
           </div>
         ) : (
-          <div onClick={openIdentityEdit} style={{ cursor: "pointer" }}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={openIdentityEdit} style={{ cursor: "pointer" }}>
             {profile.dateOfBirth || profile.clinicNumber || profile.address || profile.nhsNumber ? (
               <>
                 {profile.dateOfBirth && <Row T={T} title="Date of birth" subtitle={profile.dateOfBirth} />}
@@ -531,14 +531,14 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       <SectionHeader T={T}>Allergies</SectionHeader>
       <SectionCard T={T}>
         {profile.allergies.length === 0 ? (
-          <EmptyRow T={T}>None recorded. <span onClick={() => setShowMyProfile(true)} style={{ color: T.healthcareBlue, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
+          <EmptyRow T={T}>None recorded. <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowMyProfile(true)} style={{ color: T.healthcareBlue, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
         ) : (
           // CHANGED 15 Sep 2026 — real report: "allergies not clickable"
           // — only the empty state opened My Profile; once real
           // allergies existed there was no way back to edit them from
           // here at all. Same target (My Profile's edit form) as the
           // empty-state link right above.
-          <div onClick={() => setShowMyProfile(true)} style={{ padding: "12px 14px", display: "flex", flexWrap: "wrap", gap: 6, cursor: "pointer" }}>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowMyProfile(true)} style={{ padding: "12px 14px", display: "flex", flexWrap: "wrap", gap: 6, cursor: "pointer" }}>
             {profile.allergies.map((a) => (
               <span key={a} style={{ fontSize: 12, fontWeight: 700, color: T.actionRedText, background: `${T.actionRed}1A`, padding: "4px 10px", borderRadius: 999 }}>{a}</span>
             ))}
@@ -656,7 +656,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       <SectionHeader T={T}>Emergency information</SectionHeader>
       <SectionCard T={T}>
         {!profile.emergencyContactName && !profile.emergencyContactPhone && !profile.emergencyNotes ? (
-          <EmptyRow T={T}>None recorded. <span onClick={() => setShowMyProfile(true)} style={{ color: T.healthcareBlue, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
+          <EmptyRow T={T}>None recorded. <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowMyProfile(true)} style={{ color: T.healthcareBlue, fontWeight: 600, cursor: "pointer" }}>Add these under My Profile → Clinical & emergency info.</span></EmptyRow>
         ) : (
           // CHANGED 15 Sep 2026 — real report: "emergency info not
           // clickable" — same gap and same fix as Allergies just above.
@@ -696,7 +696,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       {showVisibilitySettings && (
         <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 300, overflowY: "auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-            <X size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(false)} aria-label="Close visibility settings" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} />
+            <X size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(false)} aria-label="Close visibility settings" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Which sections to show</span>
           </div>
           <div style={{ padding: "8px 16px", fontSize: 12, color: T.textSecondary }}>
