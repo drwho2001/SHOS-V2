@@ -877,7 +877,7 @@ function LocationExtraFields({ entry, refresh, T, color }) {
         {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
       </select>
       <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
-      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={commitNotes} rows={2} placeholder="Optional" style={{ ...inputStyle, marginBottom: 0, resize: "vertical" }} />
+      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={commitNotes} rows={2} placeholder="Optional" aria-label="Location notes" style={{ ...inputStyle, marginBottom: 0, resize: "vertical" }} />
     </div>
   );
 }
@@ -1093,9 +1093,9 @@ function ResourceEntryRow({ entry, categoryKey, onChanged, darkMode }) {
       </div>
       {expanded && (
         <div style={{ marginTop: 10 }}>
-          <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="Link or phone number"
+          <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="Link or phone number" aria-label="Resource link"
             style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", marginBottom: 8 }} />
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" rows={2}
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" rows={2} aria-label="Resource notes"
             style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical", marginBottom: 8 }} />
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={remove} style={{ padding: "8px 14px", borderRadius: 999, border: `1px solid ${ACTION.red}`, background: "transparent", color: ACTION.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Remove</button>
@@ -2478,6 +2478,7 @@ function ErrorLogScreen({ darkMode, onClose }) {
             onChange={(e) => setReportText(e.target.value)}
             placeholder="What happened, and what did you expect instead?"
             rows={2}
+            aria-label="Report a problem"
             style={{ width: "100%", boxSizing: "border-box", fontFamily: "'Inter', sans-serif", fontSize: 13, padding: 8, borderRadius: RADIUS.sm, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.bg : "#FFFFFF", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, resize: "vertical" }}
           />
           <div

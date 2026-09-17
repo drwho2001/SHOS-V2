@@ -3397,15 +3397,17 @@ this date; summarized here for durability.
   propagated past those two sites; a real, quantified, cross-cutting
   remediation pass, not a per-screen patch. (2) Critical axe `label`/
   `select-name` violations (missing accessible names) concentrated in
-  a handful of shared components — **RESOLVED 17 Sep 2026 for
+  a handful of shared components — **RESOLVED 17 Sep 2026, both
+  batches — see "Recently shipped" below.** Batch 1:
   `SelectRow`/`SelectField`, `DateTimeField`, `AgeField`,
-  `hoursInput()`, and the Colour-scheme RGB/Hex inputs, see "Recently
-  shipped" below.** `SectionCard`'s own Notes `<textarea>` fields (~20
-  sites, one per module's Add/Edit form) are the one part of this
-  finding still open — deliberately left as its own next-smallest
-  batch rather than folded into the first pass, since it's a
-  genuinely separate, larger cluster from the `<select>`/
-  `<input type="date/number">` gaps just closed. (3) No module-level bottom sheet
+  `hoursInput()`, and the Colour-scheme RGB/Hex inputs. Batch 2: every
+  Notes-style `<textarea>` across all 20 module files (~24 real sites,
+  since several files have more than one — MenstrualHealth's 3
+  Cycle/Contraception/Pregnancy sheets, Medication Dashboard's 2), plus
+  the handful of adjacent unlabeled `<input>`s found in the same sweep
+  (Contacts' availability-rule note, Settings' Resources link/notes
+  and Locations notes, Partner Notification's per-contact
+  methods/DOB/age/address block). (3) No module-level bottom sheet
   has real dialog semantics (`role="dialog"`, focus-on-open) — a
   pattern `App.jsx`'s own top-level modals already use correctly,
   never ported down to any module sheet. (4) Only ~7 of the app's
@@ -3455,6 +3457,61 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (17 Sep 2026, later again — accessibility: missing accessible names, batch 2, the Notes-textarea cluster)
+
+Real ask, continuing directly from batch 1: "Continue but bigger batches"
+— the same accessibility remediation, no longer constrained to
+smallest-first, so this batch closes the whole ~20-site Notes-`<textarea>`
+cluster deliberately deferred out of batch 1, plus every adjacent unlabeled
+`<input>` found in the same file while touching it, rather than stopping
+at exactly what batch 1's own audit named.
+
+**Every Notes-style `<textarea>` across `src/modules/` now has a real
+`aria-label`.** 15 files, ~24 sites once files with more than one
+Add/Edit sheet are counted (Medication Dashboard's 2, MenstrualHealth's
+3 — Cycle/Contraception/Pregnancy, each an independent copy of the same
+`SectionCard` Notes pattern). Most took the generic `aria-label="Notes"`
+(Contacts, ClinicVisits, Encounters, Measurements, Medication Dashboard,
+MenstrualHealth ×3, SymptomLog, Vaccinations, Timeline's episode notes);
+2 sites got their own real, more-specific visible-label text instead of
+the generic default, matching what's actually printed next to them —
+Testing's is genuinely labeled "General notes" in its own UI, not
+"Notes", so it got `aria-label="General notes"`; MyProfile's shared
+`TextAreaField` component (a generic, reusable field taking its own
+`label` prop, called with several different real labels) got
+`aria-label={label}`, the same pass-through pattern already proven for
+`SelectField` in batch 1, so every one of its callers is correct for
+free rather than needing its own fix.
+
+**Found and fixed 3 more real, unlabeled sites in the same files while
+touching them — not part of the original ~20-site count, but the same
+underlying gap.** Settings' Resources-entry editor had TWO unlabeled
+fields, not one — its `link` input (`aria-label="Resource link"`)
+alongside the already-known `notes` textarea (`aria-label="Resource
+notes"`); its Locations extra-fields Notes textarea got `aria-label=
+"Location notes"`; its Error Log "Report a problem" textarea got
+`aria-label="Report a problem"`. Contacts' availability-rule note input
+(the per-day "e.g. 'Work'" field in the day-picker) got `aria-label=
+"Availability note"`. Partner Notification's per-contact checklist row
+— a `methods` textarea plus DOB/age/address inputs, all rendered once
+per person with no accessible name distinguishing one row from the
+next — got real, per-person labels (`` `Contact methods for ${item.name}`
+``, `` `Date of birth for ${item.name}` ``, etc.) rather than a bare
+generic string, since a screen-reader user stepping through a multi-row
+checklist needs to know WHICH person's field they're on, not just that
+it's a methods field.
+
+**A full final sweep confirmed the cluster is genuinely closed, not
+just the sites remembered from the original audit**: `grep -rn
+"<textarea" src/modules/*.jsx src/components/*.jsx | grep -v
+"aria-label"` returns only the one multi-line Settings textarea whose
+own `aria-label` sits on a following line (confirmed present, a grep
+artifact, not a real gap).
+
+Verified live: full build, `npx eslint .` clean, and the full 15-flow
+smoke-test suite against a real `vite preview` production build —
+15/15 pass, no regressions from any of the 13 files touched.
 
 ## Recently shipped (17 Sep 2026, latest — accessibility: missing accessible names on shared form-field components, batch 1)
 

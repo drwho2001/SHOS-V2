@@ -357,7 +357,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
           </div>
           <div style={{ padding: "8px 0" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Paste a shared profile</div>
-            <textarea value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={4}
+            <textarea value={pasteText} onChange={(e) => setPasteText(e.target.value)} rows={4} aria-label="Paste a shared profile"
               placeholder="Paste the JSON text someone sent you"
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box", resize: "vertical" }} />
           </div>
@@ -1241,7 +1241,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
           )}
         </div>
 
-        <input value={draft.note} onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))} placeholder="Note (optional, e.g. 'Work')"
+        <input value={draft.note} onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))} placeholder="Note (optional, e.g. 'Work')" aria-label="Availability note"
           style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontSize: 12, boxSizing: "border-box", marginBottom: 8 }} />
 
         <button onClick={addRule} disabled={draft.days.length === 0}
@@ -2010,7 +2010,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
         </SectionCard>
 
         <SectionCard T={T} title="Notes">
-          <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} placeholder="e.g. how you met, preferences, things to remember before meeting again"
+          <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="Notes" placeholder="e.g. how you met, preferences, things to remember before meeting again"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </SectionCard>
 

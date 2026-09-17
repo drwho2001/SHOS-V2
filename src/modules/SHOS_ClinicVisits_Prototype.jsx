@@ -816,7 +816,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
           </div>
           <div style={{ padding: "8px 0" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Clinical notes</div>
-            <textarea value={form.clinicalNotes} onChange={(e) => set("clinicalNotes")(e.target.value)} rows={3}
+            <textarea value={form.clinicalNotes} onChange={(e) => set("clinicalNotes")(e.target.value)} rows={3} aria-label="Clinical notes"
               placeholder="e.g. Discussed PrEP adherence, no concerns raised. Advised to continue current regimen."
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>

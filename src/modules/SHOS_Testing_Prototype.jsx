@@ -856,7 +856,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
               textarea pattern as Vaccinations/Symptom Log. */}
           <div style={{ padding: "8px 0" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>General notes</div>
-            <textarea value={form.notes ?? ""} onChange={(e) => set("notes")(e.target.value)} rows={3}
+            <textarea value={form.notes ?? ""} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="General notes"
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
         </SectionCard>

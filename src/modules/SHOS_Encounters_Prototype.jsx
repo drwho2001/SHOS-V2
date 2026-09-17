@@ -1676,7 +1676,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
         </SectionCard>
 
         <SectionCard title="Notes" T={T}>
-          <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={4}
+          <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={4} aria-label="Notes"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box", marginTop: 8 }} />
         </SectionCard>
       </div>

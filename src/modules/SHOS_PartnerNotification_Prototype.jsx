@@ -212,15 +212,15 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
               </div>
               <span style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary, textDecoration: item.notified ? "line-through" : "none", opacity: item.notified ? 0.6 : 1 }}>{item.name}</span>
             </div>
-            <textarea value={item.methods} onChange={(e) => editField(item.contactId, "methods", e.target.value)} placeholder="Contact method(s) — e.g. Phone: 07700 900123 / Snapchat: @handle" rows={2}
+            <textarea value={item.methods} onChange={(e) => editField(item.contactId, "methods", e.target.value)} placeholder="Contact method(s) — e.g. Phone: 07700 900123 / Snapchat: @handle" rows={2} aria-label={`Contact methods for ${item.name}`}
               style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", resize: "vertical", marginBottom: list.clinical ? 8 : 0 }} />
             {list.clinical && (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <input value={item.dob} onChange={(e) => editField(item.contactId, "dob", e.target.value)} placeholder="DOB"
+                <input value={item.dob} onChange={(e) => editField(item.contactId, "dob", e.target.value)} placeholder="DOB" aria-label={`Date of birth for ${item.name}`}
                   style={{ flex: "1 1 90px", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
-                <input value={item.age ?? ""} onChange={(e) => editField(item.contactId, "age", e.target.value === "" ? null : Number(e.target.value))} type="number" placeholder="Age"
+                <input value={item.age ?? ""} onChange={(e) => editField(item.contactId, "age", e.target.value === "" ? null : Number(e.target.value))} type="number" placeholder="Age" aria-label={`Age for ${item.name}`}
                   style={{ flex: "1 1 70px", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
-                <input value={item.address} onChange={(e) => editField(item.contactId, "address", e.target.value)} placeholder="Address"
+                <input value={item.address} onChange={(e) => editField(item.contactId, "address", e.target.value)} placeholder="Address" aria-label={`Address for ${item.name}`}
                   style={{ flex: "2 1 140px", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
               </div>
             )}

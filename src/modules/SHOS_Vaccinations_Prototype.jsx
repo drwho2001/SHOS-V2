@@ -308,7 +308,7 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
           <RelationPicker label="Clinic visits" value={form.clinicVisitIds} onChange={set("clinicVisitIds")} T={T} items={visits} placeholder="No clinic visits logged yet" />
           <div style={{ padding: "8px 0 20px" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
-            <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3}
+            <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="Notes"
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
         </div>

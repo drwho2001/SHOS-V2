@@ -154,7 +154,7 @@ function PartnerMessageHelper({ infectionNames, T }) {
           <span style={{ fontSize: 12, color: T.textPrimary }}>Name the specific result ({infectionNames.join(", ")})</span>
         </div>
       )}
-      <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={5}
+      <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={5} aria-label="Message draft"
         style={{ width: "100%", padding: 10, borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
       <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
         <button onClick={copy} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 999, border: "none", background: T.healthcareBlue, color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
@@ -591,7 +591,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
         </SectionCard>
 
         <SectionCard title="Notes" T={T}>
-          <textarea value={episode.notes} onChange={(e) => update({ notes: e.target.value })} rows={3}
+          <textarea value={episode.notes} onChange={(e) => update({ notes: e.target.value })} rows={3} aria-label="Notes"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </SectionCard>
 

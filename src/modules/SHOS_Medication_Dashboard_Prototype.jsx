@@ -1312,7 +1312,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
             real records' raw data. */}
         <div style={{ padding: "10px 0" }}>
           <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Notes</div>
-          <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} placeholder="Anything else worth noting about this medication" rows={3}
+          <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} placeholder="Anything else worth noting about this medication" rows={3} aria-label="Notes"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </div>
         {/* ADDED 26 Aug 2026 — real ask: dose history display, showing
@@ -1498,7 +1498,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
         </div>
         <div style={{ padding: "10px 0" }}>
           <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Notes</div>
-          <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} placeholder="Anything else worth noting about this medication" rows={3}
+          <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} placeholder="Anything else worth noting about this medication" rows={3} aria-label="Notes"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
         </div>
         </div>
