@@ -3408,10 +3408,25 @@ this date; summarized here for durability.
   tap-to-reveal-caption pattern, 2 call sites), Medication Dashboard's
   per-row stock-correct/edit-medication icons and its own header
   Search/Settings icons, Contacts' header Settings icon, and
-  Measurements' header preferences Gear icon. Still real, still open:
-  the large remainder of the ~610-site count (per-row edit/link/unlink
-  icons, chip-toggle rows, and more) — this was the highest-value, most
-  repeated shared shapes first, not the whole count. (2) Critical axe `label`/
+  Measurements' header preferences Gear icon. **Batch 2 shipped the
+  same day** — the shared `ToggleSwitch` component (5 files, one fix
+  per definition reaches every caller) and every item inside the
+  3-dot dropdown MENUS whose triggers batch 1 fixed but whose own rows
+  (Edit/Archive/Delete/Update dose/etc.) still had zero keyboard access
+  — Contacts (3 items + its own eye-icon show-blank-fields toggle),
+  Encounters (3 items), Medication Dashboard (11 items, the app's
+  largest menu). Combined role-attribute count across `src/modules/`
+  after both batches: `role="button"` 174, `role="switch"` 23,
+  `role="menuitem"` 16, `role="checkbox"` 6 (up from the original
+  ~55/~148 `role`/`tabIndex` baseline). Still real, still open: of
+  ~575 real `cursor:"pointer"` onClick sites left in `src/modules/`,
+  ~211 still carry no role/tabIndex at all — mostly per-row edit/link/
+  unlink icons inside detail views and one-off text links (a "Now"
+  quick-fill, a "Cancel"/"Save" pair, a collapse toggle) that are each
+  individually distinct rather than one repeated shared shape, so
+  fixing the rest needs real per-site review, not another mechanical
+  regex sweep — this was the highest-value, most repeated shared
+  shapes first, not the whole count. (2) Critical axe `label`/
   `select-name` violations (missing accessible names) concentrated in
   a handful of shared components — **RESOLVED 17 Sep 2026, both
   batches — see "Recently shipped" below.** Batch 1:
