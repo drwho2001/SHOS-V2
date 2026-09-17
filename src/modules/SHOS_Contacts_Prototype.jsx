@@ -2661,7 +2661,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
           {/* ADDED 15 Sep 2026 — real ask: a real in-module settings
               screen (see ContactsSettingsScreen's own comment above),
               matching Medication Dashboard's own gear-icon placement. */}
-          {onOpenContactsSettings && <SettingsIcon size={19} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onOpenContactsSettings} title="Contacts settings" />}
+          {onOpenContactsSettings && <SettingsIcon size={19} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onOpenContactsSettings} role="button" tabIndex={0} aria-label="Contacts settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenContactsSettings(); } }} title="Contacts settings" />}
         </div>
       </div>
 

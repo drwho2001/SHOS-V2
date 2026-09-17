@@ -2871,7 +2871,7 @@ function InfoIcon({ onClick }) {
   const [darkMode] = useDarkModePreference();
 
   return (
-    <div onClick={onClick} style={{ width: 16, height: 16, borderRadius: 999, border: "1px solid #656568", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, cursor: "pointer", flexShrink: 0 }}>i</div>
+    <div onClick={onClick} role="button" tabIndex={0} aria-label="More information" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }} style={{ width: 16, height: 16, borderRadius: 999, border: "1px solid #656568", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, cursor: "pointer", flexShrink: 0 }}>i</div>
   );
 }
 

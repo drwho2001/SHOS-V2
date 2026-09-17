@@ -3402,9 +3402,15 @@ this date; summarized here for durability.
   Delete/Trash icon (11 sites), 3-dot "more options" menu (3 sites),
   and Timeline's Archive icon (1 site) is now `role="button"`/
   `tabIndex={0}`/keyboard-operable — `role="button"` count grew from
-  ~55 to ~166 in this pass alone. Still real, still open: the large
-  remainder of the ~610-site count (per-row edit/link/unlink icons,
-  chip-toggle rows, and more) — this was the highest-value, most
+  ~55 to ~166 in this pass alone. A small same-day addendum fixed 7
+  more of the same shared, module-header-level shapes found while
+  sweeping for the batch: Settings' shared `InfoIcon` component (the
+  tap-to-reveal-caption pattern, 2 call sites), Medication Dashboard's
+  per-row stock-correct/edit-medication icons and its own header
+  Search/Settings icons, Contacts' header Settings icon, and
+  Measurements' header preferences Gear icon. Still real, still open:
+  the large remainder of the ~610-site count (per-row edit/link/unlink
+  icons, chip-toggle rows, and more) — this was the highest-value, most
   repeated shared shapes first, not the whole count. (2) Critical axe `label`/
   `select-name` violations (missing accessible names) concentrated in
   a handful of shared components — **RESOLVED 17 Sep 2026, both
@@ -3467,6 +3473,25 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (17 Sep 2026, latest of all yet again — accessibility: keyboard-operability addendum, batch 1's own leftover header-level icons)
+
+Small, same-day follow-up found while re-sweeping for other common
+icon-button shapes right after batch 1 shipped — `InfoIcon`, `Gear`/
+`SettingsIcon`, `RefreshCcw`, and `Search` icons weren't covered by the
+FAB/chevron/X/Trash/3-dot-menu sweep since they're each a distinct
+component name. 7 more sites fixed the same way (`role="button"`/
+`tabIndex={0}`/`aria-label`/a real `onKeyDown`): Settings' shared
+`InfoIcon` component (the tap-to-reveal-caption pattern used by
+`StatRow` and 2 other call sites — one fix at the component reaches
+every caller), Medication Dashboard's per-medication-row "correct
+stock"/"edit medication" icons and its own header Search/Settings
+icons, Contacts' header Settings icon, and Measurements' header
+preferences Gear icon.
+
+Verified live: full build, `npx eslint .` clean, and the full 15-flow
+smoke-test suite against a real `vite preview` production build —
+15/15 pass, no regressions from any of the 4 files touched.
 
 ## Recently shipped (17 Sep 2026, latest of all — accessibility: keyboard-operability for the app's most-repeated icon-button shapes, batch 1 of the ~610-site sweep)
 

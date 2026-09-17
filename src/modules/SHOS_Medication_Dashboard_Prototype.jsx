@@ -820,8 +820,8 @@ function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
                 <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, color: s.tracked && s.needsAction && !requested ? T.actionRed : T.textPrimary }}>
                   {s.tracked ? `${s.currentStock} ${m.unit}s` : "—"}
                 </span>
-                {s.tracked && <RefreshCcw size={15} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => onCorrectStock(m.id)} title="Correct stock level" />}
-                <Settings2 size={15} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => onEditMedication(m.id)} />
+                {s.tracked && <RefreshCcw size={15} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => onCorrectStock(m.id)} role="button" tabIndex={0} aria-label="Correct stock level" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCorrectStock(m.id); } }} title="Correct stock level" />}
+                <Settings2 size={15} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => onEditMedication(m.id)} role="button" tabIndex={0} aria-label="Edit medication" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEditMedication(m.id); } }} />
               </div>
             </div>
 
@@ -2067,11 +2067,11 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF", cursor: "pointer" }}>
               {selectMode ? "Done" : "Select"}
             </span>
-            <Search size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={openMedSearch} />
+            <Search size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={openMedSearch} role="button" tabIndex={0} aria-label="Search medications" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMedSearch(); } }} />
             {/* CHANGED 26 Aug 2026 — real content now exists (dose
                 reminders), so this is wired up for real — was
                 deliberately a visual-only stub until this existed. */}
-            <SettingsIcon size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => setShowMedicationSettings(true)} />
+            <SettingsIcon size={20} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => setShowMedicationSettings(true)} role="button" tabIndex={0} aria-label="Medication settings" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowMedicationSettings(true); } }} />
           </div>
         </div>
         {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
