@@ -1484,9 +1484,23 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
   const cardLabel = anonymise ? MASKED : displayName(contact);
   return (
     <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
-      role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selected : undefined} aria-label={cardLabel} tabIndex={0}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
       style={{ position: "relative", background: selected ? `${T.contactsTeal}10` : T.surface, border: `1px solid ${selected ? T.contactsTeal : flaggedDontMeetAgain ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,.06)", cursor: "pointer", display: "flex", gap: 12 }}>
+      {/* ADDED 17 Sep 2026 — real fix for a genuine axe `nested-interactive`
+          violation: this card used to be role="button" itself, with the
+          status dot below ALSO role="button" — an interactive widget
+          nested inside another interactive widget, invalid per WAI-ARIA
+          and unreliable for keyboard/screen-reader users. A real click
+          anywhere on the card still works via ordinary event bubbling to
+          this div's own onClick above (unaffected by this change) — this
+          invisible button exists purely to give keyboard/screen-reader
+          users the equivalent single-tab-stop "open profile" action,
+          without making the whole card itself an interactive ancestor of
+          the dot's own, separately-focusable toggle. Negative z-index so
+          real content (name, dot, icons) always paints above it and keeps
+          capturing its own clicks/taps first. */}
+      <button type="button" onClick={handleClick} aria-label={cardLabel}
+        {...(selectMode ? { role: "checkbox", "aria-checked": selected } : {})}
+        style={{ position: "absolute", inset: 0, zIndex: -1, opacity: 0, border: "none", background: "transparent", padding: 0, margin: 0, cursor: "pointer", borderRadius: radius.md }} />
       {/* ADDED 26 Aug 2026 — real ask: favourite contacts, star icon
           per the user's preference over a pin. Own click handler with
           stopPropagation so tapping the star toggles the favourite

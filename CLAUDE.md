@@ -3473,13 +3473,13 @@ this date; summarized here for durability.
   instead of the token; Medication Dashboard's outline button fading
   to 50% opacity when a dose is locked; a few more not yet
   individually pinned down). (6) Zero live-region announcement
-  anywhere a search/filter box's result count changes. (7) One
-  `nested-interactive` violation confirmed live on Contacts (fires
-  reproducibly, exact element not yet pinned down — flagged as real
-  but not fully triaged). None of these were attempted this round
-  given the genuine scale involved — logged here in full so the next
-  session can pick up any one of them without re-auditing from
-  scratch.
+  anywhere a search/filter box's result count changes. (7) `nested-interactive` violation on
+  Contacts — RESOLVED 17 Sep 2026, see "Recently shipped" below: the
+  contact card was `role="button"` with the active-status dot INSIDE
+  it also `role="button"`, an interactive widget nested inside
+  another. None of the others were attempted this round given the
+  genuine scale involved — logged here in full so the next session can
+  pick up any one of them without re-auditing from scratch.
 - **Spacing consistency — audited 10 Sep 2026, clean result, not a
   gap anymore.** The real live report that started this (Contacts'
   "N active" count sitting flush against the header banner's bottom
@@ -3510,6 +3510,59 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (17 Sep 2026, later still — fixing the Contacts card's nested-interactive violation)
+
+Real continuation of the accessibility work, picking the next bounded
+item from Known Issues: the `nested-interactive` axe violation flagged
+as "confirmed live on Contacts... exact element not yet pinned down."
+
+**Pinned down precisely via a fresh, scoped axe scan** (`nested-
+interactive` rule only, run against Contacts/Encounters/Medication
+Dashboard/Healthcare after navigating into each): isolated to
+Contacts, 14 violations (one per visible card) — `ContactCard`'s outer
+wrapper was `role="button"` (the whole card opens the contact's
+profile on tap) with the active-status dot INSIDE it *also*
+`role="button"` (its own tap-to-reveal-caption affordance, added
+10 Sep 2026) — an interactive widget nested inside another, invalid
+per WAI-ARIA and unreliable for keyboard/screen-reader users, who may
+not be able to reliably tab into the inner control at all.
+
+**Fixed with the standard "invisible full-card button behind the real
+content" pattern**, rather than either of the two lossy options (strip
+the dot's own keyboard access back out, or make the whole card
+non-interactive and lose click-anywhere): the outer div keeps its
+`onClick`/long-press handlers for real mouse/touch clicks (working via
+ordinary event bubbling, unaffected by this change) but drops
+`role="button"`/`tabIndex`/`onKeyDown` — it's no longer itself an
+interactive ancestor. A new invisible sibling `<button>` (`opacity:0`,
+`position:absolute; inset:0; zIndex:-1`, carrying the real
+`aria-label`/`role="checkbox"` in select-mode) sits behind all the
+real content and provides the single keyboard/screen-reader tab-stop
+for "open this contact" — a native `<button>` needs no manual
+`onKeyDown`, Enter/Space already triggers `onClick` by default. The
+negative `z-index` (not `0`) matters: CSS paints non-positioned in-flow
+content (the name, the dot, the icons) *before* z-index-0/auto
+positioned descendants but *after* negative-z-index ones, so ordinary
+static content automatically paints above a negative-z-index overlay
+with no extra per-element `zIndex` needed — the status dot and the
+favourite star (already `zIndex:2`) both keep capturing their own
+clicks/taps first, exactly as before.
+
+Verified live via Playwright, not just the axe re-scan: focusing the
+invisible button directly landed on `<button aria-label="Grace J.">`
+(confirmed via `document.activeElement`), and pressing Enter genuinely
+opened Grace's real profile (RELATIONSHIP/TIMELINE sections visible) —
+proving the keyboard path is real, not just a DOM attribute. Separately
+confirmed the status dot still toggles its own caption without
+navigating away, and a plain mouse click on the card's name text still
+opens the profile as before. A fresh `nested-interactive` axe scan
+afterward: 0 violations on Contacts (was 14) and 0 on the three other
+screens checked (unaffected, confirming this was isolated to Contacts).
+
+Verified live: full build, `npx eslint .` clean, and the full 15-flow
+smoke-test suite against a real `vite preview` production build —
+15/15 pass.
 
 ## Recently shipped (17 Sep 2026, latest of all yet again again again again — accessibility: closing the ~610-site sweep's remaining ~211 gaps, and a critical SVG click() bug fix)
 
