@@ -262,17 +262,28 @@ export function getTopSymptoms(symptomEntries, resolveSymptomName, topN = 5) {
 // resolves ids via whichever registry it already has loaded.
 export function getPositiveTestsByOrganism(tests, resolveOrganismName, resolveResultName, topN = 8) {
   const real = tests.filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
-  const seenEvents = new Set(); // `${date}|${organismId}`
+  const seenEvents = new Set(); // `${date}|${bucketKey}`
   const counts = {};
   for (const t of real) {
     const isPositive = (t.resultIds || []).some((id) => resolveResultName(id)?.toLowerCase() === "positive");
     if (!isPositive) continue;
     const day = t.date.slice(0, 10);
-    for (const organismId of t.organismIds || []) {
-      const eventKey = `${day}|${organismId}`;
+    // FIXED — real report: "counting positive results by organism
+    // doesn't actually work." Root cause: Testing's own "Organism (if
+    // positive)" field is genuinely optional (its own label says so),
+    // so a real positive result logged without ever filling it in used
+    // to vanish from this breakdown entirely, even though a real
+    // positive exists. Falls back to the test's own `testingFor`
+    // selections (what was actually being screened for) so a positive
+    // result is never silently invisible here just because the more
+    // specific, optional organism field was left blank.
+    const buckets = (t.organismIds && t.organismIds.length)
+      ? t.organismIds.map((id) => ({ key: id, name: resolveOrganismName(id) }))
+      : (t.testingFor || []).filter((name) => name && name !== "Other").map((name) => ({ key: name, name }));
+    for (const { key, name } of buckets) {
+      const eventKey = `${day}|${key}`;
       if (seenEvents.has(eventKey)) continue;
       seenEvents.add(eventKey);
-      const name = resolveOrganismName(organismId);
       if (name) counts[name] = (counts[name] || 0) + 1;
     }
   }

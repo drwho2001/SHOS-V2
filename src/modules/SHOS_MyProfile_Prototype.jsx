@@ -924,7 +924,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   const [revealContraceptionAnyway, setRevealContraceptionAnyway] = useState(false);
 
   return (
-    <div tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: T.bg, overflowY: "auto", zIndex: 200 }}>
+    <div tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, overflowY: "auto", zIndex: 200 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onCancel} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Edit My Profile</span>
@@ -949,7 +949,12 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
               overall situation, not your connection to one person. */}
           <SuggestField label="Relationship status" value={form.relationshipStatus} onChange={set("relationshipStatus")} options={relationshipStatusOptions}
             onAddNew={(v) => { CustomOptionListsRepository.add("relationshipStatus", v).then(setRelationshipStatusOptions); }} T={T} placeholder="e.g. Single, Married, Poly" />
-          {form.relationshipStatus && (
+          {/* CHANGED 17 Sep 2026 — real report (from the Contacts-side
+              equivalent of this same field): linking a specific contact
+              to a "Single" status doesn't make sense — hidden for
+              exactly that one value, same as the Contact profile's own
+              toggle. */}
+          {form.relationshipStatus && form.relationshipStatus.trim().toLowerCase() !== "single" && (
             <RelationPicker label="Linked to" value={form.relationshipContactIds} onChange={set("relationshipContactIds")}
               T={T} items={allContacts} placeholder="No contacts yet — add one under Contacts first" />
           )}
@@ -1432,7 +1437,7 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
     // correct (`position: fixed, inset: 0, overflowY: auto`, entirely
     // self-contained) — applying the exact same pattern here instead
     // of depending on App.jsx's wrapper to provide it.
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", overflowY: "auto", fontFamily: "'Inter', sans-serif", background: T.bg, display: "flex", justifyContent: "center" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", overflowY: "auto", fontFamily: "'Inter', sans-serif", background: T.bg, display: "flex", justifyContent: "center" }}>
       {/* CHANGED 26 Aug 2026 — same fix already shipped in Medication:
           was a fixed 390px regardless of viewport; now fills the screen
           on mobile and caps at a real desktop-appropriate width on

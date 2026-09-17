@@ -31,8 +31,16 @@ let loadAttempted = false;
 // the bare proxy directly from an async function makes Promise
 // resolution probe its `.then` property, which the proxy treats as a
 // real (unimplemented) native call and rejects on.
+// FIXED — real bug caught in the app's own error log ("ScreenSecurity.
+// then() is not implemented on android"): this file's own comment
+// already correctly diagnosed the mechanism, but the code below still
+// returned the bare plugin proxy directly (`return ScreenSecurity`),
+// the exact anti-pattern the comment describes — never actually
+// wrapped in `{ plugin }` the way notificationService.js/
+// locationService.js's own getPlugin() do. Every caller (both below)
+// awaits this function, so the crash fired on every real native call.
 async function getPlugin() {
-  if (loadAttempted) return ScreenSecurity;
+  if (loadAttempted) return { plugin: ScreenSecurity };
   loadAttempted = true;
   try {
     const { Capacitor, registerPlugin } = await import("@capacitor/core");
@@ -42,11 +50,12 @@ async function getPlugin() {
   } catch {
     console.warn("[screenSecurityService] ScreenSecurity plugin not available in this environment.");
   }
-  return ScreenSecurity;
+  return { plugin: ScreenSecurity };
 }
 
 export async function isScreenSecurityAvailable() {
-  return !!(await getPlugin());
+  const { plugin } = await getPlugin();
+  return !!plugin;
 }
 
 // `allowed: true` clears FLAG_SECURE (screenshots/recording permitted);
@@ -54,7 +63,7 @@ export async function isScreenSecurityAvailable() {
 // the native call actually succeeded — the caller decides whether to
 // persist the preference change on a failure (see PrivacyScreen).
 export async function setScreenshotsAllowed(allowed) {
-  const plugin = await getPlugin();
+  const { plugin } = await getPlugin();
   if (!plugin) return false;
   try {
     await plugin.setSecure({ secure: !allowed });

@@ -3452,6 +3452,144 @@ this date; summarized here for durability.
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
 
+## Recently shipped (17 Sep 2026, later still — real-device feedback batch: ScreenSecurity crash, Stats organism count, field reorders, and more)
+
+Real ask: a large batch of live feedback from actual device use — 2 real
+crashes surfaced in the on-device Error log plus 11 more UI/bug reports.
+Worked crashes first, then concrete bugs, then UI polish, per this
+project's own established priority order.
+
+**Real crash fixed: `"ScreenSecurity.then() is not implemented on
+android"`.** `screenSecurityService.js`'s own `getPlugin()` — the
+"Allow screenshots" toggle's native bridge — had a comment correctly
+describing the "never let the raw Capacitor plugin proxy be a
+Promise's resolved value" bug already fixed in every OTHER native-
+plugin service this app has (`notificationService.js`,
+`locationService.js`, `calendarSyncService.js`, `fileExportHelper.js`,
+`biometricAuthService.js`) — but the code itself still did exactly
+that (`return ScreenSecurity;`, the bare proxy, from an `async`
+function). Every one of its 2 real callers awaited it, so the crash
+fired on every real use. Fixed by wrapping the return in `{ plugin }`,
+matching every sibling file's own already-correct pattern. A full
+sweep of every other `getPlugin()`/`registerPlugin()` site in
+`src/storage/` confirmed this was the one remaining unfixed instance.
+
+**The repeated `Cannot read properties of undefined (reading
+'filter')` crash (7 real occurrences in the error log) — investigated
+at length, not conclusively pinned down.** Every `.filter()` chained
+directly onto a repository's `getAll()` was checked (all properly
+`await`ed, or provided with a real `[]` fallback via `useLoadedMemo`/
+`useLoadedState`), `storageAdapter.js`'s own `load()` never returns
+`undefined` when a real fallback is passed (confirmed no repository
+calls it without one), and the classic "chained `.filter()` directly
+onto an un-awaited Promise" bug class (documented extensively
+elsewhere in this file as a recurring issue) came back with zero
+matches on a fresh grep. All 7 occurrences predate this round's own
+commits by many hours, in the middle of a very dense same-day
+16 Sep commit sequence — very plausibly already fixed by one of the
+~20 commits that shipped later the same day, given how many `.filter()`-
+on-`getAll()` fixes that day's own work included, but not confirmed
+without a stack trace. Flagged here rather than silently dropped — if
+this recurs on a build newer than this round's own commit, it needs a
+real stack trace (or a specific repro) to actually pin down.
+
+**Stats' "positive results by organism" — real bug, not a display
+issue.** Testing's own "Organism (if positive)" field is genuinely
+OPTIONAL — a positive result logged without ever filling it in
+(a real, easy thing to do) silently vanished from this breakdown
+entirely, even though a real positive existed. Fixed in
+`getPositiveTestsByOrganism()` (`statsCalculations.js`): falls back to
+the test's own `testingFor` selections (what was actually screened
+for) when `organismIds` is empty, so a positive result is never
+invisible here just because the more specific, optional field was
+left blank.
+
+**Contraception tab's linked clinic visit — real bug, showed no
+identifiable name.** `MenstrualHealth`'s `ContraceptionTab` detail view
+showed only the bare date for a linked clinic visit — fixed to match
+the same "title or reason, then date" label every other module's own
+linked-clinic-visit display already uses (Testing/Encounters).
+
+**Encounters' Quick-Add icon reverted from Flame back to Pulse/
+Activity** — a direct, explicit follow-up overriding the earlier
+16 Sep decision to keep Flame as a deliberately distinct glyph; the
+owner's own later ask was clear, so it now matches the bottom nav/
+Global Search's own Activity icon for this module everywhere.
+
+**Healthcare's Symptoms/Measurements sub-tab pills — real vertical-
+centering bug.** The 6 sub-tab pills sit in a CSS grid with no
+explicit row height — a 2-line label in the same row (Clinic Visits,
+or Menstrual & Contraception when shown) stretches that row's height,
+and the shorter 1-line labels sharing that row (Testing/Vaccinations,
+and specifically Symptoms/Measurements in the second row) sat top-
+aligned in the now-taller cell instead of centred. Fixed by adding
+`display:flex, alignItems:center, justifyContent:center` to each pill.
+
+**Settings > Notifications — the two clinic-appointment reminders
+combined onto one shared card**, instead of two separate ones for the
+same real feature (a booked appointment). `NotificationToggleRow`
+gained an optional `bare` prop to drop its own outer card chrome when
+nested inside a shared wrapper — every other call site unaffected.
+
+**Home's "Log contraception" — real colour-consistency bug, most
+visible in dark mode.** Used `healthcareColor` (green) while "Log
+period" right next to it used `menstrualColor` — two different
+accents for what's the same Menstrual & Contraception sub-tab. Both
+now share `menstrualColor`.
+
+**Settings' bottom-scroll buffer — bumped from 20px to 48px, app-wide
+(37 sites across 15 files).** Real report: the last item in Settings'
+About screen (among others) was still half cut off against a real
+device's gesture-nav area even with the existing `calc(20px +
+env(safe-area-inset-bottom))` buffer shipped 16 Sep — this sandboxed
+environment can't verify the exact real-device gap (`env()` resolves
+to 0px here), so a more generous, purely-additive bump was the safe
+fix rather than guessing at an exact number.
+
+**Contacts' section order reordered, in both the Add/Edit sheet and
+the read-only profile view** — real ask: "physical & health before
+kinks, contact methods second to last, before notes." New order:
+Relationship → Location & logistics → Physical & health → Kink →
+Chems → Contact methods → Notes → Linked contacts. (The read view's
+Contact methods was already positioned directly before Notes — only
+its Physical & health/Kink order needed the same swap the edit sheet
+got.)
+
+**The "Linked to My Profile's relationship status (Single)" toggle —
+investigated, not converted to static text.** Confirmed via
+`toggleLinkedToMe()`/`MyProfileRepository.linkRelationshipContact()`
+that this is a real, meaningful ACTION (which contact counts toward
+your own profile's relationship status), not just a passive status
+display — removing the toggle would remove real functionality, so it
+stays interactive. The actual confusion is real, though: the row read
+as "is this contact single?" specifically when the profile's own
+status genuinely IS "Single," where "linking" a contact makes no
+sense. Fixed narrowly — hidden for exactly that one value (case-
+insensitive "single"), both on the Contact profile's own toggle and
+My Profile's own matching "Linked to" picker — every other real status
+(Married, Partnered, Poly, etc.) keeps the real, interactive control.
+
+**Not acted on this round, flagged rather than guessed at**: "Privacy
+option into contacts maybe? Maybe not... maybe duplicated?" — read as
+the owner thinking out loud rather than a firm ask (the message itself
+raises and then questions its own idea); left alone pending a clearer
+ask. "Stats — click to open records/module section being analysed" —
+a real, legitimate feature request (deep-linking each Stats block to
+its own module/record), but a genuinely bigger plumbing job (Settings'
+own multi-level nav has no `onNavigateToRecord`-style prop threaded
+into `StatsScreen` today) than fit in this same round — logged here so
+it isn't lost. "City on contacts - adding new one doesn't seem to work
+properly" — investigated at length (the City `ComboField`, the
+Address-autocomplete's `onCityDetected` city-fill path, and
+`getKnownCities()`'s own suggestion-list logic all read correct on
+direct inspection) but no concrete bug was found or reproduced; needs
+a more specific repro (what was typed, what was expected vs. what
+happened) to pin down further.
+
+Verified live throughout: full build, `npx eslint .` clean, and the
+full 15-flow smoke-test suite against a real `vite preview` production
+build — 15/15 pass, no regressions.
+
 ## Recently shipped (17 Sep 2026 — icon-only-UI affordance fixes, status-bar/notch edge-to-edge redesign, desktop full-width sweep, and a first real screen-reader-keyboard pass)
 
 Real ask, four items reordered/reframed from the standing backlog list: (4) icon-only-UI retroactive audit — done first, per the user's own explicit ordering; (2) desktop full-width — reframed from "measure-cap sweep" to "desktop should always be full width, never affecting mobile"; (1) status-bar/notch colour — research how other apps handle it, then design and implement a real approach; (3) screen-reader audit — "do exhaustive." Delegated 3 parallel background agents (icon-only-UI, desktop full-width, screen-reader) per this project's own established "delegate audits, verify and fix myself" pattern, worked item 1 directly in parallel, then triaged every finding against real code before touching anything.

@@ -345,7 +345,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16, color: T.textPrimary }}>Import shared profile</span>
@@ -1837,26 +1837,6 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           </div>
         </SectionCard>
 
-        {/* REORDERED 19 Aug 2026 — moved up from near the bottom of the
-            sheet (it used to sit after Physical & health and Notes).
-            the user's ask for logical/intuitive ordering: how to actually
-            reach someone is one of the first things worth capturing
-            when adding a new contact, not one of the last. */}
-        <SectionCard T={T} title="Contact methods">
-          <TextField T={T} label="Phone/WhatsApp" value={form.phone} onChange={set("phone")} placeholder="e.g. +44 7700 900123" />
-          <TextField T={T} label="Snapchat" value={form.snapchat} onChange={set("snapchat")} placeholder="Username" />
-          <TextField T={T} label="Fabguys" value={form.fabguys} onChange={set("fabguys")} placeholder="Username" />
-          <TextField T={T} label="Fabswingers" value={form.fabswingers} onChange={set("fabswingers")} placeholder="Username" />
-          {/* ADDED — real ask: Recon as its own real field, same as
-              Snapchat/Fabguys/Fabswingers, not the free-text "other
-              platforms" list — this is specifically for a Recon
-              username. Grey placeholder is native input behavior,
-              genuinely disappears the instant real text is typed. */}
-          <TextField T={T} label="Recon" value={form.recon} onChange={set("recon")} placeholder="Username" />
-          <AutoDetectedMethods T={T} contact={form} />
-          <TagInput T={T} label="Other platforms" value={form.contactableVia} onChange={set("contactableVia")} suggestions={contactableViaOptions} placeholder="e.g. Tinder, Bumble, Grindr" />
-        </SectionCard>
-
         <SectionCard T={T} title="Relationship">
           <SelectField T={T} label="Rating" value={form.rating} onChange={set("rating")} options={RATING_OPTIONS} />
           <MultiSelectChips T={T} label="Relationship type" value={form.relationshipType} onChange={set("relationshipType")} options={relationshipTypeOptions} listName="relationshipType"
@@ -1918,42 +1898,8 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           <SelectField T={T} label="Readily available?" value={form.readilyAvailable} onChange={set("readilyAvailable")} options={READILY_AVAILABLE_OPTIONS} />
         </SectionCard>
 
-        <SectionCard T={T} title="Kink">
-          {/* REVERTED — the user clarified the cross-exclusion (a kink
-              already in Limits hidden from Stated Kinks' suggestions,
-              and vice versa) was actually wanted, kept as-is. The
-              "unify?" question was about something else entirely (see
-              below) — this exclusion was never the cause. Overlap
-              warning kept as a defensive backstop for the rare case a
-              kink still ends up in both anyway (e.g. via a backup
-              restore or direct data edit, which bypass the picker's
-              own exclusion) — not contradicting "keep the exclusion",
-              just covering what the exclusion itself can't catch. */}
-          <RegistryTagPicker T={T} label="Stated kinks" value={form.statedKinks} onChange={set("statedKinks")} registry={KinkRegistry} excludeIds={form.limits.map((l) => l.kinkId)} trackRole roleOptions={KINK_ROLE_OPTIONS} resolveSynonym={resolveKinkSynonym} analyzeEntry={analyzeKinkEntry} getRoleOptionsForKink={getKinkRoleOptions} />
-          <RegistryTagPicker T={T} label="Limits" value={form.limits} onChange={set("limits")} registry={KinkRegistry} excludeIds={form.statedKinks.map((s) => s.kinkId)} trackRole roleOptions={KINK_ROLE_OPTIONS} resolveSynonym={resolveKinkSynonym} analyzeEntry={analyzeKinkEntry} getRoleOptionsForKink={getKinkRoleOptions} />
-          {(() => {
-            const statedIds = new Set(form.statedKinks.map((s) => s.kinkId));
-            const overlapping = form.limits.filter((l) => statedIds.has(l.kinkId)).map((l) => kinkNameById.get(l.kinkId)).filter(Boolean);
-            return overlapping.length > 0 ? (
-              <div style={{ display: "flex", gap: 6, padding: "8px 0", alignItems: "flex-start" }}>
-                <AlertTriangle size={13} color={T.actionRed} style={{ flexShrink: 0, marginTop: 2 }} />
-                <span style={{ fontSize: 11, color: T.actionRed, lineHeight: 1.4 }}>
-                  Listed as both a stated kink and a limit: {overlapping.join(", ")}. Left as-is — worth a second look, not necessarily wrong.
-                </span>
-              </div>
-            ) : null;
-          })()}
-          <MultiSelectChips T={T} label="Role" value={form.bdsmRole} onChange={set("bdsmRole")} options={BDSM_ROLE_OPTIONS} />
-          <MultiSelectChips T={T} label="Position" value={form.sexualPosition} onChange={set("sexualPosition")} options={SEXUAL_POSITION_OPTIONS} />
-        </SectionCard>
-
-        {/* Own section, not folded into Kink — Notion keeps the Chems
-            Registry architecturally separate (neutral grey domain, not
-            kink-red, per Doc 2), so the app mirrors that distinction. */}
-        <SectionCard T={T} title="Chems">
-          <RegistryTagPicker T={T} label="Known chems" value={form.knownChems} onChange={set("knownChems")} registry={ChemsRegistry} placeholder="e.g. Alcohol, Weed, Poppers, Coke, LSD" resolveSynonym={resolveChemSynonym} />
-        </SectionCard>
-
+        {/* REORDERED 17 Sep 2026 — real ask: "physical & health before
+            kinks" — moved up ahead of Kink/Chems. */}
         <SectionCard T={T} title="Physical & health">
           {/* ADDED — real ask: these specific fields (not the whole
               section — Known to be on/Last tested below stay relevant
@@ -2006,6 +1952,61 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           )}
           <MultiSelectChips T={T} label="Known to be on" value={form.knownPrepDoxy} onChange={set("knownPrepDoxy")} options={PREP_DOXY_OPTIONS} />
           <TextField T={T} label="Last tested date (if known)" value={form.lastTestedDate} onChange={set("lastTestedDate")} type="date" helper="Often unknown — leave blank, no pressure." />
+        </SectionCard>
+
+        <SectionCard T={T} title="Kink">
+          {/* REVERTED — the user clarified the cross-exclusion (a kink
+              already in Limits hidden from Stated Kinks' suggestions,
+              and vice versa) was actually wanted, kept as-is. The
+              "unify?" question was about something else entirely (see
+              below) — this exclusion was never the cause. Overlap
+              warning kept as a defensive backstop for the rare case a
+              kink still ends up in both anyway (e.g. via a backup
+              restore or direct data edit, which bypass the picker's
+              own exclusion) — not contradicting "keep the exclusion",
+              just covering what the exclusion itself can't catch. */}
+          <RegistryTagPicker T={T} label="Stated kinks" value={form.statedKinks} onChange={set("statedKinks")} registry={KinkRegistry} excludeIds={form.limits.map((l) => l.kinkId)} trackRole roleOptions={KINK_ROLE_OPTIONS} resolveSynonym={resolveKinkSynonym} analyzeEntry={analyzeKinkEntry} getRoleOptionsForKink={getKinkRoleOptions} />
+          <RegistryTagPicker T={T} label="Limits" value={form.limits} onChange={set("limits")} registry={KinkRegistry} excludeIds={form.statedKinks.map((s) => s.kinkId)} trackRole roleOptions={KINK_ROLE_OPTIONS} resolveSynonym={resolveKinkSynonym} analyzeEntry={analyzeKinkEntry} getRoleOptionsForKink={getKinkRoleOptions} />
+          {(() => {
+            const statedIds = new Set(form.statedKinks.map((s) => s.kinkId));
+            const overlapping = form.limits.filter((l) => statedIds.has(l.kinkId)).map((l) => kinkNameById.get(l.kinkId)).filter(Boolean);
+            return overlapping.length > 0 ? (
+              <div style={{ display: "flex", gap: 6, padding: "8px 0", alignItems: "flex-start" }}>
+                <AlertTriangle size={13} color={T.actionRed} style={{ flexShrink: 0, marginTop: 2 }} />
+                <span style={{ fontSize: 11, color: T.actionRed, lineHeight: 1.4 }}>
+                  Listed as both a stated kink and a limit: {overlapping.join(", ")}. Left as-is — worth a second look, not necessarily wrong.
+                </span>
+              </div>
+            ) : null;
+          })()}
+          <MultiSelectChips T={T} label="Role" value={form.bdsmRole} onChange={set("bdsmRole")} options={BDSM_ROLE_OPTIONS} />
+          <MultiSelectChips T={T} label="Position" value={form.sexualPosition} onChange={set("sexualPosition")} options={SEXUAL_POSITION_OPTIONS} />
+        </SectionCard>
+
+        {/* Own section, not folded into Kink — Notion keeps the Chems
+            Registry architecturally separate (neutral grey domain, not
+            kink-red, per Doc 2), so the app mirrors that distinction. */}
+        <SectionCard T={T} title="Chems">
+          <RegistryTagPicker T={T} label="Known chems" value={form.knownChems} onChange={set("knownChems")} registry={ChemsRegistry} placeholder="e.g. Alcohol, Weed, Poppers, Coke, LSD" resolveSynonym={resolveChemSynonym} />
+        </SectionCard>
+
+        {/* REORDERED 17 Sep 2026 — real ask: "contact methods second to
+            last, before notes" — moved down from its earlier position
+            right after Basics (see the 19 Aug 2026 reasoning that used
+            to live here) to sit right before Notes instead. */}
+        <SectionCard T={T} title="Contact methods">
+          <TextField T={T} label="Phone/WhatsApp" value={form.phone} onChange={set("phone")} placeholder="e.g. +44 7700 900123" />
+          <TextField T={T} label="Snapchat" value={form.snapchat} onChange={set("snapchat")} placeholder="Username" />
+          <TextField T={T} label="Fabguys" value={form.fabguys} onChange={set("fabguys")} placeholder="Username" />
+          <TextField T={T} label="Fabswingers" value={form.fabswingers} onChange={set("fabswingers")} placeholder="Username" />
+          {/* ADDED — real ask: Recon as its own real field, same as
+              Snapchat/Fabguys/Fabswingers, not the free-text "other
+              platforms" list — this is specifically for a Recon
+              username. Grey placeholder is native input behavior,
+              genuinely disappears the instant real text is typed. */}
+          <TextField T={T} label="Recon" value={form.recon} onChange={set("recon")} placeholder="Username" />
+          <AutoDetectedMethods T={T} contact={form} />
+          <TagInput T={T} label="Other platforms" value={form.contactableVia} onChange={set("contactableVia")} suggestions={contactableViaOptions} placeholder="e.g. Tinder, Bumble, Grindr" />
         </SectionCard>
 
         <SectionCard T={T} title="Notes">
@@ -2283,8 +2284,19 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <ReadRow T={T} label="Meet again?" value={contact.meetAgain} />
           {/* Deliberately distinct label from "Relationship type" above
               — different axis (My Profile's own overall status), not a
-              second copy of it. See myProfileRepository.js. */}
-          {myProfile.relationshipStatus && (
+              second copy of it. See myProfileRepository.js.
+              CHANGED 17 Sep 2026 — real report: this read as "is this
+              contact single?" when the profile's own status genuinely
+              IS "Single" — "linking" a contact to a single status never
+              makes sense, so the toggle is hidden for exactly that one
+              value (relationshipStatus is free text, so this can't be
+              a full enum check, but "single" is the one value the
+              report was actually about). Every other status (Married,
+              Partnered, Poly, etc.) keeps the real toggle — it's a
+              genuine action (who counts toward that status), not just
+              a status display, so it stays interactive rather than
+              becoming static text. */}
+          {myProfile.relationshipStatus && myProfile.relationshipStatus.trim().toLowerCase() !== "single" && (
             <div onClick={toggleLinkedToMe} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0 2px", cursor: "pointer" }}>
               <span style={{ fontSize: 12, color: T.textSecondary }}>Linked to My Profile's relationship status ({myProfile.relationshipStatus})</span>
               <div style={{ width: 36, height: 21, borderRadius: 999, background: isLinkedToMe ? T.contactsTeal : "#DCDCE1", position: "relative", flexShrink: 0 }}>
@@ -2315,33 +2327,9 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <ReadRow T={T} label="Readily available?" value={contact.readilyAvailable} />
         </SectionCard>
 
-        <SectionCard T={T} title="Kink">
-          {hideFurther ? (
-            <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "6px 0" }}>{MASKED}</div>
-          ) : (
-            <>
-              <ReadRow T={T} label="Stated kinks" value={contact.statedKinks.map((sel) => {
-                const name = kinkNameById.get(sel.kinkId);
-                return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
-              }).filter(Boolean)} />
-              <ReadRow T={T} label="Limits" value={contact.limits.map((sel) => {
-                const name = kinkNameById.get(sel.kinkId);
-                return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
-              }).filter(Boolean)} />
-              <ReadRow T={T} label="Role" value={contact.bdsmRole} />
-              <ReadRow T={T} label="Position" value={contact.sexualPosition} />
-            </>
-          )}
-        </SectionCard>
-
-        <SectionCard T={T} title="Chems">
-          {/* CHANGED — real ask: empty Chems should explicitly say
-              "None known" rather than the row just disappearing —
-              ReadRow's default behavior everywhere else (hide empty
-              fields entirely) still applies to every other field. */}
-          <ReadRow T={T} label="Known chems" value={contact.knownChems.length > 0 ? contact.knownChems.map((id) => chemNameById.get(id)).filter(Boolean) : "None known"} />
-        </SectionCard>
-
+        {/* REORDERED 17 Sep 2026 — real ask: "physical & health before
+            kinks" — moved up ahead of Kink/Chems, matching the same
+            reorder made in the Add/Edit sheet above. */}
         <SectionCard T={T} title="Physical & health">
           {/* CHANGED 19 Aug 2026 — Anonymise mode's "hide further" tier:
               physical attributes (length/girth/cummer), per the user's
@@ -2379,6 +2367,33 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           )}
           <ReadRow T={T} label="Known to be on" value={contact.knownPrepDoxy} />
           <ReadRow T={T} label="Last tested" value={contact.lastTestedDate} />
+        </SectionCard>
+
+        <SectionCard T={T} title="Kink">
+          {hideFurther ? (
+            <div style={{ fontSize: 13, color: T.textDisabled, fontStyle: "italic", padding: "6px 0" }}>{MASKED}</div>
+          ) : (
+            <>
+              <ReadRow T={T} label="Stated kinks" value={contact.statedKinks.map((sel) => {
+                const name = kinkNameById.get(sel.kinkId);
+                return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
+              }).filter(Boolean)} />
+              <ReadRow T={T} label="Limits" value={contact.limits.map((sel) => {
+                const name = kinkNameById.get(sel.kinkId);
+                return name ? (sel.role ? `${name} (${sel.role})` : name) : null;
+              }).filter(Boolean)} />
+              <ReadRow T={T} label="Role" value={contact.bdsmRole} />
+              <ReadRow T={T} label="Position" value={contact.sexualPosition} />
+            </>
+          )}
+        </SectionCard>
+
+        <SectionCard T={T} title="Chems">
+          {/* CHANGED — real ask: empty Chems should explicitly say
+              "None known" rather than the row just disappearing —
+              ReadRow's default behavior everywhere else (hide empty
+              fields entirely) still applies to every other field. */}
+          <ReadRow T={T} label="Known chems" value={contact.knownChems.length > 0 ? contact.knownChems.map((id) => chemNameById.get(id)).filter(Boolean) : "None known"} />
         </SectionCard>
 
         <SectionCard T={T} title="Contact methods">
@@ -2994,7 +3009,7 @@ function ShowRoleOnCardsToggleCard({ T }) {
 
 function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} />
         <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Contacts settings</span>

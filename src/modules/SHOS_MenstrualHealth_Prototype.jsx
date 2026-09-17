@@ -695,7 +695,13 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
             <ReadRow label="Started" value={formatDate(e.startDate)} T={T} />
             <ReadRow label="Ended" value={e.endDate ? formatDate(e.endDate) : "Currently active"} T={T} />
             <ReadRow label="Next due" value={e.nextDueDate ? formatDate(e.nextDueDate) : ""} T={T} alert={overdue} />
-            {linkedVisit && <ReadRow label="Linked clinic visit" value={formatDate(linkedVisit.date)} T={T} />}
+            {/* FIXED — real report: this used to show just the bare
+                date ("no user-identifiable name"). Matches the same
+                "title or reason, then date" label every other module's
+                own linked-clinic-visit display already uses (see
+                Testing's/Encounters' own allTests/allMeds-style
+                lookups). */}
+            {linkedVisit && <ReadRow label="Linked clinic visit" value={`${linkedVisit.title || (linkedVisit.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(linkedVisit.date)}`} T={T} />}
           </SectionCard>
           <SectionCard title="Notes" T={T}><ReadRow label="Notes" value={e.notes} T={T} /></SectionCard>
         </div>

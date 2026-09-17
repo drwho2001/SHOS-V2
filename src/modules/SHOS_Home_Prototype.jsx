@@ -51,7 +51,7 @@ import {
   ShieldIcon as Shield,
   HeartbeatIcon as HeartPulse, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon,
   UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database,
-  TestTubeIcon as TestTube, FireIcon as Flame, StethoscopeIcon as Stethoscope,
+  TestTubeIcon as TestTube, StethoscopeIcon as Stethoscope,
   SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CalendarCheckIcon as CalendarCheck, StackIcon as Stack, DropIcon as Drop,
   IdentificationBadgeIcon as CreditCard, DownloadSimpleIcon as Download, LockIcon as Lock,
   BellIcon as Bell, XIcon as X,
@@ -987,13 +987,11 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginBottom: 6 }}>Personal</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         <QuickAddButton icon={Users} label="New contact" color={ACCENTS.contacts} onClick={() => onQuickAdd("contacts")} />
-        {/* CHANGED — real ask: a distinct icon for Encounter rather
-            than the generic Activity glyph. Lucide doesn't have a
-            literal "lips" icon (checked before picking a substitute,
-            not guessed at) — Flame is the closest thematically-honest
-            match already established in this app (Kink Registry uses
-            it the same way), kept in Encounters' own existing pink. */}
-        <QuickAddButton icon={Flame} label="New encounter" color={ACCENTS.encounters} onClick={() => onQuickAdd("activity")} />
+        {/* CHANGED 17 Sep 2026 — real, explicit follow-up ask overriding
+            the earlier Flame decision above: back to the same Pulse/
+            Activity glyph the bottom nav and Global Search already use
+            for Encounters everywhere else, for consistency. */}
+        <QuickAddButton icon={Activity} label="New encounter" color={ACCENTS.encounters} onClick={() => onQuickAdd("activity")} />
         {/* CHANGED 20 Aug 2026 — real bug found in the design-
             unification pass: this was #3B82F6, a different, lighter
             blue than Medication Dashboard's own accent (medsBlue,
@@ -1045,7 +1043,13 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         {menstrualTrackingEnabled && (
           <>
             <QuickAddButton icon={Drop} label="Log period" color={menstrualColor} onClick={() => onQuickAdd("healthcare", "menstrualHealth")} />
-            <QuickAddButton icon={Shield} label="Log contraception" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "menstrualContraception")} />
+            {/* CHANGED 17 Sep 2026 — real report: "log contraception match
+                period colour" (most visible in dark mode, where the two
+                accents diverge more) — both are the same Menstrual &
+                Contraception sub-tab, so they now share one accent
+                instead of contraception borrowing Healthcare's own
+                green. */}
+            <QuickAddButton icon={Shield} label="Log contraception" color={menstrualColor} onClick={() => onQuickAdd("healthcare", "menstrualContraception")} />
           </>
         )}
       </div>
@@ -1116,7 +1120,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         // bottom) taller than the viewport was simply unreachable, no
         // way to scroll to it at all. Matches every other module's
         // overlay wrapper elsewhere in this file.
-        <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(20px + env(safe-area-inset-bottom))", zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }}>
+        <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }}>
           <div style={{ width: "100%" }}>
             <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>
