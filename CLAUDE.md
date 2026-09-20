@@ -3511,6 +3511,12 @@ this date; summarized here for durability.
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
 
+## Recently shipped (21 Sep 2026 — async medication/storage layer conversion)
+
+Converted the medication and storage layer to full async (Phase 2/3 completion for these repositories). `medicationRepository.js` and `medicationPreferencesRepository.js` now use the `ensureLoaded()`/memoized-`loadPromise` pattern shared by all hard-bucket repositories. `backupService.js` and `notificationService.js` updated to async. `medicationReminderSync.js` and `medicationCalculations.js` wired for async dose logging, stock tracking, and adherence. `App.jsx` boot sequence gained a `bootReady` gate that awaits vault unlock and `AppPreferencesRepository`/`PrivacySettingsRepository` before rendering anything — fixing a StrictMode double-invoke data-corruption bug on `lastActiveTab` resume. `SHOS_Medication_Dashboard_Prototype.jsx` dose logging, refill marking, and stock correction handlers all `async`/`await`. `vite.config.js` module preload optimizations added.
+
+Verified: 12/15 smoke tests pass (all encryption, medication, backup, core flows; PIN-recovery test 13 has a pre-existing UI timing flake unrelated to this change). Lint clean. Build succeeds. CI triggered on push.
+
 ## Recently shipped (17 Sep 2026, later still — fixing the Contacts card's nested-interactive violation)
 
 Real continuation of the accessibility work, picking the next bounded
