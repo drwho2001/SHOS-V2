@@ -27,7 +27,7 @@
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { MedicationPreferencesRepository, isSkippedToday, isDoseSnoozed } from "../repositories/medicationPreferencesRepository";
 import { LogRepository } from "../repositories/logRepository";
-import { isDoseLockedOut, lockoutEndsAt } from "./medicationCalculations";
+import { lockoutEndsAt } from "./medicationCalculations";
 import { scheduleNotification, cancelNotification, registerNotificationActionTypes, NOTIFICATION_IDS, MEDICATION_ACTION_TYPE_ID, moduleSmallIconName } from "../storage/notificationService";
 import { ACCENTS } from "./designTokens";
 import { nowAsStoredDateTime } from "./dateInputHelpers";
@@ -54,11 +54,15 @@ export async function getDailyMedsState() {
     if (isDoseSnoozed(prefs, med.id)) continue;
     const logs = await LogRepository.getForMedication(med.id);
     const lastDose = [...logs].filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-    if (!lastDose || !isDoseLockedOut(med, lastDose.date)) {
+    const unlockAt = lastDose ? lockoutEndsAt(med, lastDose.date, prefs.reminderTimingMode) : null;
+    // Use the same timestamp the native reminder is scheduled from,
+    // not isDoseLockedOut()'s always-adaptive manual-double-log guard.
+    // Fixed reminder mode can be anchored to med.scheduledTimes, so the
+    // in-app banner and native notification must agree on this check.
+    if (!lastDose || !unlockAt || unlockAt <= new Date()) {
       due.push(med);
     } else {
-      const unlockAt = lockoutEndsAt(med, lastDose.date, prefs.reminderTimingMode);
-      if (unlockAt) upcoming.push({ med, unlockAt });
+      upcoming.push({ med, unlockAt });
     }
   }
   return { due, upcoming };
@@ -125,6 +129,7 @@ export async function syncMedicationReminders() {
 export async function handleTakeAll() {
   const { due } = await getDailyMedsState();
   const names = due.map((m) => m.name);
+  await cancelNotification(NOTIFICATION_IDS.medicationReminder);
   // nowAsStoredDateTime(), not new Date().toISOString() — real bug
   // found auditing notification gaps: this stored a genuine real-UTC
   // timestamp while every other dose-logging path in this app (the
@@ -136,7 +141,7 @@ export async function handleTakeAll() {
   // assumes every stored dose date follows the fake-UTC convention.
   const timestamp = nowAsStoredDateTime();
   for (const m of due) await LogRepository.create({ medicationId: m.id, type: "dose", delta: -m.unitsPerDose, date: timestamp });
-  syncMedicationReminders();
+  await syncMedicationReminders();
   return { medications: names };
 }
 

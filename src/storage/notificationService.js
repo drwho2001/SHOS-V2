@@ -68,6 +68,13 @@
 // same ID naturally replaces any previous pending alert rather than
 // stacking duplicates. This holds on both platforms: native replaces
 // by id, web replaces by using the id as the Notification `tag`.
+// ADDED — route diagnostic output to on-device error log instead of console
+import { ErrorLogRepository } from "../repositories/errorLogRepository";
+
+function logError(source, message, stack) {
+  ErrorLogRepository.record({ source, message, stack }).catch(() => {});
+}
+
 export const NOTIFICATION_IDS = {
   doxyPepAlert: 9001,
   medicationReminder: 9002,
@@ -202,7 +209,7 @@ export async function registerNotificationActionTypes() {
     // with no try/catch of its own, so a rejection here used to be a
     // silent, untraced failure that could quietly block every
     // subsequent schedule() call in the same sync pass.
-    console.error("[notificationService] registerActionTypes() failed:", err);
+    logError("notificationService", "registerActionTypes() failed", err?.stack);
     return false;
   }
 }
@@ -256,7 +263,7 @@ async function primeEarlyNativeActionBuffer() {
       earlyBufferedNativeAction = action;
     });
   } catch (err) {
-    console.warn("[notificationService] Priming the early native action buffer failed:", err);
+    logError("notificationService", "Priming the early native action buffer failed", err?.stack);
   }
 }
 // FIXED — real bug caught by scripts/smoke-test.cjs: calling this
@@ -308,7 +315,7 @@ export async function addNotificationActionListener(handler) {
         setTimeout(() => handler({ actionId: pendingAction }), 0);
       }
     } catch (err) {
-      console.warn("[notificationService] Reading pending notification action from URL failed:", err);
+      logError("notificationService", "Reading pending notification action from URL failed", err?.stack);
     }
     if ("serviceWorker" in navigator) {
       const listener = (event) => {
@@ -401,7 +408,7 @@ export async function getDeliveredNotifications() {
     const result = await withTimeout(plugin.getDeliveredNotifications(), 8000, "getDeliveredNotifications()");
     return result?.notifications || [];
   } catch (err) {
-    console.warn("[notificationService] getDeliveredNotifications() failed:", err);
+    logError("notificationService", "getDeliveredNotifications() failed", err?.stack);
     return [];
   }
 }
@@ -529,7 +536,7 @@ async function getPlugin() {
     const mod = await import("@capacitor/local-notifications");
     LocalNotifications = mod.LocalNotifications;
   } catch {
-    console.warn("[notificationService] @capacitor/local-notifications not available - native notifications disabled in this environment.");
+    logError("notificationService", "@capacitor/local-notifications not available - native notifications disabled in this environment", undefined);
   }
   return { plugin: LocalNotifications };
 }
@@ -560,7 +567,7 @@ export async function requestNotificationPermission() {
       const result = await withTimeout(plugin.requestPermissions(), 8000, "requestPermissions()");
       return { status: result.display };
     } catch (err) {
-      console.warn("[notificationService] requestPermissions() failed:", err);
+      logError("notificationService", "requestPermissions() failed", err?.stack);
       return { status: "error", detail: formatNativeError("requestPermissions()", err) };
     }
   }
@@ -573,7 +580,7 @@ export async function requestNotificationPermission() {
     // agnostic rather than juggling two different vocabularies.
     return { status: result === "default" ? "prompt" : result };
   } catch (err) {
-    console.warn("[notificationService] Notification.requestPermission() failed:", err);
+    logError("notificationService", "Notification.requestPermission() failed", err?.stack);
     return { status: "error" };
   }
 }
@@ -593,7 +600,7 @@ export async function checkNotificationPermission() {
       const result = await withTimeout(plugin.checkPermissions(), 8000, "checkPermissions()");
       return { status: result.display };
     } catch (err) {
-      console.warn("[notificationService] checkPermissions() failed:", err);
+      logError("notificationService", "checkPermissions() failed", err?.stack);
       // ADDED — real ask: surface the exact failing call on-screen (see
       // NotificationPermissionBanner's own use of this field) so a hang
       // like this can be diagnosed without adb/USB debugging, which
@@ -621,7 +628,7 @@ export async function checkExactAlarmPermission() {
     const result = await withTimeout(plugin.checkExactNotificationSetting(), 8000, "checkExactNotificationSetting()");
     return { status: result.exact_alarm };
   } catch (err) {
-    console.warn("[notificationService] checkExactNotificationSetting() failed:", err);
+    logError("notificationService", "checkExactNotificationSetting() failed", err?.stack);
     return { status: "error", detail: formatNativeError("checkExactNotificationSetting()", err) };
   }
 }
@@ -638,7 +645,7 @@ export async function requestExactAlarmPermission() {
     const result = await withTimeout(plugin.changeExactNotificationSetting(), 8000, "changeExactNotificationSetting()");
     return { status: result.exact_alarm };
   } catch (err) {
-    console.warn("[notificationService] changeExactNotificationSetting() failed:", err);
+    logError("notificationService", "changeExactNotificationSetting() failed", err?.stack);
     return { status: "error", detail: formatNativeError("changeExactNotificationSetting()", err) };
   }
 }
@@ -672,7 +679,7 @@ export async function sendTestNotification() {
     });
     return { ok: true };
   } catch (err) {
-    console.warn("[notificationService] Test notification failed to schedule:", err);
+    logError("notificationService", "Test notification failed to schedule", err?.stack);
     return { ok: false, reason: "error" };
   }
 }
@@ -706,7 +713,7 @@ async function showWebNotification({ id, title, body, actionTypeId }) {
     }
     return true;
   } catch (err) {
-    console.warn("[notificationService] showNotification() failed:", err);
+    logError("notificationService", "showNotification() failed", err?.stack);
     return false;
   }
 }
@@ -783,7 +790,7 @@ export async function scheduleNotification({ id, title, body, at, actionTypeId, 
       }), 8000, "schedule()");
       return true;
     } catch (err) {
-      console.error(`[notificationService] Native schedule() failed for notification id ${id} ("${title}"):`, err);
+      logError("notificationService", `Native schedule() failed for notification id ${id} ("${title}")`, err?.stack);
       return false;
     }
   }
@@ -857,29 +864,38 @@ export async function updateAppBadge(count) {
     else await navigator.clearAppBadge();
     return true;
   } catch (err) {
-    console.warn("[notificationService] App badge update failed:", err);
+    logError("notificationService", "App badge update failed", err?.stack);
     return false;
   }
 }
 
 // Cancels a previously scheduled notification by its fixed id — safe
-// to call even if nothing is currently scheduled under that id. On
-// web this also closes an already-SHOWN notification under that id
-// (matched by tag), not just a still-pending timeout — e.g. logging a
-// dose from inside the app should dismiss a reminder already sitting
-// in the notification tray, not just stop a future one.
+// to call even if nothing is currently scheduled under that id. Also
+// removes an already-delivered notification where the platform exposes
+// that separately (native notification tray; web tag lookup) — e.g.
+// logging a dose from inside the app should dismiss a reminder already
+// sitting in the notification tray, not just stop a future one.
 export async function cancelNotification(id) {
   const platform = await getPlatform();
   if (platform === "native") {
     const { plugin } = await getPlugin();
     if (!plugin) return false;
+    let ok = true;
     try {
       await withTimeout(plugin.cancel({ notifications: [{ id }] }), 8000, "cancel()");
-      return true;
     } catch (err) {
-      console.error(`[notificationService] Native cancel() failed for notification id ${id}:`, err);
-      return false;
+      logError("notificationService", `Native cancel() failed for notification id ${id}`, err?.stack);
+      ok = false;
     }
+    if (plugin.removeDeliveredNotifications) {
+      try {
+        await withTimeout(plugin.removeDeliveredNotifications({ notifications: [{ id }] }), 8000, "removeDeliveredNotifications()");
+      } catch (err) {
+        logError("notificationService", `Native removeDeliveredNotifications() failed for notification id ${id}`, err?.stack);
+        ok = false;
+      }
+    }
+    return ok;
   }
   const pending = webTimeouts.get(id);
   if (pending) { clearTimeout(pending); webTimeouts.delete(id); }
@@ -889,7 +905,7 @@ export async function cancelNotification(id) {
       const shown = await registration.getNotifications({ tag: String(id) });
       shown.forEach((n) => n.close());
     } catch (err) {
-      console.warn("[notificationService] Closing shown web notification failed:", err);
+      logError("notificationService", "Closing shown web notification failed", err?.stack);
     }
   }
   return true;

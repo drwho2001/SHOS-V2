@@ -31,4 +31,17 @@ export default defineConfig({
   define: {
     __BUILD_SHA__: JSON.stringify(resolveBuildSha()),
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          settings: ['src/modules/SHOS_Settings_Prototype.jsx'],
+          healthcare: ['src/modules/SHOS_Healthcare_Prototype.jsx'],
+          timeline: ['src/modules/SHOS_Timeline_Prototype.jsx'],
+          partnernotification: ['src/modules/SHOS_PartnerNotification_Prototype.jsx'],
+          globalsearch: ['src/modules/SHOS_GlobalSearch_Prototype.jsx'],
+        }
+      }
+    }
+  }
 });

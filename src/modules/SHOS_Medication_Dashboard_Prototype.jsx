@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { PlusIcon as Plus, WarningIcon as AlertTriangle, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, PillIcon as Pill, MagnifyingGlassIcon as Search, GearIcon as SettingsIcon, GearSixIcon as Settings2, XIcon as X, MoonIcon as Moon, SunIcon as Sun, TrashIcon as Trash2, FireIcon as Flame, PaperPlaneTiltIcon as Send, ClockIcon as Clock, DotsThreeVerticalIcon as MoreVertical, ListChecksIcon as ListChecks, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore, CaretLeftIcon as ChevronLeft, InfoIcon } from "@phosphor-icons/react";
 // The dashboard no longer owns its own medication/log data — it reads and
 // writes through these two repositories instead. Nothing about how the UI
@@ -274,8 +274,8 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
   // which schedules from this exact lockoutEndsAt() value, not from
   // nextDoseEstimate's own 100%-of-interval mark). Computed fresh from
   // the real last-logged dose every render, same as nextDose itself —
-  // so a late dose visibly shifts this forward by the same lateness,
-  // it isn't pinned to a fixed clock time.
+  // so adaptive mode visibly shifts this forward by the same lateness;
+  // fixed mode instead uses the medication's scheduled time when set.
   const nextReminderAt = lastDose ? lockoutEndsAt(med, lastDose.date, reminderTimingMode) : null;
   const nextReminderClock = nextReminderAt && nextReminderAt > new Date()
     ? nextReminderAt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
@@ -905,14 +905,13 @@ function addHoursToTime(time, hoursToAdd) {
 // tracks which slots the user has actually edited, so re-spacing off
 // a changed first time — or a changed doses-per-day count — never
 // clobbers a slot someone already set deliberately. Deliberately
-// display/planning data only — see medicationRepository.js's own
-// `scheduledTimes` comment for why this isn't wired into the
-// elapsed-time-based lockout/reminder math this round.
+// fixed-reminder clock source — see medicationRepository.js's own
+// `scheduledTimes` comment for the exact timing semantics.
 function ScheduledTimesField({ dosesPerDay, value, onChange, T }) {
   const touchedRef = useRef(new Set());
   const count = Math.max(1, dosesPerDay || 1);
 
-  useEffect(() => {
+  const deriveTimes = useCallback(() => {
     const first = value[0] || "08:00";
     const spacingHours = 24 / count;
     const next = Array.from({ length: count }, (_, i) => {
@@ -922,8 +921,11 @@ function ScheduledTimesField({ dosesPerDay, value, onChange, T }) {
     });
     const changed = next.length !== value.length || next.some((t, i) => t !== value[i]);
     if (changed) onChange(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-derive when the slot count changes; value/onChange would refire this every keystroke
-  }, [count]);
+  }, [count, value, onChange]);
+
+  useEffect(() => {
+    deriveTimes();
+  }, [deriveTimes]);
 
   const setSlot = (i, time) => {
     touchedRef.current.add(i);

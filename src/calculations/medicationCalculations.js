@@ -294,28 +294,41 @@ export function lockoutEndsEstimate(med, lastDoseDate) {
 // forward by the same lateness is correct for someone who's shifted
 // their whole day. But it also means one late dose permanently drifts
 // every future reminder, which isn't what everyone wants. "Fixed"
-// mode anchors to the very FIRST dose ever logged for this medication
-// (its own real clock time, held constant forever, never recomputed
-// off a later dose) and steps forward by whole dosing intervals to the
-// next occurrence still in the future — so a single late or early
-// dose only ever affects that one day's own reminder, not every
-// reminder after it. Returns null (falls back to adaptive math at the
-// call site) if no dose has ever been logged yet — there's no anchor
-// to hold fixed to before that.
+// mode uses the medication's own scheduledTimes[0] clock when present,
+// while preserving the first logged dose's original calendar cadence.
+// If no scheduled time is set, it falls back to the older first-dose
+// clock anchor. Either way, one late or early dose only affects that
+// one day's own reminder, not every reminder after it. Returns null
+// (falls back to adaptive math at the call site) only if no scheduled
+// time and no dose log exist — there's no anchor to hold fixed to.
 function firstDoseTimestamp(med) {
-  const doseLogs = med.logs.filter((l) => l.type === "dose" && !l.voided);
+  const doseLogs = (med.logs || []).filter((l) => l.type === "dose" && !l.voided);
   if (doseLogs.length === 0) return null;
   return Math.min(...doseLogs.map((l) => realTimestampFromStored(l.date)));
 }
 
-function fixedModeDueSlot(med, intervalHours) {
-  const anchorMs = firstDoseTimestamp(med);
+function fixedModeDueSlot(med, intervalHours, lastDoseDate) {
+  let anchorMs = firstDoseTimestamp(med) ?? (lastDoseDate ? realTimestampFromStored(lastDoseDate) : null);
+  if (med.scheduledTimes?.length > 0) {
+    const [h, m] = med.scheduledTimes[0].split(":").map(Number);
+    if (Number.isFinite(h) && Number.isFinite(m)) {
+      // Keep the original day/cadence from the first logged dose, but use
+      // the user's intended clock time when they have set one.
+      const anchorDate = new Date(anchorMs ?? Date.now());
+      anchorMs = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), anchorDate.getDate(), h, m).getTime();
+    }
+  }
   if (anchorMs == null) return null;
   const intervalMs = intervalHours * 3600000;
   const now = Date.now();
   if (anchorMs > now) return anchorMs;
   const stepsForward = Math.ceil((now - anchorMs) / intervalMs) || 1;
-  return anchorMs + stepsForward * intervalMs;
+  let dueMs = anchorMs + stepsForward * intervalMs;
+  if (lastDoseDate) {
+    const lastDoseMs = realTimestampFromStored(lastDoseDate);
+    while (dueMs - intervalMs * 0.2 <= lastDoseMs) dueMs += intervalMs;
+  }
+  return dueMs;
 }
 
 // ADDED 26 Aug 2026 — real ask: custom dose reminder notifications.
@@ -337,7 +350,7 @@ export function lockoutEndsAt(med, lastDoseDate, timingMode = "adaptive") {
   const intervalHours = effectiveDoseIntervalHours(med);
   if (!intervalHours) return null;
   if (timingMode === "fixed") {
-    const dueMs = fixedModeDueSlot(med, intervalHours);
+    const dueMs = fixedModeDueSlot(med, intervalHours, lastDoseDate);
     if (dueMs != null) return new Date(dueMs - intervalHours * 0.2 * 3600000);
   }
   if (!lastDoseDate) return null;
@@ -355,7 +368,7 @@ export function nextDoseEstimate(med, lastDoseDate, timingMode = "adaptive") {
   if (med.usagePattern === "prn" || !intervalHours) return null;
   let next = null;
   if (timingMode === "fixed") {
-    const dueMs = fixedModeDueSlot(med, intervalHours);
+    const dueMs = fixedModeDueSlot(med, intervalHours, lastDoseDate);
     if (dueMs != null) next = new Date(dueMs);
   }
   if (!next) {

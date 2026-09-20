@@ -828,6 +828,17 @@ async function deriveBackupKey(password, saltBytes) {
   );
 }
 
+async function deriveHmacKey(password, saltBytes) {
+  const keyMaterial = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: saltBytes, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+    keyMaterial,
+    { name: "HMAC", hash: "SHA-256", length: 256 },
+    false,
+    ["sign", "verify"]
+  );
+}
+
 // Pure data assembly + real crypto, no browser file/DOM APIs touched
 // here — same "pure" vs. "browser-facing" split as buildBackup() vs.
 // exportBackup() above.
@@ -841,6 +852,18 @@ export async function buildEncryptedBackup(password, includeKeys = null, dateRan
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveBackupKey(password, salt);
   const ciphertextBuf = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(backup)));
+  // Generate HMAC over the encrypted envelope data — ciphertext + iv +
+  // salt in that exact byte order, the same sequence
+  // decryptBackupEnvelope() re-checks on restore (encrypt-then-MAC, so
+  // any tampering with the ciphertext, IV, or salt fails the integrity
+  // check rather than silently decrypting to a corrupted plaintext).
+  const hmacKey = await deriveHmacKey(password, salt);
+  const ciphertextBytes = new Uint8Array(ciphertextBuf);
+  const dataToSign = new Uint8Array(ciphertextBytes.length + iv.length + salt.length);
+  dataToSign.set(ciphertextBytes, 0);
+  dataToSign.set(iv, ciphertextBytes.length);
+  dataToSign.set(salt, ciphertextBytes.length + iv.length);
+  const hmacBuf = await crypto.subtle.sign("HMAC", hmacKey, dataToSign);
   return {
     type: ENCRYPTED_BACKUP_TYPE,
     schemaVersion: ENCRYPTED_SCHEMA_VERSION,
@@ -850,6 +873,7 @@ export async function buildEncryptedBackup(password, includeKeys = null, dateRan
     salt: bytesToBase64(salt),
     iv: bytesToBase64(iv),
     ciphertext: bytesToBase64(new Uint8Array(ciphertextBuf)),
+    hmac: bytesToBase64(new Uint8Array(hmacBuf)),
   };
 }
 
@@ -859,12 +883,28 @@ export async function buildEncryptedBackup(password, includeKeys = null, dateRan
 // not a separate one that could drift. Throws a plain-language error
 // on a wrong password rather than a cryptic DOMException — AES-GCM's
 // own authentication tag is what actually catches this, not a guess.
+// Also verifies HMAC for integrity before decrypting.
 export async function decryptBackupEnvelope(envelope, password) {
   if (!envelope || envelope.type !== ENCRYPTED_BACKUP_TYPE) {
     throw new Error("That doesn't look like an encrypted SHOS backup.");
   }
   if (typeof envelope.schemaVersion === "number" && envelope.schemaVersion > ENCRYPTED_SCHEMA_VERSION) {
     throw new Error("This encrypted backup was made with a newer version of SHOS than this app understands.");
+  }
+  // Verify HMAC before decrypting (if present - for backwards compatibility with older backups)
+  if (envelope.hmac) {
+    const hmacKey = await deriveHmacKey(password, base64ToBytes(envelope.salt));
+    const ciphertextBytes = base64ToBytes(envelope.ciphertext);
+    const ivBytes = base64ToBytes(envelope.iv);
+    // The HMAC covers the ciphertext + iv + salt (the encrypted envelope data)
+    const dataToVerify = new Uint8Array(ciphertextBytes.length + ivBytes.length + base64ToBytes(envelope.salt).length);
+    dataToVerify.set(ciphertextBytes, 0);
+    dataToVerify.set(ivBytes, ciphertextBytes.length);
+    dataToVerify.set(base64ToBytes(envelope.salt), ciphertextBytes.length + ivBytes.length);
+    const valid = await crypto.subtle.verify("HMAC", hmacKey, base64ToBytes(envelope.hmac), dataToVerify);
+    if (!valid) {
+      throw new Error("Backup integrity check failed — this file may have been tampered with or corrupted.");
+    }
   }
   const key = await deriveBackupKey(password, base64ToBytes(envelope.salt));
   let plainBuf;

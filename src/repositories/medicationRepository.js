@@ -310,16 +310,12 @@ const DEFAULT_MEDICATION = {
   doseHistory: [],
   // ADDED 16 Sep 2026 — real gap: no field anywhere captured an actual
   // wall-clock dose time ("8am and 8pm"), only elapsed-time-since-last-
-  // dose (see medicationCalculations.js's lockoutEndsAt()/
-  // nextDoseEstimate()). This is display/planning data only for now —
-  // one "HH:mm" 24-hour string per daily dose slot, index-matched to
-  // dosesPerDay (e.g. ["08:00","20:00"] for a twice-daily medication).
-  // Deliberately NOT wired into the lockout/reminder timing math this
-  // round — that's still genuinely elapsed-time-based (adaptive: from
-  // the last dose; fixed: from the first-ever dose), a bigger, separate
-  // architectural decision left for later, not attempted speculatively
-  // here. Empty array means "no preferred times set" — nothing reads
-  // this as a hard requirement.
+  // dose. One "HH:mm" 24-hour string per daily dose slot, index-matched
+  // to dosesPerDay (e.g. ["08:00","20:00"] for a twice-daily medication).
+  // In fixed reminder mode, medicationCalculations.js uses the first
+  // slot as the clock anchor while preserving the original dose cadence;
+  // adaptive mode still follows the actual last logged dose time. Empty
+  // array means "no preferred times set".
   scheduledTimes: [],
 };
 

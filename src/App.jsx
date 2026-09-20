@@ -238,6 +238,9 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
   const [error, setError] = useState("");
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricAttempting, setBiometricAttempting] = useState(false);
+  // PIN rate limiting: track failed attempts and lockout time
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState(0);
   // ADDED 9 Sep 2026 — real ask: PIN-recovery/alternate-access, per
   // CLAUDE.md's own scoped design. Genuinely a real path, not a "reset
   // my whole app" nuclear option — the recovery string unlocks the SAME
@@ -264,14 +267,30 @@ function AppLockScreen({ onUnlock, onUnlockDecoy }) {
   // fails there for real (AES-GCM's own authentication tag), not via a
   // separate classification step.
   const attempt = async () => {
+    const now = Date.now();
+    if (now < lockedUntil) {
+      const waitSec = Math.ceil((lockedUntil - now) / 1000);
+      setError(`Too many attempts. Try again in ${waitSec}s.`);
+      return;
+    }
     if (pin && pin === getDuressPin()) {
       onUnlockDecoy();
       return;
     }
     try {
       await unlockWithPin(pin);
+      setFailedAttempts(0);
+      setLockedUntil(0);
     } catch {
-      setError("Incorrect PIN.");
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+      if (newAttempts >= 5) {
+        const lockoutMs = Math.min(30000 * Math.pow(2, newAttempts - 5), 3600000);
+        setLockedUntil(Date.now() + lockoutMs);
+        setError(`Too many attempts. Locked for ${Math.ceil(lockoutMs / 60000)}min.`);
+      } else {
+        setError("Incorrect PIN.");
+      }
       setPin("");
       return;
     }
@@ -1285,17 +1304,17 @@ export default function App() {
   const onDueMedsTake = async () => {
     const result = await handleTakeAll();
     showNotifToast(result.medications.length ? `${result.medications.join(", ")} logged` : "Logged");
-    checkDueMeds();
+    await checkDueMeds();
   };
   const onDueMedsSkip = async () => {
     await handleSkipToday();
     showNotifToast("Skipped until tomorrow");
-    checkDueMeds();
+    await checkDueMeds();
   };
   const onDueMedsSnooze = async () => {
     const result = await handleSnooze();
     showNotifToast(`Snoozed ${result.minutes} min`);
-    checkDueMeds();
+    await checkDueMeds();
   };
 
   // ADDED — real ask: "Build the Testing/Refill/Clinic-visit reminder
@@ -1570,9 +1589,9 @@ export default function App() {
       // notification and acting from inside the app both give the same
       // real, visible acknowledgment.
       listenerHandle = await addNotificationActionListener(async (action) => {
-        if (action.actionId === MEDICATION_ACTIONS.takeAll) onDueMedsTake();
-        else if (action.actionId === MEDICATION_ACTIONS.skipToday) onDueMedsSkip();
-        else if (action.actionId === MEDICATION_ACTIONS.snooze) onDueMedsSnooze();
+        if (action.actionId === MEDICATION_ACTIONS.takeAll) await onDueMedsTake();
+        else if (action.actionId === MEDICATION_ACTIONS.skipToday) await onDueMedsSkip();
+        else if (action.actionId === MEDICATION_ACTIONS.snooze) await onDueMedsSnooze();
         else if (action.actionId === DOXYPEP_ACTIONS.takeDose) {
           const result = await handleTakeDoxyDose();
           showNotifToast(result.medications.length ? `${result.medications.join(", ")} logged` : "Logged");
