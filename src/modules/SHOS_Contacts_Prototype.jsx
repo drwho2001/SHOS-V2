@@ -2862,6 +2862,10 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
               Clear filters
             </div>
           )}
+
+          <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+            {filtered.length > 0 ? `${filtered.length} contacts${activeFilterCount > 0 ? ` (${activeFilterCount} filter${activeFilterCount > 1 ? "s" : ""} active)` : ""}` : activeContacts.length === 0 ? "No contacts" : "No contacts match"}
+          </div>
         </div>
       )}
 

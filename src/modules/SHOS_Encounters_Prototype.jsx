@@ -1191,6 +1191,10 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowFilters((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 8px", borderRadius: radius.full, cursor: "pointer", border: `1px solid ${dateFilter ? T.encountersPink : T.border}`, color: dateFilter ? T.encountersPink : T.textSecondary, fontSize: 11, fontWeight: 600 }}>
             Filter{dateFilter ? " (1)" : ""}
           </div>
+
+          <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+            {visible.length > 0 ? `${visible.length} encounters${dateFilter ? ` (filtered)` : ""}${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No encounters match" : "No encounters logged"}
+          </div>
         </div>
         {showFilters && (
           <div style={{ padding: "8px 16px 0", display: "flex", flexWrap: "wrap", gap: 6 }}>

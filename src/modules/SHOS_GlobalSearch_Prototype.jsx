@@ -421,6 +421,9 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
           ))}
         </div>
       )}
+      <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+        {query.trim().length > 0 && results.length > 0 ? `${results.length} results found, sorted by ${sortMode === "chronological" ? "most recent" : "A–Z"}` : query.trim().length > 0 ? "No matches found" : ""}
+      </div>
 
       <div tabIndex={0} style={{ flex: 1, overflowY: "auto" }}>
         {query.trim().length === 0 && (
