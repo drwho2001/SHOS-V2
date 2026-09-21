@@ -988,7 +988,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
               Shares the same recency-aware logic as the list row now
               (see computeTestDotColor's own comment). */}
           <span style={{ width: 10, height: 10, borderRadius: radius.full, background: computeTestDotColor(test, allTests || [test], T, resultNameById, revealEarly), display: "inline-block" }} />
-          <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{test.title || "Untitled test"}</span>
+          <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{test.title || "Untitled test"}</h1>
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>{formatDate(test.date)}</div>
 

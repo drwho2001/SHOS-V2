@@ -513,7 +513,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
       <div style={{ padding: "0 16px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <span style={{ width: 10, height: 10, borderRadius: radius.full, background: isOpen && hasPositive ? T.actionRed : isOpen ? T.healthcareBlue : T.actionGreen, display: "inline-block" }} />
-          <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{episode.title}</span>
+          <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{episode.title}</h1>
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>
           {isOpen ? (hasPositive ? "Open · positive result found" : "Open") : `Resolved ${formatDate(episode.resolvedDate)} — ${episode.resolution}`}

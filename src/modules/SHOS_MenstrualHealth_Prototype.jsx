@@ -445,7 +445,7 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Drop size={16} color={T.menstrualPurple} weight="fill" />
-            <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</span>
+            <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{formatDate(c.startDate)}{c.endDate ? ` – ${formatDate(c.endDate)}` : " (ongoing)"}</h1>
           </div>
           <SectionCard title="Details" T={T}>
             {c.flow && (
@@ -688,7 +688,7 @@ function ContraceptionTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, o
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <ContraceptionIcon formulation={e.formulation} size={16} color={T.healthcareBlue} />
-            <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{e.method}</span>
+            <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{e.method}</h1>
           </div>
           <SectionCard title="Details" T={T}>
             <ReadRow label="Formulation" value={e.formulation} T={T} />
@@ -875,7 +875,7 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen, registerModuleBac
         <div style={{ padding: "0 16px 100px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <Baby size={16} color={T.healthcareBlue} weight="fill" />
-            <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{formatDate(p.testDate)}</span>
+            <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{formatDate(p.testDate)}</h1>
           </div>
           {masked ? (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setRevealedIds((ids) => [...ids, p.id])} style={{ marginTop: 14, padding: 20, textAlign: "center", borderRadius: radius.md, border: `1px solid ${T.border}`, background: T.surface, cursor: "pointer" }}>

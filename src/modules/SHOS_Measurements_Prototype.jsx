@@ -647,7 +647,7 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
       <div style={{ padding: "0 16px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <span style={{ width: 10, height: 10, borderRadius: radius.full, background: T.healthcareBlue, display: "inline-block" }} />
-          <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{m.type}</span>
+          <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{m.type}</h1>
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20 }}>{formatDate(m.date)}</div>
 

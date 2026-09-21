@@ -912,7 +912,7 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
       <div style={{ padding: "0 16px 100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <span style={{ width: 10, height: 10, borderRadius: radius.full, background: T.healthcareBlue, display: "inline-block" }} />
-          <span style={{ ...TYPE.recordTitle, color: T.textPrimary }}>{visit.title || "Untitled visit"}</span>
+          <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{visit.title || "Untitled visit"}</h1>
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>{formatDateTime(visit.date)}</div>
 
