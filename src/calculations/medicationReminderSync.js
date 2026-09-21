@@ -27,7 +27,7 @@
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { MedicationPreferencesRepository, isSkippedToday, isDoseSnoozed } from "../repositories/medicationPreferencesRepository";
 import { LogRepository } from "../repositories/logRepository";
-import { lockoutEndsAt } from "./medicationCalculations";
+import { lockoutEndsAt, getNextNotificationTime } from "./medicationCalculations";
 import { scheduleNotification, cancelNotification, registerNotificationActionTypes, NOTIFICATION_IDS, MEDICATION_ACTION_TYPE_ID, moduleSmallIconName } from "../storage/notificationService";
 import { ACCENTS } from "./designTokens";
 import { nowAsStoredDateTime } from "./dateInputHelpers";
@@ -54,11 +54,7 @@ export async function getDailyMedsState() {
     if (isDoseSnoozed(prefs, med.id)) continue;
     const logs = await LogRepository.getForMedication(med.id);
     const lastDose = [...logs].filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-    const unlockAt = lastDose ? lockoutEndsAt(med, lastDose.date, prefs.reminderTimingMode) : null;
-    // Use the same timestamp the native reminder is scheduled from,
-    // not isDoseLockedOut()'s always-adaptive manual-double-log guard.
-    // Fixed reminder mode can be anchored to med.scheduledTimes, so the
-    // in-app banner and native notification must agree on this check.
+    const unlockAt = lastDose ? getNextNotificationTime(med, lastDose.date, prefs.reminderTimingMode) : null;
     if (!lastDose || !unlockAt || unlockAt <= new Date()) {
       due.push(med);
     } else {

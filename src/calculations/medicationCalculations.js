@@ -349,12 +349,19 @@ function fixedModeDueSlot(med, intervalHours, lastDoseDate) {
 export function lockoutEndsAt(med, lastDoseDate, timingMode = "adaptive") {
   const intervalHours = effectiveDoseIntervalHours(med);
   if (!intervalHours) return null;
-  if (timingMode === "fixed") {
-    const dueMs = fixedModeDueSlot(med, intervalHours, lastDoseDate);
-    if (dueMs != null) return new Date(dueMs - intervalHours * 0.2 * 3600000);
-  }
   if (!lastDoseDate) return null;
   return new Date(realTimestampFromStored(lastDoseDate) + intervalHours * 0.8 * 3600000);
+}
+
+export function getNextNotificationTime(med, lastDoseDate, timingMode = "adaptive") {
+  const intervalHours = effectiveDoseIntervalHours(med);
+  if (!intervalHours) return null;
+  if (timingMode === "fixed") {
+    const dueMs = fixedModeDueSlot(med, intervalHours, lastDoseDate);
+    if (dueMs != null) return new Date(dueMs);
+  }
+  if (!lastDoseDate) return null;
+  return new Date(realTimestampFromStored(lastDoseDate) + intervalHours * 3600000);
 }
 
 

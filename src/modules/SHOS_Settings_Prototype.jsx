@@ -41,7 +41,7 @@ import {
 // object, but only NEUTRAL_DARK was ever imported — a real
 // ReferenceError, only thrown once the `darkMode ? DARK : NEUTRAL`
 // ternary actually evaluated the NEUTRAL branch, i.e. in light mode.
-import { ACCENTS, ACTION, ACTION_TEXT_SAFE, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { ACCENTS, ACCENT_TEXT_SAFE, ACTION, ACTION_TEXT_SAFE, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { ModuleColorRepository, CUSTOMIZABLE_MODULE_KEYS, CUSTOMIZABLE_ACTION_KEYS } from "../repositories/moduleColorRepository";
 import { computeAdherence } from "../calculations/medicationCalculations";
 import { isQualifyingEncounter, DOXYPEP_WINDOW_HOURS, findDoxyPepMedication } from "../calculations/doxyPepCalculations";
@@ -469,8 +469,8 @@ function EncryptedExportSheet({ onClose }) {
           <div style={{ position: "relative", marginBottom: 8 }}>
             <input value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} type={showPasswords ? "text" : "password"} placeholder="Password (6+ characters)"
               style={{ width: "100%", padding: "10px 40px 10px 12px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 14, boxSizing: "border-box", background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
-            {showPasswords ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(false)} />
-              : <Eye size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(true)} />}
+            {showPasswords ? <EyeOff size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(false)} role="button" tabIndex={0} aria-label="Hide password" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+              : <Eye size={17} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ position: "absolute", right: 12, top: 12, cursor: "pointer" }} onClick={() => setShowPasswords(true)} role="button" tabIndex={0} aria-label="Show password" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />}
           </div>
           <div style={{ position: "relative", marginBottom: 10 }}>
             <input value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }} type={showPasswords ? "text" : "password"} placeholder="Confirm password"
@@ -3641,7 +3641,7 @@ function GuideScreen({ onClose, onStartTour }) {
               anytime, regardless of whether the one-time post-onboarding
               offer was already taken or skipped. */}
           {onStartTour && (
-            <button onClick={onStartTour} style={{ width: isDesktopWidth ? "auto" : "100%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 20px", borderRadius: RADIUS.md, border: "none", background: ACCENTS.home, color: "#FFFFFF", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: isDesktopWidth ? 0 : 16, whiteSpace: "nowrap" }}>
+            <button onClick={onStartTour} style={{ width: isDesktopWidth ? "auto" : "100%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 20px", borderRadius: RADIUS.md, border: "none", background: ACCENT_TEXT_SAFE.home, color: "#FFFFFF", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: isDesktopWidth ? 0 : 16, whiteSpace: "nowrap" }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>
               Take the interactive tour
             </button>
           )}

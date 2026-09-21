@@ -1457,7 +1457,7 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
           {onClose && <ChevronLeft size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />}
           <User size={18} color={T.contactsTeal} />
           <span style={{ ...TYPE.sectionLabel, color: T.contactsTeal, flex: 1 }}>My Profile</span>
-          <Share size={18} color={T.contactsTeal} style={{ cursor: "pointer" }} onClick={() => setShowShare((s) => !s)} title="Share profile" />
+          <Share size={18} color={T.contactsTeal} style={{ cursor: "pointer" }} onClick={() => setShowShare((s) => !s)} title="Share profile" role="button" tabIndex={0} aria-label="Share profile" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
 
         <ProfileSummary profile={profile} T={T} onEdit={() => setEditing(true)} />

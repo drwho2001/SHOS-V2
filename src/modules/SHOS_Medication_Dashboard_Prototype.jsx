@@ -31,7 +31,9 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../repositories/medicationPreferencesRepository";
 import { LogRepository, REASON_OPTIONS, SIDE_EFFECT_OPTIONS } from "../repositories/logRepository";
-import { computeStock, computeAdherence, nextDoseEstimate, isDoseLockedOut, lockoutEndsEstimate, lockoutEndsAt, effectiveDoseIntervalHours, getDoseComponents, formatDoseComponents } from "../calculations/medicationCalculations";
+import { computeStock, computeAdherence, nextDoseEstimate, 
+isDoseLockedOut, lockoutEndsEstimate, lockoutEndsAt, getNextNotificationTime, effectiveDoseIntervalHours, getDoseComponents, 
+formatDoseComponents } from "../calculations/medicationCalculations";
 // ADDED — real ask: Correction Sheet needs to change WHEN a dose was
 // logged, not just how much, for the "forgot to log at the time, adding
 // it after" case. Same shared "Now" helper and plain-string-slicing
@@ -276,7 +278,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
   // the real last-logged dose every render, same as nextDose itself —
   // so adaptive mode visibly shifts this forward by the same lateness;
   // fixed mode instead uses the medication's scheduled time when set.
-  const nextReminderAt = lastDose ? lockoutEndsAt(med, lastDose.date, reminderTimingMode) : null;
+  const nextReminderAt = lastDose ? getNextNotificationTime(med, lastDose.date, reminderTimingMode) : null;
   const nextReminderClock = nextReminderAt && nextReminderAt > new Date()
     ? nextReminderAt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
     : null;
@@ -503,10 +505,11 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
 
       <div style={{ display: "flex", gap: 8, marginTop: 12, position: "relative" }}>
         <button onClick={handleLogTap}
-          style={{ ...btnStyle(T.medsBlue, "outline"), opacity: doseLocked ? 0.9 : 1 }}>
+          style={btnStyle(T.medsBlue, "outline", doseLocked)}
+        >
           <Pill size={14} /> {doseLocked ? "Already logged" : "Log dose"}
         </button>
-        {stock.tracked && <button onClick={() => onLogRefill(med.id)} style={btnStyle(T.medsBlue, "filled")}><RefreshCcw size={14} /> Log refill</button>}
+        {stock.tracked && <button onClick={() => onLogRefill(med.id)} style={btnStyle(T.medsBlue, "filled", false)}><RefreshCcw size={14} /> Log refill</button>}
         {lockFlash && (
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={handleLogTap} style={{ position: "absolute", bottom: "100%", left: 0, right: 0, marginBottom: 6, padding: "6px 10px", background: T.textPrimary, color: T.bg, fontSize: 11, fontWeight: 600, borderRadius: radius.sm, textAlign: "center", cursor: "pointer" }}>
             Locked until {lockoutEndsEstimate(med, lastDose?.date)} — tap again to log anyway
@@ -517,8 +520,11 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
   );
 }
 
-function btnStyle(color, variant) {
-  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: radius.full, fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer", border: variant === "outline" ? `1px solid ${color}` : "none", background: variant === "filled" ? color : "transparent", color: variant === "filled" ? "#FFFFFF" : color };
+function btnStyle(color, variant, disabled) {
+  const textColor = disabled ? "#999999" : (variant === "filled" ? "#FFFFFF" : color);
+  const borderColor = disabled ? "#CCCCCC" : (variant === "outline" ? color : "none");
+  const bgColor = disabled ? "#F5F5F5" : (variant === "filled" ? color : "transparent");
+  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: radius.full, fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", border: variant === "outline" ? `1px solid ${borderColor}` : "none", background: bgColor, color: textColor };
 }
 
 // ADDED — real ask: "an option... for medication to update each stock
@@ -591,7 +597,7 @@ function QuantitySheet({ med, mode, onConfirm, onClose, T }) {
         <div style={{ textAlign: "center", fontSize: 12, color: T.textSecondary, marginBottom: 18 }}>
           {isRefill && unitMode === "container" ? `= ${finalUnits} ${med.unit}s` : "Type a number, or hold either button to speed up"}
         </div>
-        <button onClick={() => onConfirm(finalUnits)} style={{ ...btnStyle(isRefill ? T.medsBlue : T.actionRed, "filled"), width: "100%", padding: 12 }}>
+        <button onClick={() => onConfirm(finalUnits)} style={{ ...btnStyle(isRefill ? T.medsBlue : T.actionRed, "filled", false), width: "100%", padding: 12 }}>
           {isRefill ? "Confirm refill" : "Confirm waste/lost"}
         </button>
       </div>
@@ -685,14 +691,14 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
           </>
         )}
         {!confirmVoid && (
-          <button onClick={() => onSave(amount, date, reason, sideEffects)} style={{ ...btnStyle(T.medsBlue, "filled"), width: "100%", padding: 12, marginTop: 10, marginBottom: 10 }}>Save correction</button>
+          <button onClick={() => onSave(amount, date, reason, sideEffects)} style={{ ...btnStyle(T.medsBlue, "filled", false), width: "100%", padding: 12, marginTop: 10, marginBottom: 10 }}>Save correction</button>
         )}
         {!confirmVoid ? (
           <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmVoid(true)} style={{ textAlign: "center", fontSize: 13, color: T.actionRed, fontWeight: 600, cursor: "pointer", padding: 6 }}>This entry was a mistake — void it</div>
         ) : (
           <div style={{ textAlign: "center", padding: 6 }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>Voided entries are kept, not deleted — same as anywhere else in SHOS.</div>
-            <button onClick={onVoid} style={{ ...btnStyle(T.actionRed, "filled"), padding: "8px 20px" }}>Confirm void</button>
+            <button onClick={onVoid} style={{ ...btnStyle(T.actionRed, "filled", false), padding: "8px 20px" }}>Confirm void</button>
           </div>
         )}
       </div>
@@ -1166,7 +1172,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
         </div>
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
           <button onClick={confirm} disabled={!doseActuallyChanged}
-            style={{ ...btnStyle(T.medsBlue, "filled"), width: "100%", padding: 16, fontSize: 16, fontWeight: 700, opacity: doseActuallyChanged ? 1 : 0.5 }}>
+            style={btnStyle(T.medsBlue, "filled", !doseActuallyChanged)}>
             {doseActuallyChanged ? "Confirm dose update" : "Change the dose to continue"}
           </button>
         </div>
@@ -1346,7 +1352,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
         </div>
 
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
-          <button onClick={save} style={{ ...btnStyle(T.medsBlue, "filled"), width: "100%", padding: 16, fontSize: 16, fontWeight: 700 }}>Save changes</button>
+          <button onClick={save} style={{ ...btnStyle(T.medsBlue, "filled", false), width: "100%", padding: 16, fontSize: 16, fontWeight: 700 }}>Save changes</button>
         </div>
       </div>
     </div>
@@ -1524,9 +1530,9 @@ function DoseReminderBanner({ med, onTake, onSnooze, onSkip, T }) {
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 12 }}>Demo notification — real delivery needs native scheduling (Doc 5 §9)</div>
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={onTake} style={{ ...btnStyle(T.medsBlue, "filled"), padding: "8px 6px" }}>Take</button>
-        <button onClick={onSnooze} style={{ ...btnStyle(T.medsBlue, "outline"), padding: "8px 6px" }}>Snooze 30m</button>
-        <button onClick={onSkip} style={{ ...btnStyle(T.textSecondary, "outline"), padding: "8px 6px" }}>Skip</button>
+        <button onClick={onTake} style={{ ...btnStyle(T.medsBlue, "filled", false), padding: "8px 6px" }}>Take</button>
+        <button onClick={onSnooze} style={{ ...btnStyle(T.medsBlue, "outline", false), padding: "8px 6px" }}>Snooze 30m</button>
+        <button onClick={onSkip} style={{ ...btnStyle(T.textSecondary, "outline", false), padding: "8px 6px" }}>Skip</button>
       </div>
     </div>
   );
@@ -2222,7 +2228,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             </div>
             {allDailyMeds.length > 0 && (
               <div style={{ padding: "0 16px 12px", position: "relative" }}>
-                <button onClick={logAllDaily} style={{ ...btnStyle(T.medsBlue, "outline"), width: "100%", padding: 10, opacity: dueDailyMeds.length === 0 ? 0.5 : 1 }}>
+                <button onClick={dueDailyMeds.length === 0 ? undefined : logAllDaily} style={{ ...btnStyle(T.medsBlue, "outline", dueDailyMeds.length === 0), width: "100%", padding: 10 }}>
                   {bulkFlash ? <><Check size={14} /> Logged all daily meds</> : <><ListChecks size={14} /> {dueDailyMeds.length === 0 ? "All daily meds logged" : "Log all daily meds"}</>}
                 </button>
                 <div style={{ fontSize: 11, color: T.textDisabled, textAlign: "center", marginTop: 4 }}>

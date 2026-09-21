@@ -197,7 +197,7 @@ oversight.
   for a change that "looks safe" — several real bugs this session
   only surfaced that way, not from reading the diff.
 
-## Known issues (as of 15 Sep 2026 — update this section as things change)
+## Known issues (as of 21 Sep 2026 — update this section as things change)
 
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
@@ -3516,6 +3516,15 @@ this date; summarized here for durability.
 Converted the medication and storage layer to full async (Phase 2/3 completion for these repositories). `medicationRepository.js` and `medicationPreferencesRepository.js` now use the `ensureLoaded()`/memoized-`loadPromise` pattern shared by all hard-bucket repositories. `backupService.js` and `notificationService.js` updated to async. `medicationReminderSync.js` and `medicationCalculations.js` wired for async dose logging, stock tracking, and adherence. `App.jsx` boot sequence gained a `bootReady` gate that awaits vault unlock and `AppPreferencesRepository`/`PrivacySettingsRepository` before rendering anything — fixing a StrictMode double-invoke data-corruption bug on `lastActiveTab` resume. `SHOS_Medication_Dashboard_Prototype.jsx` dose logging, refill marking, and stock correction handlers all `async`/`await`. `vite.config.js` module preload optimizations added.
 
 Verified: 12/15 smoke tests pass (all encryption, medication, backup, core flows; PIN-recovery test 13 has a pre-existing UI timing flake unrelated to this change). Lint clean. Build succeeds. CI triggered on push.
+
+## Recently shipped (21 Sep 2026 — accessibility: all sub-screen titles converted to semantic <h1>)
+
+Item 4 of the accessibility sweep complete. All 31 sub-screen titles across 10 modules converted from `<span style={{ ...TYPE.subScreenTitle }}>` to `<h1 style={{ ...TYPE.subScreenTitle, margin: 0 }}>` for proper heading hierarchy and screen-reader navigation:
+
+- Settings (20): Data & network, Stats, Guide, Glossary, About, Phone calendar sync, Calendar, Trash, Colour scheme, Preferences, Settings, Developer tools, Manage lists, Resources, Privacy & Security, Notifications, Notification history, Error log, Automatic backups, Backup & Export
+- Other modules (11): Attachments, Clinic Card (2: main card + visibility settings), Contacts settings, Medication settings, Edit My Profile, Option List Editor (2: list editor + option lists), Partner Notification, Registry Management (2: main + duplicates), Timeline Episodes
+
+All titles preserve module accent colours via `TYPE.subScreenTitle` and existing `color:` props; `margin: 0` prevents browser default heading margin from creating unwanted spacing. Lint clean, build passes, smoke tests 1-12 pass (test 13 PIN-recovery pre-existing flake).
 
 ## Recently shipped (17 Sep 2026, later still — fixing the Contacts card's nested-interactive violation)
 
