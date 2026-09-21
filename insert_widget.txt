@@ -1,0 +1,5 @@
+## Recently shipped (21 Sep 2026 — Android home-screen widget for next medication dose)
+
+Installed `capacitor-widget-bridge` plugin. Created `NextDoseWidgetProvider` (AppWidgetProvider) showing medication name and next dose time on home screen. Widget layout (`next_dose_widget.xml`), metadata (`next_dose_widget_info.xml`), and provider class (`NextDoseWidgetProvider.java`) created. Registered in `AndroidManifest.xml`. Widget reads from SharedPreferences updated via `NextDoseWidgetProvider.updateNextDose()` called from `medicationReminderSync.js`. 
+
+Build passes, lint clean. CI build (APK) triggered on push.
