@@ -329,6 +329,8 @@ function ReadRow({ label, value, T, alert }) {
 
 function EntrySheet({ entry, onSave, onClose, T }) {
   const isNew = !entry;
+  const editSheetRef = useRef(null);
+  useEffect(() => { editSheetRef.current?.focus(); }, []);
   const draftKey = `symptomLog_${entry?.id || "new"}`;
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);
@@ -374,7 +376,7 @@ function EntrySheet({ entry, onSave, onClose, T }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
+    <div role="dialog" aria-label={isNew ? "Log symptom" : "Edit symptom entry"} ref={editSheetRef} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
       <div style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
             module banner title. */}

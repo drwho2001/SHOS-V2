@@ -293,6 +293,8 @@ function LocationField({ locationType, clinicName, onLocationTypeChange, onClini
 
 function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose, T }) {
   const isNew = !measurement;
+  const editSheetRef = useRef(null);
+  useEffect(() => { editSheetRef.current?.focus(); }, []);
   const [typeOptions, setTypeOptions] = useLoadedState(() => CustomOptionListsRepository.get("measurementType"), [], []);
   const [rankedTypeOptions, setRankedTypeOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("measurementType"), [], []);
   // ADDED — real groundwork for encryption at rest: getDefaultUnit()/
@@ -444,7 +446,7 @@ function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
+    <div role="dialog" aria-label={isNew ? "Add measurement" : "Edit measurement"} ref={editSheetRef} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
       <div style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>{isNew ? "Add measurement" : "Edit measurement"}</span>
@@ -945,6 +947,8 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
   const [newName, setNewName] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [confirmDeleteGroupId, setConfirmDeleteGroupId] = useState(null);
+  const manageRef = useRef(null);
+  useEffect(() => { manageRef.current?.focus(); }, []);
   const refresh = async () => { setGroups(await CustomGroupsRepository.get(domain)); onChanged?.(); };
 
   const createGroup = async () => {
@@ -955,7 +959,7 @@ function ManageGroupsScreen({ domain, allMembers, onBack, onChanged, T }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto" }}>
+    <div role="dialog" aria-label="Manage groups" ref={manageRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto" }}>
       <div style={{ background: T.healthcareBlue, display: "flex", alignItems: "center", gap: 12, padding: "16px 20px 14px" }}>
         <ChevronLeft size={22} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Manage groups</span>
@@ -1036,6 +1040,8 @@ function detectUnitSystem(prefs) {
 
 function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
   const [prefs, setPrefs] = useLoadedState(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
+  const prefsRef = useRef(null);
+  useEffect(() => { prefsRef.current?.focus(); }, []);
   // CHANGED 3 Sep 2026 — Height and Temperature both got real
   // UNIT_CONFIG conversion but were never added to this list, so their
   // default unit was never settable here.
@@ -1050,7 +1056,7 @@ function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 215 }} onClick={onClose}>
+    <div role="dialog" aria-label="Measurement preferences" ref={prefsRef} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 215 }} onClick={onClose}>
       <div style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Measurement preferences</span>

@@ -1786,7 +1786,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   const howMetOptions = useMemo(() => getKnownValues(contacts, "howDidWeMeet"), [contacts]);
 
   return (
-    <div role="dialog" aria-label="Import shared profile" ref={importSheetRef} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
+    <div role="dialog" aria-label={isNew ? "Add contact" : "Edit contact"} ref={editSheetRef} data-contact-sheet style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
       {/* CHANGED 19 Aug 2026 — real fix, the user's ask: Save was buried at
           the end of the scrollable content, so on a real device you had
           to scroll all the way down to find it — hence "can't see save

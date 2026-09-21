@@ -12,7 +12,7 @@
 // Reached from a positive Test's own detail screen (Testing module) —
 // not a standalone module with its own tab, per the user's explicit
 // "that's a tangent" on the bigger nav/module-architecture question.
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { CaretLeftIcon as ChevronLeft, XIcon as X, MagnifyingGlassIcon as Search, CheckIcon as Check, PencilSimpleIcon as Edit, ExportIcon as ExportIcon, TrashIcon as Trash2 } from "@phosphor-icons/react";
@@ -258,6 +258,8 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
 export default function PartnerNotificationSheet({ testId, onClose }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
+  const sheetRef = useRef(null);
+  useEffect(() => { sheetRef.current?.focus(); }, []);
   // CHANGED 4 Sep 2026 — encryption-at-rest groundwork (see CLAUDE.md's
   // Known Issues / the Notion Development log): NOT a mechanical
   // useLoadedState swap — editing's own initial value depends on
@@ -306,7 +308,7 @@ export default function PartnerNotificationSheet({ testId, onClose }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 230, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+    <div role="dialog" aria-label="Partner notification" ref={sheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 230, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}

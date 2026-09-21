@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { CaretLeftIcon as ChevronLeft, CaretDownIcon as ChevronDown, PlusIcon as Plus, ArrowUpIcon as ArrowUp, ArrowDownIcon as ArrowDown, XIcon as X, PillIcon as Pill, ArrowCircleRightIcon as ArrowRightCircle, ClipboardTextIcon as ClipboardList, CalendarIcon as CalendarClock, TestTubeIcon as TestTube, SyringeIcon as Syringe, CalendarCheckIcon as CalendarCheck, MapPinIcon as MapPin, PlayCircleIcon as PlayCircle, TagIcon as Tag, HeartIcon as Heart, UserIcon as User, DropIcon as Drop, RulerIcon as Ruler, ArrowUUpLeftIcon as RestoreIcon, ArrowsLeftRightIcon as SwapIcon, LockIcon as Lock } from "@phosphor-icons/react";
 import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } from "../repositories/customOptionListsRepository";
 import { findRecordsUsingOptionValue, reassociateOptionValue } from "../calculations/optionListUsage";
@@ -83,6 +83,8 @@ function UsageDisclosure({ listName, value, T }) {
 export function OptionListDetail({ listName, onClose }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
+  const detailRef = useRef(null);
+  useEffect(() => { detailRef.current?.focus(); }, []);
 
   const [refreshKey, setRefreshKey] = useState(0);
   const [addingValue, setAddingValue] = useState("");
@@ -153,7 +155,7 @@ export function OptionListDetail({ listName, onClose }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 230, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div role="dialog" aria-label={`Manage ${OPTION_LIST_LABELS[listName] || listName}`} ref={detailRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 230, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{OPTION_LIST_LABELS[listName] || listName}</h1>
@@ -275,6 +277,8 @@ export function OptionListDetail({ listName, onClose }) {
 export default function OptionListsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
+  const optionListsRef = useRef(null);
+  useEffect(() => { optionListsRef.current?.focus(); }, []);
 
   const [open, setOpen] = useState(null);
   const listNames = CustomOptionListsRepository.getAllListNames();
@@ -287,7 +291,7 @@ export default function OptionListsScreen({ onClose }) {
   }, [], {});
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div role="dialog" aria-label="Option lists" ref={optionListsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Option lists</h1>
