@@ -295,7 +295,7 @@ this date; summarized here for durability.
   - Item 5 (contrast fixes): DONE (Guide tour button, Meds locked-dose button)
   - Item 6 (live regions for search/filter): DONE (10 locations)
   - Item 7 (notch/status-bar): PENDING (needs device)
-  - Item 8 (cold-start removal from Known Issues): PENDING
+  - Item 8 (cold-start removal from Known Issues): DONE (accepted upstream Capacitor limitation)
 
 - **Desktop font-size/empty-space (#93) — scoped 15 Sep 2026,
 
@@ -3154,13 +3154,7 @@ this date; summarized here for durability.
   (`(daysSince - 1) % daysPerContainer) + 1`) is sound for when it
   eventually does. No code change needed — this entry exists to
   correct the record, not to close a real gap.
-- **Cold-start notification-action race** — a still-open upstream
-  Capacitor limitation (not fixable purely from this app's JS): tapping
-  a notification action after the app was fully killed can fail to
-  reach the JS listener if the event fires before React mounts. Partial
-  mitigation shipped (an early listener buffer in
-  `notificationService.js`); the due-meds banner is the real safety net
-  for a missed tap.
+
 - **"Settings/Management UI" (captured 18 Aug 2026) — checked 9
   Sep 2026, only 1 of 3 parts actually done at the time; tab reorder
   closed for real later the same day, font attempted and reverted (see
