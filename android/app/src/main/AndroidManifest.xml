@@ -47,6 +47,18 @@
 
         </activity>
 
+        <!-- ADDED 21 Sep 2026 — Android home-screen widget for next medication dose -->
+        <receiver
+            android:name=".widget.NextDoseWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/next_dose_widget_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
