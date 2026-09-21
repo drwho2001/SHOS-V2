@@ -324,6 +324,8 @@ function SectionCard({ title, T, children }) {
 function ImportSharedProfileSheet({ T, onClose, onImported }) {
   const [pasteText, setPasteText] = useState("");
   const [status, setStatus] = useState(null);
+  const importSheetRef = useRef(null);
+  useEffect(() => { importSheetRef.current?.focus(); }, []);
 
   const doImportPaste = () => {
     importProfileShareFromText(
@@ -345,7 +347,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
+    <div role="dialog" aria-label="Import shared profile" ref={importSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16, color: T.textPrimary }}>Import shared profile</span>
@@ -1690,6 +1692,8 @@ const REDUNDANT_PLATFORM_SUGGESTIONS = ["phone", "snapchat", "fabguys", "fabswin
 
 function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   const isNew = !contact;
+  const editSheetRef = useRef(null);
+  useEffect(() => { editSheetRef.current?.focus(); }, []);
   // ADDED 19 Aug 2026 — draft autosave, real fix for a real gap the user
   // flagged: in-progress edits used to live only in this component's
   // memory, gone on any refresh. draftKey is scoped per-contact (or
@@ -1782,7 +1786,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   const howMetOptions = useMemo(() => getKnownValues(contacts, "howDidWeMeet"), [contacts]);
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
+    <div role="dialog" aria-label="Import shared profile" ref={importSheetRef} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       {/* CHANGED 19 Aug 2026 — real fix, the user's ask: Save was buried at
           the end of the scrollable content, so on a real device you had
           to scroll all the way down to find it — hence "can't see save
@@ -1790,7 +1794,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           sticky bottom action bar, so Save (and the new Clear button)
           are always visible regardless of scroll position. Save is now
           full-width, accent-colored, and large, per the user's explicit ask. */}
-      <div data-contact-sheet style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
+      <div role="dialog" aria-label={isNew ? "Add contact" : "Edit contact"} ref={editSheetRef} data-contact-sheet style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         {/* CHANGED 26 Aug 2026 — real ask: forms (Add/Edit Contact)
             should also have the module banner title, matching every
             other module screen. This is a bottom-sheet modal (closes
@@ -3026,8 +3030,11 @@ function ShowRoleOnCardsToggleCard({ T }) {
 }
 
 function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
+  const settingsRef = useRef(null);
+  useEffect(() => { settingsRef.current?.focus(); }, []);
+
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div role="dialog" aria-label="Contacts settings" ref={settingsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Contacts settings</h1>

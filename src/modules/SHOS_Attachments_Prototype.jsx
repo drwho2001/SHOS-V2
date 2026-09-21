@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { CaretLeftIcon as ChevronLeft, TrashIcon as Trash2, FileTextIcon as FileText } from "@phosphor-icons/react";
 import { TestingRepository } from "../repositories/testingRepository";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
@@ -67,6 +67,8 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
     actionRed: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red,
   };
   const [refreshKey, setRefreshKey] = useState(0);
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
   const [filterType, setFilterType] = useState("");
   const isDesktopWidth = useIsDesktopWidth();
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -90,7 +92,7 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+    <div role="dialog" aria-label="Attachments" ref={dialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}

@@ -573,6 +573,8 @@ function AttachmentManager({ visitId, attachments, onChanged, T }) {
 // ── Add/Edit sheet ──
 function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, onAfterEdit, T }) {
   const isNew = !visitId;
+  const editSheetRef = useRef(null);
+  useEffect(() => { editSheetRef.current?.focus(); }, []);
   // ADDED 19 Aug 2026 — real in-app editable option lists.
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026) — see
@@ -680,7 +682,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
+    <div role="dialog" aria-label={isNew ? "New clinic visit" : "Edit clinic visit"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
           module banner title. */}
       {/* ADDED 16 Sep 2026 — real ask (#82, cross-module consistency

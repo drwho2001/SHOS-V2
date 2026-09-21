@@ -1474,6 +1474,8 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
 // ── Add/Edit sheet ──
 function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord }) {
   const isNew = !encounterId;
+  const editSheetRef = useRef(null);
+  useEffect(() => { editSheetRef.current?.focus(); }, []);
   const [contacts, setContacts] = useLoadedState(loadContacts, [], []);
   // ADDED 26 Aug 2026 — real ask, decided: can't add an Activity for
   // someone not yet in Contacts, since AttendeePicker only searches
@@ -1585,7 +1587,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   };
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }} data-encounter-sheet>
+    <div role="dialog" aria-label={isNew ? "Add Encounter" : "Edit Encounter"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }} data-encounter-sheet>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to this module's other screens. */}
       <div style={{ width: "100%", background: T.bg, minHeight: "100vh" }}>

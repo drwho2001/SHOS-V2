@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, CaretDownIcon as CaretDown, PillIcon as Pill, HeartbeatIcon as HeartPulse, UsersIcon as Users, WarningIcon as AlertTriangle, PlusIcon as Plus, GearIcon as Settings, XIcon as X, CheckIcon as Check, FilePdfIcon as FilePdf } from "@phosphor-icons/react";
 import { exportClinicCardPdf } from "../storage/clinicCardPdfService";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
@@ -178,6 +178,9 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   const encounters = useLoadedMemo(async () => sortByDateDesc(await EncounterRepository.getAll()), [], []);
   const [profile, setProfile] = useLoadedState(() => MyProfileRepository.getProfile(), [], DEFAULT_PROFILE);
 
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
+
   // ADDED — real ask: "Recent partners should have filterable
   // timeframe... maybe generic for whole clinic card — so can say all
   // since X date, or all since last test (which system can pull that
@@ -190,6 +193,8 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   const lastTestDate = tests[0]?.date || null;
   const [timeframe, setTimeframe] = useState("all");
   const [customDate, setCustomDate] = useState("");
+  const visibilityDialogRef = useRef(null);
+  useEffect(() => { if (showVisibilitySettings) visibilityDialogRef.current?.focus(); }, [showVisibilitySettings]);
   const cutoffDate = useMemo(() => {
     if (timeframe === "sinceLastTest") return lastTestDate;
     if (timeframe === "30days") return new Date(Date.now() - 30 * 86400000).toISOString();
@@ -373,7 +378,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   }, [contactsRaw, encounters, cutoffDate]);
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+    <div role="dialog" aria-label="Clinic Card" ref={dialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
@@ -694,7 +699,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           sections show, full-screen overlay matching the same pattern
           used elsewhere in this app for a focused settings list. */}
       {showVisibilitySettings && (
-        <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 300, overflowY: "auto" }}>
+        <div role="dialog" aria-label="Which sections to show" ref={visibilityDialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 300, overflowY: "auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
             <X size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(false)} aria-label="Close visibility settings" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Which sections to show</h1>
