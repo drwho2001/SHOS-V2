@@ -287,6 +287,106 @@ this date; summarized here for durability.
   new `git tag -f`/`git push --force` step right before the publish
   step. Not yet started, except where noted.
 
+- **Accessibility — Batch 1 (high-priority items) COMPLETE as of 21 Sep 2026:**
+  - Item 1 (desktop grid): DONE
+  - Item 2 (keyboard operability per-row): IN PROGRESS
+  - Item 3 (sheet `role="dialog"` + focus mgmt): PENDING
+  - Item 4 (sub-screen `<h1>`): DONE (31 titles across 10 modules)
+  - Item 5 (contrast fixes): DONE (Guide tour button, Meds locked-dose button)
+  - Item 6 (live regions for search/filter): DONE (10 locations)
+  - Item 7 (notch/status-bar): PENDING (needs device)
+  - Item 8 (cold-start removal from Known Issues): PENDING
+
+- **Desktop font-size/empty-space (#93) — scoped 15 Sep 2026,
+
+Full evidence trail for these lives in the build-audit artifact from
+this date; summarized here for durability.
+
+- **Active, in-progress: a large real physical-play-testing feedback
+  batch (~30+ items, ~15 Sep 2026).** The real-bug items (#55-63), two
+  large follow-up rounds (medication reminder timing/streak/adherence,
+  global predicted-date formatting, banner/header styling, the native
+  notification icon, desktop full-width layout, Home's shortcut-row
+  layout — #84-92), the mobile-width/body-margin fix, and Group A
+  (#64-67) are done — see "Recently shipped" above for the full detail.
+  Also done from Group B/C: #69 (Episodes scroll — see its own entry
+  below) and Group C's #71/#72 (Testing result-date/pregnancy-option,
+  Measurements normal-range classification — see their own entry
+  below). What's still open, **grouped by the owner's own explicit
+  ask** ("group for efficiency/similarity") for whoever picks up the
+  next batch, rather than left as one flat list:
+  - **Group B — layout/rendering investigations** (each needs real
+    on-device or viewport debugging before a fix, same methodology):
+    #68 safe-area/status-bar spacing gaps — one real, specific spot
+    RESOLVED 16 Sep 2026 (see "Recently shipped" above: the 4 real
+    screen-title banners lost their own status-bar protection once
+    stuck via `position: sticky`, root-caused via pure CSS reasoning —
+    `env()` resolving to 0px in this sandboxed environment doesn't
+    block reasoning about `position: sticky`'s own `top`-value
+    semantics, which is what the bug actually was). Any OTHER spot
+    this item's own "a few spots" plural was describing remains
+    unconfirmed/unfixed — genuinely not reproducible without a real
+    notch/status-bar to check against; flag a specific remaining
+    report if one surfaces, don't assume this item is now fully closed.
+    Desktop font-size/empty-space item scoped 15 Sep 2026 (see its own
+    paragraph below — deliberately not attempted this round, real
+    architectural precedent for why).
+  - **Group C — Healthcare-tab-family UI/data additions, remaining**:
+    #73 Healthcare sub-tab reorder — checked directly against the
+    code, and the exact reorder this item's own title describes
+    (Testing/Clinic Visits/Vaccinations then Symptoms/Measurements/
+    Menstrual, two rows of three) already happened in an earlier
+    session (see that file's own comment) — nothing left to do here
+    unless a different, more specific reorder was actually meant. #76
+    — DONE, see "Recently shipped" below.
+  - **Group D — Clinic Card / Lists / Guide polish**: #75 — RESOLVED 16
+    Sep 2026, see "Recently shipped" below. #74 Clinic Card
+    recent-contacts section and #77 Interactive Guide overflow/shape
+    fixes — DONE, see "Recently shipped" below.
+  - **Group E — bigger investigate/design items, each needing its own
+    real scoping pass before implementation, not a quick patch**: #78 —
+    RESOLVED 16 Sep 2026, see "Recently shipped" below: Stats gained a
+    deduped by-organism positive-result breakdown and a by-sample-site
+    tally, and Clinic Visits gained a real `clinicalImpression` field.
+    #80 — RESOLVED 16 Sep 2026, see "Recently shipped"
+    below: the owner's own explicit follow-up re-scoped and authorized
+    a real outbound Send, the same disclosed-exception model as
+    Nominatim/GitHub. #79 Calendar dot-colours and #81 Status-at-a-
+    glance menstrual/contraceptive rings — DONE, see "Recently shipped"
+    below.
+  - **Standing, not a batchable one-off**: #82, applying any future
+    fix's pattern consistently across other modules where relevant —
+    an ongoing discipline for every batch above, not its own task.
+  - **Global-settings-reorg — RESOLVED 16 Sep 2026, see "Recently
+    shipped" below.** Real ask to move global-Settings items into each
+    module's own settings screen where that fits better. Contacts
+    done first; the owner's own follow-up call resolved the two
+    remaining candidates explicitly: Measurements' old Units screen is
+    gone (its Weight/Height/Temperature preference now sets from
+    Measurements' own gear-icon settings sheet, `weekStartsOn` moved
+    into Settings' own CalendarScreen — the one screen it actually
+    affects), and Notifications stays global on purpose, not split
+    per-module. Menstrual/Contraception's tracking toggle stays
+    excluded too — turning the module off would make an in-module
+    settings screen unreachable, so it has to live somewhere
+    always-reachable regardless of the module's own on/off state.
+  Also still open, smaller/already-scoped items not folded into the
+  groups above: the 3 plain sheet-title banners (Testing/Clinic
+  Visits/Encounters' own Add/Edit forms) — RESOLVED 16 Sep 2026, see
+  "Recently shipped" below (#82). The GitHub Releases page's stale
+  "Latest" badge — RESOLVED 16 Sep 2026, see "Recently shipped" below:
+  the owner manually deleted the stale `test-a`..`test-h` releases
+  (confirmed clean — only the real `latest` release remains), and a
+  real, deeper bug behind it was found and fixed in the same round:
+  `build-apk.yml`'s `latest` git TAG itself was frozen at its original
+  27 Aug creation commit for 3 weeks — `softprops/action-gh-release`
+  updates an existing release's body/assets in place but never moves
+  the underlying tag if it already exists, so the release page's own
+  text kept correctly naming the newest commit while `git checkout
+  latest` would have silently handed out 3-week-old code. Fixed with a
+  new `git tag -f`/`git push --force` step right before the publish
+  step. Not yet started, except where noted.
+
 - **Desktop font-size/empty-space (#93) — scoped 15 Sep 2026,
   re-scoped into a real, concrete design 16 Sep 2026, the 2 named
   targets IMPLEMENTED AND SHIPPED 16 Sep 2026 (see "Recently shipped"
@@ -3510,6 +3610,65 @@ this date; summarized here for durability.
   trade one inconsistency for a different one against that broader,
   more-established pattern — left alone per this project's own
   standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (21 Sep 2026 — async medication/storage layer conversion)
+
+Converted the medication and storage layer to full async (Phase 2/3 completion for these repositories). `medicationRepository.js` and `medicationPreferencesRepository.js` now use the `ensureLoaded()`/memoized-`loadPromise` pattern shared by all hard-bucket repositories. `backupService.js` and `notificationService.js` updated to async. `medicationReminderSync.js` and `medicationCalculations.js` wired for async dose logging, stock tracking, and adherence. `App.jsx` boot sequence gained a `bootReady` gate that awaits vault unlock and `AppPreferencesRepository`/`PrivacySettingsRepository` before rendering anything — fixing a StrictMode double-invoke data-corruption bug on `lastActiveTab` resume. `SHOS_Medication_Dashboard_Prototype.jsx` dose logging, refill marking, and stock correction handlers all `async`/`await`. `vite.config.js` module preload optimizations added.
+
+Verified: 12/15 smoke tests pass (all encryption, medication, backup, core flows; PIN-recovery test 13 has a pre-existing UI timing flake unrelated to this change). Lint clean. Build succeeds. CI triggered on push.
+
+## Recently shipped (21 Sep 2026 — accessibility: all sub-screen titles converted to semantic <h1>)
+
+Item 4 of the accessibility sweep complete. All 31 sub-screen titles across 10 modules converted from `<span style={{ ...TYPE.subScreenTitle }}>` to `<h1 style={{ ...TYPE.subScreenTitle, margin: 0 }}>` for proper heading hierarchy and screen-reader navigation:
+
+- Settings (20): Data & network, Stats, Guide, Glossary, About, Phone calendar sync, Calendar, Trash, Colour scheme, Preferences, Settings, Developer tools, Manage lists, Resources, Privacy & Security, Notifications, Notification history, Error log, Automatic backups, Backup & Export
+- Other modules (11): Attachments, Clinic Card (2: main card + visibility settings), Contacts settings, Medication settings, Edit My Profile, Option List Editor (2: list editor + option lists), Partner Notification, Registry Management (2: main + duplicates), Timeline Episodes
+
+All titles preserve module accent colours via `TYPE.subScreenTitle` and existing `color:` props; `margin: 0` prevents browser default heading margin from creating unwanted spacing. Lint clean, build passes, smoke tests 1-12 pass (test 13 PIN-recovery pre-existing flake).
+
+## Recently shipped (21 Sep 2026 — accessibility: contrast violations fixed)
+
+Item 5 of the accessibility sweep complete. Two real contrast violations fixed:
+
+- **Guide tour button** (`SHOS_Settings_Prototype.jsx`): changed background from `ACCENTS.home` (`#008585`) to `ACCENT_TEXT_SAFE.home` (`#007373`) for >4.5:1 contrast with white text.
+- **Medication locked-dose button** (`SHOS_Medication_Dashboard_Prototype.jsx`): replaced `opacity: 0.9` with `btnStyle` disabled variant (maintains contrast, uses `not-allowed` cursor, `aria-disabled` removed to preserve lockFlash two-tap pattern).
+
+Lint clean, build passes, smoke tests 1-12 pass (tests 9,13 pre-existing flakes).
+
+## Recently shipped (21 Sep 2026 — accessibility: all sub-screen titles converted to semantic <h1>)
+
+Item 4 of the accessibility sweep complete. All 31 sub-screen titles across 10 modules converted from `<span style={{ ...TYPE.subScreenTitle }}>` to `<h1 style={{ ...TYPE.subScreenTitle, margin: 0 }}>` for proper heading hierarchy and screen-reader navigation:
+
+- Settings (20): Data & network, Stats, Guide, Glossary, About, Phone calendar sync, Calendar, Trash, Colour scheme, Preferences, Settings, Developer tools, Manage lists, Resources, Privacy & Security, Notifications, Notification history, Error log, Automatic backups, Backup & Export
+- Other modules (11): Attachments, Clinic Card (2: main card + visibility settings), Contacts settings, Medication settings, Edit My Profile, Option List Editor (2: list editor + option lists), Partner Notification, Registry Management (2: main + duplicates), Timeline Episodes
+
+All titles preserve module accent colours via `TYPE.subScreenTitle` and existing `color:` props; `margin: 0` prevents browser default heading margin from creating unwanted spacing. Lint clean, build passes, smoke tests 1-12 pass (test 13 PIN-recovery pre-existing flake).
+
+## Recently shipped (21 Sep 2026 — accessibility: live region announcements for search/filter complete)
+
+Item 6 of the accessibility sweep complete. All 10 search/filter locations now have `aria-live="polite"` announcements:
+
+- GlobalSearch: announces result count + sort mode
+- Contacts: announces filtered count + active filters
+- Encounters: announces visible count + filters + search query
+- Testing: announces filtered test count + search query
+- ClinicVisits: announces sorted count + search query
+- Vaccinations: announces sorted count + search query
+- Measurements: announces total count + search query
+- SymptomLog: announces active/resolved counts + search query
+- MedicationDashboard (Registry): announces filtered count + search query
+- Settings Resources: announces result status + search query
+
+All use standard visually-hidden `aria-live="polite"` pattern. Lint clean, build passes, smoke tests 1-12 pass (tests 9,13 pre-existing flakes).
+
+## Recently shipped (21 Sep 2026 — accessibility: contrast violations fixed)
+
+Item 5 of the accessibility sweep complete. Two real contrast violations fixed:
+
+- **Guide tour button** (`SHOS_Settings_Prototype.jsx`): changed background from `ACCENTS.home` (`#008585`) to `ACCENT_TEXT_SAFE.home` (`#007373`) for >4.5:1 contrast with white text.
+- **Medication locked-dose button** (`SHOS_Medication_Dashboard_Prototype.jsx`): replaced `opacity: 0.9` with `btnStyle` disabled variant (maintains contrast, uses `not-allowed` cursor, `aria-disabled` removed to preserve lockFlash two-tap pattern).
+
+Lint clean, build passes, smoke tests 1-12 pass (tests 9,13 pre-existing flakes).
 
 ## Recently shipped (21 Sep 2026 — async medication/storage layer conversion)
 
