@@ -380,7 +380,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       <div style={{ width: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary, flex: 1 }}>{profile.nickname ? `${profile.nickname}'s clinic card` : "Clinic Card"}</span>
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary, flex: 1 }}>{profile.nickname ? `${profile.nickname}'s clinic card` : "Clinic Card"}</h1>
         {/* ADDED — real ask: a real PDF export, for handing this to (or
             printing for) a clinician rather than only reading it on
             screen. Disabled mid-export rather than hidden, so a slow
@@ -697,7 +697,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 300, overflowY: "auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
             <X size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(false)} aria-label="Close visibility settings" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-            <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Which sections to show</span>
+            <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Which sections to show</h1>
           </div>
           <div style={{ padding: "8px 16px", fontSize: 12, color: T.textSecondary }}>
             Every section shows the most detail permitted by default — these only ever narrow what's shown, never add anything.

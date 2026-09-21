@@ -684,7 +684,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary, flex: 1 }}>Episodes</span>
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary, flex: 1 }}>Episodes</h1>
       </div>
       {/* CHANGED — real gap found: every other Healthcare-domain
           module already got the floating, module-colored add button

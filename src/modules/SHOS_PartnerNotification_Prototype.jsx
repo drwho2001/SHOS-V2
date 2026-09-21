@@ -318,7 +318,7 @@ export default function PartnerNotificationSheet({ testId, onClose }) {
           ) : (
             <X size={20} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
           )}
-          <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>{editing ? (list ? "Edit contacts" : "Contact list") : "Contact list"}</span>
+          <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>{editing ? (list ? "Edit contacts" : "Contact list") : "Contact list"}</h1>
         </div>
       </div>
       {editing ? (

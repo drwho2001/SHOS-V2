@@ -503,7 +503,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
 
       <div style={{ display: "flex", gap: 8, marginTop: 12, position: "relative" }}>
         <button onClick={handleLogTap}
-          style={{ ...btnStyle(T.medsBlue, "outline"), opacity: doseLocked ? 0.5 : 1 }}>
+          style={{ ...btnStyle(T.medsBlue, "outline"), opacity: doseLocked ? 0.9 : 1 }}>
           <Pill size={14} /> {doseLocked ? "Already logged" : "Log dose"}
         </button>
         {stock.tracked && <button onClick={() => onLogRefill(med.id)} style={btnStyle(T.medsBlue, "filled")}><RefreshCcw size={14} /> Log refill</button>}
@@ -1563,7 +1563,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
     <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
-        <span style={{ ...TYPE.subScreenTitle, color: T.textPrimary }}>Medication settings</span>
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Medication settings</h1>
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", marginBottom: 20 }}>
