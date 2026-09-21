@@ -1132,6 +1132,9 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search clinic visits"
           style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
       </div>
+      <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+        {sorted.length > 0 ? `${sorted.length} clinic visits${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No clinic visits match" : "No clinic visits logged"}
+      </div>
       {/* CHANGED 26 Aug 2026 — real audit finding: wrapped for
           wide-viewport centering, matching Medication's own pattern. */}
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
