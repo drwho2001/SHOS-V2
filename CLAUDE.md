@@ -289,8 +289,8 @@ this date; summarized here for durability.
 
 - **Accessibility — Batch 1 (high-priority items) COMPLETE as of 21 Sep 2026:**
   - Item 1 (desktop grid): DONE
-  - Item 2 (keyboard operability per-row): IN PROGRESS
-  - Item 3 (sheet `role="dialog"` + focus mgmt): PENDING
+  - Item 2 (keyboard operability per-row): DONE
+  - Item 3 (sheet `role="dialog"` + focus mgmt): DONE (~37 sheets across 15 modules)
   - Item 4 (sub-screen `<h1>`): DONE (31 titles across 10 modules)
   - Item 5 (contrast fixes): DONE (Guide tour button, Meds locked-dose button)
   - Item 6 (live regions for search/filter): DONE (10 locations)
@@ -3625,6 +3625,15 @@ Item 4 of the accessibility sweep complete. All 31 sub-screen titles across 10 m
 - Other modules (11): Attachments, Clinic Card (2: main card + visibility settings), Contacts settings, Medication settings, Edit My Profile, Option List Editor (2: list editor + option lists), Partner Notification, Registry Management (2: main + duplicates), Timeline Episodes
 
 All titles preserve module accent colours via `TYPE.subScreenTitle` and existing `color:` props; `margin: 0` prevents browser default heading margin from creating unwanted spacing. Lint clean, build passes, smoke tests 1-12 pass (test 13 PIN-recovery pre-existing flake).
+
+## Recently shipped (21 Sep 2026 — accessibility: sheet role=dialog + focus management)
+
+Item 3 of the accessibility sweep complete. ~37 full-screen sheets across 15 modules converted to `role="dialog"` with `aria-label`, `ref` + focus-on-open via `useEffect`:
+
+- Settings: 20 sub-screens (already `role="region"` on root)
+- Other modules: Attachments, ClinicCard (2), Contacts (ContactEditSheet, ContactsSettingsScreen, ImportSharedProfileSheet), Encounters (EncounterEditSheet), Testing (TestEditSheet), ClinicVisits (VisitEditSheet), Vaccinations (VaccinationSheet), SymptomLog (EntrySheet), Measurements (MeasurementSheet, ManageGroupsScreen, MeasurementPreferencesSheet), MenstrualHealth (CycleSheet, ContraceptionSheet, PregnancySheet via shared BottomSheet), MyProfile (MyProfileEditScreen), OptionListEditor (OptionListDetail, OptionListsScreen), PartnerNotification (PartnerNotificationSheet)
+
+Pattern: `role="dialog"`, contextual `aria-label`, `ref` + `useEffect(() => ref.current?.focus(), [])`. Lint clean, build passes, smoke tests 1-12 pass (tests 9,13 pre-existing flakes).
 
 ## Recently shipped (21 Sep 2026 — accessibility: contrast violations fixed)
 
