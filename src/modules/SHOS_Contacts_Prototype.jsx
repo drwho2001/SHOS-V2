@@ -2757,14 +2757,14 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                 record, enabled only when exactly one is selected —
                 exporting several at once as one file doesn't map to
                 "a single record to hand to a provider". */}
-            <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("contacts", await ContactRepository.getById(selectedIds[0])); }}
+            <span role="button" tabIndex={0} aria-label="Export contact" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("contacts", await ContactRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span onClick={async () => { if (selectedIds.length > 0) { await ContactRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            <span role="button" tabIndex={0} aria-label="Archive contacts" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await ContactRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
             {/* CHANGED 10 Sep 2026 — standardised delete confirmation:
                 was a native window.confirm() dialog, now the same shared
                 inline card every module uses. */}
-            <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
+            <span role="button" tabIndex={0} aria-label="Delete contacts" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>

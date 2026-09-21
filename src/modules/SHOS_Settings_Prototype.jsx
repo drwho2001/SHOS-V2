@@ -2335,7 +2335,7 @@ function NotificationHistoryScreen({ darkMode, onClose }) {
           <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Notification history</h1>
         </div>
         {entries.length > 0 && (
-          <span onClick={() => setConfirmClear(true)} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Clear</span>
+          <span role="button" tabIndex={0} aria-label="Clear notification history" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmClear(true)} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Clear</span>
         )}
       </div>
       {confirmClear && (
@@ -2451,8 +2451,8 @@ function ErrorLogScreen({ darkMode, onClose }) {
         </div>
         {entries.length > 0 && (
           <div style={{ display: "flex", gap: 14 }}>
-            <span onClick={exportLog} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>Export</span>
-            <span onClick={() => setConfirmClear(true)} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Clear</span>
+            <span role="button" tabIndex={0} aria-label="Export error log" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exportLog} style={{ fontSize: 12, fontWeight: 600, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>Export</span>
+            <span role="button" tabIndex={0} aria-label="Clear error log" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setConfirmClear(true)} style={{ fontSize: 12, fontWeight: 600, color: ACTION.red, cursor: "pointer" }}>Clear</span>
           </div>
         )}
       </div>
@@ -4308,7 +4308,7 @@ function TrashScreen({ onClose }) {
           <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Trash</h1>
         </div>
         {items.length > 0 && (
-          <span onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: ACCENTS.medication, cursor: "pointer" }}>
+          <span role="button" tabIndex={0} aria-label={selectMode ? "Done selecting" : "Select items"} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 13, fontWeight: 600, color: ACCENTS.medication, cursor: "pointer" }}>
             {selectMode ? "Done" : "Select"}
           </span>
         )}
@@ -4317,8 +4317,8 @@ function TrashScreen({ onClose }) {
         <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
-            <span onClick={() => selectedIds.length > 0 && restoreSelected()} style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Restore</span>
-            <span onClick={() => selectedIds.length > 0 && setConfirmDeleteSelected(true)} style={{ fontSize: 13, color: selectedIds.length > 0 ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+            <span role="button" tabIndex={0} aria-label="Restore selected items" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectedIds.length > 0 && restoreSelected()} style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Restore</span>
+            <span role="button" tabIndex={0} aria-label="Delete selected items" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectedIds.length > 0 && setConfirmDeleteSelected(true)} style={{ fontSize: 13, color: selectedIds.length > 0 ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>
         </div>

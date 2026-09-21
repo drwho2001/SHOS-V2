@@ -303,7 +303,7 @@ function DetailHeader({ onBack, onEdit, onDelete, T }) {
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
       <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={onEdit}>Edit</span>
+        <span role="button" tabIndex={0} aria-label="Edit" style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={onEdit} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
         <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={onDelete} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
       </div>
     </div>

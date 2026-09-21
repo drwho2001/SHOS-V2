@@ -964,7 +964,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px" }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onBack} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => onEdit(testId)}>Edit</span>
+          <span role="button" tabIndex={0} aria-label="Edit test" style={{ fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }} onClick={() => onEdit(testId)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}>Edit</span>
           <Trash2 size={17} color={T.actionRed} style={{ cursor: "pointer" }} onClick={() => setConfirmDelete(true)} aria-label="Delete permanently" title="Delete permanently" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
       </div>
@@ -1248,11 +1248,11 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
             </span>
             {/* ADDED 26 Aug 2026 — real ask: export/print a single
                 record, enabled only when exactly one is selected. */}
-            <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("testing", await TestingRepository.getById(selectedIds[0])); }}
+            <span role="button" tabIndex={0} aria-label="Export test" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("testing", await TestingRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-            <span onClick={async () => { if (selectedIds.length > 0) { await TestingRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
+            <span role="button" tabIndex={0} aria-label="Archive tests" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await TestingRepository.bulkArchive(selectedIds); refresh(); exitSelectMode(); } }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-            <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
+            <span role="button" tabIndex={0} aria-label="Delete tests" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
               style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
           </div>

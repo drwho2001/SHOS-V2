@@ -2094,15 +2094,15 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
                 style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>
                 {selectedIds.length === activeMeds.filter(matchesMedSearch).length ? "Deselect all" : "Select all"}
               </span>
-              {/* ADDED 26 Aug 2026 — real ask: export/print a single
-                  record, enabled only when exactly one is selected. */}
-              <span onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("medications", await MedicationRepository.getById(selectedIds[0])); }}
-                style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
-              <span onClick={async () => { if (selectedIds.length > 0) { await MedicationRepository.bulkArchive(selectedIds); refreshMeds(); exitSelectMode(); } }}
-                style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
-              <span onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
-                style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
-              <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
+{/* ADDED 26 Aug 2026 — real ask: export/print a single
+                   record, enabled only when exactly one is selected. */}
+               <span role="button" tabIndex={0} aria-label="Export medication" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("medications", await MedicationRepository.getById(selectedIds[0])); }}
+                 style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
+               <span role="button" tabIndex={0} aria-label="Archive medications" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length > 0) { await MedicationRepository.bulkArchive(selectedIds); refreshMeds(); exitSelectMode(); } }}
+                 style={{ fontSize: 13, color: selectedIds.length > 0 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Archive</span>
+               <span role="button" tabIndex={0} aria-label="Delete medications" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { if (selectedIds.length > 0) setConfirmingBulkDelete(true); }}
+                 style={{ fontSize: 13, color: selectedIds.length > 0 ? buildDark().actionRed : "#89898C", fontWeight: 600, cursor: selectedIds.length > 0 ? "pointer" : "default" }}>Delete</span>
+               <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={exitSelectMode} style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>Cancel</span>
             </div>
           </div>
         )}
