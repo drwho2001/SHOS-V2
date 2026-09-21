@@ -529,6 +529,9 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search vaccinations"
           style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
       </div>
+      <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+        {sorted.length > 0 ? `${sorted.length} vaccinations${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No vaccinations match" : "No vaccinations logged"}
+      </div>
       {/* CHANGED — real ask: Add button now floats bottom-right, same
           fixed-position pattern as every other module, instead of an
           inline header icon that scrolled away with the rest of the

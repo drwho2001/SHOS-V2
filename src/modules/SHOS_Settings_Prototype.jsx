@@ -1230,6 +1230,9 @@ function ResourcesScreen({ onClose }) {
             population pass. Matches name, link, or notes. */}
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search resources"
           style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", marginBottom: 16 }} />
+        <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+          {hasMatch ? `Results found${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No resources match" : "No query"}
+        </div>
         <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8, alignItems: "start" } : undefined}>
           {ResourcesRepository.getAllCategoryKeys().map((key) => (
             <ResourceCategory key={key} categoryKey={key} darkMode={darkMode} query={query} />

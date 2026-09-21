@@ -2226,6 +2226,9 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
               <input ref={medSearchInputRef} value={medQuery} onChange={(e) => setMedQuery(e.target.value)} placeholder="Search medications"
                 style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
             </div>
+            <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+              {activeMeds.filter(matchesMedSearch).length > 0 ? `${activeMeds.filter(matchesMedSearch).length} medications${medQuery.trim() ? `, searched "${medQuery}"` : ""}` : medQuery.trim() ? "No medications match" : `${activeMeds.length} medications`}
+            </div>
             {allDailyMeds.length > 0 && (
               <div style={{ padding: "0 16px 12px", position: "relative" }}>
                 <button onClick={dueDailyMeds.length === 0 ? undefined : logAllDaily} style={{ ...btnStyle(T.medsBlue, "outline", dueDailyMeds.length === 0), width: "100%", padding: 10 }}>

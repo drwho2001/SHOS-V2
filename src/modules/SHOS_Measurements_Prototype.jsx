@@ -846,6 +846,9 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by type"
           style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
       </div>
+      <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+        {byTypeGroups.length > 0 ? `${byTypeGroups.reduce((sum, g) => sum + g.entries.length, 0)} measurements${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No measurements match" : "No measurements logged"}
+      </div>
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
         <div onClick={onAdd} role="button" tabIndex={0} aria-label="Add measurement" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
           <Plus size={24} />
