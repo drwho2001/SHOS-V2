@@ -1,19 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import ContactsModule from "./modules/SHOS_Contacts_Prototype";
+import React, { useState, useRef, useEffect, useCallback, Suspense, lazy } from "react";
 import { useDarkModePreference } from "./calculations/darkModePreference";
 import { NEUTRAL_DARK as DARK } from "./calculations/designTokens";
 // ADDED — real architecture extraction, see each file's own header.
 import HomeScreen from "./modules/SHOS_Home_Prototype";
-import HealthcareScreen from "./modules/SHOS_Healthcare_Prototype";
-import MedicationDashboard from "./modules/SHOS_Medication_Dashboard_Prototype";
-import EncountersModule from "./modules/SHOS_Encounters_Prototype";
 import { exportBackup, inspectBackupFile, decryptBackupEnvelope, restoreFromParsedBackup, EXPORT_GROUPS } from "./storage/backupService";
 import { localStorageAdapter } from "./storage/storageAdapter";
 // ADDED — real architecture extraction, see that file's own header.
-import SettingsScreen from "./modules/SHOS_Settings_Prototype";
-import GlobalSearchScreen from "./modules/SHOS_GlobalSearch_Prototype";
-// ADDED 9 Sep 2026 — real ask: an interactive spotlight-overlay tour,
-// not just the static Guide screen. See that file's own header.
 import TourOverlay from "./modules/InteractiveTour";
 import { PrivacySettingsRepository } from "./repositories/privacySettingsRepository";
 import { checkBiometryAvailable, authenticateWithBiometrics } from "./storage/biometricAuthService";
@@ -68,6 +60,14 @@ import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon 
 // needed different real Phosphor names to avoid a genuine naming
 // collision (both used in this same file) — used the closest real
 // equivalents, worth a visual spot-check once installed for real.
+
+// Lazy-loaded modules for route-based code splitting
+const ContactsModule = lazy(() => import("./modules/SHOS_Contacts_Prototype"));
+const EncountersModule = lazy(() => import("./modules/SHOS_Encounters_Prototype"));
+const MedicationDashboard = lazy(() => import("./modules/SHOS_Medication_Dashboard_Prototype"));
+const HealthcareScreen = lazy(() => import("./modules/SHOS_Healthcare_Prototype"));
+const SettingsScreen = lazy(() => import("./modules/SHOS_Settings_Prototype"));
+const GlobalSearchScreen = lazy(() => import("./modules/SHOS_GlobalSearch_Prototype"));
 
 // CHANGED 18 Aug 2026 — real persistent bottom nav, replacing the old
 // top switcher. Per Doc 1 (Master Navigation Map v1.0): five tabs —
@@ -2196,11 +2196,13 @@ export default function App() {
           <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)}
             markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "home"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
         ) : ActiveModule ? (
-          <ActiveModule key={`${active}-${navResetCount}`} openAddOnMount={quickAdd} onConsumedQuickAdd={() => { setQuickAdd(false); setQuickAddTarget(null); }} quickAddTarget={quickAddTarget}
-            openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}
-            prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
-            onOpenSettings={() => setShowSettings(true)} registerModuleBackHandler={registerModuleBackHandler}
-            markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "healthcare"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
+          <Suspense fallback={<div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: "'Inter', sans-serif" }}>Loading...</div>}>
+            <ActiveModule key={`${active}-${navResetCount}`} openAddOnMount={quickAdd} onConsumedQuickAdd={() => { setQuickAdd(false); setQuickAddTarget(null); }} quickAddTarget={quickAddTarget}
+              openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}
+              prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
+              onOpenSettings={() => setShowSettings(true)} registerModuleBackHandler={registerModuleBackHandler}
+              markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "healthcare"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
+          </Suspense>
         ) : (
           <div style={{ padding: 40, textAlign: "center", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontFamily: "'Inter', sans-serif" }}>
             <activeTab.icon size={32} color={darkMode ? DARK.textDisabled : NEUTRAL.textDisabled} style={{ marginBottom: 12 }} />
