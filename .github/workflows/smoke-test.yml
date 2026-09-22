@@ -50,6 +50,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Unit tests (Vitest)
+        run: npm run test
+
       # scripts/smoke-test.cjs's own header notes this repo doesn't
       # depend on playwright directly (a dev-machine convenience, not
       # meant to bloat every real install) — installed here, in CI
