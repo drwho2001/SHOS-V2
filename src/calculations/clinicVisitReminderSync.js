@@ -30,6 +30,11 @@ let WidgetBridge = null;
 async function getWidgetBridge() {
   if (WidgetBridge) return WidgetBridge;
   try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor.isNativePlatform()) {
+      WidgetBridge = false;
+      return null;
+    }
     const { registerPlugin } = await import("@capacitor/core");
     WidgetBridge = registerPlugin("WidgetBridge");
   } catch (e) {

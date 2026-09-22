@@ -326,7 +326,10 @@ function fixedModeDueSlot(med, intervalHours, lastDoseDate) {
   let dueMs = anchorMs + stepsForward * intervalMs;
   if (lastDoseDate) {
     const lastDoseMs = realTimestampFromStored(lastDoseDate);
-    while (dueMs - intervalMs * 0.2 <= lastDoseMs) dueMs += intervalMs;
+    // For fixed mode with scheduled times: only step forward if the calculated
+    // due time is at or before the last dose (we already passed that slot).
+    // The 20% buffer is for adaptive mode's lockout; fixed mode uses explicit clock times.
+    while (dueMs <= lastDoseMs) dueMs += intervalMs;
   }
   return dueMs;
 }
