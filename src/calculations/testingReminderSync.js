@@ -27,6 +27,23 @@ import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmall
 import { NotificationPreferencesRepository, isTestingSnoozed } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
 
+let WidgetBridge = null;
+async function getWidgetBridge() {
+  if (WidgetBridge) return WidgetBridge;
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor.isNativePlatform()) {
+      WidgetBridge = false;
+      return null;
+    }
+    const { registerPlugin } = await import("@capacitor/core");
+    WidgetBridge = registerPlugin("WidgetBridge");
+  } catch (e) {
+    WidgetBridge = false;
+  }
+  return WidgetBridge || null;
+}
+
 // Pure "is a retest due right now" read, shared by syncTestingReminder
 // (decides whether to schedule) and App.jsx's in-app due-state banner.
 // Same suggestedRoutineRetestDate() source of truth as the schedule
@@ -93,7 +110,34 @@ export async function syncTestingReminder() {
     smallIcon: moduleSmallIconName("healthcare"),
     iconColor: ACCENTS.healthcare,
   });
+  await updateTestWidget();
   return { scheduled: true, dueDate };
+}
+
+async function updateTestWidget() {
+  try {
+    const bridge = await getWidgetBridge();
+    if (bridge && bridge.updateTest) {
+      const { TestingRepository } = await import("../repositories/testingRepository");
+      const { ResultsRegistry } = await import("../registries/resultsRegistry");
+      const { suggestedRoutineRetestDate } = await import("./testingCalculations");
+
+      const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+      if (tests.length > 0) {
+        const mostRecent = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+        const resultNameById = new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name]));
+        const suggested = suggestedRoutineRetestDate(mostRecent, resultNameById);
+        const lastTest = mostRecent.date;
+        const retestDue = suggested ? new Date(suggested).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "—";
+
+        await bridge.updateTest({ lastTest, retestDue });
+      } else {
+        await bridge.updateTest({ lastTest: "No tests logged", retestDue: "—" });
+      }
+    }
+  } catch (e) {
+    console.debug("Test widget update skipped:", e);
+  }
 }
 
 // ADDED — real ask: parity with Medication/DoxyPEP's own notification

@@ -95,6 +95,78 @@
                 android:resource="@xml/quick_add_encounter_widget_info" />
         </receiver>
 
+        <!-- ADDED 23 Sep 2026 — DoxyPEP Window widget -->
+        <receiver
+            android:name=".widget.DoxyPEPWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/doxy_pep_widget_info" />
+        </receiver>
+
+        <!-- ADDED 23 Sep 2026 — Cycle/Fertility widget -->
+        <receiver
+            android:name=".widget.CycleWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/cycle_widget_info" />
+        </receiver>
+
+        <!-- ADDED 23 Sep 2026 — Last Test/Retest Due widget -->
+        <receiver
+            android:name=".widget.TestWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/test_widget_info" />
+        </receiver>
+
+        <!-- ADDED 23 Sep 2026 — Quick Add Contact widget (deep link only) -->
+        <receiver
+            android:name=".widget.QuickAddContactWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_add_contact_widget_info" />
+        </receiver>
+
+        <!-- ADDED 23 Sep 2026 — Quick Add Medication widget (deep link only) -->
+        <receiver
+            android:name=".widget.QuickAddMedicationWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_add_medication_widget_info" />
+        </receiver>
+
+        <!-- ADDED 23 Sep 2026 — Clinic Card widget (with Maps link, redacted sensitive fields) -->
+        <receiver
+            android:name=".widget.ClinicCardWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/clinic_card_widget_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

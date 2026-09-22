@@ -47,6 +47,47 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 
+let WidgetBridge = null;
+async function getWidgetBridge() {
+  if (WidgetBridge) return WidgetBridge;
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor.isNativePlatform()) {
+      WidgetBridge = false;
+      return null;
+    }
+    const { registerPlugin } = await import("@capacitor/core");
+    WidgetBridge = registerPlugin("WidgetBridge");
+  } catch (e) {
+    WidgetBridge = false;
+  }
+  return WidgetBridge || null;
+}
+
+async function updateCycleWidget() {
+  try {
+    const bridge = await getWidgetBridge();
+    if (bridge && bridge.updateCycle) {
+      const { MenstrualCycleRepository } = await import("../repositories/menstrualCycleRepository");
+      const cycles = await MenstrualCycleRepository.getAll();
+      const activeCycles = cycles.filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
+      if (activeCycles.length > 0) {
+        const latest = activeCycles[0];
+        const avgLength = await MenstrualCycleRepository.getAverageCycleLengthDays();
+        const startDate = latest.startDate ? new Date(latest.startDate) : new Date();
+        const now = new Date();
+        const cycleDay = Math.max(1, Math.floor((now - startDate) / (1000 * 60 * 60 * 24)) + 1);
+        const phase = cycleDay <= 7 ? "Menstrual" : cycleDay <= 14 ? "Follicular" : cycleDay <= 21 ? "Ovulatory" : "Luteal";
+        const nextPeriodDate = new Date(startDate.getTime() + avgLength * 24 * 60 * 60 * 1000);
+        const nextPeriod = nextPeriodDate.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+        await bridge.updateCycle({ day: cycleDay, phase, nextPeriod });
+      }
+    }
+  } catch (e) {
+    console.debug("Cycle widget update skipped:", e);
+  }
+}
+
 // CHANGED 2 Sep 2026 — real ask: Menstrual gets its own dedicated
 // colour (menstrualPurple) instead of borrowing ACTION.red purely for
 // module identity — see designTokens.js's own comment on why. Only
@@ -427,13 +468,14 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
   // by the detail view's symptomNames.
   const symptomNameById = useLoadedMemo(async () => new Map((await SymptomsRegistry.getAll()).map((s) => [s.id, s.name])), [], new Map());
 
-  const create = async (data) => { await MenstrualCycleRepository.create(data); refresh(); onDataChanged?.(); setScreen({ name: "list" }); };
+  const create = async (data) => { await MenstrualCycleRepository.create(data); refresh(); onDataChanged?.(); setScreen({ name: "list" }); await updateCycleWidget(); };
   const save = async (data) => {
     await editUndo.captureBeforeEdit(screen.id);
     await MenstrualCycleRepository.update(screen.id, data);
     await editUndo.notifyEdited(screen.id);
     refresh();
     setScreen({ name: "detail", id: screen.id });
+    await updateCycleWidget();
   };
 
   if (screen.name === "detail") {

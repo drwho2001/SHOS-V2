@@ -100,6 +100,7 @@ export async function syncClinicVisitReminders() {
   });
 
   await updateAppointmentWidget(visit);
+  await updateClinicCardWidget(visit);
   return { visit, resultA, resultB };
 }
 
@@ -117,6 +118,31 @@ async function updateAppointmentWidget(visit) {
   } catch (e) {
     // Widget bridge not available (web) — ignore
     console.debug("Widget update skipped:", e);
+  }
+}
+
+async function updateClinicCardWidget(visit) {
+  try {
+    const bridge = await getWidgetBridge();
+    if (bridge && bridge.updateClinicCard) {
+      const tests = visit.linkedTestIds?.length || 0;
+      const testsStr = tests > 0 ? `${tests} test${tests > 1 ? "s" : ""}` : "None";
+      const docType = visit.visitType || "";
+      const clinicNum = visit.clinicNumber || "";
+      const nhsNum = visit.nhsNumber || "";
+
+      await bridge.updateClinicCard({
+        title: visit.title || "Appointment",
+        date: visit.date ? new Date(realTimestampFromStored(visit.date)).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "",
+        location: visit.location || "",
+        tests: testsStr,
+        docType,
+        clinicNum,
+        nhsNum,
+      });
+    }
+  } catch (e) {
+    console.debug("ClinicCard widget update skipped:", e);
   }
 }
 

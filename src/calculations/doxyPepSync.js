@@ -20,6 +20,23 @@ import { NotificationPreferencesRepository } from "../repositories/notificationP
 import { ACCENTS } from "./designTokens";
 import { nowAsStoredDateTime } from "./dateInputHelpers";
 
+let WidgetBridge = null;
+async function getWidgetBridge() {
+  if (WidgetBridge) return WidgetBridge;
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor.isNativePlatform()) {
+      WidgetBridge = false;
+      return null;
+    }
+    const { registerPlugin } = await import("@capacitor/core");
+    WidgetBridge = registerPlugin("WidgetBridge");
+  } catch (e) {
+    WidgetBridge = false;
+  }
+  return WidgetBridge || null;
+}
+
 // ADDED — real ask: unified notifications on/off switchboard. Gates
 // only the NATIVE notification below — the returned `status` object
 // (what Home's own in-app banner reads) is computed and returned
@@ -94,7 +111,21 @@ export async function syncDoxyPepAlert() {
     smallIcon: moduleSmallIconName("medication"),
     iconColor: ACCENTS.medication,
   });
+  await updateDoxyPEPWidget(status);
   return status;
+}
+
+async function updateDoxyPEPWidget(status) {
+  try {
+    const bridge = await getWidgetBridge();
+    if (bridge && bridge.updateDoxyPEP) {
+      const statusText = status.overdue ? "Overdue" : (status.active ? "Active" : "No active window");
+      const expiryMs = status.deadline ? status.deadline.getTime() : 0;
+      await bridge.updateDoxyPEP({ status: statusText, expiryMs });
+    }
+  } catch (e) {
+    console.debug("DoxyPEP widget update skipped:", e);
+  }
 }
 
 // Handlers for the two real actions — called from the app-level

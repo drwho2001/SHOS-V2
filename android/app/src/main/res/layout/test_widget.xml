@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#1B1B1F"
+    android:gravity="center">
+
+    <TextView
+        android:id="@+id/widget_test_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Last Test"
+        android:textSize="16sp"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_last_test"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="No tests logged"
+        android:textSize="14sp"
+        android:textColor="#09582E"
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/widget_retest_due"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Retest due: —"
+        android:textSize="12sp"
+        android:textColor="#B0B0B0" />
+</LinearLayout>
