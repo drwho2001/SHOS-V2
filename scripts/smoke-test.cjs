@@ -1015,6 +1015,42 @@ async function testServiceWorkerAutoUpdate(browser) {
   await context.close();
 }
 
+// ADDED 22 Sep 2026 — deep-link baseline: verify all shos:// routes work
+// before AND after lazy-loading changes. Runs once on the shared page
+// (after dismissOnboarding) so it covers the initial state, and can be
+// re-run after lazy-loading is implemented to catch regressions.
+async function testDeepLinkBaseline(page) {
+  console.log("\n[DEEP-LINK] Baseline — all shos:// routes resolve correctly");
+  
+  const deepLinks = [
+    { path: "shos://medication", name: "Medication tab" },
+    { path: "shos://clinic-visits", name: "Clinic Visits tab" },
+    { path: "shos://encounter/add", name: "Add Encounter" },
+    { path: "shos://contact/add", name: "Add Contact" },
+    { path: "shos://medication/log", name: "Log Medication" },
+    { path: "shos://healthcare?subTab=testing", name: "Testing sub-tab" },
+    { path: "shos://clinic-card", name: "Clinic Card" },
+    { path: "shos://episodes", name: "Episodes" },
+    { path: "shos://settings", name: "Settings" },
+    { path: "shos://search", name: "Global Search" },
+  ];
+
+  for (const { path, name } of deepLinks) {
+    console.log(`  Testing ${name} (${path})`);
+    await page.goto(`${APP_URL}${path}`, { waitUntil: "networkidle", timeout: 15000 });
+    await page.waitForTimeout(500);
+    await dismissTransientBanners(page);
+    
+    // Verify we didn't land on an error boundary
+    const errorText = await page.locator("text=Something went wrong").count();
+    assert(errorText === 0, `${name}: did not land on error boundary`);
+    
+    // Verify we're not stuck on a blank/loading screen
+    const hasContent = await page.evaluate(() => document.body.innerText.trim().length > 0);
+    assert(hasContent, `${name}: page has content`);
+  }
+}
+
 (async () => {
   const browser = await chromium.launch({ executablePath: PLAYWRIGHT_EXECUTABLE });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -1038,6 +1074,7 @@ async function testServiceWorkerAutoUpdate(browser) {
     await testBackupMigratesOldFieldShape(page);
     await testPinRecoveryFlow(page);
     await testServiceWorkerAutoUpdate(browser);
+    await testDeepLinkBaseline(page);
     await testBackupImportDropsGarbageRecords(page);
   } catch (err) {
     failed = true;
