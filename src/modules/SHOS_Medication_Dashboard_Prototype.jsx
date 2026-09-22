@@ -39,7 +39,7 @@ formatDoseComponents } from "../calculations/medicationCalculations";
 // it after" case. Same shared "Now" helper and plain-string-slicing
 // safety already established by Encounters'/Clinic Visits' own
 // DateTimeField — no Date-object round-trip, no silent BST/UTC shift.
-import { nowAsDateTimeLocalString, nowAsStoredDateTime } from "../calculations/dateInputHelpers";
+import { nowAsDateTimeLocalString, nowAsStoredDateTime, realTimestampFromStored } from "../calculations/dateInputHelpers";
 // ADDED 19 Aug 2026 — real ask: allergies visible "± medications at
 // the top" too, not just on Clinic Card. Read-only here — Allergies
 // itself is edited on My Profile, this is just a visibility surface.
@@ -1748,7 +1748,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   const [justCompleted, setJustCompleted] = useState(null);
   const [dueReminder, setDueReminder] = useState(null);
   const [snoozedUntil, setSnoozedUntil] = useState({});
-  const [bulkFlash, setBulkFlash] = useState(false);
+  const [bulkFlash, setBulkFlash] = useState("");
   // ADDED 18 Aug 2026 — same "keep it visible, flash instead of nothing"
   // fix as the individual card, applied to the bulk button.
   const [bulkLockFlash, setBulkLockFlash] = useState(false);
@@ -1845,8 +1845,9 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     syncMedicationReminders();
     syncRefillReminder();
     refreshMeds();
-    setBulkFlash(true);
-    setTimeout(() => setBulkFlash(false), 2000);
+    const timeStr = new Date(realTimestampFromStored(timestamp)).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    setBulkFlash(`Logged all daily meds at ${timeStr}`);
+    setTimeout(() => setBulkFlash(""), 3000);
   };
 
   const logQuantity = async (units) => {
@@ -2036,7 +2037,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   };
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh", display: "flex", justifyContent: "center", transition: "background 200ms ease" }}>
+    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center", transition: "background 200ms ease" }}>
       {/* CHANGED — real ask: "Medications module is the only one
           designed like a phone screen — not full width on laptop."
           Was a fixed 390px regardless of viewport; now genuinely
@@ -2044,7 +2045,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
           desktop-appropriate width rather than stretching single-
           column cards absurdly wide (per the wider design review's
           own explicit caution against just stretching mobile layouts). */}
-      <div style={{ width: "100%", background: T.bg, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ width: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column" }}>
         {/* ADDED 26 Aug 2026 — real ask: page title on a sticky banner
             filled with the module's own colour, same pattern applied
             across every module. Was missed in the first banner pass. */}
@@ -2232,7 +2233,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             {allDailyMeds.length > 0 && (
               <div style={{ padding: "0 16px 12px", position: "relative" }}>
                 <button onClick={dueDailyMeds.length === 0 ? undefined : logAllDaily} style={{ ...btnStyle(T.medsBlue, "outline", dueDailyMeds.length === 0), width: "100%", padding: 10 }}>
-                  {bulkFlash ? <><Check size={14} /> Logged all daily meds</> : <><ListChecks size={14} /> {dueDailyMeds.length === 0 ? "All daily meds logged" : "Log all daily meds"}</>}
+                  {bulkFlash ? <><Check size={14} /> {bulkFlash}</> : <><ListChecks size={14} /> {dueDailyMeds.length === 0 ? "All daily meds logged" : "Log all daily meds"}</>}
                 </button>
                 <div style={{ fontSize: 11, color: T.textDisabled, textAlign: "center", marginTop: 4 }}>
                   {dueDailyMeds.length > 0 ? `Includes: ${dueDailyMeds.map((m) => m.name.split(" (")[0]).join(", ")}` : "Nothing due right now"}

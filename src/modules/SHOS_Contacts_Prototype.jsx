@@ -3193,7 +3193,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
   };
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh", display: "flex", justifyContent: "center" }}>
+    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center" }}>
       {/* ADDED 19 Aug 2026 — real undo/redo toast, same visual pattern
           as Medication's own, kept consistent. */}
       {/* CHANGED — real ask: this sat at top:12, directly on top of
@@ -3215,7 +3215,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
           larger screens, rather than stretching single-column cards
           absurdly wide. Outer wrapper already centers via
           justifyContent: "center", so this is a like-for-like swap. */}
-      <div style={{ width: "100%", background: T.bg, minHeight: "100vh" }}>
+      <div style={{ width: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
         {screen === "list" ? (
           <ContactsList contacts={contacts} T={T} onOpen={openProfile} onAdd={() => setEditingContact({})} sortBy={sortBy} setSortBy={setSortBy} query={query} setQuery={setQuery}
             onOpenMyProfile={() => setShowMyProfile(true)} onOpenImportProfile={() => setShowImportProfile(true)} onOpenContactsSettings={() => setShowContactsSettings(true)} refresh={refresh}

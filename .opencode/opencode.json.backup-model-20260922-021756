@@ -1,5 +1,5 @@
-﻿{
-    "$schema":  "https://opencode.ai/config.json",
+{
+  "$schema": "https://opencode.ai/config.json",
     "mcp":  {
                 "notion":  {
                                "type":  "local",
@@ -13,6 +13,5 @@
                                                    "NOTION_TOKEN":  "${env:NOTION_TOKEN}"
                                                }
                            }
-            },
-    "model":  "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
+            }
 }

@@ -813,7 +813,7 @@ export default function TimelineModule({ onClose, registerModuleBackHandler } = 
   }, [screen, registerModuleBackHandler, onClose]);
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh" }}>
+    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
       <DeleteUndoToast toast={deleteToast} onUndo={undoDelete} onRedo={redoDelete} T={T} />
       {screen.name === "list" && <TimelineLanding key={refreshKey} T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} onClose={onClose} />}
       {screen.name === "detail" && <EpisodeDetail T={T} episodeId={screen.id} onBack={backToList} onDeleted={backToList} onDelete={handleDelete} />}

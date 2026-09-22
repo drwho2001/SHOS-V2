@@ -688,7 +688,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   );
 
   return (
-    <div style={{ background: darkMode ? DARK.bg : NEUTRAL.bg, minHeight: "100vh", display: "flex", justifyContent: "center" }}>
+    <div style={{ background: darkMode ? DARK.bg : NEUTRAL.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}

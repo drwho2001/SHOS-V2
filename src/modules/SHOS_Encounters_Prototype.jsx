@@ -1099,13 +1099,13 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
   const visibleGroups = isDesktopWidth ? groupConsecutive(visible, (e) => monthLabel(e.date)) : null;
 
   return (
-    <div style={{ background: T.bg, minHeight: "100vh", display: "flex", justifyContent: "center" }}>
+    <div style={{ background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center" }}>
       {/* ADDED — real report: thin vertical border lines already shipped
           on Contacts/My Profile/Medication Dashboard as a deliberate
           desktop-width-cap treatment, but never rolled out to the rest
           of the app — inconsistent by omission, not by design. Same
           maxWidth: 600 + border pattern applied here. */}
-      <div style={{ width: "100%", background: T.bg, minHeight: "100vh", paddingBottom: 90 }}>
+      <div style={{ width: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", paddingBottom: 90 }}>
       {/* CHANGED — real edge-to-edge redesign (researched how other
           apps handle colour under the notch/status bar): the earlier
           env()+8px offset on this wrapper left a permanent neutral
@@ -1330,10 +1330,10 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
   };
 
   return (
-    <div style={{ background: T.bg, minHeight: "100vh", display: "flex", justifyContent: "center" }}>
+    <div style={{ background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", display: "flex", justifyContent: "center" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to ActivityLanding above. */}
-      <div style={{ width: "100%", background: T.bg, minHeight: "100vh", paddingBottom: 40 }}>
+      <div style={{ width: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))", paddingBottom: 40 }}>
       {/* CHANGED — real ask: "Next to back button shows date, instead
           should show back, and centred on screen at top should be the
           encounter title." Real title (not date) now centered; date
@@ -1590,7 +1590,7 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
     <div role="dialog" aria-label={isNew ? "Add Encounter" : "Edit Encounter"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }} data-encounter-sheet>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to this module's other screens. */}
-      <div style={{ width: "100%", background: T.bg, minHeight: "100vh" }}>
+      <div style={{ width: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
       {/* CHANGED 26 Aug 2026 — real ask: forms (Add/Edit Activity)
           should also have the module banner title, matching every
           other module screen. */}

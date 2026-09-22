@@ -24,6 +24,18 @@ import { NotificationPreferencesRepository } from "../repositories/notificationP
 import { MedicationPreferencesRepository, isRefillSnoozed } from "../repositories/medicationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
 
+let WidgetBridge = null;
+async function getWidgetBridge() {
+  if (WidgetBridge) return WidgetBridge;
+  try {
+    const { registerPlugin } = await import("@capacitor/core");
+    WidgetBridge = registerPlugin("WidgetBridge");
+  } catch (e) {
+    WidgetBridge = false;
+  }
+  return WidgetBridge || null;
+}
+
 // Pure "what currently needs a refill" read, shared by syncRefillReminder
 // (decides whether to schedule) and App.jsx's in-app due-state banner
 // (same live check, no separate concept to drift out of sync).
@@ -58,6 +70,7 @@ export async function syncRefillReminder() {
 
   if (needsRefill.length === 0) {
     await cancelNotification(NOTIFICATION_IDS.refillReminder);
+    await updateRefillWidget();
     return { scheduled: false };
   }
 
@@ -71,7 +84,25 @@ export async function syncRefillReminder() {
     smallIcon: moduleSmallIconName("medication"),
     iconColor: ACCENTS.medication,
   });
+  await updateRefillWidget();
   return { scheduled: true, needsRefill };
+}
+
+async function updateRefillWidget() {
+  try {
+    const { getRefillDueMedications } = await import("./refillReminderSync");
+    const needsRefill = await getRefillDueMedications();
+    const count = needsRefill.length;
+    const nextRefill = count > 0 ? needsRefill[0].name : "No refills due";
+
+    const bridge = await getWidgetBridge();
+    if (bridge && bridge.updateRefill) {
+      await bridge.updateRefill({ count, nextRefill });
+    }
+  } catch (e) {
+    // Widget bridge not available (web) — ignore
+    console.debug("Widget update skipped:", e);
+  }
 }
 
 // ADDED — real ask: parity with Medication/DoxyPEP's own notification

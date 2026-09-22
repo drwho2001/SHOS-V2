@@ -59,6 +59,42 @@
                 android:resource="@xml/next_dose_widget_info" />
         </receiver>
 
+        <!-- ADDED 22 Sep 2026 — Refill Due widget -->
+        <receiver
+            android:name=".widget.RefillWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/refill_widget_info" />
+        </receiver>
+
+        <!-- ADDED 22 Sep 2026 — Next Appointment widget -->
+        <receiver
+            android:name=".widget.AppointmentWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/appointment_widget_info" />
+        </receiver>
+
+        <!-- ADDED 22 Sep 2026 — Quick Add Encounter widget (deep link only) -->
+        <receiver
+            android:name=".widget.QuickAddEncounterWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_add_encounter_widget_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

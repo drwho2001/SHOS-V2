@@ -1303,7 +1303,8 @@ export default function App() {
 
   const onDueMedsTake = async () => {
     const result = await handleTakeAll();
-    showNotifToast(result.medications.length ? `${result.medications.join(", ")} logged` : "Logged");
+    const timeStr = new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    showNotifToast(result.medications.length ? `${result.medications.join(", ")} logged at ${timeStr}` : `Logged at ${timeStr}`);
     await checkDueMeds();
   };
   const onDueMedsSkip = async () => {

@@ -730,7 +730,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   else if (screen.name === "detail") content = <VaccinationDetail T={T} vaccinationId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} />;
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh" }}>
+    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
       {/* ADDED 19 Aug 2026 — real undo/redo toast, same pattern as
           every other module. */}
       {/* CHANGED — real ask: this sat at top:12, directly on top of

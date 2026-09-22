@@ -26,6 +26,18 @@ import { NotificationPreferencesRepository, isClinicVisitSnoozed } from "../repo
 import { ACCENTS } from "./designTokens";
 import { realTimestampFromStored } from "./dateInputHelpers";
 
+let WidgetBridge = null;
+async function getWidgetBridge() {
+  if (WidgetBridge) return WidgetBridge;
+  try {
+    const { registerPlugin } = await import("@capacitor/core");
+    WidgetBridge = registerPlugin("WidgetBridge");
+  } catch (e) {
+    WidgetBridge = false;
+  }
+  return WidgetBridge || null;
+}
+
 export async function getSoonestBookedVisit() {
   const nowMs = Date.now();
   const booked = (await ClinicVisitsRepository.getAll())
@@ -82,7 +94,25 @@ export async function syncClinicVisitReminders() {
     label: `in ${prefs.clinicVisitReminderBHours}h`,
   });
 
+  await updateAppointmentWidget(visit);
   return { visit, resultA, resultB };
+}
+
+async function updateAppointmentWidget(visit) {
+  try {
+    const count = visit ? 1 : 0;
+    const nextAppt = visit
+      ? `${visit.title || "Appointment"} — ${new Date(realTimestampFromStored(visit.date)).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}`
+      : "No appointments";
+
+    const bridge = await getWidgetBridge();
+    if (bridge && bridge.updateAppointment) {
+      await bridge.updateAppointment({ count, nextAppt });
+    }
+  } catch (e) {
+    // Widget bridge not available (web) — ignore
+    console.debug("Widget update skipped:", e);
+  }
 }
 
 // ADDED — real ask: in-app due-state awareness, same as Medication's

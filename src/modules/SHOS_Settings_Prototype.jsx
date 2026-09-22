@@ -32,6 +32,7 @@ import {
   FolderIcon as Folder, FunnelIcon as Filter, ClockIcon as Clock,
   ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass,
   BugIcon as Bug, PencilSimpleIcon as PencilSimple,
+  MonitorIcon as Monitor,
 } from "@phosphor-icons/react";
 // FIXED 1 Sep 2026 — real ask: "Managed lists crashes app on
 // attempting to open" / "Same for resources [crashes], in light [mode]
@@ -3813,6 +3814,133 @@ function AboutScreen({ onClose }) {
   );
 }
 
+// ADDED 22 Sep 2026 — Home-screen widgets with per-widget privacy tiers
+// (Full / Redacted / Off). Widgets show on lock screen so default is
+// Redacted (counts + "Next: 08:00" only, no names). Full tier shows
+// medication/appointment names; Off disables the widget entirely.
+function WidgetsScreen({ onClose }) {
+  const [darkMode] = useDarkModePreference();
+  const T = darkMode ? DARK : NEUTRAL;
+  const [widgetPrefs, setWidgetPrefs] = useLoadedState(() => 
+    import("../repositories/appPreferencesRepository").then(m => m.AppPreferencesRepository.getPreferences()), 
+    [], 
+    { widgetPrivacy: {} }
+  );
+
+  const widgetConfigs = [
+    {
+      key: "nextDose",
+      label: "Next Medication Dose",
+      description: "Shows medication name + next dose time",
+      defaultTier: "full",
+    },
+    {
+      key: "refillDue",
+      label: "Refills Due",
+      description: "Shows count + next medication needing refill",
+      defaultTier: "redacted",
+    },
+    {
+      key: "nextAppointment",
+      label: "Next Appointment",
+      description: "Shows appointment count + next clinic visit",
+      defaultTier: "redacted",
+    },
+    {
+      key: "doxyPepWindow",
+      label: "DoxyPEP Window",
+      description: "Shows 72h post-exposure countdown",
+      defaultTier: "full",
+    },
+    {
+      key: "quickAddEncounter",
+      label: "Quick Add: Encounter",
+      description: "Tap to open Add Encounter form",
+      defaultTier: "full",
+    },
+    {
+      key: "quickAddContact",
+      label: "Quick Add: Contact",
+      description: "Tap to open Add Contact form",
+      defaultTier: "full",
+    },
+    {
+      key: "quickAddMedication",
+      label: "Quick Add: Medication",
+      description: "Tap to open Log Medication form",
+      defaultTier: "full",
+    },
+  ];
+
+  const privacyOptions = [
+    { value: "full", label: "Full — names & times" },
+    { value: "redacted", label: "Redacted — counts only" },
+    { value: "off", label: "Off — disabled" },
+  ];
+
+  const handlePrivacyChange = async (widgetKey, tier) => {
+    const newPrefs = { ...widgetPrefs, widgetPrivacy: { ...widgetPrefs.widgetPrivacy, [widgetKey]: tier } };
+    setWidgetPrefs(newPrefs);
+    try {
+      const { AppPreferencesRepository } = await import("../repositories/appPreferencesRepository");
+      await AppPreferencesRepository.update({ widgetPrivacy: newPrefs.widgetPrivacy });
+    } catch (e) {
+      console.debug("Widget privacy save failed:", e);
+    }
+  };
+
+  return (
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+        <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+        <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Widgets</h1>
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 16, lineHeight: 1.5 }}>
+          Widgets appear on your home screen and lock screen. <strong>Redacted</strong> shows counts only (e.g. "1 refill due"). <strong>Full</strong> shows names and times. <strong>Off</strong> disables the widget.
+        </div>
+        {widgetConfigs.map((w) => {
+          const currentTier = widgetPrefs.widgetPrivacy?.[w.key] ?? w.defaultTier;
+          return (
+            <div key={w.key} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, marginBottom: 12, overflow: "hidden" }}>
+              <div style={{ padding: "14px 16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 600 }}>{w.label}</div>
+                    <div style={{ fontSize: 12, color: T.textDisabled, marginTop: 2 }}>{w.description}</div>
+                  </div>
+                  <select
+                    value={currentTier}
+                    onChange={(e) => handlePrivacyChange(w.key, e.target.value)}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: `1px solid ${T.border}`,
+                      background: T.bg,
+                      color: T.textPrimary,
+                      fontSize: 13,
+                      fontFamily: "'Inter', sans-serif",
+                      cursor: "pointer",
+                      minWidth: 160,
+                    }}
+                  >
+                    {privacyOptions.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        <div style={{ marginTop: 20, padding: 16, background: T.surfaceVariant, borderRadius: RADIUS.md, fontSize: 12, color: T.textSecondary, lineHeight: 1.5 }}>
+          <strong>Privacy note:</strong> Widgets are visible on the lock screen without authentication. Use <strong>Redacted</strong> for sensitive data (refills, appointments). <strong>Full</strong> is OK for Next Dose (you're the one taking it). Quick-add widgets don't show data — they're just shortcuts.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ADDED — real ask: "maybe better to move/copy calendar share options
 // to calendar page settings... doesn't have to exist in a settings
 // menu, can exist as icon." Moved out of Settings -> Privacy entirely
@@ -4839,6 +4967,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // builds now flowing through GitHub Actions, there was no way to
   // confirm which build is actually installed.
   const [showAbout, setShowAbout] = useState(false);
+  // ADDED 22 Sep 2026 — Home-screen widgets privacy settings
+  const [showWidgets, setShowWidgets] = useState(false);
 
   useEffect(() => {
     if (!registerModuleBackHandler) return;
@@ -4861,6 +4991,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       if (showSelectiveExport) { setShowSelectiveExport(false); return true; }
       if (showCSVExport) { setShowCSVExport(false); return true; }
       if (showEncryptedExport) { setShowEncryptedExport(false); return true; }
+      if (showWidgets) { setShowWidgets(false); return true; }
       // CHECKED AFTER the three export sheets/Automatic backups above —
       // they can be open "on top of" this screen (its own rows open
       // them), so a back press has to close the topmost one first.
@@ -4869,7 +5000,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       return false; // nothing open on top — let App.jsx's own fallback close all of Settings
     });
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showBackupExport, showResources, showGlossary, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, registerModuleBackHandler]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showBackupExport, showResources, showGlossary, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, showWidgets, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.
@@ -4971,6 +5102,8 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             not a backup one; sat oddly at the bottom of the export
             list before. */}
         <SettingsRow icon={WifiHigh} label="Data & network" onClick={() => setShowDataNetwork(true)} />
+        {/* ADDED 22 Sep 2026 — Home-screen widgets with per-widget privacy */}
+        <SettingsRow icon={Monitor} label="Widgets" onClick={() => setShowWidgets(true)} />
       </div>
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>General</div>
@@ -5084,6 +5217,9 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       )}
       {showDataNetwork && (
         <DataNetworkScreen onClose={() => setShowDataNetwork(false)} />
+      )}
+      {showWidgets && (
+        <WidgetsScreen onClose={() => setShowWidgets(false)} />
       )}
       {showResources && (
         <ResourcesScreen onClose={() => setShowResources(false)} />

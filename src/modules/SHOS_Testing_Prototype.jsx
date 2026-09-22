@@ -1504,7 +1504,7 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
   }
 
   return (
-    <div style={{ background: T.bg, minHeight: "100vh" }}>
+    <div style={{ background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
       {/* ADDED 19 Aug 2026 — real undo/redo toast, same pattern as
           every other module. */}
       {/* CHANGED — real ask: this sat at top:12, directly on top of

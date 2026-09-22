@@ -32,6 +32,18 @@ import { scheduleNotification, cancelNotification, registerNotificationActionTyp
 import { ACCENTS } from "./designTokens";
 import { nowAsStoredDateTime } from "./dateInputHelpers";
 
+let WidgetBridge = null;
+async function getWidgetBridge() {
+  if (WidgetBridge) return WidgetBridge;
+  try {
+    const { registerPlugin } = await import("@capacitor/core");
+    WidgetBridge = registerPlugin("WidgetBridge");
+  } catch (e) {
+    WidgetBridge = false; // mark as unavailable
+  }
+  return WidgetBridge || null;
+}
+
 // ADDED 3 Sep 2026 — exported (was module-private) — real ask: "clear
 // notification awareness" needs an in-app "medication due" banner
 // (App.jsx), reading the exact same due/upcoming state the real
@@ -88,6 +100,7 @@ export async function syncMedicationReminders() {
       smallIcon: moduleSmallIconName("medication"),
       iconColor: ACCENTS.medication,
     });
+    await updateRefillWidget();
     return { scheduled: true, due };
   }
 
@@ -102,13 +115,37 @@ export async function syncMedicationReminders() {
       smallIcon: moduleSmallIconName("medication"),
       iconColor: ACCENTS.medication,
     });
+    await updateRefillWidget();
     return { scheduled: true, upcoming: earliest };
   }
 
   // No daily meds at all — nothing to schedule, and nothing stale
   // should be left pending either.
   await cancelNotification(NOTIFICATION_IDS.medicationReminder);
+  await updateRefillWidget();
   return { scheduled: false };
+}
+
+async function updateRefillWidget() {
+  try {
+    const { MedicationRepository } = await import("../repositories/medicationRepository");
+    const { getRefillDueMedications } = await import("./medicationCalculations");
+    const { MedicationPreferencesRepository } = await import("../repositories/medicationPreferencesRepository");
+
+    const meds = await MedicationRepository.getAll();
+    const prefs = await MedicationPreferencesRepository.getPreferences();
+    const refillDue = getRefillDueMedications(meds, prefs);
+    const count = refillDue.length;
+    const nextRefill = count > 0 ? refillDue[0].name : "No refills due";
+
+    const bridge = await getWidgetBridge();
+    if (bridge && bridge.updateRefill) {
+      await bridge.updateRefill({ count, nextRefill });
+    }
+  } catch (e) {
+    // Widget bridge not available (web) — ignore
+    console.debug("Widget update skipped:", e);
+  }
 }
 
 // Handlers for the three real actions — called from the app-level

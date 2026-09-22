@@ -1195,7 +1195,7 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
   else if (screen.name === "detail") content = <MeasurementDetail T={T} measurementId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} />;
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "100vh" }}>
+    <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
       {editUndo.toast && (
         <div onClick={editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo}
           role="button" tabIndex={0} aria-live="polite"

@@ -356,7 +356,10 @@ export function lockoutEndsAt(med, lastDoseDate, timingMode = "adaptive") {
 export function getNextNotificationTime(med, lastDoseDate, timingMode = "adaptive") {
   const intervalHours = effectiveDoseIntervalHours(med);
   if (!intervalHours) return null;
-  if (timingMode === "fixed") {
+  // If medication has scheduledTimes set, always use fixed-mode calculation
+  // (user's explicit clock-time intent) regardless of global timingMode.
+  const useFixed = timingMode === "fixed" || (med.scheduledTimes?.length > 0);
+  if (useFixed) {
     const dueMs = fixedModeDueSlot(med, intervalHours, lastDoseDate);
     if (dueMs != null) return new Date(dueMs);
   }
@@ -373,8 +376,11 @@ export function getNextNotificationTime(med, lastDoseDate, timingMode = "adaptiv
 export function nextDoseEstimate(med, lastDoseDate, timingMode = "adaptive") {
   const intervalHours = effectiveDoseIntervalHours(med);
   if (med.usagePattern === "prn" || !intervalHours) return null;
+  // If medication has scheduledTimes set, always use fixed-mode calculation
+  // (user's explicit clock-time intent) regardless of global timingMode.
+  const useFixed = timingMode === "fixed" || (med.scheduledTimes?.length > 0);
   let next = null;
-  if (timingMode === "fixed") {
+  if (useFixed) {
     const dueMs = fixedModeDueSlot(med, intervalHours, lastDoseDate);
     if (dueMs != null) next = new Date(dueMs);
   }
