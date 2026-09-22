@@ -823,4 +823,12 @@ export const ContactRepository = {
     nextContactNumber = computeNextContactNumber(contacts);
     await persist();
   },
+
+  // TEST-ONLY: Reset internal state for integration tests.
+  // This is a test-only export and should never be used in production code.
+  async __testOnlyReset() {
+    contacts = null;
+    loadPromise = null;
+    nextContactNumber = null;
+  },
 };
