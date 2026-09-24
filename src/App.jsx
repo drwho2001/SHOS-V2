@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, Suspense, lazy } from "react";
+import { resolveDeepLinkRoute } from "./calculations/deepLinkRoutes";
 import { useDarkModePreference } from "./calculations/darkModePreference";
 import { NEUTRAL_DARK as DARK } from "./calculations/designTokens";
 // ADDED — real architecture extraction, see each file's own header.
@@ -1710,12 +1711,18 @@ export default function App() {
   // sync. Silently no-ops in any environment without @capacitor/app
   // (browser preview) — shortcuts are an Android-only concept anyway.
   useEffect(() => {
+    // Routes widget taps + App Shortcuts via the pure mapping in
+    // calculations/deepLinkRoutes.js (unit-tested there). Extended 24 Sep
+    // 2026 audit: the old 2-branch version only knew medication/encounter,
+    // so 8 of the 10 widget routes no-op'd even once taps actually delivered
+    // a URL (they never did - providers set action-only intents, fixed
+    // alongside this). clinic-card routes resolve null on purpose (no
+    // App-level opener exists yet - documented open, not silent).
     const routeShortcutUrl = (urlString) => {
-      if (!urlString) return;
-      let url;
-      try { url = new URL(urlString); } catch { return; }
-      if (url.hostname === "medication") handleQuickAdd("medication");
-      else if (url.hostname === "encounter") handleQuickAdd("activity");
+      const route = resolveDeepLinkRoute(urlString);
+      if (!route) return;
+      if (route.type === "quickAdd") handleQuickAdd(route.tab, route.target);
+      else navigateTo(route.tab, route.subTab);
     };
     let listenerHandle = null;
     (async () => {

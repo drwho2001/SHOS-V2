@@ -68,7 +68,7 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
 
         // Main click opens full Clinic Card
         Intent mainIntent = new Intent(context, com.shos.app.MainActivity.class);
-        mainIntent.setAction("shos://clinic-card");
+        mainIntent.setData(Uri.parse("com.shos.app://clinic-card"));
         mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         android.app.PendingIntent mainPendingIntent = android.app.PendingIntent.getActivity(
             context, 0, mainIntent, android.app.PendingIntent.FLAG_IMMUTABLE);
@@ -85,7 +85,7 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
 
         // Reveal click
         Intent revealIntent = new Intent(context, com.shos.app.MainActivity.class);
-        revealIntent.setAction("shos://widget/reveal-clinic");
+        revealIntent.setData(Uri.parse("com.shos.app://widget/reveal-clinic"));
         revealIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         android.app.PendingIntent revealPendingIntent = android.app.PendingIntent.getActivity(
             context, 2, revealIntent, android.app.PendingIntent.FLAG_IMMUTABLE);

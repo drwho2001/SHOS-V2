@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.widget.RemoteViews;
+import android.net.Uri;
 import com.shos.app.R;
 
 public class AppointmentWidgetProvider extends AppWidgetProvider {
@@ -40,7 +41,7 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
 
         // Click opens Clinic Visits tab
         Intent intent = new Intent(context, com.shos.app.MainActivity.class);
-        intent.setAction("shos://clinic-visits");
+        intent.setData(Uri.parse("com.shos.app://clinic-visits"));
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
             context, 0, intent, android.app.PendingIntent.FLAG_IMMUTABLE);

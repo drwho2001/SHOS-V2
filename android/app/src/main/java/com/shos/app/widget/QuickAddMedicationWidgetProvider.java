@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViews;
+import android.net.Uri;
 import com.shos.app.R;
 
 public class QuickAddMedicationWidgetProvider extends AppWidgetProvider {
@@ -21,7 +22,7 @@ public class QuickAddMedicationWidgetProvider extends AppWidgetProvider {
 
         // Click opens Log Medication directly
         Intent intent = new Intent(context, com.shos.app.MainActivity.class);
-        intent.setAction("shos://medication/log");
+        intent.setData(Uri.parse("com.shos.app://medication/log"));
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
             context, 0, intent, android.app.PendingIntent.FLAG_IMMUTABLE);
