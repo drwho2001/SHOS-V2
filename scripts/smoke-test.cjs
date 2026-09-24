@@ -92,6 +92,7 @@ async function dismissTransientBanners(page) {
   await page.locator('[aria-label="Dismiss refill banner"]').first().click({ timeout: 2000 }).catch(() => {});
   await page.locator('[aria-label="Dismiss testing banner"]').first().click({ timeout: 2000 }).catch(() => {});
   await page.locator('[aria-label="Dismiss clinic visit banner"]').first().click({ timeout: 2000 }).catch(() => {});
+  await page.locator('[aria-label="Dismiss vaccination banner"]').first().click({ timeout: 2000 }).catch(() => {});
   await page.locator('[aria-label="Dismiss update notice"]').first().click({ timeout: 2000 }).catch(() => {});
   await page.waitForTimeout(300);
 }
@@ -112,12 +113,31 @@ async function dismissTransientBanners(page) {
 // click, pulled into one shared helper, closes it everywhere at once
 // rather than patching only the 2 sites CI happened to catch this
 // time — the other 5 were equally exposed, just not triggered yet.
+// HARDENED 24 Sep 2026 — real CI flake ([3/15] timed out waiting for
+// "Manage lists" identically on two consecutive mains): the due-reminders
+// stack is position:fixed top:0 (see App.jsx) and COVERS Home's header gear
+// while visible, so the (356,40) gear click hits the banner and Settings
+// never opens — a silent miss, then a timeout far from the real cause.
+// Dismissal is temporary (reappears on the 60s poll), and CI's slower pace
+// makes a re-appeared banner far more likely by test 3 than locally, which
+// is why this only ever failed in CI. Dismiss first, and verify Settings
+// actually opened afterward, retrying once — closes the whole class of
+// silent coordinate-click misses at every call site, not just test 3.
 async function goHomeThenOpenSettings(page) {
+  await dismissTransientBanners(page);
   await page.mouse.click(195, 800);
   await page.waitForTimeout(500);
   await page.evaluate(() => window.scrollTo(0, 0));
+  await dismissTransientBanners(page);
   await page.mouse.click(356, 40);
   await page.waitForTimeout(600);
+  const opened = await page.locator("text=Manage lists").waitFor({ timeout: 2500 }).then(() => true).catch(() => false);
+  if (!opened) {
+    await dismissTransientBanners(page);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.mouse.click(356, 40);
+    await page.waitForTimeout(600);
+  }
 }
 
 async function testMedicationReasonSideEffects(page) {
@@ -547,7 +567,11 @@ async function testTabReorder(page) {
   await dismissTransientBanners(page);
   await goHomeThenOpenSettings(page);
   await page.locator("text=Preferences", { exact: true }).first().click({ timeout: 5000 });
-  await page.waitForTimeout(500);
+  // HARDENED 24 Sep 2026 — PreferencesScreen is a lazy chunk since the
+  // Settings split: first open needs a chunk fetch the old fixed 500ms
+  // wait couldn't survive (proven live: control present at 2500ms, absent
+  // at 500ms, zero crash). Wait for the marker itself instead.
+  await page.locator("text=Bottom nav tab order").waitFor({ timeout: 8000 });
 
   assert(await page.locator("text=Bottom nav tab order").isVisible(), "the tab-order control renders in Settings > Preferences");
 
@@ -717,7 +741,10 @@ async function testBackupMigratesOldFieldShape(page) {
   await page.locator("text=Support", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(400);
   await page.locator("text=Developer tools", { exact: true }).first().click({ timeout: 5000 });
-  await page.waitForTimeout(400);
+  // HARDENED 24 Sep 2026 — same lazy-first-open class as test 10 above:
+  // "Broken references" only exists on the Developer tools screen itself,
+  // so waiting for it proves the chunk landed (the row label alone can't).
+  await page.locator("text=Broken references").waitFor({ timeout: 8000 });
   const devToolsText = await page.evaluate(() => document.body.innerText);
   assert(devToolsText.includes("Medications") && /Medications\D*1\b/.test(devToolsText.replace(/\n/g, " ")), "the Replace All import genuinely landed (Developer Tools shows exactly 1 real medication, the migrated one)");
 
@@ -803,7 +830,10 @@ async function testBackupImportDropsGarbageRecords(page) {
   await page.locator("text=Support", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(400);
   await page.locator("text=Developer tools", { exact: true }).first().click({ timeout: 5000 });
-  await page.waitForTimeout(400);
+  // HARDENED 24 Sep 2026 — same lazy-first-open class as test 10 above:
+  // "Reset all app data" only exists on the Developer tools screen itself,
+  // so waiting for it proves the chunk landed (the row label alone can't).
+  await page.locator("text=Reset all app data").waitFor({ timeout: 8000 });
   const devToolsText = await page.evaluate(() => document.body.innerText);
   assert(/Contacts\D*1\b/.test(devToolsText.replace(/\n/g, " ")), "exactly the one real valid contact landed — every malformed element (null/string/number/boolean/nested-array) was dropped, not silently corrupting the count");
 }
@@ -861,6 +891,7 @@ async function testPinRecoveryFlow(page) {
   await textInputs.nth(1).fill("correct-horse-battery");
   await page.locator('button:has-text("Save")').click({ timeout: 5000 });
   await page.waitForTimeout(400);
+  await page.waitForFunction(() => document.body.innerText.includes("Change recovery string"), null, { timeout: 15000 });
   assert(await page.locator("text=Change recovery string").count() > 0, "saving a recovery string switches the section to 'Change recovery string'");
 
   await page.reload({ waitUntil: "networkidle" });
@@ -875,6 +906,7 @@ async function testPinRecoveryFlow(page) {
   await page.fill('input[placeholder="Confirm new PIN"]', "9999");
   await page.locator('button:has-text("Unlock and set new PIN")').click({ timeout: 5000 });
   await page.waitForTimeout(600);
+  await page.waitForFunction(() => document.body.innerText.includes("t right"), null, { timeout: 15000 });
   bodyText = await page.evaluate(() => document.body.innerText);
   assert(bodyText.includes("wasn't right"), "a wrong recovery string is rejected — the vault itself refuses it, not a string comparison");
 
@@ -883,6 +915,7 @@ async function testPinRecoveryFlow(page) {
   await page.fill('input[placeholder="Confirm new PIN"]', "9999");
   await page.locator('button:has-text("Unlock and set new PIN")').click({ timeout: 5000 });
   await page.waitForTimeout(800);
+  await page.waitForFunction(() => !document.body.innerText.includes("Enter PIN to unlock") && !document.body.innerText.includes("Unlock with your recovery string"), null, { timeout: 15000 });
   bodyText = await page.evaluate(() => document.body.innerText);
   assert(!bodyText.includes("Enter PIN to unlock") && !bodyText.includes("Unlock with your recovery string"), "the real recovery string unlocks the vault and sets a new PIN in the same step");
 
@@ -891,11 +924,13 @@ async function testPinRecoveryFlow(page) {
   await page.fill('input[type="password"]', "2468");
   await page.locator('button:has-text("Unlock")').click({ timeout: 5000 });
   await page.waitForTimeout(500);
+  await page.waitForFunction(() => document.body.innerText.includes("Incorrect PIN"), null, { timeout: 15000 });
   bodyText = await page.evaluate(() => document.body.innerText);
   assert(bodyText.includes("Incorrect PIN"), "the OLD PIN no longer works after a recovery-triggered reset");
   await page.fill('input[type="password"]', "9999");
   await page.locator('button:has-text("Unlock")').click({ timeout: 5000 });
   await page.waitForTimeout(700);
+  await page.waitForFunction(() => !document.body.innerText.includes("Enter PIN to unlock"), null, { timeout: 15000 });
   bodyText = await page.evaluate(() => document.body.innerText);
   assert(!bodyText.includes("Enter PIN to unlock"), "the NEW PIN set during recovery genuinely gates the vault going forward");
 
@@ -1015,41 +1050,14 @@ async function testServiceWorkerAutoUpdate(browser) {
   await context.close();
 }
 
-// ADDED 22 Sep 2026 — deep-link baseline: verify all shos:// routes work
-// before AND after lazy-loading changes. Runs once on the shared page
-// (after dismissOnboarding) so it covers the initial state, and can be
-// re-run after lazy-loading is implemented to catch regressions.
-async function testDeepLinkBaseline(page) {
-  console.log("\n[DEEP-LINK] Baseline — all shos:// routes resolve correctly");
-  
-  const deepLinks = [
-    { path: "shos://medication", name: "Medication tab" },
-    { path: "shos://clinic-visits", name: "Clinic Visits tab" },
-    { path: "shos://encounter/add", name: "Add Encounter" },
-    { path: "shos://contact/add", name: "Add Contact" },
-    { path: "shos://medication/log", name: "Log Medication" },
-    { path: "shos://healthcare?subTab=testing", name: "Testing sub-tab" },
-    { path: "shos://clinic-card", name: "Clinic Card" },
-    { path: "shos://episodes", name: "Episodes" },
-    { path: "shos://settings", name: "Settings" },
-    { path: "shos://search", name: "Global Search" },
-  ];
+// REMOVED 24 Sep 2026 — testDeepLinkBaseline ran here. Removed as stillborn,
+// not flaky: it navigated desktop Chromium to APP_URL+"shos://..." (missing
+// "/", a deterministic page.goto protocol error), the app has no shos://
+// handling anywhere (native scheme is com.shos.app://, only the medication +
+// encounter quick-add hostnames implemented), and 8 of its 10 routes have zero
+// implementation. It never passed once. Re-add a real deep-link test only
+// alongside a real web-side route parser or an on-device intent harness.
 
-  for (const { path, name } of deepLinks) {
-    console.log(`  Testing ${name} (${path})`);
-    await page.goto(`${APP_URL}${path}`, { waitUntil: "networkidle", timeout: 15000 });
-    await page.waitForTimeout(500);
-    await dismissTransientBanners(page);
-    
-    // Verify we didn't land on an error boundary
-    const errorText = await page.locator("text=Something went wrong").count();
-    assert(errorText === 0, `${name}: did not land on error boundary`);
-    
-    // Verify we're not stuck on a blank/loading screen
-    const hasContent = await page.evaluate(() => document.body.innerText.trim().length > 0);
-    assert(hasContent, `${name}: page has content`);
-  }
-}
 
 (async () => {
   const browser = await chromium.launch({ executablePath: PLAYWRIGHT_EXECUTABLE });
@@ -1074,7 +1082,6 @@ async function testDeepLinkBaseline(page) {
     await testBackupMigratesOldFieldShape(page);
     await testPinRecoveryFlow(page);
     await testServiceWorkerAutoUpdate(browser);
-    await testDeepLinkBaseline(page);
     await testBackupImportDropsGarbageRecords(page);
   } catch (err) {
     failed = true;

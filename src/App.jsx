@@ -2301,6 +2301,10 @@ export default function App() {
         </div>
       )}
 
+      {/* Lazy overlays suspend on first open until their chunk loads — without this
+          boundary that first open throws React #426 straight to the ErrorBoundary
+          (found live 24 Sep 2026: opening Settings crashed the app). */}
+      <Suspense fallback={<div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? DARK.bg : NEUTRAL.bg, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: "'Inter', sans-serif", fontSize: 13 }}>Loading...</div>}>
       {showSettings && (
         <SettingsScreen onClose={() => { setShowSettings(false); setSettingsInitialScreen(null); }} onExport={exportBackup} onImportClick={handleImportClick} status={status} onNavigateToRecord={navigateToRecord} initialScreen={settingsInitialScreen} registerModuleBackHandler={registerModuleBackHandler} onStartTour={() => {
           // Real reason to force Home here rather than trusting whatever
@@ -2317,6 +2321,7 @@ export default function App() {
       {showSearch && (
         <GlobalSearchScreen onClose={() => setShowSearch(false)} onNavigate={navigateToRecord} />
       )}
+      </Suspense>
       {/* ADDED 19 Aug 2026 — real ask: App Lock setup prompt. Renders
           as an overlay ON TOP of the real, already-interactive app
           underneath — never a full-screen replacement the way the

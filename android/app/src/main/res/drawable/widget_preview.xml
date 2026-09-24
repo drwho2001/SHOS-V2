@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget picker preview placeholder (24 Sep 2026): all 10 widget_info.xml
+     files reference @drawable/widget_preview, which never existed, so the
+     APK build failed at resource linking (verified in CI log). Simple dark
+     rounded card with teal accent bar, matching the app's widget look.
+     Per-widget live previews can replace it later without touching callers. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="80dp"
+    android:viewportWidth="120"
+    android:viewportHeight="80">
+    <path
+        android:fillColor="#1B1B1F"
+        android:pathData="M0,8 Q0,0 8,0 H112 Q120,0 120,8 V72 Q120,80 112,80 H8 Q0,80 0,72 Z" />
+    <path
+        android:fillColor="#008585"
+        android:pathData="M12,14 H28 Q30,14 30,16 V64 Q30,66 28,66 H12 Q10,66 10,64 V16 Q10,14 12,14 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85"
+        android:pathData="M40,22 H100 Q102,22 102,24 V30 Q102,32 100,32 H40 Q38,32 38,30 V24 Q38,22 40,22 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.45"
+        android:pathData="M40,40 H84 Q86,40 86,42 V48 Q86,50 84,50 H40 Q38,50 38,48 V42 Q38,40 40,40 Z" />
+</vector>
