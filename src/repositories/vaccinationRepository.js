@@ -36,6 +36,7 @@ export const DEFAULT_VACCINATION = {
   vaccine: "",
   reason: [],
   doseNumber: null,
+  time: null,
   date: null,
   provider: "",
   nextDue: null,
@@ -43,6 +44,7 @@ export const DEFAULT_VACCINATION = {
   notes: "",
   symptomIds: [],      // → SymptomsRegistry, real and wired
   clinicVisitIds: [],  // → ClinicVisitsRepository, real and wired
+  doses: [],
   isArchived: false,
 };
 

@@ -3603,7 +3603,33 @@ this date; summarized here for durability.
   plain, non-colored header). Changing Encounters alone to 14px would
   trade one inconsistency for a different one against that broader,
   more-established pattern â€” left alone per this project's own
-  standing "avoid over-normalisation" rule, not an oversight.
+standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (24 Sep 2026 - device-feedback batch: Clinic Visit meds sections, vaccine dose series, Testing colours/filter, Episodes full-page, anonymise link, Settings buffer)
+
+Real ask: device feedback from build `2ea84ef`, worked as one batch. Nine items shipped together. Last clean full verification in-session: build succeeds, 81 unit tests pass, eslint clean (lint/test runners timed out late in the session from sandbox resource exhaustion, not code errors).
+
+**Clinic Visit medication sections + restock field.** New `medicationsPrescribedIds` and `restockMedicationIds` fields (`clinicVisitsRepository.js` `DEFAULT_CLINIC_VISIT`, defensive-default merge covers old records). Edit sheet splits medications into two real `SectionCard`s - "Administered in clinic" (tracker-linked + ad-hoc) vs "Prescribed to take home" (new tracker-linked picker) - plus a "Restock medications" section. Detail view renders all three, resolving prescribed/restock names via a new `allMeds` lookup.
+
+**Clinic Visit location placeholder.** "Conifer Sexual Health Clinic" replaced with "56 Dean Street, London" - Conifer identifies Hull, wrong city for seed/demo data. The "Use current location" Nominatim reverse-geocode path already existed and is unchanged.
+
+**Vaccines dose-by-dose series.** New `doses[]` array on the vaccination record (`vaccinationRepository.js`, plus a `time` field) with legacy migration: an old record carrying `doseNumber`+`date` but no `doses` migrates into a single-element series on first edit. New `DoseByDose` component in the edit sheet (per-dose date/time/provider/site/notes/nextDue, add/remove with renumbering, "Add dose / booster" button). Detail view shows a "Dose series" card per dose with overdue highlighting + an "Add dose / booster" shortcut. Grouping by vaccine series in the list view is still open - each record is still its own row.
+
+**Testing colours + archived fade.** Positive already rendered red and negative green via `computeTestDotColor`; the gap was archived records - the dot and result text now fade to 50% opacity when `isRecentTest` is false (both list `TestRow` and `TestDetail`), while keeping the true result colour. Added a date filter dropdown to `TestingLanding` (All time / 30 / 90 / 180 / 365 days), applied before the text search.
+
+**Anonymise mode link from Contacts settings.** New "Anonymise mode" row in `ContactsSettingsScreen` that deep-links straight to Settings > Privacy via a new `onOpenPrivacySettings` prop threaded ContactsModule <- App.jsx (`openSettingsToPrivacy`, mirrors the existing `openSettingsToCalendar` pattern) and a new `initialScreen === "privacy"` gate on `SettingsScreen`'s `showPrivacy` state.
+
+**Face ID.** Verified already working - `biometricAuthService.js` uses `@aparajita/capacitor-biometric-auth` which handles Face ID and fingerprint through the same native API; no code change needed.
+
+**Settings bottom buffer.** All `position: fixed` overlay screens app-wide bumped from `calc(48px + env(safe-area-inset-bottom))` to `calc(80px + env(safe-area-inset-bottom))` so the last row is reachable above the device gesture/nav bar (~36 files).
+
+**Episodes full-page + scroll.** `TimelineModule` converted from a min-height div to a real full-screen overlay (`position: fixed; inset: 0`, `role="dialog"`, `overflowY: auto`); body scroll locked via effect in both entry points (Home + Healthcare).
+
+**Contacts social icons.** Checked, no change needed - `MethodBadge` already renders unique brand marks (WhatsApp/Snapchat/Fabguys/Fabswingers/Recon), generic chat bubble only for unknown methods.
+
+**Notch (build 2ea84ef).** Owner confirms the 100dvh work reads good on-device; Item 7 stays open only for final confirmation, not new work.
+
+Still open, not attempted this round: extracting the 11 remaining Settings screens to `src/modules/settings/` (9 extracted so far, none yet wired into the main Settings file - `src/modules/settings/*.jsx` plus 4 stray `SHOS_*_Prototype.jsx` files in `src/modules/` are untracked WIP, deliberately uncommitted), the 5-audit findings batch, Clinic-visit future-appointment to real linked visit, reason-field free-text automap, and Item 7 device confirmation.
 
 ## Recently shipped (21 Sep 2026 â€” async medication/storage layer conversion)
 

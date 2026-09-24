@@ -347,7 +347,7 @@ function ImportSharedProfileSheet({ T, onClose, onImported }) {
   };
 
   return (
-    <div role="dialog" aria-label="Import shared profile" ref={importSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
+    <div role="dialog" aria-label="Import shared profile" ref={importSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px", position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16, color: T.textPrimary }}>Import shared profile</span>
@@ -3029,12 +3029,12 @@ function ShowRoleOnCardsToggleCard({ T }) {
   );
 }
 
-function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
+function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacySettings, T }) {
   const settingsRef = useRef(null);
   useEffect(() => { settingsRef.current?.focus(); }, []);
 
   return (
-    <div role="dialog" aria-label="Contacts settings" ref={settingsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div role="dialog" aria-label="Contacts settings" ref={settingsRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Contacts settings</h1>
@@ -3042,9 +3042,15 @@ function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
       <div style={{ padding: 16 }}>
         <div style={{ marginBottom: 12 }}><InactiveThresholdCard T={T} /></div>
         <div style={{ marginBottom: 20 }}><ShowRoleOnCardsToggleCard T={T} /></div>
-        {/* CHANGED 15 Sep 2026 — matches MedicationSettingsScreen's own
-            established convention: every per-module settings screen
-            ends with a link back to general/app Settings. */}
+        {/* ADDED — real ask: link to Privacy settings for Anonymise mode */}
+        {onOpenPrivacySettings && (
+          <div onClick={onOpenPrivacySettings} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, background: T.surface, border: `1px solid ${T.border}`, marginBottom: 12, cursor: "pointer" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 14, color: T.textPrimary }}>Anonymise mode</span>
+            </div>
+            <ChevronRight size={16} color={T.textDisabled} />
+          </div>
+        )}
         <div onClick={onOpenGeneralSettings} style={{ textAlign: "center", fontSize: 13, color: T.textSecondary, textDecoration: "underline", cursor: "pointer", padding: "12px 0" }}>
           Go to general app settings
         </div>
@@ -3053,7 +3059,7 @@ function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
   );
 }
 
-export default function ContactsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, onOpenSettings, registerModuleBackHandler } = {}) {
+export default function ContactsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, onOpenSettings, onOpenPrivacySettings, registerModuleBackHandler } = {}) {
   const [contacts, setContacts] = useLoadedState(() => loadContacts(), [], []);
   // FIXED — real crash found via a live bulk-delete/bulk-archive audit:
   // loadContacts() returns ContactRepository.getAll(), async since this
@@ -3242,7 +3248,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
           <ImportSharedProfileSheet T={T} onClose={() => setShowImportProfile(false)} onImported={refresh} />
         )}
         {showContactsSettings && (
-          <ContactsSettingsScreen T={T} onClose={() => setShowContactsSettings(false)} onOpenGeneralSettings={() => { setShowContactsSettings(false); onOpenSettings?.(); }} />
+          <ContactsSettingsScreen T={T} onClose={() => setShowContactsSettings(false)} onOpenGeneralSettings={() => { setShowContactsSettings(false); onOpenSettings?.(); }} onOpenPrivacySettings={onOpenPrivacySettings} />
         )}
       </div>
     </div>

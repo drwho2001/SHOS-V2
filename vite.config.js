@@ -1,6 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const pkg = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8"));
 
 // ADDED — real ask: "getting version back to fixes already done" —
 // package.json's version had never once been bumped since the initial
@@ -29,6 +33,7 @@ export default defineConfig({
     host: true,
   },
   define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_SHA__: JSON.stringify(resolveBuildSha()),
   },
   build: {

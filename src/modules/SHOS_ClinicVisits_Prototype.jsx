@@ -399,7 +399,7 @@ function ClinicVisitLocationField({ value, onChange, T }) {
           ))}
         </div>
       )}
-      <input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder="e.g. Conifer Sexual Health Clinic — leave blank if unknown"
+      <input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder="e.g. 56 Dean Street, London — leave blank if unknown"
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
     </div>
   );
@@ -682,7 +682,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
   };
 
   return (
-    <div role="dialog" aria-label={isNew ? "New clinic visit" : "Edit clinic visit"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
+    <div role="dialog" aria-label={isNew ? "New clinic visit" : "Edit clinic visit"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
           module banner title. */}
       {/* ADDED 16 Sep 2026 — real ask (#82, cross-module consistency
@@ -767,8 +767,14 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
             </div>
           )}
 
-          <RelationPicker label="Medications given (from your Medication tracker)" value={form.medicationsGivenIds} onChange={set("medicationsGivenIds")} items={allMeds} T={T} placeholder="No medications in registry" />
-          <AdHocMedicationsManager value={form.adHocMedicationsGiven} onChange={set("adHocMedicationsGiven")} T={T} />
+          <SectionCard title="Medications — Administered in clinic" T={T}>
+            <RelationPicker label="From your Medication tracker" value={form.medicationsGivenIds} onChange={set("medicationsGivenIds")} items={allMeds} T={T} placeholder="No medications in registry" />
+            <AdHocMedicationsManager value={form.adHocMedicationsGiven} onChange={set("adHocMedicationsGiven")} T={T} />
+          </SectionCard>
+
+          <SectionCard title="Medications — Prescribed to take home" T={T}>
+            <RelationPicker label="From your Medication tracker" value={form.medicationsPrescribedIds} onChange={set("medicationsPrescribedIds")} items={allMeds} T={T} placeholder="No medications in registry" />
+          </SectionCard>
 
           <RelationPicker label="Vaccinations given" value={form.vaccinationsGivenIds} onChange={set("vaccinationsGivenIds")} items={allVaccinations} T={T} placeholder="No vaccinations logged yet" />
 
@@ -822,6 +828,10 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
               placeholder="e.g. Discussed PrEP adherence, no concerns raised. Advised to continue current regimen."
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
+        </SectionCard>
+
+        <SectionCard title="Restock medications" T={T}>
+          <RelationPicker label="Medications to restock after this visit" value={form.restockMedicationIds} onChange={set("restockMedicationIds")} items={allMeds} T={T} placeholder="No medications in registry" />
         </SectionCard>
 
         {!isNew && (
@@ -881,6 +891,8 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
     const resolved = await Promise.all(visit.medicationsGivenIds.map((id) => MedicationRepository.getById(id)));
     return resolved.map((m) => m?.name).filter(Boolean);
   }, [visit], []);
+  // ADDED — all medications for resolving prescribed medication names
+  const allMeds = useLoadedMemo(async () => (await MedicationRepository.getAll()).filter((m) => !m.isArchived).map((m) => ({ id: m.id, name: m.name })), [], []);
   // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry/
   // ResultsRegistry are now async — same hoisted-above-the-guard
   // treatment as everything else above. resultNameById is also reused
@@ -957,6 +969,15 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
               ))}
             </div>
           )}
+          {visit.medicationsPrescribedIds?.length > 0 && (
+            <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Prescribed to take home</div>
+              {visit.medicationsPrescribedIds.map((id) => {
+                const m = allMeds.find((m) => m.id === id);
+                return m ? <div key={id} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{m.name}</div> : null;
+              })}
+            </div>
+          )}
           <ReadRow label="Vaccinations given" value={vaccinationEntries.map((v) => v.title || v.vaccine)} T={T} />
           <ReadRow label="Symptom types discussed" value={symptomNames} T={T} />
           {symptomLogEntries.length > 0 && (
@@ -988,6 +1009,15 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
           {visit.clinicalImpression && <ReadRow label="Clinical impression" value={visit.clinicalImpression} T={T} />}
           <ReadRow label="Clinical notes" value={visit.clinicalNotes} T={T} />
         </SectionCard>
+
+        {visit.restockMedicationIds?.length > 0 && (
+          <SectionCard title="Restock medications" T={T}>
+            {visit.restockMedicationIds.map((id) => {
+              const m = allMeds.find((m) => m.id === id);
+              return m ? <ReadRow key={id} label="Restock" value={m.name} T={T} /> : null;
+            })}
+          </SectionCard>
+        )}
 
         {visit.attachments.length > 0 && (
           <SectionCard title="Attachments" T={T}>

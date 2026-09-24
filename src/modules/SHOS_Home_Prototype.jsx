@@ -315,6 +315,15 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   };
   const doxyBannerVisible = doxyStatus.active && !doxyTempDismissed && !doxyPermanentlyDismissed;
 
+  // ADDED — lock body scroll when Timeline modal is open
+  useEffect(() => {
+    if (showTimeline) {
+      const originalStyle = window.document.body.style.overflow;
+      window.document.body.style.overflow = 'hidden';
+      return () => { window.document.body.style.overflow = originalStyle; };
+    }
+  }, [showTimeline]);
+
   // CHANGED 3 Sep 2026 — real bug found auditing notification gaps:
   // this used to call requestNotificationPermission() directly, every
   // single app open, from inside a plain useEffect — no user gesture
@@ -1120,7 +1129,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         // bottom) taller than the viewport was simply unreachable, no
         // way to scroll to it at all. Matches every other module's
         // overlay wrapper elsewhere in this file.
-        <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }}>
+        <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }}>
           <div style={{ width: "100%" }}>
             <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>

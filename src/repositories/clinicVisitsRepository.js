@@ -138,6 +138,10 @@ export const DEFAULT_CLINIC_VISIT = {
   attachments: [],         // real, wired — same shape/pattern as Testing's
   // CHANGED 19 Aug 2026 — now real, see file header.
   vaccinationsGivenIds: [],
+  // ADDED — medications prescribed to take home (not administered in clinic)
+  medicationsPrescribedIds: [],
+  // ADDED — medications that need restocking after this visit
+  restockMedicationIds: [],
   isArchived: false,
 };
 

@@ -1067,6 +1067,7 @@ export default function App() {
   // just the main Settings menu.
   const [settingsInitialScreen, setSettingsInitialScreen] = useState(null);
   const openSettingsToCalendar = () => { setSettingsInitialScreen("calendar"); setShowSettings(true); };
+  const openSettingsToPrivacy = () => { setSettingsInitialScreen("privacy"); setShowSettings(true); };
   const [showSearch, setShowSearch] = useState(false);
   // ADDED 9 Sep 2026 — the interactive tour, replayable from Settings >
   // Guide (settingsInitialScreen === "guide" doesn't exist as its own
@@ -2200,7 +2201,7 @@ export default function App() {
             <ActiveModule key={`${active}-${navResetCount}`} openAddOnMount={quickAdd} onConsumedQuickAdd={() => { setQuickAdd(false); setQuickAddTarget(null); }} quickAddTarget={quickAddTarget}
               openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}
               prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
-              onOpenSettings={() => setShowSettings(true)} registerModuleBackHandler={registerModuleBackHandler}
+              onOpenSettings={() => setShowSettings(true)} onOpenPrivacySettings={openSettingsToPrivacy} registerModuleBackHandler={registerModuleBackHandler}
               markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "healthcare"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
           </Suspense>
         ) : (

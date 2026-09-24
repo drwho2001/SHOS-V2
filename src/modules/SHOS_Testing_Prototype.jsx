@@ -705,7 +705,7 @@ function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, on
   };
 
   return (
-    <div role="dialog" aria-label={isNew ? "New test" : "Edit test"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
+    <div role="dialog" aria-label={isNew ? "New test" : "Edit test"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }}>
       {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
           module banner title, matching every other module screen. */}
       {/* ADDED 16 Sep 2026 — real ask (#82, cross-module consistency
@@ -960,6 +960,7 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   const resultNames = (test.resultIds || []).map((id) => resultNameById.get(id)).filter(Boolean);
   const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
   const resultPending = test.resultDate && new Date(test.resultDate) > new Date() && !revealEarly;
+  const isArchived = !isRecentTest(test, allTests || [test]);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -989,10 +990,10 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
               — the fix here just hadn't reached this screen too.
               Shares the same recency-aware logic as the list row now
               (see computeTestDotColor's own comment). */}
-          <span style={{ width: 10, height: 10, borderRadius: radius.full, background: computeTestDotColor(test, allTests || [test], T, resultNameById, revealEarly), display: "inline-block" }} />
-          <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{test.title || "Untitled test"}</h1>
+          <span style={{ width: 10, height: 10, borderRadius: radius.full, background: computeTestDotColor(test, allTests || [test], T, resultNameById, revealEarly), display: "inline-block", opacity: isArchived ? 0.5 : 1 }} />
+          <h1 style={{ ...TYPE.recordTitle, margin: 0, color: isArchived ? T.textSecondary : T.textPrimary }}>{test.title || "Untitled test"}</h1>
         </div>
-        <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>{formatDate(test.date)}</div>
+        <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>{formatDate(test.date)}</div>
 
         <SectionCard title="Overview" T={T}>
           {/* MOVED — real ask: Result date should read near the top,
@@ -1156,12 +1157,19 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
   // ADDED 26 Aug 2026 — real ask: search within module, rolled out to
   // every module that didn't already have it (Contacts/Activity did).
   const [query, setQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState("all");
   const sorted = useMemo(() => {
-    const base = [...tests].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    let base = [...tests].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    // Apply date filter
+    if (dateFilter !== "all") {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - parseInt(dateFilter, 10));
+      base = base.filter((t) => t.date && new Date(t.date) >= cutoff);
+    }
     const q = query.trim().toLowerCase();
     if (!q) return base;
     return base.filter((t) => [t.title, t.setting, ...(t.testingFor || []), ...(t.resultIds || []).map((id) => resultNameById.get(id))].filter(Boolean).some((v) => v.toLowerCase().includes(q)));
-  }, [tests, query, resultNameById]);
+  }, [tests, query, dateFilter, resultNameById]);
   // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
   // to every module.
   const [selectMode, setSelectMode] = useState(false);
@@ -1277,8 +1285,22 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
       )}
       {/* ADDED 26 Aug 2026 — real ask: search within module. */}
       <div style={{ padding: "8px 16px 0" }}>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search tests"
-          style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search tests"
+              style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+          </div>
+          <div style={{ minWidth: 180 }}>
+            <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}
+              style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}>
+              <option value="all">All time</option>
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="180">Last 6 months</option>
+              <option value="365">Last year</option>
+            </select>
+          </div>
+        </div>
       </div>
       <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
         {sorted.length > 0 ? `${sorted.length} tests${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No tests match" : "No tests logged"}
@@ -1376,7 +1398,7 @@ function TestRow({ t, tests, resultNameById, T, selectMode, selectedIds, toggleS
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ width: 8, height: 8, borderRadius: radius.full, background: dotColor, display: "inline-block" }} />
+        <span style={{ width: 8, height: 8, borderRadius: radius.full, background: dotColor, display: "inline-block", opacity: isArchived ? 0.5 : 1 }} />
         <span style={{ fontSize: 15, fontWeight: 600, color: isArchived ? T.textSecondary : T.textPrimary }}>{t.title || "Untitled test"}</span>
         {t.mostRecent && <Check size={13} color={T.healthcareBlue} />}
       </div>
@@ -1385,9 +1407,9 @@ function TestRow({ t, tests, resultNameById, T, selectMode, selectedIds, toggleS
         <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2 }}>{t.setting}</div>
       )}
       {resultPending ? (
-        <div style={{ fontSize: 12, color: T.textDisabled, marginLeft: 16, marginTop: 2, fontStyle: "italic" }}>Pending — expected {formatDate(t.resultDate)}</div>
+        <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textDisabled, marginLeft: 16, marginTop: 2, fontStyle: "italic", opacity: isArchived ? 0.5 : 1 }}>Pending — expected {formatDate(t.resultDate)}</div>
       ) : resultNames.length > 0 && (
-        <div style={{ fontSize: 12, color: isPositive ? T.actionRed : isNegative ? T.actionGreenText : ACTION.gold, marginLeft: 16, marginTop: 2, fontWeight: isPositive || isNegative ? 700 : 400 }}>{resultNames.join(", ")}</div>
+        <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : (isPositive ? T.actionRed : isNegative ? T.actionGreenText : ACTION.gold), marginLeft: 16, marginTop: 2, fontWeight: isPositive || isNegative ? 700 : 400, opacity: isArchived ? 0.5 : 1 }}>{resultNames.join(", ")}</div>
       )}
       </div>
     </div>

@@ -141,6 +141,16 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
     })();
   }, [dataVersion]);
 
+  // ADDED — lock body scroll when Timeline modal is open (matches Home's
+  // own wrapper — both are entry points into the same TimelineModule).
+  useEffect(() => {
+    if (showTimeline) {
+      const originalStyle = window.document.body.style.overflow;
+      window.document.body.style.overflow = 'hidden';
+      return () => { window.document.body.style.overflow = originalStyle; };
+    }
+  }, [showTimeline]);
+
   const SummaryStat = ({ label, value, alert }) => (
     <div style={{ flex: 1, textAlign: "center" }}>
       <div style={{ fontSize: 22, fontWeight: 700, color: alert && value > 0 ? ACTION.red : T.healthcareBlue }}>{value}</div>
@@ -297,7 +307,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         // comment) but never carried over here — Healthcare is the
         // OTHER real entry point into Episodes, so it had the identical
         // gap independently.
-        <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", zIndex: 210, overflowY: "auto", display: "flex", justifyContent: "center" }}>
+        <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", zIndex: 210, overflowY: "auto", display: "flex", justifyContent: "center" }}>
           <div style={{ width: "100%" }}>
             <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>

@@ -23,7 +23,7 @@ export default [
       sourceType: "module",
       // __BUILD_SHA__ is a real Vite `define` build-time constant
       // (vite.config.js), not a genuine undefined-global bug.
-      globals: { ...globals.browser, ...globals.node, __BUILD_SHA__: "readonly" },
+      globals: { ...globals.browser, ...globals.node, __BUILD_SHA__: "readonly", __APP_VERSION__: "readonly" },
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
     plugins: {

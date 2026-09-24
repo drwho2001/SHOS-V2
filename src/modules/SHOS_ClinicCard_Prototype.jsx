@@ -342,7 +342,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // Shows recent vaccinations plus any overdue boosters/next-dues in
   // red — same Action State convention as the rest of this screen.
   const vaccinationsRaw = useLoadedMemo(() => VaccinationRepository.getAll(), [], []);
-  const vaccinations = sortByDateDesc(vaccinationsRaw.filter((v) => !v.isArchived && withinTimeframe(v.date)));
+  const vaccinations = sortByDateDesc((Array.isArray(vaccinationsRaw) ? vaccinationsRaw : []).filter((v) => !v.isArchived && withinTimeframe(v.date)));
   const overdueVaccinations = useLoadedMemo(() => VaccinationRepository.getOverdue(), [], []);
 
   const recentPartners = encounters.filter((e) => withinTimeframe(e.date)).slice(0, 8).map((e) => ({
@@ -378,7 +378,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   }, [contactsRaw, encounters, cutoffDate]);
 
   return (
-    <div role="dialog" aria-label="Clinic Card" ref={dialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+    <div role="dialog" aria-label="Clinic Card" ref={dialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
@@ -699,7 +699,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           sections show, full-screen overlay matching the same pattern
           used elsewhere in this app for a focused settings list. */}
       {showVisibilitySettings && (
-        <div role="dialog" aria-label="Which sections to show" ref={visibilityDialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 300, overflowY: "auto" }}>
+        <div role="dialog" aria-label="Which sections to show" ref={visibilityDialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 300, overflowY: "auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
             <X size={20} color={T.textSecondary} style={{ cursor: "pointer" }} onClick={() => setShowVisibilitySettings(false)} aria-label="Close visibility settings" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
             <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Which sections to show</h1>
