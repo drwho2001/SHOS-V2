@@ -351,6 +351,70 @@ async function getKnownClinicVisitLocations() {
   const typed = (await ClinicVisitsRepository.getAll()).map((v) => v.location).filter(Boolean);
   return Array.from(new Set(typed));
 }
+// ADDED 24 Sep 2026 — real ask: free-text automap for Reason
+// for visit. Type to filter existing options, Enter to select
+// or create new (same pattern as ClinicianField).
+function ReasonForVisitField({ value, onChange, options, T, listName }) {
+  const [draft, setDraft] = useState("");
+  const visibleSuggestions = draft.trim()
+    ? options.filter((opt) => fuzzyIncludes(opt, draft)).filter((opt) => !value.includes(opt)).slice(0, 8)
+    : options.filter((opt) => !value.includes(opt)).slice(0, 8);
+  const [pendingSuggestion, setPendingSuggestion] = useState(null);
+  const addReason = (name) => {
+    const trimmed = name.trim();
+    if (!trimmed || value.some((v) => v.toLowerCase() === trimmed.toLowerCase())) { setDraft(""); return; }
+    const match = findClosestMatch(options, trimmed);
+    if (match) {
+      setPendingSuggestion({ typedAs: trimmed, suggestion: match });
+      setDraft("");
+      return;
+    }
+    onChange([...value, trimmed]);
+    if (listName) CustomOptionListsRepository.recordUsage(listName, trimmed);
+    setDraft("");
+  };
+  const removeReason = (name) => onChange(value.filter((c) => c !== name));
+  return (
+    <div style={{ padding: "8px 0" }}>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Reason for visit</div>
+      {value.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
+          {value.map((r) => (
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={r} onClick={() => removeReason(r)}
+              style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              {r} <X size={11} />
+            </div>
+          ))}
+        </div>
+      )}
+      {pendingSuggestion && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: radius.sm, background: `${T.healthcareBlue}15`, border: `1px solid ${T.healthcareBlue}`, marginBottom: 6, fontSize: 12 }}>
+          <span style={{ color: T.textPrimary }}>Did you mean "{pendingSuggestion.suggestion}"? You typed "{pendingSuggestion.typedAs}".</span>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { if (!value.includes(pendingSuggestion.suggestion)) onChange([...value, pendingSuggestion.suggestion]); setPendingSuggestion(null); }}
+            style={{ fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Yes, use it</div>
+          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onMouseDown={(ev) => ev.preventDefault()} onClick={() => { onChange([...value, pendingSuggestion.typedAs]); setPendingSuggestion(null); }}
+            style={{ fontWeight: 700, color: T.textSecondary, cursor: "pointer" }}>No, add as new</div>
+        </div>
+      )}
+      {visibleSuggestions.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
+          {visibleSuggestions.map((opt) => (
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={opt} onMouseDown={(ev) => ev.preventDefault()} onClick={() => addReason(opt)}
+              style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
+              {opt}
+            </div>
+          ))}
+        </div>
+      )}
+      <input value={draft} onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addReason(draft); } }}
+        onBlur={() => addReason(draft)}
+        placeholder="e.g. Routine screening — type to filter or add new"
+        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
+    </div>
+  );
+}
+
 function ClinicVisitLocationField({ value, onChange, T }) {
   const known = useLoadedMemo(() => getKnownClinicVisitLocations(), [], []);
   // CHANGED — same real ask as Encounters' Location field this session:
@@ -714,7 +778,10 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
               genuinely free-text). */}
           <ClinicianField value={form.clinician} onChange={set("clinician")} T={T} />
           <ClinicVisitLocationField value={form.location} onChange={set("location")} T={T} />
-          <MultiSelectChips label="Reason for visit" value={form.reasonForVisit} onChange={set("reasonForVisit")} options={reasonForVisitOptions} listName="reasonForVisit" T={T} />
+          {/* ADDED 24 Sep 2026 — real ask: free-text automap for Reason
+              for visit. Type to filter existing options, Enter to select
+              or create new (same pattern as ClinicianField). */}
+          <ReasonForVisitField value={form.reasonForVisit} onChange={set("reasonForVisit")} options={reasonForVisitOptions} listName="reasonForVisit" T={T} />
           {/* CHANGED 19 Aug 2026 — explicit yes/no question, not a
               bare toggle. */}
           <YesNoQuestion question="Is this a future appointment?" value={form.isFutureAppointment} onChange={set("isFutureAppointment")} T={T} />
