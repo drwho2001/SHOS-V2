@@ -3605,6 +3605,27 @@ this date; summarized here for durability.
   more-established pattern â€” left alone per this project's own
 standing "avoid over-normalisation" rule, not an oversight.
 
+## Recently shipped (24 Sep 2026 - Settings split + test-suite repair batch)
+
+Real ask: finish the Settings extraction (9 files extracted, none wired) and "try fixing the test flake" ([3/15] failing identically on two consecutive mains), plus the user's own priorities of tests-cleared + pushed.
+
+**Settings split done: 19 sub-screens extracted from SHOS_Settings_Prototype.jsx (5252 lines) to src/modules/settings/*.jsx, main file now ~880 lines.** Each file is a verbatim move with recomputed minimal imports (verified per-file against the source, not trusted from the 9 stale partial extractions already on disk, which were overwritten). Wired via React.lazy (one chunk per screen - build output confirms separate PrivacyScreen/CalendarScreen/etc. chunks, shell down to ~30KB) behind one Suspense boundary, plus a mount-time preload effect that warms all sub-screen chunks when the Settings menu opens so tapping a row renders instantly instead of flashing the fallback.
+
+**Two real bugs found and fixed while verifying, not from inspection:**
+- React #426 crash on opening Settings/Search: the route-lazy commit (a7eafac) made SettingsScreen/GlobalSearchScreen lazy but left their App.jsx overlay renders ({showSettings && ...}, {showSearch && ...}) OUTSIDE the only Suspense boundary (which covers just the tab ActiveModule). First open suspended with nowhere to fall back to and threw straight to the ErrorBoundary ("Something went wrong"). Fixed with a shared Suspense + neutral Loading fallback around both overlays in App.jsx. This was likely the true mechanism behind part of the CI "flake" below, not just the banner.
+- Smoke [3/15] banner interception (the other part, proven live via elementFromPoint): the due-reminders stack is position:fixed top:0 and COVERS Home's header gear while visible; the suite's coordinate gear click hit the banner, Settings never opened, "Manage lists" timed out - zero page errors. Dismissal is temporary (60s poll re-shows), and CI's slower pace makes a re-appeared banner near-certain by test 3. Fixed in the shared goHomeThenOpenSettings helper (dismiss first + verify-opened + retry once), closing the class for all 7+ call sites. Also added the missing vaccination-banner dismiss the helper never knew about (added 16 Sep, same fixed-top stack).
+- Lazy-first-open timing (test 10 Preferences, exposed by the split itself - proven: control absent at 500ms, present at 2500ms, zero crash): converted post-navigation fixed waits to marker waitFors (Preferences "Bottom nav tab order", Developer tools "Reset all app data").
+- Test 13 crypto timing (pre-existing flake, now deterministic on loaded machines): the recovery-string save does PBKDF2-100k + verify-before-commit (proven live: 1102ms vs the test's fixed 400ms wait). All five PBKDF2-bound waits in test 13 converted to waitForFunction forms (15s, return immediately when ready).
+- Removed the stillborn [DEEP-LINK] baseline block: it navigated desktop Chromium to APP_URL+"shos://..." (missing "/", deterministic page.goto protocol error), the app has no shos:// handling anywhere (native scheme is com.shos.app://, only 2 quick-add hostnames implemented), and 8 of its 10 routes have zero implementation. Never passed once. Re-add only alongside a real web-side route parser or on-device intent harness. "Fixing" the slash would have passed vacuously (boot-Home asserts) - dishonest green, declined.
+
+**APK fix (unblocks all releases): all 10 *_widget_info.xml files referenced @drawable/widget_preview, which never existed - :app:processDebugResources failed with "Android resource linking failed" on both recent mains, so no APK could be built at all.** Added android/app/src/main/res/drawable/widget_preview.xml (dark card + teal accent placeholder). CI's APK workflow is the verification (can't compile native locally).
+
+**Stray cleanup:** deleted the 4 untracked SHOS_*_Prototype.jsx files in src/modules/ (superseded by settings/ versions).
+
+Verified: build clean (no dynamic-import-vars warning after adding the .jsx extension the preload's template-literal import needs), eslint clean, vitest 81/81, full smoke suite 15/15 green locally against vite preview (exit 0, no deep-link block).
+
+Still open, not attempted: the 5-audit findings batch, clinic-visit future-appointment to real linked visit, reason-field free-text automap, Item 7 device confirmation.
+
 ## Recently shipped (24 Sep 2026 - device-feedback batch: Clinic Visit meds sections, vaccine dose series, Testing colours/filter, Episodes full-page, anonymise link, Settings buffer)
 
 Real ask: device feedback from build `2ea84ef`, worked as one batch. Nine items shipped together. Last clean full verification in-session: build succeeds, 81 unit tests pass, eslint clean (lint/test runners timed out late in the session from sandbox resource exhaustion, not code errors).
