@@ -115,25 +115,6 @@ export const DEFAULT_PROFILE = {
   foreskinDetail: "",
   chastityStatus: "N/A",
   cummer: [],
-  // ADDED — real ask: contraception, gated to Female/Trans-male gender
-  // in the UI (see SHOS_MyProfile_Prototype.jsx's own comment on the
-  // gating condition — shown as its own section since the Physical
-  // section above it is hidden entirely for Female). Free text with
-  // suggestions, same CustomOptionListsRepository pattern as gender.
-  // CHANGED 1 Sep 2026 — real ask: "allow for multiple (ie Testosterone
-  // + Implant)." Was a single string; see normalizeContraception()
-  // below for how an existing single-value profile keeps reading back
-  // correctly.
-  // SUPERSEDED — real design decision: contraceptionRepository.js is
-  // now the single owner of real contraception data (method, dates,
-  // interval/next-due, history). This field stays here ONLY for
-  // backward compatibility with profiles/shares written before that
-  // repository existed — the edit screen no longer writes to it.
-  // My Profile's own display now reads a live derived summary from
-  // ContraceptionRepository.getActive() instead, same "one owner,
-  // everywhere else just displays" fix already applied to Measurements
-  // vs Testing/Clinic Visits.
-  contraception: [],
 
   // Sexual health status — "the actual point of this page" per the
   // existing static Notion template. Manually curated by the user here,
@@ -213,17 +194,6 @@ function normalizeRoleCasing(role) {
   return role == null ? role : (LEGACY_ROLE_CASING[role] ?? role);
 }
 
-// ADDED 1 Sep 2026 — same self-healing-on-every-read pattern as
-// normalizeRoleCasing above: contraception moved from a single string
-// to an array (see DEFAULT_PROFILE's own comment), so a profile saved
-// under the old shape needs to keep reading back correctly forever,
-// not just until the next manual edit.
-function normalizeContraception(value) {
-  if (Array.isArray(value)) return value;
-  if (typeof value === "string" && value.trim()) return [value];
-  return [];
-}
-
 export const MyProfileRepository = {
   // Singleton read — always returns a full shape (missing fields fall
   // back to DEFAULT_PROFILE), so callers never have to null-check.
@@ -233,7 +203,6 @@ export const MyProfileRepository = {
     return structuredClone({
       ...merged,
       bdsmRole: (merged.bdsmRole || []).map(normalizeRoleCasing),
-      contraception: normalizeContraception(merged.contraception),
     });
   },
 

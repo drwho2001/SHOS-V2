@@ -615,7 +615,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
                 few days after it came back). */}
             <div style={{ padding: "4px 0 8px" }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>End date</div>
-              <input type="date" value={resolveDateDraft} onChange={(e) => { resolveDateTouchedRef.current = true; setResolveDateDraft(e.target.value); }}
+              <input type="date" value={resolveDateDraft} onChange={(e) => { resolveDateTouchedRef.current = true; setResolveDateDraft(e.target.value); }} aria-label="End date"
                 style={{ padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
@@ -633,7 +633,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
             <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginBottom: 10 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>End date</div>
-                <input type="date" value={resolveDateDraft} onChange={(e) => { resolveDateTouchedRef.current = true; setResolveDateDraft(e.target.value); }}
+                <input type="date" value={resolveDateDraft} onChange={(e) => { resolveDateTouchedRef.current = true; setResolveDateDraft(e.target.value); }} aria-label="End date"
                   style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
               </div>
               {resolveDateDraft !== (episode.resolvedDate || "").slice(0, 10) && (

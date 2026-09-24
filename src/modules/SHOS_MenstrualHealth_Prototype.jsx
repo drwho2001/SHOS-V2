@@ -637,7 +637,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
       <div style={{ padding: "8px 0" }}>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Renewal interval (optional — e.g. every 12 weeks for a depot shot, every 60 months for a 5-year IUD)</div>
         <div style={{ display: "flex", gap: 8 }}>
-          <input type="number" value={intervalDisplayValue} onChange={(e) => setIntervalValue(e.target.value)} placeholder="e.g. 12"
+          <input type="number" value={intervalDisplayValue} onChange={(e) => setIntervalValue(e.target.value)} placeholder="e.g. 12" aria-label="Interval value"
             style={{ flex: 1, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
           <select value={intervalUnit} onChange={(e) => changeIntervalUnit(e.target.value)}
             style={{ padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14 }}>
@@ -653,7 +653,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
               directly back-calculates the interval instead. */}
           <span style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic" }}>{form.intervalDays ? "from interval above" : "sets the interval above"}</span>
         </div>
-        <input type="date" value={form.nextDueDate ?? ""} onChange={(e) => setNextDueDate(e.target.value)}
+        <input type="date" value={form.nextDueDate ?? ""} onChange={(e) => setNextDueDate(e.target.value)} aria-label="Next due date"
           style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
       </div>
       {visits.length > 0 && (

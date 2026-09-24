@@ -180,12 +180,12 @@ function SelectiveExportSheet({ onClose, onExported }) {
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
-                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label="From date"
                   style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
-                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label="To date"
                   style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
             </div>
@@ -261,12 +261,12 @@ function CSVExportSheet({ onClose }) {
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
-                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label="From date"
                   style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
-                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label="To date"
                   style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
             </div>
@@ -442,12 +442,12 @@ function EncryptedExportSheet({ onClose }) {
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>From</div>
-                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label="From date"
                   style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 4 }}>To</div>
-                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label="To date"
                   style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), fontSize: 13, boxSizing: "border-box", background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }} />
               </div>
             </div>
@@ -675,7 +675,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
     // styling — was ever inside any landmark at all. One role="region"
     // here covers the whole tree; confirmed live via axe-core before
     // and after, not assumed from the DOM shape alone.
-    <div tabIndex={0} role="region" aria-label="Settings" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+    <div tabIndex={0} role="region" aria-label="Settings" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(120px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}

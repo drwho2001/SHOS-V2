@@ -275,31 +275,31 @@ function DoseByDose({ doses, onChange, T }) {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             <div style={{ flex: 1, minWidth: 120 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Date</div>
-              <input type="date" value={dose.date ?? ""} onChange={(e) => updateDose(index, "date", e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
+              <input type="date" value={dose.date ?? ""} onChange={(e) => updateDose(index, "date", e.target.value)} aria-label="Date" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
             </div>
             <div style={{ flex: 1, minWidth: 100 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Time</div>
-              <input type="time" value={dose.time ?? ""} onChange={(e) => updateDose(index, "time", e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
+              <input type="time" value={dose.time ?? ""} onChange={(e) => updateDose(index, "time", e.target.value)} aria-label="Time" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             <div style={{ flex: 1, minWidth: 140 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Provider</div>
-              <input type="text" value={dose.provider ?? ""} onChange={(e) => updateDose(index, "provider", e.target.value)} placeholder="e.g. 56 Dean Street" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+              <input type="text" value={dose.provider ?? ""} onChange={(e) => updateDose(index, "provider", e.target.value)} placeholder="e.g. 56 Dean Street" aria-label="Provider" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
             </div>
             <div style={{ flex: 1, minWidth: 120 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Injection site</div>
-              <input type="text" value={dose.injectionSite ?? ""} onChange={(e) => updateDose(index, "injectionSite", e.target.value)} placeholder="e.g. Deltoid" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
+              <input type="text" value={dose.injectionSite ?? ""} onChange={(e) => updateDose(index, "injectionSite", e.target.value)} placeholder="e.g. Deltoid" aria-label="Injection site" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             <div style={{ flex: 1, minWidth: 140 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Next due</div>
-              <input type="date" value={dose.nextDue ?? ""} onChange={(e) => updateDose(index, "nextDue", e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
+              <input type="date" value={dose.nextDue ?? ""} onChange={(e) => updateDose(index, "nextDue", e.target.value)} aria-label="Next due" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }} />
             </div>
             <div style={{ flex: 1, minWidth: 100 }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Dose #</div>
-              <input type="number" min="1" value={dose.doseNumber ?? index + 1} onChange={(e) => updateDose(index, "doseNumber", e.target.value ? Number(e.target.value) : null)} style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, textAlign: "center", boxSizing: "border-box" }} />
+              <input type="number" min="1" value={dose.doseNumber ?? index + 1} onChange={(e) => updateDose(index, "doseNumber", e.target.value ? Number(e.target.value) : null)} aria-label="Dose number" style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, textAlign: "center", boxSizing: "border-box" }} />
             </div>
           </div>
           <div style={{ padding: "8px 0 0" }}>
@@ -407,7 +407,6 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
           {/* REPLACED legacy doseNumber/date/nextDue with DoseByDose for series tracking */}
           <DoseByDose doses={form.doses} onChange={set("doses")} T={T} />
           <TextField label="Provider" value={form.provider} onChange={set("provider")} T={T} placeholder="e.g. Sexual Health Clinic" />
-          <SelectField label="Injection site" value={form.injectionSite} onChange={set("injectionSite")} options={injectionSiteOptions} listName="injectionSite" T={T} />
           {/* FIXED 1 Sep 2026 â€” real ask: "Vaccination log symptoms not
               correct type." MultiSelectChips is a plain string-toggle
               component fed symptom NAMES as its options, but symptomIds
@@ -494,7 +493,11 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
         <SectionCard title="Overview" T={T}>
           <ReadRow label="Vaccine" value={v.vaccine} T={T} />
           <ReadRow label="Reason" value={v.reason} T={T} />
-          <ReadRow label="Injection site" value={v.injectionSite} T={T} />
+          {v.doses?.length > 0 ? (
+            <ReadRow label="Injection site (latest)" value={v.doses[v.doses.length - 1]?.injectionSite || v.injectionSite} T={T} />
+          ) : (
+            <ReadRow label="Injection site" value={v.injectionSite} T={T} />
+          )}
           <ReadRow label="Provider" value={v.provider} T={T} />
           <ReadRow label="Next due" value={v.nextDue ? formatDate(v.nextDue) : ""} T={T} alert={overdue} />
         </SectionCard>

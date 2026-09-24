@@ -682,10 +682,10 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
                 <div style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}` }}>
                   <div style={{ fontSize: 11, color: T.textSecondary, marginBottom: 6 }}>Normal range for {m.type} ({m.unit})</div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <input type="number" value={rangeLow} onChange={(e) => setRangeLow(e.target.value)} placeholder="Low"
+                    <input type="number" value={rangeLow} onChange={(e) => setRangeLow(e.target.value)} placeholder="Low" aria-label="Low"
                       style={{ width: 70, padding: "6px 8px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
                     <span style={{ color: T.textSecondary }}>–</span>
-                    <input type="number" value={rangeHigh} onChange={(e) => setRangeHigh(e.target.value)} placeholder="High"
+                    <input type="number" value={rangeHigh} onChange={(e) => setRangeHigh(e.target.value)} placeholder="High" aria-label="High"
                       style={{ width: 70, padding: "6px 8px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
                     <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={saveRange} style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", marginLeft: 4 }}>Save</span>
                     <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setEditingRange(false)} style={{ fontSize: 12, color: T.textSecondary, cursor: "pointer" }}>Cancel</span>

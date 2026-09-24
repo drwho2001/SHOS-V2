@@ -391,6 +391,7 @@ export function PrivacyScreen({ onClose }) {
                   <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Grace period:</span>
                   <input type="number" min={1} max={120} value={settings.appLockGraceMinutes}
                     onChange={async (e) => { const v = Math.max(1, Math.min(120, Number(e.target.value) || 1)); await PrivacySettingsRepository.update({ appLockGraceMinutes: v }); refresh(); }}
+                    aria-label="Grace period (minutes)"
                     style={{ width: 56, padding: "6px 8px", borderRadius: 8, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), background: darkMode ? DARK.surfaceVariant : NEUTRAL.bg, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 13, textAlign: "center" }} />
                   <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>minutes</span>
                 </div>

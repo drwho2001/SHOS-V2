@@ -3597,13 +3597,17 @@ this date; summarized here for durability.
   deliberately left alone: Encounters' search box uses `padding: "8px
   16px 0"` under its own banner â€” real breathing room, not flush, just
   smaller than Healthcare's exact-match 14px â€” but that exact `"8px
-  16px 0"` value is also the genuinely consistent, deliberate
+16px 0"` value is also the genuinely consistent, deliberate
   convention already shared by Vaccinations/Testing/Clinic Visits/
   Measurements/Symptom Log's own search boxes (all sitting under a
   plain, non-colored header). Changing Encounters alone to 14px would
   trade one inconsistency for a different one against that broader,
   more-established pattern â€” left alone per this project's own
 standing "avoid over-normalisation" rule, not an oversight.
+
+## Recently shipped (24 Sep 2026 - Clinic Card TDZ fix)
+
+Fixed a recurrent Temporal Dead Zone crash in `SHOS_ClinicCard_Prototype.jsx`: a `useEffect` referencing `showVisibilitySettings` was placed before its `useState` declaration (line 197 vs 229). Moved the effect after the state declaration. This is the same pattern previously caught as minified 'V' (Encounters `loadEncounters`/`loadContacts`, PartnerNotification `list`/`editing`, Timeline `EpisodeDetail`, MyProfile `form` resync) — now 'L'. Verified: build clean, eslint clean, smoke 15/15.
 
 ## Recently shipped (24 Sep 2026 - audit: widget tap routing)
 
@@ -3632,7 +3636,15 @@ Real ask: finish the Settings extraction (9 files extracted, none wired) and "tr
 
 Verified: build clean (no dynamic-import-vars warning after adding the .jsx extension the preload's template-literal import needs), eslint clean, vitest 81/81, full smoke suite 15/15 green locally against vite preview (exit 0, no deep-link block).
 
-Still open, not attempted: the 5-audit findings batch, clinic-visit future-appointment to real linked visit, reason-field free-text automap, Item 7 device confirmation.
+Still open, not attempted: the 5-audit findings batch, Item 7 device confirmation.
+
+## Recently shipped (24 Sep 2026 - Clinic Visit reason free-text automap)
+
+Added free-text automap for "Reason for visit" in Clinic Visits. Type to filter existing options from the custom option list, Enter to select or create new (same pattern as ClinicianField). Includes fuzzy matching, pending suggestion confirmation ("Did you mean X?"), and custom option list usage tracking. Verified: build clean, eslint clean.
+
+## Recently shipped (24 Sep 2026 - Clinic Visit confirm attendance flow)
+
+Added a "Confirm attendance" flow for future Clinic Visits (isFutureAppointment=true). When the user attends a scheduled appointment, a confirmation button appears in the edit sheet. On confirm: sets isFutureAppointment=false, updates the visit date to now if the scheduled date was in the future, and clears follow-up fields (nextReviewDate, followUpType) since they're for scheduling, not for a visit that already happened. Verified: build clean, eslint clean.
 
 ## Recently shipped (24 Sep 2026 - device-feedback batch: Clinic Visit meds sections, vaccine dose series, Testing colours/filter, Episodes full-page, anonymise link, Settings buffer)
 

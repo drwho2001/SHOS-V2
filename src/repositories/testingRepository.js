@@ -103,17 +103,6 @@ export const DEFAULT_TEST = {
   // per the user's own instruction applied consistently: wire a relationship
   // once both ends genuinely exist and it's appropriate to.
   clinicVisitIds: [],
-  // relatedSymptomIds: was "stays stubbed — Symptoms Tracker doesn't
-  // exist" — stale, Symptom Log is now a real module. FOUND DEAD in a
-  // full-app audit: never read or written anywhere. Left unremoved,
-  // matching the clinicVisitIds precedent above (SAME reasoning: don't
-  // add a second, unsynced way to represent a relationship that already
-  // has a real source of truth). Symptom Log's own relatedTestIds
-  // (SHOS_SymptomLog_Prototype.jsx) is that source of truth — Testing's
-  // own detail screen now shows a reverse lookup into it instead
-  // (TestDetail's relatedSymptoms, via SymptomLogRepository.getAll()
-  // filtered on relatedTestIds), same shape as linkedVisits below.
-  relatedSymptomIds: [],
   isArchived: false,
 };
 
@@ -158,7 +147,6 @@ let seedTests = [
     followUpActionedDate: daysAgo(8),
     notes: "Discharge + discomfort a few days after an encounter. Positive for Gonorrhoea, negative for everything else screened.",
     clinicVisitIds: ["visit_001"],
-    relatedSymptomIds: ["symlog_001"],
     isArchived: false,
   },
   {

@@ -418,7 +418,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
           ))}
         </div>
         {timeframe === "custom" && (
-          <input type="date" value={customDate} onChange={(e) => setCustomDate(e.target.value)}
+          <input type="date" value={customDate} onChange={(e) => setCustomDate(e.target.value)} aria-label="Custom date"
             style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13 }} />
         )}
         {timeframe === "sinceLastTest" && !lastTestDate && (

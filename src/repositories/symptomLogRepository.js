@@ -44,10 +44,7 @@ export const DEFAULT_SYMPTOM_ENTRY = {
   title: "",
   // CHANGED 26 Aug 2026 — real ask, decided (was backlogged, now
   // built): support more than one symptom per entry (e.g. dysuria +
-  // urethral discharge together). symptomId (singular) is kept, not
-  // removed — real existing entries have it, and normalizeSymptomIds()
-  // below migrates it into symptomIds on read, so nothing breaks.
-  symptomId: "",           // DEPRECATED — kept for backward compat only, do not write to this going forward, use symptomIds
+  // urethral discharge together). symptomIds is now the canonical field.
   symptomIds: [],          // → SymptomsRegistry, real field going forward
   dateStarted: null,
   dateResolved: null,     // empty = active, present = resolved — the real Notion concept

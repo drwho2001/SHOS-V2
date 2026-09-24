@@ -548,7 +548,7 @@ function StockCorrectionSheet({ med, currentStock, onConfirm, onClose, T }) {
           <X size={18} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} aria-label="Close" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 14 }}>App currently shows {currentStock} left. Enter what you've actually counted.</div>
-        <input type="number" value={actualStock} onChange={(e) => setActualStock(e.target.value === "" ? "" : Number(e.target.value))}
+        <input type="number" value={actualStock} onChange={(e) => setActualStock(e.target.value === "" ? "" : Number(e.target.value))} aria-label="Actual stock"
           style={{ width: "100%", padding: "12px 14px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 20, fontWeight: 700, textAlign: "center", boxSizing: "border-box", marginBottom: 8 }} />
         {actualStock !== "" && delta !== 0 && (
           <div style={{ fontSize: 12, color: T.textSecondary, textAlign: "center", marginBottom: 14 }}>
@@ -590,7 +590,7 @@ function QuantitySheet({ med, mode, onConfirm, onClose, T }) {
         )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginBottom: 8 }}>
           {amount > 1 ? <HoldButton onStep={step} dir={-1} style={stepperBtn(T)}>−</HoldButton> : <div style={{ width: 44, height: 44 }} />}
-          <input type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(Math.max(1, Number(e.target.value) || 1))}
+          <input type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(Math.max(1, Number(e.target.value) || 1))} aria-label="Amount"
             style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 600, width: 70, textAlign: "center", color: T.textPrimary, border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, padding: "4px 2px" }} />
           <HoldButton onStep={step} dir={1} style={stepperBtn(T)}>+</HoldButton>
         </div>
@@ -659,6 +659,7 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
           <input type="number" inputMode="decimal" value={confirmVoid ? 0 : amount}
             onChange={(e) => setAmount(Math.max(1, Number(e.target.value) || 1))}
             disabled={confirmVoid}
+            aria-label="Amount"
             style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 600, width: 70, textAlign: "center", color: confirmVoid ? T.actionRed : T.textPrimary, textDecoration: confirmVoid ? "line-through" : "none", border: `1px solid ${T.border}`, borderRadius: radius.sm, background: T.surfaceVariant, padding: "4px 2px" }} />
           {!confirmVoid && <HoldButton onStep={step} dir={1} style={stepperBtn(T)}>+</HoldButton>}
         </div>
@@ -1143,7 +1144,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
           <DoseComponentsField value={doseComponents} onChange={setDoseComponents} T={T} />
           <div style={{ padding: "8px 0" }}>
             <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>Units per dose</div>
-            <input type="number" min="1" value={unitsPerDose} onChange={(e) => setUnitsPerDose(e.target.value)}
+            <input type="number" min="1" value={unitsPerDose} onChange={(e) => setUnitsPerDose(e.target.value)} aria-label="Units per dose"
               style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
           </div>
           <div style={{ padding: "8px 0" }}>
@@ -1165,7 +1166,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
           {updateStockToo && (
             <div style={{ padding: "4px 0 8px" }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>Stock change (+ for adding, − for removing)</div>
-              <input type="number" value={stockDelta} onChange={(e) => setStockDelta(e.target.value)} placeholder="e.g. 30 or -5"
+              <input type="number" value={stockDelta} onChange={(e) => setStockDelta(e.target.value)} placeholder="e.g. 30 or -5" aria-label="Stock change"
                 style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
             </div>
           )}
@@ -2214,10 +2215,12 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             onClick={needsActionMeds.length > 0 ? scrollToProblem : undefined} />
         </div>
 
-        <div style={{ display: "flex", gap: 20, padding: "0 16px", borderBottom: `1px solid ${T.border}`, marginBottom: 16 }}>
-          {["Registry", "Log", "Inventory"].map((t) => (
-            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setTab(t)} style={{ paddingBottom: 10, fontSize: 14, fontWeight: 600, color: tab === t ? T.medsBlue : T.textSecondary, borderBottom: tab === t ? `2px solid ${T.medsBlue}` : "2px solid transparent", cursor: "pointer" }}>{t}</div>
-          ))}
+        <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 70px)", zIndex: 5, background: T.bg, padding: "8px 16px 8px", borderBottom: `1px solid ${T.border}` }}>
+          <div style={{ display: "flex", gap: 20, padding: "0 16px", borderBottom: `1px solid ${T.border}`, marginBottom: 16 }}>
+            {["Registry", "Log", "Inventory"].map((t) => (
+              <div role="tab" tabIndex={0} aria-selected={tab === t} aria-label={t} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setTab(t)} style={{ paddingBottom: 10, fontSize: 14, fontWeight: 600, color: tab === t ? T.medsBlue : T.textSecondary, borderBottom: tab === t ? `2px solid ${T.medsBlue}` : "2px solid transparent", cursor: "pointer" }}>{t}</div>
+            ))}
+          </div>
         </div>
 
         {tab === "Registry" && (

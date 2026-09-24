@@ -607,16 +607,6 @@ function normalizeKinkSelections(arr) {
 // methods] (ie Testosterone + Implant)." DEFAULT_CONTACT.contraception
 // switched from a single string to an array, so every contact saved
 // under the old single-value shape needs to keep reading back
-// correctly — same self-healing-on-every-read pattern as
-// normalizeRoleCasing above, not a one-off migration. A stored string
-// becomes its own one-item array; already-array values (new saves)
-// pass through unchanged.
-function normalizeContraception(value) {
-  if (Array.isArray(value)) return value;
-  if (typeof value === "string" && value.trim()) return [value];
-  return [];
-}
-
 export const ContactRepository = {
   // CHANGED 18 Aug 2026 — getAll()/getById() now merge each raw stored
   // record over DEFAULT_CONTACT before returning it, not just clone it
@@ -646,7 +636,6 @@ export const ContactRepository = {
           ...merged,
           statedKinks: normalizeKinkSelections(merged.statedKinks), limits: normalizeKinkSelections(merged.limits),
           bdsmRole: (merged.bdsmRole || []).map(normalizeRoleCasing), sexualPosition: (merged.sexualPosition || []).map(normalizeRoleCasing),
-          contraception: normalizeContraception(merged.contraception),
         };
       })
     );
@@ -661,7 +650,6 @@ export const ContactRepository = {
       ...merged,
       statedKinks: normalizeKinkSelections(merged.statedKinks), limits: normalizeKinkSelections(merged.limits),
       bdsmRole: (merged.bdsmRole || []).map(normalizeRoleCasing), sexualPosition: (merged.sexualPosition || []).map(normalizeRoleCasing),
-      contraception: normalizeContraception(merged.contraception),
     });
   },
 
