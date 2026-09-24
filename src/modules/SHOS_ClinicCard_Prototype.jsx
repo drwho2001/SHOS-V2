@@ -194,7 +194,6 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   const [timeframe, setTimeframe] = useState("all");
   const [customDate, setCustomDate] = useState("");
   const visibilityDialogRef = useRef(null);
-  useEffect(() => { if (showVisibilitySettings) visibilityDialogRef.current?.focus(); }, [showVisibilitySettings]);
   const cutoffDate = useMemo(() => {
     if (timeframe === "sinceLastTest") return lastTestDate;
     if (timeframe === "30days") return new Date(Date.now() - 30 * 86400000).toISOString();
@@ -227,6 +226,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // Every section defaults to visible; this only ever narrows.
   const [visibility, , toggleSection] = useClinicCardVisibility();
   const [showVisibilitySettings, setShowVisibilitySettings] = useState(false);
+  useEffect(() => { if (showVisibilitySettings) visibilityDialogRef.current?.focus(); }, [showVisibilitySettings]);
   // ADDED — real ask: "clinician-facing export" — a real PDF, not just
   // the on-screen summary, honouring the same section visibility below
   // so it can never show more than the screen does. exportingPdf guards
