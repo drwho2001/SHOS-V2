@@ -718,6 +718,35 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
           {/* CHANGED 19 Aug 2026 — explicit yes/no question, not a
               bare toggle. */}
           <YesNoQuestion question="Is this a future appointment?" value={form.isFutureAppointment} onChange={set("isFutureAppointment")} T={T} />
+          {/* ADDED 24 Sep 2026 — real ask: when a future appointment is
+              attended, convert it to a real visit with one click. Shows
+              a confirmation dialog, updates date to now if still future,
+              clears follow-up fields (they're for scheduling, not for a
+              visit that already happened). */}
+          {form.isFutureAppointment && (
+            <div style={{ marginTop: 8, padding: "12px", borderRadius: radius.sm, background: `${T.healthcareBlue}12`, border: `1px solid ${T.healthcareBlue}40` }}>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 8 }}>This visit was scheduled for the future. When you attend it, confirm below to convert it to a real visit record.</div>
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => {
+                const newDate = new Date(form.date);
+                const now = new Date();
+                // If the scheduled date is in the future, offer to update to now
+                const shouldUpdateDate = newDate > now;
+                const confirmed = window.confirm(
+                  `Mark this appointment as attended?\n\n` +
+                  `${shouldUpdateDate ? `The date will update from ${newDate.toLocaleDateString()} to today.` : "The date will stay as entered."}\n` +
+                  `Follow-up fields (next review, follow-up type) will be cleared — they're for scheduling, not for a visit that already happened.`
+                );
+                if (confirmed) {
+                  set("isFutureAppointment")(false);
+                  if (shouldUpdateDate) set("date")(nowAsDateTimeLocalString());
+                  set("followUpType")("");
+                  set("nextReviewDate")(null);
+                }
+              }} style={{ padding: "8px 14px", borderRadius: radius.full, background: T.healthcareBlue, color: "#FFFFFF", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Calendar size={14} /> Confirm attendance
+              </div>
+            </div>
+          )}
           {/* ADDED 19 Aug 2026 — real feedback batch: "arrange
               follow-up" — what kind, paired with the existing date
               field for when. */}
