@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.widget.RemoteViews;
+import com.shos.app.R;
 
 public class TestWidgetProvider extends AppWidgetProvider {
 
@@ -20,10 +21,10 @@ public class TestWidgetProvider extends AppWidgetProvider {
         }
     }
 
-    private void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String lastTest = prefs.getString(KEY_LAST_TEST, "No tests logged");
-        String retestDue = prefs.getString(KEY_RETEST_DUE, "—");
+        String retestDue = prefs.getString(KEY_RETEST_DUE, "-");
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.test_widget);
 

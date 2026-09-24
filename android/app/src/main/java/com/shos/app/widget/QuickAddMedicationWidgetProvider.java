@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViews;
+import com.shos.app.R;
 
 public class QuickAddMedicationWidgetProvider extends AppWidgetProvider {
 
@@ -15,7 +16,7 @@ public class QuickAddMedicationWidgetProvider extends AppWidgetProvider {
         }
     }
 
-    private void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.quick_add_medication_widget);
 
         // Click opens Log Medication directly

@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.widget.RemoteViews;
+import com.shos.app.R;
 
 public class NextDoseWidgetProvider extends AppWidgetProvider {
 
@@ -19,7 +20,7 @@ public class NextDoseWidgetProvider extends AppWidgetProvider {
         }
     }
 
-    private void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String nextDoseTime = prefs.getString(KEY_NEXT_DOSE_TIME, "--:--");
         String medName = prefs.getString(KEY_MED_NAME, "Medication");

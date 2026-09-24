@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.widget.RemoteViews;
+import com.shos.app.R;
 
 public class AppointmentWidgetProvider extends AppWidgetProvider {
 
@@ -20,7 +21,7 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
         }
     }
 
-    private void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         int apptCount = prefs.getInt(KEY_APPT_COUNT, 0);
         String nextAppt = prefs.getString(KEY_NEXT_APPT, "No appointments");

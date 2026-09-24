@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.widget.RemoteViews;
+import com.shos.app.R;
 
 public class ClinicCardWidgetProvider extends AppWidgetProvider {
 
@@ -27,7 +28,7 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
         }
     }
 
-    private void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String title = prefs.getString(KEY_APPT_TITLE, "No upcoming appointment");
         String date = prefs.getString(KEY_APPT_DATE, "");

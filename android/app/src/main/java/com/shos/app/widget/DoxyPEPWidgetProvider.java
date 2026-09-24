@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.widget.RemoteViews;
+import com.shos.app.R;
 
 public class DoxyPEPWidgetProvider extends AppWidgetProvider {
 
@@ -20,7 +21,7 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
         }
     }
 
-    private void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String status = prefs.getString(KEY_DOXY_STATUS, "No active window");
         long expiry = prefs.getLong(KEY_DOXY_EXPIRY, 0);

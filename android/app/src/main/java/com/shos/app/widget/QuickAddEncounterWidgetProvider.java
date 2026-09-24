@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViews;
+import com.shos.app.R;
 
 public class QuickAddEncounterWidgetProvider extends AppWidgetProvider {
 
@@ -15,7 +16,7 @@ public class QuickAddEncounterWidgetProvider extends AppWidgetProvider {
         }
     }
 
-    private void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.quick_add_encounter_widget);
 
         // Click opens Add Encounter directly
