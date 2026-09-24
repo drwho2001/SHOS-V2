@@ -3605,6 +3605,10 @@ this date; summarized here for durability.
   more-established pattern â€” left alone per this project's own
 standing "avoid over-normalisation" rule, not an oversight.
 
+## Recently shipped (24 Sep 2026 - audit: widget tap routing)
+
+Real audit finding: widget taps never reached JS (action-only intents, no data URI) and the router knew 2/10 routes. Fixed: setData com.shos.app:// URIs in all providers, pure unit-tested route mapping (deepLinkRoutes.js, 17 cases), Cycle subTab key fix. clinic-card routes documented open. Verified: lint/build/vitest84/smoke15 local, full CI green.
+
 ## Recently shipped (24 Sep 2026 - widget APK compile fix)
 
 Follow-up to the drawable fix in the batch above: with resource linking unblocked, CI's Java compile exposed the next layer - all 10 widget providers missed `import com.shos.app.R` (providers live in package `com.shos.app.widget`, R generates in `com.shos.app`, so javac reported "package R does not exist" on every R.* line), and `updateAppWidget` was instance-private but called from the public static `updateX` entry points in 7 providers ("non-static method cannot be referenced from a static context" - made static, uses only params, no instance state). TestWidgetProvider also had a corrupted non-ASCII default string, replaced with a plain hyphen. Cross-checked before pushing: every R.layout/R.id reference resolves against a real layout file, all 10 providers registered in the manifest. Native code can't compile locally, so CI's Build-APK workflow is the verification - honest about that, same as every native change in this repo.
