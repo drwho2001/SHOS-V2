@@ -297,6 +297,16 @@ this date; summarized here for durability.
   - Item 7 (notch/status-bar): PENDING (needs device)
   - Item 8 (cold-start removal from Known Issues): DONE (accepted upstream Capacitor limitation)
 
+- **Audit Findings (25 Sep 2026) â€” read-only sweep of high-stakes/unreviewed areas:**
+  - **ErrorBoundary (main.jsx:147-163)** â€” ALREADY FIXED (Phase 4). Encrypted `shos_app_preferences` detected via `iv`+`ciphertext` shape, dynamically imports `cryptoService.js`, decrypts, clears navigation state, re-encrypts. No action needed.
+  - **darkModePreference.js (calculations:89-95)** â€” ALREADY CORRECT. `syncDarkModePreferenceFromStorage()` called in `App.jsx:938` after vault unlock in `finishBootAfterUnlock()`. One-shot self-correction from `systemPrefersDark()` fallback works; async `await storage.load()` handles Phase 3 adapter. No action needed.
+  - **Module sheets `role="dialog"`** â€” PARTIAL. ~14 modules' main sheets have it (Attachments, ClinicCard, ClinicVisits, Contacts, Encounters, MenstrualHealth, Measurements, MyProfile, OptionListEditor, PartnerNotification, SymptomLog, Testing, Timeline, Vaccinations). **MISSING**: All 19 Settings sub-screens (extracted 24 Sep, lazy-loaded), HealthcareScreen, GlobalSearchScreen, SettingsScreen, HomeScreen, MedicationDashboard sheets. ~35 sheets need `role="dialog"` + `aria-label` + focus-on-open.
+  - **Widget deep-linking (native)** â€” 10 providers, all use `com.shos.app://` URIs. `deepLinkRoutes.js` covers 17 cases (medication, encounter, contact, clinic-visits, healthcare subTabs, clinic-card, widget/reveal-clinic). **Web gaps**: No `shos://` handler in `App.jsx`; 8 of 10 routes unimplemented on web/PWA. NextDoseWidgetProvider has no tap action (native-only update).
+  - **Draft storage (storage/draftStorage.js)** â€” 7+ forms use sessionStorage (Contacts, Encounters, Testing, ClinicVisits, SymptomLog, Vaccinations, Measurements). Sensitive data, ephemeral (cleared on save/tab close). Deliberately out of Phase 4 scope; no migration path if encryption extends here.
+  - **Duplicate patterns needing standardization**: RegistryTagPicker (4 copies: Testing, MyProfile, Contacts, Encounters), Date/Time "Now" button (7+ copies), per-module field components (SelectField, DateTimeField, AgeField, RelationPicker â€” 10+ copies each), FAB buttons (12 sites).
+  - **Accessibility exhaustive (17 Sep axe-core)**: ~33 screens missing real `<h1>`; live regions beyond 10 done; contrast violations (Guide raw hex, Meds 50% opacity, more unpinned); module sheets need `role="dialog"` (same as above).
+  - **Settings navigation** â€” 22 rows/8 sections; test flakes from banner interception (fixed in helper), crypto timing waits need `waitForFunction`. Healthcare sub-tab discoverability (Menstrual/Contraception gated behind toggle).
+
 - **Desktop font-size/empty-space (#93) â€” scoped 15 Sep 2026,
 
 Full evidence trail for these lives in the build-audit artifact from
