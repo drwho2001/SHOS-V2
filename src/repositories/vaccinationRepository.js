@@ -192,14 +192,35 @@ async function persist() {
 // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
 // async — this is now async too, awaited at both call sites below
 // (getAll() needs Promise.all since it applies this per-entry).
+async function migrateLegacyVaccinationFields(entry) {
+  const migrated = { ...entry };
+  const legacyFields = ["injectionSite", "provider", "nextDue", "doseNumber"];
+  const hasLegacy = legacyFields.some((f) => migrated[f] != null && migrated[f] !== "");
+  if (!hasLegacy) return migrated;
+  if (!migrated.doses || migrated.doses.length === 0) {
+    migrated.doses = [{
+      doseNumber: migrated.doseNumber || 1,
+      date: migrated.date,
+      time: migrated.time || null,
+      provider: migrated.provider || "",
+      injectionSite: migrated.injectionSite || "",
+      nextDue: migrated.nextDue || null,
+      notes: "",
+    }];
+  }
+  legacyFields.forEach((f) => { delete migrated[f]; });
+  return migrated;
+}
+
 async function normalizeSymptomIds(entry) {
-  if (!entry.symptomIds || entry.symptomIds.length === 0) return entry;
-  const fixed = await Promise.all(entry.symptomIds.map(async (value) => {
+  const migrated = await migrateLegacyVaccinationFields(entry);
+  if (!migrated.symptomIds || migrated.symptomIds.length === 0) return migrated;
+  const fixed = await Promise.all(migrated.symptomIds.map(async (value) => {
     if (await SymptomsRegistry.getById(value)) return value;
     const byName = (await SymptomsRegistry.getAll()).find((s) => s.name === value);
     return byName ? byName.id : value;
   }));
-  return { ...entry, symptomIds: fixed };
+  return { ...migrated, symptomIds: fixed };
 }
 
 export const VaccinationRepository = {
