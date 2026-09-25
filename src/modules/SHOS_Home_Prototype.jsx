@@ -486,7 +486,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     // approach used throughout this effect.
     (async () => {
       const today = new Date().toISOString().slice(0, 10);
-      const visits = (await ClinicVisitsRepository.getAll()).filter((v) => !v.isArchived && v.date && v.date.slice(0, 10) >= today);
+      const visits = (await ClinicVisitsRepository.getAll()).filter((v) => !v.isArchived && v.date && v.date.slice(0, 10) > today);
       const sortedUpcoming = [...visits].sort((a, b) => new Date(a.date) - new Date(b.date));
       setNextVisit(sortedUpcoming[0] || null);
     })();
@@ -903,7 +903,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         <SummaryRow label="Last encounter" moduleColor={ACCENTS.encounters} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
         <SummaryRow label="Last medication dose" moduleColor={medsBlue} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
         <SummaryRow label="Last test" moduleColor={healthcareColor} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
-        <SummaryRow label="Next clinic visit" moduleColor={healthcareColor} value={nextVisit ? `${(nextVisit.reasonForVisit || []).join("/") || nextVisit.title || "Visit"} · ${formatExactDate(nextVisit.date)}` : "None scheduled"} onClick={nextVisit ? () => onNavigateToRecord("healthcare", nextVisit.id, "clinicVisits") : undefined} />
+        <SummaryRow label="Next clinic visit" moduleColor={healthcareColor} value={nextVisit ? `${(nextVisit.reasonForVisit || []).join("/") || nextVisit.title || "Visit"} · ${formatExactDate(nextVisit.date)}` : "No future visit booked — BASHH advises 3/12 monthly testing"} onClick={nextVisit ? () => onNavigateToRecord("healthcare", nextVisit.id, "clinicVisits") : () => onQuickAdd("healthcare", "clinicVisits", { isFutureAppointment: true })} />
         {/* ADDED — real ask: Menstrual/Contraception real results on
             the dashboard, same "click opens the actual record" pattern
             as every row above — not a separate stats section, this

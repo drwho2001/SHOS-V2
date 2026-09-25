@@ -54,7 +54,7 @@ function buildDark() {
 const radius = RADIUS;
 
 function formatDate(iso) {
-  if (!iso) return "â€”";
+  if (!iso) return "—";
   return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 function isOverdue(nextDue) {
@@ -531,8 +531,16 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
 
         {(symptomNames.length > 0 || visitNames.length > 0) && (
           <SectionCard title="Related records" T={T}>
-            <ReadRow label="Symptom" value={symptomNames} T={T} />
-            <ReadRow label="Clinic visits" value={visitNames} T={T} />
+            {symptomNames.length > 0 && (
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { onNavigateToRecord?.("healthcare", v.symptomIds[0], "symptomLog"); }} style={{ cursor: "pointer", padding: "4px 0" }}>
+                <ReadRow label="Symptom" value={symptomNames} T={T} />
+              </div>
+            )}
+            {visitNames.length > 0 && (
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { onNavigateToRecord?.("healthcare", v.clinicVisitIds[0], "clinicVisits"); }} style={{ cursor: "pointer", padding: "4px 0" }}>
+                <ReadRow label="Clinic visits" value={visitNames} T={T} />
+              </div>
+            )}
           </SectionCard>
         )}
 

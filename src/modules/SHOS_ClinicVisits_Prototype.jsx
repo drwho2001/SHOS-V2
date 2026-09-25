@@ -864,12 +864,22 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
           )}
 
           <SectionCard title="Medications — Administered in clinic" T={T}>
-            <RelationPicker label="From your Medication tracker" value={form.medicationsGivenIds} onChange={set("medicationsGivenIds")} items={allMeds} T={T} placeholder="No medications in registry" />
-            <AdHocMedicationsManager value={form.adHocMedicationsGiven} onChange={set("adHocMedicationsGiven")} T={T} />
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>From your Medication tracker</div>
+              <RelationPicker label="" value={form.medicationsGivenIds} onChange={set("medicationsGivenIds")} items={allMeds} T={T} placeholder="No medications in registry" />
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>One-off (free text)</div>
+              <AdHocMedicationsManager value={form.adHocMedicationsGiven} onChange={set("adHocMedicationsGiven")} T={T} />
+            </div>
           </SectionCard>
 
           <SectionCard title="Medications — Prescribed to take home" T={T}>
             <RelationPicker label="From your Medication tracker" value={form.medicationsPrescribedIds} onChange={set("medicationsPrescribedIds")} items={allMeds} T={T} placeholder="No medications in registry" />
+          </SectionCard>
+
+          <SectionCard title="Restock medications after visit" T={T}>
+            <RelationPicker label="Medications to restock after this visit" value={form.restockMedicationIds} onChange={set("restockMedicationIds")} items={allMeds} T={T} placeholder="No medications in registry" />
           </SectionCard>
 
           <RelationPicker label="Vaccinations given" value={form.vaccinationsGivenIds} onChange={set("vaccinationsGivenIds")} items={allVaccinations} T={T} placeholder="No vaccinations logged yet" />
@@ -1056,10 +1066,15 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
               })}
             </div>
           )}
-          <ReadRow label="Medications given (tracker)" value={medNames} T={T} />
+          {visit.medicationsGivenIds?.length > 0 && (
+            <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>Administered in clinic (tracker)</div>
+              {medNames && <ReadRow label="" value={medNames} T={T} />}
+            </div>
+          )}
           {visit.adHocMedicationsGiven.length > 0 && (
             <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Other medications given</div>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>Administered in clinic (one-off)</div>
               {visit.adHocMedicationsGiven.map((m) => (
                 <div key={m.id} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{m.name}{m.notes ? ` — ${m.notes}` : ""}</div>
               ))}
@@ -1067,8 +1082,17 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
           )}
           {visit.medicationsPrescribedIds?.length > 0 && (
             <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Prescribed to take home</div>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>Prescribed to take home</div>
               {visit.medicationsPrescribedIds.map((id) => {
+                const m = allMeds.find((m) => m.id === id);
+                return m ? <div key={id} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{m.name}</div> : null;
+              })}
+            </div>
+          )}
+          {visit.restockMedicationIds?.length > 0 && (
+            <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>Restock after visit</div>
+              {visit.restockMedicationIds.map((id) => {
                 const m = allMeds.find((m) => m.id === id);
                 return m ? <div key={id} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{m.name}</div> : null;
               })}
