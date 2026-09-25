@@ -8,8 +8,6 @@ describe("resolveDeepLinkRoute", () => {
     expect(resolveDeepLinkRoute("not a url")).toBeNull();
     expect(resolveDeepLinkRoute("com.shos.app://nope")).toBeNull();
     expect(resolveDeepLinkRoute("com.shos.app://contact")).toBeNull();
-    expect(resolveDeepLinkRoute("com.shos.app://clinic-card")).toBeNull();
-    expect(resolveDeepLinkRoute("com.shos.app://widget/reveal-clinic")).toBeNull();
   });
   it("shortcut compat", () => {
     expect(resolveDeepLinkRoute("com.shos.app://medication")).toEqual({ type: "quickAdd", tab: "medication" });
@@ -24,5 +22,11 @@ describe("resolveDeepLinkRoute", () => {
     expect(resolveDeepLinkRoute("com.shos.app://healthcare?subTab=testing")).toEqual({ type: "navigate", tab: "healthcare", subTab: "testing" });
     expect(resolveDeepLinkRoute("com.shos.app://healthcare?subTab=menstrual")).toEqual({ type: "navigate", tab: "healthcare", subTab: "menstrualHealth" });
     expect(resolveDeepLinkRoute("com.shos.app://healthcare?subTab=bogus")).toEqual({ type: "navigate", tab: "healthcare", subTab: "testing" });
+  });
+  it("clinic-card routes", () => {
+    expect(resolveDeepLinkRoute("com.shos.app://clinic-card")).toEqual({ type: "navigate", tab: "healthcare", subTab: "clinicCard" });
+  });
+  it("widget action routes", () => {
+    expect(resolveDeepLinkRoute("com.shos.app://widget/reveal-clinic")).toEqual({ type: "action", action: "revealClinicCard" });
   });
 });

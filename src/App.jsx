@@ -1722,7 +1722,10 @@ export default function App() {
       const route = resolveDeepLinkRoute(urlString);
       if (!route) return;
       if (route.type === "quickAdd") handleQuickAdd(route.tab, route.target);
-      else navigateTo(route.tab, route.subTab);
+      else if (route.type === "navigate") navigateTo(route.tab, route.subTab);
+      else if (route.type === "action" && route.action === "revealClinicCard") {
+        // Handled by ClinicCardWidgetProvider's reveal intent
+      }
     };
     let listenerHandle = null;
     (async () => {
