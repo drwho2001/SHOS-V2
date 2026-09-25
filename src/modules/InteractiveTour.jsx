@@ -26,7 +26,7 @@
 // rather than showing a spotlight around nothing.
 import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, XIcon as X } from "@phosphor-icons/react";
-import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, RADIUS, TYPE } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACCENT_TEXT_SAFE, RADIUS, TYPE } from "../calculations/designTokens";
 
 export const TOUR_STEPS = [
   { id: "welcome", target: null, title: "Quick tour", body: "A minute on where things live — each tab, search, and Settings. Skip anytime." },
@@ -186,7 +186,7 @@ export default function TourOverlay({ steps = TOUR_STEPS, onDone, darkMode }) {
               <ChevronLeft size={14} weight="bold" /> Back
             </button>
           )}
-          <button onClick={goNext} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENTS.home, color: "#FFFFFF", fontSize: 13, fontWeight: 600, fontFamily: "'Inter', sans-serif", cursor: "pointer" }}>
+          <button onClick={goNext} style={{ display: "flex", alignItems: "center", gap: 2, padding: "8px 14px", borderRadius: 999, border: "none", background: ACCENT_TEXT_SAFE.home, color: "#FFFFFF", fontSize: 13, fontWeight: 600, fontFamily: "'Inter', sans-serif", cursor: "pointer" }}>
             {isLast ? "Done" : "Next"} {!isLast && <ChevronRight size={14} weight="bold" />}
           </button>
         </div>

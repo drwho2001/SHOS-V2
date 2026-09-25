@@ -6,7 +6,7 @@
 // to be routing/global-state shell, not feature screens). Pure code
 // motion — every line of actual behavior below is unchanged from what
 // was working in App.jsx; only the file it lives in has changed.
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack } from "@phosphor-icons/react";
@@ -68,6 +68,8 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   }, []);
   const [showAttachments, setShowAttachments] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
   // CHANGED — real bugs found in the user's own device testing: (1) this
   // whole screen had no fontFamily set anywhere at all, unlike every
   // other screen in the app, which wraps itself in Public Sans
@@ -307,7 +309,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         // comment) but never carried over here — Healthcare is the
         // OTHER real entry point into Episodes, so it had the identical
         // gap independently.
-        <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", zIndex: 210, overflowY: "auto", display: "flex", justifyContent: "center" }}>
+        <div ref={dialogRef} role="dialog" aria-label="Healthcare" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", zIndex: 210, overflowY: "auto", display: "flex", justifyContent: "center" }}>
           <div style={{ width: "100%" }}>
             <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>

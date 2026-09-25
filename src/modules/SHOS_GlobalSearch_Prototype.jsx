@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { MagnifyingGlassIcon as Search, XIcon as X, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, CaretRightIcon as ChevronRight, TestTubeIcon as TestTube, StethoscopeIcon as Stethoscope, ThermometerIcon as Thermometer, SyringeIcon as Syringe, RulerIcon as Ruler, DropIcon as Drop, ShieldIcon as Shield, BabyIcon as Baby } from "@phosphor-icons/react";
 import { ContactRepository } from "../repositories/contactRepository";
 import { MedicationRepository } from "../repositories/medicationRepository";
@@ -324,6 +324,8 @@ const TYPE_PLURAL = {
 export default function GlobalSearchScreen({ onClose, onNavigate }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
 
   const [query, setQuery] = useState("");
   // ADDED 26 Aug 2026 — real ask: sort/filter on the search results
@@ -392,7 +394,7 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
     // ADDED — same region-landmark gap as SettingsScreen: this renders
     // as a direct sibling of App.jsx's own <main>, so its content was
     // never inside any landmark.
-    <div role="region" aria-label="Search" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: T.bg, zIndex: 200, display: "flex", justifyContent: "center", fontFamily: FONT_FAMILY }}>
+    <div ref={dialogRef} role="dialog" aria-label="Global Search" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: T.bg, zIndex: 200, display: "flex", justifyContent: "center", fontFamily: FONT_FAMILY }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}

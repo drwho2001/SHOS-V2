@@ -540,8 +540,10 @@ function btnStyle(color, variant, disabled) {
 function StockCorrectionSheet({ med, currentStock, onConfirm, onClose, T }) {
   const [actualStock, setActualStock] = useState(currentStock);
   const delta = actualStock - currentStock;
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
+    <div ref={dialogRef} role="dialog" aria-label="Correct stock level" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Correct stock level — {med.name}</span>
@@ -570,8 +572,10 @@ function QuantitySheet({ med, mode, onConfirm, onClose, T }) {
   const [amount, setAmount] = useState(1);
   const finalUnits = isRefill && unitMode === "container" ? amount * med.unitsPerContainer : amount;
   const step = (dir) => setAmount((a) => Math.max(1, a + dir));
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
+    <div ref={dialogRef} role="dialog" aria-label="Log refill" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>{isRefill ? "Log refill" : "Log waste/lost"} — {med.name}</span>
@@ -641,8 +645,10 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
   const toggle = (list, setList, v) => setList(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
   const step = (dir) => setAmount((a) => Math.max(1, a + dir));
   const typeLabel = entry.type === "dose" ? "Dose taken" : entry.type === "refill" ? "Refill" : "Waste/lost";
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
+    <div ref={dialogRef} role="dialog" aria-label="Edit entry" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Edit entry — {med.name}</span>
@@ -1113,6 +1119,8 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
   const [updateStockToo, setUpdateStockToo] = useState(false);
   const [stockDelta, setStockDelta] = useState("");
   const [note, setNote] = useState("");
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
 
   const doseActuallyChanged = JSON.stringify(doseComponents) !== JSON.stringify(getDoseComponents(med)) || Number(unitsPerDose) !== med.unitsPerDose;
 
@@ -1131,7 +1139,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
+    <div ref={dialogRef} role="dialog" aria-label="Update dose" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
       <div tabIndex={0} onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "85vh", overflowY: "auto", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, display: "flex", flexDirection: "column" }}>
         <div style={{ background: T.medsBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Update dose — {med.name}</span>
@@ -1419,13 +1427,15 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
   // itself was already memoized. Small dataset today, but the same
   // missing-memoization pattern is worth closing here too.
   const { exactNameMatch, closeNameMatch } = useMemo(() => {
-    const exactNameMatch = trimmedName && existingNames.some((n) => n.toLowerCase() === trimmedName.toLowerCase());
-    const closeNameMatch = trimmedName && !exactNameMatch ? findClosestMatch(existingNames, trimmedName) : null;
-    return { exactNameMatch, closeNameMatch };
-  }, [trimmedName, existingNames]);
+const exactNameMatch = trimmedName && existingNames.some((n) => n.toLowerCase() === trimmedName.toLowerCase());
+  const closeNameMatch = trimmedName && !exactNameMatch ? findClosestMatch(existingNames, trimmedName) : null;
+  return { exactNameMatch, closeNameMatch };
+}, [trimmedName, existingNames]);
 
-  return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
+const dialogRef = useRef(null);
+useEffect(() => { dialogRef.current?.focus(); }, []);
+return (
+    <div ref={dialogRef} role="dialog" aria-label="Add medication" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       {/* CHANGED 19 Aug 2026 — same sticky-bottom-bar restructure as
           MedicationEditSheet/Contacts' ContactEditSheet — see that
           sheet's comment for the full reasoning. */}
@@ -1562,8 +1572,10 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
     syncMedicationReminders();
   };
 
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label="Medication settings" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Medication settings</h1>

@@ -15,7 +15,7 @@
 // src/modules/settings/*.jsx (one file per screen, React.lazy-loaded
 // on first open). This file keeps the top-level SettingsScreen menu,
 // the three export sheets, and the lazy wiring. Behavior unchanged.
-import React, { useState, useEffect, Suspense, lazy } from "react";
+import React, { useState, useEffect, Suspense, lazy, useRef } from "react";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 import { WarningIcon as AlertTriangle, CheckIcon as Check, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, EyeIcon as Eye, EyeSlashIcon as EyeOff, ListChecksIcon as ClipboardCheck, DatabaseIcon as Database, DownloadSimpleIcon as Download, FireIcon as Flame, TreeStructureIcon as ListTree, MicroscopeIcon as Microscope, PillIcon as Pill, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User, PaletteIcon as Palette, ArrowUUpLeftIcon as ResetIcon, CalendarIcon as Calendar, FileCsvIcon as FileCsv, LockIcon as Lock, BellIcon as Bell, CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck, LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen, SlidersHorizontalIcon as SlidersHorizontal, MapPinIcon as MapPin, XIcon as X, WifiHighIcon as WifiHigh, LinkBreakIcon as LinkBreak, FolderIcon as Folder, FunnelIcon as Filter, ClockIcon as Clock, ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass, BugIcon as Bug, PencilSimpleIcon as PencilSimple, MonitorIcon as Monitor } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../calculations/designTokens";
@@ -493,6 +493,8 @@ function EncryptedExportSheet({ onClose }) {
 // needs to print a byte count.
 function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateToRecord, initialScreen, registerModuleBackHandler, onStartTour }) {
   const [darkMode] = useDarkModePreference();
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
 
   // Preload every sub-screen chunk the moment the Settings menu mounts, so
   // tapping a row renders instantly instead of flashing the Suspense
@@ -675,7 +677,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
     // styling — was ever inside any landmark at all. One role="region"
     // here covers the whole tree; confirmed live via axe-core before
     // and after, not assumed from the DOM shape alone.
-    <div tabIndex={0} role="region" aria-label="Settings" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(120px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+    <div ref={dialogRef} role="dialog" aria-label="Settings" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(120px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
