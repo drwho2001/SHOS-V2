@@ -380,7 +380,7 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
     .map((v) => ({
       id: v.id,
-      name: `${v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} Â· ${formatDate(v.date)}`,
+      name: `${v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(v.date)}`,
       searchText: (v.clinician || []).join(" ").toLowerCase(),
     })), [], []);
 
@@ -448,7 +448,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
   const visitNames = useLoadedMemo(async () => {
     if (!v?.clinicVisitIds?.length) return [];
     const visits = await Promise.all(v.clinicVisitIds.map((id) => ClinicVisitsRepository.getById(id)));
-    return visits.filter(Boolean).map((visit) => `${visit.title || (visit.reasonForVisit || []).join("/") || "Clinic visit"} Â· ${formatDate(visit.date)}`);
+    return visits.filter(Boolean).map((visit) => `${visit.title || (visit.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(visit.date)}`);
   }, [v], []);
   // FIXED 1 Sep 2026 â€” same real bug as the edit form's own picker:
   // symptomIds holds real SymptomsRegistry ids now, so displaying it
