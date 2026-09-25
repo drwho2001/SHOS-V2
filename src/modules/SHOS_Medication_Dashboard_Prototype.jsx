@@ -1232,10 +1232,6 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
     const doseComponents = form.doseComponents.filter((c) => c.value !== "");
     onSave({
       ...rest, doseComponents,
-      // legacy fields kept in sync for a single-ingredient medication only —
-      // see getDoseComponents()'s own comment for why nothing here auto-splits
-      doseStrengthValue: doseComponents.length === 1 ? doseComponents[0].value : "",
-      doseStrengthUnit: doseComponents.length === 1 ? doseComponents[0].unit : "",
       defaultRefillQuantity: defaultRefillContainers * (form.unitsPerContainer || 0),
     });
   };
@@ -1873,8 +1869,8 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     setSheet(null);
   };
   // ADDED 26 Aug 2026 — real ask: dose change as its own real action.
-  const confirmDoseUpdate = async ({ doseStrengthValue, doseStrengthUnit, doseComponents, unitsPerDose, note, stockDelta }) => {
-    await MedicationRepository.updateDose(updatingDose.id, { doseStrengthValue, doseStrengthUnit, doseComponents, unitsPerDose, note });
+  const confirmDoseUpdate = async ({ doseComponents, unitsPerDose, note, stockDelta }) => {
+    await MedicationRepository.updateDose(updatingDose.id, { doseComponents, unitsPerDose, note });
     if (stockDelta !== null && stockDelta !== 0) {
       await LogRepository.create({ medicationId: updatingDose.id, type: stockDelta > 0 ? "refill" : "waste", delta: stockDelta, date: nowAsStoredDateTime(), notes: `Stock update alongside dose change${note ? `: ${note}` : ""}` });
     }

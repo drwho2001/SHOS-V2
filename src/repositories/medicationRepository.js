@@ -264,13 +264,6 @@ const DEFAULT_MEDICATION = {
   refillCancelledAt: null,
   isArchived: false, sortOrder: 0,
   route: "", medicationType: "",
-  // CHANGED 19 Aug 2026 — dosePerUnit (one free-text string) replaced
-  // with doseStrengthValue (number) + doseStrengthUnit (real dropdown,
-  // see DOSE_UNIT_OPTIONS) — this field only existed for a few hours
-  // before the user's own testing flagged the free-text version as worth
-  // restructuring, so replacing it outright rather than keeping the
-  // old shape around for compatibility it never really needed.
-  doseStrengthValue: "", doseStrengthUnit: "",
   // ADDED 16 Sep 2026 — real gap: a combination product (PrEP, co-
   // codamol) has more than one active ingredient at its own strength —
   // see medicationCalculations.js's getDoseComponents()/
@@ -390,14 +383,12 @@ export const MedicationRepository = {
   // superseded, then the current fields update to the new dose.
   // Stock/adherence/log history all stay attached to this same
   // record's id throughout, genuinely continuous.
-  async updateDose(id, { doseStrengthValue, doseStrengthUnit, doseComponents, unitsPerDose, note }) {
+  async updateDose(id, { doseComponents, unitsPerDose, note }) {
     await ensureLoaded();
     let updatedMedication = null;
     medications = medications.map((m) => {
       if (m.id !== id) return m;
       const historyEntry = {
-        doseStrengthValue: m.doseStrengthValue,
-        doseStrengthUnit: m.doseStrengthUnit,
         doseComponents: m.doseComponents,
         unitsPerDose: m.unitsPerDose,
         supersededAt: new Date().toISOString(),
@@ -405,7 +396,7 @@ export const MedicationRepository = {
       };
       updatedMedication = {
         ...m,
-        doseStrengthValue, doseStrengthUnit, doseComponents, unitsPerDose,
+        doseComponents, unitsPerDose,
         doseHistory: [...(m.doseHistory || []), historyEntry],
         updatedAt: new Date().toISOString(),
       };

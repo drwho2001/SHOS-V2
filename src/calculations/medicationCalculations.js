@@ -30,17 +30,9 @@ import { realTimestampFromStored } from "./dateInputHelpers";
 // it by unitsPerDose (the Update-dose sheet's own description, dose
 // history) silently rendered "NaN". `doseComponents` (an array of
 // {label, value, unit}, one entry per active ingredient) is now the
-// real source of truth; `getDoseComponents()` wraps the OLD singular
-// doseStrengthValue/doseStrengthUnit fields as a single unlabeled
-// component for any medication never touched since — deliberately
-// never auto-splits an existing combined string like "200 , 245" into
-// separate components, since guessing which number belongs to which
-// ingredient could silently corrupt a real dose (the same caution
-// backupMigrations.js's own dosePerUnit-rename entry already applied).
+// only source of truth; the old singular fields are deprecated.
 export function getDoseComponents(med) {
-  if (med.doseComponents && med.doseComponents.length > 0) return med.doseComponents;
-  if (med.doseStrengthValue) return [{ label: "", value: med.doseStrengthValue, unit: med.doseStrengthUnit || "" }];
-  return [];
+  return med.doseComponents || [];
 }
 
 // Formats a dose-components list for display, one "Label 245mg"-style
