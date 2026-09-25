@@ -4,21 +4,26 @@
 // WHAT HAPPENED: CLAUDE.md (and later SHOS_Vaccinations_Prototype.jsx)
 // contained genuine, committed mojibake. Original UTF-8 bytes had been
 // read as CP1252/Latin-1 and re-encoded as UTF-8, so every em-dash had
-// become the 3 characters "â€"" (~1,800 occurrences across the two files),
-// and it had survived build, lint, vitest and the 15-flow smoke suite
-// because all of those check BEHAVIOUR, not bytes. Nothing in the repo
-// could have caught it. That's what this script is for.
+// become the 3 characters U+00E2 U+20AC U+201D (~1,800 occurrences across
+// the two files), and it had survived build, lint, vitest and the 15-flow
+// smoke suite because all of those check BEHAVIOUR, not bytes. Nothing in
+// the repo could have caught it. That's what this script is for.
+//
+// NOTE: this file deliberately describes those sequences in HEX rather than
+// reproducing them literally. Writing the literal characters into this
+// comment reintroduced the exact corruption being fixed - and this guard
+// caught it, on its own source, in its first CI run.
 //
 // WHAT IT CHECKS, per git-tracked text file:
 //   1. valid UTF-8 (catches truncated / partially written bytes)
-//   2. C1 control characters U+0080-U+009F — never legitimate in source.
+//   2. C1 control characters U+0080-U+009F - never legitimate in source.
 //      These are the fingerprint of a lossy CP1252 round-trip, where an
 //      undefined byte (0x80, 0x81, ...) was replaced by the euro sign or
 //      dropped entirely, which is why a naive "decode it back" repair can
-//      silently produce the WRONG character (e.g. "â€¢" decodes to "€" but
-//      was actually a bullet "•").
-//   3. classic mojibake lead characters (Â Ã â ã) immediately followed by
-//      another non-ASCII character.
+//      silently produce the WRONG character (e.g. U+00E2 U+20AC U+00A2
+//      decodes to a euro sign but was actually a bullet U+2022).
+//   3. classic mojibake lead characters immediately followed by another
+//      non-ASCII character.
 //
 // Deliberately uses `git ls-files` rather than a filesystem walk, so
 // untracked build output (node_modules, dist/, the committed-by-accident
