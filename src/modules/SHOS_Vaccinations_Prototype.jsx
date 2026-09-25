@@ -437,7 +437,7 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
   );
 }
 
-function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, refresh }) {
+function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, refresh, onNavigateToRecord }) {
   const v = useLoadedMemo(() => VaccinationRepository.getById(vaccinationId), [vaccinationId], null);
   // ADDED â€” real ask: real delete, with a confirmation step, same
   // pattern already proven for Testing.
@@ -784,7 +784,7 @@ function VaccinationRow({ v, T, selectMode, selectedIds, toggleSelected, onOpen,
   );
 }
 
-export default function VaccinationsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler } = {}) {
+export default function VaccinationsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onDataChanged, registerModuleBackHandler, onNavigateToRecord } = {}) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "list" });
@@ -878,7 +878,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
 
   let content;
   if (screen.name === "list") content = <VaccinationsLanding T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} vaccinations={vaccinations} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />;
-  else if (screen.name === "detail") content = <VaccinationDetail T={T} vaccinationId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} />;
+  else if (screen.name === "detail") content = <VaccinationDetail T={T} vaccinationId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} triggerDelete={triggerDelete} refresh={refresh} onNavigateToRecord={onNavigateToRecord} />;
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
