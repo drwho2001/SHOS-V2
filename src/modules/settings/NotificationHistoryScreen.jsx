@@ -1,6 +1,6 @@
 // NotificationHistoryScreen — extracted verbatim from src/modules/SHOS_Settings_Prototype.jsx
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import ConfirmDeleteCard from "../../components/ConfirmDeleteCard";
 import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
@@ -10,9 +10,6 @@ import { useIsDesktopWidth } from "../../calculations/responsive";
 import { NotificationHistoryRepository } from "../../repositories/notificationHistoryRepository";
 
 export function NotificationHistoryScreen({ darkMode, onClose }) {
-  // Local T-shaped object for the shared ConfirmDeleteCard — same
-  // pattern as TrashScreen's own, this screen otherwise reads
-  // NEUTRAL/DARK directly rather than a per-module T.
   const T = { ...(darkMode ? DARK : NEUTRAL), actionRed: darkMode ? resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") : ACTION.red };
   // ADDED — real audit finding (desktop full-width sweep): uneven
   // multi-line log entries — CSS multi-column flow, same as Trash.
@@ -23,9 +20,11 @@ export function NotificationHistoryScreen({ darkMode, onClose }) {
   // action in the app.
   const [confirmClear, setConfirmClear] = useState(false);
   const clear = async () => { await NotificationHistoryRepository.clear(); setEntries([]); setConfirmClear(false); };
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
 
   return (
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+    <div ref={dialogRef} role="dialog" aria-label="Notification history" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 225, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
