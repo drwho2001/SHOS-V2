@@ -881,9 +881,18 @@ async function testPinRecoveryFlow(page) {
   await page.locator('button:has-text("Save PIN")').click({ timeout: 5000 });
   await page.waitForTimeout(400);
   await page.locator('[aria-label="App Lock"]').click({ timeout: 5000 });
-  await page.waitForTimeout(500);
 
-  assert(await page.locator("text=Set a recovery string").count() > 0, "the recovery-string section renders once App Lock is on");
+  // Was a fixed 500ms wait then a single count() check with no retry —
+  // turning App Lock on triggers a real vault re-wrap (PBKDF2), so 500ms
+  // is not reliably enough on a loaded machine and this gate went red
+  // intermittently for that reason alone, not because the app regressed.
+  // Bounded wait that returns as soon as the section actually renders,
+  // same treatment already applied to the five PBKDF2 waits further down
+  // in this flow.
+  await page
+    .locator("text=Set a recovery string")
+    .first()
+    .waitFor({ state: "visible", timeout: 20000 });
   await page.locator('button:has-text("Set a recovery string")').click({ timeout: 5000 });
   await page.waitForTimeout(200);
   const textInputs = page.locator('input[type="password"]:not([inputmode="numeric"])');

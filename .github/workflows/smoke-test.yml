@@ -50,6 +50,24 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # ADDED 25 Sep 2026 — a real, committed encoding-corruption bug got
+      # through every other gate in this file. CLAUDE.md (this repo's own
+      # source-of-truth doc) and SHOS_Vaccinations_Prototype.jsx both
+      # contained ~1,800 genuine mojibake characters, because original UTF-8
+      # bytes had been read as CP1252 and re-encoded as UTF-8. Lint, vitest,
+      # the build and all 15 smoke flows passed throughout, because they
+      # check BEHAVIOUR, not bytes — nothing in the repo could have caught
+      # it. This guard scans every git-tracked text file for the mojibake
+      # signatures and the C1-control-character fingerprint of a lossy
+      # encoding round-trip. It is deliberately tested against injected
+      # corruption rather than merely run once green: its first two
+      # versions each produced false positives on a clean repo (unpaired
+      # emoji surrogates, and a legitimately UTF-16 PowerShell manifest),
+      # and its first lead-character range missed the single most common
+      # sequence of all ("â" + "€") because U+20AC is outside 0x80-0xFF.
+      - name: Encoding guard (mojibake)
+        run: npm run check:encoding
+
       - name: Unit tests (Vitest)
         run: npm run test
 

@@ -543,7 +543,7 @@ function StockCorrectionSheet({ med, currentStock, onConfirm, onClose, T }) {
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Correct stock level" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
+    <div ref={dialogRef} role="dialog" aria-label="Correct stock level" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Correct stock level — {med.name}</span>
@@ -575,7 +575,7 @@ function QuantitySheet({ med, mode, onConfirm, onClose, T }) {
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Log refill" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
+    <div ref={dialogRef} role="dialog" aria-label="Log refill" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>{isRefill ? "Log refill" : "Log waste/lost"} — {med.name}</span>
@@ -648,7 +648,7 @@ function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Edit entry" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
+    <div ref={dialogRef} role="dialog" aria-label="Edit entry" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 16, color: T.textPrimary }}>Edit entry — {med.name}</span>
@@ -1139,7 +1139,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
   };
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Update dose" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
+    <div ref={dialogRef} role="dialog" aria-label="Update dose" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
       <div tabIndex={0} onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "85vh", overflowY: "auto", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, display: "flex", flexDirection: "column" }}>
         <div style={{ background: T.medsBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <span style={{ fontFamily: "'Inter', sans-serif", ...TYPE.sheetTitle, color: "#FFFFFF" }}>Update dose — {med.name}</span>
@@ -1427,15 +1427,15 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
   // itself was already memoized. Small dataset today, but the same
   // missing-memoization pattern is worth closing here too.
   const { exactNameMatch, closeNameMatch } = useMemo(() => {
-const exactNameMatch = trimmedName && existingNames.some((n) => n.toLowerCase() === trimmedName.toLowerCase());
-  const closeNameMatch = trimmedName && !exactNameMatch ? findClosestMatch(existingNames, trimmedName) : null;
-  return { exactNameMatch, closeNameMatch };
-}, [trimmedName, existingNames]);
+    const exactNameMatch = trimmedName && existingNames.some((n) => n.toLowerCase() === trimmedName.toLowerCase());
+    const closeNameMatch = trimmedName && !exactNameMatch ? findClosestMatch(existingNames, trimmedName) : null;
+    return { exactNameMatch, closeNameMatch };
+  }, [trimmedName, existingNames]);
 
-const dialogRef = useRef(null);
-useEffect(() => { dialogRef.current?.focus(); }, []);
-return (
-    <div ref={dialogRef} role="dialog" aria-label="Add medication" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
+  return (
+    <div ref={dialogRef} role="dialog" aria-label="Add medication" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       {/* CHANGED 19 Aug 2026 — same sticky-bottom-bar restructure as
           MedicationEditSheet/Contacts' ContactEditSheet — see that
           sheet's comment for the full reasoning. */}

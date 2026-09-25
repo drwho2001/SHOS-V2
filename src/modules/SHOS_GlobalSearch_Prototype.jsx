@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { MagnifyingGlassIcon as Search, XIcon as X, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, CaretRightIcon as ChevronRight, TestTubeIcon as TestTube, StethoscopeIcon as Stethoscope, ThermometerIcon as Thermometer, SyringeIcon as Syringe, RulerIcon as Ruler, DropIcon as Drop, ShieldIcon as Shield, BabyIcon as Baby } from "@phosphor-icons/react";
 import { ContactRepository } from "../repositories/contactRepository";
 import { MedicationRepository } from "../repositories/medicationRepository";
@@ -324,8 +324,12 @@ const TYPE_PLURAL = {
 export default function GlobalSearchScreen({ onClose, onNavigate }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
-  const dialogRef = useRef(null);
-  useEffect(() => { dialogRef.current?.focus(); }, []);
+  // No container-level focus() here on purpose: the search input below
+  // already carries autoFocus, which is the behaviour that actually
+  // matters for this screen — a keyboard user should be able to start
+  // typing immediately. A mount-once focus() on the overlay container
+  // (as the other 19 Settings sub-screens use) would fight that and pull
+  // focus back off the field on every open.
 
   const [query, setQuery] = useState("");
   // ADDED 26 Aug 2026 — real ask: sort/filter on the search results
@@ -391,10 +395,13 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
   };
 
   return (
-    // ADDED — same region-landmark gap as SettingsScreen: this renders
-    // as a direct sibling of App.jsx's own <main>, so its content was
-    // never inside any landmark.
-    <div ref={dialogRef} role="dialog" aria-label="Global Search" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: T.bg, zIndex: 200, display: "flex", justifyContent: "center", fontFamily: FONT_FAMILY }}>
+    // role="dialog", not role="region": this is a modal overlay that
+    // covers the app until dismissed, so dialog is the accurate role
+    // (a modal legitimately sits outside the page's landmark structure,
+    // unlike the non-modal content the 10 Sep region fix was for). The
+    // "never inside any landmark" note that used to sit here justified
+    // role="region" and is no longer the reason for this element.
+    <div role="dialog" aria-label="Global Search" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: T.bg, zIndex: 200, display: "flex", justifyContent: "center", fontFamily: FONT_FAMILY }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}

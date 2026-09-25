@@ -4,7 +4,7 @@ import { VaccinationRepository, DEFAULT_VACCINATION } from "../repositories/vacc
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
-// ADDED 19 Aug 2026 â€” VACCINE_OPTIONS/REASON_OPTIONS/INJECTION_SITE_OPTIONS
+// ADDED 19 Aug 2026 — VACCINE_OPTIONS/REASON_OPTIONS/INJECTION_SITE_OPTIONS
 // now live here, real in-app editable option lists.
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
@@ -15,7 +15,7 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString } from "../calculations/dateInputHelpers";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
-// CHANGED 20 Aug 2026 â€” real design-unification pass: values read
+// CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
@@ -24,15 +24,15 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 
-// ADDED 19 Aug 2026 â€” Vaccinations, real live Notion schema. Same
+// ADDED 19 Aug 2026 — Vaccinations, real live Notion schema. Same
 // self-contained-module pattern, Healthcare blue, single Inter
 // typeface throughout (JetBrains Mono retired 26 Aug 2026).
-// CHANGED 15 Sep 2026 â€” real bug found: these were plain module-level
-// `const`s, baking in ACCENTS.healthcare/ACTION.red at IMPORT time â€”
+// CHANGED 15 Sep 2026 — real bug found: these were plain module-level
+// `const`s, baking in ACCENTS.healthcare/ACTION.red at IMPORT time —
 // before App.jsx's own bootReady gate ever resolves the real
 // ModuleColorRepository overrides (the colour-blind-safe palette toggle
 // included). Same bug already found and fixed for Measurements/
-// MenstrualHealth (and now several other module files) â€” converted to
+// MenstrualHealth (and now several other module files) — converted to
 // functions, called fresh per-render, same fix.
 function buildLight() {
   return {
@@ -40,9 +40,9 @@ function buildLight() {
     healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red,
   };
 }
-// Dark mode, on Medication's DARK basis â€” see Contacts' own comment
+// Dark mode, on Medication's DARK basis — see Contacts' own comment
 // for the full reasoning.
-// CHANGED â€” real architecture fix, same as Contacts' own comment:
+// CHANGED — real architecture fix, same as Contacts' own comment:
 // resolveDarkAccent() keeps today's exact behaviour by default, only
 // brightening once a real colour override exists.
 function buildDark() {
@@ -76,7 +76,7 @@ function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
     <div style={{ padding: "8px 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
-        {/* ADDED â€” real ask: "Now" quick-fill, device's real local date. */}
+        {/* ADDED — real ask: "Now" quick-fill, device's real local date. */}
         {type === "date" && (
           <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(nowAsDateString())} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Now</span>
         )}
@@ -96,7 +96,7 @@ function SelectField({ label, value, onChange, options, T, listName }) {
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
       <select value={value ?? ""} onChange={(e) => { onChange(e.target.value); if (listName && e.target.value) CustomOptionListsRepository.recordUsage(listName, e.target.value); }} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
-        <option value="">â€”</option>
+        <option value="">—</option>
         {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
       </select>
     </div>
@@ -124,9 +124,9 @@ function MultiSelectChips({ label, value, onChange, options, T, listName }) {
   );
 }
 
-// CHANGED 1 Sep 2026 â€” real omission found in a broader audit: unlike
+// CHANGED 1 Sep 2026 — real omission found in a broader audit: unlike
 // the same-named component in Clinic Visits/Symptom Log (fixed earlier
-// this session), this copy had no search at all â€” just a hard cap-8
+// this session), this copy had no search at all — just a hard cap-8
 // chip list with nothing beyond it reachable. Same fix: real search
 // box (matches name or clinician), default suggestion count tightened
 // to the 3 most recent.
@@ -146,13 +146,13 @@ function RelationPicker({ label, value, onChange, T, items, placeholder }) {
           {value.map((id) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={id} onClick={() => onChange(value.filter((v) => v !== id))}
               style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer" }}>
-              {nameFor(id)} âœ•
+              {nameFor(id)} ✕
             </div>
           ))}
         </div>
       )}
       {available.length > 0 && (
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or clinicianâ€¦"
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or clinician…"
           style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", marginBottom: 6 }} />
       )}
       {visibleSuggestions.length > 0 ? (
@@ -182,18 +182,18 @@ function ReadRow({ label, value, T, alert }) {
   );
 }
 
-// CHANGED â€” real ask: "not an exhaustive vaccine name given, should be
+// CHANGED — real ask: "not an exhaustive vaccine name given, should be
 // free/partially free text with recognition, so e.g. MENACWY can be
-// added" â€” the underlying data already came from the editable option
+// added" — the underlying data already came from the editable option
 // list, but the field itself was still a closed <select>, meaning
 // typing a new one directly on this form wasn't actually possible.
 // Same free-text-plus-suggestions pattern already proven for Clinician
-// in Clinic Visits â€” genuinely typing a new value here also saves it
+// in Clinic Visits — genuinely typing a new value here also saves it
 // to the real shared option list, so it's a real suggestion next time.
 function VaccineField({ value, onChange, options, onAddNew, T }) {
-  // CHANGED â€” same real ask as the other suggestion-chip fields this
+  // CHANGED — same real ask as the other suggestion-chip fields this
   // session: narrow to real matches once typing begins, instead of
-  // always showing the same static option list regardless of input â€”
+  // always showing the same static option list regardless of input —
   // also lowers the odds of "Hep B" and "Hepatitis B" both quietly
   // ending up as separate saved options.
   const typed = (value || "").trim();
@@ -221,7 +221,7 @@ function VaccineField({ value, onChange, options, onAddNew, T }) {
   );
 }
 
-// Dose-by-dose series editor â€” manages the doses[] array for a vaccine series
+// Dose-by-dose series editor — manages the doses[] array for a vaccine series
 function DoseByDose({ doses, onChange, T }) {
   const addDose = () => {
     const nextNumber = (doses?.length || 0) + 1;
@@ -320,7 +320,7 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   const isNew = !vaccination;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
-  // ADDED 19 Aug 2026 â€” real in-app editable option lists.
+  // ADDED 19 Aug 2026 — real in-app editable option lists.
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
   const [vaccineOptions, setVaccineOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("vaccine"), [], []);
@@ -362,20 +362,20 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
     saveDraft(draftKey, form);
-    // draftKey deliberately omitted â€” derived once from the record
+    // draftKey deliberately omitted — derived once from the record
     // being edited and fixed for this sheet instance's whole life.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const canSave = form.title.trim().length > 0;
   const symptoms = useLoadedMemo(async () => (await SymptomsRegistry.getAll()).filter((s) => !s.isArchived), [], []);
-  // CHANGED 1 Sep 2026 â€” real omission found in a broader audit: this
+  // CHANGED 1 Sep 2026 — real omission found in a broader audit: this
   // had no .sort() at all (storage order = oldest first), the same
   // "old options listed first" bug already fixed elsewhere. Sorted
   // newest-first; searchText adds clinician name(s) as a second match
   // field, same "search by name or [relevant field]" pattern used
   // elsewhere (Encounters searches by attendee, this searches by
-  // clinician â€” Vaccinations' nearest equivalent).
+  // clinician — Vaccinations' nearest equivalent).
   const visits = useLoadedMemo(async () => [...(await ClinicVisitsRepository.getAll())].filter((v) => !v.isArchived)
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
     .map((v) => ({
@@ -390,10 +390,10 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
   };
 
   return (
-    <div role="dialog" aria-label={isNew ? "Log vaccination" : "Edit vaccination"} ref={editSheetRef} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
+    <div role="dialog" aria-label={isNew ? "Log vaccination" : "Edit vaccination"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
       <div style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
-        {/* CHANGED 26 Aug 2026 â€” real ask: forms should also have the
-            module banner title. Also added a real close button â€” this
+        {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
+            module banner title. Also added a real close button — this
             had no visible close control at all, only backdrop-tap. */}
         <div style={{ background: T.healthcareBlue, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", flexShrink: 0, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }}>
           <h1 style={{ ...TYPE.sheetTitle, margin: 0, color: "#FFFFFF" }}>{isNew ? "Log vaccination" : "Edit vaccination"}</h1>
@@ -407,11 +407,11 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
           {/* REPLACED legacy doseNumber/date/nextDue with DoseByDose for series tracking */}
           <DoseByDose doses={form.doses} onChange={set("doses")} T={T} />
           <TextField label="Provider" value={form.provider} onChange={set("provider")} T={T} placeholder="e.g. Sexual Health Clinic" />
-          {/* FIXED 1 Sep 2026 â€” real ask: "Vaccination log symptoms not
+          {/* FIXED 1 Sep 2026 — real ask: "Vaccination log symptoms not
               correct type." MultiSelectChips is a plain string-toggle
               component fed symptom NAMES as its options, but symptomIds
               is documented (DEFAULT_VACCINATION's own comment) and
-              named as real SymptomsRegistry IDs â€” every selection was
+              named as real SymptomsRegistry IDs — every selection was
               storing a name string into a field meant to hold an ID,
               exactly like every other symptomIds/symptomTypeIds field
               in this app (Symptom Log, Clinic Visits) correctly does
@@ -439,23 +439,23 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
 
 function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, refresh, onNavigateToRecord }) {
   const v = useLoadedMemo(() => VaccinationRepository.getById(vaccinationId), [vaccinationId], null);
-  // ADDED â€” real ask: real delete, with a confirmation step, same
+  // ADDED — real ask: real delete, with a confirmation step, same
   // pattern already proven for Testing.
   const [confirmDelete, setConfirmDelete] = useState(false);
-  // CHANGED â€” Phase 2 encryption groundwork: ClinicVisitsRepository
-  // went async â€” hoisted above the guard (hooks-before-guard rule),
+  // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
+  // went async — hoisted above the guard (hooks-before-guard rule),
   // guarded with `v?.` since it's genuinely null for one render.
   const visitNames = useLoadedMemo(async () => {
     if (!v?.clinicVisitIds?.length) return [];
     const visits = await Promise.all(v.clinicVisitIds.map((id) => ClinicVisitsRepository.getById(id)));
     return visits.filter(Boolean).map((visit) => `${visit.title || (visit.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(visit.date)}`);
   }, [v], []);
-  // FIXED 1 Sep 2026 â€” same real bug as the edit form's own picker:
+  // FIXED 1 Sep 2026 — same real bug as the edit form's own picker:
   // symptomIds holds real SymptomsRegistry ids now, so displaying it
   // raw needs resolving to names first, same as visitNames just above
   // and ClinicVisits' own symptomTypeIds display.
-  // CHANGED â€” Phase 2 encryption groundwork: SymptomsRegistry is now
-  // async â€” hoisted above the `!v` guard (hooks-before-guard rule),
+  // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry is now
+  // async — hoisted above the `!v` guard (hooks-before-guard rule),
   // guarded with `v?.` since it's genuinely null for one render, same
   // treatment as visitNames just above.
   const symptomNames = useLoadedMemo(async () => {
@@ -478,7 +478,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
         <ConfirmDeleteCard
           T={T}
           moduleColor={T.healthcareBlue}
-          message="This permanently deletes the record â€” unlike archiving, there's no getting it back. Only use this for a genuinely wrong entry."
+          message="This permanently deletes the record — unlike archiving, there's no getting it back. Only use this for a genuinely wrong entry."
           onCancel={() => setConfirmDelete(false)}
           onConfirm={async () => { await triggerDelete([v]); refresh(); onBack(); }}
         />
@@ -547,7 +547,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
         <SectionCard title="Notes" T={T}>
           <ReadRow label="Notes" value={v.notes} T={T} />
         </SectionCard>
-        {/* ADDED 26 Aug 2026 â€” real ask: last-updated indicator. */}
+        {/* ADDED 26 Aug 2026 — real ask: last-updated indicator. */}
         {v.updatedAt && (
           <div style={{ textAlign: "center", fontSize: 11, color: T.textDisabled, marginTop: 16 }}>
             Last updated {formatDate(v.updatedAt)}
@@ -559,14 +559,14 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
 }
 
 function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteToast, undoDelete, redoDelete, triggerDelete }) {
-  // ADDED 16 Sep 2026 â€” real report: "module contents still mobile
-  // width" â€” see the list container's own comment below for the fix.
+  // ADDED 16 Sep 2026 — real report: "module contents still mobile
+  // width" — see the list container's own comment below for the fix.
   const isDesktopWidth = useIsDesktopWidth();
   const allSorted = useMemo(() => [...vaccinations].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), [vaccinations]);
   const overdueCount = allSorted.filter((v) => isOverdue(v.nextDue)).length;
-  // ADDED 26 Aug 2026 â€” real ask: search within module, rolled out to
+  // ADDED 26 Aug 2026 — real ask: search within module, rolled out to
   // every module that didn't already have it. Deliberately kept
-  // separate from allSorted/overdueCount above â€” the overdue count
+  // separate from allSorted/overdueCount above — the overdue count
   // should always reflect everything, not just what's currently
   // search-filtered, otherwise it'd misleadingly change while typing.
   const [query, setQuery] = useState("");
@@ -575,7 +575,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
     if (!q) return allSorted;
     return allSorted.filter((v) => [v.title, v.vaccine].filter(Boolean).some((val) => val.toLowerCase().includes(q)));
   }, [allSorted, query]);
-  // ADDED 26 Aug 2026 â€” real ask: long-press multi-select, rolled out
+  // ADDED 26 Aug 2026 — real ask: long-press multi-select, rolled out
   // to every module.
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -583,11 +583,11 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
   const toggleSelected = (id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
   const exitSelectMode = () => { setSelectMode(false); setSelectedIds([]); setConfirmingBulkDelete(false); };
   const pressTimer = useRef(null);
-  // CHANGED â€” real ask: long-press for select/multiselect fired too
+  // CHANGED — real ask: long-press for select/multiselect fired too
   // easily. 750ms (1.5x the original 500ms), same across every module
   // using this pattern.
-  // ADDED â€” real bug the user flagged: resting a finger on a card
-  // while scrolling (or scrolling slowly) still fired long-press â€” see
+  // ADDED — real bug the user flagged: resting a finger on a card
+  // while scrolling (or scrolling slowly) still fired long-press — see
   // Contacts' own ContactCard for the full reasoning, same fix.
   const pressStartPos = useRef(null);
   const startPress = (id, evt) => {
@@ -601,53 +601,53 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
     const dy = evt.touches[0].clientY - pressStartPos.current.y;
     if (Math.hypot(dx, dy) > 10) cancelPress();
   };
-  // CHANGED 26 Aug 2026 â€” real gap found and fixed: vaccinations/
+  // CHANGED 26 Aug 2026 — real gap found and fixed: vaccinations/
   // deletedRecent/undoDelete/triggerDelete lifted to
   // VaccinationsModule, shared with VaccinationDetail.
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
-      {/* CHANGED 26 Aug 2026 â€” real ask: this had the same full
-          prominence as Healthcare's own title banner right above it â€”
+      {/* CHANGED 26 Aug 2026 — real ask: this had the same full
+          prominence as Healthcare's own title banner right above it —
           redundant, since this is always a sub-tab within Healthcare
           (the sub-tab pills already show which section is active),
           never a standalone top-level screen. Shrunk to a small
           subordinate label instead of a duplicate full banner, same
           fix already applied to Testing. */}
-      {/* CHANGED â€” real bug fix, same as Testing's own: this stuck at
+      {/* CHANGED — real bug fix, same as Testing's own: this stuck at
           top:0, colliding with Healthcare's own banner (also top:0)
           in the same shared scroll container, instead of stacking
           beneath it. top:62 matches Contacts' own established offset
           for a second sticky bar under an identical banner shape. */}
-      {/* FIXED 16 Sep 2026 â€” real bug, same as Testing's own: the
+      {/* FIXED 16 Sep 2026 — real bug, same as Testing's own: the
           sticky-header status-bar fix moved Healthcare's banner from
           top:0 to calc(env(safe-area-inset-top) + 8px), leaving this
-          bar's own bare top:62 stuck at the OLD position â€” now
+          bar's own bare top:62 stuck at the OLD position — now
           overlapping the banner's new, lower bottom edge. Carries the
           identical offset so it always sits flush beneath it. */}
-      {/* CHANGED â€” real edge-to-edge redesign: Healthcare's banner
+      {/* CHANGED — real edge-to-edge redesign: Healthcare's banner
           moved its safe-area inset from `top` into its own top
           padding, shrinking its net height by 8px, so 70 became 62. */}
       <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 62px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Vaccinations</span>
-        {/* ADDED 26 Aug 2026 â€” real ask: explicit Select toggle. */}
+        {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle. */}
         <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>
           {selectMode ? "Done" : "Select"}
         </span>
       </div>
-      {/* ADDED 26 Aug 2026 â€” real ask: bulk action toolbar. */}
+      {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
       {selectMode && (
         <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
-            {/* ADDED 1 Sep 2026 â€” real ask: "option to select all...
+            {/* ADDED 1 Sep 2026 — real ask: "option to select all...
                 rather than manual 1 by 1", scoped to whatever's
                 currently visible under the active search/filters. */}
             <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setSelectedIds(selectedIds.length === sorted.length ? [] : sorted.map((v) => v.id))}
               style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600, cursor: "pointer" }}>
               {selectedIds.length === sorted.length ? "Deselect all" : "Select all"}
             </span>
-            {/* ADDED 26 Aug 2026 â€” real ask: export/print a single
+            {/* ADDED 26 Aug 2026 — real ask: export/print a single
                 record, enabled only when exactly one is selected. */}
             <span role="button" tabIndex={0} aria-label="Export vaccination" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { if (selectedIds.length === 1) exportRecordAsFile("vaccinations", await VaccinationRepository.getById(selectedIds[0])); }}
               style={{ fontSize: 13, color: selectedIds.length === 1 ? "#FFFFFF" : "#89898C", fontWeight: 600, cursor: selectedIds.length === 1 ? "pointer" : "default" }}>Export</span>
@@ -677,7 +677,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
       {overdueCount > 0 && (
         <div style={{ margin: "8px 16px 0", fontSize: 12, color: T.actionRed, fontWeight: 600 }}>{overdueCount} overdue</div>
       )}
-      {/* ADDED 26 Aug 2026 â€” real ask: search within module. */}
+      {/* ADDED 26 Aug 2026 — real ask: search within module. */}
       <div style={{ padding: "8px 16px 0" }}>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search vaccinations"
           style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
@@ -685,19 +685,19 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
       <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
         {sorted.length > 0 ? `${sorted.length} vaccinations${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No vaccinations match" : "No vaccinations logged"}
       </div>
-      {/* CHANGED â€” real ask: Add button now floats bottom-right, same
+      {/* CHANGED — real ask: Add button now floats bottom-right, same
           fixed-position pattern as every other module, instead of an
           inline header icon that scrolled away with the rest of the
-          page. CHANGED 26 Aug 2026 â€” real audit finding: wrapped for
+          page. CHANGED 26 Aug 2026 — real audit finding: wrapped for
           wide-viewport centering, matching Medication's own pattern. */}
       <div style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px", pointerEvents: "none" }}>
         <div onClick={onAdd} role="button" tabIndex={0} aria-label="Add vaccination" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", pointerEvents: "auto" }}>
           <Plus size={24} />
         </div>
       </div>
-      {/* FIXED 16 Sep 2026 â€” real report: same "mobile-width content
+      {/* FIXED 16 Sep 2026 — real report: same "mobile-width content
           stretched into a wide row" gap fixed on Contacts/Encounters/
-          Testing/Clinic Visits â€” see Contacts' own comment for the
+          Testing/Clinic Visits — see Contacts' own comment for the
           full reasoning. */}
       {isDesktopWidth ? (
         <div style={{ padding: "12px 16px 100px" }}>
@@ -706,7 +706,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
               {query.trim() ? "No vaccinations match your search." : "No vaccinations logged yet. Tap + to add one."}
             </div>
           )}
-          {/* ADDED â€” real ask: desktop grid grouped consecutively by
+          {/* ADDED — real ask: desktop grid grouped consecutively by
               month, see dateGrouping.js. */}
           {groupConsecutive(sorted, (v) => monthLabel(v.date)).map((group) => (
             <div key={group.key} style={{ marginBottom: 16 }}>
@@ -731,7 +731,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
           ))}
         </div>
       )}
-      {/* ADDED 26 Aug 2026 â€” real ask: undo for delete. */}
+      {/* ADDED 26 Aug 2026 — real ask: undo for delete. */}
       {deleteToast && (
         <div onClick={deleteToast.mode === "undo" ? undoDelete : redoDelete}
           role="button" tabIndex={0} aria-live="polite"
@@ -751,7 +751,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
   );
 }
 
-// ADDED â€” pulled out of VaccinationsLanding's own inline .map() body so
+// ADDED — pulled out of VaccinationsLanding's own inline .map() body so
 // the desktop-grid month-grouping pass and the mobile flat list both
 // render the exact same row markup, unchanged.
 function VaccinationRow({ v, T, selectMode, selectedIds, toggleSelected, onOpen, startPress, cancelPress, handleTouchMove }) {
@@ -788,19 +788,19 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "list" });
-  // CHANGED â€” Phase 2 encryption groundwork: VaccinationRepository went
+  // CHANGED — Phase 2 encryption groundwork: VaccinationRepository went
   // async, and VaccinationSheet's own `vaccination` prop is read only
   // once, at mount, via a lazy useState initializer with no resync
-  // effect â€” resolved here instead, same "gate the mount on the real
+  // effect — resolved here instead, same "gate the mount on the real
   // value being ready" fix as Symptom Log's own EntrySheet.
   const editingVaccination = useLoadedMemo(() => (screen.name === "edit" ? VaccinationRepository.getById(screen.id) : null), [screen], null);
-  // CHANGED 26 Aug 2026 â€” real gap found and fixed: lifted from
-  // VaccinationsLanding â€” vaccinations/deletedRecent/undoDelete/
+  // CHANGED 26 Aug 2026 — real gap found and fixed: lifted from
+  // VaccinationsLanding — vaccinations/deletedRecent/undoDelete/
   // triggerDelete now live at the real module level, shared with
   // VaccinationDetail.
   const [vaccinations, setVaccinations] = useLoadedState(() => VaccinationRepository.getAll().then((all) => all.filter((v) => !v.isArchived)), [], []);
   const refresh = () => { VaccinationRepository.getAll().then((all) => setVaccinations(all.filter((v) => !v.isArchived))); };
-  // CHANGED 26 Aug 2026 â€” real ask, previously flagged low-priority and
+  // CHANGED 26 Aug 2026 — real ask, previously flagged low-priority and
   // now built: redo for delete, matching Contacts' reference
   // implementation.
   const [deleteToast, setDeleteToast] = useState(null); // { mode: "undo" | "redo", records }
@@ -828,7 +828,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
   };
-  // ADDED 19 Aug 2026 â€” real undo/redo extension.
+  // ADDED 19 Aug 2026 — real undo/redo extension.
   const editUndo = useEditUndo(VaccinationRepository);
 
   useEffect(() => {
@@ -836,7 +836,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
       setScreen({ name: "add" });
       onConsumedQuickAdd?.();
     }
-    // ADDED â€” real ask: Global Search deep-link, same pattern as Testing.
+    // ADDED — real ask: Global Search deep-link, same pattern as Testing.
     if (openRecordId) {
       setScreen({ name: "detail", id: openRecordId });
       onConsumedRecordOpen?.();
@@ -846,7 +846,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
 
   const backToList = () => setScreen({ name: "list" });
 
-  // ADDED 26 Aug 2026 â€” real ask: back should go one step within this
+  // ADDED 26 Aug 2026 — real ask: back should go one step within this
   // module. Same real screen shape as Symptom Log (list/detail/edit/
   // add).
   useEffect(() => {
@@ -862,14 +862,14 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
 
   const createVaccination = async (data) => { await VaccinationRepository.create(data); onDataChanged?.(); syncVaccinationReminders(); backToList(); };
   const saveVaccination = async (data) => {
-    // CHANGED â€” editUndoHelpers.js's captureBeforeEdit/notifyEdited, and
+    // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited, and
     // now VaccinationRepository itself (Phase 2 encryption groundwork),
-    // are all async â€” every step here awaited.
+    // are all async — every step here awaited.
     await editUndo.captureBeforeEdit(screen.id);
     await VaccinationRepository.update(screen.id, data);
     await editUndo.notifyEdited(screen.id);
     onDataChanged?.();
-    // ADDED 16 Sep 2026 â€” real gap found auditing notifications: a
+    // ADDED 16 Sep 2026 — real gap found auditing notifications: a
     // saved nextDue change never re-synced the reminder, same as
     // Testing's own onSaved comment for syncTestingReminder.
     syncVaccinationReminders();
@@ -882,11 +882,11 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
-      {/* ADDED 19 Aug 2026 â€” real undo/redo toast, same pattern as
+      {/* ADDED 19 Aug 2026 — real undo/redo toast, same pattern as
           every other module. */}
-      {/* CHANGED â€” real ask: this sat at top:12, directly on top of
+      {/* CHANGED — real ask: this sat at top:12, directly on top of
           the screen's own back button (a plain 16px-padding header is
-          only ~54px tall) â€” the instinctive "do the edit, then tap
+          only ~54px tall) — the instinctive "do the edit, then tap
           back" motion hit the toast instead. top:64 clears every
           header shape in this app (plain back+title or a colored
           banner). */}
@@ -896,7 +896,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (editUndo.toast.mode === "undo" ? editUndo.undo : editUndo.redo)(); } }}
           style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.healthcareBlue, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
-          {editUndo.toast.mode === "undo" ? "Vaccination updated â€” tap to undo" : "Undone â€” tap to redo"}
+          {editUndo.toast.mode === "undo" ? "Vaccination updated — tap to undo" : "Undone — tap to redo"}
         </div>
       )}
       {content}

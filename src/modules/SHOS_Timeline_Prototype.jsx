@@ -765,6 +765,14 @@ export default function TimelineModule({ onClose, registerModuleBackHandler } = 
   const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "list" });
   const [refreshKey, setRefreshKey] = useState(0);
+  // This component is the real full-screen Episodes dialog (reached from
+  // both Home and Healthcare, each of which only mounts it when its own
+  // Episodes overlay is open), so a mount-once focus() here is correct —
+  // unlike the wrappers those two entry points used to put around it,
+  // which were always mounted and so never fired. tabIndex={0} on the
+  // root below is what makes that focus() land at all.
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
   const backToList = () => setScreen({ name: "list" });
   const startEpisode = async (data) => { await EpisodeRepository.create(data); backToList(); };
 
@@ -813,7 +821,7 @@ export default function TimelineModule({ onClose, registerModuleBackHandler } = 
   }, [screen, registerModuleBackHandler, onClose]);
 
   return (
-    <div role="dialog" aria-label="Episodes" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
+    <div ref={dialogRef} role="dialog" aria-label="Episodes" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
       <DeleteUndoToast toast={deleteToast} onUndo={undoDelete} onRedo={redoDelete} T={T} />
       {screen.name === "list" && <TimelineLanding key={refreshKey} T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} onClose={onClose} />}
       {screen.name === "detail" && <EpisodeDetail T={T} episodeId={screen.id} onBack={backToList} onDeleted={backToList} onDelete={handleDelete} />}

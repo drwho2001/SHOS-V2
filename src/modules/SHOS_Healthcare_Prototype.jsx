@@ -68,8 +68,13 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
   }, []);
   const [showAttachments, setShowAttachments] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
-  const dialogRef = useRef(null);
-  useEffect(() => { dialogRef.current?.focus(); }, []);
+  // No dialog ref/effect here: TimelineModule's own root
+  // (SHOS_Timeline_Prototype.jsx) is already the full-screen Episodes
+  // dialog and owns focus-on-open. Giving this wrapper a second
+  // role="dialog" produced nested dialogs, and a mount-once focus() on
+  // HealthcareScreen (which stays mounted regardless) found no element
+  // to focus at all, since this branch only renders when showTimeline
+  // is true.
   // CHANGED — real bugs found in the user's own device testing: (1) this
   // whole screen had no fontFamily set anywhere at all, unlike every
   // other screen in the app, which wraps itself in Public Sans
@@ -309,7 +314,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         // comment) but never carried over here — Healthcare is the
         // OTHER real entry point into Episodes, so it had the identical
         // gap independently.
-        <div ref={dialogRef} role="dialog" aria-label="Healthcare" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", zIndex: 210, overflowY: "auto", display: "flex", justifyContent: "center" }}>
+        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", zIndex: 210, overflowY: "auto", display: "flex", justifyContent: "center" }}>
           <div style={{ width: "100%" }}>
             <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>

@@ -209,9 +209,11 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [showTimeline, setShowTimeline] = useState(false);
-  const [showTimelineDialog, setShowTimelineDialog] = useState(false);
-  const timelineDialogRef = useRef(null);
-  useEffect(() => { if (showTimelineDialog) timelineDialogRef.current?.focus(); }, [showTimelineDialog]);
+  // No dialog ref/effect on this wrapper: TimelineModule's own root
+  // (SHOS_Timeline_Prototype.jsx) is already the full-screen dialog for
+  // Episodes and now owns the focus-on-open, so declaring a second
+  // role="dialog" here produced nested dialogs. The wrapper keeps its
+  // overflowY fix below and nothing else.
   // ADDED 19 Aug 2026 — next scheduled clinic visit, real data.
   const [nextVisit, setNextVisit] = useState(null);
   // ADDED — real ask: Menstrual/Contraception shortcuts + real results
@@ -1132,7 +1134,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         // bottom) taller than the viewport was simply unreachable, no
         // way to scroll to it at all. Matches every other module's
         // overlay wrapper elsewhere in this file.
-        <div ref={timelineDialogRef} role="dialog" aria-label="Episodes" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }}>
+        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }}>
           <div style={{ width: "100%" }}>
             <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>
