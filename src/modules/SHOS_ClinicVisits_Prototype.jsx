@@ -936,10 +936,6 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
           </div>
         </SectionCard>
 
-        <SectionCard title="Restock medications" T={T}>
-          <RelationPicker label="Medications to restock after this visit" value={form.restockMedicationIds} onChange={set("restockMedicationIds")} items={allMeds} T={T} placeholder="No medications in registry" />
-        </SectionCard>
-
         {!isNew && (
           <SectionCard title="Attachments" T={T}>
             <AttachmentManager visitId={visitId} attachments={form.attachments || []} onChanged={async () => setForm(await ClinicVisitsRepository.getById(visitId))} T={T} />
