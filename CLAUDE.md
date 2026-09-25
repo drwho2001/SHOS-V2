@@ -290,9 +290,9 @@ this date; summarized here for durability.
 - **Accessibility â€” Batch 1 (high-priority items) COMPLETE as of 21 Sep 2026:**
   - Item 1 (desktop grid): DONE
   - Item 2 (keyboard operability per-row): DONE
-  - Item 3 (sheet `role="dialog"` + focus mgmt): DONE (~37 sheets across 15 modules)
-  - Item 4 (sub-screen `<h1>`): DONE (31 titles across 10 modules)
-  - Item 5 (contrast fixes): DONE (Guide tour button, Meds locked-dose button)
+  - Item 3 (sheet `role="dialog"` + focus mgmt): DONE (~52 sheets across 19 modules, including HealthcareScreen, GlobalSearchScreen, SettingsScreen, HomeScreen, 7 MedicationDashboard sheets, 19 Settings sub-screens)
+  - Item 4 (sub-screen `<h1>`): DONE (38 titles across 17 modules, including 7 edit/detail sheets converted 25 Sep 2026)
+  - Item 5 (contrast fixes): DONE (Guide tour button, Meds locked-dose button, InteractiveTour "Next" button)
   - Item 6 (live regions for search/filter): DONE (10 locations)
   - Item 7 (notch/status-bar): PENDING (needs device)
   - Item 8 (cold-start removal from Known Issues): DONE (accepted upstream Capacitor limitation)
@@ -300,11 +300,11 @@ this date; summarized here for durability.
 - **Audit Findings (25 Sep 2026) â€” read-only sweep of high-stakes/unreviewed areas:**
   - **ErrorBoundary (main.jsx:147-163)** â€” ALREADY FIXED (Phase 4). Encrypted `shos_app_preferences` detected via `iv`+`ciphertext` shape, dynamically imports `cryptoService.js`, decrypts, clears navigation state, re-encrypts. No action needed.
   - **darkModePreference.js (calculations:89-95)** â€” ALREADY CORRECT. `syncDarkModePreferenceFromStorage()` called in `App.jsx:938` after vault unlock in `finishBootAfterUnlock()`. One-shot self-correction from `systemPrefersDark()` fallback works; async `await storage.load()` handles Phase 3 adapter. No action needed.
-  - **Module sheets `role="dialog"`** â€” PARTIAL. ~14 modules' main sheets have it (Attachments, ClinicCard, ClinicVisits, Contacts, Encounters, MenstrualHealth, Measurements, MyProfile, OptionListEditor, PartnerNotification, SymptomLog, Testing, Timeline, Vaccinations). **MISSING**: All 19 Settings sub-screens (extracted 24 Sep, lazy-loaded), HealthcareScreen, GlobalSearchScreen, SettingsScreen, HomeScreen, MedicationDashboard sheets. ~35 sheets need `role="dialog"` + `aria-label` + focus-on-open.
+  - **Module sheets `role="dialog"`** â€” COMPLETE. ~52 sheets across 19 modules now have it (Attachments, ClinicCard, ClinicVisits, Contacts, Encounters, MenstrualHealth, Measurements, MyProfile, OptionListEditor, PartnerNotification, SymptomLog, Testing, Timeline, Vaccinations, HealthcareScreen, GlobalSearchScreen, SettingsScreen, HomeScreen, 7 MedicationDashboard sheets, 19 Settings sub-screens).
   - **Widget deep-linking (native)** â€” 10 providers, all use `com.shos.app://` URIs. `deepLinkRoutes.js` covers 17 cases (medication, encounter, contact, clinic-visits, healthcare subTabs, clinic-card, widget/reveal-clinic). **Web gaps**: No `shos://` handler in `App.jsx`; 8 of 10 routes unimplemented on web/PWA. NextDoseWidgetProvider has no tap action (native-only update).
   - **Draft storage (storage/draftStorage.js)** â€” 7+ forms use sessionStorage (Contacts, Encounters, Testing, ClinicVisits, SymptomLog, Vaccinations, Measurements). Sensitive data, ephemeral (cleared on save/tab close). Deliberately out of Phase 4 scope; no migration path if encryption extends here.
   - **Duplicate patterns needing standardization**: RegistryTagPicker (4 copies: Testing, MyProfile, Contacts, Encounters), Date/Time "Now" button (7+ copies), per-module field components (SelectField, DateTimeField, AgeField, RelationPicker â€” 10+ copies each), FAB buttons (12 sites).
-  - **Accessibility exhaustive (17 Sep axe-core)**: ~33 screens missing real `<h1>`; live regions beyond 10 done; contrast violations (Guide raw hex, Meds 50% opacity, more unpinned); module sheets need `role="dialog"` (same as above).
+  - **Accessibility exhaustive (17 Sep axe-core + 25 Sep follow-up)**: Sub-screen `<h1>` now complete (38 titles across 17 modules); live regions beyond 10 done; contrast violations fixed (Guide raw hex, Meds 50% opacity, InteractiveTour fixed); module sheets `role="dialog"` complete; ~33 screens missing real `<h1>` reduced to ~26 (mainly list/landing screens, not sub-screens).
   - **Settings navigation** â€” 22 rows/8 sections; test flakes from banner interception (fixed in helper), crypto timing waits need `waitForFunction`. Healthcare sub-tab discoverability (Menstrual/Contraception gated behind toggle).
 
 - **Desktop font-size/empty-space (#93) â€” scoped 15 Sep 2026,
@@ -3618,6 +3618,14 @@ standing "avoid over-normalisation" rule, not an oversight.
 ## Recently shipped (24 Sep 2026 - Clinic Card TDZ fix)
 
 Fixed a recurrent Temporal Dead Zone crash in `SHOS_ClinicCard_Prototype.jsx`: a `useEffect` referencing `showVisibilitySettings` was placed before its `useState` declaration (line 197 vs 229). Moved the effect after the state declaration. This is the same pattern previously caught as minified 'V' (Encounters `loadEncounters`/`loadContacts`, PartnerNotification `list`/`editing`, Timeline `EpisodeDetail`, MyProfile `form` resync) — now 'L'. Verified: build clean, eslint clean, smoke 15/15.
+
+## Recently shipped (25 Sep 2026 - accessibility: edit/detail sheets to <h1> headings)
+
+Converted 7 edit/detail sheets to semantic `<h1>` headings for proper accessibility hierarchy (Accessibility Item 4): ClinicVisits edit, Testing edit, Vaccinations edit, Encounters edit, Measurements edit, SymptomLog edit, MenstrualHealth BottomSheet (Cycle/Contraception/Pregnancy). All now use `<h1 style={{...TYPE.sheetTitle, margin:0}}>` instead of `<span>` for proper heading hierarchy. Build clean, eslint clean, CI green.
+
+## Recently shipped (25 Sep 2026 - widget deep-linking & contrast)
+
+Widget deep-linking: 10 native providers now use `com.shos.app://` URIs with 17 unit-tested routes in `deepLinkRoutes.js`; clinic-card/widget/reveal-clinic routes mapped. InteractiveTour contrast fix: "Next" button changed from `ACCENTS.home` to `ACCENT_TEXT_SAFE.home` for WCAG AA compliance. Build clean, eslint clean, CI green (Build APK, Web Alpha, Smoke Test all passing).
 
 ## Recently shipped (24 Sep 2026 - audit: widget tap routing)
 
