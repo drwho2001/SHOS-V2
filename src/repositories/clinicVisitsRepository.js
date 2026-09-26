@@ -160,14 +160,18 @@ export const DEFAULT_CLINIC_VISIT = {
   // the original ask being a count (pills/containers) for the restock window
   // rather than something to be worked out by hand every visit.
   //
-  // Shape: [{ medicationId, containers }]. `containers` is deliberately in
-  // CONTAINERS, not units, because that is the unit someone actually reorders
-  // in, and because MedicationRepository already carries unitsPerContainer —
-  // so a unit-based figure can always be derived from it, whereas a
-  // container-based one cannot be derived back into meaningful units without
-  // also knowing the pack size. `containers` may be null, meaning "yes,
-  // take home, quantity not recorded", which is the honest default for
-  // something genuinely prescribed without a stated course.
+  // Shape: [{ medicationId, unit, quantity }]. `unit` is "containers" or
+  // "units", and it is per-entry because the same medication can legitimately
+  // be taken away as "one full box" or as "14 tablets, a bit over half a
+  // box" - a DoxyPEP course is the real example, since a course is often
+  // shorter than a full pack and no whole-container count can express that.
+  // The two are convertible because MedicationRepository already carries
+  // unitsPerContainer, and the UI converts on switch rather than
+  // reinterpreting the number.
+  //
+  // `quantity` may be null, meaning "yes, take home, quantity not recorded",
+  // which is the honest default for something genuinely prescribed without a
+  // stated course.
   takeHomeMedications: [],
   isArchived: false,
 };
@@ -276,10 +280,13 @@ let seedVisits = [
     vaccinationsGivenIds: ["vaccination_003"],
     // ADDED 26 Sep 2026 — the merged take-home/restock field on a real
     // record, so the new quantity UI has something to render and the shape
-    // is exercised by seed data rather than shipping untested.
+    // is exercised by seed data rather than shipping untested. The second
+    // entry deliberately uses `units` rather than `containers`, and a
+    // half-container quantity, because that is the case the unit switch
+    // exists for: a DoxyPEP course shorter than a full pack.
     takeHomeMedications: [
-      { medicationId: "med_001", containers: 1 },
-      { medicationId: "med_003", containers: 2 },
+      { medicationId: "med_001", unit: "containers", quantity: 1 },
+      { medicationId: "med_003", unit: "units", quantity: 14 },
     ],
     isArchived: false,
   },

@@ -32,9 +32,26 @@ describe("encodingRepair", () => {
         .toBe("approx " + C(0x2248) + " close");
     });
 
+    // ADDED 26 Sep 2026 — both sequences were confirmed against real
+    // surrounding usage (a `// ── section ──` divider and the "★" primary-
+    // symptom marker) before being added to the map, rather than decoded
+    // blind. Pinned here so neither can be silently changed or dropped.
+    it("repairs a double-encoded box-drawing divider back to U+2500", () => {
+      const bad = "// " + C(0x00e2, 0x201d, 0x20ac, 0x00e2, 0x201d, 0x20ac) + " Add/Edit sheet";
+      const r = repairString(bad);
+      expect(r.text).toBe("// " + C(0x2500, 0x2500) + " Add/Edit sheet");
+      expect(r.changed).toBe(true);
+    });
+
+    it("repairs a double-encoded star back to U+2605", () => {
+      // Real shape: {isPrimary ? " ★" : ""} in JSX.
+      const r = repairString('{isPrimary ? " ' + C(0x00e2, 0x02dc, 0x2026) + '" : ""}');
+      expect(r.text).toBe('{isPrimary ? " ' + C(0x2605) + '" : ""}');
+      expect(r.changed).toBe(true);
+    });
+
     it("distinguishes the two arrow shapes", () => {
-      expect(repairString("a " + C(0x00e2, 0x2020, 0x2019) + " b").text).toBe("a " + C(0x2192) + " b");
-      expect(repairString("a " + C(0x00e2, 0x2020, 0x201d) + " b").text).toBe("a " + C(0x2194) + " b");
+      expect(repairString("a " + C(0x00e2, 0x2020, 0x2019) + " b").text).toBe("a " + C(0x2192) + " b");      expect(repairString("a " + C(0x00e2, 0x2020, 0x201d) + " b").text).toBe("a " + C(0x2194) + " b");
     });
 
     it("repairs every sequence in the map, including repeated ones", () => {

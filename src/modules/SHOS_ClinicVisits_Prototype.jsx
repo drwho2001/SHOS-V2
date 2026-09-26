@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+﻿import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, CalendarIcon as Calendar, ArrowsClockwiseIcon as RefreshCcw, XIcon as X, CrosshairIcon as Crosshair } from "@phosphor-icons/react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 // ADDED — real ask: "use current location" on Clinic Visits, the last
@@ -47,6 +47,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE,
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
+import { suggestedQuantity, round2 } from "../calculations/takeHomeQuantity";
 
 // Same Healthcare blue + font conventions as Testing — applied from
 // creation, not retrofitted, per the user's standing instruction.
@@ -444,89 +445,110 @@ function ClinicVisitLocationField({ value, onChange, T }) {
 // should read as an explicit yes/no question", not a bare toggle with
 // a one-word label that leaves what "on" means to context. Same
 // underlying boolean, just an unambiguous either/or.
-// ADDED 26 Sep 2026 — the merged replacement for the former "Medications —
-// Prescribed to take home" and "Medications to restock" pair, which asked
-// the same question twice and stored the answer twice. Own component rather
-// than reusing RelationPicker because the value here is not a list of ids but
-// a list of { medicationId, containers }: the picker's chip/remove model has
-// nowhere to hang a quantity, and inventing a second inline editor for it
-// would have been a worse version of the same thing.
-//
-// The quantity is the real addition. The owner's ask was a count for the
-// restock window "without having to do it manually", so `suggestedContainers`
-// pre-fills a figure derived from the medication's OWN data rather than
-// asking them to do arithmetic:
-//
-//   1. defaultRefillQuantity, if the user has already told us how much they
-//      normally reorder. This is the most trustworthy source and the cheapest.
-//   2. Otherwise, containers to cover COVER_DAYS of their current usage,
-//      derived from unitsPerContainer / unitsPerDose / dosing interval.
-//
-// If neither is knowable (a PRN medication with no stated pack size, say)
-// it returns null and the field is left blank on purpose. A blank "unknown"
-// is honest; a fabricated 1 is not, and 1 container is exactly the kind of
-// plausible-looking default that ends up being trusted and being wrong.
-const TAKE_HOME_COVER_DAYS = 30;
-
-export function suggestedContainers(med, coverDays = TAKE_HOME_COVER_DAYS) {
-  if (!med) return null;
-  if (med.defaultRefillQuantity > 0) return Math.max(1, Math.round(med.defaultRefillQuantity));
-  const perContainer = Number(med.unitsPerContainer);
-  const perDose = Number(med.unitsPerDose);
-  if (!(perContainer > 0) || !(perDose > 0)) return null;
-  // Consumption per day. Mirrors medicationCalculations' own stock math
-  // (effectiveDoseIntervalHours -> dailyConsumption) rather than inventing a
-  // second, subtly different formula here.
-  const dosesPerDay = med.usagePattern === "prn" ? null : Number(med.dosesPerDay) || null;
-  if (med.usagePattern === "custom") {
-    const intervalDays = Number(med.scheduleIntervalDays);
-    if (!(intervalDays > 0) || !(Number(med.dosesPerDay) > 0)) return null;
-    const daily = (Number(med.dosesPerDay) * perDose) / intervalDays;
-    return Math.max(1, Math.ceil((daily * coverDays) / perContainer));
-  }
-  if (!(dosesPerDay > 0)) return null;
-  return Math.max(1, Math.ceil(((dosesPerDay * perDose) * coverDays) / perContainer));
-}
-
 function TakeHomeMedicationsField({ value, onChange, meds, T }) {
   const entries = Array.isArray(value) ? value : [];
   const alreadyPicked = entries.map((e) => e.medicationId);
   const available = meds.filter((m) => !alreadyPicked.includes(m.id));
-  const nameFor = (id) => meds.find((m) => m.id === id)?.name || "?";
+  const medFor = (id) => meds.find((m) => m.id === id);
+  const nameFor = (id) => medFor(id)?.name || "?";
+
+  // ADDED 26 Sep 2026 — the owner's own example for wanting a unit switch:
+  // "if doxy course is less than full containers worth of pills." A course
+  // of 28 tablets is one container; a 14-day course is half of one, and
+  // there is no honest way to write that as a whole-container count. So the
+  // quantity carries its own unit, and the two are freely convertible
+  // because the medication's own unitsPerContainer is the conversion factor.
+  const unitsPerContainer = (id) => Number(medFor(id)?.unitsPerContainer) || 0;
+  const defaultUnit = (id) => (unitsPerContainer(id) > 0 ? "containers" : "units");
+
   const add = (medId) => {
-    const med = meds.find((m) => m.id === medId);
-    onChange([...entries, { medicationId: medId, containers: suggestedContainers(med) }]);
+    const unit = defaultUnit(medId);
+    onChange([...entries, { medicationId: medId, unit, quantity: suggestedQuantity(medFor(medId), unit) }]);
   };
   const setQty = (idx, qty) => {
     const n = qty === "" ? null : Math.max(0, Math.round(Number(qty) || 0));
-    onChange(entries.map((e, i) => (i === idx ? { ...e, containers: n } : e)));
+    onChange(entries.map((e, i) => (i === idx ? { ...e, quantity: n } : e)));
+  };
+  // Switching unit CONVERTS the existing number rather than reinterpreting it.
+  // Reinterpreting would be the worse bug: 1 container silently becoming
+  // "1 pill" is wrong by a factor of 28, and the user would have no way to
+  // tell from looking at it.
+  const setUnit = (idx, unit) => {
+    const per = unitsPerContainer(entries[idx].medicationId);
+    onChange(entries.map((e, i) => {
+      if (i !== idx || e.unit === unit) return e;
+      if (!(per > 0) || e.quantity == null) return { ...e, unit };
+      const next = unit === "units"
+        ? e.quantity * per
+        : Math.round((e.quantity / per) * 100) / 100; // half a container is real
+      return { ...e, unit, quantity: next };
+    }));
   };
   const remove = (idx) => onChange(entries.filter((_, i) => i !== idx));
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
   const suggestions = (q ? available.filter((m) => m.name.toLowerCase().includes(q)) : available).slice(0, 8);
+
   return (
     <div>
-      {entries.map((e, i) => (
-        <div key={e.medicationId} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0" }}>
-          <span style={{ flex: 1, fontSize: 13, color: T.textPrimary }}>{nameFor(e.medicationId)}</span>
-          <input
-            type="number" min="0" inputMode="numeric"
-            value={e.containers ?? ""}
-            onChange={(ev) => setQty(i, ev.target.value)}
-            aria-label={`Containers of ${nameFor(e.medicationId)} to take home`}
-            placeholder="Qty"
-            style={{ width: 74, padding: "7px 9px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}
-          />
-          <span style={{ fontSize: 11, color: T.textDisabled }}>containers</span>
-          <div role="button" tabIndex={0}
-            onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ev.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
-            onClick={() => remove(i)} aria-label={`Remove ${nameFor(e.medicationId)}`}
-            style={{ cursor: "pointer", color: T.textSecondary, display: "flex", alignItems: "center" }}>
-            <X size={13} />
+      {entries.map((e, i) => {
+        const per = unitsPerContainer(e.medicationId);
+        const showToggle = per > 0;
+        const unit = e.unit || defaultUnit(e.medicationId);
+        // The equivalence line, so the number is never ambiguous: "1 container
+        // (28 pills)" or "14 pills (half a container)".
+        let equivalence = "";
+        if (per > 0 && e.quantity != null && e.quantity > 0) {
+          const containers = unit === "units" ? e.quantity / per : e.quantity;
+          const pills = unit === "units" ? e.quantity : e.quantity * per;
+          equivalence = unit === "units"
+            ? ` = ${round2(containers)} container${containers === 1 ? "" : "s"} (${per} each)`
+            : ` = ${pills} pill${pills === 1 ? "" : "s"}`;
+        }
+        return (
+          <div key={e.medicationId} style={{ padding: "6px 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ flex: 1, fontSize: 13, color: T.textPrimary }}>{nameFor(e.medicationId)}</span>
+              {showToggle && (
+                <div style={{ display: "flex", border: `1px solid ${T.border}`, borderRadius: radius.full, overflow: "hidden", flexShrink: 0 }}>
+                  {[{ k: "containers", l: "containers" }, { k: "units", l: "pills" }].map((opt) => {
+                    const on = unit === opt.k;
+                    return (
+                      <div key={opt.k} role="button" tabIndex={0}
+                        onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ev.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
+                        onClick={() => setUnit(i, opt.k)}
+                        aria-pressed={on}
+                        aria-label={`Show quantity in ${opt.l} for ${nameFor(e.medicationId)}`}
+                        style={{ padding: "4px 9px", fontSize: 11, fontWeight: on ? 700 : 400, cursor: "pointer",
+                          background: on ? `${T.healthcareBlue}1A` : "transparent",
+                          color: on ? T.healthcareBlue : T.textSecondary }}>
+                        {opt.l}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <input
+                type="number" min="0" inputMode="decimal" step="any"
+                value={e.quantity ?? ""}
+                onChange={(ev) => setQty(i, ev.target.value)}
+                aria-label={`Quantity of ${nameFor(e.medicationId)} to take home, in ${unit}`}
+                placeholder="Qty"
+                style={{ width: 78, padding: "7px 9px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}
+              />
+              <div role="button" tabIndex={0}
+                onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ev.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
+                onClick={() => remove(i)} aria-label={`Remove ${nameFor(e.medicationId)}`}
+                style={{ cursor: "pointer", color: T.textSecondary, display: "flex", alignItems: "center" }}>
+                <X size={13} />
+              </div>
+            </div>
+            {equivalence && (
+              <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 3, textAlign: "right" }}>{equivalence}</div>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
       {available.length > 0 && (
         <div style={{ marginTop: 8 }}>
           <input
@@ -622,7 +644,12 @@ function RecordVaccinationInline({ visitDate, location, onCreated, T }) {
   );
 }
 
-function YesNoQuestion({ question, value, onChange, T }) {  return (
+// ADDED 19 Aug 2026 — real feedback batch: "Future appointment"
+// should read as an explicit yes/no question", not a bare toggle with
+// a one-word label that leaves what "on" means to context. Same
+// underlying boolean, just an unambiguous either/or.
+function YesNoQuestion({ question, value, onChange, T }) {
+  return (
     <div style={{ padding: "10px 0" }}>
       <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{question}</div>
       <div style={{ display: "flex", gap: 8 }}>
@@ -916,8 +943,10 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
   }, [form.linkedTestIds], {});
   // CHANGED 26 Sep 2026 — loads the FULL medication record rather than just
   // { id, name }. The take-home quantity is derived from each medication's
-  // own dosing and pack size (see suggestedContainers), which needs
-  // unitsPerContainer / unitsPerDose / dosesPerDay / scheduleIntervalDays /
+  // own dosing and pack size (see ../calculations/takeHomeQuantity, which
+  // reuses medicationCalculations' existing interval logic rather than
+  // re-deriving it), which needs unitsPerContainer / unitsPerDose /
+  // dosesPerDay / scheduleIntervalDays /
   // defaultRefillQuantity — none of which a name-only projection carries.
   const allMeds = useLoadedMemo(async () => (await MedicationRepository.getAll()).filter((m) => !m.isArchived), [], []);
   const allSymptoms = useLoadedMemo(async () => (await SymptomsRegistry.getAll()).filter((s) => !s.isArchived), [], []);
@@ -1389,9 +1418,25 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
               {visit.takeHomeMedications.map((entry) => {
                 const m = allMeds.find((x) => x.id === entry.medicationId);
                 const name = m?.name || "Medication";
+                // Reads the current { unit, quantity } shape, and still
+                // tolerates the short-lived earlier { containers } shape so a
+                // record saved before the unit switch keeps displaying.
+                // Uses the medication's OWN unit name, which is a real field
+                // on MedicationRepository ("tablet", "capsule", ...), so the
+                // text says "14 tablets" or "7 capsules" rather than a
+                // generic "pills" that would be wrong for most of them.
+                const unit = entry.unit || "containers";
+                const qty = entry.quantity != null ? entry.quantity : entry.containers;
+                let unitWord = "container";
+                if (unit === "units") {
+                  const base = m?.unit || "pill";
+                  unitWord = qty === 1 ? base : (base.endsWith("s") ? base : `${base}s`);
+                } else if (qty !== 1) {
+                  unitWord = "containers";
+                }
                 return (
                   <div key={entry.medicationId} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>
-                    {name}{entry.containers != null ? ` — ${entry.containers} container${entry.containers === 1 ? "" : "s"}` : ""}
+                    {name}{qty != null ? ` — ${qty} ${unitWord}` : ""}
                   </div>
                 );
               })}

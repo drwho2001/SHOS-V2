@@ -54,6 +54,23 @@ export const MOJIBAKE_MAP = [
   [C(0x00c2, 0x00b0), C(0x00b0), "degree sign"],
   [C(0x00c2, 0x00b1), C(0x00b1), "plus-minus"],
   [C(0x00e2, 0x2030, 0x00a5), C(0x2265), "greater-than or equal"],
+  // ADDED 26 Sep 2026 — two more, each confirmed against real surrounding
+  // usage before being added rather than decoded blind, which is the rule
+  // the module's own guard output insists on. Both were reintroduced by a
+  // PowerShell read/write round-trip on a source file during the Healthcare
+  // restructure, so they are a case that will genuinely recur here.
+  //
+  //   U+2500 (box drawing light horizontal) is UTF-8 E2 94 80; read as
+  //   CP1252 that is "â" + curly-double-quote + euro, i.e. exactly the
+  //   U+00E2 U+201D U+20AC seen in a `// ── Add/Edit sheet ──` divider.
+  //   Confirmed by reading the line it appears on: a section comment, used
+  //   as a horizontal rule and for nothing else in the codebase.
+  [C(0x00e2, 0x201d, 0x20ac), C(0x2500), "box drawing light horizontal (section divider)"],
+  //   U+2605 (black star) is UTF-8 E2 98 85; read as CP1252 that is
+  //   "â" + tilde-above + ellipsis. Confirmed by the line it appears on:
+  //   the "★" marking a symptom entry the user flagged as the reason for
+  //   the visit, in JSX alongside `isPrimary`.
+  [C(0x00e2, 0x02dc, 0x2026), C(0x2605), "black star (primary symptom marker)"],
 ];
 
 // Characters that must survive untouched. Used only by the self-test /
