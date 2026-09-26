@@ -41,16 +41,16 @@ function nextDueAsDate(nextDue) {
   return new Date(`${day}T09:00:00`);
 }
 
-// The soonest-due selection now lives in vaccinationCalculations.js, which
-// derives the date from the per-dose series. It used to read the top-level
-// v.nextDue here, but migrateLegacyVaccinationFields() deletes that field
-// when it moves the value into doses[].nextDue - so this filter matched
-// nothing and every vaccine reminder silently stopped firing.
-// Returns { vaccination, nextDue } rather than the bare record, so a caller
-// cannot accidentally read a date off an object that no longer has one.
-function soonestDueVaccinationLocal(vaccinations) {
-  return soonestDueVaccination(vaccinations, new Date().toISOString().slice(0, 10));
-}
+// CHANGED 26 Sep 2026 — the soonest-due selection now lives in
+// vaccinationCalculations.js, which derives the date from the per-dose
+// series. It used to read the top-level v.nextDue here, but
+// migrateLegacyVaccinationFields() deletes that field when it moves the
+// value into doses[].nextDue - so this filter matched nothing and every
+// vaccine reminder silently stopped firing.
+//
+// The helper returns { vaccination, nextDue } rather than the bare record,
+// so a caller cannot accidentally read a date off an object that no longer
+// has one.
 
 // Pure "is a vaccination due right now" read, shared by
 // syncVaccinationReminders (decides whether to schedule) and App.jsx's

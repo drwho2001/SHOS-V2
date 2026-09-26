@@ -176,7 +176,15 @@ export async function findOrphanReferences() {
   for (const v of await VaccinationRepository.getAll()) {
     const ctx = { recordType: "Vaccination", recordLabel: v.title || v.vaccine, recordId: v.id };
     await checkArray(results, symptomExists, v.symptomIds, { ...ctx, field: "symptomIds", targetType: "Symptoms Registry" });
-    await checkArray(results, clinicVisitExists, v.clinicVisitIds, { ...ctx, field: "clinicVisitIds", targetType: "Clinic Visit" });
+    // REMOVED 26 Sep 2026 — the `v.clinicVisitIds` check that used to sit
+    // here. That field is gone: the clinic visit owns the vaccination link
+    // via its own `vaccinationsGivenIds`, and that IS checked, on the
+    // Clinic Visit loop just above, so the relation is still fully covered
+    // from the side that actually stores it. Worth removing rather than
+    // leaving: checkArray tolerates a missing field with `ids || []`, so a
+    // checker pointing at a deleted field does not fail loudly, it just
+    // silently stops checking anything - the worst kind of dead code in a
+    // tool whose entire job is to notice things.
   }
 
   for (const ep of await EpisodeRepository.getAll()) {

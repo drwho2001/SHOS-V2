@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect, useRef } from "react";
+﻿import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X } from "@phosphor-icons/react";
 import { VaccinationRepository, DEFAULT_VACCINATION } from "../repositories/vaccinationRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
@@ -320,6 +320,95 @@ function DoseByDose({ doses, onChange, T }) {
   );
 }
 
+// ADDED 26 Sep 2026 — replaces the removed "Clinic visits" RelationPicker.
+// Shows which visits this vaccination is linked to (derived from the visit
+// side, which is the single source of truth) and offers a one-tap way to
+// attach it to an existing visit, for back-filling a vaccination that
+// already happened.
+//
+// Deliberately a secondary affordance rather than a required field. The
+// normal path needs no interaction at all: recording a vaccination from
+// inside a clinic visit creates and links in one action, which is what stops
+// an uninitiated user from silently never having these links at all. This
+// control only exists for the case where the vaccination was logged first
+// and the visit remembered afterwards.
+function DerivedVisitLinks({ vaccinationId, onLinked, T }) {
+  const [visits, setVisits] = useState([]);
+  const [showPicker, setShowPicker] = useState(false);
+  const [query, setQuery] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!vaccinationId) return;
+    setVisits(await ClinicVisitsRepository.getByLinkedVaccination(vaccinationId));
+  }, [vaccinationId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const link = async (visitId) => {
+    if (busy || !vaccinationId) return;
+    setBusy(true);
+    try {
+      const visit = await ClinicVisitsRepository.getById(visitId);
+      if (!visit) return;
+      await ClinicVisitsRepository.update(visitId, {
+        vaccinationsGivenIds: [...new Set([...(visit.vaccinationsGivenIds || []), vaccinationId])],
+      });
+      setShowPicker(false);
+      setQuery("");
+      await load();
+      onLinked?.();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const labelOf = (x) => x.title || (x.reasonForVisit || []).join("/") || "Clinic visit";
+  const q = query.trim().toLowerCase();
+  const candidates = visits.filter((x) => (q ? labelOf(x).toLowerCase().includes(q) : true)).slice(0, 6);
+
+  return (
+    <div style={{ padding: "8px 0" }}>
+      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Given at</div>
+      {visits.length === 0 ? (
+        <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 6 }}>Not linked to a clinic visit.</div>
+      ) : (
+        visits.map((x) => (
+          <div key={x.id} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{labelOf(x)}</div>
+        ))
+      )}
+      {showPicker ? (
+        <div style={{ marginTop: 6 }}>
+          <input
+            value={query} onChange={(e) => setQuery(e.target.value)}
+            placeholder="Find a clinic visit..."
+            aria-label="Find a clinic visit to link this vaccination to"
+            style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}
+          />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>
+            {candidates.length === 0 && <span style={{ fontSize: 11, color: T.textDisabled }}>No matching visits.</span>}
+            {candidates.map((x) => (
+              <div key={x.id} role="button" tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
+                onClick={() => link(x.id)}
+                style={{ padding: "4px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer" }}>
+                {labelOf(x)}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div role="button" tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
+          onClick={() => setShowPicker(true)}
+          style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", marginTop: 4 }}>
+          Link to an existing visit
+        </div>
+      )}
+    </div>
+  );
+}
+
 function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   const isNew = !vaccination;
   const editSheetRef = useRef(null);
@@ -374,19 +463,16 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
   const canSave = form.title.trim().length > 0;
   const symptoms = useLoadedMemo(async () => (await SymptomsRegistry.getAll()).filter((s) => !s.isArchived), [], []);
   // CHANGED 1 Sep 2026 — real omission found in a broader audit: this
-  // had no .sort() at all (storage order = oldest first), the same
-  // "old options listed first" bug already fixed elsewhere. Sorted
-  // newest-first; searchText adds clinician name(s) as a second match
-  // field, same "search by name or [relevant field]" pattern used
-  // elsewhere (Encounters searches by attendee, this searches by
-  // clinician — Vaccinations' nearest equivalent).
-  const visits = useLoadedMemo(async () => [...(await ClinicVisitsRepository.getAll())].filter((v) => !v.isArchived)
-    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
-    .map((v) => ({
-      id: v.id,
-      name: `${v.title || (v.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(v.date)}`,
-      searchText: (v.clinician || []).join(" ").toLowerCase(),
-    })), [], []);
+  // REMOVED 26 Sep 2026 — the `visits` list this sheet used to load, which
+  // existed only to feed the removed "Clinic visits" RelationPicker's search
+  // chips and suggestion list. Nothing read it after that picker went, and an
+  // unused `useLoadedMemo` still costs a repository round-trip on every mount
+  // of this sheet, so leaving it would have been dead code with a real
+  // runtime cost rather than just a dangling name.
+  //
+  // The visit list the form still needs is loaded by DerivedVisitLinks, and
+  // only when that component is mounted - i.e. when a vaccination is actually
+  // being edited, rather than on every list row.
 
   const doSave = () => {
     clearDraft(draftKey);
@@ -424,7 +510,17 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
               same real ID-backed picker. */}
           <RelationPicker label="Symptom" value={form.symptomIds} onChange={set("symptomIds")}
             T={T} items={symptoms} placeholder="No symptoms in registry" />
-          <RelationPicker label="Clinic visits" value={form.clinicVisitIds} onChange={set("clinicVisitIds")} T={T} items={visits} placeholder="No clinic visits logged yet" />
+          {/* CHANGED 26 Sep 2026 — this was a second, independently-editable
+              copy of the vaccination<->clinic-visit link. ClinicVisits
+              already owned `vaccinationsGivenIds`, so linking a vaccination
+              here left the visit showing nothing, and linking it on the
+              visit left this screen showing nothing: two half-truths and no
+              way to tell they disagreed. Removed. The link is now written to
+              the visit (see the inline "Record a vaccination here" action on
+              the Clinic Visit form, which creates and links together) and
+              read back here via the derived list below, so there is only
+              ever one place it is stored. */}
+          <DerivedVisitLinks vaccinationId={form?.id} T={T} />
           <div style={{ padding: "8px 0 20px" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Notes</div>
             <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={3} aria-label="Notes"
@@ -449,11 +545,17 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
   // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
   // went async — hoisted above the guard (hooks-before-guard rule),
   // guarded with `v?.` since it's genuinely null for one render.
+  // CHANGED 26 Sep 2026 — derived from the clinic visit's own
+  // `vaccinationsGivenIds` via getByLinkedVaccination(), the same
+  // single-source-of-truth treatment TestingRepository.clinicVisitIds
+  // already got (that field is documented dead for exactly this reason).
+  // Previously this read the vaccination's own clinicVisitIds array, which
+  // the edit form no longer writes, so it would have shown nothing at all.
+  const linkedVisits = useLoadedMemo(() => (v?.id ? ClinicVisitsRepository.getByLinkedVaccination(v.id) : Promise.resolve([])), [v?.id], []);
   const visitNames = useLoadedMemo(async () => {
-    if (!v?.clinicVisitIds?.length) return [];
-    const visits = await Promise.all(v.clinicVisitIds.map((id) => ClinicVisitsRepository.getById(id)));
-    return visits.filter(Boolean).map((visit) => `${visit.title || (visit.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(visit.date)}`);
-  }, [v], []);
+    const visits = await linkedVisits;
+    return visits.map((visit) => `${visit.title || (visit.reasonForVisit || []).join("/") || "Clinic visit"} · ${formatDate(visit.date)}`);
+  }, [linkedVisits], []);
   // FIXED 1 Sep 2026 — same real bug as the edit form's own picker:
   // symptomIds holds real SymptomsRegistry ids now, so displaying it
   // raw needs resolving to names first, same as visitNames just above
@@ -542,8 +644,8 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
               </div>
             )}
             {visitNames.length > 0 && (
-              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { onNavigateToRecord?.("healthcare", v.clinicVisitIds[0], "clinicVisits"); }} style={{ cursor: "pointer", padding: "4px 0" }}>
-                <ReadRow label="Clinic visits" value={visitNames} T={T} />
+              <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => { onNavigateToRecord?.("healthcare", linkedVisits[0].id, "clinicVisits"); }} style={{ cursor: "pointer", padding: "4px 0" }}>
+                <ReadRow label="Given at" value={visitNames} T={T} />
               </div>
             )}
           </SectionCard>

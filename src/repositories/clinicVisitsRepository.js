@@ -53,7 +53,16 @@ import { ContraceptionRepository } from "./contraceptionRepository.js";
 // on both sides is a method CALL deferred inside a function body
 // (delete()), never read at module-evaluation time.
 import { TestingRepository } from "./testingRepository.js";
-import { VaccinationRepository } from "./vaccinationRepository.js";
+// CHANGED 26 Sep 2026 — the `import { VaccinationRepository }` that used to
+// sit here is gone, and the import with it. It existed only for the
+// `VaccinationRepository.unlinkClinicVisit(id)` call in delete() below, whose
+// whole job was scrubbing the removed per-vaccination clinicVisitIds array.
+// The link is now owned by this side (vaccinationsGivenIds), so there is
+// nothing left for this file to ask the vaccination repository to clean up.
+// Left in place it would have been an unused import, and this project's
+// ESLint config only enables rules-of-hooks and exhaustive-deps, so an
+// unused import passes lint silently - exactly the kind of thing that only
+// a deliberate sweep catches.
 import { EpisodeRepository } from "./episodeRepository.js";
 
 const STORAGE_KEY = "shos_clinic_visits";
@@ -138,10 +147,28 @@ export const DEFAULT_CLINIC_VISIT = {
   attachments: [],         // real, wired — same shape/pattern as Testing's
   // CHANGED 19 Aug 2026 — now real, see file header.
   vaccinationsGivenIds: [],
-  // ADDED — medications prescribed to take home (not administered in clinic)
-  medicationsPrescribedIds: [],
-  // ADDED — medications that need restocking after this visit
-  restockMedicationIds: [],
+  // CHANGED 26 Sep 2026 — RESTRUCTURED. These were two separate id arrays,
+  // `medicationsPrescribedIds` and `restockMedicationIds`, and the owner's
+  // own read of the form was that they are the same thing: in practice
+  // almost every medication in this category is both "prescribed to take
+  // home" AND "needs restocking", and nothing in the app ever behaved
+  // differently based on which box it landed in. Two boxes asking the same
+  // question, with the answer stored twice, is exactly the "one fact, one
+  // canonical owner" problem this app's architecture rules exist to prevent.
+  //
+  // Now ONE list, and it carries the quantity that was missing entirely -
+  // the original ask being a count (pills/containers) for the restock window
+  // rather than something to be worked out by hand every visit.
+  //
+  // Shape: [{ medicationId, containers }]. `containers` is deliberately in
+  // CONTAINERS, not units, because that is the unit someone actually reorders
+  // in, and because MedicationRepository already carries unitsPerContainer —
+  // so a unit-based figure can always be derived from it, whereas a
+  // container-based one cannot be derived back into meaningful units without
+  // also knowing the pack size. `containers` may be null, meaning "yes,
+  // take home, quantity not recorded", which is the honest default for
+  // something genuinely prescribed without a stated course.
+  takeHomeMedications: [],
   isArchived: false,
 };
 
@@ -242,6 +269,18 @@ let seedVisits = [
     reasonForVisit: ["Routine screen"],
     clinicalNotes: "Full annual screen — all clear.",
     linkedTestIds: ["test_007"],
+    // ADDED 26 Sep 2026 — this is where vaccination_003's clinic-visit
+    // link now lives. It previously existed only as a clinicVisitIds entry
+    // on the vaccination itself, so this visit showed no vaccinations at
+    // all despite the vaccine being given here.
+    vaccinationsGivenIds: ["vaccination_003"],
+    // ADDED 26 Sep 2026 — the merged take-home/restock field on a real
+    // record, so the new quantity UI has something to render and the shape
+    // is exercised by seed data rather than shipping untested.
+    takeHomeMedications: [
+      { medicationId: "med_001", containers: 1 },
+      { medicationId: "med_003", containers: 2 },
+    ],
     isArchived: false,
   },
   // ADDED 9 Sep 2026 — real ask: an IUD insertion appointment, the
@@ -312,6 +351,21 @@ export const ClinicVisitsRepository = {
     await ensureLoaded();
     return structuredClone(
       visits.filter((v) => (v.linkedTestIds || []).includes(testId)).map((v) => normalizeClinician({ ...DEFAULT_CLINIC_VISIT, ...v }))
+    );
+  },
+
+  // ADDED 26 Sep 2026 — the vaccination counterpart of getByLinkedTest
+  // above, and for the same reason. Vaccination records used to carry their
+  // own `clinicVisitIds` array that was edited independently, so linking a
+  // vaccination from one screen left the other screen's list unchanged —
+  // two editable copies of one fact. This makes this visit's
+  // `vaccinationsGivenIds` the single source of truth, exactly as
+  // `linkedTestIds` already is for tests, and the vaccination side derives
+  // its visits from here instead of storing its own.
+  async getByLinkedVaccination(vaccinationId) {
+    await ensureLoaded();
+    return structuredClone(
+      visits.filter((v) => (v.vaccinationsGivenIds || []).includes(vaccinationId)).map((v) => normalizeClinician({ ...DEFAULT_CLINIC_VISIT, ...v }))
     );
   },
 
@@ -402,12 +456,17 @@ export const ClinicVisitsRepository = {
     MeasurementRepository.unlinkClinicVisit(id);
     ContraceptionRepository.unlinkClinicVisit(id);
     // ADDED — real gap found via the new orphan-reference checker
-    // (orphanReferenceCheck.js): Testing.clinicVisitIds/
-    // Vaccination.clinicVisitIds/Episode.clinicVisitIds all reference a
-    // Clinic Visit by id too, same "only clears the link" role as the
-    // two calls above.
+    // (orphanReferenceCheck.js): Testing.clinicVisitIds and
+    // Episode.clinicVisitIds both reference a Clinic Visit by id, same
+    // "only clears the link" role as the two calls above.
+    //
+    // CHANGED 26 Sep 2026 — VaccinationRepository.unlinkClinicVisit() is
+    // deliberately absent from this list now. It only existed to scrub the
+    // removed per-vaccination `clinicVisitIds` array; since this visit's
+    // own `vaccinationsGivenIds` is now the single source of truth for the
+    // vaccination link, the record being deleted here takes that link with
+    // it and there is nothing left to clean up on the other side.
     TestingRepository.unlinkClinicVisit(id);
-    VaccinationRepository.unlinkClinicVisit(id);
     EpisodeRepository.unlinkClinicVisit(id);
   },
 

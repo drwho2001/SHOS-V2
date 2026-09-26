@@ -40,7 +40,21 @@ export const DEFAULT_VACCINATION = {
   date: null,
   notes: "",
   symptomIds: [],      // → SymptomsRegistry, real and wired
-  clinicVisitIds: [],  // → ClinicVisitsRepository, real and wired
+  // REMOVED 26 Sep 2026 — `clinicVisitIds` used to live here as a second,
+  // independently-editable copy of the vaccination↔clinic-visit link, with
+  // ClinicVisitsRepository's own `vaccinationsGivenIds` holding the other
+  // copy. Both were editable and neither updated the other, so linking a
+  // vaccination to a visit from one screen left the other screen showing
+  // nothing — demonstrable in the seed data, where vaccination_003 claimed
+  // visit_005 while visit_005 listed no vaccinations at all.
+  //
+  // Now the visit owns the link, exactly as it already did for tests
+  // (TestingRepository.clinicVisitIds is documented dead for this same
+  // reason and the visit's linkedTestIds is the single source of truth).
+  // The vaccination side derives its visits via
+  // ClinicVisitsRepository.getByLinkedVaccination() and writes to the visit
+  // directly, so the convenient "link from the vaccination screen" flow is
+  // kept without keeping a second copy of the fact.
   doses: [],
   isArchived: false,
 };
@@ -114,7 +128,7 @@ let seedVaccinations = [
   // ADDED 9 Sep 2026 — real ask: neither existing entry sets nextDue,
   // doseNumber > 1, or a non-Deltoid injectionSite — a real 2-dose
   // Hepatitis A/B course (Twinrix) exercises all three plus a genuine
-  // clinicVisitIds link, none of which any existing seed vaccination
+  // clinic-visit link, none of which any existing seed vaccination
   // covers.
   {
     ...DEFAULT_VACCINATION,
@@ -125,7 +139,10 @@ let seedVaccinations = [
     date: daysAgo(160),
     provider: "56 Dean Street",
     injectionSite: "Deltoid",
-    clinicVisitIds: ["visit_005"],
+    // MOVED 26 Sep 2026 — the link to visit_005 now lives on that visit's
+    // own `vaccinationsGivenIds`, since the visit is the single source of
+    // truth for this relation. Previously only this side had it, which is
+    // exactly the one-sided-link bug the move fixes.
     notes: "First of a 3-dose Twinrix course, offered at the routine annual screen.",
     doses: [{
       doseNumber: 1,
@@ -307,15 +324,13 @@ export const VaccinationRepository = {
     return this.update(id, { isArchived: false });
   },
 
-  // ADDED — real gap found via the new orphan-reference checker
-  // (orphanReferenceCheck.js): clinicVisitIds needs cleaning up when
-  // the Clinic Visit it points at is hard-deleted elsewhere — called
-  // by clinicVisitsRepository.js's own delete().
-  async unlinkClinicVisit(visitId) {
-    await ensureLoaded();
-    vaccinations = vaccinations.map((v) => ({ ...v, clinicVisitIds: (v.clinicVisitIds || []).filter((id) => id !== visitId) }));
-    await persist();
-  },
+  // REMOVED 26 Sep 2026 — the former `unlinkClinicVisit(visitId)`, which
+  // existed only to scrub the removed per-vaccination `clinicVisitIds`
+  // array when a visit was hard-deleted. With the visit owning the link
+  // there is nothing left to scrub here: deleting the visit deletes its
+  // own `vaccinationsGivenIds` by virtue of the record itself being gone,
+  // and deleting a vaccination is handled by `unlinkVaccination` above,
+  // which strips the vaccination from each visit that referenced it.
 
   // ADDED 26 Aug 2026 — real ask: long-press multi-select rolled out
   // to every module.

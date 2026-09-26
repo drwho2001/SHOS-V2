@@ -473,8 +473,185 @@ function ClinicVisitLocationField({ value, onChange, T }) {
 // should read as an explicit yes/no question", not a bare toggle with
 // a one-word label that leaves what "on" means to context. Same
 // underlying boolean, just an unambiguous either/or.
-function YesNoQuestion({ question, value, onChange, T }) {
+// ADDED 26 Sep 2026 — the merged replacement for the former "Medications —
+// Prescribed to take home" and "Medications to restock" pair, which asked
+// the same question twice and stored the answer twice. Own component rather
+// than reusing RelationPicker because the value here is not a list of ids but
+// a list of { medicationId, containers }: the picker's chip/remove model has
+// nowhere to hang a quantity, and inventing a second inline editor for it
+// would have been a worse version of the same thing.
+//
+// The quantity is the real addition. The owner's ask was a count for the
+// restock window "without having to do it manually", so `suggestedContainers`
+// pre-fills a figure derived from the medication's OWN data rather than
+// asking them to do arithmetic:
+//
+//   1. defaultRefillQuantity, if the user has already told us how much they
+//      normally reorder. This is the most trustworthy source and the cheapest.
+//   2. Otherwise, containers to cover COVER_DAYS of their current usage,
+//      derived from unitsPerContainer / unitsPerDose / dosing interval.
+//
+// If neither is knowable (a PRN medication with no stated pack size, say)
+// it returns null and the field is left blank on purpose. A blank "unknown"
+// is honest; a fabricated 1 is not, and 1 container is exactly the kind of
+// plausible-looking default that ends up being trusted and being wrong.
+const TAKE_HOME_COVER_DAYS = 30;
+
+export function suggestedContainers(med, coverDays = TAKE_HOME_COVER_DAYS) {
+  if (!med) return null;
+  if (med.defaultRefillQuantity > 0) return Math.max(1, Math.round(med.defaultRefillQuantity));
+  const perContainer = Number(med.unitsPerContainer);
+  const perDose = Number(med.unitsPerDose);
+  if (!(perContainer > 0) || !(perDose > 0)) return null;
+  // Consumption per day. Mirrors medicationCalculations' own stock math
+  // (effectiveDoseIntervalHours -> dailyConsumption) rather than inventing a
+  // second, subtly different formula here.
+  const dosesPerDay = med.usagePattern === "prn" ? null : Number(med.dosesPerDay) || null;
+  if (med.usagePattern === "custom") {
+    const intervalDays = Number(med.scheduleIntervalDays);
+    if (!(intervalDays > 0) || !(Number(med.dosesPerDay) > 0)) return null;
+    const daily = (Number(med.dosesPerDay) * perDose) / intervalDays;
+    return Math.max(1, Math.ceil((daily * coverDays) / perContainer));
+  }
+  if (!(dosesPerDay > 0)) return null;
+  return Math.max(1, Math.ceil(((dosesPerDay * perDose) * coverDays) / perContainer));
+}
+
+function TakeHomeMedicationsField({ value, onChange, meds, T }) {
+  const entries = Array.isArray(value) ? value : [];
+  const alreadyPicked = entries.map((e) => e.medicationId);
+  const available = meds.filter((m) => !alreadyPicked.includes(m.id));
+  const nameFor = (id) => meds.find((m) => m.id === id)?.name || "?";
+  const add = (medId) => {
+    const med = meds.find((m) => m.id === medId);
+    onChange([...entries, { medicationId: medId, containers: suggestedContainers(med) }]);
+  };
+  const setQty = (idx, qty) => {
+    const n = qty === "" ? null : Math.max(0, Math.round(Number(qty) || 0));
+    onChange(entries.map((e, i) => (i === idx ? { ...e, containers: n } : e)));
+  };
+  const remove = (idx) => onChange(entries.filter((_, i) => i !== idx));
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const suggestions = (q ? available.filter((m) => m.name.toLowerCase().includes(q)) : available).slice(0, 8);
   return (
+    <div>
+      {entries.map((e, i) => (
+        <div key={e.medicationId} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0" }}>
+          <span style={{ flex: 1, fontSize: 13, color: T.textPrimary }}>{nameFor(e.medicationId)}</span>
+          <input
+            type="number" min="0" inputMode="numeric"
+            value={e.containers ?? ""}
+            onChange={(ev) => setQty(i, ev.target.value)}
+            aria-label={`Containers of ${nameFor(e.medicationId)} to take home`}
+            placeholder="Qty"
+            style={{ width: 74, padding: "7px 9px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}
+          />
+          <span style={{ fontSize: 11, color: T.textDisabled }}>containers</span>
+          <div role="button" tabIndex={0}
+            onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ev.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
+            onClick={() => remove(i)} aria-label={`Remove ${nameFor(e.medicationId)}`}
+            style={{ cursor: "pointer", color: T.textSecondary, display: "flex", alignItems: "center" }}>
+            <X size={13} />
+          </div>
+        </div>
+      ))}
+      {available.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          <input
+            value={query} onChange={(ev) => setQuery(ev.target.value)}
+            placeholder="Add a medication to take home..."
+            aria-label="Add a medication to take home"
+            style={{ width: "100%", padding: "9px 11px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }}
+          />
+          {suggestions.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
+              {suggestions.map((m) => (
+                <div key={m.id} role="button" tabIndex={0}
+                  onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ev.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
+                  onClick={() => { add(m.id); setQuery(""); }}
+                  style={{ padding: "4px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.border}`, color: T.textSecondary, cursor: "pointer" }}>
+                  {m.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {entries.length > 0 && (
+        <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 7 }}>
+          Quantity is pre-filled from each medication's own dosing and pack
+          size where those are known. Change it if the clinic said otherwise.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ADDED 26 Sep 2026 — the vaccination counterpart of StartTestInline above,
+// and for the same reason. The owner's point was exactly right: if the only
+// way to relate a vaccination to a visit is to go and pick it on the other
+// screen, then an ordinary user simply never creates that link, and the
+// relation silently does not exist. So the record is created AND linked in a
+// single action, with no second step to forget.
+//
+// Deliberately NOT inferring links from "same day + same clinic looks like
+// the same appointment" — that is the auto-logging this app has explicitly
+// rejected, and a confidently wrong link is worse than an absent one. The
+// link is only ever created because the user said so, here or in the
+// vaccination's own screen.
+function RecordVaccinationInline({ visitDate, location, onCreated, T }) {
+  const [name, setName] = useState("");
+  const [showInput, setShowInput] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const create = async () => {
+    const trimmed = name.trim();
+    if (!trimmed || busy) return;
+    setBusy(true);
+    try {
+      const created = await VaccinationRepository.create({
+        title: trimmed,
+        vaccine: trimmed,
+        date: visitDate || new Date().toISOString(),
+        // The visit's own location is the vaccination's provider unless the
+        // user says otherwise later - a sensible default, and still a fact
+        // the user can edit rather than an invented one.
+        provider: Array.isArray(location) ? (location[0] || "") : (location || ""),
+      });
+      onCreated(created.id);
+      setName("");
+      setShowInput(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (!showInput) {
+    return (
+      <div role="button" tabIndex={0}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
+        onClick={() => setShowInput(true)}
+        style={{ fontSize: 11, color: T.healthcareBlue, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>
+        + Record a vaccination here
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Vaccine - continue details in Vaccinations"
+        aria-label="Vaccination name"
+        onKeyDown={(e) => { if (e.key === "Enter") create(); }}
+        style={{ flex: 1, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13 }} />
+      <div role="button" tabIndex={0}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
+        onClick={create}
+        style={{ padding: "8px 12px", borderRadius: radius.sm, background: T.healthcareBlue, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+        {busy ? "..." : "Add"}
+      </div>
+    </div>
+  );
+}
+
+function YesNoQuestion({ question, value, onChange, T }) {  return (
     <div style={{ padding: "10px 0" }}>
       <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6 }}>{question}</div>
       <div style={{ display: "flex", gap: 8 }}>
@@ -493,9 +670,47 @@ function YesNoQuestion({ question, value, onChange, T }) {
 // that aren't in the user's personal Medication tracker — a simple
 // add/remove list of free-text {name, notes} entries, distinct from
 // the registry-linked RelationPicker used for medicationsGivenIds.
-function AdHocMedicationsManager({ value, onChange, T }) {
+function AdHocMedicationsManager({ value, onChange, T, onPromoted }) {
   const [name, setName] = useState("");
   const [notes, setNotes] = useState("");
+  // ADDED 26 Sep 2026 — the owner's own point: someone who writes a
+  // medication into a clinic visit by free text is usually describing a
+  // drug they now actually take, and the only way to get it into their
+  // tracker was to retype it there. So each row offers to create the
+  // Medication record itself, from what is already captured, rather than
+  // asking them to re-enter the name and notes they just typed.
+  //
+  // Deliberately opt-in per row rather than automatic on save. Promoting
+  // creates a standing self-administered medication record with its own
+  // dose log, stock tracking and reminders - that is a real commitment,
+  // and a one-off IM injection is genuinely not that. Opt-in also means
+  // this is not "auto-logging", which this app has explicitly rejected.
+  //
+  // Only the name, notes and dose are carried across. Everything else in
+  // DEFAULT_MEDICATION stays at its default, so the new record opens
+  // visibly incomplete in Medication Dashboard (no dose strength, no
+  // schedule) rather than pretending to be a fully-specified medication
+  // the user never actually described.
+  const [promoting, setPromoting] = useState(null);
+  const [dose, setDose] = useState("");
+  const [busy, setBusy] = useState(false);
+  const promote = async (entry) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const created = await MedicationRepository.create({
+        name: entry.name,
+        notes: entry.notes || "",
+        doseStrengthValue: dose === "" ? null : Number(dose),
+      });
+      onChange(value.filter((m) => m.id !== entry.id));
+      setPromoting(null);
+      setDose("");
+      onPromoted?.(created?.id);
+    } finally {
+      setBusy(false);
+    }
+  };
   const add = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -509,12 +724,45 @@ function AdHocMedicationsManager({ value, onChange, T }) {
       {value.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
           {value.map((m) => (
-            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: radius.sm, background: T.surfaceVariant }}>
-              <div style={{ minWidth: 0, overflowWrap: "break-word" }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{m.name}</div>
-                {m.notes && <div style={{ fontSize: 11, color: T.textSecondary }}>{m.notes}</div>}
+            <div key={m.id} style={{ padding: "6px 10px", borderRadius: radius.sm, background: T.surfaceVariant }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <div style={{ minWidth: 0, overflowWrap: "break-word" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{m.name}</div>
+                  {m.notes && <div style={{ fontSize: 11, color: T.textSecondary }}>{m.notes}</div>}
+                </div>
+                <X size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => remove(m.id)} aria-label={`Remove ${m.name}`} title="Remove medication" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
               </div>
-              <X size={14} color={T.actionRed} style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => remove(m.id)} aria-label="Remove medication" title="Remove medication" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
+              {promoting === m.id ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 7, flexWrap: "wrap" }}>
+                  <input
+                    type="number" min="0" step="any" inputMode="decimal"
+                    value={dose} onChange={(e) => setDose(e.target.value)}
+                    placeholder="Dose (optional)"
+                    aria-label={`Dose for ${m.name}`}
+                    style={{ width: 120, padding: "6px 9px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surface, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }}
+                  />
+                  <span style={{ fontSize: 11, color: T.textDisabled }}>adds it to Medication Dashboard</span>
+                  <div role="button" tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
+                    onClick={() => promote(m)}
+                    style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>
+                    {busy ? "Adding..." : "Confirm"}
+                  </div>
+                  <div role="button" tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
+                    onClick={() => { setPromoting(null); setDose(""); }}
+                    style={{ fontSize: 11, color: T.textDisabled, cursor: "pointer" }}>
+                    Cancel
+                  </div>
+                </div>
+              ) : (
+                <div role="button" tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }}
+                  onClick={() => { setPromoting(m.id); setDose(""); }}
+                  style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", marginTop: 5, alignSelf: "flex-start" }}>
+                  Add to my medications
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -695,7 +943,12 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
     const entries = await Promise.all(form.linkedTestIds.map((id) => TestingRepository.getById(id)));
     return Object.fromEntries(form.linkedTestIds.map((id, i) => [id, entries[i]]));
   }, [form.linkedTestIds], {});
-  const allMeds = useLoadedMemo(async () => (await MedicationRepository.getAll()).filter((m) => !m.isArchived).map((m) => ({ id: m.id, name: m.name })), [], []);
+  // CHANGED 26 Sep 2026 — loads the FULL medication record rather than just
+  // { id, name }. The take-home quantity is derived from each medication's
+  // own dosing and pack size (see suggestedContainers), which needs
+  // unitsPerContainer / unitsPerDose / dosesPerDay / scheduleIntervalDays /
+  // defaultRefillQuantity — none of which a name-only projection carries.
+  const allMeds = useLoadedMemo(async () => (await MedicationRepository.getAll()).filter((m) => !m.isArchived), [], []);
   const allSymptoms = useLoadedMemo(async () => (await SymptomsRegistry.getAll()).filter((s) => !s.isArchived), [], []);
   // CHANGED — Phase 2 encryption groundwork: ResultsRegistry is now
   // async — resolved once here for the inline linked-test result
@@ -769,19 +1022,32 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
       )}
 
       <div style={{ padding: "0 16px 100px" }}>
+        {/* CHANGED 26 Sep 2026 — clinical impression MOVED here from the
+            Notes card. The owner's read was that the form was asking the
+            same question in three boxes: what you came in with, what the
+            symptoms were, and what it turned out to be. Impression is a
+            short headline conclusion — the same category of thing as the
+            reason for the visit, which already lives here — so it belongs
+            beside it rather than inside a notes narrative it is not part
+            of. Notes is now just notes. */}
         <SectionCard title="Overview" T={T}>
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder="e.g. Routine screening" />
           <DateTimeField label="Date & time" value={form.date} onChange={set("date")} T={T} />
-          {/* CHANGED 19 Aug 2026 — real feedback batch: free text, not
+          {/* CHANGED 19 Aug 2026 - real feedback batch: free text, not
               a fixed list, and not mandatory (no validation ever
-              required it — this was already true, just now also
+              required it - this was already true, just now also
               genuinely free-text). */}
           <ClinicianField value={form.clinician} onChange={set("clinician")} T={T} />
           <ClinicVisitLocationField value={form.location} onChange={set("location")} T={T} />
-          {/* ADDED 24 Sep 2026 — real ask: free-text automap for Reason
+          {/* ADDED 24 Sep 2026 - real ask: free-text automap for Reason
               for visit. Type to filter existing options, Enter to select
               or create new (same pattern as ClinicianField). */}
           <ReasonForVisitField value={form.reasonForVisit} onChange={set("reasonForVisit")} options={reasonForVisitOptions} listName="reasonForVisit" T={T} />
+          {/* MOVED 26 Sep 2026 - was in the Notes card. See that card's
+              note for why. A short, scannable working impression/diagnosis,
+              distinct from the longer narrative (see
+              clinicVisitsRepository.js's own field comment). */}
+          <TextField label="Clinical impression" value={form.clinicalImpression || ""} onChange={set("clinicalImpression")} T={T} placeholder="e.g. Symptomatic urethritis, likely Gonorrhoea pending culture" />
           {/* CHANGED 19 Aug 2026 — explicit yes/no question, not a
               bare toggle. */}
           <YesNoQuestion question="Is this a future appointment?" value={form.isFutureAppointment} onChange={set("isFutureAppointment")} T={T} />
@@ -890,6 +1156,14 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
           )}
 
           <RelationPicker label="Vaccinations given" value={form.vaccinationsGivenIds} onChange={set("vaccinationsGivenIds")} items={allVaccinations} T={T} placeholder="No vaccinations logged yet" />
+          {/* ADDED 26 Sep 2026 — see RecordVaccinationInline's own note.
+              Records and links in one action, so the user is never asked
+              to remember a second step. */}
+          <RecordVaccinationInline
+            visitDate={form.date}
+            location={form.location}
+            onCreated={(vaccinationId) => { set("vaccinationsGivenIds")([...form.vaccinationsGivenIds, vaccinationId]); setRefreshKey((k) => k + 1); }}
+            T={T} />
         </SectionCard>
 
         {/* RESTRUCTURED 26 Sep 2026 — its own card because it carries a
@@ -941,29 +1215,18 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
           </div>
         </SectionCard>
 
-        <SectionCard title="Medications — Prescribed to take home" T={T}>
-          <RelationPicker label="From your Medication tracker" value={form.medicationsPrescribedIds} onChange={set("medicationsPrescribedIds")} items={allMeds} T={T} placeholder="No medications in registry" />
+        {/* CHANGED 26 Sep 2026 — one card, not two. "Prescribed to take
+            home" and "Medications to restock" were separate id arrays
+            asking the same question, and neither ever changed any
+            behaviour. Merged, and the entry now carries a containers
+            quantity, which is what the owner actually wanted from it. */}
+        <SectionCard title="Medications to take home" T={T}>
+          <TakeHomeMedicationsField value={form.takeHomeMedications} onChange={set("takeHomeMedications")} meds={allMeds} T={T} />
         </SectionCard>
 
-        {/* CHANGED 26 Sep 2026 — the inner picker's own label used to read
-            "Medications to restock after this visit", which said the same
-            thing as this card's own title directly above it. Dropped, so
-            the information appears once rather than twice. */}
-        <SectionCard title="Medications to restock" T={T}>
-          <RelationPicker label="" value={form.restockMedicationIds} onChange={set("restockMedicationIds")} items={allMeds} T={T} placeholder="No medications in registry" />
-        </SectionCard>
-
+        {/* CHANGED 26 Sep 2026 — Clinical impression moved up to the
+            Overview card, so this is now just the free-text narrative. */}
         <SectionCard title="Notes" T={T}>
-          {/* ADDED 16 Sep 2026 — real ask (#78): a short, scannable
-              working impression/diagnosis, distinct from the longer
-              Clinical notes narrative below — see
-              clinicVisitsRepository.js's own field comment. */}
-          <div style={{ padding: "8px 0" }}>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Clinical impression</div>
-            <input value={form.clinicalImpression || ""} onChange={(e) => set("clinicalImpression")(e.target.value)}
-              placeholder="e.g. Symptomatic urethritis, likely Gonorrhoea pending culture"
-              style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
-          </div>
           <div style={{ padding: "8px 0" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Clinical notes</div>
             <textarea value={form.clinicalNotes} onChange={(e) => set("clinicalNotes")(e.target.value)} rows={3} aria-label="Clinical notes"
@@ -1082,6 +1345,11 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
           <ReadRow label="Clinician" value={visit.clinician} T={T} />
           <ReadRow label="Location" value={visit.location} T={T} />
           <ReadRow label="Reason for visit" value={visit.reasonForVisit} T={T} />
+          {/* CHANGED 26 Sep 2026 — moved here from the Notes card, to match
+              the edit sheet. See that form's own note: the impression is a
+              short headline conclusion, the same category as the reason for
+              the visit, not part of the notes narrative. */}
+          <ReadRow label="Clinical impression" value={visit.clinicalImpression} T={T} />
           <ReadRow label="Future appointment" value={visit.isFutureAppointment ? "Yes" : ""} T={T} />
           <ReadRow label="Follow-up arranged" value={visit.followUpType && visit.followUpType !== "None" ? visit.followUpType : ""} T={T} />
           <ReadRow label="Follow-up / next review" value={formatDate(visit.nextReviewDate) !== "—" ? formatDate(visit.nextReviewDate) : ""} T={T} />
@@ -1139,21 +1407,22 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
               ))}
             </div>
           )}
-          {visit.medicationsPrescribedIds?.length > 0 && (
-            <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>Prescribed to take home</div>
-              {visit.medicationsPrescribedIds.map((id) => {
-                const m = allMeds.find((m) => m.id === id);
-                return m ? <div key={id} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{m.name}</div> : null;
-              })}
-            </div>
-          )}
-          {visit.restockMedicationIds?.length > 0 && (
+          {/* CHANGED 26 Sep 2026 — the former "Prescribed to take home" and
+              "To restock after visit" blocks, which were two renderings of
+              the one merged field. The quantity now stored alongside each
+              entry is shown here too, since the whole point of capturing it
+              was to be able to read it back. */}
+          {Array.isArray(visit.takeHomeMedications) && visit.takeHomeMedications.length > 0 && (
             <div style={{ padding: "7px 0" }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>To restock after visit</div>
-              {visit.restockMedicationIds.map((id) => {
-                const m = allMeds.find((m) => m.id === id);
-                return m ? <div key={id} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{m.name}</div> : null;
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>To take home</div>
+              {visit.takeHomeMedications.map((entry) => {
+                const m = allMeds.find((x) => x.id === entry.medicationId);
+                const name = m?.name || "Medication";
+                return (
+                  <div key={entry.medicationId} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>
+                    {name}{entry.containers != null ? ` — ${entry.containers} container${entry.containers === 1 ? "" : "s"}` : ""}
+                  </div>
+                );
               })}
             </div>
           )}
@@ -1188,7 +1457,6 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
         </SectionCard>
 
         <SectionCard title="Notes" T={T}>
-          {visit.clinicalImpression && <ReadRow label="Clinical impression" value={visit.clinicalImpression} T={T} />}
           <ReadRow label="Clinical notes" value={visit.clinicalNotes} T={T} />
         </SectionCard>
 

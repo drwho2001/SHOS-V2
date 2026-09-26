@@ -87,21 +87,19 @@ export function isVaccinationOverdue(vaccination, today) {
 
 /**
  * The soonest still-relevant due date across many vaccinations, ignoring
- * archived ones. Returns the record plus its date, or null.
+ * archived ones. Returns { vaccination, nextDue } — an object rather than
+ * the bare record, so a caller cannot accidentally read a date off a
+ * record that no longer has one.
  *
- * Shared by the reminder's own scheduling and App.jsx's in-app due banner
- * so the two can never disagree about which record is due first.
+ * "Soonest" includes already-overdue records on purpose: the past-due one
+ * genuinely is the next thing that needs attention, and both the reminder
+ * and the in-app banner want it first. A record whose due date has passed
+ * is therefore returned, not filtered out.
  */
-export function soonestDueVaccination(vaccinations, today) {
-  const candidates = (vaccinations || [])
+export function soonestDueVaccination(vaccinations) {
+  return (vaccinations || [])
     .filter((v) => v && !v.isArchived)
     .map((v) => ({ vaccination: v, nextDue: getVaccinationNextDue(v) }))
     .filter((x) => x.nextDue)
-    .sort((a, b) => (a.nextDue < b.nextDue ? -1 : a.nextDue > b.nextDue ? 1 : 0));
-  if (candidates.length === 0) return null;
-  // Past-due records sort first, which is what both the reminder and the
-  // banner want; `today` is accepted for callers that need to reason about
-  // staleness and is deliberately not used to filter here.
-  void today;
-  return candidates[0];
+    .sort((a, b) => (a.nextDue < b.nextDue ? -1 : a.nextDue > b.nextDue ? 1 : 0))[0] || null;
 }
