@@ -197,11 +197,30 @@ oversight.
   for a change that "looks safe" — several real bugs this session
   only surfaced that way, not from reading the diff.
 
-## Known issues (as of 25 Sep 2026 — update this section as things change)
+## Known issues (as of 27 Sep 2026 — update this section as things change)
 
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+- **The only genuinely open items both need the physical device, so neither
+  can be closed from a development machine.** Everything else in the 25 Sep
+  batch is done (see "Recently shipped" below for the full detail).
+  - **#68 safe-area / status-bar spacing gaps.** The specific stuck-banner
+    case was resolved 16 Sep 2026. This item's own original wording was "a
+    few spots", and the remaining ones are genuinely unconfirmed - there is
+    no notch or status bar to measure against in a headless browser, and
+    `env(safe-area-inset-*)` resolves to 0px there, so any fix would be
+    shipped unverified. Flag a specific remaining report if one surfaces;
+    do not assume this item is closed.
+  - **Accessibility Item 7** (physical notch / status-bar confirmation).
+    Same blocker, same reason.
+- **`doseTimingAdvisory` may prove too persistent on a high-frequency
+  medication - not fixed, deliberately.** It is visible for 4h per dosing
+  cycle, which is 17% of the day at 1x/day but **67% at 4x/day**. The 2-hour
+  window is the NHS-sourced figure and the prominence question is a
+  presentation one, so the calculation is left alone; see the 27 Sep entry
+  above. If it is annoying in practice, the fix is a dismissible UI, not a
+  smaller number.
 - **Active, in-progress: a large real physical-play-testing feedback
   batch (~30+ items, ~15 Sep 2026).** The real-bug items (#55-63), two
   large follow-up rounds (medication reminder timing/streak/adherence,
@@ -312,6 +331,80 @@ this date; summarized here for durability.
 
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
+
+## Recently shipped (27 Sep 2026 - a real DST bug in every-N-days medication adherence; one self-caught overclaim)
+
+No new feature this round. Two correctness findings, both from reviewing my
+own previous round rather than from a new report.
+
+**A real DST bug in the every-N-days (custom) medication maths.** The owner
+asked whether the "this refill" figure counts days up to now or the whole
+supply, and whether it can ever reach 100%. The answer to the design question
+is yes - it is deliberately windowed to the *current container's* cycle, not
+the refill-to-today span, so a 6-month PrEP supply does not dilute the rate
+(see the 18 Aug entry in "Recently shipped"). But asking the question is what
+exposed the bug, because checking the answer meant checking the arithmetic.
+
+`computeExpectedDoseDays()` decided which days were due with raw millisecond
+modulo (`diff % (days * 86400000)`), and the custom streak walk stepped the
+schedule with flat millisecond offsets. Across a DST boundary that is wrong by
+exactly the offset change, so a dose genuinely taken on a genuine due day
+failed the test, was never added to `expected`, and **a flawless every-14-days
+medication silently lost adherence it had actually earned**. Measured rather
+than assumed, by probing the same anchor in four zones: the modulo test
+disagreed with a real 14-day cadence on 1 day in Europe/London, 0 in UTC, 3 in
+America/New_York and 1 in Australia/Sydney. Fixed by using calendar-date
+arithmetic (`setDate`/`wholeDaysBetween`) instead of dividing elapsed
+milliseconds. The daily-median path in the same file already did it this way
+and was never affected, which is exactly why the bug survived in only the
+custom branch - the kind of half-fixed pattern that hides a real defect.
+
+**A third "instance" of the bug that was not one, and I said so.** The
+`daysSince` calculation for the refill window had the same
+divide-by-86400000 shape. I fixed it too - then mutation-tested it, and
+reverting that line fails *nothing*. It is not an observable bug: a DST shift
+is one hour and `Math.round` absorbs a +/-1h day-count error completely, since
+crossing a rounding boundary would need a 12-hour shift. The change is kept
+(as `wholeDaysBetween`) and covered by a test, but the comment says plainly
+that it removes a latent trap rather than fixing a live defect. **"Fixed a
+bug" and "removed a trap" are different claims and this file keeps losing that
+distinction**, so the difference is recorded at the code, not just here.
+
+**My "deliberately silent in the common case" claim about `doseTimingAdvisory`
+was wrong as a general claim.** I asserted it without measuring. Measuring it:
+the window is 2 hours either side of a floor that sits halfway through the
+dosing interval, so it covers 4h/interval - 17% of the cycle at 1x/day, 33% at
+2x/day, 50% at 3x/day, and **67% at 4x/day**. A QDS medication would show a
+message two days in three. The 2-hour figure is NHS-sourced, so it is not mine
+to quietly shrink, and prominence is a presentation decision rather than a
+calculation one - so the number is unchanged and the corrected figures are
+recorded in the function's own docstring, with the note that if it proves
+annoying in practice the fix is a dismissible UI, not a smaller magic number.
+
+**Two of my own new tests were wrong in the same way, and both are documented
+at the fixture.** The new DST test file broke twice on the month-index trap:
+JS `Date` months are 0-indexed but the ISO date strings this app stores are
+1-indexed, so a first version anchored every fixture on February while pinning
+"now" to April, and every assertion read 0 - indistinguishable from the bug
+under test. A later draft made the opposite slip. Both are now separated into
+a 1-indexed `isoDay` and a 0-indexed `jsDate` so the same number cannot be
+passed to both again. Separately, one test was passing *vacuously*: its window
+contained no due day at all, so `expected` was 0 and `windowStats`' existing
+"nothing was due, nothing was missed" guard returned 100% regardless of DST.
+It now asserts the window is non-empty, which is what stops a real
+regression from hiding behind that fallback.
+
+Six new tests in `medicationAdherenceDST.test.js`, verified green under
+Europe/London, UTC, America/New_York and Australia/Sydney, and
+mutation-verified: reverting the expected-day fix fails 2 tests, reverting
+the streak fix fails 2, and a lazy "count every day as expected" fix - which
+is how the bug could have been "fixed" without thinking - fails 3.
+
+**New standing rule:** when this app stores a calendar DATE for a
+medication/schedule calculation, use calendar arithmetic, never
+`milliseconds / 86400000`. The DST bug above is the concrete reason, and
+`dateInputHelpers.js` already has the correct pattern from the 26 Sep
+timezone fix - reuse it rather than re-deriving.
 
 ## Recently shipped (26 Sep 2026 late - medication lockout rebuilt on NHS guidance; Healthcare follow-ups)
 

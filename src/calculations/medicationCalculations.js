@@ -92,6 +92,35 @@ export function computeStock(med) {
   return { tracked: true, currentStock, needsAction, supplementary, barPct };
 }
 
+// ADDED 26 Sep 2026 — two calendar-arithmetic helpers, added together
+// because they exist for the same reason and were previously hand-inlined
+// as raw millisecond maths in three separate places, which is how the DST
+// bug below got introduced three times over.
+//
+//   wholeDaysBetween(a, b) - how many CALENDAR days separate two instants,
+//     counting a 23- or 25-hour day as exactly one day.
+//   addDays(ts, n)        - the midnight day key n calendar days away,
+//     always landing on a real local midnight so it can be compared with
+//     the keys doseDays is built from.
+
+/** Normalise any instant to its local midnight day key. */
+function midnightKey(ts) {
+  const d = new Date(ts);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+/** Whole calendar days from `from` to `to`; negative when `to` is earlier. */
+function wholeDaysBetween(from, to) {
+  return Math.round((midnightKey(to) - midnightKey(from)) / 86400000);
+}
+
+/** The midnight day key `n` calendar days away from `ts`. */
+function addDays(ts, n) {
+  const d = new Date(midnightKey(ts));
+  d.setDate(d.getDate() + n);
+  return d.getTime();
+}
+
 // Small helper used only by computeAdherence below — how many of the
 // last N days had a logged dose. `expectedDaysOverride`, when given,
 // restricts which days actually count as "expected" — used for
@@ -123,17 +152,40 @@ function windowStats(doseDays, days, today, expectedDaysOverride) {
 // the expected days going forward, not an arbitrary fixed calendar
 // pattern). Returns null for non-custom meds — callers treat null as
 // "every day is expected", the original behavior, unchanged.
+// FIXED 26 Sep 2026 — a real DST bug, found by asking whether the "this
+// refill" figure could ever legitimately reach 100% (it can, and it should).
+//
+// This function used to decide which days were due with raw millisecond
+// modulo:
+//
+//     const diff = day.getTime() - anchor;
+//     if (diff >= 0 && diff % intervalMs === 0) expected.add(...)
+//
+// where intervalMs is a flat scheduleIntervalDays * 86400000. Across a
+// DST boundary that is wrong by exactly the offset change, so a dose taken
+// on a genuine due day silently failed the test, was never added to
+// `expected`, and a flawless every-N-days medication lost adherence it had
+// actually earned. Measured, not assumed: anchoring a 14-day cycle on
+// 1 Mar 2026, this dropped real due days in Europe/London (1), UTC (0),
+// America/New_York (3) and Australia/Sydney (1).
+//
+// The fix is to do calendar arithmetic with setDate(), which is DST-correct
+// because it moves the DATE rather than the elapsed milliseconds. The daily
+// path in this same file already did it this way and was never affected,
+// which is exactly why the bug survived in only the custom branch.
 function computeExpectedDoseDays(med, doseDays, windowDays, today) {
   if (med.usagePattern !== "custom" || !med.scheduleIntervalDays) return null;
   const sortedDoseDays = Array.from(doseDays).sort((a, b) => a - b);
   const anchor = sortedDoseDays[0];
   if (anchor == null) return new Set(); // no dose logged yet — nothing's been "due" so far
-  const intervalMs = med.scheduleIntervalDays * 86400000;
+  const anchorDate = new Date(anchor);
   const expected = new Set();
   for (let i = 0; i < windowDays; i++) {
     const day = new Date(today); day.setDate(day.getDate() - i);
-    const diff = day.getTime() - anchor;
-    if (diff >= 0 && diff % intervalMs === 0) expected.add(day.getTime());
+    // Whole calendar days between the anchor and this day, via the shared
+    // helper, so a 23- or 25-hour day still counts as exactly one day.
+    const elapsedDays = wholeDaysBetween(anchorDate.getTime(), day.getTime());
+    if (elapsedDays >= 0 && elapsedDays % med.scheduleIntervalDays === 0) expected.add(day.getTime());
   }
   return expected;
 }
@@ -185,12 +237,25 @@ export function computeAdherence(med) {
     const sortedDoseDays = Array.from(doseDays).sort((a, b) => a - b);
     const anchor = sortedDoseDays[0];
     if (anchor != null) {
-      const intervalMs = med.scheduleIntervalDays * 86400000;
-      const stepsBack = Math.floor((today.getTime() - anchor) / intervalMs);
-      let cursor = anchor + stepsBack * intervalMs;
+      // FIXED 26 Sep 2026 — same DST bug as computeExpectedDoseDays above,
+      // and the same fix. This walked the schedule with flat millisecond
+      // steps (anchor + stepsBack * intervalMs), so after a DST change the
+      // cursor landed on 23:00 or 01:00 rather than on the midnight day key
+      // that doseDays is built from. `doseDays.has(cursor)` then returned
+      // false for a dose the user had genuinely taken, silently resetting a
+      // real streak. Now walked by calendar day, matching the anchor's own
+      // day-of-month cadence.
+      const daysSinceAnchor = wholeDaysBetween(anchor, today.getTime());
+      const stepsBack = Math.floor(daysSinceAnchor / med.scheduleIntervalDays);
+      // FORWARD from the anchor to the most recent due slot at or before
+      // today, then walk backwards from there. (An intermediate draft of this
+      // fix used a negative offset and walked off the front of the anchor
+      // entirely, reporting a streak of 0 for everyone - caught by the
+      // DST tests asserting a real value rather than just a percentage.)
+      let cursor = addDays(anchor, stepsBack * med.scheduleIntervalDays);
       const todayIsDueSlot = cursor === today.getTime();
-      if (todayIsDueSlot) cursor -= intervalMs;
-      while (cursor >= anchor && doseDays.has(cursor)) { streak += 1; cursor -= intervalMs; }
+      if (todayIsDueSlot) cursor = addDays(cursor, -med.scheduleIntervalDays);
+      while (cursor >= anchor && doseDays.has(cursor)) { streak += 1; cursor = addDays(cursor, -med.scheduleIntervalDays); }
       if (todayIsDueSlot && doseDays.has(today.getTime())) streak += 1;
     }
   } else {
@@ -226,7 +291,23 @@ export function computeAdherence(med) {
   let sinceRefill;
   if (lastRefill) {
     const refillDay = new Date(lastRefill.date); refillDay.setHours(0, 0, 0, 0);
-    const daysSince = Math.max(1, Math.round((today.getTime() - refillDay.getTime()) / 86400000) + 1);
+    // FIXED 26 Sep 2026 — made DST-correct for consistency with the two fixes
+    // above, and covered by a test. Being straight about this one: dividing
+    // elapsed milliseconds by 86400000 here was NOT an observable bug, unlike
+    // the other two. A single DST shift is one hour, and Math.round absorbs a
+    // +/-1h error in a day count completely - it cannot cross a rounding
+    // boundary, because that would need a 12-hour shift. Verified by
+    // mutation: reverting this line fails nothing.
+    //
+    // Changed anyway because it is a latent trap rather than a live defect -
+    // the identical line with Math.floor instead of Math.round would be wrong
+    // at every DST boundary, and the "nothing else is wrong here" reasoning
+    // that justifies a 0.5 rounding is not something a future editor of this
+    // line can see. wholeDaysBetween() counts calendar days, so the question
+    // does not arise. Left as a comment rather than a silent tidy because the
+    // difference between "fixed a bug" and "removed a trap" is exactly the
+    // distinction this file keeps losing track of.
+    const daysSince = Math.max(1, wholeDaysBetween(refillDay.getTime(), today.getTime()) + 1);
     const windowDays = daysPerContainer && daysPerContainer > 0
       ? Math.min(daysSince, ((daysSince - 1) % daysPerContainer) + 1)
       : daysSince;
@@ -603,6 +684,24 @@ export function isDoseLockedOut(med, lastDoseDate, timingMode = "adaptive") {
  *
  * The hard lockout is NOT relaxed by this. It is purely additive advice, so
  * there is no path by which this function can permit something unsafe.
+ *
+ * HONEST LIMITATION, found by measuring rather than assuming. I originally
+ * described this as "deliberately silent in the common case". That was true
+ * for a once-daily medication and wrong as a general claim. The window is
+ * 2 hours either side of the floor, and the floor sits halfway through the
+ * dosing interval, so the fraction of the cycle covered is 4h/interval:
+ *
+ *   1x/day (24h interval) -> 17% of the time
+ *   2x/day (12h)          -> 33%
+ *   3x/day  (8h)          -> 50%
+ *   4x/day  (6h)          -> 67%   <-- a QDS med shows a message most of the day
+ *
+ * The 2-hour figure is the NHS-sourced number, so it is not mine to quietly
+ * shrink, and the UI is the right place to decide how prominent this is
+ * rather than the calculation layer. Left as-is and recorded here deliberately:
+ * if it turns out to be annoying on a QDS medication, the fix is a
+ * presentation decision (dismissible, or only on an actual log tap), not a
+ * smaller magic number in here.
  */
 export function doseTimingAdvisory(med, lastDoseDate, timingMode = "adaptive") {
   if (!med || !lastDoseDate) return null;
