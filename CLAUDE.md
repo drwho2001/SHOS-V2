@@ -313,6 +313,86 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+## Recently shipped (26 Sep 2026 late - medication lockout rebuilt on NHS guidance; Healthcare follow-ups)
+
+Commits `eab689c` and `b1ecab9`.
+
+**The medication lockout no longer contains an invented number.** It released
+a dose at 80% of the dosing interval, and an audit of that constant found no
+source for it. NHS Specialist Pharmacy Service guidance ("Advising on missed
+or delayed doses of medicines", reviewed 3 Jun 2026) supplies two values that
+do have sources, and both are now in `medicationCalculations.js` with the
+citations recorded at the constants themselves:
+
+- **Half the dosing interval** as the minimum gap before the next dose. NHS
+  states this absolutely and it is exactly half the interval in every case
+  it gives: apixaban/dabigatran 12h to 6h, rivaroxaban 24h to 12h,
+  antiepileptics BD 12h to 6h. This app never tells anyone to skip or double
+  a dose, so this is the only genuinely load-bearing value in the file.
+- **2 hours** as the acceptable lateness - "for most medicines, it is
+  acceptable to take a dose up to 2 hours late". An absolute figure. An
+  intermediate attempt derived 0.2 OF THE INTERVAL instead, which gave a
+  daily tablet 4.8h of slack, two and a half times more permissive than the
+  guidance allows. Deriving an hours-based rule from a percentage was the
+  original bug in my own first fix.
+
+A third constant (a 1-hour early tolerance) was written and then deleted: no
+guidance publishes such a rule, and it was unreachable arithmetic besides,
+since the half-interval floor is earlier than any 1h-early window for every
+frequency this app supports. **If you add a timing constant to this file, cite
+the source in the comment or do not add it** - the 0.8 and the 0.2 were both
+untethered numbers that read as deliberate.
+
+**The same guidance corrected a real behavioural bug.** "More than twice a
+day: skip the missed dose and wait until the next one is due." A QDS
+medication should therefore never follow a late dose - which is precisely the
+case the old "follow the actual dose" branch was being used to justify. The
+schedule is now the unconditional answer, and a past slot is stepped over
+rather than offered, so the skip rule falls out for free.
+
+**`fixed` means fixed.** It ignores phasing entirely, so a proven multi-day
+weaning trend cannot move a fixed schedule. It previously read as "mostly
+fixed" without saying so. `adaptive` is where shift detection belongs, and it
+requires three consecutive doses trending the same way: with only two, "taken
+6h late once" and "started moving to 06:00" are the same two observations, so
+the burden of proof sits on the shift and the schedule holds until it is met.
+
+**New: `doseTimingAdvisory()`** implements the owner's "just over or under is
+fine, but warn me about the next dose" ask. A plain-language note in a grace
+window around the boundary, deliberately silent in the common case so it does
+not become noise. It is advisory only - a test asserts it cannot unlock a dose
+the hard floor still blocks, because the softness belongs in the message, not
+in the rule. The UI gate that would have hidden it was itself a bug: being
+inside the grace window but before the floor is exactly when `isDoseLockedOut`
+is still true, so the one message that mattered could never render. Found by
+a live browser check against real seed data, not by reading the diff.
+
+**Test-clock discipline.** `medicationLockout.test.js` pins the clock for the
+whole file. Both the due-slot walk and the lateness comparison read the real
+wall clock, so an unpinned suite answers differently depending on what time of
+day it runs - which is how a QDS assertion came to expect the wrong value and
+looked like a code bug. The suite also carries a deliberately duplicated
+clock-time helper, because "a midnight dose taken 15 minutes late" means
+00:15 and an earlier version of these tests built "15 minutes ago", i.e. a
+dose at whatever time of day the test happened to run, making every lateness
+assertion meaningless.
+
+**Verified by mutation testing, not assumed.** 12 behavioural mutations each
+provably fail with a clean baseline. Two of them initially failed to fail
+anything, which is what exposed two of my own tests asserting only `< 24h` -
+loose enough that both branches satisfied it - and a missing "two doses is not
+yet a shift" case that is the entire point of `MIN_TREND_DOSES = 3`.
+
+Also in `b1ecab9`: Home's long-dead `lastContact` query now renders as a
+"Newest contact" row (verified live - clicking it opens the real profile), and
+`contactRepository`'s `STORAGE_KEY` is exported rather than duplicated into
+its test. **The two Menstrual "unused setter" findings are not bugs and were
+deliberately left alone**, with the reasoning commented at both sites: Flow is
+a bounded vocabulary whose stored value drives a 1-4 icon count, Formulation
+picks an entry out of a lookup table, and the only editor for either list is
+the Settings overlay - so the setters are dead rather than the lists being
+stale. Commented specifically so the next audit does not re-raise them.
+
 ## Recently shipped (26 Sep 2026 - stored-datetime timezone fix, personal-data encoding repair, vaccine reminder fix)
 
 Three real bugs found by auditing Healthcare and the storage layer rather
