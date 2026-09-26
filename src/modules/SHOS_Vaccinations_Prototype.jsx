@@ -94,19 +94,6 @@ function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
 // listName optional: only the CustomOptionListsRepository-backed
 // fields pass it, so real selections there count toward getRanked()'s
 // frequency ranking (real ask, 3 Sep 2026).
-function SelectField({ label, value, onChange, options, T, listName }) {
-  return (
-    <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
-      <select value={value ?? ""} onChange={(e) => { onChange(e.target.value); if (listName && e.target.value) CustomOptionListsRepository.recordUsage(listName, e.target.value); }} aria-label={label}
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
-        <option value="">—</option>
-        {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-      </select>
-    </div>
-  );
-}
-
 function MultiSelectChips({ label, value, onChange, options, T, listName }) {
   const toggle = (opt) => { const has = value.includes(opt); onChange(has ? value.filter((v) => v !== opt) : [...value, opt]); if (!has && listName) CustomOptionListsRepository.recordUsage(listName, opt); };
   return (
@@ -229,7 +216,6 @@ function VaccineField({ value, onChange, options, onAddNew, T }) {
 function DoseByDose({ doses, onChange, T }) {
   const addDose = () => {
     const nextNumber = (doses?.length || 0) + 1;
-    const today = new Date().toISOString().slice(0, 10);
     const newDose = {
       doseNumber: nextNumber,
       date: new Date().toISOString().slice(0, 10),
@@ -418,7 +404,6 @@ function VaccinationSheet({ vaccination, onSave, onClose, T }) {
   // most-frequently-picked options first (real ask, 3 Sep 2026).
   const [vaccineOptions, setVaccineOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("vaccine"), [], []);
   const vaccinationReasonOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("vaccinationReason"), [], []);
-  const injectionSiteOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("injectionSite"), [], []);
 const draftKey = `vaccination_${vaccination?.id || "new"}`;
   const [form, setForm] = useState(() => {
     const draft = loadDraft(draftKey);

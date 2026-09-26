@@ -7,7 +7,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // screen content, living directly inside App.jsx. Pure code motion —
 // every line of actual behavior below is unchanged from what was
 // working in App.jsx; only the file it lives in has changed.
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { NEUTRAL, ACCENTS, ACTION, ACCENT_TEXT_SAFE, RADIUS, TYPE, deriveLightAccent, resolveDarkAccent } from "../calculations/designTokens";
 // CHANGED 2 Sep 2026 — real ask: "no hardcoded hexes" (medication blue
 // specifically), then a follow-up real ask: "meds blue on recent
@@ -49,10 +49,10 @@ import { checkForUpdate, RELEASE_APK_URL } from "../storage/updateCheckService";
 import {
   HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill,
   ShieldIcon as Shield,
-  HeartbeatIcon as HeartPulse, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon,
+  CaretRightIcon as ChevronRight, GearIcon as SettingsIcon,
   UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database,
   TestTubeIcon as TestTube, StethoscopeIcon as Stethoscope,
-  SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CalendarCheckIcon as CalendarCheck, StackIcon as Stack, DropIcon as Drop,
+  SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, StackIcon as Stack, DropIcon as Drop,
   IdentificationBadgeIcon as CreditCard, DownloadSimpleIcon as Download, LockIcon as Lock,
   BellIcon as Bell, XIcon as X,
 } from "@phosphor-icons/react";
@@ -71,7 +71,6 @@ import { MyProfileRepository } from "../repositories/myProfileRepository";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository";
 import { ContraceptionRepository } from "../repositories/contraceptionRepository";
-import { PregnancyRepository } from "../repositories/pregnancyRepository";
 import { formatDoxyPepCountdown, formatDoxyPepOverdueDuration, DOXYPEP_WINDOW_HOURS } from "../calculations/doxyPepCalculations";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { requestNotificationPermission, checkNotificationPermission } from "../storage/notificationService";

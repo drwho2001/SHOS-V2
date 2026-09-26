@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { 
   computeAdherence, 
   lockoutEndsEstimate, 
@@ -22,16 +22,6 @@ const createMed = (overrides = {}) => ({
   inventoryTracked: true,
   createdAt: '2026-01-01T00:00:00.000Z',
   logs: [],
-  ...overrides,
-});
-
-const createLog = (date, overrides = {}) => ({
-  id: `log_${date}`,
-  medicationId: 'med_001',
-  type: 'dose',
-  delta: -1,
-  date,
-  voided: false,
   ...overrides,
 });
 

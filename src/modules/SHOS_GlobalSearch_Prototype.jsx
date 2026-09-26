@@ -90,10 +90,6 @@ const RESULT_META = {
   pregnancy: { label: "Pregnancy", icon: Baby, color: ACCENTS.healthcare, tab: "healthcare", subTab: "menstrualHealth" },
 };
 
-function norm(v) {
-  return (v == null ? "" : String(v)).toLowerCase();
-}
-
 // Builds the full unfiltered index once per screen-open — the whole
 // app's data is small enough (single user, not thousands of rows) that
 // filtering client-side on every keystroke is simpler and fast enough,

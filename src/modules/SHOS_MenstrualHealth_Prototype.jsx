@@ -28,8 +28,8 @@
 // is real, visible data — never hidden by this gating, only optionally
 // masked per-entry via `sensitive` (a completely separate, user-set
 // thing — see PregnancyDetail below).
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X, EyeIcon as Eye, EyeSlashIcon as EyeSlash, DropIcon as Drop, PillIcon as Pill, BabyIcon as Baby, SyringeIcon as Syringe, BandaidsIcon as Bandaids, AnchorSimpleIcon as AnchorSimple } from "@phosphor-icons/react";
+import React, { useState, useEffect, useRef } from "react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, TrashIcon as Trash2, XIcon as X, EyeIcon as Eye, EyeSlashIcon as EyeSlash, DropIcon as Drop, PillIcon as Pill, BabyIcon as Baby, SyringeIcon as Syringe, BandaidsIcon as Bandaids, AnchorSimpleIcon as AnchorSimple } from "@phosphor-icons/react";
 import { MenstrualCycleRepository, DEFAULT_CYCLE } from "../repositories/menstrualCycleRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { ContraceptionRepository, DEFAULT_CONTRACEPTION_ENTRY } from "../repositories/contraceptionRepository";

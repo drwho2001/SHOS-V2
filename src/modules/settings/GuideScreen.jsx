@@ -2,7 +2,7 @@
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useRef, useEffect } from "react";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
-import { CaretLeftIcon as ChevronLeft, CalendarIcon as Calendar, LockIcon as Lock, XIcon as X, CompassIcon as Compass } from "@phosphor-icons/react";
+import { CaretLeftIcon as ChevronLeft, CompassIcon as Compass } from "@phosphor-icons/react";
 import { ACCENT_TEXT_SAFE, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../../calculations/responsive";

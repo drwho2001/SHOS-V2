@@ -19,7 +19,6 @@ import { ResultsRegistry } from "../../registries/resultsRegistry";
 import RegistryManagementScreen from "../SHOS_RegistryManagement_Prototype";
 import { OptionListDetail, ICON_COMPONENTS as OPTION_LIST_ICON_COMPONENTS } from "../SHOS_OptionListEditor_Prototype";
 import { CustomOptionListsRepository, OPTION_LIST_LABELS, OPTION_LIST_ICONS } from "../../repositories/customOptionListsRepository";
-import { ResourcesRepository } from "../../repositories/resourcesRepository";
 
 function LocationExtraFields({ entry, refresh, T, color }) {
   const [address, setAddress] = useState(entry.address || "");
@@ -77,7 +76,6 @@ const REGISTRIES = [
 // this only touches how the two lists are ENTERED, not how they work.
 export function ManageListsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
-  const T = darkMode ? DARK : NEUTRAL;
   const [tab, setTab] = useState("registries");
   const [openRegistry, setOpenRegistry] = useState(null);
   const [openOptionList, setOpenOptionList] = useState(null);

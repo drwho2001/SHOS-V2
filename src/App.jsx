@@ -4,8 +4,7 @@ import { useDarkModePreference } from "./calculations/darkModePreference";
 import { NEUTRAL_DARK as DARK } from "./calculations/designTokens";
 // ADDED — real architecture extraction, see each file's own header.
 import HomeScreen from "./modules/SHOS_Home_Prototype";
-import { exportBackup, inspectBackupFile, decryptBackupEnvelope, restoreFromParsedBackup, EXPORT_GROUPS } from "./storage/backupService";
-import { localStorageAdapter } from "./storage/storageAdapter";
+import { exportBackup, inspectBackupFile, decryptBackupEnvelope, restoreFromParsedBackup } from "./storage/backupService";
 // ADDED — real architecture extraction, see that file's own header.
 import TourOverlay from "./modules/InteractiveTour";
 import { PrivacySettingsRepository } from "./repositories/privacySettingsRepository";
@@ -46,21 +45,22 @@ import { getClinicVisitDueState, handleSnoozeClinicVisit } from "./calculations/
 // ADDED — real ask: "standardise UI/appearance." Shared design tokens,
 // the actual foundation — see designTokens.js for full reasoning and
 // honest scope (this is a start, not a finished migration).
-import { NEUTRAL, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent, applyRealAccentOverrides } from "./calculations/designTokens";
+import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent, applyRealAccentOverrides } from "./calculations/designTokens";
 import { ModuleColorRepository } from "./repositories/moduleColorRepository";
 import { useIsDesktopWidth } from "./calculations/responsive";
 // ADDED — real ask: Home's title should read "[Name]'s dashboard".
-import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HeartbeatIcon as HeartPulse, HospitalIcon as Hospital, DownloadSimpleIcon as Download, UploadSimpleIcon as Upload, CaretRightIcon as ChevronRight, GearIcon as SettingsIcon, CaretLeftIcon as ChevronLeft, UserIcon as User, MagnifyingGlassIcon as Search, DatabaseIcon as Database, TrashIcon as Trash2, WarningIcon as AlertTriangle, CheckIcon as Check, ClipboardTextIcon as ClipboardList, TreeStructureIcon as ListTree, PaperclipIcon as Paperclip, ClockCounterClockwiseIcon as History, EyeSlashIcon as EyeOff, EyeIcon as Eye, TestTubeIcon as TestTube, FireIcon as Flame, ShieldIcon as Shield, StethoscopeIcon as Stethoscope, MicroscopeIcon as Microscope, ListChecksIcon as ClipboardCheck, SyringeIcon as Syringe, ThermometerIcon as Thermometer, CalendarIcon as Calendar, CreditCardIcon as CreditCard, FingerprintIcon as Fingerprint, LockIcon as Lock, XIcon as X } from "@phosphor-icons/react";
+import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HospitalIcon as Hospital, WarningIcon as AlertTriangle, EyeIcon as Eye, TestTubeIcon as TestTube, SyringeIcon as Syringe, FingerprintIcon as Fingerprint, LockIcon as Lock, XIcon as X } from "@phosphor-icons/react";
 // CHANGED — real Tier 1 decision: Phosphor, replacing lucide-react.
 // Every icon aliased directly in ONE import statement, back to its
 // original lucide name — deliberately one consistent pattern (not
 // mixed with a separate const-reassignment block, which got messy on
 // a first attempt and was corrected before shipping) so every actual
 // icon *usage* below is completely unchanged, only the import source
-// changed. Real, flagged uncertainty: ClipboardCheck/ClipboardList
-// needed different real Phosphor names to avoid a genuine naming
-// collision (both used in this same file) — used the closest real
-// equivalents, worth a visual spot-check once installed for real.
+// changed. Real, flagged uncertainty at the time: ClipboardCheck/
+// ClipboardList needed different real Phosphor names to avoid a
+// genuine naming collision (both were used in this same file then) —
+// used the closest real equivalents. Both have since been removed
+// again as their last call sites went, so the collision is moot.
 
 // Lazy-loaded modules for route-based code splitting
 const ContactsModule = lazy(() => import("./modules/SHOS_Contacts_Prototype"));

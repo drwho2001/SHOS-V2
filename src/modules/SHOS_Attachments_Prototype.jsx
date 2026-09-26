@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { CaretLeftIcon as ChevronLeft, TrashIcon as Trash2, FileTextIcon as FileText } from "@phosphor-icons/react";
 import { TestingRepository } from "../repositories/testingRepository";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";

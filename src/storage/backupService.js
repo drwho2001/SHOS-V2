@@ -15,7 +15,7 @@
 // know backup/restore exists.
 
 import { ContactRepository } from "../repositories/contactRepository.js";
-import { exportTextFile, writeTextFileSilently, writeTextFileToFolder, exportTextFileToChosenFolder, isChooseFolderExportAvailable } from "./fileExportHelper.js";
+import { exportTextFile, writeTextFileSilently, writeTextFileToFolder, exportTextFileToChosenFolder } from "./fileExportHelper.js";
 // ADDED — real ask: scheduled auto-export reads its own on/off toggle
 // and interval from here (Settings -> Preferences), same repository
 // every other real app preference already lives in.

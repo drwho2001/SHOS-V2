@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArchiveIcon as Archive, ArrowUUpLeftIcon as ArchiveRestore, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X } from "@phosphor-icons/react";
 import { SymptomLogRepository, DEFAULT_SYMPTOM_ENTRY, SEVERITY_OPTIONS } from "../repositories/symptomLogRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { TrashRepository } from "../repositories/trashRepository";

@@ -6,7 +6,6 @@ import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
 import { NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
-import { AppPreferencesRepository } from "../../repositories/appPreferencesRepository";
 
 export function WidgetsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();

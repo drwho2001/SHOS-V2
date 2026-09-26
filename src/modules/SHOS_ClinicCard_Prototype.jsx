@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
-import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, CaretDownIcon as CaretDown, PillIcon as Pill, HeartbeatIcon as HeartPulse, UsersIcon as Users, WarningIcon as AlertTriangle, PlusIcon as Plus, GearIcon as Settings, XIcon as X, CheckIcon as Check, FilePdfIcon as FilePdf } from "@phosphor-icons/react";
+import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, CaretDownIcon as CaretDown, WarningIcon as AlertTriangle, PlusIcon as Plus, GearIcon as Settings, XIcon as X, FilePdfIcon as FilePdf } from "@phosphor-icons/react";
 import { exportClinicCardPdf } from "../storage/clinicCardPdfService";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import { MedicationRepository } from "../repositories/medicationRepository";

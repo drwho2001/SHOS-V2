@@ -2,7 +2,7 @@
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useState, useEffect, useRef } from "react";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
-import { CheckIcon as Check, CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
+import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
 import { ACCENTS, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";

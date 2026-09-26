@@ -2,7 +2,7 @@
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useState, useRef, useEffect } from "react";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
-import { WarningIcon as AlertTriangle, CheckIcon as Check, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, TrashIcon as Trash2, LinkBreakIcon as LinkBreak, BugIcon as Bug } from "@phosphor-icons/react";
+import { WarningIcon as AlertTriangle, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, TrashIcon as Trash2, LinkBreakIcon as LinkBreak, BugIcon as Bug } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, ACTION_TEXT_SAFE, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedMemo } from "../../calculations/loadedRepositoryState";

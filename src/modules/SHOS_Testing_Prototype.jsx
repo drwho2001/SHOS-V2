@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCcw } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, XIcon as X, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCcw } from "@phosphor-icons/react";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";

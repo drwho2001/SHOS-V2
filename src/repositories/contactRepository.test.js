@@ -1,8 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ContactRepository } from './contactRepository';
-import { localStorageAdapter } from '../storage/storageAdapter';
-
-const STORAGE_KEY = 'shos_contacts';
 
 // Mock the storage adapter to use in-memory storage
 const mockStore = new Map();

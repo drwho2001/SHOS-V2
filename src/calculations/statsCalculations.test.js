@@ -101,7 +101,7 @@ describe('statsCalculations', () => {
         { id: 'm3', usagePattern: 'daily', isArchived: true, logs: [] },
       ];
       const computeAdherenceFn = vi.fn().mockReturnValue({ sevenDay: { pct: 80 } });
-      const result = getOverallAdherence(meds, computeAdherenceFn);
+      getOverallAdherence(meds, computeAdherenceFn);
       // Only m1 should be counted
       expect(computeAdherenceFn).toHaveBeenCalledTimes(1);
     });
@@ -132,7 +132,6 @@ describe('statsCalculations', () => {
       const doses = [
         { type: 'dose', date: '2026-09-16T08:00:00.000Z', voided: false },
       ];
-      const isQualifying = (e) => true;
       const result = getDoxyPepComplianceRate(encounters, doses, () => true, 72);
       expect(typeof result).toBe('number');
     });

@@ -8,7 +8,7 @@ import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
-import { nowAsDateString, nowAsDateTimeLocalString, nowAsStoredDateTime } from "../calculations/dateInputHelpers";
+import { nowAsDateString, nowAsStoredDateTime } from "../calculations/dateInputHelpers";
 import {
   ClinicVisitsRepository, DEFAULT_CLINIC_VISIT, generateAdHocMedId,
   CLINICIAN_OPTIONS,
@@ -166,35 +166,6 @@ function SelectField({ label, value, onChange, options, T, listName }) {
         <option value="">—</option>
         {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
       </select>
-    </div>
-  );
-}
-
-function MultiSelectChips({ label, value, onChange, options, T, listName }) {
-  const toggle = (opt) => { const has = value.includes(opt); onChange(has ? value.filter((v) => v !== opt) : [...value, opt]); if (!has && listName) CustomOptionListsRepository.recordUsage(listName, opt); };
-  return (
-    <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{label}</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {options.map((opt) => {
-          const active = value.includes(opt);
-          return (
-            <div key={opt} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt); } }}
-              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.healthcareBlue : T.border}`, color: active ? T.healthcareBlue : T.textSecondary, background: active ? `${T.healthcareBlue}15` : "transparent" }}>
-              {opt}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function ToggleSwitch({ value, onChange, T }) {
-  return (
-    <div onClick={() => onChange(!value)} role="switch" tabIndex={0} aria-checked={value} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(!value); } }} style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.healthcareBlue : T.surfaceVariant, position: "relative", cursor: "pointer", transition: "background 150ms ease" }}>
-      <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 20, height: 20, borderRadius: radius.full, background: "#FFFFFF", transition: "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
     </div>
   );
 }

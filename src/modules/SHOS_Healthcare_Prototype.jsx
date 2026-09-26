@@ -6,7 +6,7 @@
 // to be routing/global-state shell, not feature screens). Pure code
 // motion — every line of actual behavior below is unchanged from what
 // was working in App.jsx; only the file it lives in has changed.
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack } from "@phosphor-icons/react";

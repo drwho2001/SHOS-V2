@@ -24,7 +24,7 @@
 // entry would look like for you", so sharing Contacts' color makes
 // that relationship visible rather than picking an arbitrary new hue.
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { UserIcon as User, DownloadSimpleIcon as Download, CopyIcon as Copy, CheckIcon as Check, XIcon as X, CaretLeftIcon as ChevronLeft, ShareNetworkIcon as Share, MessengerLogoIcon as MessengerLogo, TelegramLogoIcon as TelegramLogo, InstagramLogoIcon as InstagramLogo, WhatsappLogoIcon as WhatsappLogo, XLogoIcon as XLogo, SnapchatLogoIcon as SnapchatLogo, CrosshairIcon as Crosshair } from "@phosphor-icons/react";
 
 // Same real-platform-logo lookup as Contacts' own copy (self-contained
@@ -427,14 +427,6 @@ function MultiSelectChips({ label, value, onChange, options, T, onAddNew }) {
             style={{ flex: 1, padding: "6px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
         </div>
       )}
-    </div>
-  );
-}
-
-function ToggleSwitch({ value, onChange, T }) {
-  return (
-    <div onClick={() => onChange(!value)} role="switch" tabIndex={0} aria-checked={value} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(!value); } }} style={{ width: 40, height: 24, borderRadius: radius.full, background: value ? T.contactsTeal : T.surfaceVariant, position: "relative", cursor: "pointer", transition: "background 150ms ease" }}>
-      <div style={{ position: "absolute", top: 2, left: value ? 18 : 2, width: 20, height: 20, borderRadius: radius.full, background: "#FFFFFF", transition: "left 150ms ease", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
     </div>
   );
 }

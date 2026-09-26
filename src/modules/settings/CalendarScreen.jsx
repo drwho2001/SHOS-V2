@@ -2,7 +2,7 @@
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
-import { WarningIcon as AlertTriangle, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, CalendarIcon as Calendar, CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck, XIcon as X, FunnelIcon as Filter } from "@phosphor-icons/react";
+import { WarningIcon as AlertTriangle, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, CloudArrowUpIcon as CloudArrowUp, CloudCheckIcon as CloudCheck, XIcon as X } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedMemo, useLoadedState } from "../../calculations/loadedRepositoryState";

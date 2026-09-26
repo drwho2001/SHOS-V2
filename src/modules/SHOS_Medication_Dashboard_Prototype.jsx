@@ -25,7 +25,6 @@ import { useEditUndo } from "../calculations/editUndoHelpers";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
-import { localStorageAdapter } from "../storage/storageAdapter";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../calculations/responsive";
