@@ -23,6 +23,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
+import { getVaccinationNextDue, isVaccinationOverdue } from "../calculations/vaccinationCalculations";
 
 // ADDED 19 Aug 2026 — Vaccinations, real live Notion schema. Same
 // self-contained-module pattern, Healthcare blue, single Inter
@@ -57,10 +58,13 @@ function formatDate(iso) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
-function isOverdue(nextDue) {
-  if (!nextDue) return false;
-  return nextDue < new Date().toISOString().slice(0, 10);
-}
+// The local isOverdue(nextDue) helper that used to live here is gone: it
+// took a next-due STRING, which only ever worked while nextDue was a
+// top-level field. Since the dose series moved that value into
+// doses[].nextDue it silently returned false for every record, so the
+// shared, unit-tested isVaccinationOverdue(record) in
+// ../calculations/vaccinationCalculations replaced it at all four call
+// sites (list row, detail "Next due", overdue count, card).
 
 function SectionCard({ title, T, children }) {
   return (
@@ -463,7 +467,8 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
     return (await Promise.all(v.symptomIds.map((id) => SymptomsRegistry.getById(id)))).filter(Boolean).map((s) => s.name);
   }, [v], []);
   if (!v) return null;
-  const overdue = isOverdue(v.nextDue);
+  const vaxNextDue = getVaccinationNextDue(v);
+  const overdue = isVaccinationOverdue(v);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -499,7 +504,7 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
             <ReadRow label="Injection site" value={v.injectionSite} T={T} />
           )}
           <ReadRow label="Provider" value={v.provider} T={T} />
-          <ReadRow label="Next due" value={v.nextDue ? formatDate(v.nextDue) : ""} T={T} alert={overdue} />
+          <ReadRow label="Next due" value={vaxNextDue ? formatDate(vaxNextDue) : ""} T={T} alert={overdue} />
         </SectionCard>
 
         {v.doses?.length > 0 && (
@@ -563,7 +568,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
   // width" — see the list container's own comment below for the fix.
   const isDesktopWidth = useIsDesktopWidth();
   const allSorted = useMemo(() => [...vaccinations].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), [vaccinations]);
-  const overdueCount = allSorted.filter((v) => isOverdue(v.nextDue)).length;
+  const overdueCount = allSorted.filter((v) => isVaccinationOverdue(v)).length;
   // ADDED 26 Aug 2026 — real ask: search within module, rolled out to
   // every module that didn't already have it. Deliberately kept
   // separate from allSorted/overdueCount above — the overdue count
@@ -755,7 +760,8 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
 // the desktop-grid month-grouping pass and the mobile flat list both
 // render the exact same row markup, unchanged.
 function VaccinationRow({ v, T, selectMode, selectedIds, toggleSelected, onOpen, startPress, cancelPress, handleTouchMove }) {
-  const overdue = isOverdue(v.nextDue);
+  const rowNextDue = getVaccinationNextDue(v);
+  const overdue = isVaccinationOverdue(v);
   const isSelected = selectedIds.includes(v.id);
   return (
     <div onClick={() => selectMode ? toggleSelected(v.id) : onOpen(v.id)}
@@ -774,9 +780,9 @@ function VaccinationRow({ v, T, selectMode, selectedIds, toggleSelected, onOpen,
         <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{v.title}</span>
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(v.date)}</div>
-      {v.nextDue && (
+      {rowNextDue && (
         <div style={{ fontSize: 12, color: overdue ? T.actionRed : T.textSecondary, marginLeft: 16, marginTop: 2, fontWeight: overdue ? 700 : 400 }}>
-          {overdue ? "Overdue since" : "Next due"} {formatDate(v.nextDue)}
+          {overdue ? "Overdue since" : "Next due"} {formatDate(rowNextDue)}
         </div>
       )}
       </div>

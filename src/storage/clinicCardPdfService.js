@@ -37,6 +37,7 @@ import { MenstrualCycleRepository } from "../repositories/menstrualCycleReposito
 import { ContraceptionRepository } from "../repositories/contraceptionRepository";
 import { PregnancyRepository } from "../repositories/pregnancyRepository";
 import { exportBinaryFile } from "./fileExportHelper";
+import { getVaccinationNextDue } from "../calculations/vaccinationCalculations.js";
 
 const MARGIN = 44;
 const PAGE_WIDTH = 595.28; // A4 in points
@@ -124,7 +125,8 @@ async function assembleClinicCardData() {
     allergies: profile.allergies,
     vaccinations: vaccinations.slice(0, 6).map((v) => {
       const overdue = overdueVaccinations.some((o) => o.id === v.id);
-      return { title: v.title || v.vaccine, subtitle: `${v.vaccine || ""}${v.nextDue ? ` · ${overdue ? "overdue since" : "next due"} ${formatRelativeDate(v.nextDue)}` : ""}`, alert: overdue };
+      const nextDue = getVaccinationNextDue(v);
+      return { title: v.title || v.vaccine, subtitle: `${v.vaccine || ""}${nextDue ? ` · ${overdue ? "overdue since" : "next due"} ${formatRelativeDate(nextDue)}` : ""}`, alert: overdue };
     }),
     recentTests,
     currentTreatment,

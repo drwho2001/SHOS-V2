@@ -20,6 +20,7 @@ import { VaccinationRepository } from "../repositories/vaccinationRepository";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName, VACCINATION_ACTION_TYPE_ID } from "../storage/notificationService";
 import { NotificationPreferencesRepository, isVaccinationSnoozed } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
+import { soonestDueVaccination } from "./vaccinationCalculations";
 
 // nextDue is a plain "YYYY-MM-DD" calendar date (a <input type="date">
 // value — see SHOS_Vaccinations_Prototype.jsx's own isOverdue(), which
@@ -29,13 +30,26 @@ import { ACCENTS } from "./designTokens";
 // "sometime that day" reminder, not a claim of precision the underlying
 // data doesn't actually have.
 function nextDueAsDate(nextDue) {
-  return new Date(`${nextDue}T09:00:00`);
+  // Sliced to the first 10 characters deliberately. nextDue is a plain
+  // "YYYY-MM-DD" calendar date, but real records - including this app's own
+  // seed data until 25 Sep 2026 - can hold a full ISO string like
+  // "2026-10-16T10:00:00.000Z", and appending "T09:00:00" to one of those
+  // silently yields an Invalid Date rather than throwing, so a reminder
+  // would just quietly never schedule. Taking the date part handles both
+  // shapes and can't itself become invalid.
+  const day = String(nextDue).slice(0, 10);
+  return new Date(`${day}T09:00:00`);
 }
 
-function soonestDueVaccination(vaccinations) {
-  const withDue = vaccinations.filter((v) => !v.isArchived && v.nextDue);
-  if (withDue.length === 0) return null;
-  return withDue.reduce((a, b) => (a.nextDue < b.nextDue ? a : b));
+// The soonest-due selection now lives in vaccinationCalculations.js, which
+// derives the date from the per-dose series. It used to read the top-level
+// v.nextDue here, but migrateLegacyVaccinationFields() deletes that field
+// when it moves the value into doses[].nextDue - so this filter matched
+// nothing and every vaccine reminder silently stopped firing.
+// Returns { vaccination, nextDue } rather than the bare record, so a caller
+// cannot accidentally read a date off an object that no longer has one.
+function soonestDueVaccinationLocal(vaccinations) {
+  return soonestDueVaccination(vaccinations, new Date().toISOString().slice(0, 10));
 }
 
 // Pure "is a vaccination due right now" read, shared by
@@ -47,9 +61,9 @@ export async function getVaccinationDueState() {
   if (!soonest) return { due: false };
   const dueDate = nextDueAsDate(soonest.nextDue);
   if (isVaccinationSnoozed(await NotificationPreferencesRepository.getPreferences())) {
-    return { due: false, vaccination: soonest, dueDate };
+    return { due: false, vaccination: soonest.vaccination, dueDate };
   }
-  return { due: dueDate <= new Date(), vaccination: soonest, dueDate };
+  return { due: dueDate <= new Date(), vaccination: soonest.vaccination, dueDate };
 }
 
 export async function syncVaccinationReminders() {
@@ -73,7 +87,7 @@ export async function syncVaccinationReminders() {
   await scheduleNotification({
     id: NOTIFICATION_IDS.vaccinationReminder,
     title: "Vaccination due",
-    body: `${soonest.vaccine || soonest.title || "Vaccine dose"} — next dose due`,
+    body: `${soonest.vaccination.vaccine || soonest.vaccination.title || "Vaccine dose"} — next dose due`,
     at,
     actionTypeId: VACCINATION_ACTION_TYPE_ID,
     smallIcon: moduleSmallIconName("healthcare"),

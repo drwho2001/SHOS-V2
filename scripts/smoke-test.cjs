@@ -522,7 +522,23 @@ async function testEncryptionAppLockGatesVault(page) {
   await page.waitForTimeout(400);
 
   await page.locator('[aria-label="App Lock"]').click({ timeout: 5000 });
-  await page.waitForTimeout(500);
+  // Bounded wait, NOT a fixed one. Turning App Lock on triggers a real
+  // PBKDF2-100k vault re-wrap with verify-before-commit, which measures
+  // around 1.1s on a healthy machine and considerably longer on a loaded
+  // one. A fixed wait here made this assertion depend on machine speed -
+  // the same bug already found and fixed twice elsewhere in this suite
+  // (the PIN-recovery flow's five PBKDF2-bound waits, and an earlier
+  // non-retrying count() here), now found in a third place. This returns
+  // as soon as the toggle actually flips, and only waits as long as it
+  // genuinely has to.
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('[aria-label="App Lock"]');
+      return el && el.getAttribute("aria-checked") === "true";
+    },
+    null,
+    { timeout: 30000 }
+  );
   assert((await page.getAttribute('[aria-label="App Lock"]', "aria-checked")) === "true", "App Lock turns on with no error (real vault re-wrap succeeded)");
 
   await page.reload({ waitUntil: "networkidle" });

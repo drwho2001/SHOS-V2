@@ -21,6 +21,7 @@ import MeasurementsModule from "./SHOS_Measurements_Prototype";
 import MenstrualHealthModule from "./SHOS_MenstrualHealth_Prototype";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { useLoadedState } from "../calculations/loadedRepositoryState";
+import { isVaccinationOverdue } from "../calculations/vaccinationCalculations";
 import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import AttachmentsScreen from "./SHOS_Attachments_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
@@ -141,7 +142,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
     (async () => {
       const symptoms = (await SymptomLogRepository.getAll()).filter((s) => !s.dateResolved).length;
       const today = new Date().toISOString().slice(0, 10);
-      const overdue = (await VaccinationRepository.getAll()).filter((v) => v.nextDue && v.nextDue < today).length;
+      const overdue = (await VaccinationRepository.getAll()).filter((v) => isVaccinationOverdue(v, today)).length;
       const thisYear = new Date().getFullYear();
       const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && new Date(t.date).getFullYear() === thisYear).length;
       setSummary({ activeSymptoms: symptoms, overdueVaccinations: overdue, testsThisYear: tests });

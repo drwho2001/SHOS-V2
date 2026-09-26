@@ -17,6 +17,7 @@
 // as an array matching Notion's own relation shape.
 import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 import { SymptomsRegistry } from "../registries/symptomsRegistry.js";
+import { isVaccinationOverdue } from "../calculations/vaccinationCalculations.js";
 // ADDED — real gap found via the new orphan-reference checker
 // (orphanReferenceCheck.js): delete-time cleanup needs both directions
 // of the Vaccination↔Clinic Visits relationship — clinicVisitsRepository.js
@@ -56,6 +57,19 @@ function daysAgo(n, hour = 11, minute = 0) {
   d.setDate(d.getDate() - n);
   d.setHours(hour, minute, 0, 0);
   return d.toISOString();
+}
+
+// `nextDue` is a plain "YYYY-MM-DD" calendar date - an <input type="date">
+// value - NOT this app's fake-UTC full-datetime convention that every other
+// seeded field above uses, because there is no time of day recorded for it.
+// daysAgo() returns a full ISO string, so using it here produced a value
+// like "2026-10-16T10:00:00.000Z" in a field every reader treats as a bare
+// date. Same sign convention as daysAgo(): negative n is in the future.
+function dateOnly(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  const p = (v) => String(v).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
 let seedVaccinations = [
@@ -129,14 +143,13 @@ let seedVaccinations = [
     vaccine: "Hepatitis A/B",
     reason: ["Routine"],
     date: daysAgo(130),
-    nextDue: daysAgo(-20),
     provider: "56 Dean Street",
     injectionSite: "Gluteal",
     notes: "Second dose, on schedule. Third and final dose due at the 6-month mark.",
     doses: [{
       doseNumber: 2,
       date: daysAgo(130),
-      nextDue: daysAgo(-20),
+      nextDue: dateOnly(-20),
       provider: "56 Dean Street",
       injectionSite: "Gluteal",
       notes: "Second dose, on schedule. Third and final dose due at the 6-month mark.",
@@ -241,7 +254,7 @@ export const VaccinationRepository = {
   // in the past.
   async getOverdue() {
     const today = new Date().toISOString().slice(0, 10);
-    return (await this.getAll()).filter((v) => !v.isArchived && v.nextDue && v.nextDue < today);
+    return (await this.getAll()).filter((v) => !v.isArchived && isVaccinationOverdue(v, today));
   },
 
   async create(data) {

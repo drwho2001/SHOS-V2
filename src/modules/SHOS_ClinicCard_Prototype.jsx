@@ -28,6 +28,7 @@ import { PregnancyRepository } from "../repositories/pregnancyRepository";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { getVaccinationNextDue } from "../calculations/vaccinationCalculations";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.healthcare/ACTION.red at IMPORT time —
@@ -563,7 +564,8 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
             <EmptyRow T={T}>None recorded yet.</EmptyRow>
           ) : vaccinations.slice(0, 6).map((v) => {
             const overdue = overdueVaccinations.some((o) => o.id === v.id);
-            return <Row T={T} key={v.id} title={v.title || v.vaccine} subtitle={`${v.vaccine || ""}${v.nextDue ? ` · ${overdue ? "overdue since" : "next due"} ${formatRelativeDate(v.nextDue)}` : ""}`} alert={overdue} onTap={() => setPendingNav({ tab: "healthcare", subTab: "vaccinations", recordId: v.id, label: v.title || v.vaccine, moduleLabel: "Vaccinations" })} />;
+            const nextDue = getVaccinationNextDue(v);
+            return <Row T={T} key={v.id} title={v.title || v.vaccine} subtitle={`${v.vaccine || ""}${nextDue ? ` · ${overdue ? "overdue since" : "next due"} ${formatRelativeDate(nextDue)}` : ""}`} alert={overdue} onTap={() => setPendingNav({ tab: "healthcare", subTab: "vaccinations", recordId: v.id, label: v.title || v.vaccine, moduleLabel: "Vaccinations" })} />;
           })}
         </SectionCard>
       )}
