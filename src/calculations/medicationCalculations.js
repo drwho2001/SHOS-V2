@@ -206,7 +206,7 @@ export function computeAdherence(med) {
   // FULL days elapsed since the last refill log entry, treating one
   // refill as one continuous block. That's wrong for meds dispensed in
   // multiple containers at once — the user's example: PrEP refilled as
-  // 5–6 containers in a single order. A refill from months ago would
+  // 5“6 containers in a single order. A refill from months ago would
   // stretch the adherence window across every container in that order,
   // diluting the rate instead of showing how you're doing on the
   // container you're actually currently working through. Fixed by
@@ -247,36 +247,32 @@ export function computeAdherence(med) {
 // early at the earliest", per the user's own rounding). PRN and Custom
 // Schedule medications are never locked — there's no fixed interval to
 // measure against for PRN, and Custom Schedule doesn't have a UI to
-// build this against yet (Doc 5 §5 already flags Custom Schedule as
+  // build this against yet (Doc 5 §5 already flags Custom Schedule as
 // editable-later, not editable-now).
 // CHANGED 19 Aug 2026 — real custom-scheduling support, via the shared
 // effectiveDoseIntervalHours() helper above. PRN still never locks (no
 // fixed interval). Daily behavior is completely unchanged.
-export function isDoseLockedOut(med, lastDoseDate) {
-  const intervalHours = effectiveDoseIntervalHours(med);
-  if (!lastDoseDate || !intervalHours) return false;
-  const hoursSinceLastDose = (Date.now() - realTimestampFromStored(lastDoseDate)) / 3600000;
-  return hoursSinceLastDose < intervalHours * 0.8;
-}
+//
+// REMOVED 26 Sep 2026 — the original isDoseLockedOut() and
+// lockoutEndsEstimate() that used to live here, both built on an arbitrary
+// 0.8 multiplier. Both now live further down, immediately after
+// lockoutEndsAt(), because all three are one decision expressed three ways
+// and keeping them adjacent is what stops them drifting apart again - which
+// is exactly what had happened.
 
 // ADDED 18 Aug 2026 — real feedback: tapping a locked "Log dose" button
 // used to do nothing (native `disabled` blocks the click entirely, and
 // the `title` tooltip it relied on for an explanation only shows on
 // hover, which doesn't exist on a touchscreen). The user's ask: keep the
 // button tappable, show a brief flash message instead of a silent
-// no-op. This computes WHEN it unlocks — deliberately distinct from
-// nextDoseEstimate() below, which estimates when the dose is actually
-// DUE (100% of the interval) — lockout ends earlier, at 80%. Reusing
-// nextDoseEstimate's number here would tell the user the wrong time.
-export function lockoutEndsEstimate(med, lastDoseDate) {
-  const intervalHours = effectiveDoseIntervalHours(med);
-  if (!lastDoseDate || !intervalHours) return null;
-  const unlockAt = new Date(realTimestampFromStored(lastDoseDate) + intervalHours * 0.8 * 3600000);
-  const hoursLeft = Math.round((unlockAt.getTime() - Date.now()) / 3600000);
-  if (hoursLeft <= 0) return "now";
-  if (hoursLeft < 24) return `~${hoursLeft}h`;
-  return `~${Math.round(hoursLeft / 24)}d`;
-}
+// no-op. This computes WHEN it unlocks - deliberately distinct from
+// nextDoseEstimate() below, which estimates when the dose is actually DUE.
+// Both now live together further down, sharing one lockoutEndsAt().
+//
+// REMOVED 26 Sep 2026 - the old 80%-based version of this. Its comment
+// said the lockout "ends earlier, at 80%" than the due time, and that was
+// the whole design at the time. It is gone for the reasons set out at the
+// replacement below.
 
 // ADDED 15 Sep 2026 — real ask: "thinking maybe remove the auto
 // adjust, for reminder at same time." The existing behavior above
@@ -299,7 +295,124 @@ function firstDoseTimestamp(med) {
   return Math.min(...doseLogs.map((l) => realTimestampFromStored(l.date)));
 }
 
-function fixedModeDueSlot(med, intervalHours, lastDoseDate) {
+/**
+ * The most recent `count` dose timestamps, oldest first.
+ * Used to tell a deliberate shift (phasing/weaning) apart from a one-off.
+ */
+function recentDoseTimestamps(med, count) {
+  const times = (med.logs || [])
+    .filter((l) => l.type === "dose" && !l.voided)
+    .map((l) => realTimestampFromStored(l.date))
+    .sort((a, b) => a - b);
+  return times.slice(-count);
+}
+
+/**
+ * Is the user deliberately shifting their dose time, rather than being late?
+ *
+ * The owner's own distinction, and the reason lateness alone is not enough:
+ * someone part-way through moving a midnight mirtazapine to 10pm is
+ * INTENTIONALLY off their original schedule, and snapping them back to
+ * midnight would fight the thing they are doing. But a single dose taken an
+ * hour late is a blip, and should not move the schedule at all.
+ *
+ * The signal is therefore direction over TIME, not size. Lateness is measured
+ * for the last few doses against each dose's OWN slot, and a shift is only
+ * claimed when that lateness has moved consistently in one direction across
+ * at least MIN_TREND_DOSES consecutive doses.
+ *
+ * Three is deliberate, and it is the whole safety argument here: with two
+ * doses, "taken 6 hours late once" and "first step of a move to 06:00" are
+ * literally the same observation, and this function cannot tell them apart.
+ * One data point must never silently rewrite a schedule the user typed in, so
+ * the burden of proof sits on the shift. A real weaning move clears three
+ * doses easily, and anyone genuinely moving gets their schedule respected
+ * from the third dose onward rather than being nagged in between.
+ */
+const MIN_TREND_DOSES = 3;
+
+function isPhasingAwayFromSchedule(med, anchorMs, intervalHours, lastDoseMs) {
+  const recent = recentDoseTimestamps(med, MIN_TREND_DOSES);
+  if (recent.length < MIN_TREND_DOSES) return false;
+  const intervalMs = intervalHours * 3600000;
+  // Each dose's lateness is measured against ITS OWN slot, not the last
+  // dose's slot - measuring against the newest slot is off by a whole
+  // interval, which inverts the comparison and made every real shift look
+  // like a blip.
+  const slotFor = (doseMs) => anchorMs + Math.floor((doseMs - anchorMs) / intervalMs) * intervalMs;
+  const lateness = recent.map((doseMs) => doseMs - slotFor(doseMs));
+  // Strictly monotonic in one direction, all of it real lateness (not noise
+  // around the slot). A flat run means a settled new habit rather than an
+  // in-progress move, and a wobble means nothing at all.
+  let later = true;
+  let earlier = true;
+  for (let i = 1; i < lateness.length; i += 1) {
+    if (!(lateness[i] > lateness[i - 1])) later = false;
+    if (!(lateness[i] < lateness[i - 1])) earlier = false;
+  }
+  return later || earlier;
+}
+
+// ADDED 26 Sep 2026 - how far past its scheduled slot a dose may be and
+// still count as "on time".
+//
+// The owner's framing for it was "the inverse of the 80% rule": a dose that
+// Both remaining numbers are taken from published NHS guidance rather than
+// chosen for feel, and the reasoning is recorded here because the temptation
+// to "tune" them later is exactly how the original 0.8 and my own first 0.2
+// got in. Source: NHS Specialist Pharmacy Service, "Advising on missed or
+// delayed doses of medicines" (sps.nhs.uk, reviewed 3 Jun 2026).
+//
+// 1. MINIMUM GAP BEFORE THE NEXT DOSE = HALF THE INTERVAL.
+//
+//    This is the real safety rule, and the guidance states it as an absolute
+//    number that happens to be half the interval in every case NHS gives:
+//
+//      apixaban / dabigatran  12h interval -> 6h minimum gap
+//      rivaroxaban           24h interval -> 12h minimum gap
+//      antiepileptics (BD)   12h interval -> 6h before the next dose
+//
+//    "Take the missed dose as soon as you remember IF it's still more than
+//    6 hours until your next scheduled dose" - i.e. never let the gap close
+//    past half. This app will not tell anyone to skip or double a dose; it
+//    only decides how early the button unlocks, so the floor is exactly this
+//    and is the one value here that is genuinely load-bearing.
+const DOUBLE_DOSE_FLOOR_FRACTION = 0.5;
+
+// 2. HOW LATE A DOSE MAY BE TAKEN AND STILL BE WORTH TAKING = 2 HOURS.
+//
+//    "For most medicines, it is acceptable to take a dose up to 2 hours
+//    late." That is an ABSOLUTE figure in the source, and my earlier
+//    LATE_SNAPBACK_FRACTION of 0.2 was a percentage of the interval, which
+//    for a once-daily tablet produced 4.8 hours of slack - nearly two and a
+//    half times more permissive than the guidance supports. Deriving it from
+//    a fraction was the actual bug: it scaled a rule the guidance states in
+//    hours. It is now used to explain the state to the user rather than to
+//    move the schedule, which is what the guidance actually uses it for.
+const MAX_ACCEPTABLE_LAG_HOURS = 2;
+
+// There is deliberately no third constant. An earlier draft had an
+// EARLY_TOLERANCE_HOURS and a LATE_SNAPBACK_FRACTION; both are gone because
+// neither had anything behind it. "Take a dose up to 2 hours early" is not a
+// rule anyone publishes, and the snap-back fraction had no source at all. The
+// half-interval floor already prevents a genuinely too-early next dose, which
+// was the only safety job the early tolerance was doing.
+
+// All three timing tolerances are declared together, immediately before the
+// functions that use them, rather than each sitting next to its own
+// function. They were originally scattered 100 lines apart with the lockout
+// pair declared *after* a function that already used one of them - legal at
+// runtime, but precisely the ordering fragility this file has been bitten by
+// before (a past temporal-dead-zone crash on every render).
+
+/**
+ * The wall-clock anchor the schedule is counted forward from: the first dose
+ * ever logged, re-anchored onto the user's intended clock time when they have
+ * set one. Kept separate from fixedModeDueSlot() because the phasing check
+ * needs the same anchor, and recomputing it there would be two definitions of
+ * "the schedule" that could quietly disagree.
+ */
+function scheduleAnchorMs(med, lastDoseDate) {
   let anchorMs = firstDoseTimestamp(med) ?? (lastDoseDate ? realTimestampFromStored(lastDoseDate) : null);
   if (med.scheduledTimes?.length > 0) {
     const [h, m] = med.scheduledTimes[0].split(":").map(Number);
@@ -310,6 +423,26 @@ function fixedModeDueSlot(med, intervalHours, lastDoseDate) {
       anchorMs = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), anchorDate.getDate(), h, m).getTime();
     }
   }
+  return anchorMs;
+}
+
+/**
+ * The next slot on the schedule, as a wall-clock time.
+ *
+ * This function is deliberately UNCONDITIONAL. It answers one question - "if
+ * nothing else is going on, when is this medication due?" - and it never
+ * looks at how late the last dose actually was, because the schedule is the
+ * user's own stated intent and a single late dose does not get to overwrite
+ * it. Every decision about lateness, phasing or skipping lives in the caller,
+ * which keeps the rule in one readable place instead of half in and half out.
+ *
+ * A past slot is stepped over rather than offered, which is what gives the
+ * "more than twice a day: skip the missed dose, wait until the next one is
+ * due" behaviour from the NHS SPS guidance for free - a QDS slot that was
+ * missed 30 minutes ago simply ceases to exist as an option.
+ */
+function fixedModeDueSlot(med, intervalHours, lastDoseDate) {
+  const anchorMs = scheduleAnchorMs(med, lastDoseDate);
   if (anchorMs == null) return null;
   const intervalMs = intervalHours * 3600000;
   const now = Date.now();
@@ -318,10 +451,18 @@ function fixedModeDueSlot(med, intervalHours, lastDoseDate) {
   let dueMs = anchorMs + stepsForward * intervalMs;
   if (lastDoseDate) {
     const lastDoseMs = realTimestampFromStored(lastDoseDate);
-    // For fixed mode with scheduled times: only step forward if the calculated
-    // due time is at or before the last dose (we already passed that slot).
-    // The 20% buffer is for adaptive mode's lockout; fixed mode uses explicit clock times.
+    // Skip forward past any slot that has already gone, so a missed dose is
+    // never still being offered as due.
     while (dueMs <= lastDoseMs) dueMs += intervalMs;
+  }
+  // The half-interval floor applies here as well as in lockoutEndsAt(). Without
+  // it, snapping back to a schedule can hand back a due time sooner than the
+  // dose button would even unlock - a reminder for a dose that cannot yet be
+  // taken, which is the exact inconsistency between the two functions that
+  // the old shared 0.8 was originally there to paper over.
+  if (lastDoseDate) {
+    const lastDoseMs = realTimestampFromStored(lastDoseDate);
+    return Math.max(dueMs, lastDoseMs + intervalMs * DOUBLE_DOSE_FLOOR_FRACTION);
   }
   return dueMs;
 }
@@ -341,25 +482,235 @@ function fixedModeDueSlot(med, intervalHours, lastDoseDate) {
 // whole purpose is double-log prevention right after a real dose was
 // just taken, which has to stay anchored to the ACTUAL last dose
 // regardless of timing mode.
+// ADDED 26 Sep 2026 — REPLACED the old 0.8 (80%) factor, which was an
+// arbitrary figure with no pharmacological basis and which the owner
+// reported as "never really worked" and causing repeated problems.
+//
+// Why there is no single defensible percentage: the interval at which a
+// repeat dose meaningfully stacks on an un-eliminated previous one is set
+// by each drug's own half-life, not by a global fraction. The
+// pharmacokinetic literature ties the two together directly - dosing at an
+// interval equal to the half-life gives a two-fold peak/trough fluctuation
+// at steady state, and accumulation becomes significant once the interval
+// falls below roughly four half-lives. So any global percentage is
+// simultaneously too tight for some drugs and far too loose for others,
+// and a single number that looks authoritative is worse than none.
+//
+// What replaced it is the rule the owner actually described wanting:
+//   - Dosing up to an hour BEFORE your scheduled time is fine. A dose five
+//     hours early (a 22:00 dose for a midnight medication) is not.
+//   - But phasing is legitimate: if you are deliberately shifting a dose
+//     earlier, what limits you is the floor - you may never take a dose
+//     sooner than HALF the dosing interval after the last one. That is the
+//     genuine double-dose guard, and it is the only part of this that is
+//     pharmacological rather than preference.
+//   - Late doses must not accumulate drift, so when a schedule exists the
+//     next time is capped at (next scheduled slot + one hour) rather than
+//     being recomputed from a late actual dose. This is what makes a late
+//     dose walk back toward the schedule instead of dragging it along.
+//     It also implements BOTH things the owner was unsure they wanted -
+//     normalising back toward the schedule, and not drifting further than
+//     the nearest reasonable time - because the tolerance band is exactly
+//     that: never more than an hour ahead of where the schedule says.
+//
+// The two bounds are combined as max(halfIntervalFloor, toleranceCeiling),
+// so whichever is LATER wins: the floor stops a double dose, the ceiling
+// stops the schedule being dragged earlier. With no schedule there is no
+// ceiling to respect, and only the floor applies - which is the old
+// behaviour minus the made-up 20% of slack.
+/**
+ * The moment a dose may next be logged: the LATER of
+ *   (a) half the dosing interval after the last actual dose, and
+ *   (b) the next scheduled slot, when the medication has a schedule.
+ * Returns null when the medication has no fixed interval (PRN) or no dose
+ * has been logged yet - there is nothing to lock out from.
+ *
+ * Note there is no early tolerance term. An earlier version subtracted an
+ * hour from the schedule to let a dose be taken slightly early, and it was
+ * removed on the grounds that no guidance publishes such a rule - which is
+ * true, but the real reason it had to go is stronger: the half-interval
+ * floor is already earlier than any hour-early window for every frequency
+ * this app supports, so the term could never be the binding bound. It was
+ * unreachable arithmetic dressed up as a tolerance.
+ *
+ * The "just over or just under" case the owner asked for is NOT handled by
+ * softening this function. It is handled by doseTimingAdvisory(), which
+ * explains the situation without moving either bound - so this stays a hard
+ * safety floor and the softness lives in the explanation, not the rule.
+ */
 export function lockoutEndsAt(med, lastDoseDate, timingMode = "adaptive") {
+  // ADDED 26 Sep 2026 - a null guard. The previous version of this function
+  // called effectiveDoseIntervalHours(med) straight away, which throws on a
+  // null medication, so a caller holding an unresolved record crashed rather
+  // than seeing "no lockout". Cheap to make total, and consistent with the
+  // defensive-default habit the rest of this codebase keeps.
+  if (!med || !lastDoseDate) return null;
   const intervalHours = effectiveDoseIntervalHours(med);
   if (!intervalHours) return null;
-  if (!lastDoseDate) return null;
-  return new Date(realTimestampFromStored(lastDoseDate) + intervalHours * 0.8 * 3600000);
+  const lastMs = realTimestampFromStored(lastDoseDate);
+  const floor = lastMs + intervalHours * DOUBLE_DOSE_FLOOR_FRACTION * 3600000;
+
+  // A schedule is an explicit clock-time statement by the user, so it is
+  // honoured regardless of the global timingMode - the same precedence
+  // getNextNotificationTime() and nextDoseEstimate() already use. The old
+  // code applied no schedule logic here at all, which meant that in fixed
+  // mode the reminder could fire while the dose was still locked out: a
+  // genuine inconsistency between three functions in this same file.
+  //
+  // With no schedule there is nothing to converge toward, so the ceiling is
+  // set to the last dose itself - i.e. it adds no constraint, and the floor
+  // alone decides. Leaving the ceiling at the full interval instead (as a
+  // first attempt here did) silently made the floor unreachable and left the
+  // lockout at 100% of the interval, which is the behaviour being replaced.
+  const useFixed = timingMode === "fixed" || (med.scheduledTimes?.length > 0);
+  const lastPlusInterval = lastMs + intervalHours * 3600000;
+  let ceiling = lastMs;
+  if (useFixed) {
+    const dueMs = fixedModeDueSlot(med, intervalHours, lastDoseDate);
+    // The schedule is a hard ceiling: never unlock before the stated time,
+    // however late the last dose actually was. Capped at the plain interval
+    // from the real dose so a schedule that is wildly out of step with
+    // reality (a medication whose times were edited, say) still produces a
+    // real interval rather than locking the user out for days.
+    if (dueMs != null) {
+      ceiling = Math.min(dueMs, lastPlusInterval);
+    }
+  }
+  return new Date(Math.max(floor, ceiling));
 }
 
+/** True when the dose button should still be locked. */
+export function isDoseLockedOut(med, lastDoseDate, timingMode = "adaptive") {
+  const unlockAt = lockoutEndsAt(med, lastDoseDate, timingMode);
+  if (!unlockAt) return false;
+  return Date.now() < unlockAt.getTime();
+}
+
+/**
+ * A gentle, informational note about taking a dose slightly outside the ideal
+ * window - NOT a block.
+ *
+ * This exists because a hard cliff at exactly half the interval is the wrong
+ * shape for real life. Nobody's watch is accurate to the minute, and the NHS
+ * position is that a dose up to 2 hours off is perfectly acceptable. So inside
+ * a short grace window around the boundary, the dose is allowed and this
+ * returns a plain-language explanation of what it will mean for the NEXT dose.
+ *
+ * Three states, deliberately distinct rather than one boolean:
+ *   null          - comfortably inside the window, say nothing
+ *   "just-early"  - a little before the floor; allowed, next dose shifts later
+ *   "just-late"   - a little after the due time; allowed, next dose is today
+ *
+ * The hard lockout is NOT relaxed by this. It is purely additive advice, so
+ * there is no path by which this function can permit something unsafe.
+ */
+export function doseTimingAdvisory(med, lastDoseDate, timingMode = "adaptive") {
+  if (!med || !lastDoseDate) return null;
+  const intervalHours = effectiveDoseIntervalHours(med);
+  if (!intervalHours) return null;
+
+  const floorMs = realTimestampFromStored(lastDoseDate) + intervalHours * DOUBLE_DOSE_FLOOR_FRACTION * 3600000;
+  const untilFloor = floorMs - Date.now();
+  const graceMs = MAX_ACCEPTABLE_LAG_HOURS * 3600000;
+
+  // Comfortably clear of the floor in either direction: nothing to say.
+  if (Math.abs(untilFloor) > graceMs) return null;
+
+  const hours = (ms) => `${Math.max(1, Math.round(Math.abs(ms) / 3600000))}h`;
+  if (untilFloor > 0) {
+    // Close to the floor but not past it - the user is about to take it early.
+    return {
+      kind: "just-early",
+      hours: hours(untilFloor),
+      message: `${hours(untilFloor)} before the safe window. Fine to log, but your next dose will shift a little later so the gap between doses does not get too short.`,
+    };
+  }
+  // Past the floor, but by less than the accepted lateness. The dose is still
+  // loggable; this only explains that the next one is due sooner than usual.
+  return {
+    kind: "just-late",
+    hours: hours(untilFloor),
+    message: `Logged ${hours(untilFloor)} ahead of the usual window. Still fine - the next dose stays on your normal schedule.`,
+  };
+}
+
+/**
+ * Human-readable time until the lockout lifts, e.g. "~5h" / "now".
+ * Kept separate from nextDoseEstimate() deliberately: the lockout answers
+ * "when may I take this", the next-dose estimate answers "when is it due".
+ * They used to be conflated through a shared 0.8, which is how the two came
+ * to disagree with each other.
+ */
+export function lockoutEndsEstimate(med, lastDoseDate, timingMode = "adaptive") {
+  const unlockAt = lockoutEndsAt(med, lastDoseDate, timingMode);
+  if (!unlockAt) return null;
+  const hoursLeft = Math.round((unlockAt.getTime() - Date.now()) / 3600000);
+  if (hoursLeft <= 0) return "now";
+  if (hoursLeft < 24) return `~${hoursLeft}h`;
+  return `~${Math.round(hoursLeft / 24)}d`;
+}
+
+/**
+ * The next due time, honouring the medication's timing mode.
+ *
+ * "fixed" means exactly what it says: the same time every day, on the same
+ * cadence, regardless of how late any individual dose was taken. That is the
+ * entire point of the mode, and it is why the phasing check below is gated
+ * behind "adaptive" rather than being applied whenever a schedule exists. An
+ * earlier version let a detected shift override the schedule even in fixed
+ * mode, which quietly turned "fixed" into "mostly fixed" and made the setting
+ * a lie the user could not see.
+ *
+ * "adaptive" is where the weaning/phasing detection earns its place: a
+ * demonstrated, multi-dose trend away from the schedule is respected, so
+ * someone deliberately moving a midnight dose to 10pm is not dragged back.
+ * One late dose is never enough, and an unproven trend always falls back to
+ * the schedule.
+ */
 export function getNextNotificationTime(med, lastDoseDate, timingMode = "adaptive") {
   const intervalHours = effectiveDoseIntervalHours(med);
   if (!intervalHours) return null;
-  // If medication has scheduledTimes set, always use fixed-mode calculation
-  // (user's explicit clock-time intent) regardless of global timingMode.
-  const useFixed = timingMode === "fixed" || (med.scheduledTimes?.length > 0);
-  if (useFixed) {
-    const dueMs = fixedModeDueSlot(med, intervalHours, lastDoseDate);
-    if (dueMs != null) return new Date(dueMs);
+
+  // The schedule is only an input when the user has actually set one (or has
+  // asked for fixed mode). Without it there is no clock time to honour, and
+  // routing through fixedModeDueSlot() anyway would anchor an arbitrary slot
+  // on the very first dose and then step it forward to today - so a dose
+  // logged 11 days ago would come back due "11 days later" rather than in 24h.
+  // That regression was caught by the pre-existing adaptive-mode test.
+  const hasSchedule = (med.scheduledTimes?.length ?? 0) > 0;
+  if (timingMode !== "fixed" && !hasSchedule) {
+    if (!lastDoseDate) return null;
+    return new Date(realTimestampFromStored(lastDoseDate) + intervalHours * 3600000);
   }
+
+  const dueMs = fixedModeDueSlot(med, intervalHours, lastDoseDate);
+
+  if (shouldFollowDose(med, lastDoseDate, intervalHours, timingMode)) {
+    const lastDoseMs = realTimestampFromStored(lastDoseDate);
+    const followed = lastDoseMs + intervalHours * 3600000;
+    const floor = lastDoseMs + intervalHours * DOUBLE_DOSE_FLOOR_FRACTION * 3600000;
+    // Never let a followed dose rewind the schedule behind a slot that is
+    // genuinely still ahead - max() against dueMs minus one interval keeps a
+    // rapid shift from pulling the next dose earlier than the current slot.
+    return new Date(Math.max(followed, floor));
+  }
+  if (dueMs != null) return new Date(dueMs);
   if (!lastDoseDate) return null;
   return new Date(realTimestampFromStored(lastDoseDate) + intervalHours * 3600000);
+}
+
+/**
+ * Should the next dose follow the dose actually taken, rather than the
+ * schedule? True only in adaptive mode, only with a schedule to deviate from,
+ * and only on a demonstrated trend.
+ */
+function shouldFollowDose(med, lastDoseDate, intervalHours, timingMode) {
+  if (timingMode === "fixed") return false;
+  if (!lastDoseDate) return false;
+  if (!(med.scheduledTimes?.length > 0)) return false;
+  const anchorMs = scheduleAnchorMs(med, lastDoseDate);
+  if (anchorMs == null) return false;
+  return isPhasingAwayFromSchedule(med, anchorMs, intervalHours, realTimestampFromStored(lastDoseDate));
 }
 
 
@@ -373,11 +724,23 @@ export function nextDoseEstimate(med, lastDoseDate, timingMode = "adaptive") {
   if (med.usagePattern === "prn" || !intervalHours) return null;
   // If medication has scheduledTimes set, always use fixed-mode calculation
   // (user's explicit clock-time intent) regardless of global timingMode.
-  const useFixed = timingMode === "fixed" || (med.scheduledTimes?.length > 0);
+  // Same precedence rule as getNextNotificationTime() above, for the same
+  // reason: no user-set schedule means no clock time to honour, and counting
+  // forward from the real last dose is the only meaningful answer.
+  const hasSchedule = (med.scheduledTimes?.length ?? 0) > 0;
+  const useFixed = timingMode === "fixed" || hasSchedule;
   let next = null;
   if (useFixed) {
-    const dueMs = fixedModeDueSlot(med, intervalHours, lastDoseDate);
-    if (dueMs != null) next = new Date(dueMs);
+    if (shouldFollowDose(med, lastDoseDate, intervalHours, timingMode)) {
+      const lastDoseMs = realTimestampFromStored(lastDoseDate);
+      next = new Date(Math.max(
+        lastDoseMs + intervalHours * 3600000,
+        lastDoseMs + intervalHours * DOUBLE_DOSE_FLOOR_FRACTION * 3600000,
+      ));
+    } else {
+      const dueMs = fixedModeDueSlot(med, intervalHours, lastDoseDate);
+      if (dueMs != null) next = new Date(dueMs);
+    }
   }
   if (!next) {
     if (!lastDoseDate) return null;

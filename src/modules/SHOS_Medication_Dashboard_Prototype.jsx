@@ -31,7 +31,7 @@ import { useIsDesktopWidth } from "../calculations/responsive";
 import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../repositories/medicationPreferencesRepository";
 import { LogRepository, REASON_OPTIONS, SIDE_EFFECT_OPTIONS } from "../repositories/logRepository";
 import { computeStock, computeAdherence, nextDoseEstimate, 
-isDoseLockedOut, lockoutEndsEstimate, lockoutEndsAt, getNextNotificationTime, effectiveDoseIntervalHours, getDoseComponents, 
+isDoseLockedOut,   lockoutEndsEstimate, lockoutEndsAt, getNextNotificationTime, effectiveDoseIntervalHours, getDoseComponents, doseTimingAdvisory, 
 formatDoseComponents } from "../calculations/medicationCalculations";
 // ADDED — real ask: Correction Sheet needs to change WHEN a dose was
 // logged, not just how much, for the "forgot to log at the time, adding
@@ -53,7 +53,10 @@ import { MyProfileRepository } from "../repositories/myProfileRepository";
 // genuinely hand-tuned per-value for dark-surface contrast/design
 // intent, not derivable from LIGHT's tokens (fabBg/fabIcon are a
 // deliberate light-on-dark inversion, not an accent at all).
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACCENT_TEXT_SAFE, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+// `Info` is the shared tap-to-reveal affordance used across this app for
+// explaining a derived value (see CLAUDE.md's icon-only-UI rule). Aliased to
+// InfoIcon on import above, so it is referenced by that name here.
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.medication/ACTION.red/ACTION.green at
@@ -292,6 +295,19 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
       }).join(", ")
     : null;
   const doseLocked = lastDose ? isDoseLockedOut(med, lastDose.date) : false;
+  // ADDED 26 Sep 2026 — real ask: "some fuzziness, so if the user is only
+  // just over or under but goes to log then it's fine, but give a warning if
+  // needed for the next dose."
+  //
+  // Deliberately NOT gated on !doseLocked. An earlier version suppressed it
+  // while locked, which quietly deleted the entire "just early" case: being
+  // inside the grace window but before the floor is precisely the moment
+  // doseLocked is still true, so the message the user actually needs - "you
+  // are 1h early, that is fine, here is what it does to your next dose" -
+  // was the one message that could never appear. Verified live: seeding an
+  // 11h-old dose on a daily medication (12h floor) rendered no advisory at
+  // all until this was corrected.
+  const timingAdvisory = lastDose ? doseTimingAdvisory(med, lastDose.date) : null;
   // ADDED 18 Aug 2026 — real feedback: a native `disabled` button blocks
   // the click entirely, so the `title` tooltip explaining the lockout
   // was the ONLY feedback — and title tooltips need hover, which
@@ -499,6 +515,21 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
           {nextDose && <span> · Next dose {nextDose}{nextReminderClock ? ` (reminder ~${nextReminderClock})` : ""}</span>}
           {scheduledTimesLabel && <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 2 }}>Scheduled: {scheduledTimesLabel}</div>}
           <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginTop: 2 }}>Not inventory-tracked</div>
+        </div>
+      )}
+
+      {timingAdvisory && (
+        <div
+          style={{
+            display: "flex", gap: 6, alignItems: "flex-start", marginTop: 10,
+            padding: "7px 9px", borderRadius: radius.sm, fontSize: 11, lineHeight: 1.4,
+            background: `${T.medsBlue}12`,
+            borderLeft: `3px solid ${ACCENT_TEXT_SAFE.medication}`,
+            color: T.textSecondary,
+          }}
+        >
+          <InfoIcon size={13} style={{ flexShrink: 0, marginTop: 1, color: T.medsBlue }} />
+          <span>{timingAdvisory.message}</span>
         </div>
       )}
 
