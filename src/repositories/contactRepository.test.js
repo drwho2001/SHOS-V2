@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ContactRepository } from './contactRepository';
+import { ContactRepository, STORAGE_KEY } from './contactRepository';
 
 // Mock the storage adapter to use in-memory storage
 const mockStore = new Map();
@@ -26,7 +26,7 @@ describe('ContactRepository Integration', () => {
     mockStore.clear();
     vi.clearAllMocks();
     // Pre-populate with empty array to avoid loading seed contacts
-    mockStore.set('shos_contacts', []);
+    mockStore.set(STORAGE_KEY, []);
     vi.clearAllMocks();
     // Reset the repository's internal cache
     await ContactRepository.__testOnlyReset();

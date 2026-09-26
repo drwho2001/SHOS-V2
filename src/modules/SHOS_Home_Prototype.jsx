@@ -905,6 +905,20 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6 }}>Recent activity</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "0 14px", marginBottom: 24 }}>
         <SummaryRow label="Last encounter" moduleColor={ACCENTS.encounters} value={lastEncounter ? `${lastEncounter.title || lastEncounter.encounterType || "Encounter"} · ${formatRelativeDate(lastEncounter.date)}` : "None yet"} onClick={lastEncounter ? () => onNavigateToRecord("activity", lastEncounter.id) : undefined} />
+        {/* ADDED 26 Sep 2026 — this row's query has existed since the
+            "Recent activity" list was first built (lastContact is set from
+            ContactRepository further up this same effect) but was never
+            rendered, so the state was dead code. Uses the real "contacts"
+            tab key from App.jsx's TABS, which is what makes
+            ContactsModule's own openRecordId prop fire and actually open the
+            profile — a tab key that isn't in TABS would silently switch to
+            nothing instead.
+            Sorts by CREATED date, so this reads "newest contact added" and
+            not "most recently seen" — deliberately not re-sorted to
+            last-encounter, because the row directly above already reports
+            the most recent encounter and duplicating it here would be the
+            kind of redundant entry point this list exists to avoid. */}
+        <SummaryRow label="Newest contact" moduleColor={ACCENTS.contacts} value={lastContact ? `${lastContact.name} · ${formatRelativeDate(lastContact.createdAt)}` : "None yet"} onClick={lastContact ? () => onNavigateToRecord("contacts", lastContact.id) : undefined} />
         <SummaryRow label="Last medication dose" moduleColor={medsBlue} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
         <SummaryRow label="Last test" moduleColor={healthcareColor} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
         <SummaryRow label="Next clinic visit" moduleColor={healthcareColor} value={nextVisit ? `${(nextVisit.reasonForVisit || []).join("/") || nextVisit.title || "Visit"} · ${formatExactDate(nextVisit.date)}` : "No future visit booked — BASHH advises 3/12 monthly testing"} onClick={nextVisit ? () => onNavigateToRecord("healthcare", nextVisit.id, "clinicVisits") : () => onQuickAdd("healthcare", "clinicVisits", { isFutureAppointment: true })} />

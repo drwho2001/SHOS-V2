@@ -404,7 +404,26 @@ function CycleSheet({ cycle, onSave, onClose, T }) {
   const isNew = !cycle;
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
-  const [flowOptions, setFlowOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("menstrualFlow"), [], []);
+  // CHECKED 26 Sep 2026, deliberately left as-is. The unused `setFlowOptions`
+  // looked like the same stale-list gap this module already fixed for the
+  // Contraception method list (which refreshes via its own onAddNew), but the
+  // two are genuinely different and forcing them together would be worse:
+  //
+  //   - Contraception methods are free-text-ish, so the sheet must let you
+  //     type a method that is not in the list yet.
+  //   - Flow is a bounded vocabulary (Spotting/Light/Medium/Heavy) whose
+  //     stored value also drives the FlowDrops icon count. A <select> that
+  //     only offers what is in the list is correct here: silently accepting
+  //     an arbitrary typed string would put an unrenderable value into a
+  //     field whose whole job is to map to one of four icons.
+  //
+  // The staleness case itself does not arise: the only place these lists are
+  // edited is Settings > Manage lists, a full-screen overlay, and returning
+  // to Healthcare re-mounts this module, re-running the loader. So the setter
+  // is dead rather than the list being stale, and the honest fix is to leave
+  // the working dropdown alone rather than add a refresh path for a case that
+  // cannot occur.
+  const [flowOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("menstrualFlow"), [], []);
   const [form, setForm] = useState(() => cycle ? { ...cycle } : { ...DEFAULT_CYCLE, startDate: new Date().toISOString().slice(0, 10) });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   const symptoms = useLoadedMemo(async () => (await SymptomsRegistry.getAll()).filter((s) => !s.isArchived), [], []);
@@ -568,7 +587,15 @@ function daysForUnit(value, unit, fromDate) {
 function ContraceptionSheet({ entry, onSave, onClose, T }) {
   const isNew = !entry;
   const [methodOptions, setMethodOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
-  const [formulationOptions, setFormulationOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("medicationType"), [], []);
+  // CHECKED 26 Sep 2026, deliberately left as-is, for the same reason as
+  // flowOptions above: the only editor for medicationType is the Settings
+  // overlay, so the list cannot go stale while this sheet is open, and a
+  // <select> is the right control for a value that picks an icon out of
+  // FORMULATION_ICONS (it already falls back to a pill for an unknown value,
+  // so a custom entry degrades gracefully rather than rendering nothing).
+  // Making it a free-text field would let a user store a value that silently
+  // maps to the fallback icon forever.
+  const [formulationOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("medicationType"), [], []);
   const [form, setForm] = useState(() => entry ? { ...entry } : { ...DEFAULT_CONTRACEPTION_ENTRY, startDate: new Date().toISOString().slice(0, 10) });
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
   // Real convenience: only auto-fills formulation while it's still

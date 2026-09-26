@@ -43,7 +43,11 @@ import { EncounterRepository } from "./encounterRepository.js";
 import { LocationsRepository } from "./locationsRepository.js";
 import { PartnerNotificationRepository } from "./partnerNotificationRepository.js";
 
-const STORAGE_KEY = "shos_contacts";
+// Exported so contactRepository.test.js can seed its mocked storage with the
+// real key instead of a second hardcoded copy. That literal had already
+// drifted once: a rename here would have left the test writing to a key
+// nothing reads, so it would still pass while testing nothing.
+export const STORAGE_KEY = "shos_contacts";
 
 
 // ---------------------------------------------------------------------
