@@ -3726,6 +3726,19 @@ tracked files, production build clean, smoke suite 15/15 against
 `vite preview` with flow 14 genuinely running (not skipped), 10/10 live
 focus assertions. CI green on `a8d277e` (all three workflows).
 
+**Notion update for this round is PENDING, not done.** Appending to the
+`Development Log` page is currently blocked: `GET
+/v1/blocks/.../children` returns 200 with the same token, but `POST` to the
+same path returns `400 invalid_request_url` on every variant tried - dashed
+and non-dashed page IDs, `Notion-Version` 2021/2022/2025, a BOM and a
+no-BOM body, a minimal and a full payload, via both `Invoke-RestMethod` and
+`curl.exe`. The token is valid and the page is readable and not archived,
+so this is a write-path restriction, not an auth or ID problem. **Don't
+redo that archaeology** - re-check whether POST works, and if it does, the
+content to append is the twelve-block summary of this round (timezone fix,
+encoding repair, vaccine reminders, and the two environment/test lessons),
+which is also summarised in this entry.
+
 ## Recently shipped (25 Sep 2026 - accessibility regression repair + encoding guard)
 
 A full audit of the 25 Sep accessibility batch against the real code (not its own claims) found the batch had shipped four genuine regressions, and that a fifth set of `CLAUDE.md` claims were false. All fixed, all verified live.
