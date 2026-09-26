@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, WarningIcon as AlertTriangle, TrashIcon as Trash2, ArchiveIcon as Archive, ArrowsClockwiseIcon as RefreshCcw, ChatCircleTextIcon as MessageSquare, CopyIcon as Copy } from "@phosphor-icons/react";
+import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, WarningIcon as AlertTriangle, TrashIcon as Trash2, ArchiveIcon as Archive, ArrowsClockwiseIcon as RefreshCcw, ChatCircleTextIcon as MessageSquare, CopyIcon as Copy, XIcon as X } from "@phosphor-icons/react";
 import { EpisodeRepository, RESOLUTION_OPTIONS } from "../repositories/episodeRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 // ADDED 19 Aug 2026 — TRIGGER_REASON_OPTIONS now lives here, real
@@ -232,8 +232,8 @@ function LinkedItemsSection({ label, linkedIds, onChange, candidates, nameFor, T
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
           {linkedIds.map((id) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={id} onClick={() => onChange(linkedIds.filter((v) => v !== id))}
-              style={{ padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: alertIds.includes(id) ? `${T.actionRed}18` : T.surfaceVariant, color: alertIds.includes(id) ? T.actionRedText : T.textPrimary, fontWeight: alertIds.includes(id) ? 700 : 400, cursor: "pointer" }}>
-              {nameFor(id)} ✕
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: radius.full, fontSize: 12, background: alertIds.includes(id) ? `${T.actionRed}18` : T.surfaceVariant, color: alertIds.includes(id) ? T.actionRedText : T.textPrimary, fontWeight: alertIds.includes(id) ? 700 : 400, cursor: "pointer" }}>
+              {nameFor(id)}<X size={11} />
             </div>
           ))}
         </div>

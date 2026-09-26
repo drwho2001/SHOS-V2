@@ -532,9 +532,13 @@ async function testEncryptionAppLockGatesVault(page) {
 
   await page.fill('input[type="password"]', "0000");
   await page.locator('button:has-text("Unlock")').click({ timeout: 5000 });
-  await page.waitForTimeout(400);
-  bodyText = await page.evaluate(() => document.body.innerText);
-  assert(bodyText.includes("Incorrect PIN"), "a wrong PIN is rejected — the vault itself refuses it, not a string comparison");
+  // Was a fixed 400ms wait then a single body-text check with no retry. A
+  // wrong PIN still derives a key and attempts a real AES-GCM unwrap
+  // (PBKDF2, 100k rounds), so 400ms is not reliably enough on a loaded
+  // machine and this gate went red intermittently for that reason alone.
+  // Same bounded-wait treatment already applied to the other PBKDF2
+  // waits in this file.
+  await page.waitForFunction(() => document.body.innerText.includes("Incorrect PIN"), null, { timeout: 15000 });
 
   await page.fill('input[type="password"]', "2468");
   await page.locator('button:has-text("Unlock")').click({ timeout: 5000 });
