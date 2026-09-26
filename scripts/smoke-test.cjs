@@ -982,15 +982,42 @@ async function testServiceWorkerAutoUpdate(browser) {
   // Real preview-build-only test: `vite preview` (what CI and this
   // suite's own recommended local flow both use) serves dist/sw.js
   // directly off disk per-request, no restart needed to pick up a
-  // change — the same real mechanism a genuine deploy relies on. A
-  // dev-server run (dist/ doesn't exist) skips this one gracefully
-  // rather than failing on an environment it was never meant to run
-  // against, the same "preview build only" carve-out already used
-  // elsewhere in this suite (e.g. the interactive-tour test's own
-  // dynamic-import lesson).
-  const distSwPath = path.join(__dirname, "..", "dist", "sw.js");
-  if (!fs.existsSync(distSwPath)) {
-    console.log("  skip — no dist/sw.js found (this suite is running against a dev server, not a preview build)");
+  // change — the same real mechanism a genuine deploy relies on.
+  //
+  // The guard below probes the ACTUAL precondition — "is the running
+  // server serving this build?" — by comparing the served root HTML
+  // against the built dist/index.html.
+  //
+  // Two things that look like they would work here, and don't:
+  //   - Checking only that dist/sw.js exists on disk is not sufficient.
+  //     A dev server also has a dist/ lying around from an earlier
+  //     `npm run build`, but never serves it.
+  //   - Comparing the SERVED sw.js against dist/sw.js is not sufficient
+  //     either, because Vite copies public/ into the build verbatim, so
+  //     public/sw.js and dist/sw.js are byte-identical and a dev server
+  //     (which serves public/) matches too. Verified directly, not
+  //     assumed — this is why the root-HTML comparison is used instead.
+  // The built index.html genuinely differs from the dev server's
+  // (hashed asset names, no /src/ reference), so it discriminates
+  // reliably in both directions.
+  const distDir = path.join(__dirname, "..", "dist");
+  const distSwPath = path.join(distDir, "sw.js");
+  const distIndexPath = path.join(distDir, "index.html");
+  if (!fs.existsSync(distSwPath) || !fs.existsSync(distIndexPath)) {
+    console.log("  skip — no dist/ build found (this suite is running against a dev server, not a preview build)");
+    return;
+  }
+  const distSwSource = fs.readFileSync(distSwPath, "utf8");
+  const distIndexSource = fs.readFileSync(distIndexPath, "utf8");
+  let servesThisBuild = false;
+  try {
+    const res = await fetch(APP_URL, { cache: "no-store" });
+    servesThisBuild = res.ok && (await res.text()) === distIndexSource;
+  } catch (e) {
+    servesThisBuild = false;
+  }
+  if (!servesThisBuild) {
+    console.log("  skip — the running server is not serving this dist/ build (dev server, or a different build on disk)");
     return;
   }
 
@@ -1025,7 +1052,7 @@ async function testServiceWorkerAutoUpdate(browser) {
   // update algorithm. try/finally guarantees the real file is restored
   // even if an assertion below throws — this must never leave the
   // build output modified.
-  const originalSwSource = fs.readFileSync(distSwPath, "utf8");
+  const originalSwSource = distSwSource;
   const bumpedSwSource = originalSwSource.replace(
     /const CACHE_NAME = "[^"]+"/,
     `const CACHE_NAME = "shos-runtime-smoketest-${Date.now()}"`

@@ -8,7 +8,7 @@ import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
-import { nowAsDateString, nowAsDateTimeLocalString } from "../calculations/dateInputHelpers";
+import { nowAsDateString, nowAsDateTimeLocalString, nowAsStoredDateTime } from "../calculations/dateInputHelpers";
 import {
   ClinicVisitsRepository, DEFAULT_CLINIC_VISIT, generateAdHocMedId,
   CLINICIAN_OPTIONS,
@@ -144,7 +144,7 @@ function DateTimeField({ label, value, onChange, T }) {
     <div style={{ padding: "8px 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <div style={{ fontSize: 12, color: T.textSecondary }}>{label}</div>
-        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(`${nowAsDateTimeLocalString()}:00.000Z`)} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Now</span>
+        <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => onChange(nowAsStoredDateTime())} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>Now</span>
       </div>
       <input type="datetime-local" value={inputVal} aria-label={label}
         onChange={(e) => onChange(e.target.value ? `${e.target.value}:00.000Z` : "")}
@@ -805,7 +805,24 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
                 );
                 if (confirmed) {
                   set("isFutureAppointment")(false);
-                  if (shouldUpdateDate) set("date")(nowAsDateTimeLocalString());
+                  // FIXED - the exact 1-hour shift the owner hit during
+                  // early development. This was writing
+                  // nowAsDateTimeLocalString(), which returns the raw value
+                  // a <input type="datetime-local"> expects
+                  // ("2026-09-26T14:23", no suffix). But this is a STORED
+                  // field, and every stored datetime in this app carries
+                  // the fake-UTC suffix (see dateInputHelpers.js's header).
+                  // Without it, `new Date(stored)` is parsed by JS as
+                  // LOCAL time, while display code reads the digits back
+                  // with timeZone:"UTC" - so the visit showed (and its
+                  // reminder offset was computed) exactly one hour early
+                  // for as long as the device was on BST, i.e. late March
+                  // to late October. nowAsStoredDateTime() is the
+                  // correct helper for writing a stored value; the
+                  // unsuffixed one is only for filling a datetime-local
+                  // input's raw value, which is what every other call site
+                  // in the app uses it for.
+                  if (shouldUpdateDate) set("date")(nowAsStoredDateTime());
                   set("followUpType")("");
                   set("nextReviewDate")(null);
                 }

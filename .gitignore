@@ -17,3 +17,11 @@ logs
 *.log
 npm-debug.log*
 .env*
+
+# PLAINTEXT PERSONAL-DATA DUMPS - never commit these.
+# scripts/repair-personal-data-encoding.cjs and the app's own "Export backup"
+# write DECRYPTED records here. This repo is the public track (see CLAUDE.md's
+# personal-alpha/public-alpha split), so a stray `git add .` here would publish
+# the owner's real medical records. Keep the directory local; delete the dumps
+# once they've served their purpose.
+backups/
