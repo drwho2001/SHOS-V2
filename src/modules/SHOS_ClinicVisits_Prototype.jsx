@@ -852,6 +852,15 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
           <TextField label="Follow-up / next review date" value={form.nextReviewDate ? form.nextReviewDate.slice(0, 10) : ""} onChange={(v) => set("nextReviewDate")(v ? new Date(v).toISOString() : null)} T={T} type="date" />
         </SectionCard>
 
+        {/* RESTRUCTURED 26 Sep 2026 — real bug found by auditing this
+            module rather than from a report. This card previously held
+            SEVEN distinct concepts and contained three more <SectionCard>
+            elements inside it, so the rendered result was a card inside a
+            card inside a card — and a card titled "Linked records" was
+            showing "Medications — Administered in clinic", which is not a
+            linked record in the relational sense at all. Flattened to a
+            single level, with each concept in a card titled for what it
+            actually is. No field, handler or stored value changed. */}
         <SectionCard title="Linked records" T={T}>
           <RelationPicker label="Linked tests" value={form.linkedTestIds} onChange={set("linkedTestIds")} items={allTests} T={T} placeholder="No tests logged yet" />
           {/* ADDED 19 Aug 2026 — real feedback batch: start a test
@@ -880,27 +889,14 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
             </div>
           )}
 
-          <SectionCard title="Medications — Administered in clinic" T={T}>
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>From your Medication tracker</div>
-              <RelationPicker label="" value={form.medicationsGivenIds} onChange={set("medicationsGivenIds")} items={allMeds} T={T} placeholder="No medications in registry" />
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>One-off (free text)</div>
-              <AdHocMedicationsManager value={form.adHocMedicationsGiven} onChange={set("adHocMedicationsGiven")} T={T} />
-            </div>
-          </SectionCard>
-
-          <SectionCard title="Medications — Prescribed to take home" T={T}>
-            <RelationPicker label="From your Medication tracker" value={form.medicationsPrescribedIds} onChange={set("medicationsPrescribedIds")} items={allMeds} T={T} placeholder="No medications in registry" />
-          </SectionCard>
-
-          <SectionCard title="Restock medications after visit" T={T}>
-            <RelationPicker label="Medications to restock after this visit" value={form.restockMedicationIds} onChange={set("restockMedicationIds")} items={allMeds} T={T} placeholder="No medications in registry" />
-          </SectionCard>
-
           <RelationPicker label="Vaccinations given" value={form.vaccinationsGivenIds} onChange={set("vaccinationsGivenIds")} items={allVaccinations} T={T} placeholder="No vaccinations logged yet" />
+        </SectionCard>
 
+        {/* RESTRUCTURED 26 Sep 2026 — its own card because it carries a
+            sub-question of its own ("which one is why you're here?")
+            that is a genuinely different interaction from the plain
+            relation pickers, rather than being buried mid-card. */}
+        <SectionCard title="Symptoms discussed" T={T}>
           <RelationPicker label="Symptom types discussed" value={form.symptomTypeIds} onChange={set("symptomTypeIds")} items={allSymptoms} T={T} placeholder="No symptoms in registry" />
           {/* ADDED 19 Aug 2026 — real feedback batch: pull from recent
               real Symptom Log entries, richer than the flat vocabulary
@@ -932,6 +928,29 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
               </div>
             </div>
           )}
+        </SectionCard>
+
+        <SectionCard title="Medications — Administered in clinic" T={T}>
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>From your Medication tracker</div>
+            <RelationPicker label="" value={form.medicationsGivenIds} onChange={set("medicationsGivenIds")} items={allMeds} T={T} placeholder="No medications in registry" />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>One-off (free text)</div>
+            <AdHocMedicationsManager value={form.adHocMedicationsGiven} onChange={set("adHocMedicationsGiven")} T={T} />
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Medications — Prescribed to take home" T={T}>
+          <RelationPicker label="From your Medication tracker" value={form.medicationsPrescribedIds} onChange={set("medicationsPrescribedIds")} items={allMeds} T={T} placeholder="No medications in registry" />
+        </SectionCard>
+
+        {/* CHANGED 26 Sep 2026 — the inner picker's own label used to read
+            "Medications to restock after this visit", which said the same
+            thing as this card's own title directly above it. Dropped, so
+            the information appears once rather than twice. */}
+        <SectionCard title="Medications to restock" T={T}>
+          <RelationPicker label="" value={form.restockMedicationIds} onChange={set("restockMedicationIds")} items={allMeds} T={T} placeholder="No medications in registry" />
         </SectionCard>
 
         <SectionCard title="Notes" T={T}>
@@ -1005,13 +1024,23 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
   }, [visit], []);
   // CHANGED — Phase 2 encryption groundwork: MedicationRepository went
   // async — same hoisted-above-the-guard treatment as testEntries above.
-  const medNames = useLoadedMemo(async () => {
-    if (!visit?.medicationsGivenIds?.length) return [];
-    const resolved = await Promise.all(visit.medicationsGivenIds.map((id) => MedicationRepository.getById(id)));
-    return resolved.map((m) => m?.name).filter(Boolean);
-  }, [visit], []);
   // ADDED — all medications for resolving prescribed medication names
   const allMeds = useLoadedMemo(async () => (await MedicationRepository.getAll()).filter((m) => !m.isArchived).map((m) => ({ id: m.id, name: m.name })), [], []);
+  // CHANGED 26 Sep 2026 — this used to resolve every linked medication
+  // with its own MedicationRepository.getById() call, i.e. one async
+  // query per linked id, while the allMeds list immediately above
+  // already holds every medication's id and name. The three sibling
+  // blocks in this same card all resolve against allMeds, so this was
+  // both the odd one out and the slow one. Deliberately declared AFTER
+  // allMeds rather than up with the other memos: referencing a const
+  // from its own initialiser would be a temporal-dead-zone error, and
+  // this file has been bitten by exactly that ordering bug before.
+  const medNames = useLoadedMemo(async () => {
+    if (!visit?.medicationsGivenIds?.length) return [];
+    return visit.medicationsGivenIds
+      .map((id) => allMeds.find((m) => m.id === id)?.name)
+      .filter(Boolean);
+  }, [visit], []);
   // CHANGED — Phase 2 encryption groundwork: SymptomsRegistry/
   // ResultsRegistry are now async — same hoisted-above-the-guard
   // treatment as everything else above. resultNameById is also reused
@@ -1058,6 +1087,11 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
           <ReadRow label="Follow-up / next review" value={formatDate(visit.nextReviewDate) !== "—" ? formatDate(visit.nextReviewDate) : ""} T={T} />
         </SectionCard>
 
+        {/* RESTRUCTURED 26 Sep 2026 — mirrors the edit sheet's own
+            restructure in the same round. This card held seven concepts
+            (tests, four separate medication groups, vaccinations and two
+            symptom kinds) and is now split so each card is titled for
+            what it actually holds. */}
         <SectionCard title="Linked records" T={T}>
           {testEntries.length > 0 && (
             <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
@@ -1079,10 +1113,22 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
               })}
             </div>
           )}
+          <ReadRow label="Vaccinations given" value={vaccinationEntries.map((v) => v.title || v.vaccine)} T={T} />
+        </SectionCard>
+
+        {/* RESTRUCTURED 26 Sep 2026 — one flat card for the four
+            medication groups rather than a card titled "Linked records"
+            containing them, which also removed a genuine duplicate:
+            restock medications were rendered twice on this screen, once
+            here and again as their own "Restock medications" card further
+            down. The single remaining copy is the one in this card. */}
+        <SectionCard title="Medications" T={T}>
           {visit.medicationsGivenIds?.length > 0 && (
             <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>Administered in clinic (tracker)</div>
-              {medNames && <ReadRow label="" value={medNames} T={T} />}
+              {medNames.map((n, i) => (
+                <div key={i} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{n}</div>
+              ))}
             </div>
           )}
           {visit.adHocMedicationsGiven.length > 0 && (
@@ -1103,15 +1149,18 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
             </div>
           )}
           {visit.restockMedicationIds?.length > 0 && (
-            <div style={{ padding: "7px 0", borderBottom: `1px solid ${T.border}` }}>
-              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>Restock after visit</div>
+            <div style={{ padding: "7px 0" }}>
+              <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>To restock after visit</div>
               {visit.restockMedicationIds.map((id) => {
                 const m = allMeds.find((m) => m.id === id);
                 return m ? <div key={id} style={{ fontSize: 13, color: T.textPrimary, marginBottom: 2 }}>{m.name}</div> : null;
               })}
             </div>
           )}
-          <ReadRow label="Vaccinations given" value={vaccinationEntries.map((v) => v.title || v.vaccine)} T={T} />
+        </SectionCard>
+
+        {/* RESTRUCTURED 26 Sep 2026 — see the edit sheet's own note. */}
+        <SectionCard title="Symptoms discussed" T={T}>
           <ReadRow label="Symptom types discussed" value={symptomNames} T={T} />
           {symptomLogEntries.length > 0 && (
             <div style={{ padding: "7px 0" }}>
@@ -1143,14 +1192,11 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
           <ReadRow label="Clinical notes" value={visit.clinicalNotes} T={T} />
         </SectionCard>
 
-        {visit.restockMedicationIds?.length > 0 && (
-          <SectionCard title="Restock medications" T={T}>
-            {visit.restockMedicationIds.map((id) => {
-              const m = allMeds.find((m) => m.id === id);
-              return m ? <ReadRow key={id} label="Restock" value={m.name} T={T} /> : null;
-            })}
-          </SectionCard>
-        )}
+        {/* REMOVED 26 Sep 2026 — real duplicate found by the audit: this
+            "Restock medications" card rendered the exact same
+            restockMedicationIds as a block inside the medications card
+            above, so every visit with a restock item showed the list
+            twice. The copy inside the medications card is the one kept. */}
 
         {visit.attachments.length > 0 && (
           <SectionCard title="Attachments" T={T}>
