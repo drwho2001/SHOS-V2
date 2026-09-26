@@ -3616,6 +3616,116 @@ this date; summarized here for durability.
   more-established pattern — left alone per this project's own
 standing "avoid over-normalisation" rule, not an oversight.
 
+## Recently shipped (26 Sep 2026 - stored-datetime timezone fix, personal-data encoding repair, vaccine reminder fix)
+
+Three real bugs found by auditing Healthcare and the storage layer rather
+than by a crash report, plus a genuine security hole in my own tooling.
+Commits `a8d277e` and `aad6db6`.
+
+**Stored datetimes were shifted by an hour in one place (real bug).**
+Clinic Visits' "Confirm attendance" wrote
+`nowAsDateTimeLocalString()` - the raw value an `<input
+type="datetime-local">` expects - straight into a STORED field.
+`realTimestampFromStored()` does `new Date(storedIso)` and then re-reads
+that result's UTC components, so a bare string is first parsed as LOCAL
+time and its digits are *already* shifted before being reinterpreted.
+Measured: the same "12:00" the user typed comes back as 11:00 in London BST,
+16:00 in New York and 02:00 in Sydney. Now uses `nowAsStoredDateTime()`, and
+a hand-rolled `":00.000Z"` suffix elsewhere in the same file was replaced
+with that helper too. All four other call sites of the input-only helper
+were audited and correctly append the suffix themselves, so none changed.
+
+Two tests added, both deliberately able to fail. The wall-clock round trip
+is asserted through local `getHours()` rather than offset arithmetic, after
+**two earlier versions of that test failed for reasons that had nothing to
+do with the app**: one sampled the *current* device offset against a fixed
+*January* date (the UK is GMT in January, BST in July, so the test
+disagreed with itself and failed intermittently), and the next read the
+offset back via `new Date(timestamp).getTimezoneOffset()`, which reports
+`0` under this project's vitest runner even while string parsing is
+genuinely local - the identical logic was verified correct in plain node
+across four zones. The second test is a source-level guard rejecting any
+module that uses `nowAsDateTimeLocalString()` without the fake-UTC suffix,
+i.e. the exact shape of this bug; confirmed to fail by reintroducing the
+bug, then pass once restored. Verified passing under Europe/London, UTC,
+America/New_York and Australia/Sydney.
+
+**Personal data had the same mojibake the source files had.** New
+`src/calculations/encodingRepair.js` matches only the 12 context-verified
+sequences and *reports* anything else rather than guessing at someone's
+medical notes. An exhaustive test proves the repair cannot emit a character
+outside the map, so the multiplication sign, almost-equal, `>=`, both arrow
+shapes, em dash, bullets, degree, plus-minus, ellipsis, curly apostrophe
+and every emoji are protected structurally, not by a filter that could be
+got wrong. `scripts/repair-personal-data-encoding.cjs` drives it: dry run by
+default, a **mandatory full backup before any write**, and a
+verify-after-write pass. Proven end-to-end against real encrypted storage
+(inject, detect, back up, apply, verify: exactly the 3 corrupted fields
+found and fixed, every wanted character surviving, no collateral damage).
+**No personal data has been written yet** - the tool exists, it has not been
+run against the owner's real profile.
+
+`.gitignore` now excludes `backups/`. That directory holds PLAINTEXT
+decrypted records, this is the public track, and a stray `git add .` would
+otherwise have published real medical records. Found by my own encoding
+guard, after I had already written the tool that creates those files.
+
+**Vaccine reminders had silently stopped firing entirely.** Two causes
+stacked. First, the dose-by-dose series work moved `nextDue` from a
+top-level field into `doses[].nextDue`, and
+`migrateLegacyVaccinationFields()` *deletes* the top-level field when it
+does - but eleven read sites still read the old field, so every one saw
+`undefined`: the reminder's own selection, `getOverdue()`, the Healthcare
+summary count, the list rows, the detail "Next due" row, the module's
+overdue count, and the Clinic Card screen and PDF export. Measured live:
+the old-style read matched **0 of 4** vaccinations while a real due date
+existed. The symptom was exactly this - the per-dose line in the detail
+view rendered fine (it reads `dose.nextDue`) while reminders never fired
+and every overdue count stayed zero.
+
+Fixed by *deriving* the value on read in a new pure
+`src/calculations/vaccinationCalculations.js` rather than writing the
+denormalised field back - denormalising is how the two truths drifted apart
+in the first place. Second cause: the seed data was storing the wrong
+*shape* of value regardless, using `daysAgo()` (a full ISO string like
+`"2026-10-16T10:00:00.000Z"`) in a field that is a plain `YYYY-MM-DD`
+calendar date. So even with the readers fixed, `nextDueAsDate()` would
+append `"T09:00:00"` to that and produce an **Invalid Date** - which does
+not throw, it just means a reminder that quietly never schedules. The seed
+now uses a `dateOnly()` helper and the readers normalise, so a record the
+owner already saved in the wrong shape is handled rather than needing a
+migration. Confirmed live: the date now reads `2026-10-16`.
+
+**A third copy of the same test bug.** The App Lock smoke flow asserted
+after a fixed `waitForTimeout(500)` on a toggle whose click triggers a real
+PBKDF2-100k vault re-wrap, so the assertion depended on machine speed. This
+is the same mistake already found and fixed *twice* in this suite (the
+PIN-recovery flow's five PBKDF2-bound waits, and an earlier non-retrying
+`count()` in that same flow) - found here a third time because it was a
+third copy. Now a bounded wait that returns as soon as the toggle flips.
+
+**Read this before trusting a red smoke build on this machine.** The three
+intermittent failures hit while verifying the above (a cold-start timeout,
+an element-stability timeout, and the App Lock one) all traced to the
+machine having roughly **300MB free of 4GB** - partly leftover `node` and
+browser processes from earlier commands, partly the machine itself. None
+were app defects. With the machine cleaned up the suite passes 15/15 with
+no flow skipped. This also gives a concrete, actionable explanation for the
+long-standing "flow 14 fails at position 14" note further up.
+
+One self-inflicted lesson worth keeping: several of these edits were first
+made with PowerShell `Get-Content -Raw` / `Set-Content -Encoding UTF8`, and
+that round-trip **re-introduced exactly the mojibake this file spent the
+session repairing** (PS 5.1 reads UTF-8 as Windows-1252 by default). The
+new encoding guard caught it on four files, they were restored from git and
+redone with the encoding-safe editor. Any future bulk edit of a source file
+in this repo should avoid PowerShell read/write round-trips.
+
+Verified: vitest 125/125, eslint clean, encoding guard clean across 211
+tracked files, production build clean, smoke suite 15/15 against
+`vite preview` with flow 14 genuinely running (not skipped), 10/10 live
+focus assertions. CI green on `a8d277e` (all three workflows).
+
 ## Recently shipped (25 Sep 2026 - accessibility regression repair + encoding guard)
 
 A full audit of the 25 Sep accessibility batch against the real code (not its own claims) found the batch had shipped four genuine regressions, and that a fifth set of `CLAUDE.md` claims were false. All fixed, all verified live.
