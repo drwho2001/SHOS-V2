@@ -47,8 +47,26 @@ export const DEFAULT_NOTIFICATION_ITEM = {
   dob: "",          // clinical only — freeform, this app has no DOB field elsewhere to pull from
   age: null,        // clinical only — prefilled from Contact.age when known
   address: "",      // clinical only — prefilled from Contact.address/city when known
-  notified: false,
-};
+    notified: false,
+    // ADDED 27 Sep 2026 — the four fields above are a SNAPSHOT of the
+    // Contact taken when the checklist was generated, and the real bug this
+    // exposed is that nothing ever re-derived them. `contactId` was stored
+    // all along and the render path simply never used it, so correcting a
+    // phone number in Contacts left the checklist showing the OLD one - and
+    // because save() deliberately reuses the same list per testId, even
+    // regenerating kept the stale value. In the app's most safety-sensitive
+    // workflow, that is a wrong-contact-details path, and it was silent.
+    //
+    // `methodsOverridden` records whether the user has typed their own value
+    // into the methods box (which is legitimately editable). Only then is the
+    // stored text authoritative; otherwise the display re-derives from the
+    // live Contact. Without this flag a fix would either wipe the user's own
+    // edits on every render, or keep showing stale data - both worse than the
+    // bug. A plain boolean rather than comparing strings, because comparing
+    // would break the moment a contact's details happened to match what the
+    // user typed.
+    methodsOverridden: false,
+  };
 
 export const DEFAULT_NOTIFICATION_LIST = {
   id: "",

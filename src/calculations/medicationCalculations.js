@@ -73,7 +73,15 @@ export function computeStock(med) {
   let supplementary;
   if (med.usagePattern === "prn") {
     const dosesRemaining = med.unitsPerDose > 0 ? Math.floor(currentStock / med.unitsPerDose) : null;
-    supplementary = `${dosesRemaining} doses left · ${Math.ceil(currentStock / med.unitsPerContainer)} containers`;
+    // FIXED 27 Sep 2026 — unitsPerContainer had no guard while unitsPerDose on
+    // the line above did. The Add/Edit form's NumberField is min={0}, so 0 is
+    // reachable, and the card then rendered the literal text
+    // "8 doses left · Infinity containers" (or "-Infinity containers" at zero
+    // stock). Verified live. A PRN medication legitimately may not track
+    // containers at all, so the honest output is to omit the clause rather
+    // than invent a number.
+    const containers = med.unitsPerContainer > 0 ? `${Math.ceil(currentStock / med.unitsPerContainer)} containers` : null;
+    supplementary = containers ? `${dosesRemaining} doses left · ${containers}` : `${dosesRemaining} doses left`;
   } else {
     // CHANGED 19 Aug 2026 — generalized via effectiveDoseIntervalHours()
     // so custom (every-N-days) scheduling gets a correct "days
@@ -136,7 +144,28 @@ function windowStats(doseDays, days, today, expectedDaysOverride) {
     expected += 1;
     if (doseDays.has(dayTime)) hit += 1;
   }
-  return { hit, expected, pct: expected > 0 ? Math.round((hit / expected) * 100) : 100 };
+  // FIXED 27 Sep 2026 — `expected > 0 ? ... : 100` turns "nothing was due in
+  // this window" into a perfect score. That is the right call for a window
+  // that genuinely contains no due day, and the AdherencePill's own NaN guard
+  // depends on it - but it is the WRONG answer for a custom (every-N-days)
+  // medication that has never had a dose logged at all, because
+  // computeExpectedDoseDays returns an empty set when there is no anchor
+  // (nothing has ever been due). Measured: such a medication reported
+  // "0/0 · 100%" on its card AND "100%" on Home's Status-at-a-glance ring
+  // AND "100%" in Stats' overall adherence - and worse, it INFLATED a mixed
+  // set, averaging to 90% when the only real medication was at 80%.
+  //
+  // So an empty window is only meaningful when the medication actually has
+  // history. With no dose ever logged there is nothing to be adherent TO, and
+  // reporting 0% is the honest answer: the medication has not been started.
+  // `hasHistory` is the caller's own knowledge (does any dose log exist at
+  // all), threaded in rather than re-derived here.
+  const hasHistory = doseDays.size > 0;
+  return {
+    hit,
+    expected,
+    pct: expected > 0 ? Math.round((hit / expected) * 100) : (hasHistory ? 100 : 0),
+  };
 }
 
 // ADDED 19 Aug 2026 — real feedback batch: custom "every N days"

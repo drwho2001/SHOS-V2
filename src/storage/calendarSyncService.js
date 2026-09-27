@@ -48,6 +48,11 @@
 // or catching up on app load) finds and UPDATES the same real calendar
 // event instead of creating a duplicate every time.
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository.js";
+// FIXED 27 Sep 2026 — a Clinic Visit's `date` is one of this app's fake-UTC
+// stored values, not a real instant. Reading it with `new Date(...)` and
+// comparing or writing the result as an epoch re-applies the device's UTC
+// offset. See realTimestampFromStored's own header for the full explanation.
+import { realTimestampFromStored } from "../calculations/dateInputHelpers.js";
 
 let Calendar = null;
 let pluginLoadAttempted = false;
@@ -149,11 +154,26 @@ async function syncOneVisit(plugin, calendar, visit) {
     title: useGenericTitle ? "Clinic appointment" : (visit.title || "Clinic appointment"),
     location: visit.location || "",
     notes: markerFor(visit.id),
-    startDate: new Date(visit.date).getTime(),
-    // No real end time is ever recorded for a Clinic Visit — a
-    // reasonable 1-hour default, same as most calendar apps use for a
-    // bare appointment with no explicit duration.
-    endDate: new Date(visit.date).getTime() + 3600000,
+      // FIXED 27 Sep 2026 — `new Date(visit.date).getTime()` is the exact
+      // fake-UTC-vs-real-instant mistake realTimestampFromStored() exists to
+      // prevent. A visit booked for 14:00 local is stored as
+      // "…T14:00:00.000Z", which parses as 14:00 UTC — one hour LATER than
+      // the real moment in BST. The old code wrote that straight to the
+      // phone calendar, so every appointment landed an hour off for eight
+      // months of the year.
+      //
+      // This is the only place in the app where a wrong timestamp escapes
+      // the app entirely, and it is the one a clinician would read off the
+      // patient's phone at an appointment. Every other consumer of a stored
+      // datetime (displays, lockout maths, adherence) was already using the
+      // correct helper; this one was missed.
+      startDate: realTimestampFromStored(visit.date),
+      // No real end time is ever recorded for a Clinic Visit — a
+      // reasonable 1-hour default, same as most calendar apps use for a
+      // bare appointment with no explicit duration. 3600000ms is
+      // deliberately not converted to a calendar-day figure: this is a real
+      // elapsed duration, not a stored calendar date, so DST does not apply.
+      endDate: realTimestampFromStored(visit.date) + 3600000,
     calendarId: calendar.id,
   };
   const existingId = await findSyncedEventId(plugin, calendar.name, visit.id);
@@ -186,8 +206,15 @@ export async function syncClinicVisitsToCalendar(visits) {
   const { plugin } = await getPlugin();
   if (!plugin) return { synced: false };
   const calendar = await resolveTargetCalendar(plugin);
-  const now = new Date();
-  const booked = visits.filter((v) => !v.isArchived && v.isFutureAppointment && v.date && new Date(v.date) > now);
+    // FIXED 27 Sep 2026 — same fake-UTC/real-instant mixing, and this one had
+    // a second consequence beyond a shifted time. A visit booked for 00:30
+    // tomorrow was judged "already past" until 01:30, so it was neither synced
+    // NOR cleaned up: the filter dropped it, and because the cleanup pass
+    // removes any calendar event whose id is not in the booked set, an event
+    // that had already been created for it was deleted. The appointment
+    // silently vanished from the user's calendar overnight.
+    const now = Date.now();
+    const booked = visits.filter((v) => !v.isArchived && v.isFutureAppointment && v.date && realTimestampFromStored(v.date) > now);
   const bookedIds = new Set(booked.map((v) => v.id));
 
   for (const visit of booked) await syncOneVisit(plugin, calendar, visit);

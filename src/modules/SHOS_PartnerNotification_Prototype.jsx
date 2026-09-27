@@ -55,6 +55,11 @@ function itemFromContact(c) {
     age: c.age ?? null,
     address: [c.address, c.city].filter(Boolean).join(", "),
     notified: false,
+    // FIXED 27 Sep 2026 - records that `methods` is still the auto-derived
+    // snapshot rather than something the user typed, so the render path below
+    // knows it is free to re-derive it from the live Contact. See
+    // DEFAULT_NOTIFICATION_ITEM's own comment for the bug this fixes.
+    methodsOverridden: false,
   };
 }
 
@@ -172,7 +177,42 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
   const toggleNotified = async (contactId) => { await PartnerNotificationRepository.toggleNotified(list.id, contactId); refresh(); };
   const editField = async (contactId, field, value) => { await PartnerNotificationRepository.updateItem(list.id, contactId, { [field]: value }); refresh(); };
 
-  const notifiedCount = list.items.filter((i) => i.notified).length;
+    const notifiedCount = list.items.filter((i) => i.notified).length;
+
+    // FIXED 27 Sep 2026 — the item's name and methods were a snapshot of the
+    // Contact taken when the checklist was generated, and nothing ever
+    // re-derived them. `contactId` was stored the whole time and the render
+    // path simply never used it, so correcting a phone number in Contacts
+    // left the checklist showing the old one — and because save() reuses the
+    // same list per testId, regenerating kept the stale value too. On the
+    // app's most safety-sensitive workflow that is a wrong-contact-details
+    // path, and it was completely silent.
+    //
+    // The rules, so this cannot reintroduce the bug in a different shape:
+    //   - If the Contact still exists, its LIVE name and methods are shown.
+    //   - A methods value the user typed themselves always wins
+    //     (methodsOverridden), because that box is legitimately editable and
+    //     re-deriving would wipe their input on every render.
+    //   - If the Contact has been deleted, the stored snapshot is shown —
+    //     which is the right fallback, since the checklist still has to be
+    //     usable for the notification it was generated for.
+    const contactsById = useLoadedMemo(async () => {
+      const all = await ContactRepository.getAll();
+      return new Map(all.map((c) => [c.id, c]));
+    }, [], new Map());
+    const liveName = (item) => contactsById.get(item.contactId)
+      ? contactDisplayName(contactsById.get(item.contactId))
+      : item.name;
+    const liveMethods = (item) => (!item.methodsOverridden && contactsById.get(item.contactId))
+      ? summarizeContactMethods(contactsById.get(item.contactId))
+      : item.methods;
+    // True when at least one row is showing a corrected live value, so the UI
+    // can say so rather than the user wondering why the details changed.
+    const anyLiveRefresh = list.items.some((i) => !i.methodsOverridden && contactsById.get(i.contactId) && (
+      contactDisplayName(contactsById.get(i.contactId)) !== i.name
+      || summarizeContactMethods(contactsById.get(i.contactId)) !== i.methods
+    ));
+
 
   const doExport = async () => {
     const lines = [
@@ -182,9 +222,14 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
       "Not sent automatically. Not a diagnosis or medical advice — for your own use, or to hand to a clinic's partner notification team.",
       "",
     ];
-    list.items.forEach((i, idx) => {
-      lines.push(`${idx + 1}. ${i.name}${i.notified ? " [notified]" : ""}`);
-      if (i.methods) lines.push(`   Contact: ${i.methods}`);
+      list.items.forEach((i, idx) => {
+        // Uses the same live-resolved values as the on-screen list, so the
+        // exported text a clinic reads can never disagree with what the user
+        // was looking at.
+        const name = liveName(i);
+        const methods = liveMethods(i);
+        lines.push(`${idx + 1}. ${name}${i.notified ? " [notified]" : ""}`);
+        if (methods) lines.push(`   Contact: ${methods}`);
       if (list.clinical) {
         if (i.dob) lines.push(`   DOB: ${i.dob}`);
         if (i.age != null) lines.push(`   Age: ${i.age}`);
@@ -200,6 +245,7 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 12, lineHeight: 1.4 }}>
         Not sent automatically — work through this yourself, or export it to hand to a clinic. Tap a name to mark it done.
         {list.clinical && " Clinical version: DOB/address are typed in here, not pulled from anywhere — this app doesn't store DOB on a Contact."}
+        {anyLiveRefresh && " Names and contact methods shown here are read live from Contacts, so any correction you have made there is already applied. Type into a methods box to override it for this checklist."}
       </div>
       <div style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, marginBottom: 8 }}>{notifiedCount} of {list.items.length} notified</div>
 
@@ -210,17 +256,17 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
               <div style={{ width: 22, height: 22, borderRadius: "50%", border: `1.5px solid ${item.notified ? ACTION.green : T.border}`, background: item.notified ? ACTION.green : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {item.notified && <Check size={14} color="#FFFFFF" weight="bold" />}
               </div>
-              <span style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary, textDecoration: item.notified ? "line-through" : "none", opacity: item.notified ? 0.6 : 1 }}>{item.name}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary, textDecoration: item.notified ? "line-through" : "none", opacity: item.notified ? 0.6 : 1 }}>{liveName(item)}</span>
             </div>
-            <textarea value={item.methods} onChange={(e) => editField(item.contactId, "methods", e.target.value)} placeholder="Contact method(s) — e.g. Phone: 07700 900123 / Snapchat: @handle" rows={2} aria-label={`Contact methods for ${item.name}`}
+            <textarea value={liveMethods(item)} onChange={(e) => { editField(item.contactId, "methods", e.target.value); editField(item.contactId, "methodsOverridden", true); }} placeholder="Contact method(s) — e.g. Phone: 07700 900123 / Snapchat: @handle" rows={2} aria-label={`Contact methods for ${liveName(item)}`}
               style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box", resize: "vertical", marginBottom: list.clinical ? 8 : 0 }} />
             {list.clinical && (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <input value={item.dob} onChange={(e) => editField(item.contactId, "dob", e.target.value)} placeholder="DOB" aria-label={`Date of birth for ${item.name}`}
+                <input value={item.dob} onChange={(e) => editField(item.contactId, "dob", e.target.value)} placeholder="DOB" aria-label={`Date of birth for ${liveName(item)}`}
                   style={{ flex: "1 1 90px", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
-                <input value={item.age ?? ""} onChange={(e) => editField(item.contactId, "age", e.target.value === "" ? null : Number(e.target.value))} type="number" placeholder="Age" aria-label={`Age for ${item.name}`}
+                <input value={item.age ?? ""} onChange={(e) => editField(item.contactId, "age", e.target.value === "" ? null : Number(e.target.value))} type="number" placeholder="Age" aria-label={`Age for ${liveName(item)}`}
                   style={{ flex: "1 1 70px", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
-                <input value={item.address} onChange={(e) => editField(item.contactId, "address", e.target.value)} placeholder="Address" aria-label={`Address for ${item.name}`}
+                <input value={item.address} onChange={(e) => editField(item.contactId, "address", e.target.value)} placeholder="Address" aria-label={`Address for ${liveName(item)}`}
                   style={{ flex: "2 1 140px", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 12, boxSizing: "border-box" }} />
               </div>
             )}
