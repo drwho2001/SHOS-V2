@@ -47,8 +47,33 @@ const GROUP_DOMAIN = "measurementType";
 // to functions, called fresh per-render (matching how T itself is
 // already recomputed on every render below) so they always read the
 // current, real ACCENTS/ACTION values.
-const buildLight = () => ({ ...NEUTRAL, healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red });
-const buildDark = () => ({ ...NEUTRAL_DARK, healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E") });
+// FIXED 27 Sep 2026 — this was the ONLY module of the ten themed ones with no
+// actionRedText / actionGreenText at all, so its RangeBadge reached for the raw
+// light-mode-only tokens directly. Every sibling defines the pair, e.g.
+// Medication:112 `actionRedText: resolveDarkAccent("actionRed", ACTION.red,
+// "#FF7A7E")`. The consequence: all three badge states (Normal / Low / High)
+// measured 2.67–2.71:1 against the dark surface, against a 4.5:1
+// requirement — the entire normal-range classification, which is the whole
+// point of that component, was an unreadable smudge in dark mode.
+const buildLight = () => ({
+  ...NEUTRAL,
+  healthcareBlue: ACCENTS.healthcare,
+  actionRed: ACTION.red,
+  actionRedText: ACTION_TEXT_SAFE.red,
+  actionGreenText: ACTION_TEXT_SAFE.green,
+  // ACTION.gold is 5.69:1 on white but 2.99:1 on the dark surface, and has no
+  // dark counterpart in designTokens (it is hardcoded in
+  // applyRealAccentOverrides). Same treatment Medication Dashboard already uses.
+  goldText: "#8A6100",
+});
+const buildDark = () => ({
+  ...NEUTRAL_DARK,
+  healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"),
+  actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
+  actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"),
+  actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+  goldText: "#FFD666",
+});
 const radius = RADIUS;
 
 // Grey placeholder hints — real ask: suggest the variety of values/
@@ -583,9 +608,14 @@ function classifyMeasurement(m, prefs) {
 function RangeBadge({ status, T }) {
   if (!status) return null;
   const config = {
-    normal: { label: "Normal", color: ACTION_TEXT_SAFE.green, bg: `${ACTION.green}15` },
-    low: { label: "Low", color: ACTION.gold, bg: `${ACTION.amber}15` },
-    high: { label: "High", color: ACTION_TEXT_SAFE.red, bg: `${ACTION.red}15` },
+    // FIXED 27 Sep 2026 — all three now read the module's own dark-aware
+    // tokens rather than the raw light-mode-only ones. `low` was also the
+    // odd one out WITHIN this literal: `normal` and `high` used the
+    // ACTION_TEXT_SAFE pattern and `low` used raw ACTION.gold, so the safe
+    // treatment had been applied to two of three entries side by side.
+    normal: { label: "Normal", color: T.actionGreenText, bg: `${ACTION.green}15` },
+    low: { label: "Low", color: T.goldText, bg: `${ACTION.amber}15` },
+    high: { label: "High", color: T.actionRedText, bg: `${ACTION.red}15` },
   }[status];
   return (
     <span style={{ fontSize: 11, fontWeight: 700, color: config.color, background: config.bg, borderRadius: radius.full, padding: "2px 8px", marginLeft: 8 }}>

@@ -41,12 +41,20 @@ import { formatStoredDate } from "../calculations/dateInputHelpers";
 // MenstrualHealth (and now several other module files) — converted to
 // functions, called fresh per-render, same fix.
 function buildLight() {
+  // FIXED 27 Sep 2026 - ACTION.gold (#7A6500) is 5.69:1 on white but only
+  // 2.99:1 on this app's dark surface, and designTokens hardcodes it in
+  // applyRealAccentOverrides with no dark counterpart. Used as raw foreground
+  // text it was unreadable in dark mode - and one of the two sites is the
+  // "uncovered window" warning, the one line a user most needs to read.
+  // goldText follows the pattern Medication Dashboard already established
+  // for this exact problem, rather than inventing a second answer.
   return {
     ...NEUTRAL,
     healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
     // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker
     // stand-ins for actionRed/actionGreen-as-text-on-its-own-tint only.
     actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
+    goldText: "#8A6100", // FIXED 27 Sep 2026 - see the note above buildDark()
   };
 }
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
@@ -61,6 +69,7 @@ function buildDark() {
     // Dark mode's resolved actionRed/actionGreen already have real
     // headroom against a near-black background — reuse as-is.
     actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+  goldText: "#FFD666", // FIXED 27 Sep 2026 - the Platforms-gold dark accent; 12.19:1 on this surface
   };
 }
 const radius = RADIUS;
@@ -565,7 +574,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
                   <div key={id} style={{ fontSize: 11, display: "flex", alignItems: "flex-start", gap: 6 }}>
                     {coverage.status === "covered" && <Check size={12} color={T.actionGreen} style={{ flexShrink: 0, marginTop: 1 }} />}
                     {coverage.status !== "covered" && <AlertTriangle size={12} color={coverage.status === "uncovered" ? ACTION.amber : T.textDisabled} style={{ flexShrink: 0, marginTop: 1 }} />}
-                    <span style={{ color: coverage.status === "covered" ? T.actionGreen : coverage.status === "uncovered" ? ACTION.gold : T.textDisabled }}>
+                    <span style={{ color: coverage.status === "covered" ? T.actionGreen : coverage.status === "uncovered" ? T.goldText : T.textDisabled }}>
                       {encounterLabel(enc)} —{" "}
                       {coverage.status === "covered" && "cleared by a test taken after the relevant window"}
                       {coverage.status === "no_test" && "no test logged since this encounter yet"}
@@ -619,7 +628,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
               return startCoverage.status === "uncovered" ? (
                 <div style={{ display: "flex", gap: 8, padding: "6px 0 10px", alignItems: "flex-start" }}>
                   <AlertTriangle size={14} color={ACTION.amber} style={{ flexShrink: 0, marginTop: 2 }} />
-                  <span style={{ fontSize: 12, color: ACTION.gold, lineHeight: 1.4 }}>
+                  <span style={{ fontSize: 12, color: T.goldText, lineHeight: 1.4 }}>
                     It's not yet been long enough since the start Encounter for a test to reliably rule out {startCoverage.uncoveredInfections.join(", ")} — a negative result now may not be conclusive. You can still resolve manually if you're confident (e.g. on clinical advice).
                   </span>
                 </div>

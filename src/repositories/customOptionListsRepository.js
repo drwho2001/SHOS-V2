@@ -150,6 +150,32 @@ const SEED_LISTS = {
 // stays fully editable as normal.
 const PROTECTED_VALUES = {
   measurementType: ["Blood pressure"],
+  // ADDED 27 Sep 2026 — a real gate inversion, found by the persona audit.
+  //
+  // Eight comparison sites across three modules match the gender string
+  // EXACTLY against these literals to decide whether to show contraception,
+  // whether to show anatomy-specific fields, and whether to default the
+  // Pregnancy tab on. All of them use the same
+  // ["female", "trans-male"].includes(gender.trim().toLowerCase()) shape.
+  //
+  // "Blood pressure" above is protected for precisely this reason - its own
+  // comment says so - and gender is the same class of dependency, arguably a
+  // stronger one. The audit's measured result: renaming "Female" to "Woman" in
+  // Settings > Manage lists silently, with no warning, flips every gate in the
+  // app for every already-saved record. Contraception disappears for a cis
+  // woman, anatomy-specific fields appear for her, and the Pregnancy tab
+  // default inverts. Nothing is deleted, and the reveal-anyway links soften it,
+  // but the gate is silently wrong and there is nothing on screen saying why.
+  //
+  // rename() rewrites only the LIST and never existing records, so a rename
+  // cannot even be caught retroactively - which is what makes the absence of
+  // protection here worse than it looks. The remaining gender values
+  // ("Male", "Trans-female", "Non-binary") are NOT protected, because no code
+  // branches on those specific strings: an unset or unmatched gender simply
+  // takes the "don't presume, offer the reveal link" branch, which is the
+  // documented intent. Protecting them would remove the user's ability to
+  // describe themselves accurately for no correctness gain.
+  gender: ["Female", "Trans-male"],
 };
 
 // Friendly labels for the editor screen — separate from the storage

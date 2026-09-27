@@ -715,9 +715,18 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
             this one row now — see BackupExportScreen below. */}
         <SettingsRow icon={Upload} label="Backup &amp; Export" onClick={() => setShowBackupExport(true)} />
       </div>
-      {status && (
-        <div style={{ margin: "0 16px 20px", padding: "10px 14px", borderRadius: 12, background: "#FFF4CE", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 12 }}>{status}</div>
-      )}
+        {/* FIXED 27 Sep 2026 - this status toast was effectively INVISIBLE in
+            dark mode: a hardcoded pale-yellow (#FFF4CE) background with
+            DARK.textPrimary (#F2F2F4) text measures 1.02:1 contrast, against a
+            4.5:1 requirement. Verified by computing the WCAG ratio. It fires on
+            every Settings action that sets `status` - export, restore, PIN
+            change, backup - so on the least-visited screen in the app, which is
+            exactly where a visual bug is least likely to be noticed. The
+            `color` field branched on darkMode but the `background` did not,
+            which is what made it so easy to miss. */}
+        {status && (
+          <div style={{ margin: "0 16px 20px", padding: "10px 14px", borderRadius: 12, background: darkMode ? DARK.surfaceVariant : "#FFF4CE", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontSize: 12 }}>{status}</div>
+        )}
 
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Security &amp; Privacy</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
@@ -817,7 +826,13 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
           onAutoBackupSettings={() => setShowAutoBackupSettings(true)}
         />
       )}
-      <Suspense fallback={<div style={{ position: "fixed", inset: 0, zIndex: 220, display: "flex", alignItems: "center", justifyContent: "center", background: "#F0F0F3", color: "#666", fontFamily: "'Inter', sans-serif", fontSize: 13 }}>Loading...</div>}>
+        {/* FIXED 27 Sep 2026 — this full-screen "Loading..." fallback was
+            hardcoded to light mode, so navigating into a sub-screen in dark
+            mode flashed a full-screen light grey panel. Contrast was fine
+            (5.07:1) so it was purely a visual jolt, but it sat directly on top
+            of the dark app. App.jsx's own equivalent fallback already branches
+            on darkMode — this was the one that hadn't been converted. */}
+        <Suspense fallback={<div style={{ position: "fixed", inset: 0, zIndex: 220, display: "flex", alignItems: "center", justifyContent: "center", background: darkMode ? DARK.bg : NEUTRAL.bg, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontFamily: "'Inter', sans-serif", fontSize: 13 }}>Loading...</div>}>
       {showSelectiveExport && (
         <SelectiveExportSheet onClose={() => setShowSelectiveExport(false)} />
       )}

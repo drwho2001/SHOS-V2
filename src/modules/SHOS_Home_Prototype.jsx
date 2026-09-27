@@ -1092,7 +1092,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           a navigation shortcut, and shouldn't visually blend in with
           them. */}
       {backupInfo.dueForReminder && (
-        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onOpenSettings} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: `1px solid ${ACTION.amber}40`, background: "#FFF7ED", cursor: "pointer" }}>
+        <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={onOpenSettings} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8, padding: "12px 16px", borderRadius: RADIUS.md, border: `1px solid ${ACTION.amber}40`, background: darkMode ? DARK.surface : "#FFF7ED", cursor: "pointer" }}>
           <Database size={15} color={ACTION.gold} />
           <span style={{ fontSize: 13, fontWeight: 600, color: ACTION.gold }}>
             {backupInfo.lastAt ? `No backup in ${backupInfo.daysSince} days — export one` : "You've never exported a backup — do it now"}

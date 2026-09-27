@@ -75,12 +75,20 @@ import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 // MenstrualHealth (and now several other module files) — converted to
 // functions, called fresh per-render, same fix.
 function buildLight() {
+  // FIXED 27 Sep 2026 - ACTION.gold (#7A6500) is 5.69:1 on white but only
+  // 2.99:1 on this app's dark surface, and designTokens hardcodes it in
+  // applyRealAccentOverrides with no dark counterpart. Used as raw foreground
+  // text it was unreadable in dark mode - and one of the two sites is the
+  // "uncovered window" warning, the one line a user most needs to read.
+  // goldText follows the pattern Medication Dashboard already established
+  // for this exact problem, rather than inventing a second answer.
   return {
     ...NEUTRAL,
     healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
     // ADDED 10 Sep 2026 — see Contacts.jsx's own comment: darker
     // stand-ins for actionRed/actionGreen-as-text-on-its-own-tint only.
     actionRedText: ACTION_TEXT_SAFE.red, actionGreenText: ACTION_TEXT_SAFE.green,
+    goldText: "#8A6100", // FIXED 27 Sep 2026 - see the note above buildDark()
     navActive: ACCENTS.healthcare,
   };
 }
@@ -96,6 +104,7 @@ function buildDark() {
     // Dark mode's resolved actionRed/actionGreen already have real
     // headroom against a near-black background — reuse as-is.
     actionRedText: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreenText: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+  goldText: "#FFD666", // FIXED 27 Sep 2026 - the Platforms-gold dark accent; 12.19:1 on this surface
     navActive: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"),
   };
 }
@@ -1425,7 +1434,7 @@ function TestRow({ t, tests, resultNameById, T, selectMode, selectedIds, toggleS
       {resultPending ? (
         <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textDisabled, marginLeft: 16, marginTop: 2, fontStyle: "italic", opacity: isArchived ? 0.5 : 1 }}>Pending — expected {formatDate(t.resultDate)}</div>
       ) : resultNames.length > 0 && (
-        <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : (isPositive ? T.actionRed : isNegative ? T.actionGreenText : ACTION.gold), marginLeft: 16, marginTop: 2, fontWeight: isPositive || isNegative ? 700 : 400, opacity: isArchived ? 0.5 : 1 }}>{resultNames.join(", ")}</div>
+        <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : (isPositive ? T.actionRed : isNegative ? T.actionGreenText : T.goldText), marginLeft: 16, marginTop: 2, fontWeight: isPositive || isNegative ? 700 : 400, opacity: isArchived ? 0.5 : 1 }}>{resultNames.join(", ")}</div>
       )}
       </div>
     </div>

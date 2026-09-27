@@ -535,7 +535,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
 
       <div style={{ display: "flex", gap: 8, marginTop: 12, position: "relative" }}>
         <button onClick={handleLogTap}
-          style={btnStyle(T.medsBlue, "outline", doseLocked)}
+          style={btnStyle(T.medsBlue, "outline", doseLocked, T)}
         >
           <Pill size={14} /> {doseLocked ? "Already logged" : "Log dose"}
         </button>
@@ -550,10 +550,22 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
   );
 }
 
-function btnStyle(color, variant, disabled) {
-  const textColor = disabled ? "#999999" : (variant === "filled" ? "#FFFFFF" : color);
-  const borderColor = disabled ? "#CCCCCC" : (variant === "outline" ? color : "none");
-  const bgColor = disabled ? "#F5F5F5" : (variant === "filled" ? color : "transparent");
+// FIXED 27 Sep 2026 — `disabled` now takes the module's own theme, because
+// these three hexes are dark-mode-INVARIANT. btnStyle is called from 3 places
+// that can genuinely be disabled (:538 doseLocked, :1214 no change made,
+// :2276 nothing due), and in dark mode each rendered as a glaring #F5F5F5
+// near-white pill on a near-black card. The colour argument was already the
+// right way to theme this - it is only the disabled branch that ignored it.
+//
+// `T` is optional so existing 2-argument call sites keep working unchanged;
+// only the disabled branch needs it.
+function btnStyle(color, variant, disabled, T) {
+  const disText = T ? T.textDisabled : "#999999";
+  const disBorder = T ? T.border : "#CCCCCC";
+  const disBg = T ? T.surfaceVariant : "#F5F5F5";
+  const textColor = disabled ? disText : (variant === "filled" ? "#FFFFFF" : color);
+  const borderColor = disabled ? disBorder : (variant === "outline" ? color : "none");
+  const bgColor = disabled ? disBg : (variant === "filled" ? color : "transparent");
   return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: radius.full, fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", border: variant === "outline" ? `1px solid ${borderColor}` : "none", background: bgColor, color: textColor };
 }
 
@@ -1211,7 +1223,7 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
         </div>
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
           <button onClick={confirm} disabled={!doseActuallyChanged}
-            style={btnStyle(T.medsBlue, "filled", !doseActuallyChanged)}>
+            style={btnStyle(T.medsBlue, "filled", !doseActuallyChanged, T)}>
             {doseActuallyChanged ? "Confirm dose update" : "Change the dose to continue"}
           </button>
         </div>
@@ -1549,7 +1561,7 @@ function AddMedicationSheet({ onCreate, onClose, T }) {
         </div>
 
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
-          <button onClick={() => canCreate && create()} style={{ ...btnStyle(canCreate ? T.medsBlue : T.textDisabled, "filled"), width: "100%", padding: 16, fontSize: 16, fontWeight: 700, cursor: canCreate ? "pointer" : "default" }}>
+          <button onClick={() => canCreate && create()} style={{ ...btnStyle(T.medsBlue, "filled", !canCreate, T), width: "100%", padding: 16, fontSize: 16, fontWeight: 700, cursor: canCreate ? "pointer" : "default" }}>
             Add medication
           </button>
         </div>
@@ -2287,7 +2299,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             </div>
             {allDailyMeds.length > 0 && (
               <div style={{ padding: "0 16px 12px", position: "relative" }}>
-                <button onClick={dueDailyMeds.length === 0 ? undefined : logAllDaily} style={{ ...btnStyle(T.medsBlue, "outline", dueDailyMeds.length === 0), width: "100%", padding: 10 }}>
+                <button onClick={dueDailyMeds.length === 0 ? undefined : logAllDaily} style={{ ...btnStyle(T.medsBlue, "outline", dueDailyMeds.length === 0, T), width: "100%", padding: 10 }}>
                   {bulkFlash ? <><Check size={14} /> {bulkFlash}</> : <><ListChecks size={14} /> {dueDailyMeds.length === 0 ? "All daily meds logged" : "Log all daily meds"}</>}
                 </button>
                 <div style={{ fontSize: 11, color: T.textDisabled, textAlign: "center", marginTop: 4 }}>

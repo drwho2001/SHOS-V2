@@ -39,6 +39,7 @@ import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 // Medication Dashboard's own accent (ACCENTS.medication, #3D63C9) —
 // same drift App.jsx's nav tab/quick-add button had.
 import { NEUTRAL, ACCENTS, FONT_FAMILY, RADIUS, TYPE } from "../calculations/designTokens";
+import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 // FIXED 1 Sep 2026 — real ask: "global search nav breaks as soon as
 // first letter typed." Root cause: the sort-toggle row (added 26 Aug
 // 2026) referenced `radius.full` but this module never defined or
@@ -229,45 +230,65 @@ async function buildIndex() {
     });
   });
 
+  // FIXED 27 Sep 2026 - Global Search was the ONLY surface in the app that
+  // ignored the "Track menstrual & contraception health" preference. Every
+  // other consumer checks it: Healthcare's sub-tab pill, Home's dashboard
+  // block / rings / quick-add, Clinic Card, and the Clinic Card PDF.
+  //
+  // The consequence was not just untidy. With the feature off - the default
+  // on a fresh install - searching "flow", "Depot" or "pregnancy" still
+  // returned those records, including a `sensitive` masked pregnancy entry
+  // whose existence and date the module itself goes to some length to hide.
+  // Tapping such a result navigated into a sub-tab whose own pill had never
+  // been rendered, so the user arrived with no highlighted tab and no
+  // obvious way back.
+  //
+  // Read inside buildIndex rather than passed in, so those three record
+  // types never enter the result set at all - the same respect for the
+  // toggle that the rest of the app already shows.
+  const menstrualTrackingEnabled = (await AppPreferencesRepository.getPreferences()).menstrualTrackingEnabled;
+  if (menstrualTrackingEnabled) {
   (await MenstrualCycleRepository.getAll()).filter((c) => !c.isArchived).forEach((c) => {
-    const searchText = [c.flow, c.notes].join(" ");
-    results.push({
-      type: "cycle", id: c.id,
-      title: c.flow ? `${c.flow} flow` : "Cycle",
-      subtitle: c.startDate ? formatRelativeDate(c.startDate) : "",
-      searchText,
-      date: c.startDate || null,
+      const searchText = [c.flow, c.notes].join(" ");
+      results.push({
+        type: "cycle", id: c.id,
+        title: c.flow ? `${c.flow} flow` : "Cycle",
+        subtitle: c.startDate ? formatRelativeDate(c.startDate) : "",
+        searchText,
+        date: c.startDate || null,
+      });
     });
-  });
+  
+    (await ContraceptionRepository.getAll()).filter((e) => !e.isArchived).forEach((e) => {
+      const searchText = [e.method, e.formulation, e.notes].join(" ");
+      results.push({
+        type: "contraception", id: e.id,
+        title: e.method || "Contraception",
+        subtitle: e.startDate ? formatRelativeDate(e.startDate) : "",
+        searchText,
+        date: e.startDate || null,
+      });
+    });
+  
+    // A `sensitive` pregnancy entry is masked behind a per-session "tap
+    // to reveal" in Menstrual Health's own list/detail views (ephemeral
+    // component state, never persisted, so it can't be resolved here) —
+    // showing its real status/notes in a search result would defeat that
+    // masking. Matches the module's own masked summaryLabel() exactly:
+    // a generic placeholder, findable by browsing but not by its content.
+    (await PregnancyRepository.getAll()).filter((p) => !p.isArchived).forEach((p) => {
+      const masked = !!p.sensitive;
+      const searchText = masked ? "pregnancy" : [p.testResult, p.status, p.notes].join(" ");
+      results.push({
+        type: "pregnancy", id: p.id,
+        title: masked ? "Tap to reveal" : (p.status || p.testResult || "Pregnancy test"),
+        subtitle: p.testDate ? formatRelativeDate(p.testDate) : "",
+        searchText,
+        date: p.testDate || null,
+      });
+    });
+  }
 
-  (await ContraceptionRepository.getAll()).filter((e) => !e.isArchived).forEach((e) => {
-    const searchText = [e.method, e.formulation, e.notes].join(" ");
-    results.push({
-      type: "contraception", id: e.id,
-      title: e.method || "Contraception",
-      subtitle: e.startDate ? formatRelativeDate(e.startDate) : "",
-      searchText,
-      date: e.startDate || null,
-    });
-  });
-
-  // A `sensitive` pregnancy entry is masked behind a per-session "tap
-  // to reveal" in Menstrual Health's own list/detail views (ephemeral
-  // component state, never persisted, so it can't be resolved here) —
-  // showing its real status/notes in a search result would defeat that
-  // masking. Matches the module's own masked summaryLabel() exactly:
-  // a generic placeholder, findable by browsing but not by its content.
-  (await PregnancyRepository.getAll()).filter((p) => !p.isArchived).forEach((p) => {
-    const masked = !!p.sensitive;
-    const searchText = masked ? "pregnancy" : [p.testResult, p.status, p.notes].join(" ");
-    results.push({
-      type: "pregnancy", id: p.id,
-      title: masked ? "Tap to reveal" : (p.status || p.testResult || "Pregnancy test"),
-      subtitle: p.testDate ? formatRelativeDate(p.testDate) : "",
-      searchText,
-      date: p.testDate || null,
-    });
-  });
 
   return results;
 }
