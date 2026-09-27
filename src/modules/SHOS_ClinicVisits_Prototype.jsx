@@ -8,7 +8,7 @@ import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
-import { nowAsDateString, nowAsStoredDateTime, formatStoredDate } from "../calculations/dateInputHelpers";
+import { nowAsDateString, nowAsStoredDateTime, formatStoredDate, formatInstantDate } from "../calculations/dateInputHelpers";
 import {
   ClinicVisitsRepository, DEFAULT_CLINIC_VISIT, generateAdHocMedId,
   CLINICIAN_OPTIONS,
@@ -1496,7 +1496,12 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
         {/* ADDED 26 Aug 2026 — real ask: last-updated indicator. */}
         {visit.updatedAt && (
           <div style={{ textAlign: "center", fontSize: 11, color: T.textDisabled, marginTop: 16 }}>
-            Last updated {formatDate(visit.updatedAt)}
+            Last updated             {/* updatedAt is a REAL instant (new Date().toISOString()), not one of
+                 this app's fake-UTC stored values - so it renders in local
+                 time. A regression caught within the hour of the c628001
+                 date fix: these 5 sites went through the stored-date
+                 formatter, which pins to UTC, so a record edited at 00:30
+                 BST displayed the PREVIOUS day. */ formatInstantDate(visit.updatedAt)}
           </div>
         )}
       </div>

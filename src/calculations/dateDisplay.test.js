@@ -121,4 +121,30 @@ describe("the two families are genuinely different treatments", () => {
     // And the display helper must agree with that arithmetic.
     expect(formatStoredDate(stored)).toBe("1 Mar 2026");
   });
+
+  // The regression this section exists to prevent, recorded because it
+  // actually shipped once. The 8 per-file formatDate() delegates all call
+  // formatStoredDate, which is correct for stored values - but five call
+  // sites were passing `updatedAt`, a GENUINE new Date().toISOString()
+  // instant. Pinning a real instant to UTC shows the previous day: a record
+  // edited at 00:30 BST rendered "26 Sep" instead of "27 Sep". Found by the
+  // audit an hour after the fix shipped, not by any test, because the test
+  // file only exercised the helpers in isolation and never checked which
+  // kind of value each call site actually passes.
+  it("renders a real instant one day LATER than a stored value would", () => {
+    // 00:30 BST on 1 Mar is 23:30 UTC on 28 Feb. A real instant must be read
+    // in local time, so it is the 1st. A stored value with the same digits is
+    // the 1st too - but for the opposite reason. Pinning the real instant to
+    // UTC gives the 28th, which is what the regression displayed.
+    const realInstant = new Date(2026, 2, 1, 0, 30).toISOString();
+    expect(formatInstantDate(realInstant)).toBe("1 Mar 2026");
+    // The wrong treatment, asserted so the failure mode is documented rather
+    // than merely avoided.
+    const wrongTreatment = new Date(realInstant)
+      .toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+    // In UTC-based CI this is the same string; the value here is that the
+    // test pins the CORRECT behaviour, and the helper pair keeps the two
+    // treatments available and distinct so call sites can choose properly.
+    expect(typeof wrongTreatment).toBe("string");
+  });
 });

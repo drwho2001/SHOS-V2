@@ -27,7 +27,7 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { TestingRepository } from "../repositories/testingRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
-import { nowAsDateString, formatStoredDate } from "../calculations/dateInputHelpers";
+import { nowAsDateString, formatStoredDate, formatInstantDate } from "../calculations/dateInputHelpers";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -725,7 +725,12 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
         </SectionCard>
         {m.updatedAt && (
           <div style={{ textAlign: "center", fontSize: 11, color: T.textDisabled, marginTop: 16 }}>
-            Last updated {formatDate(m.updatedAt)}
+            Last updated             {/* updatedAt is a REAL instant (new Date().toISOString()), not one of
+                 this app's fake-UTC stored values - so it renders in local
+                 time. A regression caught within the hour of the c628001
+                 date fix: these 5 sites went through the stored-date
+                 formatter, which pins to UTC, so a record edited at 00:30
+                 BST displayed the PREVIOUS day. */ formatInstantDate(m.updatedAt)}
           </div>
         )}
       </div>

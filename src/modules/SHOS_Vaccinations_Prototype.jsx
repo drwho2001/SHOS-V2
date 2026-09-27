@@ -13,7 +13,7 @@ import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
-import { nowAsDateString, formatStoredDate } from "../calculations/dateInputHelpers";
+import { nowAsDateString, formatStoredDate, formatInstantDate } from "../calculations/dateInputHelpers";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
@@ -653,7 +653,12 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
         {/* ADDED 26 Aug 2026 — real ask: last-updated indicator. */}
         {v.updatedAt && (
           <div style={{ textAlign: "center", fontSize: 11, color: T.textDisabled, marginTop: 16 }}>
-            Last updated {formatDate(v.updatedAt)}
+            Last updated             {/* updatedAt is a REAL instant (new Date().toISOString()), not one of
+                 this app's fake-UTC stored values - so it renders in local
+                 time. A regression caught within the hour of the c628001
+                 date fix: these 5 sites went through the stored-date
+                 formatter, which pins to UTC, so a record edited at 00:30
+                 BST displayed the PREVIOUS day. */ formatInstantDate(v.updatedAt)}
           </div>
         )}
       </div>

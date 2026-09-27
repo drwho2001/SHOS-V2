@@ -12,7 +12,7 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
 import PartnerNotificationSheet from "./SHOS_PartnerNotification_Prototype";
 import { PartnerNotificationRepository } from "../repositories/partnerNotificationRepository";
-import { nowAsDateString, formatStoredDate } from "../calculations/dateInputHelpers";
+import { nowAsDateString, formatStoredDate, formatInstantDate } from "../calculations/dateInputHelpers";
 import {
   TestingRepository, DEFAULT_TEST,
   SETTING_OPTIONS, TESTING_FOR_OPTIONS,
@@ -1142,7 +1142,12 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
         {/* ADDED 26 Aug 2026 — real ask: last-updated indicator. */}
         {test.updatedAt && (
           <div style={{ textAlign: "center", fontSize: 11, color: T.textDisabled, marginTop: 16 }}>
-            Last updated {formatDate(test.updatedAt)}
+            Last updated             {/* updatedAt is a REAL instant (new Date().toISOString()), not one of
+                 this app's fake-UTC stored values - so it renders in local
+                 time. A regression caught within the hour of the c628001
+                 date fix: these 5 sites went through the stored-date
+                 formatter, which pins to UTC, so a record edited at 00:30
+                 BST displayed the PREVIOUS day. */ formatInstantDate(test.updatedAt)}
           </div>
         )}
       </div>
