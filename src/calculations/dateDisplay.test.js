@@ -71,8 +71,10 @@ describe("formatStoredDate - a stored date must never shift", () => {
 
   it("keeps the clock time on a stored date-time", () => {
     const out = formatStoredDateTime("2026-03-01T09:30:00.000Z");
-    expect(out).toContain("1 Mar 2026");
-    expect(out).toContain("9:30");
+    expectShowsDate(out, 2026, 2, 1);
+    // The time part is locale-formatted too ("9:30 AM" vs "09:30"), so assert
+    // on the digits rather than the rendered string.
+    expect(out).toMatch(/9:30/);
   });
 
   it("degrades safely on empty input rather than printing NaN", () => {
@@ -89,14 +91,16 @@ describe("formatInstantDate - a real instant must stay local", () => {
     // UTC. Pinning them to "UTC" would show the event at the wrong local
     // time - the mirror-image mistake of the stored-date bug.
     const real = new Date(2026, 2, 1, 15, 30).toISOString();
-    expect(formatInstantDate(real)).toBe("1 Mar 2026");
-    expect(formatInstantDateTime(real)).toContain("1 Mar 2026");
+    expectShowsDate(formatInstantDate(real), 2026, 2, 1);
+    expectShowsDate(formatInstantDateTime(real), 2026, 2, 1);
   });
 
   it("agrees with a plain local render, which is the point", () => {
+    // Compared via the parsed date rather than the string, so this holds in
+    // every locale - the plain local render IS the definition of correct here.
     const real = new Date(2026, 5, 15, 9, 0).toISOString();
     const naive = new Date(real).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
-    expect(formatInstantDate(real)).toBe(naive);
+    expectShowsDate(formatInstantDate(real), new Date(naive).getFullYear(), new Date(naive).getMonth(), new Date(naive).getDate());
   });
 
   it("degrades safely on empty input", () => {
