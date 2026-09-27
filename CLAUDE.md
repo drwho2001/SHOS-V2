@@ -139,6 +139,64 @@ oversight.
 
 ## Working conventions for this project specifically
 
+### The change procedure — read `docs/CHANGE-PROCEDURE.md`
+
+**The algorithm to follow when changing this code exists as a file, not as
+memory.** `docs/CHANGE-PROCEDURE.md` is the sequence: the PowerShell-encoding
+trap and why it happens, the change loop, how to write a commit message, the
+post-push CI check, the documentation requirement, and a table of the specific
+traps in this codebase (dynamic `/src/` imports only work on a dev server,
+`SVGElement` has no `.click()`, bottom-nav tabs have no text content, and so on).
+
+`node scripts/verify-changes.mjs` (also `npm run verify`) runs the whole gate —
+build → lint → unit tests → encoding → smoke suite → a docs check — and prints a
+pass/fail table. `--fast` skips the smoke suite. **Correctness should not depend
+on anyone remembering to run the right things in the right order**, which is
+exactly how this project has repeatedly shipped a green build with a real defect
+in it.
+
+A **pre-commit hook** (`.git/hooks/pre-commit`) blocks mojibake on every commit.
+Tested in both directions: it blocks a file containing real double-encoded bytes
+and lets a clean commit through. Bypass deliberately with `--no-verify` only.
+
+### PowerShell 5.1 is not UTF-8 — this has damaged the codebase four times
+
+`Get-Content` decodes using the system ANSI codepage (CP1252), not UTF-8, and
+`Set-Content -Encoding utf8` writes UTF-8 **with a BOM**. Chained, they
+double-encode every non-ASCII character. The result is *valid UTF-8 that displays
+as garbage*, which is why it survives the build, lint, every unit test and every
+smoke flow — none of which look at bytes.
+
+**Never use those cmdlets to read or write source.** Use the editor directly, or
+write a Node script (which handles UTF-8 correctly). Same for commit message
+files: `[IO.File]::WriteAllText($p, $msg, (New-Object Text.UTF8Encoding $false))`.
+
+**Never regex over JSX attributes or source to make a bulk edit.** Regex
+codemods damaged this codebase twice in one week — truncating `aria-label`
+closing braces, and mangling smoke-test flow labels into `[2/16][1/16]`. Make the
+edit with the editor, or write a script that *understands the structure*.
+
+### Before trusting a red build: check free memory — but fix recurring failures
+
+```powershell
+[math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1KB)
+```
+
+This machine has produced repeated **false** failures purely from memory
+pressure, and they have cost hours each time. `verify-changes.mjs` reports free
+RAM every run and flags a smoke failure that occurred while memory was marginal.
+
+**But a flow that fails the same way every time is a BROKEN FLOW, not the
+machine.** Two App Lock assertions were guessing at timing with a fixed
+`waitForTimeout(500)` and reading `aria-checked` immediately; they are now a
+bounded `waitForFunction` on the state actually asserted. **A test must never
+depend on how fast the machine is.**
+
+Related: killed smoke runs used to leave **orphaned `chrome-headless-shell`
+processes** (~190 MB) and `vite preview` servers behind — four of the former were
+found on this machine starving the next run. `verify-changes.mjs` now cleans up
+both on every exit path.
+
 - **Personal-alpha vs. public-alpha split**: this repo (`drwho2001/SHOS-V2`)
   is the public track. The owner's real personal data must never land
   here — seed/demo data only. History was rewritten once (27 Aug) to
@@ -334,6 +392,60 @@ this date; summarized here for durability.
 
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
+
+## Recently shipped (27 Sep 2026, latest - the sample data is disclosed and safe to clear, plus a committed change procedure)
+
+Two things: closing the loop on the app's worst first-impression problem, and
+turning "remember to run the checks" into a committed algorithm.
+
+**A fresh install disclosed nothing, and clearing it was unsafe.** ~93
+fabricated records — 16 contacts, 18 encounters, a positive gonorrhoea result —
+loaded with no UI string anywhere saying so (the only mention of "demo data" was
+a code comment), and the sole exit was "Reset all app data" three levels deep,
+worded as total data loss. Worse, that button was *wrong* for the job: seed
+arrays are returned as the fallback for an absent storage key, so the moment a
+user creates a record the sample data is persisted into the same array. Verified
+in code before designing around it. New `clearSampleData()` removes exactly the
+seed ids — derived per repository from the seed arrays so they cannot drift — and
+keeps everything the user added, at any time. A first-run banner on Home states
+the real record count and that the data is not theirs; Developer Tools offers the
+same clear as a separate action, with the reset beside it explicitly labelled as
+also destroying your own records; the export screen warns while sample data
+would ride along into a file meant for a clinic.
+
+**Two bugs the new flow caught in my own work, both worth more than the
+feature.** The clear's confirmation sat *inside* the `count > 0` block, so it
+vanished at the exact moment it became relevant — the user got no confirmation
+the action had worked. And clearing from Home left Developer Tools still
+displaying "96 sample records are still here", with a live-looking button that
+would then report there was nothing to remove. Each screen refreshed only its
+own copy; `onSampleDataChanged()` now lets them re-read on any clear. Found by
+the smoke flow, not by reading the code.
+
+**Smoke suite: 15 → 17 flows, and two recurring flakes actually fixed.** Both
+App Lock assertions read `aria-checked` after a fixed 500 ms wait; under memory
+pressure the click lands late and React has not re-rendered, so the flow failed
+while the app was correct. `CLAUDE.md` had already recorded this assertion
+failing here and written it off as "the machine" — which is how a test defect
+survives. Both are now a bounded `waitForFunction` on the state being asserted,
+and `openSettingsPrivacyScreen` confirms it landed on the right screen so a
+mis-navigation reports where it happens.
+
+**The change procedure is now a file, not a habit.** `docs/CHANGE-PROCEDURE.md`
+plus `node scripts/verify-changes.mjs` (build → lint → tests → encoding → smoke →
+docs check, one pass/fail table). A **pre-commit hook** blocks mojibake,
+tested in both directions. Three real defects in the script itself, all found by
+using it: `spawn EINVAL` because Windows cannot spawn a `.cmd` without a shell;
+a gate that threw and crashed the whole run instead of failing one gate; and
+**a server leak** — killing the spawned process left its grandchild holding the
+port, and Playwright's headless browsers survived too. Four orphaned
+`chrome-headless-shell` processes were then found on this machine holding ~190 MB,
+which is exactly what had been starving successive smoke runs and producing
+"environmental" failures. All cleanups are now on every exit path, verified by
+checking for leaks after a run.
+
+Verified: vitest 257/257 across 21 files, smoke suite 17/17 against a real
+production build, eslint clean, encoding guard clean, no leaked processes.
 
 ## Recently shipped (27 Sep 2026, later - a six-pass audit batch: stale data, a dead reset, frozen contact details, a calendar hour off, and two settings missing from every backup)
 

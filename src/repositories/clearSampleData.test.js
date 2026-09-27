@@ -225,3 +225,60 @@ describe("clearSampleData removes sample records and keeps real ones", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// The change listener, added after the smoke suite caught a real bug this file
+// could never have found: clearing the sample data from the first-run banner on
+// Home left the Developer Tools panel still displaying "96 sample records are
+// still here", with a live-looking button that would then report there was
+// nothing left to remove. Each screen refreshed only its own copy, so the two
+// permanently disagreed.
+//
+// That is a cross-component behaviour, so it needs the smoke flow to catch it
+// — but the mechanism underneath is plain logic and belongs here too.
+// ---------------------------------------------------------------------------
+describe("subscribers are told when the sample data changes", () => {
+  it("notifies on a successful clear", async () => {
+    const { clear } = await freshApp();
+    let calls = 0;
+    const off = clear.onSampleDataChanged(() => { calls += 1; });
+    await clear.clearSampleData();
+    expect(calls).toBe(1);
+    off();
+  });
+
+  it("stops notifying after unsubscribe", async () => {
+    const { clear } = await freshApp();
+    let calls = 0;
+    const off = clear.onSampleDataChanged(() => { calls += 1; });
+    off();
+    await clear.clearSampleData();
+    // A leaked listener would keep a mounted screen re-counting forever, which
+    // is a slow leak rather than an obvious bug - so it is asserted.
+    expect(calls).toBe(0);
+  });
+
+  it("notifies even when there was nothing to remove", async () => {
+    // Deliberate: a screen that skipped a repository still needs to stop
+    // claiming there is sample data here. A clear that "did nothing" is not a
+    // clear that changed nothing.
+    const { clear } = await freshApp();
+    await clear.clearSampleData();
+    let calls = 0;
+    const off = clear.onSampleDataChanged(() => { calls += 1; });
+    await clear.clearSampleData();
+    expect(calls).toBe(1);
+    off();
+  });
+
+  it("one broken listener cannot break the clear or the other listeners", async () => {
+    const { clear } = await freshApp();
+    let good = 0;
+    clear.onSampleDataChanged(() => { throw new Error("listener exploded"); });
+    const off = clear.onSampleDataChanged(() => { good += 1; });
+    const result = await clear.clearSampleData();
+    expect(result.removed).toBeGreaterThan(0);
+    expect(good).toBe(1);
+    off();
+  });
+});

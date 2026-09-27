@@ -1,13 +1,27 @@
 // BackupExportScreen — extracted verbatim from src/modules/SHOS_Settings_Prototype.jsx
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DownloadSimpleIcon as Download, UploadSimpleIcon as Upload, FileCsvIcon as FileCsv, LockIcon as Lock, FolderIcon as Folder, FunnelIcon as Filter, ClockIcon as Clock } from "@phosphor-icons/react";
 import { ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
+import { countSampleData, onSampleDataChanged } from "../../repositories/clearSampleData";
 
 export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFolder, chooseFolderAvailable, plainExportStatus, plainFolderExportStatus, onImportClick, onSelectiveExport, onCSVExport, onEncryptedExport, onAutoBackupSettings }) {
   const [darkMode] = useDarkModePreference();
+  // ADDED 27 Sep 2026 - how many sample records an export would still carry.
+  // See the warning row below for why this belongs on THIS screen.
+  const [sampleDataCount, setSampleDataCount] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => { countSampleData().then((r) => { if (!cancelled) setSampleDataCount(r.total); }).catch(() => {}); };
+    refresh();
+    // Same reason as the Developer Tools panel: the sample data can be cleared
+    // from the first-run banner on Home, and a stale "N sample records are in
+    // this export" warning would keep telling the user to clear data they have
+    // already cleared. The warning outliving the problem is its own bug.
+    return onSampleDataChanged(refresh);
+  }, []);
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
   // Local copy of SettingsScreen's own SettingsRow — that one is
@@ -33,6 +47,27 @@ export function BackupExportScreen({ onClose, doPlainExport, doPlainExportToFold
       <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, padding: "12px 16px 4px" }}>
         Everything here makes a copy of your data or brings one back in — nothing here ever leaves this device unless you choose to send it somewhere yourself.
       </div>
+      {/* ADDED 27 Sep 2026 — warn before exporting while sample data is present.
+          buildBackup() reads through the repositories, so a user who exports on
+          day one archives the made-up contacts, encounters and a POSITIVE STI
+          result into a file they are quite likely to hand to a clinic or move
+          to a new phone. The first-run banner on Home says the data is sample
+          data, but the user may have dismissed it and still be weeks from
+          clearing anything — and the moment it actually matters is here, at the
+          point of export.
+
+          Advisory rather than a blocker: exporting is legitimate (someone may
+          genuinely want the demo data to look at), and a dialog here would be
+          the wrong place to force a decision. */}
+      {sampleDataCount > 0 && (
+        <div style={{ margin: "8px 16px 0", padding: "10px 12px", borderRadius: 10, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant }}>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, lineHeight: 1.45 }}>
+            Heads up: {sampleDataCount} of the records in this export are still SHOS's made-up
+            sample data, not yours. Clear it first if this file is going to a clinic or a new
+            phone — it’s in Settings → Support → Developer tools.
+          </div>
+        </div>
+      )}
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "12px 16px 8px", overflow: "hidden" }}>
         {/* CHANGED — real bug found in the user's own testing: passing
             `exportBackup` directly meant the DOM click's SyntheticEvent

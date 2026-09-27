@@ -11,6 +11,7 @@ import { hasUnbackedChanges } from "../../storage/backupService";
 import { ErrorLogRepository } from "../../repositories/errorLogRepository";
 import { localStorageAdapter } from "../../storage/storageAdapter";
 import { resetAllData } from "../../repositories/resetAllData";
+import { countSampleData, clearSampleData, onSampleDataChanged } from "../../repositories/clearSampleData";
 import { findOrphanReferences } from "../../calculations/orphanReferenceCheck";
 import { ContactRepository } from "../../repositories/contactRepository";
 import { EncounterRepository } from "../../repositories/encounterRepository";
@@ -159,6 +160,37 @@ export function DeveloperToolsScreen({ onClose }) {
     setResetStage("done");
   };
 
+  // ADDED 27 Sep 2026 - the non-destructive counterpart to handleReset above.
+  // Kept as genuinely separate state and a genuinely separate action rather than
+  // a mode of the reset, because the difference matters: reset empties every
+  // collection including the user's own records, this removes only the ids that
+  // came from the seed arrays. Both report what they did, because a partial
+  // clear that silently left sample data behind would be worse than useless.
+  const [sampleCount, setSampleCount] = useState(0);
+  const [clearingSample, setClearingSample] = useState(false);
+  const [sampleResult, setSampleResult] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => { countSampleData().then((r) => { if (!cancelled) setSampleCount(r.total); }).catch(() => {}); };
+    refresh();
+    // Re-read whenever the sample data is cleared ANYWHERE, not just here. The
+    // first-run banner on Home is the other place that can clear it, and
+    // without this the panel sat there claiming 96 records were still present
+    // with a button that would then report there was nothing to remove. Found
+    // by the smoke flow, not by reading the code.
+    return onSampleDataChanged(refresh);
+  }, []);
+  const sampleDataCount = sampleCount;
+  const handleClearSample = async () => {
+    setClearingSample(true);
+    try {
+      const result = await clearSampleData();
+      setSampleResult(result);
+    } finally {
+      setClearingSample(false);
+    }
+  };
+
   return (
     <div ref={dialogRef} role="dialog" aria-label="Developer tools" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
@@ -288,7 +320,7 @@ export function DeveloperToolsScreen({ onClose }) {
           <>
             <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>
               <AlertTriangle size={16} color={ACTION.red} style={{ flexShrink: 0, marginTop: 1 }} />
-              <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>This permanently deletes every contact, encounter, medication, log, test, clinic visit, and registry entry on this device. There's no undo — export a backup first if you're not sure.</div>
+              <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>This permanently deletes EVERYTHING on this device — your contacts, encounters, medications, logs, tests, clinic visits, the sample data, and every preference, including your App Lock PIN. There's no undo — export a backup first if you're not sure. To remove only the made-up example data, cancel and use “Clear sample data” instead.</div>
             </div>
             {/* ADDED 26 Aug 2026 — real ask: warn explicitly if there
                 are genuinely unbacked-up changes, not just a generic
@@ -312,10 +344,66 @@ export function DeveloperToolsScreen({ onClose }) {
             </div>
           </>
         ) : (
-          <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setResetStage("confirming")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-            <Trash2 size={17} color={ACTION.red} />
-            <span style={{ fontSize: 14, color: ACTION.red, fontWeight: 600 }}>Reset all app data</span>
-          </div>
+          <>
+            {/* ADDED 27 Sep 2026 - "Clear sample data" as a genuinely separate
+                action, sitting directly above "Reset all app data".
+
+                Why this is not just a rename of the reset button: repositories
+                load their seed array as the fallback for an absent storage key,
+                so the moment a user creates a record the sample data is
+                persisted into the same array as their own. "Reset all app data"
+                would then destroy THEIR data too. This removes only the ids
+                that came from the seed arrays, so it is safe at any time and
+                always keeps real records - see clearSampleData.js.
+
+                Placed above rather than below so the non-destructive option is
+                read first. Someone who came here to get rid of the demo
+                content was previously offered one button, worded as total data
+                loss, with no way to tell the two situations apart. */}
+            {sampleDataCount > 0 && (
+              <div style={{ marginBottom: 12, padding: "12px", borderRadius: 12, background: darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}` }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>
+                  {sampleDataCount} sample records are still here
+                </div>
+                <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.45, marginBottom: 10 }}>
+                  SHOS starts with made-up example data so you can look around before adding
+                  anything. Removing it keeps every record you have added yourself.
+                </div>
+                <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClearSample(); } }} onClick={handleClearSample}
+                  aria-label="Clear the sample data"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: darkMode ? DARK.surface : NEUTRAL.surface, fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: clearingSample ? "default" : "pointer", opacity: clearingSample ? 0.6 : 1 }}>
+                  {clearingSample ? "Clearing…" : "Clear sample data"}
+                </div>
+              </div>
+            )}
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setResetStage("confirming")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <Trash2 size={17} color={ACTION.red} />
+              <span style={{ fontSize: 14, color: ACTION.red, fontWeight: 600 }}>Reset all app data</span>
+            </div>
+            {/* ADDED 27 Sep 2026 - the one-line distinction. The two buttons
+                above look similar and mean very different things, and a user
+                has no way to tell them apart from the labels alone. */}
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginTop: 6, lineHeight: 1.45 }}>
+              This one deletes everything, including your own records. If you only want to remove
+              the example data, use “Clear sample data” above.
+            </div>
+            {sampleResult && (
+              // FIXED 27 Sep 2026 — this used to sit INSIDE the
+              // `sampleDataCount > 0` block above, which meant it disappeared
+              // at the exact moment it became relevant: clearing drives the
+              // count to zero, so the panel unmounted and the user got no
+              // confirmation the action had worked at all. Caught by the smoke
+              // flow asserting on the reported count. A confirmation that only
+              // exists while there is still a problem to confirm is not a
+              // confirmation.
+              <div style={{ marginTop: 8, fontSize: 12, color: sampleResult.failed.length ? ACTION_TEXT_SAFE.red : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), lineHeight: 1.45 }}>
+                {sampleResult.removed > 0
+                  ? `Removed ${sampleResult.removed} sample record${sampleResult.removed === 1 ? "" : "s"}. Anything you added yourself was kept.`
+                  : "There was no sample data left to remove."}
+                {sampleResult.failed.length > 0 && ` Could not clear: ${sampleResult.failed.map((f) => f.name).join(", ")}.`}
+              </div>
+            )}
+          </>
         )}
       </div>
       </div>

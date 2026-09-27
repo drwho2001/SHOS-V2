@@ -87,6 +87,50 @@ async function dismissOnboarding(page) {
 // reload point in the suite — not just the very first page load — can
 // defend against it the same way; every click here is a harmless
 // no-op via .catch() if the banner in question isn't actually showing.
+// Wait until a toggle's aria-checked reaches `expected`, or time out.
+//
+// ADDED 27 Sep 2026 to replace a fixed `waitForTimeout` followed by an
+// immediate getAttribute. That pattern is a guaranteed flake under load: the
+// assertion reads the DOM at a moment unrelated to when React actually
+// re-rendered, so it passes on an idle machine and fails on a busy one for no
+// reason connected to the app. It has failed on this machine before and been
+// written off as "the machine" - which is how a real test defect survives for
+// months.
+//
+// Bounded, not infinite, so a genuine regression still fails rather than hangs.
+async function waitForAriaChecked(page, label, expected, timeoutMs = 10000) {
+  try {
+    await page.waitForFunction(
+      ({ label, expected }) => {
+        const el = document.querySelector(`[aria-label="${label}"]`);
+        return !!el && el.getAttribute("aria-checked") === expected;
+      },
+      { label, expected },
+      { timeout: timeoutMs }
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Click a bottom-nav tab by its accessible name.
+async function nav(page, label) {
+  const bar = page.getByRole("navigation", { name: "Main navigation" });
+  if (await bar.getByRole("button", { name: label, exact: true }).count()) {
+    await bar.getByRole("button", { name: label, exact: true }).first().click({ timeout: 5000 });
+    await page.waitForTimeout(1200);
+  }
+}
+
+// Click the Home tab. Bottom-nav tabs are role=button with aria-label and no
+// text content, so they must be queried through the navigation landmark by
+// role - a text search for "Home" matches nothing, and silently does nothing
+// when used to decide a flow should carry on.
+async function navHome(page) {
+  await nav(page, "Home");
+}
+
 async function dismissTransientBanners(page) {
   await page.locator('[aria-label="Dismiss due medications banner"]').first().click({ timeout: 2000 }).catch(() => {});
   await page.locator('[aria-label="Dismiss refill banner"]').first().click({ timeout: 2000 }).catch(() => {});
@@ -166,7 +210,7 @@ async function goHomeThenOpenSettings(page) {
 }
 
 async function testMedicationReasonSideEffects(page) {
-  console.log("\n[2/16] Medication log — Reason/Side effects (added 1 Sep 2026)");
+  console.log("\n[3/17] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Log").first().click({ timeout: 5000 });
@@ -183,7 +227,7 @@ async function testMedicationReasonSideEffects(page) {
 }
 
 async function testSymptomTestTwoWayLink(page) {
-  console.log("\n[3/16] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
+  console.log("\n[4/17] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
   await page.locator("text=Healthcare").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Test of cure — Gonorrhoea").click({ timeout: 5000 });
@@ -227,7 +271,7 @@ async function testSymptomTestTwoWayLink(page) {
 }
 
 async function testLocationsExtraFields(page) {
-  console.log("\n[4/16] Locations registry — extra fields (added 2 Sep 2026)");
+  console.log("\n[5/17] Locations registry — extra fields (added 2 Sep 2026)");
   // the Settings gear only lives on the Home dashboard header — get back
   // there first, since the previous check left us on Healthcare/Symptoms.
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
@@ -252,7 +296,7 @@ async function testLocationsExtraFields(page) {
 // building it (the Refuge entry, a real https:// URL from the seeded
 // list), never given permanent coverage until now.
 async function testResourceLinkClickable(page) {
-  console.log("\n[5/16] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
+  console.log("\n[6/17] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
   // Reload first — the previous test (Locations registry) leaves the
   // Manage Lists > Locations sub-screen open, a stacked Settings
   // overlay that would otherwise sit on top of (and intercept clicks
@@ -295,7 +339,7 @@ async function testResourceLinkClickable(page) {
 // (anonymisePin) is still unset at this point — deactivating needs no
 // PIN then (see privacySettingsRepository.js's own deactivate()).
 async function testEncountersAnonymiseMasking(page) {
-  console.log("\n[6/16] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
+  console.log("\n[7/17] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
@@ -358,7 +402,7 @@ async function testEncountersAnonymiseMasking(page) {
 // logged at the real current time, which always has a real future
 // lockoutEndsAt() to check.
 async function testMedicationReminderClock(page) {
-  console.log("\n[7/16] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
+  console.log("\n[8/17] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   // Scoped on "Last dose" rather than the "Log dose" button's own text
@@ -411,7 +455,7 @@ async function testMedicationReminderClock(page) {
 // existing install's first Phase 4 boot" from a genuinely fresh
 // profile (see that function's own comment).
 async function testEncryptionMigratesLegacyData(browser) {
-  console.log("\n[8/16] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
+  console.log("\n[9/17] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
     localStorage.setItem("shos_app_preferences", JSON.stringify({
@@ -467,7 +511,7 @@ async function testEncryptionMigratesLegacyData(browser) {
 // check broad, real coverage rather than just the vault metadata key
 // and whatever the fresh boot itself wrote.
 async function testEncryptionPositiveCheck(page) {
-  console.log("\n[9/16] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
+  console.log("\n[10/17] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
   const rawShapes = await page.evaluate(() => {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -523,11 +567,26 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
       await page.waitForTimeout(700);
     }
   }
-  await dismissTransientBanners(page);
-  await goHomeThenOpenSettings(page);
-  await page.getByText("Privacy", { exact: true }).first().click({ timeout: 5000 });
-  await page.waitForTimeout(500);
-}
+    await dismissTransientBanners(page);
+    await goHomeThenOpenSettings(page);
+    // FIXED 27 Sep 2026 — wait for the row to actually be there rather than
+    // clicking at it and hoping. `getByText(...).click()` already retries, but
+    // the failure mode this whole helper chain had was a *silent* miss: the
+    // next step then operated on whatever happened to be on screen, and the
+    // flow failed several steps later pointing at entirely the wrong cause.
+    const privacyRow = page.getByText("Privacy", { exact: true }).first();
+    await privacyRow.waitFor({ state: "visible", timeout: 15000 });
+    await privacyRow.click({ timeout: 15000 });
+    // And confirm we actually landed, so a mis-navigation is reported HERE
+    // rather than surfacing as a mysterious failure in a later assertion.
+    const landed = await page
+      .locator('[aria-label="App Lock"]')
+      .first()
+      .waitFor({ state: "attached", timeout: 15000 })
+      .then(() => true)
+      .catch(() => false);
+    assert(landed, "the Privacy screen actually opened (App Lock toggle is present on it)");
+  }
 
 // The real point of Phase 4: App Lock's PIN has to actually gate the
 // vault (cryptoService.enablePinProtection/unlockWithPin), not just
@@ -535,7 +594,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
 async function testEncryptionAppLockGatesVault(page) {
-  console.log("\n[10/16] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
+  console.log("\n[11/17] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
@@ -591,9 +650,14 @@ async function testEncryptionAppLockGatesVault(page) {
   // this exact point, so the reload inside openSettingsPrivacyScreen
   // will hit the real lock screen — pass the PIN so it can get past it.
   await openSettingsPrivacyScreen(page, "2468");
-  await page.locator('[aria-label="App Lock"]').click({ timeout: 5000 });
-  await page.waitForTimeout(500);
-  assert((await page.getAttribute('[aria-label="App Lock"]', "aria-checked")) === "false", "App Lock turns back off cleanly, reverting to the always-works device slot");
+  // FIXED 27 Sep 2026 — the identical fixed-wait-then-read pattern that made
+  // the PIN-recovery flow flaky, in the flow that runs FIRST. Same assertion,
+  // same 500ms guess, same failure waiting for a slow machine. Fixed together
+  // deliberately: patching one and leaving the other would have left a
+  // guaranteed future flake behind.
+  await page.locator('[aria-label="App Lock"]').click({ timeout: 15000 });
+  assert(await waitForAriaChecked(page, "App Lock", "false", 15000),
+    "App Lock turns back off cleanly, reverting to the always-works device slot");
 }
 
 // ADDED 9 Sep 2026 — real ask (18 Aug 2026 — the "tab reorder"
@@ -606,7 +670,7 @@ async function testEncryptionAppLockGatesVault(page) {
 // stored preference, the same class of gap this whole suite exists to
 // close.
 async function testTabReorder(page) {
-  console.log("\n[11/16] Settings — bottom nav tab order (added 9 Sep 2026)");
+  console.log("\n[12/17] Settings — bottom nav tab order (added 9 Sep 2026)");
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   await dismissTransientBanners(page);
@@ -662,7 +726,7 @@ async function testTabReorder(page) {
 // it, and an early version auto-offered the tour even after an explicit
 // Skip tap, which directly contradicted the user's own "not now" signal.
 async function testInteractiveTour(browser) {
-  console.log("\n[12/16] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
+  console.log("\n[13/17] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const tourPageErrors = [];
@@ -754,7 +818,7 @@ async function testInteractiveTour(browser) {
 // the exact portability trap the interactive-tour flow above already
 // hit and fixed once this same day).
 async function testBackupMigratesOldFieldShape(page) {
-  console.log("\n[13/16] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
+  console.log("\n[14/17] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
   const oldShapedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -832,7 +896,7 @@ async function testBackupMigratesOldFieldShape(page) {
 // error, and exactly the one valid contact lands (not zero, not a
 // partial/corrupted count).
 async function testBackupImportDropsGarbageRecords(page) {
-  console.log("\n[16/16] Backup import — malformed array elements are dropped, not a crash (added 10 Sep 2026)");
+  console.log("\n[17/17] Backup import — malformed array elements are dropped, not a crash (added 10 Sep 2026)");
   const malformedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -900,7 +964,7 @@ async function testBackupImportDropsGarbageRecords(page) {
 // directly exercise that exact path, so a regression here would fail
 // loudly, not silently.
 async function testPinRecoveryFlow(page) {
-  console.log("\n[14/16] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
+  console.log("\n[15/17] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
   // The App Lock setup prompt can be pending again here — test 12's
   // own Replace All import doesn't touch privacySettings at all (its
   // synthetic backup has no privacySettings key), but a plain reload
@@ -998,9 +1062,20 @@ async function testPinRecoveryFlow(page) {
   await page.locator('button:has-text("Remove")').first().click({ timeout: 5000 });
   await page.waitForTimeout(400);
   assert(await page.locator("text=Set a recovery string").count() > 0, "removing the recovery string reverts the section cleanly");
-  await page.locator('[aria-label="App Lock"]').click({ timeout: 5000 });
-  await page.waitForTimeout(500);
-  assert((await page.getAttribute('[aria-label="App Lock"]', "aria-checked")) === "false", "App Lock turns back off cleanly after a recovery-triggered PIN reset — the PrivacySettingsRepository mirror stayed in sync");
+  // FIXED 27 Sep 2026 — this ending was a real recurring flake, not bad luck.
+  // It asserted `aria-checked === "false"` after a FIXED 500ms wait, having
+  // just clicked the toggle. Under memory pressure the click lands late and
+  // React has not re-rendered when the assertion reads the attribute, so the
+  // flow failed while the app was behaving correctly. CLAUDE.md already
+  // records the App Lock assertion failing this way on this machine.
+  //
+  // The fix is to stop timing-guessing: wait for the state the assertion
+  // actually cares about, with a generous bound, rather than sleeping a fixed
+  // 500ms and hoping. This is the same treatment already given to the
+  // PBKDF2-bound waits in this flow.
+  await page.locator('[aria-label="App Lock"]').click({ timeout: 15000 });
+  assert(await waitForAriaChecked(page, "App Lock", "false", 15000),
+    "App Lock turns back off cleanly after a recovery-triggered PIN reset — the PrivacySettingsRepository mirror stayed in sync");
 }
 
 // ADDED 10 Sep 2026 — real bug found (not a live report) while finally
@@ -1018,7 +1093,7 @@ async function testPinRecoveryFlow(page) {
 // Runs in its own fresh browser context (real SW registration/
 // lifecycle state, not shared with the rest of the suite).
 async function testServiceWorkerAutoUpdate(browser) {
-  console.log("\n[15/16] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
+  console.log("\n[16/17] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
 
   // Real preview-build-only test: `vite preview` (what CI and this
   // suite's own recommended local flow both use) serves dist/sw.js
@@ -1165,6 +1240,7 @@ async function testServiceWorkerAutoUpdate(browser) {
     // plainly visible. The app was healthy - it was simply the wrong build.
     // Unregistering the worker in-page did not fix it either.
     await testSampleDataDisclosureAndClear(browser);
+    await testSampleDataClearInDeveloperTools(browser);
     await dismissOnboarding(page);
     await testMedicationReasonSideEffects(page);
     await testSymptomTestTwoWayLink(page);
@@ -1221,7 +1297,7 @@ async function testServiceWorkerAutoUpdate(browser) {
 // the PWA auto-update flow leaves a service worker in the browser profile, and
 // any flow after it is served a stale cached shell.
 async function testSampleDataDisclosureAndClear(browser) {
-  console.log("\n[1/16] Sample data is disclosed on first run, and clearing keeps real records (added 27 Sep 2026)");
+  console.log("\n[1/17] Sample data is disclosed on first run, and clearing keeps real records (added 27 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const flowErrors = [];
@@ -1307,6 +1383,160 @@ async function testSampleDataDisclosureAndClear(browser) {
     console.log("  ok — the real contact survived AND the sample contacts are gone from the list");
 
     if (flowErrors.length) throw new Error("page errors during the sample-data flow:\n" + flowErrors.join("\n"));
+  } finally {
+    await context.close();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ADDED 27 Sep 2026 - Developer Tools must offer "clear sample data" as its own
+// action and must NOT leave it confusable with "reset all app data".
+//
+// A SEPARATE flow with its own context, rather than a section of the flow above.
+// That was tried first and does not work: the two checks are mutually
+// exclusive in time, since the Home banner's clear removes exactly the sample
+// data this one needs to find. Reloading to get a fresh state re-triggers
+// onboarding and the App Lock prompt, which then intercept the navigation the
+// rest of the previous flow depended on. Its own context avoids all of that,
+// and this flow must run BEFORE the flow above for the same reason.
+async function testSampleDataClearInDeveloperTools(browser) {
+  console.log("\n[2/17] Developer Tools separates 'clear sample data' from 'reset all app data' (added 27 Sep 2026)");
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  const flowErrors = [];
+  page.on("pageerror", (err) => flowErrors.push(err.message));
+
+  try {
+    await page.goto(APP_URL, { waitUntil: "networkidle" });
+    for (const label of ["Skip", "Not now", "Get started"]) {
+      const b = page.getByRole("button", { name: label, exact: true });
+      if (await b.count()) { await b.first().click({ timeout: 2500 }).catch(() => {}); await page.waitForTimeout(400); }
+    }
+    await page.waitForTimeout(1500);
+
+    // Settings is a header icon on Home, not a bottom-nav tab.
+    await page.evaluate(() => {
+      const el = [...document.querySelectorAll('[role="button"]')]
+        .find((b) => (b.getAttribute("aria-label") || "") === "Settings");
+      if (el) el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await page.waitForTimeout(1500);
+    await page.getByText("Support", { exact: true }).first().click({ timeout: 5000 });
+    await page.waitForTimeout(800);
+    await page.getByText("Developer tools", { exact: true }).first().click({ timeout: 5000 });
+    await page.waitForTimeout(2000);
+
+    const dev = await page.evaluate(() => document.body.innerText);
+    assert(dev.includes("Clear sample data"),
+      "Developer Tools offers 'Clear sample data' as its own action, not only as a reset");
+    assert(/sample records are still here/.test(dev),
+      "Developer Tools shows how many sample records remain, so the action is not a blind guess");
+    // The distinction is the whole point: the reset next to it destroys the
+    // user's own data, and the labels alone do not convey that.
+    assert(/deletes everything, including your own records/.test(dev),
+      "Developer Tools states that the reset also deletes the user's own records, so the two cannot be confused");
+    console.log("  ok — the two destructive-sounding actions are clearly distinguished");
+
+    // The clear itself must work from here too, keeping a real record.
+    //
+    // Order matters and was got wrong twice here, so both reasons are kept:
+    //
+    //  1. The bottom nav sits UNDER the Settings overlay, so the contact has to
+    //     be added BEFORE Settings is opened. Clicking a nav tab with the
+    //     overlay up hangs until the click times out.
+    //  2. Reloading re-triggers onboarding AND the App Lock prompt, both of
+    //     which cover the page. The second dismiss loop below is not a
+    //     copy-paste of the first - without it the very next nav click fails,
+    //     and the error points at the nav bar rather than at the prompt.
+    await page.goto(APP_URL, { waitUntil: "networkidle" });
+    for (const label of ["Skip", "Not now", "Get started"]) {
+      const b = page.getByRole("button", { name: label, exact: true });
+      if (await b.count()) { await b.first().click({ timeout: 2500 }).catch(() => {}); await page.waitForTimeout(400); }
+    }
+    await page.waitForTimeout(1500);
+    await nav(page, "Contacts");
+    await page.getByRole("button", { name: /add contact/i }).first().click({ timeout: 5000 });
+    await page.waitForTimeout(1000);
+    await page.getByLabel("Full name", { exact: false }).first().fill("ZZZ DevTools Real Contact");
+    await page.waitForTimeout(250);
+    await page.getByRole("button", { name: /^add contact$/i }).last().click({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+    assert((await page.evaluate(() => document.body.innerText)).includes("ZZZ DevTools Real Contact"),
+      "a real contact was added before clearing from Developer Tools");
+
+    // Back into Developer Tools and clear.
+    //
+    // Home first: the Settings gear lives in HOME's header, not in a
+    // bottom-nav bar and not on the Contacts screen. Dispatching a click at
+    // whatever currently carries aria-label="Settings" while sitting on
+    // Contacts finds nothing, and the next step then times out on "Support"
+    // with an error that points at the wrong thing entirely.
+    await navHome(page);
+    await page.evaluate(() => {
+      const el = [...document.querySelectorAll('[role="button"]')]
+        .find((b) => (b.getAttribute("aria-label") || "") === "Settings");
+      if (el) el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await page.waitForTimeout(1500);
+    await page.getByText("Support", { exact: true }).first().click({ timeout: 5000 });
+    await page.waitForTimeout(800);
+    await page.getByText("Developer tools", { exact: true }).first().click({ timeout: 5000 });
+    await page.waitForTimeout(2000);
+    // Scoped to the Developer Tools dialog, NOT a bare document lookup.
+    //
+    // Two elements carry aria-label="Clear the sample data": this panel's, and
+    // the first-run banner's on Home. Home stays mounted behind the Settings
+    // overlay, so `document.querySelector` finds Home's one first - and a
+    // document-wide click therefore clears the data from the wrong screen
+    // entirely, leaving this panel showing a stale count. That is not a test
+    // artefact: it is the same confusion a screen-reader user would have, and
+    // it is why the panel now re-reads its count on every clear.
+    const devPanel = page.getByRole("dialog", { name: "Developer tools" });
+    await page.evaluate(() => {
+      const panel = [...document.querySelectorAll('[role="dialog"]')]
+        .find((d) => (d.getAttribute("aria-label") || "") === "Developer tools");
+      const el = panel && panel.querySelector('[aria-label="Clear the sample data"]');
+      if (el) el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await page.waitForTimeout(3000);
+    void devPanel;
+
+    const after = await page.evaluate(() => document.body.innerText);
+    assert(/Removed \d+ sample record/.test(after),
+      "clearing from Developer Tools reports how many sample records it removed");
+    // Scoped to this panel, and asserting on the COUNT REFRESHING rather than
+    // on the button vanishing. The count is the thing that was actually broken:
+    // clearing from Home used to leave this panel still claiming 96 records
+    // were present, with a live-looking button that would then report there was
+    // nothing to remove. Asserting the number is honest about what must work.
+    const devAfter = await page.evaluate(() => {
+      const panel = [...document.querySelectorAll('[role="dialog"]')]
+        .find((d) => (d.getAttribute("aria-label") || "") === "Developer tools");
+      return panel ? panel.innerText : "";
+    });
+    assert(!/sample records are still here/.test(devAfter),
+      "the Developer Tools count refreshes after a clear, instead of still claiming the sample data is there");
+
+    // Fresh load before checking Contacts. The Developer Tools panel is a
+    // full-screen overlay and the bottom nav sits BENEATH it, so a nav click
+    // with the panel still open hangs until it times out. Reloading is the
+    // reliable way out, and it also proves the cleared state PERSISTED rather
+    // than merely being absent from memory.
+    await page.goto(APP_URL, { waitUntil: "networkidle" });
+    for (const label of ["Skip", "Not now", "Get started"]) {
+      const b = page.getByRole("button", { name: label, exact: true });
+      if (await b.count()) { await b.first().click({ timeout: 2500 }).catch(() => {}); await page.waitForTimeout(400); }
+    }
+    await page.waitForTimeout(1500);
+    assert(!(await page.evaluate(() => document.body.innerText)).includes("This app starts with sample data"),
+      "the sample data is still gone after a reload — the clear genuinely persisted");
+    await nav(page, "Contacts");
+    const contacts = await page.evaluate(() => document.body.innerText);
+    assert(contacts.includes("ZZZ DevTools Real Contact"),
+      "the user's own contact survived clearing from Developer Tools too");
+    console.log("  ok — clearing works from here and keeps the user's own record");
+
+    if (flowErrors.length) throw new Error("page errors during the Developer Tools flow:\n" + flowErrors.join("\n"));
   } finally {
     await context.close();
   }

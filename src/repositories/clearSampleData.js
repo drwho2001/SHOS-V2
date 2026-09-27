@@ -108,6 +108,38 @@ export async function countSampleData() {
 }
 
 /**
+ * Subscribers are notified after every successful clear.
+ *
+ * WHY THIS EXISTS: caught by the smoke flow, and it is a genuine UX bug rather
+ * than a test artefact. Two screens show this count - the first-run banner on
+ * Home and the Developer Tools panel - and each only refreshed its own copy
+ * when IT performed the clear. Clearing from Home left Developer Tools still
+ * displaying "96 sample records are still here" with a live-looking button
+ * that would then report there was nothing left to remove. The user is left
+ * looking at a screen that contradicts what just happened to them.
+ *
+ * A tiny subscription rather than a shared cache, deliberately: the count is
+ * cheap to recompute, so a stale cache would introduce a second way for the
+ * number to be wrong. Listeners just re-read it.
+ *
+ * Follows the same shape darkModePreference.js already uses for its own
+ * notify-listener path.
+ */
+const listeners = new Set();
+
+/** Register a listener; returns an unsubscribe function. */
+export function onSampleDataChanged(listener) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function notify() {
+  listeners.forEach((l) => {
+    try { l(); } catch { /* a broken listener must not break the clear */ }
+  });
+}
+
+/**
  * Removes every sample record, leaving real records untouched.
  *
  * Never throws for one failing repository - a partial clear that reports what
@@ -138,5 +170,8 @@ export async function clearSampleData() {
     }
   }
 
+  // Always notify, even on a partial clear: a screen that skipped a repository
+  // still needs to stop claiming there is sample data here.
+  notify();
   return { removed, kept, failed };
 }
