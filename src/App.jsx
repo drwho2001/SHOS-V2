@@ -1771,6 +1771,25 @@ export default function App() {
   // Vaccinations), so a search result for e.g. a Vaccination just
   // needs to say so, not require new plumbing.
   const navigateToRecord = (tabKey, recordId, subTab) => {
+    // FIXED 27 Sep 2026 - real navigation bug, found by auditing the app as a
+    // new user. Tapping a record from inside a Settings sub-screen (Calendar
+    // is the one that does this today) switched the underlying tab and opened
+    // the record's detail correctly - but the Settings overlay stayed open on
+    // top of it, so the user was left staring at the Settings main menu
+    // having apparently done nothing. The navigation really happened; it was
+    // just invisible. One more back press closed Settings and revealed it.
+    //
+    // Fixed at this shared chokepoint rather than in CalendarScreen, because
+    // the bug is not Calendar's: `navigateTo` and `navigateToRecord` change
+    // `active`, and the record renders in <main> - which is UNDERNEATH both
+    // full-screen overlays. Any overlay that hands off to a record needs them
+    // closed, so every present and future caller is fixed at once.
+    //
+    // `onClose` in CalendarScreen still runs and is still needed - it closes
+    // the Calendar sub-screen itself, which this does not touch.
+    setShowSettings(false);
+    setSettingsInitialScreen(null);
+    setShowSearch(false);
     navigateTo(tabKey, subTab);
     setPendingOpenRecordId(recordId);
   };

@@ -57,7 +57,7 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 // contactRepository.js into the real in-app editable option list
 // system already used elsewhere (Vaccine, Reason for visit, etc.).
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
-import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomplete, getContactableVia, normalizeTag, extractKinkRoleFromText } from "../calculations/contactCalculations";
+import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomplete, getContactableVia, normalizeTag, extractKinkRoleFromText, hasPhysicalDetail, mergeCummerRow } from "../calculations/contactCalculations";
 // ADDED 19 Aug 2026 — Anonymise mode. See privacySettingsRepository.js
 // for the full reasoning. Read-only from Contacts' side, same
 // one-directional pattern as every other cross-module read in this app.
@@ -591,6 +591,37 @@ function AddressAutocomplete({ label, value, onChange, T, placeholder, onCityDet
       )}
     </div>
   );
+}
+
+// FIXED 27 Sep 2026 — true when a record already has a value in any of the
+// "Physical & health" fields that the gender gate hides. Defined once in
+// contactCalculations.js's hasPhysicalDetail() so this file and My Profile
+// cannot drift apart again — they each hid the identical bug, and the rule it
+// encodes ("never hide an already-entered answer") is a product rule, not a
+// per-screen detail. See that function's own comment.
+
+// One row of the three-part "Ejaculation" group.
+//
+// FIXED 27 Sep 2026 — real data loss, found by auditing this as a first-time
+// user. All three rows used to read AND write the whole `cummer` array, via
+// MultiSelectChips' toggle handler, which replaces the entire array:
+//   onChange(has ? value.filter(v => v !== opt) : [...value, opt])
+// Since `value` was the full array, picking "Big load" in the volume row and
+// then "Squirter" in the style row silently discarded "Big load". Worse, each
+// row renders `value` as its own selected set, so after that the VOLUME row
+// also showed nothing selected — giving no clue the value had been dropped
+// rather than never applied. Real data loss, on first entry, in the most
+// intimate section of the most-used module.
+//
+// The merge logic lives in contactCalculations.js's mergeCummerRow() rather
+// than here, so it is defined once (this file and My Profile each had their
+// own copy of the bug) and is unit-testable at all — the bug survived build,
+// lint, vitest and the whole smoke suite precisely because it lived in render
+// code. See that function's own comment for the full reasoning.
+function CummerRow({ T, label, form, set, options }) {
+  const mine = (form.cummer || []).filter((v) => options.includes(v));
+  const onChange = (next) => set("cummer")(mergeCummerRow(form.cummer, next, options));
+  return <MultiSelectChips T={T} label={label} value={mine} onChange={onChange} options={options} />;
 }
 
 function MultiSelectChips({ label, value, onChange, options, T, onAddNew, listName }) {
@@ -1721,6 +1752,16 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   // not a new persisted field; defaults open if there's already real
   // data to show.
   const [revealContraceptionAnyway, setRevealContraceptionAnyway] = useState(false);
+  // FIXED 27 Sep 2026 — the "Physical & health" fields were hidden entirely
+  // for gender "female" with no way back, while the Contraception gate
+  // directly below this sheet has had a "+ Track anyway" link since 11 Sep.
+  // Same principle, applied to one gate and not the other in the same file:
+  // don't presume, but never structurally block. A user whose Gender is
+  // "female" — including a cis woman with a penis, or anyone who set Gender
+  // early and later decided to record these — otherwise had NO path in the
+  // entire UI to length/girth/foreskin/chastity/ejaculation. This state is
+  // ephemeral component state, not a persisted field, matching that gate.
+  const [revealPhysicalAnyway, setRevealPhysicalAnyway] = useState(false);
   // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
   // — resolved once here for the Stated kinks/Limits overlap-warning
   // check below.
@@ -1927,7 +1968,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
               Trans-female, since anatomy varies enough there that
               presuming it away could hide something genuinely
               relevant. Nothing here is deleted, just not shown. */}
-          {form.gender?.trim().toLowerCase() !== "female" && (
+          {(form.gender?.trim().toLowerCase() !== "female" || revealPhysicalAnyway || hasPhysicalDetail(form)) && (
           <>
           <SelectField T={T} label="Length (penis)" value={form.length} onChange={set("length")} options={LENGTH_OPTIONS} />
           <SelectField T={T} label="Girth (penis)" value={form.thickness} onChange={set("thickness")} options={GIRTH_OPTIONS} />
@@ -1944,10 +1985,18 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           {/* ADDED — real ask: a short descriptor, since "N/A" alone
               doesn't explain the choice being made. */}
           <div style={{ fontSize: 11, color: T.textDisabled, marginTop: -6, marginBottom: 6 }}>Only relevant if chastity is something they're genuinely into — leave as N/A otherwise.</div>
-          <MultiSelectChips T={T} label="Ejaculation — frequency" value={form.cummer} onChange={set("cummer")} options={CUMMER_FREQUENCY_OPTIONS} />
-          <MultiSelectChips T={T} label="Ejaculation — volume" value={form.cummer} onChange={set("cummer")} options={CUMMER_VOLUME_OPTIONS} />
-          <MultiSelectChips T={T} label="Ejaculation — style" value={form.cummer} onChange={set("cummer")} options={CUMMER_STYLE_OPTIONS} />
+          <CummerRow T={T} label="Ejaculation — frequency" form={form} set={set} options={CUMMER_FREQUENCY_OPTIONS} />
+          <CummerRow T={T} label="Ejaculation — volume" form={form} set={set} options={CUMMER_VOLUME_OPTIONS} />
+          <CummerRow T={T} label="Ejaculation — style" form={form} set={set} options={CUMMER_STYLE_OPTIONS} />
           </>
+          )}
+          {/* FIXED 27 Sep 2026 — the escape hatch this gate never had. Same
+              shape and wording as the Contraception gate below, so the two
+              gates in one sheet now behave identically. */}
+          {form.gender?.trim().toLowerCase() === "female" && !revealPhysicalAnyway && !hasPhysicalDetail(form) && (
+            <div role="button" tabIndex={0} onClick={() => setRevealPhysicalAnyway(true)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRevealPhysicalAnyway(true); } }}
+              style={{ fontSize: 12, color: T.contactsTealText, cursor: "pointer", padding: "4px 0" }}>+ Record these details anyway</div>
           )}
           {/* ADDED — real ask: contraception, shown when Gender is
               Female or Trans-male (see the same gating condition used
@@ -2359,7 +2408,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               Known to be on/Last tested below) when Gender is exactly
               "Female" — see the edit sheet's own comment on why
               Trans-female is deliberately excluded from this match. */}
-          {contact.gender?.trim().toLowerCase() !== "female" && (
+          {contact.gender?.trim().toLowerCase() !== "female" || hasPhysicalDetail(contact) ? (
           <>
           <ReadRow T={T} label="Length (penis)" value={hideFurther ? MASKED : contact.length} />
           <ReadRow T={T} label="Girth (penis)" value={hideFurther ? MASKED : contact.thickness} />
@@ -2368,7 +2417,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <ReadRow T={T} label="Chastity status" value={contact.chastityStatus} />
           <ReadRow T={T} label="Ejaculation" value={hideFurther ? MASKED : contact.cummer} />
           </>
-          )}
+          ) : null}
           {/* CHANGED 11 Sep 2026 — real gap found (a demographics audit):
               the exact "female"/"trans-male" gate below never shows for
               a non-binary/custom-typed gender, with no way to override

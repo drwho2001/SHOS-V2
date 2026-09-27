@@ -800,6 +800,19 @@ function LogTab({ meds, T, onOpenCorrection }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", padding: "0 16px 100px" }}>
+      {/* FIXED 27 Sep 2026 — this tab rendered COMPLETELY BLANK with no
+          medications. The Registry tab in this same file was already given an
+          empty state for exactly this bug class (see the comment at its own
+          render block); the two sibling tabs were missed, so tapping Log or
+          Inventory on a new account showed the tab underline, the stat tiles,
+          and then nothing at all — with no hint that it was even a list.
+          Matching the Registry tab's existing wording rather than inventing a
+          new shape. */}
+      {byDay.length === 0 && !anyVoided && (
+        <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
+          No doses or refills logged yet. Add a medication first, then logging a dose or refill from its card builds this history.
+        </div>
+      )}
       {anyVoided && (
         <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setShowVoided((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", padding: "8px 0 4px", fontSize: 12, color: T.textSecondary, fontWeight: 600 }}>
           {showVoided ? "Hide voided entries" : "Show voided entries"}
@@ -861,6 +874,13 @@ function InventoryTab({ meds, T, onEditMedication, onCorrectStock }) {
   const isDesktopWidth = useIsDesktopWidth();
   return (
     <div style={isDesktopWidth ? { columnCount: 2, columnGap: 24, padding: "0 16px 100px" } : { display: "flex", flexDirection: "column", padding: "0 16px 100px" }}>
+      {/* FIXED 27 Sep 2026 — same blank-tab bug as LogTab above, same round,
+          same file. `meds.map` with no fallback rendered nothing at all. */}
+      {meds.length === 0 && (
+        <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
+          Nothing in stock yet. Add a medication with stock tracking on, and its current level appears here.
+        </div>
+      )}
       {meds.map((m) => {
         const s = computeStock(m);
         const requested = !!m.refillRequestedAt;

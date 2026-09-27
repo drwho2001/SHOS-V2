@@ -156,3 +156,84 @@ export function isContactIncomplete(contact) {
   const hasRolePosition = isFilled(contact.bdsmRole) || isFilled(contact.sexualPosition);
   return !(hasIdentifier && hasAge && hasCity && hasRolePosition);
 }
+
+
+// ---------------------------------------------------------------------------
+// Added 27 Sep 2026 — two helpers extracted out of Contacts and My Profile,
+// which each carried their own copy of the logic (and which each hid the
+// identical bug, described below). Shared here so the behaviour is defined
+// once and is unit-testable.
+// ---------------------------------------------------------------------------
+
+/**
+ * True when a record already holds a value in any of the fields that the
+ * gender gate hides.
+ *
+ * WHY THIS EXISTS: "Physical & health" fields were hidden entirely when
+ * Gender was exactly "female", with no escape hatch at all — while the
+ * Contraception gate in the very same edit sheet had carried a
+ * "+ Track anyway" link since 11 Sep. Same app, same sheet, same principle
+ * ("don't presume, but never structurally block") applied to one gate and not
+ * the other. A user whose Gender is "female" — including a cis woman with a
+ * penis, or anyone who set Gender early and later decided to record these —
+ * otherwise had no path in the entire UI to length/girth/foreskin/chastity/
+ * ejaculation.
+ *
+ * It also handles the read side: a record saved before the gate existed, or
+ * one whose Gender was changed afterwards, would hide data the user has no
+ * way to reach. Never hide an already-entered answer.
+ *
+ * Chastity defaults to the literal "N/A" on every contact, so it is excluded
+ * here — treating that default as "real data" would make this always true and
+ * defeat the gate entirely.
+ */
+export function hasPhysicalDetail(record) {
+  if (!record) return false;
+  return !!(
+    record.length ||
+    record.thickness ||
+    record.foreskin ||
+    record.foreskinDetail ||
+    (Array.isArray(record.cummer) && record.cummer.length > 0) ||
+    (record.chastityStatus && record.chastityStatus !== "N/A")
+  );
+}
+
+/**
+ * Merges one row's own slice of the shared `cummer` array back in, leaving
+ * every other row's selections untouched.
+ *
+ * WHY THIS EXISTS: "Ejaculation" is three chip rows (frequency / volume /
+ * style) over THREE DISJOINT option sets, but all three used to read and
+ * write the WHOLE array through MultiSelectChips' toggle handler, which
+ * replaces the entire array:
+ *
+ *     onChange(has ? value.filter(v => v !== opt) : [...value, opt])
+ *
+ * So picking "Big load" in the volume row and then "Squirter" in the style
+ * row silently discarded "Big load". Each row renders `value` as its own
+ * selected set, so the volume row then also showed nothing selected — giving
+ * no clue the value had been dropped rather than never applied. Real data
+ * loss, on first entry, in the most intimate section of the most-used module.
+ *
+ * The field's single-array SHAPE is correct and deliberately unchanged: the
+ * seed data itself stores ["Multiple loads", "Big load"] — a frequency AND a
+ * volume together — so there is no migration here and no existing record
+ * changes meaning. The bug was only that each row claimed ownership of all
+ * of it.
+ *
+ * A value typed via "Add new" belongs to no row's option set, so it lands in
+ * the "others" side of the merge and is preserved. That is deliberate: a value
+ * the user invented must not be dropped by editing an unrelated row.
+ *
+ * @param {string[]} current  the existing full `cummer` array
+ * @param {string[]} next     the row's own new selection, after its toggle
+ * @param {string[]} options  the option set THIS row owns
+ * @returns {string[]} the merged array
+ */
+export function mergeCummerRow(current, next, options) {
+  const all = Array.isArray(current) ? current : [];
+  const others = all.filter((v) => !options.includes(v));
+  const updated = (Array.isArray(next) ? next : []).filter((v) => options.includes(v));
+  return [...others, ...updated];
+}

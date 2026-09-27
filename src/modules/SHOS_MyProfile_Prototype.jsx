@@ -62,7 +62,7 @@ import {
 } from "../repositories/contactRepository";
 import { KinkRegistry, KINK_ROLE_OPTIONS, resolveKinkSynonym, analyzeKinkEntry, getKinkRoleOptions } from "../registries/kinkRegistry";
 // ADDED — real fix: same normalizeTag Contacts/Encounters use.
-import { normalizeTag } from "../calculations/contactCalculations";
+import { normalizeTag, hasPhysicalDetail, mergeCummerRow } from "../calculations/contactCalculations";
 import { findClosestMatch, fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { ChemsRegistry, resolveChemSynonym } from "../registries/chemsRegistry";
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
@@ -384,6 +384,25 @@ function SelectField({ label, value, onChange, options, T }) {
       </select>
     </div>
   );
+}
+
+// FIXED 27 Sep 2026 — the "Physical" gate, like Contacts', now uses the
+// shared hasPhysicalDetail() from contactCalculations.js so the two files
+// cannot drift apart again. See that function's comment.
+
+// One row of the three-part "Ejaculation" group.
+//
+// FIXED 27 Sep 2026 — real data loss. All three rows read AND wrote the whole
+// `cummer` array through MultiSelectChips' toggle handler, which replaces the
+// entire array, so picking "Big load" in the volume row then "Squirter" in
+// the style row silently discarded "Big load". The merge logic now lives in
+// contactCalculations.js's mergeCummerRow() — shared with Contacts, which had
+// the identical bug — so it is defined once and unit-testable. See that
+// function's comment for the full reasoning.
+function CummerRow({ T, label, form, set, options }) {
+  const mine = (form.cummer || []).filter((v) => options.includes(v));
+  const onChange = (next) => set("cummer")(mergeCummerRow(form.cummer, next, options));
+  return <MultiSelectChips label={label} value={mine} onChange={onChange} options={options} T={T} />;
 }
 
 function MultiSelectChips({ label, value, onChange, options, T, onAddNew }) {
@@ -916,6 +935,13 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
   // own gender-based default (its own "Show pregnancy tracking anyway"
   // link) and for the same field on a Contact's own edit sheet.
   const [revealContraceptionAnyway, setRevealContraceptionAnyway] = useState(false);
+  // FIXED 27 Sep 2026 — the "Physical & health" fields were hidden entirely
+  // for gender "female" with no way back, while the Contraception gate
+  // directly below has had a "+ Track anyway" link since 11 Sep. Same
+  // principle applied to one gate and not the other in the same sheet: don't
+  // presume, but never structurally block. Ephemeral component state, not a
+  // persisted field, matching that gate.
+  const [revealPhysicalAnyway, setRevealPhysicalAnyway] = useState(false);
 
   return (
     <div role="dialog" aria-label="Edit My Profile" ref={editSheetRef} tabIndex={0} data-myprofile-sheet style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, overflowY: "auto", zIndex: 200 }}>
@@ -998,7 +1024,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
             that presuming it away could hide something genuinely
             relevant. Nothing here is deleted, just not shown; picking
             a different Gender later brings it straight back. */}
-        {form.gender?.trim().toLowerCase() !== "female" && (
+        {form.gender?.trim().toLowerCase() !== "female" || revealPhysicalAnyway || hasPhysicalDetail(form) ? (
         <SectionCard title="Physical" T={T}>
           <SelectField label="Length (penis)" value={form.length} onChange={set("length")} options={LENGTH_OPTIONS} T={T} />
           <SelectField label="Girth (penis)" value={form.thickness} onChange={set("thickness")} options={GIRTH_OPTIONS} T={T} />
@@ -1010,11 +1036,18 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
           {/* ADDED — parity with the same descriptor already added to
               Contacts' Chastity field. */}
           <div style={{ fontSize: 11, color: T.textDisabled, marginTop: -6, marginBottom: 6 }}>Only relevant if chastity is something you're genuinely into — leave as N/A otherwise.</div>
-          <MultiSelectChips label="Ejaculation — frequency" value={form.cummer} onChange={set("cummer")} options={CUMMER_FREQUENCY_OPTIONS} T={T} />
-          <MultiSelectChips label="Ejaculation — volume" value={form.cummer} onChange={set("cummer")} options={CUMMER_VOLUME_OPTIONS} T={T} />
-          <MultiSelectChips label="Ejaculation — style" value={form.cummer} onChange={set("cummer")} options={CUMMER_STYLE_OPTIONS} T={T} />
+          <CummerRow T={T} label="Ejaculation — frequency" form={form} set={set} options={CUMMER_FREQUENCY_OPTIONS} />
+          <CummerRow T={T} label="Ejaculation — volume" form={form} set={set} options={CUMMER_VOLUME_OPTIONS} />
+          <CummerRow T={T} label="Ejaculation — style" form={form} set={set} options={CUMMER_STYLE_OPTIONS} />
+          {/* FIXED 27 Sep 2026 — the escape hatch this gate never had, matching
+              the Contraception gate's shape and wording in the same sheet. */}
+          {form.gender?.trim().toLowerCase() === "female" && !revealPhysicalAnyway && !hasPhysicalDetail(form) && (
+            <div role="button" tabIndex={0} onClick={() => setRevealPhysicalAnyway(true)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRevealPhysicalAnyway(true); } }}
+              style={{ fontSize: 12, color: T.contactsTealText, cursor: "pointer", padding: "4px 0" }}>+ Record these details anyway</div>
+          )}
         </SectionCard>
-        )}
+        ) : null}
 
         {/* SUPERSEDED — real design decision: contraception is no
             longer edited here. contraceptionRepository.js is the
@@ -1205,16 +1238,16 @@ function ProfileDataView({ profile, T }) {
       <SectionCard title="Chems" T={T}>
         <ReadRow label="Known chems" value={chemNames.length > 0 ? chemNames : "None known"} T={T} />
       </SectionCard>
-      {profile.gender?.trim().toLowerCase() !== "female" && (
-      <SectionCard title="Physical" T={T}>
+        {profile.gender?.trim().toLowerCase() !== "female" || hasPhysicalDetail(profile) ? (
+        <SectionCard title="Physical" T={T}>
         <ReadRow label="Length (penis)" value={profile.length} T={T} />
         <ReadRow label="Girth (penis)" value={profile.thickness} T={T} />
         <ReadRow label="Foreskin" value={profile.foreskin} T={T} />
         <ReadRow label="Foreskin fit" value={profile.foreskinDetail} T={T} />
         <ReadRow label="Chastity status" value={profile.chastityStatus} T={T} />
         <ReadRow label="Ejaculation" value={profile.cummer} T={T} />
-      </SectionCard>
-      )}
+        </SectionCard>
+        ) : null}
       {/* CHANGED 11 Sep 2026 — real gap found (a demographics audit):
           widened to also show whenever real active contraception data
           already exists, on top of the original gender check — never

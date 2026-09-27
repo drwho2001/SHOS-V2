@@ -236,11 +236,33 @@ function SingleEncounterSelect({ value, onChange, T, items }) {
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Start — the exposure Encounter</div>
-      <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label="Start — the exposure Encounter"
-        style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
-        <option value="">Select an Encounter…</option>
-        {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
-      </select>
+      {/* FIXED 27 Sep 2026 — a genuine dead end, found by auditing this as a
+          first-time user. With zero Encounters the <select> below rendered
+          one placeholder option and nothing else, so `canSave` (which
+          requires startEncounterId) could never become true: the form simply
+          refused to save, with no explanation and no way forward. Meanwhile
+          this module's own empty state told the user to "Tap + to start one
+          from an existing Encounter" — an instruction that is impossible to
+          follow at that moment.
+
+          An episode is BY DEFINITION anchored to an Encounter, so requiring
+          one is correct and the real fix is not to drop that. It is to say so
+          plainly, and point at the one place that can actually create the
+          missing prerequisite. */}
+      {items.length === 0 ? (
+        <div style={{ padding: "12px", borderRadius: radius.sm, background: T.surfaceVariant, border: `1px solid ${T.border}`, fontSize: 12, color: T.textSecondary, lineHeight: 1.5 }}>
+          An episode is built around an Encounter — the possible exposure it
+          groups together. You don't have any Encounters logged yet, so add one
+          first (the Encounters tab, or Quick add on Home), then come back to
+          start an episode around it.
+        </div>
+      ) : (
+        <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label="Start — the exposure Encounter"
+          style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
+          <option value="">Select an Encounter…</option>
+          {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+        </select>
+      )}
     </div>
   );
 }
@@ -699,6 +721,13 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
     return Object.fromEntries(entries);
   }, [episodes, resultNameById], {});
   const isDesktopWidth = useIsDesktopWidth();
+  // FIXED 27 Sep 2026 — only needed to decide which of two honest empty-state
+  // sentences to show (see the empty state below): an episode is always
+  // anchored to an Encounter, so "no Encounters yet" is a materially different
+  // situation from "you have Encounters but haven't grouped one yet", and
+  // telling someone to "Tap + to start one from an existing Encounter" when
+  // none exist is an instruction they cannot follow.
+  const encounterCount = useLoadedMemo(() => EncounterRepository.getAll().then((all) => all.filter((e) => !e.isArchived).length), [], 0);
   // ADDED — real ask: desktop's multi-column grid read as cluttered
   // once episode counts grew, so group consecutively by month — "Open"
   // episodes (sorted first, see `sorted`'s own comparator above) stay
@@ -723,7 +752,17 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
       <div style={{ padding: "12px 16px 100px" }}>
         {sorted.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
-            No episodes yet. An episode groups a possible exposure together with everything relevant to it — the encounter(s), and any tests or treatment that followed — so you can see the whole thing at a glance instead of hunting across separate records. Tap + to start one from an existing Encounter.
+            No episodes yet. An episode groups a possible exposure together with everything relevant to it — the encounter(s), and any tests or treatment that followed — so you can see the whole thing at a glance instead of hunting across separate records.
+            {/* FIXED 27 Sep 2026 — this line used to end "Tap + to start one
+                from an existing Encounter", which is an instruction a
+                first-time user cannot follow: with no Encounters yet, the
+                episode form's own Encounter picker is empty and can never
+                satisfy its own save condition. Branch on whether there's
+                anything to start one FROM, so the copy matches what's
+                actually possible. */}
+            {encounterCount === 0
+              ? " An episode always starts from an Encounter, so log an Encounter first — then you can group the tests and treatment that followed it."
+              : " Tap + to start one from an existing Encounter."}
           </div>
         )}
         {isDesktopWidth ? (
