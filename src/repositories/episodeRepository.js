@@ -105,6 +105,19 @@ let seedEpisodes = [
 let episodes = null;
 let nextNumber = null;
 let loadPromise = null;
+// ADDED 27 Sep 2026 - the ids of this repository's own sample data, derived
+// from the seed array above rather than hardcoded, so it cannot drift when
+// the sample data is edited.
+//
+// Why this exists: on a fresh install the seed is returned as the fallback
+// for an absent storage key, so a brand-new user's first view is a stranger's
+// medical history - including a positive STI result - with nothing in the UI
+// saying so. `clearSampleData()` needs to remove exactly these and nothing
+// else, because by the time a user has added a record of their own, the seed
+// and the real data live in the same array and are indistinguishable except by
+// id. "Delete everything" would take their data with it.
+export const SEED_EPISODE_IDS = new Set(seedEpisodes.map((r) => r.id));
+
 async function ensureLoaded() {
   if (episodes === null) {
     if (!loadPromise) loadPromise = storage.load(STORAGE_KEY, seedEpisodes);
