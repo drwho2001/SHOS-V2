@@ -92,3 +92,69 @@ export function realTimestampFromStored(storedIso) {
     d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()
   ).getTime();
 }
+
+// ---------------------------------------------------------------------------
+// DISPLAY — the other half of the same problem, and the fix for a real
+// cross-platform bug.
+//
+// The file header explains that a STORED date is a deliberate "Z"-suffixed
+// lie: the digits are literal wall-clock time and the Z is not true UTC. So
+// `new Date("2026-03-01T00:30:00.000Z")` is a real instant 30 minutes AFTER
+// UTC midnight, and asking the browser to render it in the LOCAL timezone
+// re-applies the very offset the storage format was invented to avoid.
+//
+// A handful of call sites had worked this out individually — ClinicVisits'
+// formatDate carries a comment explaining exactly this, and it passes
+// `timeZone: "UTC"`. The other copies of the same function did not, so the
+// app rendered the SAME saved date differently depending on which screen you
+// looked at it on, and differently again depending on where the device was.
+// Measured: identical input rendered as "1 Mar" in London and "28 Feb" in
+// New York. Invisible in the UK, so it was never caught by eye.
+//
+// These two helpers make the correct choice the easy one. They are
+// deliberately NOT interchangeable:
+//
+//   formatStoredDate / formatStoredDateTime
+//     For a STORED date (the fake-UTC lie). Reads the digits back literally.
+//   formatInstantDate / formatInstantDateTime
+//     For a REAL instant — `createdAt`/`updatedAt`, which come from a genuine
+//     `new Date().toISOString()` and ARE true UTC. These must render in local
+//     time, because the user is looking at when something really happened
+//     relative to themselves.
+//
+// Getting this backwards is the trap the naming exists to prevent: pinning a
+// real instant to "UTC" shows an event at the wrong local time, and letting a
+// stored date render locally shifts its date. See dateDisplay.test.js, which
+// asserts the two families disagree where they must and agree where they must.
+
+/** Renders a STORED date (fake-UTC digits) as e.g. "1 Mar 2026". */
+export function formatStoredDate(storedIso) {
+  if (!storedIso) return "-";
+  return new Date(storedIso).toLocaleDateString(undefined, {
+    day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
+  });
+}
+
+/** Renders a STORED date-time (fake-UTC digits) as e.g. "1 Mar 2026, 09:30". */
+export function formatStoredDateTime(storedIso) {
+  if (!storedIso) return "-";
+  const d = new Date(storedIso);
+  return `${d.toLocaleDateString(undefined, {
+    day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
+  })}, ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", timeZone: "UTC" })}`;
+}
+
+/** Renders a REAL instant (createdAt/updatedAt) in the device's local time. */
+export function formatInstantDate(iso) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleDateString(undefined, {
+    day: "numeric", month: "short", year: "numeric",
+  });
+}
+
+/** Renders a REAL instant (createdAt/updatedAt) in local date + time. */
+export function formatInstantDateTime(iso) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  return `${d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}, ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+}

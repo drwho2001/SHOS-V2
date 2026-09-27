@@ -27,7 +27,7 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { TestingRepository } from "../repositories/testingRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
-import { nowAsDateString } from "../calculations/dateInputHelpers";
+import { nowAsDateString, formatStoredDate } from "../calculations/dateInputHelpers";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -62,9 +62,20 @@ const PLACEHOLDER_HINTS = {
   Other: { value: "e.g. 42", unit: "e.g. units" },
 };
 
+// FIXED 27 Sep 2026 - this was one of 8 per-file copies of a date
+// formatter, and the copies did NOT agree. ClinicVisits' copy had been
+// individually fixed to pass timeZone: "UTC" (with a comment explaining
+// why); the other 7 were still rendering the device's LOCAL timezone.
+// This app's stored dates are a deliberate "Z"-suffixed lie (see
+// dateInputHelpers.js's header), so a local render re-applies the exact
+// offset that storage format exists to avoid, and can shift the DATE.
+// Measured: the same stored value rendered "1 Mar 2026" in London and
+// "28 Feb 2026" in New York, so the app could show one date for a record
+// on one screen and a different date for the same record elsewhere.
+// Invisible in the UK, which is why it survived this long. Now delegates
+// to the shared helper, so the next copy cannot drift again.
 function formatDate(iso) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  return formatStoredDate(iso);
 }
 
 function SectionCard({ title, T, children }) {

@@ -14,6 +14,7 @@ import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 // single tap with zero confirmation, unlike ~15 other real destructive
 // deletes app-wide that all go through this one shared component.
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import { formatStoredDate } from "../calculations/dateInputHelpers";
 
 const TYPE_OPTIONS = ["Test result", "Prescription", "ID", "Photo", "Other"];
 
@@ -50,9 +51,20 @@ async function loadAllAttachments() {
   return [...fromTests, ...fromVisits].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 }
 
+// FIXED 27 Sep 2026 - this was one of 8 per-file copies of a date
+// formatter, and the copies did NOT agree. ClinicVisits' copy had been
+// individually fixed to pass timeZone: "UTC" (with a comment explaining
+// why); the other 7 were still rendering the device's LOCAL timezone.
+// This app's stored dates are a deliberate "Z"-suffixed lie (see
+// dateInputHelpers.js's header), so a local render re-applies the exact
+// offset that storage format exists to avoid, and can shift the DATE.
+// Measured: the same stored value rendered "1 Mar 2026" in London and
+// "28 Feb 2026" in New York, so the app could show one date for a record
+// on one screen and a different date for the same record elsewhere.
+// Invisible in the UK, which is why it survived this long. Now delegates
+// to the shared helper, so the next copy cannot drift again.
 function formatDate(iso) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  return formatStoredDate(iso);
 }
 
 function isImage(dataUrl) {

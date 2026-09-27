@@ -8,7 +8,7 @@ import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
-import { nowAsDateString, nowAsStoredDateTime } from "../calculations/dateInputHelpers";
+import { nowAsDateString, nowAsStoredDateTime, formatStoredDate } from "../calculations/dateInputHelpers";
 import {
   ClinicVisitsRepository, DEFAULT_CLINIC_VISIT, generateAdHocMedId,
   CLINICIAN_OPTIONS,
@@ -83,14 +83,14 @@ function buildDark() {
 }
 const radius = RADIUS;
 
+// CHANGED 27 Sep 2026 - this copy was the CORRECT one (it had been
+// individually fixed to pass timeZone: "UTC" while seven other files kept
+// the buggy unguarded version, so the app rendered the same saved date
+// differently depending on which screen you looked at). It now delegates
+// to the shared helper like the other 7, so the fix lives in ONE place
+// instead of being correct in exactly one of eight copies.
 function formatDate(iso) {
-  if (!iso) return "—";
-  // timeZone: "UTC" reads the stored digits back literally rather than
-  // applying a real timezone shift — this app's stored dates are a
-  // deliberate "Z"-suffixed lie (see dateInputHelpers.js), not real
-  // UTC, so a plain toLocaleDateString() would shift the displayed
-  // time by the device's UTC offset (0 in GMT, 1h in BST).
-  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  return formatStoredDate(iso);
 }
 
 // ADDED 26 Aug 2026 — the main visit date now genuinely carries a
