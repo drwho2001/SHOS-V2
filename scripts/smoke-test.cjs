@@ -94,6 +94,31 @@ async function dismissTransientBanners(page) {
   await page.locator('[aria-label="Dismiss clinic visit banner"]').first().click({ timeout: 2000 }).catch(() => {});
   await page.locator('[aria-label="Dismiss vaccination banner"]').first().click({ timeout: 2000 }).catch(() => {});
   await page.locator('[aria-label="Dismiss update notice"]').first().click({ timeout: 2000 }).catch(() => {});
+  // ADDED 27 Sep 2026 - the first-run sample-data banner. It is NOT a
+  // position:fixed overlay like the five above, so it was missed when this
+  // helper was written, and its absence broke flow 3 in a confusing way: the
+  // banner adds content to Home, and goHomeThenOpenSettings() reaches the
+  // Settings gear by a fixed pixel coordinate, so a taller Home changed what
+  // sat at that point and the click landed on nothing.
+  //
+  // Confirmed by A/B rather than guessed: with the banner stashed the whole
+  // suite passes 15/15; with it restored, flow 3 fails.
+  //
+  // Dispatched in-page rather than clicked, which is load-bearing: the banner
+  // sits below the fold on a 390x844 viewport, so an ordinary Playwright click
+  // SCROLLS it into view first - and goHomeThenOpenSettings() then reaches the
+  // gear by a fixed coordinate that assumes Home is scrolled to the top.
+  // Clicking it properly broke every flow that opens Settings, with an error
+  // message ("a click on Manage lists intercepted by the Settings dialog")
+  // that pointed nowhere near the real cause.
+  //
+  // Dismissed via "Keep it for now" rather than the clear action, so the sample
+  // data survives for the flows that still need it.
+  await page.evaluate(() => {
+    const el = [...document.querySelectorAll('[role="button"]')]
+      .find((b) => (b.textContent || "").trim() === "Keep it for now");
+    if (el) el.click();
+  }).catch(() => {});
   await page.waitForTimeout(300);
 }
 
@@ -141,7 +166,7 @@ async function goHomeThenOpenSettings(page) {
 }
 
 async function testMedicationReasonSideEffects(page) {
-  console.log("\n[1/15] Medication log — Reason/Side effects (added 1 Sep 2026)");
+  console.log("\n[2/16] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Log").first().click({ timeout: 5000 });
@@ -158,7 +183,7 @@ async function testMedicationReasonSideEffects(page) {
 }
 
 async function testSymptomTestTwoWayLink(page) {
-  console.log("\n[2/15] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
+  console.log("\n[3/16] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
   await page.locator("text=Healthcare").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Test of cure — Gonorrhoea").click({ timeout: 5000 });
@@ -202,7 +227,7 @@ async function testSymptomTestTwoWayLink(page) {
 }
 
 async function testLocationsExtraFields(page) {
-  console.log("\n[3/15] Locations registry — extra fields (added 2 Sep 2026)");
+  console.log("\n[4/16] Locations registry — extra fields (added 2 Sep 2026)");
   // the Settings gear only lives on the Home dashboard header — get back
   // there first, since the previous check left us on Healthcare/Symptoms.
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
@@ -227,7 +252,7 @@ async function testLocationsExtraFields(page) {
 // building it (the Refuge entry, a real https:// URL from the seeded
 // list), never given permanent coverage until now.
 async function testResourceLinkClickable(page) {
-  console.log("\n[4/15] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
+  console.log("\n[5/16] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
   // Reload first — the previous test (Locations registry) leaves the
   // Manage Lists > Locations sub-screen open, a stacked Settings
   // overlay that would otherwise sit on top of (and intercept clicks
@@ -270,7 +295,7 @@ async function testResourceLinkClickable(page) {
 // (anonymisePin) is still unset at this point — deactivating needs no
 // PIN then (see privacySettingsRepository.js's own deactivate()).
 async function testEncountersAnonymiseMasking(page) {
-  console.log("\n[5/15] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
+  console.log("\n[6/16] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
@@ -333,7 +358,7 @@ async function testEncountersAnonymiseMasking(page) {
 // logged at the real current time, which always has a real future
 // lockoutEndsAt() to check.
 async function testMedicationReminderClock(page) {
-  console.log("\n[6/15] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
+  console.log("\n[7/16] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   // Scoped on "Last dose" rather than the "Log dose" button's own text
@@ -386,7 +411,7 @@ async function testMedicationReminderClock(page) {
 // existing install's first Phase 4 boot" from a genuinely fresh
 // profile (see that function's own comment).
 async function testEncryptionMigratesLegacyData(browser) {
-  console.log("\n[7/15] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
+  console.log("\n[8/16] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
     localStorage.setItem("shos_app_preferences", JSON.stringify({
@@ -442,7 +467,7 @@ async function testEncryptionMigratesLegacyData(browser) {
 // check broad, real coverage rather than just the vault metadata key
 // and whatever the fresh boot itself wrote.
 async function testEncryptionPositiveCheck(page) {
-  console.log("\n[8/15] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
+  console.log("\n[9/16] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
   const rawShapes = await page.evaluate(() => {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -510,7 +535,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
 async function testEncryptionAppLockGatesVault(page) {
-  console.log("\n[9/15] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
+  console.log("\n[10/16] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
@@ -581,7 +606,7 @@ async function testEncryptionAppLockGatesVault(page) {
 // stored preference, the same class of gap this whole suite exists to
 // close.
 async function testTabReorder(page) {
-  console.log("\n[10/15] Settings — bottom nav tab order (added 9 Sep 2026)");
+  console.log("\n[11/16] Settings — bottom nav tab order (added 9 Sep 2026)");
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   await dismissTransientBanners(page);
@@ -637,7 +662,7 @@ async function testTabReorder(page) {
 // it, and an early version auto-offered the tour even after an explicit
 // Skip tap, which directly contradicted the user's own "not now" signal.
 async function testInteractiveTour(browser) {
-  console.log("\n[11/15] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
+  console.log("\n[12/16] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const tourPageErrors = [];
@@ -729,7 +754,7 @@ async function testInteractiveTour(browser) {
 // the exact portability trap the interactive-tour flow above already
 // hit and fixed once this same day).
 async function testBackupMigratesOldFieldShape(page) {
-  console.log("\n[12/15] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
+  console.log("\n[13/16] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
   const oldShapedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -807,7 +832,7 @@ async function testBackupMigratesOldFieldShape(page) {
 // error, and exactly the one valid contact lands (not zero, not a
 // partial/corrupted count).
 async function testBackupImportDropsGarbageRecords(page) {
-  console.log("\n[15/15] Backup import — malformed array elements are dropped, not a crash (added 10 Sep 2026)");
+  console.log("\n[16/16] Backup import — malformed array elements are dropped, not a crash (added 10 Sep 2026)");
   const malformedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -875,7 +900,7 @@ async function testBackupImportDropsGarbageRecords(page) {
 // directly exercise that exact path, so a regression here would fail
 // loudly, not silently.
 async function testPinRecoveryFlow(page) {
-  console.log("\n[13/15] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
+  console.log("\n[14/16] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
   // The App Lock setup prompt can be pending again here — test 12's
   // own Replace All import doesn't touch privacySettings at all (its
   // synthetic backup has no privacySettings key), but a plain reload
@@ -993,7 +1018,7 @@ async function testPinRecoveryFlow(page) {
 // Runs in its own fresh browser context (real SW registration/
 // lifecycle state, not shared with the rest of the suite).
 async function testServiceWorkerAutoUpdate(browser) {
-  console.log("\n[14/15] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
+  console.log("\n[15/16] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
 
   // Real preview-build-only test: `vite preview` (what CI and this
   // suite's own recommended local flow both use) serves dist/sw.js
@@ -1123,6 +1148,23 @@ async function testServiceWorkerAutoUpdate(browser) {
 
   let failed = false;
   try {
+    // ADDED 27 Sep 2026 - the sample-data flow, deliberately FIRST rather than
+    // last, which is the opposite of the obvious choice and took several real
+    // debugging rounds to establish.
+    //
+    // It depends on nothing the other flows do and uses its own browser
+    // context, so running it first costs nothing.
+    //
+    // It CANNOT go last. The PWA auto-update flow (14) deliberately swaps the
+    // real dist/sw.js to simulate a deploy and taps Refresh, and the app
+    // registers a service worker on every load. That worker is cached in the
+    // browser PROFILE and inherited by any later context, so a flow placed
+    // after it is served a CACHED app shell instead of the current bundle.
+    // The symptom was genuinely maddening: "the sample-data banner never
+    // appeared" while Home rendered flawlessly underneath with the sample data
+    // plainly visible. The app was healthy - it was simply the wrong build.
+    // Unregistering the worker in-page did not fix it either.
+    await testSampleDataDisclosureAndClear(browser);
     await dismissOnboarding(page);
     await testMedicationReasonSideEffects(page);
     await testSymptomTestTwoWayLink(page);
@@ -1157,3 +1199,115 @@ async function testServiceWorkerAutoUpdate(browser) {
   }
   console.log("\nSMOKE TEST: ALL PASSED");
 })();
+
+// ---------------------------------------------------------------------------
+// ADDED 27 Sep 2026 - the sample-data disclosure and clear.
+//
+// WHY A REAL BROWSER DRIVE RATHER THAN A UNIT TEST: the whole point is a
+// first-run experience. A unit test can prove clearSampleData() filters the
+// right ids, but not that a new user is TOLD, on the first screen they look at,
+// that what they are looking at is not theirs. Only a real page can fail that.
+//
+// The behaviour that genuinely matters, and that a naive implementation would
+// get wrong, is preservation: repositories load their seed as the fallback for
+// an absent key, so the moment a user adds a record the sample data is
+// persisted into the same array. "Clear sample data" must therefore remove the
+// sample records and KEEP the user's, in one and the same array - which is
+// exactly what "Reset all app data" would not do. So the flow adds a real
+// contact through the real Contacts form first, then clears, then checks both
+// halves of that claim.
+//
+// Runs FIRST, in its own context. See the ordering comment at the call site:
+// the PWA auto-update flow leaves a service worker in the browser profile, and
+// any flow after it is served a stale cached shell.
+async function testSampleDataDisclosureAndClear(browser) {
+  console.log("\n[1/16] Sample data is disclosed on first run, and clearing keeps real records (added 27 Sep 2026)");
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  const flowErrors = [];
+  page.on("pageerror", (err) => flowErrors.push(err.message));
+
+  try {
+    // Deliberately NOT the shared dismissOnboarding() helper: that one navigates
+    // and then dismisses banners, and using it here made the banner never
+    // appear at all - while the same flow with the manual sequence below worked.
+    // Isolating that difference is the point; the helper is still correct for
+    // the shared-page flows, which is all it was written for.
+    await page.goto(APP_URL, { waitUntil: "networkidle" });
+    for (const label of ["Skip", "Not now", "Get started"]) {
+      const b = page.getByRole("button", { name: label, exact: true });
+      if (await b.count()) { await b.first().click({ timeout: 2500 }).catch(() => {}); await page.waitForTimeout(400); }
+    }
+
+    // Wait for the banner rather than sleeping: it only renders once
+    // countSampleData() has resolved across 14 repositories, and a fixed wait
+    // is the kind of flake this suite has been bitten by repeatedly.
+    try {
+      await page.getByText("This app starts with sample data", { exact: false }).first()
+        .waitFor({ state: "visible", timeout: 20000 });
+    } catch {
+      // Self-diagnosing on purpose. A bare timeout gives no clue whether the
+      // app is still on onboarding, behind a lock screen, or genuinely empty -
+      // and the first version of this flow failed exactly that way.
+      const diag = await page.evaluate(() => ({
+        text: document.body.innerText.slice(0, 300),
+        keys: Object.keys(localStorage).filter((k) => k.startsWith("shos_")).length,
+      }));
+      throw new Error(
+        "the sample-data banner never appeared.\nFirst 300 chars:\n" + diag.text +
+        "\nshos_ keys in storage: " + diag.keys
+      );
+    }
+
+    const body = await page.evaluate(() => document.body.innerText);
+    assert(body.includes("is made-up example data, not yours"),
+      "the first screen says plainly that what is on it is not the user's own data");
+    assert(/Everything you can see right now — \d+ records/.test(body),
+      "the banner states a real record count rather than a vague claim");
+    assert(body.includes("Anything you have added yourself is always kept"),
+      "the banner states that clearing cannot touch the user's own records - the question that stops anyone tapping a 'clear' button in a medical app");
+    console.log("  ok — the first screen discloses the sample data and states a real count");
+
+    // Add a real contact through the REAL form. Bottom-nav tabs are
+    // role=button with aria-label and no text content, so they must be queried
+    // by role - a text search for "Contacts" silently matches nothing.
+    const nav = page.getByRole("navigation", { name: "Main navigation" });
+    await nav.getByRole("button", { name: "Contacts", exact: true }).first().click({ timeout: 5000 });
+    await page.waitForTimeout(1200);
+    // The "+" FAB and the sheet's submit are BOTH labelled "Add contact"
+    // (`isNew ? "Add contact" : "Save changes"`), so first-then-last.
+    await page.getByRole("button", { name: /add contact/i }).first().click({ timeout: 5000 });
+    await page.waitForTimeout(1000);
+    await page.getByLabel("Full name", { exact: false }).first().fill("ZZZ Smoke Real Contact");
+    await page.waitForTimeout(250);
+    await page.getByRole("button", { name: /^add contact$/i }).last().click({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+    assert((await page.evaluate(() => document.body.innerText)).includes("ZZZ Smoke Real Contact"),
+      "a real contact was added through the real Contacts form");
+
+    // Back to Home, and clear.
+    await nav.getByRole("button", { name: "Home", exact: true }).first().click({ timeout: 5000 });
+    await page.getByText("This app starts with sample data", { exact: false }).first()
+      .waitFor({ state: "visible", timeout: 15000 });
+    await page.getByRole("button", { name: "Clear the sample data" }).first().click({ timeout: 5000 });
+    await page.waitForTimeout(2500);
+    assert(!(await page.evaluate(() => document.body.innerText)).includes("This app starts with sample data"),
+      "the banner is gone once the sample data is cleared");
+    console.log("  ok — clearing removes the sample data and dismisses the banner");
+
+    // The half that actually matters: the user's own record survived.
+    await nav.getByRole("button", { name: "Contacts", exact: true }).first().click({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+    const contacts = await page.evaluate(() => document.body.innerText);
+    assert(contacts.includes("ZZZ Smoke Real Contact"),
+      "the user's own contact survived the clear — 'clear sample data' is not 'delete everything'");
+    const sampleLeft = ["Grace", "Sam T."].filter((n) => contacts.includes(n));
+    assert(sampleLeft.length === 0,
+      `the sample contacts are really gone from the list (still showing: ${sampleLeft.join(", ") || "none"})`);
+    console.log("  ok — the real contact survived AND the sample contacts are gone from the list");
+
+    if (flowErrors.length) throw new Error("page errors during the sample-data flow:\n" + flowErrors.join("\n"));
+  } finally {
+    await context.close();
+  }
+}

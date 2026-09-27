@@ -45,6 +45,7 @@ import { formatRelativeDate } from "../calculations/encounterCalculations";
 import { getTestingFrequencyStats, getOverallAdherence, BASHH_TESTING_INTERVAL_DAYS } from "../calculations/statsCalculations";
 import { computeAdherence } from "../calculations/medicationCalculations";
 import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService";
+import { countSampleData, clearSampleData } from "../repositories/clearSampleData";
 import { checkForUpdate, RELEASE_APK_URL } from "../storage/updateCheckService";
 import {
   HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill,
@@ -241,6 +242,34 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // mount, same pattern as everything else on Home — see
   // backupService.js's getLastBackupInfo() for how "due" is computed.
   const [backupInfo] = useLoadedState(() => getLastBackupInfo(), [], { lastAt: null, daysSince: null, dueForReminder: false });
+  // ADDED 27 Sep 2026 - a first-run banner disclosing the sample data.
+  //
+  // On a fresh install every repository returns its seed array as the fallback
+  // for an absent storage key, so a new user's first view of this app is ~93
+  // fabricated records - 16 contacts, 18 encounters, and a POSITIVE gonorrhoea
+  // result - with nothing anywhere in the UI saying so. The only mention of
+  // "demo data" in the whole app was a code comment.
+  //
+  // The banner is deliberately an OFFER, not an automatic deletion. Auto-
+  // clearing would destroy the sample data the owner relies on for exploring
+  // the app and for the smoke suite, and it would also be destructive by
+  // surprise on an install that is genuinely being used for a demo. So: say
+  // what it is, show the real count, and make clearing one tap.
+  //
+  // `countSampleData` never throws (it catches per-repository), so a storage
+  // hiccup cannot break boot - the banner simply does not appear.
+  const [sampleData, setSampleData] = useLoadedState(() => countSampleData(), [], { total: 0, byCollection: [] });
+  const [clearingSample, setClearingSample] = useState(false);
+  const [sampleDataHidden, setSampleDataHidden] = useState(false);
+  const clearSample = async () => {
+    setClearingSample(true);
+    try {
+      await clearSampleData();
+      setSampleData({ total: 0, byCollection: [] });
+    } finally {
+      setClearingSample(false);
+    }
+  };
   // ADDED — real ask: "scheduled auto-export" — self-gated inside
   // runAutoExportIfDue() on whether the preference is actually turned
   // on (Settings -> Preferences), safe to call unconditionally here,
@@ -1080,6 +1109,60 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           </>
         )}
       </div>
+
+      {/* ADDED 27 Sep 2026 - the sample-data disclosure. Placed FIRST, above
+          every other banner, because it changes how a new user reads
+          everything below it: the Status rings, the "Recent activity" rows and
+          the test results are all currently somebody else's data, and that
+          has to be stated before any of them are looked at, not after.
+
+          Deliberately an offer rather than an automatic deletion - see the
+          state setup above for why. Dismissible, because someone deliberately
+          exploring the sample data should not be nagged on every visit, and
+          the same action stays available in Developer Tools.
+
+          No separate InfoIcon needed here, unlike the tap-to-reveal ones
+          elsewhere in this app: the reassurance that clearing cannot touch the
+          user's own records is stated in plain text right in the banner rather
+          than hidden behind a tap, because a button labelled "clear" in an app
+          holding someone's medical history should not require a second tap to
+          learn what it will and will not delete.
+
+          The copy deliberately does NOT list which kinds of record the sample
+          data covers. An earlier draft enumerated all fourteen collection names,
+          which was worse in two ways: it is a wall of registry jargon to read
+          past on a first screen, and it collided with the smoke suite's `text=`
+          locators - Home stays mounted behind the Settings overlay, so
+          `text=Locations` began matching both the registry row and this banner
+          and Playwright refused the click as a strict-mode violation. One
+          number is the only part of that sentence anyone needs. */}
+      {sampleData.total > 0 && !sampleDataHidden && (
+        <div style={{ marginTop: 8, padding: "14px 16px", borderRadius: RADIUS.md, border: `1px solid ${homeColor}40`, background: darkMode ? DARK.surface : "#F0FDFA" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
+            This app starts with sample data
+          </div>
+          <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 4, lineHeight: 1.45 }}>
+            Everything you can see right now — {sampleData.total} records — is made-up example
+            data, not yours. Clear it to start with a blank app, or keep it for now to look
+            around first.
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); clearSample(); } }} onClick={clearSample}
+              aria-label="Clear the sample data"
+              style={{ fontSize: 12, fontWeight: 600, color: homeColorText, cursor: clearingSample ? "default" : "pointer", opacity: clearingSample ? 0.6 : 1 }}>
+              {clearingSample ? "Clearing…" : "Clear sample data"}
+            </div>
+            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSampleDataHidden(true); } }} onClick={() => setSampleDataHidden(true)}
+              style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, cursor: "pointer" }}>
+              Keep it for now
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginTop: 8, lineHeight: 1.4 }}>
+            Clearing removes only the example records. Anything you have added yourself is always
+            kept — and you can do the same from Settings → Support → Developer tools.
+          </div>
+        </div>
+      )}
 
       {/* ADDED 19 Aug 2026 — real ask: a backup reminder. No cloud
           sync by design (everything stays on-device) means a real
