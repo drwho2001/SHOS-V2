@@ -327,10 +327,164 @@ this date; summarized here for durability.
   - **Settings navigation** — 16 rows across 8 sections (corrected 25 Sep 2026: the long-standing "22 rows" figure predates the 16 Sep Backup-&-Export consolidation and the Units-screen removal; a stale "same 22 rows" comment still sits in `SHOS_Settings_Prototype.jsx`). Test flakes from banner interception (fixed in helper); a crypto-timing wait in flow 13 was still a fixed 500ms plus a non-retrying count and is now a bounded wait (25 Sep 2026). Healthcare sub-tab discoverability (Menstrual/Contraception gated behind toggle).
   - **Overlays — deliberately NOT normalised (25 Sep 2026)**: an audit of all ~69 real dialogs/sheets found zIndex scattered across 200/210/215/220/230/300, `maxHeight` across 80/85/88vh, radius across `radius.lg`/24/16, and 0 of 22 dimmed bottom sheets carrying any `env(safe-area-inset-bottom)`. Left alone on purpose: normalising geometry across every sheet is broad churn with unverifiable visual benefit, and this project has been burned by exactly that kind of sweep before. Geometry is only normalised where a sheet is already being touched. The genuine UX gaps the audit found (two back-button traps, six level-skipping overlays, no Escape anywhere) are logged as their own batch above.
 
-- **Desktop font-size/empty-space (#93) — scoped 15 Sep 2026,
+- **Desktop font-size/empty-space (#93) — see the 15/16 Sep entries under
+  "Recently shipped" for the full design reasoning and what shipped.** Note: this
+  bullet was left truncated mid-sentence in an earlier edit; the substance was
+  never lost, it lives in those dated entries.
 
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
+
+## Recently shipped (27 Sep 2026, later - a six-pass audit batch: stale data, a dead reset, frozen contact details, a calendar hour off, and two settings missing from every backup)
+
+A user-authorised audit/fix round. Six passes, most findings real bugs rather
+than polish. Three commits: `bfdaea4` (stale data/undo/reset/Trash),
+`e5fbe01` (calendar offset, two medication figures, partner notification),
+`1351810` (two settings backed up, plus tests for all of it).
+
+**Five modules showed stale data after saving.** Encounters, Testing, Clinic
+Visits, Vaccinations and Symptom Log all returned to their list without
+re-reading the repository, so an edit was invisible until a manual refresh or a
+relaunch — on the exact screens where a wrong value could matter clinically
+(a result, a vaccination, a positive test). All five now refresh first.
+
+**Undo/redo updated storage but not the screen.** `useEditUndo()` was used at 11
+sites and none of them re-read after a restore; Medication needed a ref
+indirection to avoid a TDZ on its own fix.
+
+**"Reset all app data" reset nothing.** It called the repositories' `clear()`
+method, which 10 of 12 did not have — so the button reported success while
+leaving every record, preference and log in place. New
+`src/repositories/resetAllData.js` does it properly (lists via `replaceAll([])`,
+preferences back to full defaults, diagnostic logs cleared) and the UI now
+reports partial failures instead of claiming success. Verified live: 16 contacts
+/ 7 tests / 6 medications became 0 and stayed 0 after reload.
+
+**Episodes now go to Trash instead of being permanently deleted.** `episodes`
+added to `MODULE_LABELS` and `TRASH_REPOSITORIES`, following the existing Clinic
+Visit Trash semantics, and TrashScreen can restore one. This was the one place
+in the app still bypassing the "archive before hard delete" rule.
+
+**Option lists: "Female" and "Trans-male" are now protected values.** Both are
+load-bearing — the app decides whether to show contraception, anatomy-specific
+fields and the Pregnancy tab by matching the stored gender string against exact
+literals in 8 places across 3 modules, exactly as "Blood pressure" already was.
+Renaming or removing either would have silently inverted every one of those
+gates. Covered by `customOptionLists.test.js`.
+
+**Global Search now respects `menstrualTrackingEnabled`.** Cycle, contraception
+and pregnancy records were indexed and searchable with the feature switched off.
+
+**Dark mode, six real contrast failures fixed** (all measured, not eyeballed):
+Settings status toast 1.02:1 → 12.47:1; Timeline/Testing gold text 2.99:1 →
+12.19:1; Measurements Normal/Low/High badges 2.67–2.71:1 → 6.36–10.79:1. Home's
+banner and Settings' Suspense fallback now branch on dark mode at all, and
+Medication's disabled/Create buttons use themed disabled colours.
+
+**Calendar sync wrote every appointment an hour off.** A Clinic Visit's `date`
+is a fake-UTC stored value, and `new Date(visit.date).getTime()` re-applies the
+device's UTC offset — so a visit booked for 14:00 landed at 15:00 for eight
+months of the year. This is the only place in the app where a wrong timestamp
+escapes the app entirely, and it is the one a clinician reads off the patient's
+phone at the appointment. Every other consumer of a stored datetime was already
+using `realTimestampFromStored()`; this one was missed.
+
+**I had the second calendar bug backwards, and measuring corrected it.** My first
+comment claimed the future-appointment filter "judged an appointment already
+past" and so deleted it. Measured across four zones, the naive parse is *later*
+than the real moment when the offset is **positive**, so the filter keeps a visit
+longer, not sooner. The real harm depends on the sign: positive offset (London,
+Sydney) leaves finished appointments in the calendar forever; negative offset
+(New York and every western zone) can judge a still-upcoming appointment past,
+and since cleanup deletes any event not in the booked set, an already-created
+event is **deleted and the appointment silently vanishes**. Two bugs in opposite
+directions, and the serious one is invisible in the UK — the zone this was built
+and reported from. The fix is a helper call, not a fudge factor, because a fudge
+would need to know the offset's sign to know which way to apply it.
+
+**"Infinity containers" on a PRN medication.** `computeStock` guarded
+`unitsPerDose` but not `unitsPerContainer`, and the form's NumberField is
+`min={0}`. The clause is now omitted rather than inventing a number.
+
+**A never-started medication reported 100% adherence.** `windowStats`'s
+`expected > 0 ? ... : 100` guard is right for a window with no due day, and
+`AdherencePill`'s NaN guard depends on it — but wrong for a custom
+(every-N-days) medication with no dose ever logged, where there is no anchor.
+It showed 100% on the card, on Home's ring and in Stats, and **inflated a mixed
+set**: averaging to 90% when the only real medication was at 80%. An empty
+window is now only "nothing due" when history exists.
+
+**Partner Notification froze contact details.** Items stored a snapshot of the
+contact's name/methods/age/address, and `contactId` was stored too — but the
+render path never used it. Correcting a phone number in Contacts left the
+checklist showing the old one, and `save()` deliberately reuses the same list
+per `testId`, so even regenerating kept the stale value. On the app's most
+safety-sensitive workflow that is a wrong-contact-details path, silent. The list
+now re-derives from the live Contact, with three rules so it cannot regress in a
+different shape: a user-typed methods value always wins (new
+`methodsOverridden` flag — that box is legitimately editable and re-deriving
+would wipe their input on every render); a deleted Contact falls back to the
+stored snapshot; and the **exported text resolves the same values**, so the file
+a clinic reads can never disagree with the screen.
+
+**Two settings were in no backup at all.** The question the earlier audits had
+not asked was not "which repositories are in the backup?" but "which *user
+settings* are in it?". `darkModePreference` and `clinicCardVisibility` both live
+in `src/calculations/`, so an audit that enumerated repositories structurally
+could not find them. CLAUDE.md already records that a new repository not wired
+into `backupService` in the same change "was missed twice historically" — this
+is the third time, in a different direction. `darkModePreference` is the app's
+**only** owner of the light/dark choice (`AppPreferencesRepository` has no
+`darkMode` field, verified), so restoring a backup on a new device silently
+reset the user to their OS default with no warning. Both now have plain async
+accessors, restore branches carry the usual `typeof`/`!Array.isArray` guards so
+an older backup still restores, and the dark-mode setter goes through the
+existing notify-listeners path so a restore does not leave the screen in the
+old theme until reload. Both are excluded from merge.
+
+**Tests: 33 new, every one mutation-verified — and one batch had to be thrown
+away first.** `medicationEdgeCases.test.js` (8), `calendarSyncOffset.test.js`
+(12), `backupPreferenceCoverage.test.js` (13). Reverting the Infinity guard fails
+2; reverting the never-started fix fails 2; reverting the calendar event-date fix
+fails 1 in London and 4 in New York/Sydney.
+
+The important one: my first calendar tests used a realistic "23:00 the night
+before a 00:30 appointment" scenario, and **mutation testing proved it
+discriminating of nothing** — reverting the filter failed *zero* tests, because a
+one-hour offset does not move a one-and-a-half-hour margin across a boundary. A
+test that cannot fail when the bug is reintroduced is worse than no test,
+because it reads as coverage. Replaced with 1ms-boundary cases pinned to
+`realTimestampFromStored`'s own answer, which must disagree in any non-zero-offset
+zone. In UTC the offset is 0 and **no** test there can fail — a real property of
+the bug, now stated in the file rather than papered over.
+
+`backupPreferenceCoverage.test.js`'s last test is the one that would have caught
+the original gap: it enumerates `src/calculations/*Preference.js` from the
+filesystem and fails if any module owning a stored value under a `STORAGE_KEY` is
+never referenced by `backupService`. The *next* unwired preference should fail
+there rather than in a user's restore.
+
+**Three test-authoring mistakes of my own, recorded at their fixtures rather
+than hidden.** A draft read `computeAdherence` as flat when it returns
+`{streak, sevenDay, sinceRefill}`. A second reintroduced the 0-indexed-JS-month
+trap one file over from the DST suite — "now" was silently *April* while the
+doses were March — and asserted the wrong direction of the today-exclusion rule.
+A third hand-counted eight negative dose logs and got seven, having quietly
+passed for entirely the wrong reason. Also: three codemod attempts damaged
+`aria-label` attributes in `SHOS_PartnerNotification_Prototype.jsx` (duplicated
+and truncated closing braces) — caught by eslint and the build each time, and the
+final diff reviewed line by line. The lesson is that **regex over JSX
+attributes is not safe**; three passes were needed where one careful edit would
+have done.
+
+Storage is mocked with an in-memory map in the new preference tests (the
+`contactRepository.test.js` pattern): the real adapter needs the encryption vault
+unlocked, so every save logs "Vault is not unlocked" and the assertions pass
+against module memory while verifying almost nothing.
+
+Verified: vitest 224/224 across 18 files, eslint clean, production build clean,
+encoding guard clean, calendar suite additionally green under Europe/London,
+America/New_York, UTC and Australia/Sydney.
 
 ## Recently shipped (27 Sep 2026 - a real DST bug in every-N-days medication adherence; one self-caught overclaim)
 
