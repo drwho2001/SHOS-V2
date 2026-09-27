@@ -138,7 +138,18 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
 
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, overflow: "hidden", columnCount: isDesktopWidth && visible.length > 0 ? 2 : undefined, columnGap: 0 }}>
         {visible.length === 0 ? (
-          <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>No contacts match.</div>
+          // FIXED 27 Sep 2026 — this said "No contacts match.", which is only
+          // true when a search is active. On a genuinely empty address book
+          // (a real new user, or anyone who cleared the sample data) it read
+          // as if a filter had hidden contacts that were there — so the screen
+          // looked broken with no way forward. Now it distinguishes the two
+          // cases and, when there are no contacts at all, says the one thing
+          // that actually helps: add someone first.
+          <div style={{ padding: 16, fontSize: 13, color: T.textDisabled }}>
+            {contacts.length === 0
+              ? "You have no contacts yet. Add someone in the Contacts tab first, then come back here."
+              : "No contacts match your search."}
+          </div>
         ) : visible.map((c) => {
           const isSelected = selectedIds.has(c.id);
           return (

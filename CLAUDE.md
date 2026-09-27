@@ -393,7 +393,56 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
-## Recently shipped (27 Sep 2026, latest - the sample data is disclosed and safe to clear, plus a committed change procedure)
+## Recently shipped (27 Sep 2026, latest - onboarding pointed new users at a Settings screen that no longer exists)
+
+Continuing the new-user audit, and a small round: two of the three suspected
+problems turned out to be real, one was a false alarm worth recording.
+
+**Onboarding's last slide sent users to a screen that isn't there.** It said
+"Settings → Design lets you customize each module's colour and switch to dark
+mode", but no screen by that name has existed since the 16 Sep global-settings
+reorg — the row is **"Colour scheme"**. This is the one class of onboarding bug
+that matters most, because onboarding's entire job is telling a first-time user
+where things are, and it was confidently pointing at nothing. Fixed and verified
+against the live Settings row rather than assumed. A second instance of the same
+class: the storage-save-failed banner said "Check Settings → Developer tools →
+Storage", but "Storage" is a *section within* the Developer Tools screen, not a
+sub-screen you navigate into, so a user hunting for it as its own destination
+would not find it. Now worded as the section it actually is.
+
+**"Contacts, activity, testing..."** in the welcome slide used a word that
+appears nowhere in the UI. The tab, the screen title, and the Global Search
+result group all say "Encounter". A new user reading "activity" and then looking
+for an Activity tab would not find one. Now matches the real label.
+
+**Checked and deliberately left alone — a "terminology inconsistency" that isn't
+one.** The singular "Encounter" looks like an oversight beside the plural
+"Contacts", and was on the list to be pluralised. Reading the actual code, it's
+deliberate and consistent: the bottom-nav label, the screen's own `<h1>`, and
+the Global Search group are *all* singular, and it matches "Medication" and
+"Healthcare", which are also singular. Only "Contacts" is plural, because it
+holds people. Changing it would have been churn against a convention that holds.
+Same for the onboarding question slide, which looked like it should offer
+"Skip" — it doesn't, and shouldn't: it offers "Not for me" / "Yes, turn it on",
+so a user is never asked a question and then given a way to avoid answering it
+without saying what they chose.
+
+**The empty-states sweep was mostly a non-finding, and one real dead end.** Ten
+of nineteen modules initially looked like they had no empty state; reading each
+one properly, ten of those ten do (my first pattern was just too narrow, and
+Attachments' real string is "No attachments yet", not the "logged yet" shape I
+searched for). The genuine finding: **Partner Notification's contact picker said
+"No contacts match"** — true only when a search is active. On a genuinely empty
+address book, which is exactly what a real new user has, or what anyone has
+after clearing the sample data, it read as though a filter had hidden contacts
+that were there. The screen looked broken with no way forward. It now
+distinguishes the two cases and, when there are genuinely no contacts, names
+the one action that helps: add someone in Contacts first.
+
+Verified: vitest 257/257 across 21 files, smoke suite 17/17 against a real
+production build, eslint clean, encoding guard clean, no leaked processes.
+
+## Recently shipped (27 Sep 2026 - the sample data is disclosed and safe to clear, plus a committed change procedure)
 
 Two things: closing the loop on the app's worst first-impression problem, and
 turning "remember to run the checks" into a committed algorithm.

@@ -625,7 +625,7 @@ function AppLockPrompt({ onDismiss, onDismissForever, onOpenSettings }) {
 // this app's own "quick add" philosophy rather than forcing a long
 // guided setup before letting the person actually use anything.
 const ONBOARDING_SLIDES = [
-  { title: "Welcome to SHOS", body: "Your own sexual health record — contacts, activity, testing, medication, and clinic visits, all in one private place on this device. Nothing leaves your phone unless you choose to export or share it." },
+  { title: "Welcome to SHOS", body: "Your own sexual health record — contacts, encounters, testing, medication, and clinic visits, all in one private place on this device. Nothing leaves your phone unless you choose to export or share it." },
   // ADDED — real ask, from a competitive-research finding: onboarding
   // was purely informational slides with no path that actually
   // reconfigures anything, unlike comparable apps whose onboarding
@@ -648,7 +648,12 @@ const ONBOARDING_SLIDES = [
   },
   { title: "Start with My Profile", body: "Settings → My Profile lets you record your own details, testing status, and preferences — it's also what gets shared if you ever export a profile to someone else." },
   { title: "DoxyPEP & reminders", body: "If it's relevant to you, SHOS can track the 72-hour DoxyPEP window after a qualifying activity, and remind you about daily medication doses — both real notifications, not just in-app banners." },
-  { title: "Make it yours", body: "Settings → Design lets you customize each module's colour and switch to dark mode. Long-press (or tap Select) on any list to archive, delete, or export several records at once." },
+  // FIXED 27 Sep 2026 — said "Settings → Design", but no screen by that name
+  // has existed since the 16 Sep global-settings reorg: the row is
+  // "Colour scheme". A new user's very first instructions sent them to a
+  // Settings screen that isn't there, which is the exact failure onboarding
+  // exists to prevent. Verified against the live row, not assumed.
+  { title: "Make it yours", body: "Settings → Colour scheme lets you switch to dark mode and customise each module's colour. Long-press (or tap Select) on any list to archive, delete, or export several records at once." },
 ];
 
 
@@ -1967,7 +1972,7 @@ export default function App() {
           <AlertTriangle size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700 }}>Your last change may not have saved</div>
-            <div style={{ fontSize: 12, marginTop: 2, color: "rgba(255,255,255,.9)" }}>Your device may be low on storage. Check Settings → Developer tools → Storage, and try freeing up space.</div>
+            <div style={{ fontSize: 12, marginTop: 2, color: "rgba(255,255,255,.9)" }}>Your device may be low on storage. Check the Storage section in Settings → Developer tools, and try freeing up space.</div>
           </div>
           <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setSaveFailedBanner(null)} aria-label="Dismiss storage save-failed banner" />
         </div>
