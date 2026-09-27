@@ -206,15 +206,36 @@ export async function syncClinicVisitsToCalendar(visits) {
   const { plugin } = await getPlugin();
   if (!plugin) return { synced: false };
   const calendar = await resolveTargetCalendar(plugin);
-    // FIXED 27 Sep 2026 — same fake-UTC/real-instant mixing, and this one had
-    // a second consequence beyond a shifted time. A visit booked for 00:30
-    // tomorrow was judged "already past" until 01:30, so it was neither synced
-    // NOR cleaned up: the filter dropped it, and because the cleanup pass
-    // removes any calendar event whose id is not in the booked set, an event
-    // that had already been created for it was deleted. The appointment
-    // silently vanished from the user's calendar overnight.
-    const now = Date.now();
-    const booked = visits.filter((v) => !v.isArchived && v.isFutureAppointment && v.date && realTimestampFromStored(v.date) > now);
+  // FIXED 27 Sep 2026 — same fake-UTC/real-instant mixing, and this one had a
+  // second consequence beyond a shifted time.
+  //
+  // An earlier draft of this comment claimed the filter "judged an appointment
+  // already past" and so deleted it. MEASURED, that is only half the story, and
+  // in the wrong direction for a positive offset: `new Date(stored)` is LATER
+  // than the real moment whenever the offset is positive, so the naive filter
+  // keeps a visit LONGER, not sooner. The real harm depends on the SIGN:
+  //
+  //   offset > 0 (Europe/London BST, Australia/Sydney AEDT)
+  //     naive is LATER -> an appointment that has genuinely finished is still
+  //     treated as upcoming, so it stays in `booked` and is NEVER cleaned up.
+  //     A stale, past appointment sits in the calendar indefinitely.
+  //
+  //   offset < 0 (America/New_York EDT, and every western zone)
+  //     naive is EARLIER -> an appointment genuinely still ahead of us can be
+  //     judged already past. The filter drops it from `booked`, and because the
+  //     cleanup pass below deletes any calendar event whose id is not in
+  //     `booked`, an event that had ALREADY been created for it is DELETED.
+  //     The appointment silently vanishes from the user's calendar.
+  //
+  // So there are two distinct real bugs here, in opposite directions, and the
+  // more serious one (silent deletion) is invisible in the UK - the zone this
+  // was built and tested in, and the only one it was reported from. That is
+  // why it is now pinned by boundary tests built on realTimestampFromStored's
+  // own answer rather than on a hand-picked clock time, and why the fix is a
+  // helper call rather than a fudge factor: a fudge would have to know the
+  // offset's sign to know which way to apply it.
+  const now = Date.now();
+  const booked = visits.filter((v) => !v.isArchived && v.isFutureAppointment && v.date && realTimestampFromStored(v.date) > now);
   const bookedIds = new Set(booked.map((v) => v.id));
 
   for (const visit of booked) await syncOneVisit(plugin, calendar, visit);

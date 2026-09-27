@@ -102,6 +102,8 @@ import { MedicationPreferencesRepository } from "../repositories/medicationPrefe
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository.js";
 import { ModuleColorRepository } from "../repositories/moduleColorRepository.js";
 import { TrashRepository } from "../repositories/trashRepository.js";
+import { getDarkModePreference, setDarkModePreference } from "../calculations/darkModePreference.js";
+import { getClinicCardVisibility, setClinicCardVisibility } from "../calculations/clinicCardVisibilityPreference.js";
 
 // Doc 5 §8: "Every export/backup file stamps: schema version, migration
 // version, app version." Schema version bumps only when a backup file's
@@ -314,6 +316,24 @@ export async function buildBackup(includeKeys = null, dateRange = null, { redact
     notificationPreferences: await NotificationPreferencesRepository.getPreferences(),
     moduleColorOverrides: await ModuleColorRepository.getOverrides(),
     trash: await TrashRepository.getAll(),
+    // ADDED 27 Sep 2026 — two real user settings that were silently lost on
+    // restore. Both live in src/calculations/ rather than src/repositories/,
+    // which is why the audit missed them: a grep of "every repository" does
+    // not find them.
+    //
+    //   darkModePreference is the app's ONLY owner of the light/dark choice
+    //   (AppPreferencesRepository has no darkMode field - verified), so
+    //   restoring a backup on a new device silently reset the user to their
+    //   OS default with no warning.
+    //   clinicCardVisibility is every "which sections show on my Clinic Card"
+    //   toggle, i.e. how the card a clinician reads is laid out.
+    //
+    // Settings preferences are the one category a restore most obviously
+    // ought to bring back, so this was a real gap rather than a defensible
+    // exclusion. Both are guarded with a typeof check on restore so an OLDER
+    // backup file - predating this - restores cleanly instead of throwing.
+    darkModePreference: await getDarkModePreference(),
+    clinicCardVisibility: await getClinicCardVisibility(),
   };
   const keySet = includeKeys ? new Set(includeKeys) : null;
   let data = keySet
@@ -441,7 +461,7 @@ function sanitizeBackupData(data) {
 // wiping everything with no confirmation was a real gap on its own,
 // separate from merge existing at all.
 export async function restoreBackup(parsedBackup) {
-  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, customOptionListsArchived, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies, appPreferences, medicationPreferences, notificationPreferences, moduleColorOverrides, trash } = parsedBackup.data;
+  const { contacts, medications, logs, encounters, kinks, chems, protection, symptoms, locations, myProfile, tests, organisms, results, clinicVisits, symptomLog, vaccinations, episodes, measurements, measurementPreferences, customGroups, customOptionLists, customOptionListsArchived, privacySettings, resources, partnerNotifications, menstrualCycles, contraception, pregnancies, appPreferences, medicationPreferences, notificationPreferences, moduleColorOverrides, trash, darkModePreference, clinicCardVisibility } = parsedBackup.data;
   if (Array.isArray(contacts)) await ContactRepository.replaceAll(contacts);
   if (Array.isArray(medications)) await MedicationRepository.replaceAll(medications);
   if (Array.isArray(logs)) await LogRepository.replaceAll(logs);
@@ -505,6 +525,16 @@ export async function restoreBackup(parsedBackup) {
     await ModuleColorRepository.replaceAll(moduleColorOverrides);
   }
   if (Array.isArray(trash)) await TrashRepository.replaceAll(trash);
+  // ADDED 27 Sep 2026 — the two preference objects added to buildBackup above.
+  // The typeof + !Array.isArray guard on each matches every sibling restore
+  // branch in this function, so an older backup file (which simply has no
+  // such key, giving undefined) is skipped cleanly rather than throwing.
+  if (darkModePreference && typeof darkModePreference === "string") {
+    await setDarkModePreference(darkModePreference);
+  }
+  if (clinicCardVisibility && typeof clinicCardVisibility === "object" && !Array.isArray(clinicCardVisibility)) {
+    await setClinicCardVisibility(clinicCardVisibility);
+  }
 }
 
 // ADDED — real ask: "ask if replace all data or merge — placeholder/
@@ -605,10 +635,11 @@ export async function mergeBackup(parsedBackup) {
   // list above.
   await append(TrashRepository, data.trash);
   // appPreferences/medicationPreferences/notificationPreferences/
-  // moduleColorOverrides are deliberately excluded from Merge, same
-  // reasoning as myProfile/privacySettings above — they're settings
-  // singletons, not lists, so "combine both sets" doesn't apply.
-  // Replace All is the only way to bring those in from a backup.
+  // moduleColorOverrides/darkModePreference/clinicCardVisibility are
+  // deliberately excluded from Merge, same reasoning as
+  // myProfile/privacySettings above — they're settings singletons, not lists,
+  // so "combine both sets" doesn't apply. Replace All is the only way to
+  // bring those in from a backup.
 }
 
 // ---------------------------------------------------------------------

@@ -94,6 +94,29 @@ export async function syncDarkModePreferenceFromStorage() {
   }
 }
 
+// ADDED 27 Sep 2026 — plain getter/setter for backupService.js.
+//
+// darkModePreference is the app's ONLY owner of the light/dark choice
+// (AppPreferencesRepository has no darkMode field - verified), so a backup
+// with no entry for it meant restoring on a new device silently reset the user
+// to their OS default, with no warning. This file lives in src/calculations/
+// rather than src/repositories/, which is why a repository-enumerating audit
+// never found it.
+//
+// The setter deliberately goes through the same notify-listeners path as the
+// live UI toggle, rather than writing storage alone: the whole point of this
+// file's in-memory `currentValue` is that every mounted subscriber has to
+// learn about a change, and a restore that left the screen in the old theme
+// until the next reload would be the same class of silent-staleness bug this
+// batch is fixing elsewhere.
+export async function getDarkModePreference() {
+  return currentValue;
+}
+
+export async function setDarkModePreference(value) {
+  setDarkModeValue(value);
+}
+
 function setDarkModeValue(updater) {
   const next = typeof updater === "function" ? updater(currentValue) : updater;
   if (next === currentValue) return;

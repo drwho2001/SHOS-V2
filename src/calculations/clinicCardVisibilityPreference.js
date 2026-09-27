@@ -44,6 +44,25 @@ export const CLINIC_CARD_SECTIONS = [
 
 const DEFAULT_VISIBILITY = Object.fromEntries(CLINIC_CARD_SECTIONS.map((s) => [s.key, true]));
 
+// ADDED 27 Sep 2026 — plain getter/setter for backupService.js.
+//
+// These are real user settings (which sections appear on the Clinic Card a
+// clinician reads) and they were in no backup, because this file lives in
+// src/calculations/ rather than src/repositories/ and so was missed by any
+// audit that enumerated repositories. Restoring a backup on a new device
+// silently reset every toggle.
+//
+// The hook below is the right shape for the UI but a backup service is not a
+// React component, so it needs a non-hook accessor. Both are one line over
+// the same storage key, so the two paths cannot drift.
+export async function getClinicCardVisibility() {
+  return { ...DEFAULT_VISIBILITY, ...(await storage.load(STORAGE_KEY, {})) };
+}
+
+export async function setClinicCardVisibility(value) {
+  await storage.save(STORAGE_KEY, { ...DEFAULT_VISIBILITY, ...(value || {}) });
+}
+
 export function useClinicCardVisibility() {
   // CHANGED 4 Sep 2026 — was a bespoke mount-time useEffect (the first
   // proof of this fix); now uses the shared useLoadedState hook
