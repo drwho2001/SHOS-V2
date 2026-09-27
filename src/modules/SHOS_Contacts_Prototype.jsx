@@ -3070,7 +3070,13 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
   const refresh = () => { loadContacts().then(setContacts); };
   // ADDED 19 Aug 2026 — real undo/redo, same shared mechanism as
   // Encounters — see editUndoHelpers.js.
-  const editUndo = useEditUndo(ContactRepository);
+// FIXED 27 Sep 2026 - onChanged is the callback useEditUndo fires after
+  // an undo or redo, to tell the host module its list is now stale. Without it
+  // the repository write succeeds and the toast says "undone", but the list
+  // still shows the edited value - the app claims an undo worked while
+  // displaying the opposite. 7 of 11 call sites omitted it; MenstrualHealth and
+  // SymptomLog were the only two already passing it.
+  const editUndo = useEditUndo(ContactRepository, refresh);
 
   const [screen, setScreen] = useState("list");
   const [activeContactId, setActiveContactId] = useState(null);

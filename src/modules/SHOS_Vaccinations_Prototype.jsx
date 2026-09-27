@@ -938,7 +938,13 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
   };
   // ADDED 19 Aug 2026 — real undo/redo extension.
-  const editUndo = useEditUndo(VaccinationRepository);
+// FIXED 27 Sep 2026 - onChanged is the callback useEditUndo fires after
+  // an undo or redo, to tell the host module its list is now stale. Without it
+  // the repository write succeeds and the toast says "undone", but the list
+  // still shows the edited value - the app claims an undo worked while
+  // displaying the opposite. 7 of 11 call sites omitted it; MenstrualHealth and
+  // SymptomLog were the only two already passing it.
+  const editUndo = useEditUndo(VaccinationRepository, refresh);
 
   useEffect(() => {
     if (openAddOnMount) {
@@ -969,7 +975,11 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
     return () => registerModuleBackHandler(null);
   }, [screen, registerModuleBackHandler]);
 
-  const createVaccination = async (data) => { await VaccinationRepository.create(data); onDataChanged?.(); syncVaccinationReminders(); backToList(); };
+  // FIXED 27 Sep 2026 - both save paths now re-read the list. refresh() was
+  // already defined and already wired to the delete paths; only the create and
+  // update paths skipped it, so a saved vaccination did not appear on the
+  // list the user returned to until a tab switch remounted the module.
+  const createVaccination = async (data) => { await VaccinationRepository.create(data); await refresh(); onDataChanged?.(); syncVaccinationReminders(); backToList(); };
   const saveVaccination = async (data) => {
     // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited, and
     // now VaccinationRepository itself (Phase 2 encryption groundwork),
@@ -977,6 +987,7 @@ export default function VaccinationsModule({ openAddOnMount = false, onConsumedQ
     await editUndo.captureBeforeEdit(screen.id);
     await VaccinationRepository.update(screen.id, data);
     await editUndo.notifyEdited(screen.id);
+    await refresh();
     onDataChanged?.();
     // ADDED 16 Sep 2026 — real gap found auditing notifications: a
     // saved nextDue change never re-synced the reminder, same as

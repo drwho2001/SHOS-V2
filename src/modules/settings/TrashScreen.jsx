@@ -16,6 +16,7 @@ import { ClinicVisitsRepository } from "../../repositories/clinicVisitsRepositor
 import { SymptomLogRepository } from "../../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../../repositories/vaccinationRepository";
 import { MeasurementRepository } from "../../repositories/measurementRepository";
+import { EpisodeRepository } from "../../repositories/episodeRepository";
 import { TrashRepository, MODULE_LABELS as TRASH_MODULE_LABELS } from "../../repositories/trashRepository";
 
 const TRASH_REPOSITORIES = {
@@ -25,9 +26,15 @@ const TRASH_REPOSITORIES = {
   clinicVisits: ClinicVisitsRepository,
   symptomLog: SymptomLogRepository,
   vaccinations: VaccinationRepository,
-  medications: MedicationRepository,
-  measurements: MeasurementRepository,
-};
+    medications: MedicationRepository,
+    measurements: MeasurementRepository,
+    // ADDED 27 Sep 2026 — Episodes now go to Trash like every other record
+    // type. Without this entry the row would render (trashRepository's
+    // MODULE_LABELS now has an "episodes" label) but restore would silently
+    // do nothing, because restoreEntries() looks the repository up here and
+    // skips a miss. The label and this map have to stay in step.
+    episodes: EpisodeRepository,
+  };
 
 // ADDED 26 Aug 2026 — real ask: calendar view, Google-Calendar-style,
 // pulling real events from every module. Lives in Settings per the user's

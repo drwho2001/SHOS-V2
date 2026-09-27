@@ -1154,7 +1154,13 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
   };
-  const editUndo = useEditUndo(MeasurementRepository);
+// FIXED 27 Sep 2026 - onChanged is the callback useEditUndo fires after
+  // an undo or redo, to tell the host module its list is now stale. Without it
+  // the repository write succeeds and the toast says "undone", but the list
+  // still shows the edited value - the app claims an undo worked while
+  // displaying the opposite. 7 of 11 call sites omitted it; MenstrualHealth and
+  // SymptomLog were the only two already passing it.
+  const editUndo = useEditUndo(MeasurementRepository, refresh);
   // ADDED — real ask: default unit preferences + manage groups, gear
   // icon on the landing screen (see MeasurementsLanding's onOpenPreferences).
   const [showPreferences, setShowPreferences] = useState(false);

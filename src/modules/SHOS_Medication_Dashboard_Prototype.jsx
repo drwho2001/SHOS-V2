@@ -1675,6 +1675,9 @@ const PATTERN_ORDER = { daily: 0, custom: 1, prn: 2 };
 
 export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, registerModuleBackHandler } = {}) {
   const [meds, setMeds] = useLoadedState(() => loadMedications(), [], []);
+  // Declared before useEditUndo below so that call can pass a stable
+  // indirection to refreshMeds without a temporal-dead-zone reference.
+  const refreshMedsRef = useRef(null);
   // ADDED 15 Sep 2026 — real ask: cards need to know the current
   // reminder-timing mode (adaptive/fixed, see medicationCalculations.js)
   // to compute their own "next reminder" display consistently with
@@ -1684,7 +1687,14 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // record (name/dose/route/etc.) — see editUndoHelpers.js. Separate
   // from the dose-log undo/redo just below (lastLoggedEntry/
   // redoAvailable), which covers a different action entirely.
-  const editUndo = useEditUndo(MedicationRepository);
+  // FIXED 27 Sep 2026 - onChanged tells the hook the list is stale after an
+  // undo/redo, so the card re-reads instead of continuing to show the edited
+  // value while the toast says "undone". One of 7 sites missing it.
+  // refreshMeds is declared just below this line (it was, when this call was
+  // written) and so is not in scope on this line - hence the wrapper below
+  // rather than passing it directly, which would be a temporal-dead-zone
+  // crash on every render.
+  const editUndo = useEditUndo(MedicationRepository, () => refreshMedsRef.current?.());
   // ADDED 19 Aug 2026 — read once on mount, same pattern as every other
   // module's read-only cross-repository reference (e.g. Contacts'
   // Timeline reading EncounterRepository). Allergies is edited on My
@@ -1694,6 +1704,10 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // rebuilds the merged view so the screen reflects what's now actually
   // stored, the same way setMeds always used to trigger a re-render.
   const refreshMeds = () => { loadMedications().then(setMeds); };
+  // Indirection so useEditUndo above can call it without being declared before
+  // it - see that call's own comment. Assigned on every render, so it always
+  // points at the current closure.
+  refreshMedsRef.current = refreshMeds;
   const [sheet, setSheet] = useState(null);
   const [correction, setCorrection] = useState(null);
   const [editingMed, setEditingMed] = useState(null);

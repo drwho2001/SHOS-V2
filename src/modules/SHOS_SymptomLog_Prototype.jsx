@@ -827,7 +827,11 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
   // adding a new one) here didn't update it until you left and
   // re-entered Healthcare. onDataChanged notifies the parent to
   // recompute immediately instead.
-  const createEntry = async (data) => { await SymptomLogRepository.create(data); onDataChanged?.(); backToList(); };
+  // FIXED 27 Sep 2026 - re-read the list after both create and update. Same
+  // omission as Encounters/Testing/ClinicVisits/Vaccinations: refresh() was
+  // wired to the delete paths only, so a saved entry did not appear on the
+  // list the user returned to.
+  const createEntry = async (data) => { await SymptomLogRepository.create(data); await refresh(); onDataChanged?.(); backToList(); };
   const saveEntry = async (data) => {
     // CHANGED — editUndoHelpers.js's captureBeforeEdit/notifyEdited are
     // now async, and SymptomLogRepository itself is now async too
@@ -835,6 +839,7 @@ export default function SymptomLogModule({ openAddOnMount = false, onConsumedQui
     await editUndo.captureBeforeEdit(screen.id);
     await SymptomLogRepository.update(screen.id, data);
     await editUndo.notifyEdited(screen.id);
+    await refresh();
     onDataChanged?.();
     setScreen({ name: "detail", id: screen.id });
   };

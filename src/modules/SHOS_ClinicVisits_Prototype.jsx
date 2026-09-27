@@ -1775,7 +1775,13 @@ export default function ClinicVisitsModule({ openAddOnMount = false, onConsumedQ
     undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
   };
   // ADDED 19 Aug 2026 — real undo/redo extension.
-  const editUndo = useEditUndo(ClinicVisitsRepository);
+// FIXED 27 Sep 2026 - onChanged is the callback useEditUndo fires after
+  // an undo or redo, to tell the host module its list is now stale. Without it
+  // the repository write succeeds and the toast says "undone", but the list
+  // still shows the edited value - the app claims an undo worked while
+  // displaying the opposite. 7 of 11 call sites omitted it; MenstrualHealth and
+  // SymptomLog were the only two already passing it.
+  const editUndo = useEditUndo(ClinicVisitsRepository, refresh);
   // ADDED — real ask: Clinic Card's quick-add shortcuts need the new
   // record to open with real starting values, not blank.
   const [addPrefill, setAddPrefill] = useState(null);
@@ -1824,7 +1830,10 @@ export default function ClinicVisitsModule({ openAddOnMount = false, onConsumedQ
     screenContent = (
       <VisitEditSheet T={T} visitId={screen.id} prefillData={!screen.id ? addPrefill : null}
         onClose={() => setScreen(screen.id ? { name: "detail", id: screen.id } : { name: "landing" })}
-        onSaved={(id) => setScreen({ name: "detail", id })}
+        // FIXED 27 Sep 2026 - same omission as Encounters/Testing: refresh()
+        // existed and was wired to the delete paths, but saving never called
+        // it, so the returned-to list showed pre-save data.
+        onSaved={(id) => { refresh(); setScreen({ name: "detail", id }); }}
         onBeforeEdit={editUndo.captureBeforeEdit}
         onAfterEdit={editUndo.notifyEdited} />
     );

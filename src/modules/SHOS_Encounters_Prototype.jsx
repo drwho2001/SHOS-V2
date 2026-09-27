@@ -1775,7 +1775,13 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
 
   // ADDED 19 Aug 2026 — see editUndoHelpers.js for the full reasoning.
   // One hook instance per module, per the user's explicit scoping rule.
-  const editUndo = useEditUndo(EncounterRepository);
+// FIXED 27 Sep 2026 - onChanged is the callback useEditUndo fires after
+  // an undo or redo, to tell the host module its list is now stale. Without it
+  // the repository write succeeds and the toast says "undone", but the list
+  // still shows the edited value - the app claims an undo worked while
+  // displaying the opposite. 7 of 11 call sites omitted it; MenstrualHealth and
+  // SymptomLog were the only two already passing it.
+  const editUndo = useEditUndo(EncounterRepository, refresh);
 
   // ADDED 19 Aug 2026 — same Dashboard quick-add pattern as Contacts;
   // see that file for the fuller reasoning on why mount-only is enough.
@@ -1826,6 +1832,15 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
       <EncounterEditSheet T={T} encounterId={screen.id}
         onClose={() => setScreen(screen.id ? { name: "detail", id: screen.id } : { name: "landing" })}
         onSaved={(placeholderContactId) => {
+          // FIXED 27 Sep 2026 - the list was not re-read after a save, so a
+          // new or edited Encounter was genuinely written to storage but did
+          // not appear in the list the user returned to. Confirmed live in a
+          // browser: the record was only visible after a tab switch, because
+          // a tab switch remounts the module and re-runs the loader. This
+          // hand the user their own new record to the Home screen just to
+          // make it show up. refresh() existed and was already wired to the
+          // delete paths - only the save paths skipped it.
+          refresh();
           if (placeholderContactId) {
             onNavigateToRecord?.("contacts", placeholderContactId);
           } else {

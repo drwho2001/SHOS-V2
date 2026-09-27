@@ -1473,7 +1473,13 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
   };
   // ADDED 19 Aug 2026 — real undo/redo extension, same shared
   // mechanism as Encounters/Contacts/Medication.
-  const editUndo = useEditUndo(TestingRepository);
+// FIXED 27 Sep 2026 - onChanged is the callback useEditUndo fires after
+  // an undo or redo, to tell the host module its list is now stale. Without it
+  // the repository write succeeds and the toast says "undone", but the list
+  // still shows the edited value - the app claims an undo worked while
+  // displaying the opposite. 7 of 11 call sites omitted it; MenstrualHealth and
+  // SymptomLog were the only two already passing it.
+  const editUndo = useEditUndo(TestingRepository, refresh);
   // ADDED — real ask: Clinic Card's quick-add shortcuts ("TOC 2 week")
   // need the new record to open with real starting values, not blank.
   const [addPrefill, setAddPrefill] = useState(null);
@@ -1534,7 +1540,13 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
     screenContent = (
       <TestEditSheet T={T} testId={screen.id} prefillData={!screen.id ? addPrefill : null}
         onClose={() => setScreen(screen.id ? { name: "detail", id: screen.id } : { name: "landing" })}
-        onSaved={(id) => { onDataChanged?.(); syncTestingReminder(); setScreen({ name: "detail", id }); }}
+        // FIXED 27 Sep 2026 - refresh() was defined and wired to the delete
+        // paths, but the SAVE path never called it, so a new or edited Test
+        // was written to storage and then invisible on the list the user
+        // returned to (the detail view looked correct because it loads by id,
+        // which is why this hid so well). onDataChanged only reaches
+        // Healthcare-internal consumers, not this module's own list.
+        onSaved={(id) => { refresh(); onDataChanged?.(); syncTestingReminder(); setScreen({ name: "detail", id }); }}
         onBeforeEdit={editUndo.captureBeforeEdit}
         onAfterEdit={editUndo.notifyEdited}
         onNavigateToRecord={onNavigateToRecord} />

@@ -10,6 +10,7 @@ import { useIsDesktopWidth } from "../../calculations/responsive";
 import { hasUnbackedChanges } from "../../storage/backupService";
 import { ErrorLogRepository } from "../../repositories/errorLogRepository";
 import { localStorageAdapter } from "../../storage/storageAdapter";
+import { resetAllData } from "../../repositories/resetAllData";
 import { findOrphanReferences } from "../../calculations/orphanReferenceCheck";
 import { ContactRepository } from "../../repositories/contactRepository";
 import { EncounterRepository } from "../../repositories/encounterRepository";
@@ -142,8 +143,19 @@ export function DeveloperToolsScreen({ onClose }) {
     { label: "Results Registry entries", value: resultsCount },
   ];
 
-  const handleReset = () => {
-    localStorageAdapter.clearAllAppData();
+  // FIXED 27 Sep 2026 - this genuinely did not reset anything.
+  // clearAllAppData() only removes the localStorage keys, but every
+  // repository keeps an in-memory cache that survives that, AND each
+  // repository loads with `storage.load(KEY, seedX)` so a MISSING key brings
+  // the seed data straight back on the next read. Measured: 16 contacts
+  // before, 0 storage keys after, still 16 contacts in memory - and back to
+  // 16 after a reload. The button's own confirmation text promises a
+  // permanent delete, so it now goes through the repositories, which own
+  // both the cache and the seed-vs-empty distinction.
+  const [resetResult, setResetResult] = useState(null);
+  const handleReset = async () => {
+    const result = await resetAllData();
+    setResetResult(result);
     setResetStage("done");
   };
 
@@ -257,7 +269,21 @@ export function DeveloperToolsScreen({ onClose }) {
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Danger zone</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: `1px solid ${ACTION.red}`, borderRadius: RADIUS.md, margin: "0 16px 20px", padding: 16 }}>
         {resetStage === "done" ? (
-          <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>All app data cleared. Reload the app to see the fresh-start state.</div>
+          // Reports what actually happened rather than a blanket "cleared",
+          // because a partial reset that silently claims success is the exact
+          // failure this button already had.
+          <div>
+            <div style={{ fontSize: 13, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
+              {resetResult?.failed?.length
+                ? `Cleared ${resetResult.ok.length} of ${resetResult.ok.length + resetResult.failed.length} stores. Some could not be cleared.`
+                : `All app data cleared (${resetResult?.ok.length ?? 0} stores). Reload the app to see the fresh-start state.`}
+            </div>
+            {resetResult?.failed?.length > 0 && (
+              <ul style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 12, color: ACTION.red }}>
+                {resetResult.failed.map((f) => <li key={f.name}>{f.name}: {f.error}</li>)}
+              </ul>
+            )}
+          </div>
         ) : resetStage === "confirming" ? (
           <>
             <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 12 }}>

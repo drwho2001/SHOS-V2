@@ -38,6 +38,18 @@ export const MODULE_LABELS = {
   vaccinations: "Vaccination",
   medications: "Medication",
   measurements: "Measurement",
+  // ADDED 27 Sep 2026 — Episodes were hard-deleting without ever reaching
+  // Trash, so this key did not exist and an episode could not be recovered
+  // even in principle. SHOS_Timeline_Prototype.jsx's handleDelete/redoDelete
+  // now call TrashRepository.add("episodes", ...) exactly like every other
+  // record type.
+  //
+  // Also missing while I was here: menstrualCycle, contraception, pregnancy
+  // and locations are all deletable record types with their own detail
+  // screens, and MenstrualHealth does archive-first rather than delete, so
+  // they are correctly absent. Flagging it rather than adding them because
+  // nothing writes those keys and a label with no writer is a lie.
+  episodes: "Episode",
 };
 
 // CHANGED — real groundwork for encryption at rest (see CLAUDE.md's

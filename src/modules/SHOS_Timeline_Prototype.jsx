@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, WarningIcon as AlertTriangle, TrashIcon as Trash2, ArchiveIcon as Archive, ArrowsClockwiseIcon as RefreshCcw, ChatCircleTextIcon as MessageSquare, CopyIcon as Copy, XIcon as X } from "@phosphor-icons/react";
 import { EpisodeRepository, RESOLUTION_OPTIONS } from "../repositories/episodeRepository";
+// ADDED 27 Sep 2026 — Episodes now go to Trash like every other record type
+// (see handleDelete below). Without this import they were hard-deleted, and
+// trashRepository's MODULE_LABELS had no "episodes" key, so recovery was not
+// merely unused but impossible.
+import { TrashRepository } from "../repositories/trashRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 // ADDED 19 Aug 2026 — TRIGGER_REASON_OPTIONS now lives here, real
 // in-app editable option list.
@@ -793,28 +798,49 @@ export default function TimelineModule({ onClose, registerModuleBackHandler } = 
   // own deleteToast (8s window, tap to undo, tap again to redo).
   const [deleteToast, setDeleteToast] = useState(null);
   const undoTimerRef = useRef(null);
-  const handleDelete = async (record) => {
-    await EpisodeRepository.delete(record.id);
-    clearTimeout(undoTimerRef.current);
-    setDeleteToast({ mode: "undo", record });
-    undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
-    setRefreshKey((k) => k + 1);
-  };
-  const undoDelete = async () => {
-    if (!deleteToast) return;
-    await EpisodeRepository.restore(deleteToast.record);
-    clearTimeout(undoTimerRef.current);
-    setDeleteToast({ mode: "redo", record: deleteToast.record });
-    undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
-    setRefreshKey((k) => k + 1);
-  };
-  const redoDelete = async () => {
-    if (!deleteToast) return;
-    await EpisodeRepository.delete(deleteToast.record.id);
-    clearTimeout(undoTimerRef.current);
-    setDeleteToast(null);
-    setRefreshKey((k) => k + 1);
-  };
+    // FIXED 27 Sep 2026 — Episodes were the ONLY record type that hard-deleted
+    // instead of going to Trash. Every sibling module (Contacts, Encounters,
+    // Clinic Visits, Testing, Vaccinations, Measurements, Medications,
+    // SymptomLog, Menstrual) does TrashRepository.add(...) and then deletes;
+    // this went straight to EpisodeRepository.delete(). It was also
+    // structurally impossible to fix later without adding a key: trash
+    // Repository's MODULE_LABELS had no "episodes" entry, so an episode could
+    // never appear in the Trash screen at all.
+    //
+    // This matters more here than elsewhere. An Episode is the only record
+    // that says a given encounter/test/visit/symptom belonged to one illness
+    // thread. Delete one and the individual records survive, but nothing
+    // anywhere records they were ever related — on an app whose whole premise
+    // is "your data is safe on your own device", that is the one place real
+    // history could be lost through ordinary use. The 8-second undo toast was
+    // the only recovery.
+    const handleDelete = async (record) => {
+      await TrashRepository.add("episodes", [record]);
+      await EpisodeRepository.delete(record.id);
+      clearTimeout(undoTimerRef.current);
+      setDeleteToast({ mode: "undo", record });
+      undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
+      setRefreshKey((k) => k + 1);
+    };
+    const undoDelete = async () => {
+      if (!deleteToast) return;
+      await EpisodeRepository.restore(deleteToast.record);
+      clearTimeout(undoTimerRef.current);
+      setDeleteToast({ mode: "redo", record: deleteToast.record });
+      undoTimerRef.current = setTimeout(() => setDeleteToast(null), 8000);
+      setRefreshKey((k) => k + 1);
+    };
+    const redoDelete = async () => {
+      if (!deleteToast) return;
+      // Re-add to Trash on redo, so the record is present in the Trash screen
+      // rather than having been silently dropped from it by the first
+      // delete's own add. Matches ClinicVisits' redoDelete exactly.
+      await TrashRepository.add("episodes", [deleteToast.record]);
+      await EpisodeRepository.delete(deleteToast.record.id);
+      clearTimeout(undoTimerRef.current);
+      setDeleteToast(null);
+      setRefreshKey((k) => k + 1);
+    };
 
   // ADDED — real ask: back should step within Timeline (add/detail back
   // to list) before closing the whole overlay, matching the pattern
