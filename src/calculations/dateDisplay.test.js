@@ -21,14 +21,30 @@ import {
   realTimestampFromStored,
 } from "./dateInputHelpers";
 
+/**
+ * Locale-proof date assertion. Asserting the formatted STRING
+ * ("1 Mar 2026" vs "Mar 1, 2026") makes a test pass on a UK-locale machine
+ * and fail on CI's en-US - which is exactly what happened to the first
+ * version of the real-instant test in this file. Parsing the rendered value
+ * back and comparing its date components tests the thing that actually
+ * matters (which calendar day is shown) with no locale in the way.
+ */
+function expectShowsDate(rendered, year, monthIndex, day) {
+  const d = new Date(rendered);
+  expect(d.getFullYear()).toBe(year);
+  expect(d.getMonth()).toBe(monthIndex);
+  expect(d.getDate()).toBe(day);
+}
+
+
 describe("formatStoredDate - a stored date must never shift", () => {
   it("renders the calendar digits exactly as they were saved", () => {
     // 1 Mar, 00:30 local wall-clock when saved. Rendered with a naive local
     // call this becomes 28 Feb in any negative-offset zone, because the
     // stored Z is a lie and the browser re-applies the offset.
-    expect(formatStoredDate("2026-03-01T00:30:00.000Z")).toBe("1 Mar 2026");
-    expect(formatStoredDate("2026-03-01T00:00:00.000Z")).toBe("1 Mar 2026");
-    expect(formatStoredDate("2026-12-31T23:30:00.000Z")).toBe("31 Dec 2026");
+    expectShowsDate(formatStoredDate("2026-03-01T00:30:00.000Z"), 2026, 2, 1);
+    expectShowsDate(formatStoredDate("2026-03-01T00:00:00.000Z"), 2026, 2, 1);
+    expectShowsDate(formatStoredDate("2026-12-31T23:30:00.000Z"), 2026, 11, 31);
   });
 
   it("is stable at both ends of the day", () => {
@@ -37,20 +53,20 @@ describe("formatStoredDate - a stored date must never shift", () => {
     // values survive even without the guard, which is exactly why this bug
     // was invisible to casual testing.
     const cases = [
-      ["2026-01-01T00:05:00.000Z", "1 Jan 2026"],
-      ["2026-01-01T23:55:00.000Z", "1 Jan 2026"],
-      ["2026-06-15T00:05:00.000Z", "15 Jun 2026"],
-      ["2026-06-15T23:55:00.000Z", "15 Jun 2026"],
+      ["2026-01-01T00:05:00.000Z", 0, 1],
+      ["2026-01-01T23:55:00.000Z", 0, 1],
+      ["2026-06-15T00:05:00.000Z", 5, 15],
+      ["2026-06-15T23:55:00.000Z", 5, 15],
     ];
-    for (const [input, expected] of cases) {
-      expect(formatStoredDate(input)).toBe(expected);
+    for (const [input, monthIndex, day] of cases) {
+      expectShowsDate(formatStoredDate(input), 2026, monthIndex, day);
     }
   });
 
   it("renders a stored date-only value without inventing an offset problem", () => {
     // Some fields store a bare "YYYY-MM-DD". Parsed as UTC midnight, a naive
     // render shifts it a day backwards in negative-offset zones.
-    expect(formatStoredDate("2026-03-01")).toBe("1 Mar 2026");
+    expectShowsDate(formatStoredDate("2026-03-01"), 2026, 2, 1);
   });
 
   it("keeps the clock time on a stored date-time", () => {
@@ -100,7 +116,7 @@ describe("the two families are genuinely different treatments", () => {
     const asLocal = new Date(stored).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
     // In UTC the two coincide; the assertion below is written to hold in
     // every zone by checking against the digits rather than a fixed string.
-    expect(storedRead).toBe("1 Mar 2026");
+    expectShowsDate(storedRead, 2026, 2, 1);
     // If a future edit makes these identical everywhere, that is not a
     // failure of this test but it IS worth knowing - hence the explicit
     // comparison rather than a bare re-assertion.
@@ -119,7 +135,7 @@ describe("the two families are genuinely different treatments", () => {
     expect(rebuilt.getMonth()).toBe(2);
     expect(rebuilt.getFullYear()).toBe(2026);
     // And the display helper must agree with that arithmetic.
-    expect(formatStoredDate(stored)).toBe("1 Mar 2026");
+    expectShowsDate(formatStoredDate(stored), 2026, 2, 1);
   });
 
   // The regression this section exists to prevent, recorded because it
@@ -132,19 +148,25 @@ describe("the two families are genuinely different treatments", () => {
   // file only exercised the helpers in isolation and never checked which
   // kind of value each call site actually passes.
   it("renders a real instant one day LATER than a stored value would", () => {
-    // 00:30 BST on 1 Mar is 23:30 UTC on 28 Feb. A real instant must be read
-    // in local time, so it is the 1st. A stored value with the same digits is
-    // the 1st too - but for the opposite reason. Pinning the real instant to
-    // UTC gives the 28th, which is what the regression displayed.
+    // 00:30 local on 1 Mar is 23:30 UTC on 28 Feb in a BST-like zone. A real
+    // instant must be read in local time, so it is the 1st. Pinning it to UTC
+    // gives the 28th, which is what the regression displayed.
+    //
+    // Compared as a PARSED DATE rather than a formatted string: the first
+    // version of this test asserted the literal "1 Mar 2026", which passes
+    // on a UK-locale machine and fails on CI's en-US ("Mar 1, 2026"). Every
+    // other test in this file got away with literals because the helpers
+    // hardcode no locale AND the values happen to format identically under
+    // day-first and month-first only when the day is > 12 - so a 1st is
+    // exactly the value that exposes it. Comparing parsed components is
+    // locale-proof and tests the thing that actually matters.
     const realInstant = new Date(2026, 2, 1, 0, 30).toISOString();
-    expect(formatInstantDate(realInstant)).toBe("1 Mar 2026");
-    // The wrong treatment, asserted so the failure mode is documented rather
-    // than merely avoided.
-    const wrongTreatment = new Date(realInstant)
+    expectShowsDate(formatInstantDate(realInstant), 2026, 2, 1);
+
+    // And the wrong treatment, asserted so the failure mode is documented
+    // rather than merely avoided.
+    const wrong = new Date(realInstant)
       .toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-    // In UTC-based CI this is the same string; the value here is that the
-    // test pins the CORRECT behaviour, and the helper pair keeps the two
-    // treatments available and distinct so call sites can choose properly.
-    expect(typeof wrongTreatment).toBe("string");
+    expect(typeof wrong).toBe("string");
   });
 });
