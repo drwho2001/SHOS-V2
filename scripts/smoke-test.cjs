@@ -1256,6 +1256,14 @@ async function testServiceWorkerAutoUpdate(browser) {
     // Unregistering the worker in-page did not fix it either.
     await testSampleDataDisclosureAndClear(browser);
     await testSampleDataClearInDeveloperTools(browser);
+    // Placed here, with the other own-context flows, for a reason its own
+    // comment explains at length: under the suppression behaviour this flow
+    // tests, a reminder banner dismissed by ANY earlier flow stays gone for
+    // the rest of that app run, so no flow on the shared page can observe a
+    // first-run banner. It needs a fresh context, and being early also keeps
+    // it ahead of the PWA auto-update flow that leaves a service worker in the
+    // browser profile.
+    await testBannerSuppression(browser);
     await dismissOnboarding(page);
     // Placed AFTER dismissOnboarding, and that ordering is load-bearing: this
     // runs on the shared `page`, which still has the onboarding overlay up
@@ -1267,11 +1275,6 @@ async function testServiceWorkerAutoUpdate(browser) {
     // overlay open, which is a neutral state for whatever runs next, and it
     // needs the sample contacts the other flows all leave in place.
     await testSearchBackNavigation(page);
-    // Placed immediately after it: both need a real due banner / real search
-    // results on the shared page's sample data, and this one leaves the page
-    // on Home with a dismissal recorded, which is a neutral state for the
-    // flows that follow.
-    await testBannerSuppression(page);
     await testMedicationReasonSideEffects(page);
     await testSymptomTestTwoWayLink(page);
     await testLocationsExtraFields(page);
@@ -1518,67 +1521,100 @@ async function testSearchBackNavigation(page) {
 // worked, the tests passed, and the feature was not on the screens that
 // mattered.
 //
-// The obvious version of this test - dismiss, wait 65 seconds, assert - is
-// unusable. Sixty-five seconds of wall clock per run is not something a CI
-// suite should pay, and on a loaded machine it is flaky for reasons that have
-// nothing to do with the app. Instead this waits for the banner to be back if
-// it is going to be at all, and the poll is driven by the app's own real
-// visibilitychange path, which calls the identical chokepoint the 60s interval
-// does. So the thing under test is the real refresh, not a shortcut around it.
-async function testBannerSuppression(page) {
+// IT NEEDS ITS OWN BROWSER CONTEXT, and the first version got that wrong in an
+// instructive way. It originally ran on the shared page, after the other flows
+// - and `dismissTransientBanners()` has always dismissed the medication banner
+// at the start of the run. Under the OLD behaviour that dismissal evaporated
+// after 60s, so a later flow could still see a banner. Under the behaviour this
+// flow is testing, a dismissal lasts the whole app run - which is the entire
+// point of the feature, and which means NO flow on a shared page can ever see a
+// reminder banner again after the first dismissal. It failed on its own guard,
+// which is exactly what that guard was written to catch: without it this flow
+// would have "passed" while testing nothing at all.
+//
+// A fresh context is the only honest way to observe a first-run banner, and it
+// also isolates the flow from whatever the shared page's data has become.
+async function testBannerSuppression(browser) {
   console.log("\n[19/19] Reminder banners - a dismissed one stays dismissed, and an acknowledged one leaves a quiet mark (added 28 Sep 2026)");
-  await navHome(page);
-  await dismissTransientBanners(page);
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  const flowErrors = [];
+  page.on("pageerror", (err) => flowErrors.push(err.message));
+  try {
+    await page.goto(APP_URL, { waitUntil: "networkidle" });
+    // Onboarding only. The banner dismissal helpers are deliberately NOT
+    // called - see the context note above.
+    for (const label of ["Skip", "Not now", "Get started"]) {
+      const b = page.getByRole("button", { name: label, exact: true });
+      if (await b.count()) { await b.first().click({ timeout: 2500 }).catch(() => {}); await page.waitForTimeout(400); }
+    }
+    // The first-run sample-data banner sits above the fold and would shift the
+    // reminder banner's position; dismiss it without scrolling.
+    await page.evaluate(() => {
+      const el = [...document.querySelectorAll('[role="button"]')]
+        .find((b) => (b.textContent || "").trim() === "Keep it for now");
+      if (el) el.click();
+    }).catch(() => {});
+    await page.waitForTimeout(600);
 
-  // The seed data's PrEP dose is genuinely due, so its banner is real rather
-  // than something this flow had to manufacture.
-  const banner = page.locator('[aria-label="Dismiss due medications banner"]');
-  const hadBanner = await banner.first().waitFor({ state: "visible", timeout: 20000 })
-    .then(() => true).catch(() => false);
-  if (!hadBanner) {
-    assert(false, "a due medication actually produces a banner to dismiss - if this fails the rest of the flow is vacuous");
-    return;
+    // The seed data's PrEP dose is genuinely due, so its banner is real rather
+    // than something this flow had to manufacture.
+    const banner = page.locator('[aria-label="Dismiss due medications banner"]');
+    const hadBanner = await banner.first().waitFor({ state: "visible", timeout: 25000 })
+      .then(() => true).catch(() => false);
+    if (!hadBanner) {
+      const diag = await page.evaluate(() => ({
+        text: document.body.innerText.slice(0, 300),
+        dismissButtons: [...document.querySelectorAll('[aria-label^="Dismiss"]')].map((b) => b.getAttribute("aria-label")),
+      }));
+      assert(false,
+        "a due medication actually produces a banner to dismiss - if this fails the rest of the flow is vacuous. Dismiss buttons present: " +
+        JSON.stringify(diag.dismissButtons) + " first 300 chars: " + diag.text);
+      return;
+    }
+    assert(true, "a genuinely due medication produces a banner");
+
+    // Dismiss it. This is the X, not "Take" - it must not log a dose.
+    await banner.first().click({ timeout: 8000 });
+    await banner.first().waitFor({ state: "detached", timeout: 8000 }).catch(() => {});
+    const goneNow = await page.locator('[aria-label="Dismiss due medications banner"]').count();
+    assert(goneNow === 0, "tapping close hides the banner immediately");
+
+    // Now the part that actually failed before: drive the app's own refresh
+    // chokepoint - the same call the 60s interval makes - and confirm the banner
+    // does NOT come back.
+    await page.evaluate(() => { document.dispatchEvent(new Event("visibilitychange")); });
+    await page.waitForTimeout(2500);
+    const backAfterRefresh = await page.locator('[aria-label="Dismiss due medications banner"]').count();
+    assert(backAfterRefresh === 0,
+      "the banner does NOT come back on the next due-state refresh - before this, every dismissal was undone within 60 seconds, which is the surest way to train someone to ignore a reminder");
+
+    // A second refresh, because the first one can land before the banner had
+    // been re-rendered at all. Two real cycles is the difference between "it
+    // happened to not have arrived yet" and "it is genuinely suppressed".
+    await page.evaluate(() => { document.dispatchEvent(new Event("visibilitychange")); });
+    await page.waitForTimeout(2500);
+    assert(await page.locator('[aria-label="Dismiss due medications banner"]').count() === 0,
+      "and it is still gone after a second refresh, not merely slow to come back");
+
+    // And no dose was silently logged by any of this. The dismissal is a UI
+    // fact and must never masquerade as handling the medication - which is the
+    // real risk here, because a dismissal that logged a dose would look like it
+    // worked right up until the next dose was missed.
+    //
+    // Checked via the toast wording rather than by inspecting the dose log: the
+    // "Take" path toasts "PrEP (...) logged at 8:00am", so its absence is a
+    // direct, discriminating signal. An earlier version of this assertion was
+    // `!/regex/.test(text) || true`, which is vacuous by construction - it can
+    // never fail - and that is the single most-recorded mistake in this repo.
+    const toasts = await page.evaluate(() => document.body.innerText);
+    assert(!/logged at/i.test(toasts),
+      "dismissing a banner did not log a dose - nothing about a dismissal touched the medication's data");
+
+    if (flowErrors.length) throw new Error("page errors during the banner flow:\n" + flowErrors.join("\n"));
+  } finally {
+    await context.close();
   }
-  assert(true, "a genuinely due medication produces a banner");
-
-  // Dismiss it. This is the X, not "Take" - it must not log a dose.
-  await banner.first().click({ timeout: 8000 });
-  await banner.first().waitFor({ state: "detached", timeout: 8000 }).catch(() => {});
-  const goneNow = await page.locator('[aria-label="Dismiss due medications banner"]').count();
-  assert(goneNow === 0, "tapping close hides the banner immediately");
-
-  // Now the part that actually failed before: drive the app's own refresh
-  // chokepoint - the same call the 60s interval makes - and confirm the banner
-  // does NOT come back.
-  await page.evaluate(() => {
-    document.dispatchEvent(new Event("visibilitychange"));
-  });
-  await page.waitForTimeout(2500);
-  const backAfterRefresh = await page.locator('[aria-label="Dismiss due medications banner"]').count();
-  assert(backAfterRefresh === 0,
-    "the banner does NOT come back on the next due-state refresh - before this, every dismissal was undone within 60 seconds, which is the surest way to train someone to ignore a reminder");
-
-  // A second refresh, because the first one can land before the banner had
-  // been re-rendered at all. Two real cycles is the difference between "it
-  // happened to not have arrived yet" and "it is genuinely suppressed".
-  await page.evaluate(() => { document.dispatchEvent(new Event("visibilitychange")); });
-  await page.waitForTimeout(2500);
-  assert(await page.locator('[aria-label="Dismiss due medications banner"]').count() === 0,
-    "and it is still gone after a second refresh, not merely slow to come back");
-
-  // And no dose was silently logged by any of this. The dismissal is a UI
-  // fact and must never masquerade as handling the medication - which is the
-  // real risk here, because a dismissal that logged a dose would look like it
-  // worked right up until the next dose was missed.
-  //
-  // Checked via the toast wording rather than by inspecting the dose log: the
-  // "Take" path toasts "PrEP (...) logged at 8:00am", so its absence is a
-  // direct, discriminating signal. An earlier version of this assertion was
-  // `!/regex/.test(text) || true`, which is vacuous by construction - it can
-  // never fail - and that is the single most-recorded mistake in this repo.
-  const toasts = await page.evaluate(() => document.body.innerText);
-  assert(!/logged at/i.test(toasts),
-    "dismissing a banner did not log a dose - nothing about a dismissal touched the medication's data");
 }
 
 // ---------------------------------------------------------------------------
