@@ -410,6 +410,52 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+## Recently shipped (28 Sep 2026, latest - search said "no matches" before it had searched, and two more vacuous gates caught)
+
+Continuing the new-user audit into search, plus the verification work the
+CI/local split prompted.
+
+**Global Search reported "No matches" for any query typed before its index had
+built.** It loaded the index with `useLoadedMemo(() => buildIndex(), [], [])`,
+and that hook's fallback is an **empty array** - indistinguishable from "we
+searched every record and found nothing". So anyone who opened Search and typed,
+which is exactly what you open Search to do, was shown the confident answer
+`No matches for "X"` for as long as the index took, and then watched results
+appear underneath them with no explanation. A false negative that contradicts
+itself a second later is worse than a visibly slow screen: it doesn't just waste
+a moment, it teaches someone the app's search is unreliable, which is the
+opposite of the feature's purpose. The index now uses `null` as its
+not-yet-loaded sentinel, which cannot be confused with a real empty result, and
+the no-matches branch is gated behind `indexReady`. The `aria-live` region had
+the same false negative, so a screen-reader user was told the search had found
+nothing while it hadn't finished running; that is fixed too. Deliberately a
+plain `useState`/`useEffect` rather than a new `useLoadedState` variant: that
+hook is shared by ~100 call sites and has no notion of "loaded", and changing it
+for one caller is a far larger change than this needs.
+
+**A pattern worth naming, because it bit twice in one session.** Both
+source-level guards written this session failed their first run because the
+*comment documenting the fix* quoted the exact string the guard checked for
+absent. In this repo comments record what a bug **was**, which is what makes
+them valuable and exactly what makes a raw substring check useless. Both guards
+now strip comments before negative assertions, and both prove the stripper still
+sees real code so the negative check cannot itself become vacuous.
+
+**Phase 1g/1h were mostly non-findings, and that is the useful result.** The
+Menstrual & Contraception sub-tab is gated behind a preference, but the
+onboarding flow now literally asks the question and the Guide documents the
+path, so a new user is not left hunting. Partner Notification is reachable only
+from a **positive** test's detail view - which reads like a discoverability gap
+but is a deliberate clinical gate, and adding a shortcut to it would dilute
+exactly the "no clutter or alarm on sensitive health data" decision recorded
+elsewhere in this file. The Glossary already defines PrEP, PEP, DoxyPEP, Doxy,
+TOC, C&S, window period, BASHH, MGen, HSV and HPV, so the jargon sweep found
+nothing to add.
+
+Verified: vitest 281/281 across 24 files, eslint clean, encoding guard clean,
+fast gate green. The new search guard is mutation-verified: ungating the
+no-matches branch fails it.
+
 ## Recently shipped (27 Sep 2026, later still - the Guide under-promised the encryption, plus a guard so stale Settings paths can't ship again)
 
 Continuing Phase 1f. One real privacy-communication bug, one regression guard,

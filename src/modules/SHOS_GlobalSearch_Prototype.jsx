@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { MagnifyingGlassIcon as Search, XIcon as X, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, CaretRightIcon as ChevronRight, TestTubeIcon as TestTube, StethoscopeIcon as Stethoscope, ThermometerIcon as Thermometer, SyringeIcon as Syringe, RulerIcon as Ruler, DropIcon as Drop, ShieldIcon as Shield, BabyIcon as Baby } from "@phosphor-icons/react";
 import { ContactRepository } from "../repositories/contactRepository";
 import { MedicationRepository } from "../repositories/medicationRepository";
@@ -19,7 +19,6 @@ import { ContraceptionRepository } from "../repositories/contraceptionRepository
 import { PregnancyRepository } from "../repositories/pregnancyRepository";
 import { formatRelativeDate } from "../calculations/encounterCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
-import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // ADDED — real bug found in the user's own testing: kinks were never
 // indexed in Global Search at all — searching "fisting" found nothing,
@@ -355,10 +354,38 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
   // relevance-only list. Chronological is the real default per the user's
   // own stated preference.
   const [sortMode, setSortMode] = useState("chronological"); // "chronological" | "alphabetical"
-  const index = useLoadedMemo(() => buildIndex(), [], []);
+  // FIXED 28 Sep 2026 — real bug, and a bad one for a search screen.
+  //
+  // This used to be `useLoadedMemo(() => buildIndex(), [], [])`. The
+  // fallback is an EMPTY ARRAY, which is indistinguishable from "we searched
+  // everything and found nothing" — so anyone who opened Search and started
+  // typing (which is what you open Search to do) got the confident answer
+  // `No matches for "X"` for as long as the index took to build, and then had
+  // the results silently appear underneath them. A false negative that
+  // contradicts itself a moment later is worse than a slow screen: it teaches
+  // someone that this app's search is unreliable.
+  //
+  // `null` is used as the not-yet-loaded value precisely because it CANNOT be
+  // confused with a real empty index, so the "no matches" branch below is
+  // now only reachable once a genuine search has actually run.
+  //
+  // Deliberately a plain useState/useEffect rather than a new variant of
+  // useLoadedState: that hook is shared by ~100 call sites across the app and
+  // has no notion of "loaded", and adding one there for the benefit of a
+  // single caller is a much larger change than this one needs.
+  const [index, setIndex] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const built = await buildIndex();
+      if (!cancelled) setIndex(built);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  const indexReady = index !== null;
   const results = useMemo(() => {
     const q = query.trim();
-    if (!q.length) return [];
+    if (!q.length || !index) return [];
     // CHANGED — real ask: typo-tolerant matching, not just case-
     // insensitive substring. See fuzzyMatch.js for exactly what this
     // does and doesn't cover.
@@ -448,7 +475,13 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
         </div>
       )}
       <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
-        {query.trim().length > 0 && results.length > 0 ? `${results.length} results found, sorted by ${sortMode === "chronological" ? "most recent" : "A–Z"}` : query.trim().length > 0 ? "No matches found" : ""}
+        {query.trim().length > 0 && !indexReady
+          ? "Searching"
+          : query.trim().length > 0 && results.length > 0
+            ? `${results.length} results found, sorted by ${sortMode === "chronological" ? "most recent" : "A–Z"}`
+            : query.trim().length > 0
+              ? "No matches found"
+              : ""}
       </div>
 
       <div tabIndex={0} style={{ flex: 1, overflowY: "auto" }}>
@@ -457,7 +490,15 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
             Start typing to search across every record in SHOS — Contacts, Encounters, Medications, Testing, Clinic Visits, Symptom Log, Vaccinations, Measurements, and Menstrual Health.
           </div>
         )}
-        {query.trim().length > 0 && results.length === 0 && (
+        {query.trim().length > 0 && !indexReady && (
+          // See the indexReady comment above. Deliberately says nothing about
+          // whether there are matches, because at this point we genuinely do
+          // not know.
+          <div role="status" style={{ padding: "40px 24px", textAlign: "center", color: T.textDisabled, fontSize: 13 }}>
+            Searching…
+          </div>
+        )}
+        {query.trim().length > 0 && indexReady && results.length === 0 && (
           <div style={{ padding: "40px 24px", textAlign: "center", color: T.textDisabled, fontSize: 13 }}>
             No matches for "{query}".
           </div>
