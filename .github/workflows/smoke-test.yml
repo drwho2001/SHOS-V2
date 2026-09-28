@@ -45,6 +45,22 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5
+        with:
+          # REQUIRED by the docs gate, not an optimisation.
+          #
+          # actions/checkout defaults to fetch-depth: 1, i.e. exactly one
+          # commit and no history. The docs gate diffs the pushed commit RANGE
+          # (`before..after`), so with a shallow clone that range cannot be
+          # resolved, the diff returns nothing, and the gate reports "no source
+          # changes" — passing while checking absolutely nothing.
+          #
+          # This is the second time this gate has passed vacuously, and both
+          # times it looked green. The first was a working-tree diff in CI
+          # (always empty); this one is a shallow clone. Neither is a logic
+          # error, both are "the thing I was measuring wasn't there" - so the
+          # verification is to read the gate's own reported verdict in the CI
+          # log, not merely its exit code.
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@v5

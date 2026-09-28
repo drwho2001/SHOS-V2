@@ -343,18 +343,37 @@ if (!FAST && !DOCS_ONLY) {
 // other flags — see the note there about the TDZ crash this caused.)
 if (useRange || !SMOKE_ONLY) {
   let touched;
+  // A gate that CANNOT measure must say so, not pass. This is not
+  // hypothetical: with actions/checkout's default fetch-depth of 1 the range
+  // below is unresolvable, `git diff` errors, stdout is empty, and the gate
+  // happily reported "no source changes" — passing while checking nothing.
+  // That is the second time this gate has passed vacuously (the first was a
+  // working-tree diff, which is always empty in CI). The fix in the workflow
+  // is fetch-depth: 0, but this check is the backstop for any future
+  // misconfiguration of it.
+  let unmeasurable = null;
+
   if (useRange) {
     const ref = baseRef && !/^0+$/.test(baseRef) ? baseRef : "HEAD~1";
-    touched = run("git", ["diff", "--name-only", `${ref}..HEAD`]).stdout.split(/\r?\n/).filter(Boolean);
+    const r = run("git", ["diff", "--name-only", `${ref}..HEAD`]);
+    if (r.status !== 0) {
+      unmeasurable = `git diff ${ref}..HEAD failed — commit range unavailable (shallow clone? missing history?)`;
+    } else {
+      touched = r.stdout.split(/\r?\n/).filter(Boolean);
+    }
   } else {
     const changed = run("git", ["diff", "--name-only", "HEAD"]).stdout || "";
     const staged = run("git", ["diff", "--cached", "--name-only"]).stdout || "";
     touched = (changed + staged).split(/\r?\n/).filter(Boolean);
   }
   // The decision itself lives in scripts/docsGate.js so it can be unit-tested
-  // without this file's top-level code (which actually runs the whole suite)
-  // executing on import.
-  results.push({ name: "docs in sync", ...classifyDocsGate(touched, useRange) });
+  // without this file's top-level code (which actually runs the whole gate suite
+  // executing on import).
+  results.push(
+    unmeasurable
+      ? { name: "docs in sync", ok: false, note: unmeasurable }
+      : { name: "docs in sync", ...classifyDocsGate(touched, useRange) }
+  );
 }
 
 
