@@ -133,9 +133,16 @@ oversight.
   `scripts/smoke-test.cjs` against a real `vite preview` build on every
   push — the one piece of automated regression coverage this project
   has, now actually gated rather than manual-only.
-- `scripts/smoke-test.cjs` — 5 flows, CI-wired (see above) but also
-  still worth running by hand before/after any risky change during a
-  session: `npm run dev -- --port 5183` then `node scripts/smoke-test.cjs`.
+- `scripts/smoke-test.cjs` — 17 flows. **These run on every push in CI**
+  (`.github/workflows/smoke-test.yml` calls `npm run verify`, which is this
+  same script), so you do not need to run them by hand before committing — the
+  local loop is `npm run verify:fast`. Run the full local gate
+  (`npm run verify:smoke`) only to debug a smoke failure interactively, which
+  is the one thing CI cannot do for you.
+- `scripts/verify-changes.mjs` + `scripts/docsGate.js` — the gate runner and
+  the pure docs-gate decision function. `--fast` (build/lint/tests/encoding/
+  docs), `--smoke-only`, `--docs-only`.
+- `docs/CHANGE-PROCEDURE.md` — the commit/push algorithm itself.
 
 ## Working conventions for this project specifically
 
@@ -394,13 +401,22 @@ this date; summarized here for durability.
 - **Audit Findings (25 Sep 2026) — read-only sweep of high-stakes/unreviewed areas:**
   - **ErrorBoundary (main.jsx:147-163)** — ALREADY FIXED (Phase 4). Encrypted `shos_app_preferences` detected via `iv`+`ciphertext` shape, dynamically imports `cryptoService.js`, decrypts, clears navigation state, re-encrypts. No action needed.
   - **darkModePreference.js (calculations:89-95)** — ALREADY CORRECT. `syncDarkModePreferenceFromStorage()` called in `App.jsx:938` after vault unlock in `finishBootAfterUnlock()`. One-shot self-correction from `systemPrefersDark()` fallback works; async `await storage.load()` handles Phase 3 adapter. No action needed.
-  - **Module sheets `role="dialog"`** — COMPLETE. 51 occurrences across 37 files (corrected 25 Sep 2026; the earlier "~52 sheets across 19 modules" figure was wrong, "19" mixing module count with sub-counts). Medication Dashboard has 6 dialog sheets, not 7 (`MedicationEditSheet` is a full-screen sheet that never got the treatment; logged below).
+  - **Module sheets `role="dialog"`** — COMPLETE for the sheet set that
+    audit covered. Medication Dashboard has 6 dialog sheets, not 7:
+    `MedicationEditSheet` is a full-screen sheet that never got the treatment
+    and **remains open** — corrected 28 Sep 2026, because this line previously
+    said "logged below" and no such entry existed anywhere in this file, so a
+    reader following the reference found nothing. A dangling cross-reference
+    is worse than no cross-reference: it implies a record that was never
+    written.
   - **Widget deep-linking (native)** — 10 providers registered in the manifest, but only 9 use `com.shos.app://` (corrected 25 Sep 2026: `NextDoseWidgetProvider` has no Intent/tap action at all). `deepLinkRoutes.js` has 12 distinct positive routes across 7 hosts, asserted by 17 expectations in 5 test blocks (5 of them negative `toBeNull`) — "17 routes" conflated assertions with routes. The `reveal-clinic` route is mapped but inert (an empty `if` in `App.jsx:1726`). **Web gaps**: there is genuinely no `shos://` or `URLSearchParams` handling anywhere in `src/`; what is missing on web is only the URL *delivery* mechanism, not the route logic (corrected 25 Sep 2026: the earlier "8 of 10 routes unimplemented on web/PWA" was stale and contradicted entries above it in this same file).
   - **Draft storage (storage/draftStorage.js)** — 8 module files use sessionStorage (Contacts, Encounters, Testing, ClinicVisits, SymptomLog, Vaccinations, Measurements, Medication Dashboard). Sensitive data, ephemeral (cleared on save/tab close). Deliberately out of Phase 4 scope; no migration path if encryption extends here.
   - **Duplicate patterns needing standardization**: RegistryTagPicker (4 copies: Testing, MyProfile, Contacts, Encounters), Date/Time "Now" button (10 files), per-module field components (corrected 25 Sep 2026: SelectField 9 copies, DateTimeField 3, AgeField 2, RelationPicker 5 — none reach "10+"; the AgeField figure was off by 5x), FAB buttons (12 sites).
   - **Accessibility exhaustive (17 Sep axe-core + 25 Sep follow-up)**: Sub-screen `<h1>` complete (58 across 39 files); live regions are exactly 10 locations and no more; contrast violations fixed (Guide raw hex, Meds 50% opacity, InteractiveTour fixed); module sheets `role="dialog"` complete.
-  - **Settings navigation** — 16 rows across 8 sections (corrected 25 Sep 2026: the long-standing "22 rows" figure predates the 16 Sep Backup-&-Export consolidation and the Units-screen removal; a stale "same 22 rows" comment still sits in `SHOS_Settings_Prototype.jsx`). Test flakes from banner interception (fixed in helper); a crypto-timing wait in flow 13 was still a fixed 500ms plus a non-retrying count and is now a bounded wait (25 Sep 2026). Healthcare sub-tab discoverability (Menstrual/Contraception gated behind toggle).
-  - **Overlays — deliberately NOT normalised (25 Sep 2026)**: an audit of all ~69 real dialogs/sheets found zIndex scattered across 200/210/215/220/230/300, `maxHeight` across 80/85/88vh, radius across `radius.lg`/24/16, and 0 of 22 dimmed bottom sheets carrying any `env(safe-area-inset-bottom)`. Left alone on purpose: normalising geometry across every sheet is broad churn with unverifiable visual benefit, and this project has been burned by exactly that kind of sweep before. Geometry is only normalised where a sheet is already being touched. The genuine UX gaps the audit found (two back-button traps, six level-skipping overlays, no Escape anywhere) are logged as their own batch above.
+  - **Settings navigation** — 16 rows across 8 sections (corrected 25 Sep 2026: the long-standing "22 rows" figure predates the 16 Sep Backup-&-Export consolidation and the Units-screen removal). Test flakes from banner interception (fixed in helper); a crypto-timing wait in flow 13 was still a fixed 500ms plus a non-retrying count and is now a bounded wait (25 Sep 2026). Healthcare sub-tab discoverability (Menstrual/Contraception gated behind toggle).
+  - **Overlays — three genuine UX gaps, still OPEN.** Corrected and re-verified 28 Sep 2026, because this line previously said these were "logged as their own batch above" and **no such batch existed anywhere in this file**. The real, current state:
+    - **No overlay is dismissible with Escape.** Measured, not assumed: 57 `role="dialog"` overlays exist across `src/modules/**` and `src/App.jsx`, and **zero** of them close on Escape. The only two `Escape` handlers in the codebase are in Option List Editor and Registry Management, and both cancel an *inline text edit*, not a dialog. This is the one overlay finding cleanly worth doing, and it is deliberately NOT attempted yet: a sweep across 57 overlays is exactly the broad mechanical change this file warns against, so it wants its own pass with its own verification rather than being folded into an unrelated round.
+    - **Two back-button traps** and **six level-skipping overlays** — recorded by the same 25 Sep audit, not independently re-verified since. Genuine but unquantified; same reasoning applies.
 
 - **Desktop font-size/empty-space (#93) — see the 15/16 Sep entries under
   "Recently shipped" for the full design reasoning and what shipped.** Note: this
@@ -409,6 +425,50 @@ this date; summarized here for durability.
 
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
+
+## Recently shipped (28 Sep 2026, later - a backlog audit that found the backlog had been lying about itself)
+
+Ran a real audit of this file's own open items rather than trusting the
+summaries, and the most useful result was about the *documentation*, not the
+app. Three classes of problem, all the same underlying failure: a claim in
+this file pointing at something that does not exist.
+
+**Two dangling cross-references, found by grep rather than by reading.** The
+`role="dialog"` audit entry said `MedicationEditSheet` was "logged below" - and
+no such entry existed anywhere in 4,873 lines. The overlay entry said its three
+genuine UX gaps were "logged as their own batch above" - also nonexistent. A
+dangling reference is worse than no reference, because it implies a record was
+written. A future session following either would have concluded the work was
+done, on the strength of a sentence pointing at nothing.
+
+**Re-measured the overlay gaps rather than restating them, and the real number
+is worse than the claim.** The file said "no Escape anywhere"; there are in fact
+two Escape handlers, both in Option List Editor and Registry Management, and both
+cancel an *inline text edit* rather than a dialog. So the true finding is
+sharper: **57 `role="dialog"` overlays, zero dismissible by Escape.** Recorded
+with the measurement and the reason it is still not attempted - a 57-site
+mechanical sweep is exactly the broad unverifiable change this file warns
+against, so it wants its own pass. The other two (two back-button traps, six
+level-skipping overlays) are recorded as unquantified, from the same audit, not
+independently re-verified.
+
+**Two stale figures, one of them in a comment whose entire purpose is
+trustworthiness.** `scripts/smoke-test.cjs` was described as "5 flows" (it is
+17). And `SHOS_Settings_Prototype.jsx` carried two comments saying "22 rows"
+when there are 16, in the one place that documents a row-by-row audit of those
+rows - a stale count there actively teaches the next reader to distrust the
+audit. Corrected at source, not just in this file, and the encoding guard
+confirmed no mojibake was introduced by the byte-safe Node edit used to make it.
+
+**A note on the sub-agent that did the audit.** It found genuinely dangling
+cross-references and stale counts that I had not noticed in this file across
+many sessions of writing in it - so delegating the read-only sweep was worth
+it. But it also reported several items as open that the file itself elsewhere
+marks resolved, which is exactly the drift this audit exists to find. Its
+findings were verified against the code before acting; none were taken on
+trust. Three of its claims turned out to be real, and one of them ("51
+occurrences across 37 files") was itself a stale figure that needed replacing
+rather than preserving.
 
 ## Recently shipped (28 Sep 2026, latest - search said "no matches" before it had searched, and two more vacuous gates caught)
 
@@ -1117,7 +1177,12 @@ Real ask: finish the Settings extraction (9 files extracted, none wired) and "tr
 
 Verified: build clean (no dynamic-import-vars warning after adding the .jsx extension the preload's template-literal import needs), eslint clean, vitest 81/81, full smoke suite 15/15 green locally against vite preview (exit 0, no deep-link block).
 
-Still open, not attempted: the 5-audit findings batch, Item 7 device confirmation.
+Still open, not attempted: Item 7 device confirmation.
+  [CORRECTED 28 Sep 2026: the other item here read 'the 5-audit findings
+  batch' - a phrase referenced twice in this file and defined nowhere in it,
+  i.e. a third dangling cross-reference. The audit findings it meant ARE
+  recorded, under 'Audit Findings (25 Sep 2026)' in Known issues below;
+  whatever remains genuinely open there is listed there explicitly.]
 
 ## Recently shipped (24 Sep 2026 - Clinic Visit reason free-text automap)
 

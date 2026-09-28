@@ -646,7 +646,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // became theme-aware — replaced with its own explicit `emphasized`
   // flag, decoupled from colour entirely.
   // FIXED — real inconsistency found in a live audit: 6 of this
-  // screen's 22 rows had accumulated an `emphasized`/`iconColor`
+  // screen's rows had accumulated an `emphasized`/`iconColor`
   // override (bold + full-strength colour) added piecemeal as each
   // feature shipped, with no actual rule behind which rows got it —
   // even 2 rows in the SAME Backup & Data section disagreed with their
@@ -707,7 +707,14 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
           gear icon (confusing one screen inside Settings, which is
           itself reached via a gear) is now Shield; About's checklist
           icon is now Info. No rows added, removed, or rewired — same
-          22 rows, same onClick handlers, just regrouped and re-iconed. */}
+          rows, same onClick handlers, just regrouped and re-iconed.
+      //
+      // CORRECTED 28 Sep 2026 - this used to say '22 rows'. There are now
+      // 16, across 8 sections: that figure predates the 16 Sep
+      // Backup-&-Export consolidation (7 rows became 1) and the removal of
+      // the Units screen. A stale count inside a comment that exists
+      // specifically to document a row-by-row audit is exactly the drift
+      // that makes the next reader distrust the whole audit. */}
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Backup &amp; Data</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 8px", overflow: "hidden" }}>
         {/* CHANGED 16 Sep 2026 — real ask: the 7 export/restore/backup
