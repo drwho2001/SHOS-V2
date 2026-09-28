@@ -426,6 +426,50 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+## Recently shipped (28 Sep 2026, latest - a palette re-check whose most valuable output was four broken scans)
+
+The colour-blind-safe palette work was 13 days old, so this re-measured it
+rather than trusting the 15 Sep summary. **Result: no regressions.** All seven
+shipped `TEXT_SAFE` values still clear 4.5:1, the four module accents that are
+used raw on their own tint still clear it comfortably (healthcare 7.5:1,
+medication 9.8:1, encounters 6.4:1), and the two that genuinely fail
+(contacts 4.05:1, ACTION.red 4.10:1) still correctly route through their safe
+variants at every site. The 10/15 Sep fixes hold.
+
+**The genuinely useful part of that round was how badly the AUTOMATION went.**
+Four attempts at scanning the source for text-on-its-own-tint sites, and every
+one failed - including one that printed "the detector is proven working because
+the safe count is non-zero" while that count was **zero**. A script that asserts
+its own correctness in prose it never checks is worse than no script, because it
+manufactures exactly the false confidence this project keeps paying for.
+
+The real bugs, in order:
+- Matched per-line, so it could never see a background and a colour that sit
+  several lines apart in one inline style object. Found 0 sites.
+- The fix for that used a 3000-char body window to find `role="dialog"`, and
+  matched 6 non-dialog components (`SectionCard`, `DateTimeField`...) as
+  dialogs.
+- The regex demanded a closing brace after the alpha hex. The real source is
+  `` background: `${T.actionRed}1A` `` - alpha then a **backtick**. It had
+  therefore never matched anything anywhere, and was reporting "no regressions"
+  from a detector that had never once fired.
+- When it finally worked it found 88 sites and flagged 33 as "regressions" - by
+  *name*, not by measurement. The 10/15 Sep audits had already established that
+  most accents pass comfortably, so 29 of those 33 were fine and flagging them
+  by name was flagging by assumption.
+
+**The honest resolution is to stop automating this and go back to naming the
+colours.** There are only four accents in this pattern, they cannot be resolved
+by reading `designTokens.js` anyway (the per-module `T.*` tokens come from each
+module's own `buildLight()`), and the original audits measured by hand for
+precisely that reason. So `paletteContrast.test.js` names them, computes the
+numbers, and includes a self-check of its own maths against known WCAG pairs -
+because a test whose maths is wrong would pass everything.
+
+Recorded as a genuine, verified non-finding rather than dressed up as a fix. The
+three automation attempts are the more useful artefact, and are documented at
+their own failure rather than deleted.
+
 ## Recently shipped (28 Sep 2026, later still - every overlay in the app was a keyboard trap, and the smoke summary couldn't prove it)
 
 **No overlay in the app could be closed with Escape.** Measured, not assumed: 55
