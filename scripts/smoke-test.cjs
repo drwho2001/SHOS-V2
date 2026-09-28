@@ -115,11 +115,58 @@ async function waitForAriaChecked(page, label, expected, timeoutMs = 10000) {
 }
 
 // Click a bottom-nav tab by its accessible name.
+//
+// FIXED 28 Sep 2026 - THIS HELPER USED TO FAIL OPEN. It was an `if (count())`
+// with no `else`, so a tab whose name no longer matched was silently not
+// clicked, the caller carried on, and the flow reported success having
+// navigated nowhere. That is not hypothetical: the Phase 3 nav dot briefly put
+// its explanation INTO the tab's accessible name, the exact-match below stopped
+// matching, and every nav-based flow would have gone on passing regardless.
+// The same "a gate measured nothing and looked green" failure this project has
+// now hit four times - the fourth being one I introduced.
+//
+// It now throws when the tab is not found, and when the click does not
+// actually change the current screen. A helper that can quietly do nothing is
+// worse than no helper: it converts a broken locator into a green run.
 async function nav(page, label) {
   const bar = page.getByRole("navigation", { name: "Main navigation" });
-  if (await bar.getByRole("button", { name: label, exact: true }).count()) {
-    await bar.getByRole("button", { name: label, exact: true }).first().click({ timeout: 5000 });
-    await page.waitForTimeout(1200);
+  const tab = bar.getByRole("button", { name: label, exact: true }).first();
+  const found = await tab.count();
+  if (!found) {
+    // Dump what IS there. A bare "not found" sends the next person looking in
+    // the wrong place, which is the same dead end a bare timeout caused in
+    // flow 3.
+    const present = await bar.getByRole("button").allTextContents();
+    const names = await bar.getByRole("button").evaluateAll(
+      (els) => els.map((e) => e.getAttribute("aria-label")).join(" | ")
+    );
+    throw new Error(
+      `nav("${label}") found no tab. The tab labels present: ${names || "(no aria-labels)"} / text: ${JSON.stringify(present)}`
+    );
+  }
+
+  // Which tab is current before the click, so we can prove the click landed.
+  // aria-current is set on the active tab, so it is the honest signal.
+  const before = await bar.getByRole("button", { name: label, exact: true }).first()
+    .getAttribute("aria-current");
+  await tab.click({ timeout: 5000 });
+  try {
+    await page.waitForFunction(
+      ({ name }) => {
+        const el = document.querySelector(
+          `[role="navigation"][aria-label="Main navigation"] [role="button"][aria-label="${name}"]`
+        );
+        return !!el && el.getAttribute("aria-current") === "page";
+      },
+      { name: label },
+      { timeout: 8000 }
+    );
+  } catch {
+    if (before === "page") return; // already on this tab; nothing to wait for
+    throw new Error(
+      `nav("${label}") clicked the tab but the screen did not change (aria-current never became "page"). ` +
+      `The app may not have navigated, or the tab is not activatable.`
+    );
   }
 }
 

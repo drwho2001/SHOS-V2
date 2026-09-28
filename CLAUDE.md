@@ -578,6 +578,66 @@ land, and the fact that a **pre-scheduled OS notification is not cancelled on
 duress entry** is now documented as a limitation rather than "fixed" - see
 the next entry.
 
+## Recently shipped (28 Sep 2026, latest of all yet again - two more of my own bugs, both from one mistake: I never checked how the codebase already did it)
+
+**The Testing banner shipped broken. The next two items I picked were broken in
+exactly the same way, and naming that is the actual finding.** All three were
+new code that was *correct in isolation* and did not follow a convention the
+codebase had already established:
+
+1. **The acknowledge sheet was a keyboard trap.** It was a `role="dialog"` with
+   no Escape handling, while `useEscapeToClose` is wired into **46 other
+   components** — added the day before specifically because every overlay in
+   this app used to trap keyboard focus on any desktop or web build. It also had
+   no focus-on-open, so the first Tab walked the page *behind* a modal. It is
+   now a real component, `AcknowledgeSheet`, so the hook can own its lifecycle
+   at all, and it follows the same ref + `tabIndex` + focus-on-mount pattern
+   the 21 Sep accessibility batch gave every other sheet.
+
+2. **The nav dot's explanation was baked into the tab's accessible name** — and
+   the smoke suite's `nav()` helper matches tab names *exactly*. So the moment
+   an unacknowledged dot appeared, `nav()` stopped matching, and because
+   `nav()` was an `if (count())` with **no `else`**, it silently did nothing
+   and the flow reported success having navigated nowhere. Every nav-based flow
+   would have gone on passing while testing nothing. That is the fourth
+   recorded instance of "a gate measured nothing and looked green" in this
+   project, and I built the fourth while fixing the feature.
+
+**The fix for (2) is the correct mechanism, not a patch on the symptom.**
+Supplementary status now goes in `aria-describedby` against real (visually
+hidden) DOM content, so the tab's accessible name is unconditionally
+`tab.label` and an exact match holds whether or not a dot is showing. Separately
+`nav()` **throws** when a tab is missing, and **confirms `aria-current` actually
+changed** after clicking, dumping the real tab names when it can't find one. A
+helper that can quietly do nothing is worse than no helper: it turns a broken
+locator into a green run.
+
+**Expect the first CI run of this to possibly go red, and that would be the
+guard working.** Any flow that was passing *because* `nav()` silently did
+nothing will now fail honestly. That is the intended outcome, not a regression,
+and the fix is in the flow rather than in the helper.
+
+**An existing guard fired red on this change, and was updated rather than
+loosened.** `reminderSuppressionWiring.test.js` asserted the dot's explanation
+was in the accessible name — correct when written, and wrong the moment we
+learned the accessible name *was* the bug. Its intent (an unexplained bare dot
+is what the icon-only-UI rule exists to prevent) is unchanged and still
+asserted; only the mechanism moved. A guard firing on a legitimate change is
+worth reading twice, and is the only reason a guard is worth having.
+
+Verified: eslint clean, 9 mutations of the new guards all confirmed to turn the
+suite red — Escape dropped, focus dropped, `tabIndex` dropped, the component
+inlined, the wording put back into the name, `aria-describedby` detached, the
+hidden text un-hidden, and `nav()` reverted to failing open twice. Unit tests
+397 → 413 across 33 files, fast gate green.
+
+Still outstanding, in order: device-silence is wired only for medications, so
+"also stop the phone notification" silently does nothing on the other four
+banners · the refill second stage (needs requesting → needs collecting) does not
+exist · no browser flow yet covers the whole "stop reminding me" path · no
+contrast or narrow-screen check on the three new surfaces · no master off-switch
+· the handover's "State: open" section is still stale.
+
 ## Recently shipped (28 Sep 2026, latest of all yet again - the Testing banner was never rendering, and a mute switch I added was dangerous)
 
 **The banner suppression feature shipped a real regression on its first CI run,

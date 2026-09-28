@@ -129,16 +129,28 @@ describe("every banner is gated on the pure visibility decision", () => {
 });
 
 describe("the passive dot is explained, and is not a nested interactive", () => {
-  it("the dot is aria-hidden and the tab's own name carries the information", () => {
+  it("the dot is aria-hidden, and its explanation is real content somewhere", () => {
     // A focusable control inside a role="button" tab is the `nested-interactive`
-    // violation already found and fixed once in this repo. The standing rule
-    // says icon-only UI needs a tap-to-reveal explanation, which is not
-    // available here without reintroducing that - so the information goes in
-    // the accessible name instead, and this asserts both halves.
+    // violation already found and fixed once in this repo, so the dot cannot be
+    // its own tap target. The explanation therefore has to live somewhere else.
+    //
+    // CHANGED 28 Sep 2026 (Phase 3 fix). This test used to assert the
+    // explanation was in the tab's ACCESSIBLE NAME - and that was correct when
+    // written. It then fired red on a legitimate change, because the
+    // accessible name turned out to be the bug: the smoke suite's nav() helper
+    // matches tab names exactly and fails open, so putting the dot's wording
+    // there meant that the moment a dot appeared, every nav-based flow
+    // silently stopped navigating and still reported green.
+    //
+    // The INTENT is unchanged and still asserted - an unexplained bare dot is
+    // what the icon-only-UI rule exists to prevent. Only the mechanism moved,
+    // from aria-label to aria-describedby, which is the standard way to say
+    // more about a control without changing what it is called. A guard firing
+    // on a legitimate change is worth reading twice, not loosening until green.
     expect(APP_CODE).toMatch(/aria-hidden="true"[^}]*borderRadius: 999[^}]*background: ACTION\.gold/);
-    expect(APP_CODE).toMatch(/const tabAriaLabel = unacknowledgedHere/);
     expect(APP_CODE).toMatch(/you've stopped being reminded about/);
-    expect(APP_CODE).toMatch(/aria-label=\{tabAriaLabel\}/);
+    expect(APP_CODE, "the explanation must be real DOM content, not a label in disguise")
+      .toMatch(/id=\{unackDescId\}/);
   });
 
   it("the dot gets a one-time visible explanation", () => {
@@ -188,6 +200,66 @@ describe("a spent acknowledgement is dropped, and only once the due state is kno
     const effectStart = APP_CODE.indexOf("pruneSpentAcknowledgements(acknowledgedReminders");
     const after = APP_CODE.slice(effectStart, effectStart + 420);
     expect(after).toMatch(/if \(kept\.length === acknowledgedReminders\.length\) return;/);
+  });
+});
+
+describe("the acknowledge sheet behaves like every other dialog in the app", () => {
+  // Both of these were real defects introduced by this same feature on the
+  // same day, and both are the same mistake: new code that was correct in
+  // isolation but did not follow conventions already established elsewhere in
+  // the codebase. The unit tests could not see either.
+  const SMOKE = readFileSync(path.join(process.cwd(), "scripts", "smoke-test.cjs"), "utf8");
+
+  it("closes on Escape, via the hook the other 46 components use", () => {
+    // Without this it was a keyboard trap: focus went in (from focus-on-open)
+    // and could not come out, on any desktop or web build. That is the exact
+    // defect the previous session spent a whole batch removing.
+    expect(APP_CODE).toMatch(/import \{ useEscapeToClose \} from "\.\/components\/useEscapeToClose"/);
+    expect(APP_CODE).toMatch(/function AcknowledgeSheet\(/);
+    expect(APP_CODE).toMatch(/useEscapeToClose\(handleClose\)/);
+  });
+
+  it("is a real component, so the hook can own its lifecycle", () => {
+    // It was inline JSX, which is why it could not participate in the hook at
+    // all without a structural change.
+    expect(APP_CODE).toMatch(/<AcknowledgeSheet\b/);
+  });
+
+  it("moves focus into itself on open", () => {
+    // The 21 Sep accessibility batch gave every full-screen sheet ref +
+    // tabIndex + focus-on-mount. Without it the first Tab walked the page
+    // BEHIND a modal.
+    const start = APP_CODE.indexOf("function AcknowledgeSheet(");
+    expect(start).toBeGreaterThan(-1);
+    const body = APP_CODE.slice(start, start + 1200);
+    expect(body).toMatch(/dialogRef\.current\?\.focus\(\)/);
+    expect(body).toMatch(/tabIndex=\{0\}/);
+  });
+
+  it("keeps the nav tab's accessible name stable and puts the dot's wording in describedby", () => {
+    // The dot's explanation used to be baked into the accessible name, which
+    // broke nav()'s exact match. Supplementary status belongs in
+    // aria-describedby; the name belongs to the name.
+    expect(APP_CODE).toMatch(/aria-label=\{tab\.label\}/);
+    expect(APP_CODE, "the tab must point at a description when a dot is showing")
+      .toMatch(/aria-describedby=\{unacknowledgedHere \? unackDescId : undefined\}/);
+    // And the description must be real, visible-to-AT content, not aria-label
+    // in disguise.
+    expect(APP_CODE).toMatch(/id=\{unackDescId\}/);
+    expect(APP_CODE).toMatch(/clip: "rect\(0,0,0,0\)"/);
+  });
+
+  it("nav() throws instead of failing open", () => {
+    // THE most important guard in this file. nav() was an `if (count())` with
+    // no `else`: a tab that no longer matched was silently not clicked, the
+    // caller carried on, and the flow reported success having navigated
+    // nowhere. A helper that can quietly do nothing is worse than no helper.
+    const start = SMOKE.indexOf("async function nav(page, label)");
+    expect(start, "nav() not found in smoke-test.cjs").toBeGreaterThan(-1);
+    const body = SMOKE.slice(start, start + 2200);
+    expect(body, "nav() must throw when the tab is missing").toMatch(/throw new Error/);
+    expect(body, "nav() must confirm the screen actually changed").toMatch(/aria-current/);
+    expect(body, "the old fail-open shape must be gone").not.toMatch(/if \(await bar\.getByRole/);
   });
 });
 

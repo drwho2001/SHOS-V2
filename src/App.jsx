@@ -51,6 +51,11 @@ import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent, applyRealAcc
 // search-return affordance show" decisions, split out of this file precisely so
 // they can be unit-tested. See backNavigation.js's own header.
 import { decideBackAction, shouldOfferSearchReturn, buildSearchReturn, BACK_ACTION } from "./calculations/backNavigation";
+// ADDED 28 Sep 2026 (Phase 3 fix) - the acknowledge sheet was a role="dialog"
+// with no Escape handling, which re-created the keyboard-trap defect the
+// previous session removed from 46 other components. Wired here rather than
+// inline so the hook can actually own the lifecycle. See AcknowledgeSheet.
+import { useEscapeToClose } from "./components/useEscapeToClose";
 // ADDED 28 Sep 2026 (Phase 3) — banner suppression. Pure, so it can be
 // unit-tested; see reminderSuppression.js's own header for the design.
 import {
@@ -792,6 +797,68 @@ function useMeasuredBannerHeight() {
     }
   }, []);
   return [height, ref];
+}
+
+// ADDED 28 Sep 2026 (Phase 3) — the "don't remind me about this" sheet, as a
+// real component rather than inline JSX, purely so it can participate in the
+// two things every other dialog in this app does and this one did not.
+//
+// FIXED 1: no Escape handling. useEscapeToClose is wired into 46 other
+// components precisely because this app's overlays were once all keyboard
+// traps — focus went in and could not come out, on any desktop or web build.
+// Adding a 47th dialog without it re-created the exact defect the previous
+// session removed, and on the day I was fixing that class of bug. That is the
+// real lesson: new code has to be checked for CONSISTENCY with existing
+// conventions, not merely for whether it is correct in isolation.
+//
+// FIXED 2: no focus-on-open. The 21 Sep accessibility batch gave every
+// full-screen sheet ref + tabIndex + focus-on-mount, so a keyboard user starts
+// inside the dialog. Without it, focus stayed wherever it was — behind the
+// overlay — and the first Tab walked the page behind a modal.
+function AcknowledgeSheet({ darkMode, pending, scopeDefault, onConfirm, onClose }) {
+  const dialogRef = useRef(null);
+  // useCallback so the hook's effect does not re-register on every render.
+  // Without it, closeStack is pushed and spliced on every single render.
+  const handleClose = useCallback(() => { onClose?.(); }, [onClose]);
+  useEscapeToClose(handleClose);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
+
+  return (
+    <div role="dialog" aria-label="Stop reminding me about this" onClick={handleClose}
+      style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }}>
+      <div ref={dialogRef} tabIndex={0} aria-describedby="acknowledge-scope-help"
+        style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }}
+        onClick={(e) => e.stopPropagation()}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
+          Stop reminding me about this
+        </div>
+        <div id="acknowledge-scope-help" style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6, lineHeight: 1.5 }}>
+          <strong>{pending.title}</strong> is still outstanding — this doesn't mark it as done. You'll stop
+          being reminded while it stays the same, and it'll speak up again if it changes.
+        </div>
+        <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.5 }}>
+          Where should it stop reminding you?
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+          {[
+            { scope: ACK_SCOPE.IN_APP, label: "In the app only", note: "No more banners. Phone notifications still fire." },
+            { scope: ACK_SCOPE.BOTH, label: "In the app and on my device", note: "Also stops this reminder's scheduled phone notification while it stays the same." },
+          ].map((option) => (
+            <button key={option.scope} onClick={() => onConfirm(option.scope)} style={{ width: "100%", textAlign: "left", padding: 12, borderRadius: 12, border: `1px solid ${scopeDefault === option.scope ? (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) : (darkMode ? DARK.border : NEUTRAL.border)}`, background: scopeDefault === option.scope ? (darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant) : "transparent", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer" }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{option.label}{scopeDefault === option.scope ? " (your default)" : ""}</div>
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>{option.note}</div>
+            </button>
+          ))}
+        </div>
+        <button onClick={handleClose} style={{ width: "100%", padding: 12, borderRadius: 999, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>
+          Keep reminding me
+        </button>
+        <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginTop: 10, lineHeight: 1.5, textAlign: "center" }}>
+          Your default is set in Settings → Notifications.
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function App() {
@@ -2633,18 +2700,43 @@ export default function App() {
           // intent (a dot must not be unexplained) without reintroducing the
           // violation.
           const unacknowledgedHere = outstandingAcknowledged.filter((k) => k === tab.key).length;
-          const tabAriaLabel = unacknowledgedHere
-            ? `${tab.label} — ${unacknowledgedHere} reminder${unacknowledgedHere > 1 ? "s" : ""} you've stopped being reminded about, still outstanding`
-            : tab.label;
+          // FIXED 28 Sep 2026 (Phase 3) - the dot's explanation used to be
+          // BAKED INTO the tab's accessible name, which broke the smoke
+          // suite's `nav()` helper: it matches tabs by exact name, and it
+          // FAILS OPEN, so the moment a dot appeared every nav-based flow
+          // silently stopped navigating and still reported green. That is the
+          // same "a gate measured nothing and looked green" failure this
+          // project has now hit four times, and I built the fourth.
+          //
+          // The fix is to use the name for what a name is for and put
+          // supplementary status in `aria-describedby` - the standard way to
+          // say more about a control without changing what it is called. The
+          // accessible name is now unconditionally `tab.label`, so an exact
+          // match holds whether or not a dot is showing.
+          const unackDescId = `tab-unack-${tab.key}`;
+          // The dot itself is aria-hidden, because the tab is already
+          // role="button" and a focusable control inside one is the
+          // `nested-interactive` violation already found and fixed once on
+          // Contacts' card. The information is in the description instead.
           const UnackDot = unacknowledgedHere ? (
-            <span aria-hidden="true" style={{ position: "absolute", top: -2, right: -4, width: 10, height: 10, borderRadius: 999, background: ACTION.gold, border: `2px solid ${darkMode ? DARK.surface : NEUTRAL.surface}` }} />
+            <>
+              <span aria-hidden="true" style={{ position: "absolute", top: -2, right: -4, width: 10, height: 10, borderRadius: 999, background: ACTION.gold, border: `2px solid ${darkMode ? DARK.surface : NEUTRAL.surface}` }} />
+              {/* Visually hidden, but real content - the same pattern the
+                  aria-live regions in this app already use. A dot with no
+                  explanation anywhere is what the icon-only-UI rule exists to
+                  prevent, and the rule's usual tap-to-reveal affordance is not
+                  available inside a button. */}
+              <span id={unackDescId} style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
+                {unacknowledgedHere} reminder{unacknowledgedHere > 1 ? "s" : ""} you've stopped being reminded about, still outstanding
+              </span>
+            </>
           ) : null;
           // ADDED 19 Aug 2026 — Home gets a raised, circular, always-
           // filled treatment (the user's ask: "circle/bump as centred"),
           // distinct from the other four flat tabs.
           if (tab.key === "home") {
             return (
-              <div key={tab.key} data-tour="tab-home" role="button" aria-label={tabAriaLabel} aria-current={isActive ? "page" : undefined} tabIndex={0}
+              <div key={tab.key} data-tour="tab-home" role="button" aria-label={tab.label} aria-describedby={unacknowledgedHere ? unackDescId : undefined} aria-current={isActive ? "page" : undefined} tabIndex={0}
                 onClick={() => { selectTab(tab.key); }}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectTab(tab.key); } }}
                 onMouseDown={startHomeLongPress} onMouseUp={cancelHomeLongPress} onMouseLeave={cancelHomeLongPress}
@@ -2663,7 +2755,7 @@ export default function App() {
               Home is explicitly excluded — stays the raised circle
               treatment above, unchanged. */}
           return (
-            <div key={tab.key} data-tour={`tab-${tab.key}`} role="button" aria-label={tabAriaLabel} aria-current={isActive ? "page" : undefined} tabIndex={0}
+            <div key={tab.key} data-tour={`tab-${tab.key}`} role="button" aria-label={tab.label} aria-describedby={unacknowledgedHere ? unackDescId : undefined} aria-current={isActive ? "page" : undefined} tabIndex={0}
               onClick={() => { selectTab(tab.key); }}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectTab(tab.key); } }}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", opacity: isBuilt ? 1 : 0.45 }}>
@@ -2758,37 +2850,13 @@ export default function App() {
           medication again". Overstating that would be the dangerous kind of
           reassuring. */}
       {pendingAcknowledge && (
-        <div role="dialog" aria-label="Stop reminding me about this" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => setPendingAcknowledge(null)}>
-          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
-              Stop reminding me about this
-            </div>
-            <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6, lineHeight: 1.5 }}>
-              <strong>{pendingAcknowledge.title}</strong> is still outstanding — this doesn't mark it as done. You'll stop
-              being reminded while it stays the same, and it'll speak up again if it changes.
-            </div>
-            <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.5 }}>
-              Where should it stop reminding you?
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-              {[
-                { scope: ACK_SCOPE.IN_APP, label: "In the app only", note: "No more banners. Phone notifications still fire." },
-                { scope: ACK_SCOPE.BOTH, label: "In the app and on my device", note: "Also stops this reminder's scheduled phone notification while it stays the same." },
-              ].map((option) => (
-                <button key={option.scope} onClick={() => confirmAcknowledge(option.scope)} style={{ width: "100%", textAlign: "left", padding: 12, borderRadius: 12, border: `1px solid ${acknowledgeScopeDefault === option.scope ? (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) : (darkMode ? DARK.border : NEUTRAL.border)}`, background: acknowledgeScopeDefault === option.scope ? (darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant) : "transparent", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer" }}>
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>{option.label}{acknowledgeScopeDefault === option.scope ? " (your default)" : ""}</div>
-                  <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>{option.note}</div>
-                </button>
-              ))}
-            </div>
-            <button onClick={() => setPendingAcknowledge(null)} style={{ width: "100%", padding: 12, borderRadius: 999, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>
-              Keep reminding me
-            </button>
-            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginTop: 10, lineHeight: 1.5, textAlign: "center" }}>
-              Your default is set in Settings → Notifications.
-            </div>
-          </div>
-        </div>
+        <AcknowledgeSheet
+          darkMode={darkMode}
+          pending={pendingAcknowledge}
+          scopeDefault={acknowledgeScopeDefault}
+          onConfirm={confirmAcknowledge}
+          onClose={() => setPendingAcknowledge(null)}
+        />
       )}
 
       {backExitToast && (
