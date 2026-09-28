@@ -116,6 +116,37 @@ describe("the back chain consults the decision rather than re-implementing it", 
     expect(body).toMatch(/BACK_ACTION\.SEARCH_RETURN/);
   });
 
+  it("every path that switches tab clears the context", () => {
+    // A REAL BUG, caught by the 18th smoke flow on its first CI run. The nav
+    // bar and quick-add call setActive directly rather than going through
+    // navigateTo, so they never cleared the context — leaving a "back to
+    // search results" button on an unrelated screen, which is the exact
+    // failure the clearing rule exists to prevent. No unit test could see it:
+    // navigateTo's default was correct all along, the *other* entry points
+    // were the ones missing.
+    //
+    // So the invariant is stated structurally: the bottom-nav handlers must
+    // go through selectTab, and selectTab must clear. A future tab switch
+    // that reaches for setActive directly fails here rather than in CI's
+    // smoke run ten minutes later.
+    expect(APP_CODE, "bottom-nav handlers must not call setActive directly any more").not.toMatch(
+      /setActive\(tab\.key\)/
+    );
+    const select = bodyOf(APP_CODE, "selectTab");
+    expect(select).toMatch(/setActive\(tabKey\)/);
+    expect(select).toMatch(/setNavResetCount/);
+    expect(select).toMatch(/setSearchReturn\(null\)/);
+  });
+
+  it("the back chain's own tab switches clear it too", () => {
+    // Same bug, second instance: backing out to Home (or back to Clinic
+    // Card's tab) left the button sitting there. Both branches now go through
+    // selectTab.
+    const body = bodyOf(APP_CODE, "goBackOneLevel");
+    expect(body).toMatch(/BACK_ACTION\.HOME\) \{ selectTab\("home"\)/);
+    expect(body).toMatch(/BACK_ACTION\.CLINIC_CARD\) \{ selectTab\(clinicCardReturnTab\)/);
+  });
+
   it("the Escape-sweep lesson is respected: the back effects list their real inputs", () => {
     // Both the hardware-back and swipe-back effects re-register their
     // listener with a fresh closure, listing every state goBackOneLevel

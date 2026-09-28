@@ -426,6 +426,49 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+## Recently shipped (28 Sep 2026, latest of all yet again - the new smoke flow caught a real bug in its own feature, on its first CI run)
+
+**Follow-on to the Phase 2b entry below, and the most useful result of the
+whole batch: the test I wrote for my own new feature found a real hole in it
+on its first run in CI.** Tapping a search result and then tapping a
+*different* bottom-nav tab left the "Back to search results" button on
+screen, pointing at a query for a record the user had already left. The
+clearing rule that the whole design rests on - every navigation that did not
+come from a search must clear the context - was implemented in exactly one
+place, `navigateTo`, and the bottom nav and quick-add do not go through
+`navigateTo`. They call `setActive` directly, four and one times
+respectively, and none of them cleared anything.
+
+**This is the half no unit test could have seen, and that is the point of
+writing the browser flow at all.** `navigateTo`'s default argument was
+correct from the first commit; the defect was in the *other* entry points,
+which no test was looking at. Fourteen unit tests on the decision, six
+source-level wiring assertions, and seven verified mutations all stayed green
+throughout, because every one of them was examining the code that worked.
+
+**The fix is a helper, not five extra calls, because the alternative is the
+bug.** `selectTab(tabKey)` is now the one way this file switches tab for a
+user-initiated navigation, and it clears the context. Every nav-bar handler,
+quick-add, the back chain's Home and Clinic-Card branches, and the tour's
+force-Home all route through it. Bolting `setSearchReturn(null)` onto five
+handlers instead would have looked equivalent and guaranteed the sixth was
+missed. Two new guards pin it structurally: the bottom-nav handlers must not
+call `setActive` directly, and `selectTab` must clear — so a future tab switch
+fails a unit test rather than CI's smoke run ten minutes later. Both are
+mutation-verified.
+
+Also worth recording as its own small finding: **my first mutation script
+for those two guards reported "not testing anything" and I nearly read that
+as a pass.** The patterns were multi-line and the file is CRLF, so `find`
+never matched and nothing was ever mutated. "The mutation did not apply" and
+"the test did not go red" are different failures, and only the second one
+says anything about the test. Re-run with single-line patterns, both went
+red. That is now the third recorded instance in this repo of tooling that
+looked like it was checking something and was not.
+
+Verified: eslint clean, encoding guard clean, **321 unit tests across 28
+files** (was 319), fast gate green. The 18-flow smoke suite goes back to CI.
+
 ## Recently shipped (28 Sep 2026, latest of all yet again - search results you can actually get back to)
 
 **Phase 2b, the handover's first open item.** Tapping a search result opened

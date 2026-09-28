@@ -85,8 +85,19 @@ All of the following are shipped, committed, and green on `main`.
   a stale button cannot follow the user around the session. The decisions live
   in `src/calculations/backNavigation.js` (pure, unit-tested); the wiring is
   guarded by `searchBackNavigationWiring.test.js`, because a unit test cannot
-  see whether a function is reached. All 7 mutations verified to turn the
-  suite red.
+  see whether a function is reached. All mutations verified to turn the suite
+  red.
+- **The 18th smoke flow found a real bug in its own feature on its first CI
+  run**, which is the single most useful thing in this batch and worth
+  understanding rather than just noting. The clearing rule had been
+  implemented in `navigateTo` only — and the bottom nav and quick-add call
+  `setActive` directly, so tapping a different tab left the button on screen.
+  Every unit test stayed green throughout, because all of them were examining
+  the code that worked. `selectTab(tabKey)` is now the one way this file
+  switches tab for a user-initiated navigation, and it clears the context.
+  **If you add a tab switch, use `selectTab`, not `setActive`** — and note
+  that `navigateTo` is a separate path (used by search results and deep
+  links) which also clears.
 - **Palette re-verified, no regressions.** `paletteContrast.test.js` names the
   four accents and self-checks its own maths against known WCAG pairs.
 - CI/local unification, enforced docs gate, encoding pre-commit hook,
@@ -224,7 +235,7 @@ write landed.
 
 ## Current git state
 
-`main` is clean and pushed. All three workflows green: 319 unit tests across 28
+`main` is clean and pushed. All three workflows green: 321 unit tests across 28
 files, 18 smoke flows, docs gate reporting a real measurement. The flow/assertion
 counts CI prints are the ones to read — a green exit code alone has lied here
 three times.

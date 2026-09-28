@@ -1492,9 +1492,13 @@ export default function App() {
     // Card has no further internal screen of its own left to pop
     // (moduleBackHandlerRef already returned false above), go back to
     // the tab Clinic Card was opened from instead of Home's default.
-    if (action === BACK_ACTION.CLINIC_CARD) { setActive(clinicCardReturnTab); setNavResetCount((c) => c + 1); return true; }
+    if (action === BACK_ACTION.CLINIC_CARD) { selectTab(clinicCardReturnTab); return true; }
     if (action === BACK_ACTION.SEARCH_RETURN) { returnToSearchResults(); return true; }
-    if (action === BACK_ACTION.HOME) { setActive("home"); setNavResetCount((c) => c + 1); return true; }
+    // selectTab rather than a bare setActive, so backing out to Home clears
+    // the search-return context exactly as a nav-bar tap does. Left as a bare
+    // setActive, the first version of this left a "back to search results"
+    // button sitting on Home — the same stale-context bug the nav bar had.
+    if (action === BACK_ACTION.HOME) { selectTab("home"); return true; }
     return false;
   };
 
@@ -1744,6 +1748,23 @@ export default function App() {
   const activeTab = TABS.find((t) => t.key === active) || TABS.find((t) => t.key === "home");
   const ActiveModule = activeTab.component;
 
+  // ADDED 28 Sep 2026 (Phase 2b) — a bottom-nav tab tap is a navigation that
+  // did NOT come from a search, so it has to clear the search-return context
+  // for exactly the same reason navigateTo does. This is its own helper
+  // rather than a `setSearchReturn(null)` bolted onto each of the four nav
+  // handlers, because that shape is what guarantees the fifth one is missed.
+  //
+  // The first version of this feature had exactly that bug: the nav bar calls
+  // setActive directly rather than going through navigateTo, so a "back to
+  // search results" button survived the user tapping another tab and kept
+  // pointing at a query for a record they had left. The 18th smoke flow caught
+  // it, and it is the half of the change the unit tests could not see.
+  const selectTab = (tabKey) => {
+    setActive(tabKey);
+    setNavResetCount((c) => c + 1);
+    setSearchReturn(null);
+  };
+
   // CHANGED 26 Aug 2026 — real bug fix: Clinic Card is reachable from
   // BOTH Home and from inside Healthcare itself. Using its quick-add
   // shortcuts a second time while already on the Healthcare tab made
@@ -1756,10 +1777,12 @@ export default function App() {
   // fresh mount, so prefilled quick-adds work every time, not just
   // when they happen to change tabs.
   const handleQuickAdd = (tabKey, target) => {
-    setActive(tabKey);
+    // selectTab rather than a bare setActive + navResetCount, for the same
+    // Phase 2b reason as the nav bar: a quick-add is a navigation that did not
+    // come from a search, so it clears the search-return context too.
+    selectTab(tabKey);
     setQuickAddTarget(target || null);
     setQuickAdd(true);
-    setNavResetCount((c) => c + 1);
   };
   const handleQuickAddWithPrefill = (tabKey, target, prefillData) => {
     handleQuickAdd(tabKey, target);
@@ -2357,8 +2380,8 @@ export default function App() {
           if (tab.key === "home") {
             return (
               <div key={tab.key} data-tour="tab-home" role="button" aria-label={tab.label} aria-current={isActive ? "page" : undefined} tabIndex={0}
-                onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActive(tab.key); setNavResetCount((c) => c + 1); } }}
+                onClick={() => { selectTab(tab.key); }}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectTab(tab.key); } }}
                 onMouseDown={startHomeLongPress} onMouseUp={cancelHomeLongPress} onMouseLeave={cancelHomeLongPress}
                 onTouchStart={startHomeLongPress} onTouchEnd={cancelHomeLongPress}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", marginTop: -18 }}>
@@ -2375,8 +2398,8 @@ export default function App() {
               treatment above, unchanged. */}
           return (
             <div key={tab.key} data-tour={`tab-${tab.key}`} role="button" aria-label={tab.label} aria-current={isActive ? "page" : undefined} tabIndex={0}
-              onClick={() => { setActive(tab.key); setNavResetCount((c) => c + 1); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActive(tab.key); setNavResetCount((c) => c + 1); } }}
+              onClick={() => { selectTab(tab.key); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectTab(tab.key); } }}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", opacity: isBuilt ? 1 : 0.45 }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 14px", borderRadius: 14, background: isActive ? resolveTabAccent(tab, darkMode) : "transparent" }}>
                 {/* FIXED — real device bug: Phosphor's "fill" weight for
@@ -2478,7 +2501,9 @@ export default function App() {
           // render gate) — TourOverlay already skips a missing target
           // gracefully, but landing on Home first means a replay from
           // Guide always shows the full tour, not a degraded one.
-          setActive("home"); setShowSettings(false); setSettingsInitialScreen(null); setShowTour(true);
+          // selectTab for the same Phase 2b reason as everywhere else: this is
+          // a tab switch, so it clears the search-return context.
+          selectTab("home"); setShowSettings(false); setSettingsInitialScreen(null); setShowTour(true);
         }} />
       )}
       {showTour && <TourOverlay onDone={finishTour} darkMode={darkMode} />}
