@@ -47,8 +47,18 @@ describe("navigating to a record must close the overlays above it", () => {
 
   it("still does the actual navigation and record selection", () => {
     // Guards against a "fix" that closes the overlays and forgets the point.
+    //
+    // CHANGED 28 Sep 2026 (Phase 2b) - this regex used to require the call to
+    // be EXACTLY `navigateTo(tabKey, subTab)`, and adding the search origin as
+    // a third argument failed it. Widened to drop only the closing paren,
+    // which is the incidental part; the assertion that actually matters -
+    // that navigateTo is still called, with the tab and the sub-tab - is
+    // unchanged, and a version that dropped either argument would still fail.
+    // Worth recording that this guard genuinely fired on a legitimate change
+    // rather than being quietly loosened to make it green: it is a real
+    // signal, which is the only reason it is worth having.
     const body = bodyOfNavigateToRecord();
-    expect(body).toMatch(/navigateTo\(tabKey, subTab\)/);
+    expect(body).toMatch(/navigateTo\(tabKey, subTab/);
     expect(body).toMatch(/setPendingOpenRecordId\(recordId\)/);
   });
 

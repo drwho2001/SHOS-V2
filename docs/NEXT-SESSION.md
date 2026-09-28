@@ -18,7 +18,7 @@ nothing here is from memory.
 
 `smoke-test.yml` runs `npm run verify` — the *same script* a developer runs
 before committing — on every push, in ~12 minutes, with no local memory
-pressure. It runs build, lint, unit tests, the encoding guard, the full 17-flow
+pressure. It runs build, lint, unit tests, the encoding guard, the full 18-flow
 Playwright suite, and the docs check.
 
 Why this matters concretely: the machine this was developed on has 4 GB and
@@ -77,27 +77,47 @@ All of the following are shipped, committed, and green on `main`.
   `MyProfileEditScreen`. Only the topmost overlay closes; registration order is
   tracked and cleaned up on unmount. Settings is hand-wired to share one
   `goBackOneLevel()` with its back button.
+- **Search results can be got back to** (Phase 2b, the item that was #1 on
+  the previous handover's list). A record opened from a result carries a
+  visible "Back to search results" control, and the back chain returns there
+  too. The origin is threaded through `navigateTo`'s third parameter, which
+  defaults to `null` — so every *other* record link in the app clears it, and
+  a stale button cannot follow the user around the session. The decisions live
+  in `src/calculations/backNavigation.js` (pure, unit-tested); the wiring is
+  guarded by `searchBackNavigationWiring.test.js`, because a unit test cannot
+  see whether a function is reached. All 7 mutations verified to turn the
+  suite red.
 - **Palette re-verified, no regressions.** `paletteContrast.test.js` names the
   four accents and self-checks its own maths against known WCAG pairs.
 - CI/local unification, enforced docs gate, encoding pre-commit hook,
   `scripts/verify-changes.mjs`, Notion log current.
 
+## Two things found while doing the item above, worth knowing
+
+- **The back-handler effects' dependency arrays were already wrong, before
+  this change.** `goBackOneLevel` reads `clinicCardReturnTab` and neither
+  effect that re-registers the back listener listed it. It happened not to
+  bite only because `markClinicCardReturn()` and `navigateToRecord()` batch
+  into one commit, so `active` changed in the same tick and the effect
+  re-registered anyway — correctness by coincidence of React batching, not by
+  design. Fixed, and a test now pins that both effects declare the same list.
+  If you add state to `goBackOneLevel`, add it there too; the `eslint-disable`
+  on those effects will not tell you.
+- **`recordNavigationWiring.test.js` fired on a legitimate change**, which is
+  what a guard is for. It asserted the exact call `navigateTo(tabKey, subTab)`
+  and the search-origin argument broke it. It was widened by one character
+  class, with the intent-bearing assertion untouched. If you ever find yourself
+  loosening one of these guards to get green, read it twice first — this repo
+  has three "coverage" tests that could never have failed.
+- **`insert_widget.txt` in the repo root is committed scratch.** A draft of a
+  CLAUDE.md entry that got `git add`ed by accident back on 21 Sep. Harmless
+  (no personal data in it) but it is clutter in a public repo and should just
+  be deleted. Deliberately left out of the Phase 2b change rather than mixed
+  into an unrelated diff.
+
 ## State: open, in the order you should take it
 
-### 1. Phase 2b — search result back-navigation (the main outstanding item)
-
-`navigateToRecord` in `src/App.jsx` calls `setShowSearch(false)` and opens the
-record. The query is gone, so returning means reopening Search and retyping.
-
-There is **no mechanism at all** for this today — do not assume a partial one
-exists. What a real fix needs: the query and a "came from search" flag held in
-`App.jsx`, a way to reopen search with it restored, and it has to compose with
-the existing `registerModuleBackHandler` chain and the consumed-once prop idiom
-(`openClinicCardOnMount` / `onConsumedClinicCardReopen` is the precedent).
-
-This is a real cross-cutting change. Do not attempt it piecemeal.
-
-### 2. Phase 3 — retention (the largest remaining feature)
+### 1. Phase 3 — retention (the largest remaining feature)
 
 None of this exists yet. In rough priority order for a real user:
 
@@ -111,12 +131,12 @@ None of this exists yet. In rough priority order for a real user:
   medication app.
 - Refill undo — marking a refill requested should be reversible.
 
-### 3. Phase 2c — the inert `reveal-clinic` route
+### 2. Phase 2c — the inert `reveal-clinic` route
 
 `src/calculations/deepLinkRoutes.js` maps `/reveal-clinic` to an action that
 has no handler behind it. Small and self-contained, but genuinely low value: it
 only affects a native home-screen widget on a secondary surface. Do it only
-after 1 and 2.
+after 1.
 
 ## Notion — where things go
 
@@ -204,6 +224,7 @@ write landed.
 
 ## Current git state
 
-`main` is clean and pushed at `f639e14`. All three workflows green: 295 unit
-tests across 26 files, 17 smoke flows / 79 assertions, docs gate reporting a
-real measurement.
+`main` is clean and pushed. All three workflows green: 319 unit tests across 28
+files, 18 smoke flows, docs gate reporting a real measurement. The flow/assertion
+counts CI prints are the ones to read — a green exit code alone has lied here
+three times.

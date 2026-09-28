@@ -210,7 +210,7 @@ async function goHomeThenOpenSettings(page) {
 }
 
 async function testMedicationReasonSideEffects(page) {
-  console.log("\n[3/17] Medication log — Reason/Side effects (added 1 Sep 2026)");
+  console.log("\n[3/18] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Log").first().click({ timeout: 5000 });
@@ -227,7 +227,7 @@ async function testMedicationReasonSideEffects(page) {
 }
 
 async function testSymptomTestTwoWayLink(page) {
-  console.log("\n[4/17] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
+  console.log("\n[4/18] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
   await page.locator("text=Healthcare").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Test of cure — Gonorrhoea").click({ timeout: 5000 });
@@ -271,7 +271,7 @@ async function testSymptomTestTwoWayLink(page) {
 }
 
 async function testLocationsExtraFields(page) {
-  console.log("\n[5/17] Locations registry — extra fields (added 2 Sep 2026)");
+  console.log("\n[5/18] Locations registry — extra fields (added 2 Sep 2026)");
   // the Settings gear only lives on the Home dashboard header — get back
   // there first, since the previous check left us on Healthcare/Symptoms.
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
@@ -296,7 +296,7 @@ async function testLocationsExtraFields(page) {
 // building it (the Refuge entry, a real https:// URL from the seeded
 // list), never given permanent coverage until now.
 async function testResourceLinkClickable(page) {
-  console.log("\n[6/17] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
+  console.log("\n[6/18] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
   // Reload first — the previous test (Locations registry) leaves the
   // Manage Lists > Locations sub-screen open, a stacked Settings
   // overlay that would otherwise sit on top of (and intercept clicks
@@ -339,7 +339,7 @@ async function testResourceLinkClickable(page) {
 // (anonymisePin) is still unset at this point — deactivating needs no
 // PIN then (see privacySettingsRepository.js's own deactivate()).
 async function testEncountersAnonymiseMasking(page) {
-  console.log("\n[7/17] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
+  console.log("\n[7/18] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
@@ -402,7 +402,7 @@ async function testEncountersAnonymiseMasking(page) {
 // logged at the real current time, which always has a real future
 // lockoutEndsAt() to check.
 async function testMedicationReminderClock(page) {
-  console.log("\n[8/17] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
+  console.log("\n[8/18] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   // Scoped on "Last dose" rather than the "Log dose" button's own text
@@ -455,7 +455,7 @@ async function testMedicationReminderClock(page) {
 // existing install's first Phase 4 boot" from a genuinely fresh
 // profile (see that function's own comment).
 async function testEncryptionMigratesLegacyData(browser) {
-  console.log("\n[9/17] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
+  console.log("\n[9/18] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
     localStorage.setItem("shos_app_preferences", JSON.stringify({
@@ -511,7 +511,7 @@ async function testEncryptionMigratesLegacyData(browser) {
 // check broad, real coverage rather than just the vault metadata key
 // and whatever the fresh boot itself wrote.
 async function testEncryptionPositiveCheck(page) {
-  console.log("\n[10/17] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
+  console.log("\n[10/18] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
   const rawShapes = await page.evaluate(() => {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -594,7 +594,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
 async function testEncryptionAppLockGatesVault(page) {
-  console.log("\n[11/17] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
+  console.log("\n[11/18] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
@@ -670,7 +670,7 @@ async function testEncryptionAppLockGatesVault(page) {
 // stored preference, the same class of gap this whole suite exists to
 // close.
 async function testTabReorder(page) {
-  console.log("\n[12/17] Settings — bottom nav tab order (added 9 Sep 2026)");
+  console.log("\n[12/18] Settings — bottom nav tab order (added 9 Sep 2026)");
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   await dismissTransientBanners(page);
@@ -741,7 +741,7 @@ async function testTabReorder(page) {
 // it, and an early version auto-offered the tour even after an explicit
 // Skip tap, which directly contradicted the user's own "not now" signal.
 async function testInteractiveTour(browser) {
-  console.log("\n[13/17] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
+  console.log("\n[13/18] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const tourPageErrors = [];
@@ -833,7 +833,7 @@ async function testInteractiveTour(browser) {
 // the exact portability trap the interactive-tour flow above already
 // hit and fixed once this same day).
 async function testBackupMigratesOldFieldShape(page) {
-  console.log("\n[14/17] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
+  console.log("\n[14/18] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
   const oldShapedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -911,7 +911,7 @@ async function testBackupMigratesOldFieldShape(page) {
 // error, and exactly the one valid contact lands (not zero, not a
 // partial/corrupted count).
 async function testBackupImportDropsGarbageRecords(page) {
-  console.log("\n[17/17] Backup import — malformed array elements are dropped, not a crash (added 10 Sep 2026)");
+  console.log("\n[17/18] Backup import — malformed array elements are dropped, not a crash (added 10 Sep 2026)");
   const malformedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -979,7 +979,7 @@ async function testBackupImportDropsGarbageRecords(page) {
 // directly exercise that exact path, so a regression here would fail
 // loudly, not silently.
 async function testPinRecoveryFlow(page) {
-  console.log("\n[15/17] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
+  console.log("\n[15/18] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
   // The App Lock setup prompt can be pending again here — test 12's
   // own Replace All import doesn't touch privacySettings at all (its
   // synthetic backup has no privacySettings key), but a plain reload
@@ -1108,7 +1108,7 @@ async function testPinRecoveryFlow(page) {
 // Runs in its own fresh browser context (real SW registration/
 // lifecycle state, not shared with the rest of the suite).
 async function testServiceWorkerAutoUpdate(browser) {
-  console.log("\n[16/17] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
+  console.log("\n[16/18] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
 
   // Real preview-build-only test: `vite preview` (what CI and this
   // suite's own recommended local flow both use) serves dist/sw.js
@@ -1263,6 +1263,10 @@ async function testServiceWorkerAutoUpdate(browser) {
     // covered — it is not in the DOM at all, so the locator waits forever. My
     // first version made exactly that mistake.
     await testEscapeClosesOverlay(page);
+    // Placed here rather than at the end: it starts and ends on Home with no
+    // overlay open, which is a neutral state for whatever runs next, and it
+    // needs the sample contacts the other flows all leave in place.
+    await testSearchBackNavigation(page);
     await testMedicationReasonSideEffects(page);
     await testSymptomTestTwoWayLink(page);
     await testLocationsExtraFields(page);
@@ -1318,7 +1322,7 @@ async function testServiceWorkerAutoUpdate(browser) {
 // the PWA auto-update flow leaves a service worker in the browser profile, and
 // any flow after it is served a stale cached shell.
 async function testSampleDataDisclosureAndClear(browser) {
-  console.log("\n[1/17] Sample data is disclosed on first run, and clearing keeps real records (added 27 Sep 2026)");
+  console.log("\n[1/18] Sample data is disclosed on first run, and clearing keeps real records (added 27 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const flowErrors = [];
@@ -1410,6 +1414,94 @@ async function testSampleDataDisclosureAndClear(browser) {
 }
 
 // ---------------------------------------------------------------------------
+// ADDED 28 Sep 2026 - search result back-navigation (Phase 2b).
+//
+// WHY A REAL BROWSER DRIVE: the unit tests prove the decision is right and
+// the wiring guard proves the code is plumbed, but neither can show that a
+// person can actually search, open a result, and get back to their results -
+// which is the entire feature. That is the same lesson as the Escape sweep
+// below: the hook worked, the tests passed, and the feature was not actually
+// on the screens that mattered. Unit tests prove a function; only this proves
+// the app.
+//
+// It also covers the half most likely to be got wrong, which is the half no
+// other test would notice: the affordance must NOT follow the user around
+// the app after they navigate somewhere unrelated. A stale "back to search
+// results" button pointing at a query for a screen they left ten minutes ago
+// is worse than no button at all.
+async function testSearchBackNavigation(page) {
+  console.log("\n[18/18] Search results - you can get back to them, and only while it makes sense (added 28 Sep 2026)");
+  await navHome(page);
+  await dismissTransientBanners(page);
+
+  // Search is a header icon on Home, not a bottom-nav tab, and the icon is
+  // an SVG with no text content - so it must be found by its accessible
+  // name, and clicked with a synthetic bubbling event (SVGElement has no
+  // .click()).
+  await page.locator('[aria-label="Search"]').first()
+    .dispatchEvent("click", { bubbles: true, cancelable: true }).catch(async () => {
+      await page.locator('[aria-label="Search"]').first().click({ timeout: 5000 });
+    });
+  const dialog = page.getByRole("dialog", { name: "Global Search" });
+  const opened = await dialog.waitFor({ state: "visible", timeout: 8000 }).then(() => true).catch(() => false);
+  assert(opened, "Global Search opened from the Home header icon");
+  if (!opened) return;
+
+  // A seed contact, so this does not depend on anything the other flows did
+  // to the shared page's data.
+  await dialog.locator("input").first().fill("Priya");
+  const resultAppeared = await dialog.getByText("Priya", { exact: false }).first()
+    .waitFor({ state: "visible", timeout: 15000 }).then(() => true).catch(() => false);
+  assert(resultAppeared, "typing a query produces real results (not a 'no matches' false negative)");
+  if (!resultAppeared) return;
+
+  // Open the result. Before this change the query simply vanished here.
+  await dialog.getByText("Priya", { exact: false }).first().click({ timeout: 5000 });
+  const searchClosed = await dialog.waitFor({ state: "detached", timeout: 8000 }).then(() => true).catch(() => false);
+  assert(searchClosed, "tapping a result opens the record and closes the search overlay");
+  const recordOpened = await page.getByRole("heading", { name: "Priya", exact: false }).first()
+    .waitFor({ state: "visible", timeout: 8000 }).then(() => true).catch(() => false);
+  assert(recordOpened, "the record itself really opened - not just the overlay closing over it");
+  if (!recordOpened) return;
+
+  const backAffordance = page.locator('[aria-label^="Back to search results"]');
+  const offered = await backAffordance.first().waitFor({ state: "visible", timeout: 8000 }).then(() => true).catch(() => false);
+  assert(offered,
+    "the record offers a visible way back to the results it came from (web has no hardware back button at all, so the back-button path alone would leave this feature invisible on one of the two platforms the app ships to)");
+
+  // And the restore genuinely restores: same query, results back.
+  await backAffordance.first().click({ timeout: 5000 });
+  const reopened = await dialog.waitFor({ state: "visible", timeout: 8000 }).then(() => true).catch(() => false);
+  assert(reopened, "tapping it reopens Global Search");
+  const restoredQuery = await dialog.locator("input").first().inputValue();
+  assert(restoredQuery === "Priya",
+    `the query is still in the search box when you come back (got ${JSON.stringify(restoredQuery)}) - before this, it was gone and had to be retyped from memory`);
+  const resultsBack = await dialog.getByText("Priya", { exact: false }).first()
+    .waitFor({ state: "visible", timeout: 15000 }).then(() => true).catch(() => false);
+  assert(resultsBack, "the results are re-listed, not just the text restored into an empty screen");
+
+  // Dismiss the restored search with its own close control. The record must
+  // still be there, and the way back must still be offered - consuming the
+  // context on return would strand the user on the record with neither the
+  // results nor a way to undo the return.
+  await dialog.locator('[aria-label="Close search"]').first().click({ timeout: 5000 });
+  const closedAgain = await dialog.waitFor({ state: "detached", timeout: 8000 }).then(() => true).catch(() => false);
+  assert(closedAgain, "dismissing the restored search returns to the record it came from");
+  const stillOffered = await backAffordance.first().isVisible().catch(() => false);
+  assert(stillOffered, "and the way back to the results is still there afterwards");
+
+  // The half that must NOT happen: leaving for an unrelated screen has to
+  // clear it, or this button follows the user around all session pointing at
+  // a query for a screen they left long ago.
+  await nav(page, "Contacts");
+  await page.waitForTimeout(800);
+  const staleAfterLeaving = await backAffordance.first().isVisible().catch(() => false);
+  assert(!staleAfterLeaving,
+    "navigating somewhere unrelated clears it - a stale 'back to search results' button would point at a screen the user is no longer on");
+  await navHome(page);
+}
+
+// ---------------------------------------------------------------------------
 // ADDED 27 Sep 2026 - Developer Tools must offer "clear sample data" as its own
 // action and must NOT leave it confusable with "reset all app data".
 //
@@ -1421,7 +1513,7 @@ async function testSampleDataDisclosureAndClear(browser) {
 // rest of the previous flow depended on. Its own context avoids all of that,
 // and this flow must run BEFORE the flow above for the same reason.
 async function testSampleDataClearInDeveloperTools(browser) {
-  console.log("\n[2/17] Developer Tools separates 'clear sample data' from 'reset all app data' (added 27 Sep 2026)");
+  console.log("\n[2/18] Developer Tools separates 'clear sample data' from 'reset all app data' (added 27 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const flowErrors = [];

@@ -133,7 +133,7 @@ oversight.
   `scripts/smoke-test.cjs` against a real `vite preview` build on every
   push — the one piece of automated regression coverage this project
   has, now actually gated rather than manual-only.
-- `scripts/smoke-test.cjs` — 17 flows. **These run on every push in CI**
+- `scripts/smoke-test.cjs` — 18 flows. **These run on every push in CI**
   (`.github/workflows/smoke-test.yml` calls `npm run verify`, which is this
   same script), so you do not need to run them by hand before committing — the
   local loop is `npm run verify:fast`. Run the full local gate
@@ -425,6 +425,103 @@ this date; summarized here for durability.
 
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
+
+## Recently shipped (28 Sep 2026, latest of all yet again - search results you can actually get back to)
+
+**Phase 2b, the handover's first open item.** Tapping a search result opened
+the record and threw the query away. There was no mechanism at all - not a
+partial one - so getting back to a result list meant reopening Search and
+retyping from memory, which for a search over medical records is not a small
+friction. Two things ship: a visible "Back to search results" control on the
+opened record, and the hardware/gesture back chain returning there too.
+
+**The visible control is the primary path, not a nicety, and the reason is
+platform.** This app ships a web/PWA build as well as the APK, and on web
+there is no hardware back button and no right-swipe. Wiring the return into
+`goBackOneLevel` alone would have made the feature invisible on one of the two
+platforms it ships to - and it would also be unreachable whenever a module had
+an internal screen still open, because a module's own back handler (correctly)
+outranks the return in that chain. It is rendered once in App.jsx rather than
+threaded into each module: a search result can open a record in 11 different
+modules, and one fixed element covers all of them and cannot drift out of sync
+with eleven per-module copies.
+
+**The load-bearing half is the clearing, and it is the half no test would
+have noticed.** The context is recorded by `navigateTo`'s third parameter,
+which defaults to `null` - so every record link in the app that did *not*
+come from a search clears any context left over from an earlier one. Without
+that, a "back to search results" button follows the user around for the rest
+of the session, pointing at a query for a screen they left ten minutes ago,
+which is worse than having no button at all. The smoke flow asserts that
+half explicitly, and `buildSearchReturn` normalises a blank or
+non-string query to `null` so a result can never produce a return point that
+reopens an empty search.
+
+**The decision logic left the JSX, because logic in a render cannot be
+tested.** `src/calculations/backNavigation.js` holds `decideBackAction`
+(which of seven things a back press does), `shouldOfferSearchReturn` (whether
+the affordance may be shown over the current screen) and
+`buildSearchReturn`. The ordering is the substance of the feature and the
+easiest thing in the app to get quietly wrong by hand - the tests therefore
+lean on ordering cases far more than on the happy path.
+
+**Three things I got wrong or found along the way, recorded because all three
+would have shipped.**
+
+- **I broke a real guard with a legitimate change, and had to decide what to
+  do about it.** `recordNavigationWiring.test.js` asserted the exact call
+  shape `navigateTo(tabKey, subTab)`; threading the search origin through as
+  a third argument failed it. The temptation was to loosen it until it went
+  green. It was widened by exactly one character class - the closing paren -
+  with the assertion that actually matters (navigateTo is still called, with
+  the tab and the sub-tab) left intact, and a comment saying why. The guard
+  firing is the only reason it is worth having; a guard that has never fired
+  is a guess.
+- **A pre-existing latent bug, in code I was already touching.**
+  `goBackOneLevel` reads `clinicCardReturnTab` and `searchReturn`, and
+  neither was in the dependency arrays of the two effects that re-register
+  the back handler. The Clinic Card case was correct only by accident:
+  `markClinicCardReturn()` and `navigateToRecord()` batch into one commit,
+  so `active` changed in the same tick and the effect re-registered anyway.
+  Correctness by coincidence of React batching, not by design - and exactly
+  what breaks the moment a second write lands in a different tick. Both are
+  listed now, and a test pins that both effects declare the same list.
+- **My first design was correct only by accident too.** It cleared the
+  context in `navigateTo` and re-set it afterwards in `navigateToRecord` -
+  two writes to one state key in one handler, relying on "last write wins"
+  within a React batch. A later edit could reverse that silently and nothing
+  would fail. The origin is now threaded as a parameter, so there is exactly
+  one write per navigation and the rule is legible at the call site.
+
+**A decision that reads like an oversight, so it is pinned by a test:**
+returning to the results deliberately does *not* consume the context.
+Dismissing the restored search with its own X therefore returns you to the
+record with the way back still offered. A single-use flag would drop you on
+the record with neither the results nor a way to undo the return - the exact
+dead end this change exists to remove.
+
+**Three layers of test, because each covers what the others cannot.** 14 unit
+tests on the pure decisions. A source-level wiring guard
+(`searchBackNavigationWiring.test.js`), because this project has *already*
+shipped a feature whose hook worked perfectly in unit tests while a sweep
+silently failed to attach it to the components that mattered - a unit test
+cannot see whether a function is reached. And a real 18th smoke flow, because
+unit tests prove a function and only driving a browser proves the app.
+**Every one of the 7 mutations is verified to turn the suite red** - dropping
+the origin argument, removing the `null` default, promoting the return above
+the module handler, consuming the context on return, dropping the effect
+dependencies, ignoring `initialQuery`, and ungating the affordance. All seven
+went red, none passed vacuously.
+
+Also of note: `GlobalSearchScreen`'s restore props are read as `useState`
+initialisers, which is only correct because the screen is conditionally
+rendered and genuinely remounts on every open. That coupling is a comment at
+both ends rather than a resync effect - if the screen is ever made
+always-mounted, both props go stale silently.
+
+Verified: eslint clean, encoding guard clean across 238 tracked files,
+**319 unit tests across 28 files** (was 295/26), and the fast gate green.
+Build and the 18-flow smoke suite left to CI, per this repo's CI-first loop.
 
 ## Recently shipped (28 Sep 2026, latest still - the Escape sweep had a live bug in its own most important rule)
 

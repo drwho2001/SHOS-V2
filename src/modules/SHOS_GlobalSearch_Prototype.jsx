@@ -338,7 +338,14 @@ const TYPE_PLURAL = {
   contraception: "Contraception", pregnancy: "Pregnancy",
 };
 
-export default function GlobalSearchScreen({ onClose, onNavigate }) {
+// initialQuery / initialSortMode (ADDED 28 Sep 2026, Phase 2b) restore a
+// previous search when the screen is reopened from a record that a result
+// opened — see App.jsx's own searchReturn comment. They are read as useState
+// initialisers, which is only correct because this screen is rendered
+// conditionally and therefore genuinely remounts on every open. That is a
+// real coupling, stated here so the next person to make this screen
+// always-mounted knows these two props would silently stop working.
+export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery = "", initialSortMode }) {
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
@@ -349,13 +356,13 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
   // (as the other 19 Settings sub-screens use) would fight that and pull
   // focus back off the field on every open.
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   // ADDED 26 Aug 2026 — real ask: sort/filter on the search results
   // page — a kink term like a specific act can genuinely match both a
   // Contact and an Activity, which read very differently in a flat
   // relevance-only list. Chronological is the real default per the user's
   // own stated preference.
-  const [sortMode, setSortMode] = useState("chronological"); // "chronological" | "alphabetical"
+  const [sortMode, setSortMode] = useState(initialSortMode === "alphabetical" ? "alphabetical" : "chronological"); // "chronological" | "alphabetical"
   // FIXED 28 Sep 2026 — real bug, and a bad one for a search screen.
   //
   // This used to be `useLoadedMemo(() => buildIndex(), [], [])`. The
@@ -436,7 +443,13 @@ export default function GlobalSearchScreen({ onClose, onNavigate }) {
   // results) through to the real deep-link mechanism.
   const handleSelect = (result) => {
     const meta = RESULT_META[result.type];
-    onNavigate(meta.tab, result.id, meta.subTab);
+    // The 4th argument (Phase 2b) is the search origin: the query and sort
+    // that produced this result. App.jsx records it so the record can offer
+    // a way back to these exact results. Every other caller of
+    // onNavigate across the app omits it, which clears any earlier context —
+    // see App.jsx's navigateToRecord comment for why that clearing is the
+    // load-bearing half.
+    onNavigate(meta.tab, result.id, meta.subTab, { query, sortMode });
     onClose();
   };
 

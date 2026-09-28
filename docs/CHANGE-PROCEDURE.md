@@ -89,7 +89,7 @@ For each unit of work:
 ### Why CI is the real gate, not a local full run
 
 `smoke-test.yml` runs `npm run verify` — the **same script**, the **same gates**,
-on **every push**, in about 11 minutes. That includes the entire 17-flow
+on **every push**, in about 11 minutes. That includes the entire 18-flow
 Playwright smoke suite, which takes ~11 minutes of wall clock on a GitHub runner
 and the better part of that plus polling overhead on a local machine.
 
@@ -155,7 +155,7 @@ All three workflows must be green before the work is done: **Smoke Test**,
 
 | Workflow | Covers |
 |---|---|
-| **SHOS Smoke Test** | The whole gate, via `npm run verify`: build, lint, unit tests, encoding guard, all 17 Playwright flows, and the docs check. |
+| **SHOS Smoke Test** | The whole gate, via `npm run verify`: build, lint, unit tests, encoding guard, all 18 Playwright flows, and the docs check. |
 | **Build Android APK** | The one thing that genuinely cannot be checked locally — that the Java/native code compiles. |
 | **SHOS Web Alpha** | Deploys to GitHub Pages, and builds with a `/SHOS-V2/` base path, which is a genuinely different build from the root-relative one CI tests. |
 

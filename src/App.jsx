@@ -46,10 +46,14 @@ import { getClinicVisitDueState, handleSnoozeClinicVisit } from "./calculations/
 // the actual foundation — see designTokens.js for full reasoning and
 // honest scope (this is a start, not a finished migration).
 import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent, applyRealAccentOverrides } from "./calculations/designTokens";
+// ADDED 28 Sep 2026 (Phase 2b) — the pure "what does back do" / "should the
+// search-return affordance show" decisions, split out of this file precisely so
+// they can be unit-tested. See backNavigation.js's own header.
+import { decideBackAction, shouldOfferSearchReturn, buildSearchReturn, BACK_ACTION } from "./calculations/backNavigation";
 import { ModuleColorRepository } from "./repositories/moduleColorRepository";
 import { useIsDesktopWidth } from "./calculations/responsive";
 // ADDED — real ask: Home's title should read "[Name]'s dashboard".
-import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HospitalIcon as Hospital, WarningIcon as AlertTriangle, EyeIcon as Eye, TestTubeIcon as TestTube, SyringeIcon as Syringe, FingerprintIcon as Fingerprint, LockIcon as Lock, XIcon as X } from "@phosphor-icons/react";
+import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HospitalIcon as Hospital, WarningIcon as AlertTriangle, EyeIcon as Eye, TestTubeIcon as TestTube, SyringeIcon as Syringe, FingerprintIcon as Fingerprint, LockIcon as Lock, XIcon as X, CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
 // CHANGED — real Tier 1 decision: Phosphor, replacing lucide-react.
 // Every icon aliased directly in ONE import statement, back to its
 // original lucide name — deliberately one consistent pattern (not
@@ -1075,6 +1079,23 @@ export default function App() {
   const openSettingsToCalendar = () => { setSettingsInitialScreen("calendar"); setShowSettings(true); };
   const openSettingsToPrivacy = () => { setSettingsInitialScreen("privacy"); setShowSettings(true); };
   const [showSearch, setShowSearch] = useState(false);
+  // ADDED 28 Sep 2026 (Phase 2b) — real ask: coming back from a search
+  // result. `navigateToRecord` closes the search overlay and opens the
+  // record, which meant the query was simply gone: to get back to the results
+  // you had to reopen Search and retype it. There was NO mechanism for this
+  // before — not a partial one, none.
+  //
+  // This holds the { query, sortMode } that produced the record now on
+  // screen, and is set from exactly one place: navigateToRecord, when the
+  // navigation is passed a search origin. Any other navigation records null
+  // and clears it (see navigateTo's own comment), so the affordance can
+  // never outlive the screen it refers to.
+  //
+  // Deliberately session state, never persisted. It is a UI affordance for a
+  // navigation the user just made; restoring it after a relaunch would put a
+  // "back to search results" button on a screen the user has no memory of
+  // arriving at.
+  const [searchReturn, setSearchReturn] = useState(null);
   // ADDED 9 Sep 2026 — the interactive tour, replayable from Settings >
   // Guide (settingsInitialScreen === "guide" doesn't exist as its own
   // screen key — GuideScreen is reached via Settings' own Content &
@@ -1431,19 +1452,49 @@ export default function App() {
   const moduleBackHandlerRef = useRef(null);
   const registerModuleBackHandler = (fn) => { moduleBackHandlerRef.current = fn; };
 
+  // ADDED 28 Sep 2026 (Phase 2b) — reopen Global Search carrying the query
+  // that produced the record now on screen, so going back to the results is
+  // one tap instead of reopening Search and retyping from memory.
+  //
+  // The context is NOT cleared here. It is deliberately still set while the
+  // search overlay is open, and is cleared by the very next navigation
+  // instead (navigateTo's own default argument). That means dismissing the
+  // restored search with its own X returns the user to the record they came
+  // from, and the affordance is still there if they want to come back again
+  // — rather than a single-use flag that leaves them stranded on the record
+  // with no way to the results and no way back to where they were.
+  //
+  // Declared ABOVE goBackOneLevel, which calls it, on purpose. It is only ever
+  // invoked from an event handler so the current ordering is not a live TDZ
+  // bug — but this file has crashed five separate times on exactly this shape
+  // (a `const` referenced above its own declaration), and leaving the next
+  // reader to work that out for no benefit is the wrong trade.
+  const returnToSearchResults = () => { setShowSearch(true); };
+
   const goBackOneLevel = () => {
-    if (moduleBackHandlerRef.current && moduleBackHandlerRef.current()) return true;
-    if (showSettings) { setShowSettings(false); return true; }
-    if (showSearch) { setShowSearch(false); return true; }
+    // The decision itself is pure and unit-tested in
+    // calculations/backNavigation.js — the ordering is the substance of this
+    // feature and the easiest thing here to get quietly wrong by hand.
+    // What lives here is only the side effects that follow from it.
+    const action = decideBackAction({
+      moduleHandled: !!(moduleBackHandlerRef.current && moduleBackHandlerRef.current()),
+      showSettings,
+      showSearch,
+      hasClinicCardReturn: !!clinicCardReturnTab,
+      hasSearchReturn: !!searchReturn,
+      active,
+    });
+    if (action === BACK_ACTION.MODULE) return true;
+    if (action === BACK_ACTION.SETTINGS) { setShowSettings(false); return true; }
+    if (action === BACK_ACTION.SEARCH) { setShowSearch(false); return true; }
     // Real report fix (15 Sep 2026) — see clinicCardReturnTab's own
     // comment above: once the record you were navigated to from Clinic
     // Card has no further internal screen of its own left to pop
     // (moduleBackHandlerRef already returned false above), go back to
     // the tab Clinic Card was opened from instead of Home's default.
-    // Deliberately checked BEFORE the plain "not on Home" fallback below
-    // — clinicCardReturnTab is only ever set from that one real flow.
-    if (clinicCardReturnTab) { setActive(clinicCardReturnTab); setNavResetCount((c) => c + 1); return true; }
-    if (active !== "home") { setActive("home"); setNavResetCount((c) => c + 1); return true; }
+    if (action === BACK_ACTION.CLINIC_CARD) { setActive(clinicCardReturnTab); setNavResetCount((c) => c + 1); return true; }
+    if (action === BACK_ACTION.SEARCH_RETURN) { returnToSearchResults(); return true; }
+    if (action === BACK_ACTION.HOME) { setActive("home"); setNavResetCount((c) => c + 1); return true; }
     return false;
   };
 
@@ -1473,8 +1524,18 @@ export default function App() {
     // logic reads (showSettings/showSearch/active) is already listed
     // here, so this effect already re-registers the listener with a
     // fresh closure whenever any of them change.
+    //
+    // FIXED 28 Sep 2026 (Phase 2b) — that list was INCOMPLETE, and was
+    // already wrong before this change: goBackOneLevel also reads
+    // `clinicCardReturnTab` and now `searchReturn`, and neither was
+    // listed. It happened not to bite for the Clinic Card case only
+    // because markClinicCardReturn() and navigateToRecord() batch into
+    // one commit, so `active` changed in the same tick and the effect
+    // re-registered anyway — correctness by coincidence, not by design,
+    // and exactly the kind of thing that breaks the moment a second
+    // write lands in a different tick. Both are listed now.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showSettings, showSearch, active]);
+  }, [showSettings, showSearch, active, clinicCardReturnTab, searchReturn]);
 
   // ADDED — real ask: actually re-lock when the app comes back from
   // the background (screen timeout, switching away and back), not
@@ -1653,9 +1714,10 @@ export default function App() {
     };
     // Same reasoning as the hardware back-button effect above:
     // goBackOneLevel deliberately omitted, its real inputs
-    // (showSettings/showSearch/active) already listed.
+    // (showSettings/showSearch/active/clinicCardReturnTab/
+    // searchReturn) already listed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showSettings, showSearch, active]);
+  }, [showSettings, showSearch, active, clinicCardReturnTab, searchReturn]);
   const fileInputRef = useRef(null);
   // ADDED 1 Sep 2026 — real ask: long-press Home to relock, see the
   // appLockEnabled state comment above for the full reasoning. Same
@@ -1753,11 +1815,19 @@ export default function App() {
   // on the right module (and right Healthcare sub-tab), doesn't open an
   // add flow. See GlobalSearchScreen's own comment for why this stops at
   // "right module" rather than a true deep-link to one record.
-  const navigateTo = (tabKey, subTab) => {
+  // `searchReturn` is threaded through here rather than cleared inside
+  // navigateTo and re-set afterwards by navigateToRecord, because two state
+  // writes to the same key in one handler is a "last write wins" subtlety
+  // that a future edit could silently reverse. This way there is exactly one
+  // write per navigation, and the rule is legible at the call site: a
+  // navigation that did not come from a search passes nothing, and therefore
+  // clears the context.
+  const navigateTo = (tabKey, subTab, searchReturn = null) => {
     setActive(tabKey);
     setQuickAddTarget(subTab || null);
     setQuickAdd(false);
     setNavResetCount((c) => c + 1);
+    setSearchReturn(searchReturn);
   };
 
   // ADDED — real ask: "linked encounter should be actually linked",
@@ -1775,7 +1845,13 @@ export default function App() {
   // pick its initial sub-tab (Testing/Clinic Visits/Symptom Log/
   // Vaccinations), so a search result for e.g. a Vaccination just
   // needs to say so, not require new plumbing.
-  const navigateToRecord = (tabKey, recordId, subTab) => {
+  // `searchReturn` (Phase 2b) is the query/sort that produced this record,
+  // passed only by Global Search. Every other caller in the app omits it,
+  // which records `null` and so clears any context left over from an earlier
+  // search — that clearing is the load-bearing half. Without it, a
+  // "back to search results" button would follow the user around the app for
+  // the rest of the session, pointing at a query for a screen they left.
+  const navigateToRecord = (tabKey, recordId, subTab, searchReturn = null) => {
     // FIXED 27 Sep 2026 - real navigation bug, found by auditing the app as a
     // new user. Tapping a record from inside a Settings sub-screen (Calendar
     // is the one that does this today) switched the underlying tab and opened
@@ -1795,7 +1871,7 @@ export default function App() {
     setShowSettings(false);
     setSettingsInitialScreen(null);
     setShowSearch(false);
-    navigateTo(tabKey, subTab);
+    navigateTo(tabKey, subTab, buildSearchReturn(searchReturn?.query, searchReturn?.sortMode));
     setPendingOpenRecordId(recordId);
   };
 
@@ -2324,6 +2400,60 @@ export default function App() {
         })}
       </div>
 
+      {/* ADDED 28 Sep 2026 (Phase 2b) — the "back to search results"
+          affordance, and the PRIMARY way back rather than the hardware
+          back button.
+
+          It has to exist as its own visible control, not just as back-
+          button behaviour, for one concrete reason: this app ships a web/
+          PWA build as well as the APK, and on web there is no hardware back
+          button and no right-swipe. Wiring search return into goBackOneLevel
+          alone would make the feature invisible on one of the two platforms
+          it ships to. It is also the only path that works while a module has
+          an internal screen still open, since the module's own back handler
+          (correctly) outranks the return in that chain.
+
+          Rendered here, in App.jsx, rather than threaded into each module:
+          a record can be opened from a search result in 11 different
+          modules, and one fixed element covers all of them and cannot drift
+          out of sync with a per-module copy. It is deliberately suppressed
+          over any other overlay — see shouldOfferSearchReturn's own
+          comment — because the record it refers to would be behind that
+          overlay, so the button would offer a destination the user cannot
+          see they are returning to.
+
+          Left-aligned and pill-shaped rather than centred, so it cannot
+          collide with the "press back again to exit" toast below, which
+          occupies the same vertical band and is centred. They cannot both
+          be showing in practice (a back press here is consumed by the
+          return, never falling through to the exit toast), but overlapping
+          chrome is worth designing out rather than reasoning about. */}
+      {shouldOfferSearchReturn({
+        searchReturn,
+        showSearch,
+        showSettings,
+        showTour,
+        showAppLockPrompt,
+        showImportModeDialog,
+        pendingEncryptedEnvelope,
+      }) && (
+        <div role="button" tabIndex={0}
+          aria-label={`Back to search results for "${searchReturn.query}"`}
+          onClick={returnToSearchResults}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); returnToSearchResults(); } }}
+          style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", left: 16,
+            maxWidth: "calc(100% - 32px)", display: "flex", alignItems: "center", gap: 8,
+            background: darkMode ? DARK.surface : NEUTRAL.surface, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary,
+            border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, borderRadius: 999,
+            padding: "9px 16px", boxShadow: "0 4px 16px rgba(0,0,0,.14)", zIndex: 100,
+            fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <ChevronLeft size={15} weight="bold" style={{ flexShrink: 0 }} />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            Back to search results
+          </span>
+        </div>
+      )}
+
       {backExitToast && (
         // ADDED — real screen-reader-quality gap found the same pass:
         // a sighted user sees this toast appear, but nothing announced
@@ -2353,7 +2483,16 @@ export default function App() {
       )}
       {showTour && <TourOverlay onDone={finishTour} darkMode={darkMode} />}
       {showSearch && (
-        <GlobalSearchScreen onClose={() => setShowSearch(false)} onNavigate={navigateToRecord} />
+        // initialQuery/initialSortMode are the Phase 2b back-navigation
+        // restore. They are read as useState initialisers, which is only
+        // correct because this component is conditionally rendered: closing
+        // the overlay unmounts it, so every open is a genuine fresh mount
+        // and therefore always sees the current props. That coupling is the
+        // reason this is a comment and not a resync effect — if this ever
+        // stops being conditionally rendered, these two props go stale
+        // silently and the screen reopens empty.
+        <GlobalSearchScreen onClose={() => setShowSearch(false)} onNavigate={navigateToRecord}
+          initialQuery={searchReturn?.query || ""} initialSortMode={searchReturn?.sortMode} />
       )}
       </Suspense>
       {/* ADDED 19 Aug 2026 — real ask: App Lock setup prompt. Renders
