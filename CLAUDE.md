@@ -426,6 +426,99 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+## Recently shipped (28 Sep 2026, latest of all yet again - banner suppression, and a parallel session committing my work for me)
+
+**A git accident happened mid-change, and it is recorded here rather than
+tidied away.** A second session working in this same tree ran `git add -A src`
+and swept up 815 lines of this in-progress work — `reminderSuppression.js` and
+its tests, `medicationReminderSync.js`, `appPreferencesRepository.js` and 262
+lines of `App.jsx` — committing it under its own message about the Clinic Card
+PDF (`bc04295`). Nothing was lost and nothing of theirs was overwritten, but
+the history for this feature is wrong: the bulk of it sits under someone else's
+commit message. I have deliberately **not** rewritten that commit, because the
+other session is actively working from it and rebasing shared history out from
+under a running process risks losing their work to fix a cosmetic problem. If
+you want it split properly, that is a deliberate decision for you to make with
+both sessions stopped.
+
+**The root cause is in our own procedure, and it is now fixed.**
+`docs/CHANGE-PROCEDURE.md` prescribed `git add -A` as the commit step. That is
+correct when you own the working tree and wrong the moment you do not — and
+this project routinely has two sessions in one tree. It now says to stage
+explicit paths, and says why. I was myself about to repeat the same mistake
+when the accident surfaced; the only reason I did not is that I had to stop and
+read `git status` first.
+
+**What the feature does**, from the owner's own spec: a dismissed reminder
+does not come back on the 60-second poll any more. It stays hidden for the
+rest of the app run and returns after a hard close. A harder "don't remind me
+about this" persists — and leaves a quiet passive mark rather than pretending
+the item is done. Medication snoozes are deliberately untouched, and still
+re-push in the same session when they expire.
+
+**The behaviour is almost entirely free, and the reason is worth knowing
+rather than rebuilding.** "For this app run" is plain in-memory `useState`.
+Sending the app to the background does not tear down a Capacitor WebView, so a
+dismissal survives a trip to the launcher and a swipe-away-and-return, and dies
+on a real close — which is exactly the requested line, with no timer and no
+lifecycle plumbing. The previous 30-minute dismissal was barely different from
+no dismissal at all; this is genuinely different.
+
+**Everything is keyed by a fingerprint of what was due, not by a flag, and
+that is the whole design.** Acknowledging "PrEP is due" must not also silence
+"Testosterone is now due too" two hours later, or a real reminder gets missed.
+So each dismissal records a signature of the current due set; while the set is
+unchanged the silence holds, and the moment it genuinely changes a new
+reminder is free to return. For medications that signature includes the
+last-dose timestamp, which means **each dose is a distinct instance** —
+otherwise a once-daily medication acknowledged this morning would still match
+tomorrow morning and never remind the user again. Getting that wrong is the one
+bug in this feature that would be dangerous rather than merely annoying, so
+`getDailyMedsState` now carries the per-instance marker it was discarding.
+
+**"Silence my device" is coarser than it sounds, and the copy says so.** This
+app schedules **one notification per reminder type** under a fixed id, so
+there is no per-item notification to cancel, and a dose that is already due is
+scheduled three seconds out. Promising "your phone will never mention this
+again" would be a claim the app cannot keep. What it actually does is stop
+re-scheduling that type while the due content is unchanged — which is correct
+and safe precisely *because* the signature changes for a genuinely new dose.
+The owner asked for a choice here rather than a fixed answer, so there is a
+two-option sheet plus a Settings default.
+
+**The passive mark is derived, never remembered, and it is not a nested
+button.** A remembered flag would outlive the dose it was about; deriving it
+from live due state means taking the dose is the only thing that ever clears
+it. And this project's own rule is that icon-only UI needs an explanation,
+which normally means a tap-to-reveal target — but a focusable control inside
+the bottom-nav tab would be the `nested-interactive` violation already found
+and fixed once on Contacts' card. So the dot is `aria-hidden`, the tab's own
+accessible name carries the count, and a one-time toast explains it per app
+run. Satisfying the rule's intent without reintroducing the violation.
+
+**Snooze is the load-bearing negative, and it is pinned by a negative test.**
+Snoozing writes a real timestamped fact the due-state check already honours, so
+it needs no suppression logic at all. Had a snooze quietly recorded a
+dismissal, the reminder would never return and the failure would be invisible
+until a dose was actually missed. `reminderSuppressionWiring.test.js` asserts
+that the snooze handlers touch *neither* suppression list.
+
+Also: the acknowledgement settings live on the existing
+`AppPreferencesRepository` rather than a new repository, which is the cheap way
+to satisfy the "wire it into `backupService.js`" rule that has been missed
+three times here — it is already wired. Stored acknowledgements are
+normalised on read, because they are restored-from-backup data. And Settings
+carries an explicit "start reminding me again", because a persisted silence
+with no way out means one mis-tap on a small button permanently silences a
+medication reminder.
+
+Not yet done, and deliberately recorded as such: **no smoke flow covers this
+yet.** The pure rules (30 tests) and the wiring (12 tests) are both in place,
+but "dismissed stays dismissed across a 60s poll" is a browser fact and should
+get a real flow like the other changes in this file have. Snooze *expiry*
+cannot be covered at all — 30 minutes is longer than a test run — which is
+another reason the negative wiring test matters.
+
 ## Recently shipped (28 Sep 2026, latest of all yet again - the new smoke flow caught a real bug in its own feature, on its first CI run)
 
 **Follow-on to the Phase 2b entry below, and the most useful result of the

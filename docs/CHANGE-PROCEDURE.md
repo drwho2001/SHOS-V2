@@ -113,7 +113,8 @@ platforms immediately exposed a Windows-only bug that splitting had hidden.
 ## 3. Committing
 
 ```
-git add -A
+git status                 # ALWAYS read this before staging anything
+git add <explicit paths>   # never `git add -A` - see below
 git commit   # a pre-commit hook blocks mojibake automatically
 git push
 ```
@@ -122,6 +123,31 @@ git push
 both directions: it blocks a file containing real mojibake, and it lets a clean
 commit through. Bypass only with `git commit --no-verify`, and only
 deliberately.
+
+### Never `git add -A` — stage explicit paths instead
+
+**This replaces an earlier version of this file that prescribed `git add -A`,
+and the reason it was wrong is worth more than the rule itself.** This project
+routinely has **two AI sessions working in the same working tree at the same
+time** — the owner runs them in parallel and relays their output. On a tree you
+own, `git add -A` is correct and convenient: it is what makes the pre-commit
+encoding hook and the docs gate see the whole change. The moment you do not own
+it, it silently stages **someone else's half-finished work** and commits it
+under your message.
+
+That is not hypothetical. It happened on 28 Sep 2026: a parallel session ran
+`git add -A src` and swept up 815 lines of an in-flight feature belonging to
+another session, committing it under a message about the Clinic Card PDF.
+Nothing was lost, but the history for that feature is now wrong and had to be
+documented in `CLAUDE.md` rather than rewritten — because the other session was
+actively working from that commit, and rebasing shared history out from under a
+running process risks losing their work to fix a cosmetic problem.
+
+**The practical rule:** read `git status` first, every time, and stage only the
+paths your own change touched. A file you did not write appearing in the staged
+list is the signal to stop. If you are unsure whether something is yours, read
+it — the cost of a minute is far below the cost of a commit that will not
+build.
 
 ### Write the commit message properly
 

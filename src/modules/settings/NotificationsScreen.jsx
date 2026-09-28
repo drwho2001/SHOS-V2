@@ -10,6 +10,11 @@ import { useIsDesktopWidth } from "../../calculations/responsive";
 import { NotificationPreferencesRepository, DEFAULT_NOTIFICATION_PREFERENCES, isPaused } from "../../repositories/notificationPreferencesRepository";
 import { getDeferredInstallPrompt, onInstallPromptAvailable, triggerInstallPrompt } from "../../storage/installPromptService";
 import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../../repositories/medicationPreferencesRepository";
+// ADDED 28 Sep 2026 (Phase 3) - banner-suppression preferences live in the
+// app preferences singleton (already wired into backupService), and the scope
+// vocabulary is shared with App.jsx so the two cannot drift.
+import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
+import { ACK_SCOPE, normaliseAcknowledgements } from "../../calculations/reminderSuppression";
 import { syncDoxyPepAlert } from "../../calculations/doxyPepSync";
 import { checkNotificationPermission, requestNotificationPermission, sendTestNotification, TEST_NOTIFICATION_DELAY_MS, checkExactAlarmPermission, requestExactAlarmPermission, getNotificationPlatform, isIOS, isStandalone, checkNativeBridgeHealth } from "../../storage/notificationService";
 import { syncMedicationReminders } from "../../calculations/medicationReminderSync";
@@ -398,6 +403,31 @@ export function NotificationsScreen({ onClose }) {
   };
   const resumeNow = async () => { await NotificationPreferencesRepository.update({ pausedUntil: null }); resyncAll(); refresh(); };
 
+  // ADDED 28 Sep 2026 (Phase 3) - the default scope offered when the user
+  // acknowledges a reminder. Read from AppPreferencesRepository rather than
+  // the notification one because it is a general app behaviour choice, not a
+  // per-notification-type setting, and that repository is already wired into
+  // backupService (see appPreferencesRepository.js's own comment).
+  const appPrefs = useLoadedMemo(() => AppPreferencesRepository.getPreferences(), [refreshKey], DEFAULT_APP_PREFERENCES);
+  const setAckScopeDefault = async (value) => {
+    await AppPreferencesRepository.update({ acknowledgeScopeDefault: value });
+    refresh();
+  };
+  // ADDED 28 Sep 2026 (Phase 3) - the escape hatch. An acknowledgement is a
+  // persisted "stop telling me", and a persisted silence with no way back is
+  // exactly the kind of thing that has to be escapable: one mis-tap on a
+  // small button must not mean a medication reminder is off until the user
+  // works out why. Normalised on read for the same reason as everywhere else -
+  // it is restored-from-backup data.
+  const acknowledgedCount = normaliseAcknowledgements(appPrefs.acknowledgedReminders).length;
+  const clearAcknowledgements = async () => {
+    await AppPreferencesRepository.update({ acknowledgedReminders: [] });
+    // Resync so anything the previous acknowledgement had withdrawn is
+    // scheduled again straight away, rather than waiting for the next poll.
+    resyncAll();
+    refresh();
+  };
+
   const hoursInput = (value, onChange) => (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
       <span style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>Hours before:</span>
@@ -419,6 +449,42 @@ export function NotificationsScreen({ onClose }) {
         <InstallPwaNudge darkMode={darkMode} />
 
         <div style={isDesktopWidth ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8, alignItems: "start" } : undefined}>
+        {/* ADDED 28 Sep 2026 (Phase 3) - where "don't remind me about this"
+            stops reminding you. Deliberately worded to be honest about what
+            the device option actually does: this app schedules ONE
+            notification per reminder type, so there is no per-item
+            notification to cancel, and an already-due dose is scheduled three
+            seconds out. Promising "your phone will never mention this again"
+            would be a claim the app cannot keep. See ACK_SCOPE's own comment
+            in calculations/reminderSuppression.js. */}
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>When I tap &quot;Don&apos;t remind&quot;</div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10, lineHeight: 1.5 }}>
+            Which of the two options is preselected. Either way the item stays outstanding and
+            a dot marks the tab, and it starts speaking up again if it changes.
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {[
+              { value: ACK_SCOPE.IN_APP, label: "Just in the app" },
+              { value: ACK_SCOPE.BOTH, label: "App and device" },
+            ].map((option) => (
+              <button key={option.value} onClick={() => setAckScopeDefault(option.value)} aria-label={`Preselect "${option.label}" when I stop a reminder`}
+                aria-pressed={appPrefs.acknowledgeScopeDefault === option.value}
+                style={{ padding: "7px 14px", borderRadius: 999, border: "1px solid " + (appPrefs.acknowledgeScopeDefault === option.value ? (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) : (darkMode ? DARK.border : NEUTRAL.border)), background: appPrefs.acknowledgeScopeDefault === option.value ? (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) : "transparent", color: appPrefs.acknowledgeScopeDefault === option.value ? (darkMode ? DARK.bg : "#FFFFFF") : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                {option.label}
+              </button>
+            ))}
+          </div>
+          {acknowledgedCount > 0 && (
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 12, lineHeight: 1.5 }}>
+              {acknowledgedCount} reminder{acknowledgedCount > 1 ? "s" : ""} stopped right now.{" "}
+              <button onClick={clearAcknowledgements} style={{ background: "none", border: "none", padding: 0, textDecoration: "underline", color: "inherit", fontSize: 11, cursor: "pointer" }}>
+                Start reminding me again
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* ADDED 3 Sep 2026 — real ask: a single master switch, distinct
             from the 5 independent per-type toggles below. Checked in
             notificationService.js's own scheduleNotification() before
