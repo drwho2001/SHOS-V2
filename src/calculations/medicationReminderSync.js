@@ -73,7 +73,26 @@ export async function getDailyMedsState() {
     const lastDose = [...logs].filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
     const unlockAt = lastDose ? getNextNotificationTime(med, lastDose.date, prefs.reminderTimingMode) : null;
     if (!lastDose || !unlockAt || unlockAt <= new Date()) {
-      due.push(med);
+      // ADDED 28 Sep 2026 (Phase 3) - `_dueSince` identifies WHICH due
+      // instance this is, which is what lets a reminder acknowledgement mean
+      // "stop telling me about this dose" rather than "stop telling me about
+      // this medication, forever".
+      //
+      // Without it a signature could only be built from the medication id, and
+      // a once-daily medication acknowledged as due this morning would still
+      // produce the identical signature tomorrow morning - so the user would
+      // never be reminded of tomorrow's dose. Every dose has to be a distinct
+      // instance, and the last-dose timestamp is what makes it one.
+      //
+      // A SPREAD, not a mutation: these are the repository's own objects and
+      // adding a field to them in place would leak into anything else holding
+      // the same reference. Every existing caller is unaffected - the record
+      // still has id, name and every other field it had.
+      //
+      // Null when the medication has never been dosed, in which case there is
+      // no occurrence to distinguish and the id alone stands. Deliberate: see
+      // buildMedsSignature's own comment.
+      due.push({ ...med, _dueSince: lastDose ? lastDose.date : null });
     } else {
       upcoming.push({ med, unlockAt });
     }
@@ -91,6 +110,24 @@ export async function syncMedicationReminders() {
   await registerNotificationActionTypes();
 
   const { due, upcoming } = await getDailyMedsState();
+
+  // ADDED 28 Sep 2026 (Phase 3) — a "don't remind me about this" that covered
+  // the device has to actually withdraw the notification, not just hide the
+  // banner. Scoped by the due-content fingerprint, so it is only ever the
+  // CURRENT instance that is silenced: take the dose, or wait for the next
+  // one, and the signature changes and scheduling resumes normally. A blanket
+  // "user said don't remind me about PrEP" flag would have been a medication
+  // app quietly deciding a dose doesn't matter, which is exactly the line this
+  // project never crosses.
+  const { AppPreferencesRepository } = await import("../repositories/appPreferencesRepository");
+  const { buildMedsSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } = await import("./reminderSuppression");
+  const appPrefs = await AppPreferencesRepository.getPreferences();
+  const acknowledged = normaliseAcknowledgements(appPrefs.acknowledgedReminders);
+  if (shouldSuppressDeviceNotification(buildMedsSignature(due), acknowledged)) {
+    await cancelNotification(NOTIFICATION_IDS.medicationReminder);
+    await updateRefillWidget();
+    return { scheduled: false, acknowledged: true };
+  }
 
   if (due.length > 0) {
     // Already due right now — schedule for a few seconds out (Capacitor

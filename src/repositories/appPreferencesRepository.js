@@ -190,6 +190,29 @@ export const DEFAULT_APP_PREFERENCES = {
   // attached — see ErrorLogScreen's submitReport() for the one fetch
   // call this ever triggers.
   errorReportEndpoint: "",
+  // ADDED 28 Sep 2026 (Phase 3, banner suppression) - "don't remind me about
+  // this" acknowledgements, persisted so they survive a hard close. See
+  // calculations/reminderSuppression.js for the whole design; the short
+  // version is that each entry is a fingerprint of what was due when the user
+  // acted, so a genuinely NEW dose is a different fingerprint and still
+  // reminds them.
+  //
+  // Stored HERE rather than in a new repository on purpose: CLAUDE.md's
+  // standing rule is that a new repository must be wired into backupService.js
+  // in the same change that adds it, and that rule has been missed three times
+  // here. Adding fields to the preferences singleton that is already wired
+  // cannot miss it.
+  //
+  // Malformed entries are dropped on read by normaliseAcknowledgements() rather
+  // than trusted, because this is restored-from-backup data and a backup can
+  // have been written by an older build.
+  acknowledgedReminders: [],
+  // The default scope offered when acknowledging. "in-app" is the default and
+  // is the safe one: it stops the in-app banner without touching the OS
+  // notification, which is the thing that actually fires when the app is
+  // closed. See reminderSuppression.js's ACK_SCOPE comment for why "device"
+  // is coarser than it sounds.
+  acknowledgeScopeDefault: "in-app",
 };
 
 export const AppPreferencesRepository = {

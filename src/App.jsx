@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, Suspense, lazy } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
 import { resolveDeepLinkRoute } from "./calculations/deepLinkRoutes";
 import { useDarkModePreference } from "./calculations/darkModePreference";
 import { NEUTRAL_DARK as DARK } from "./calculations/designTokens";
@@ -50,6 +50,20 @@ import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent, applyRealAcc
 // search-return affordance show" decisions, split out of this file precisely so
 // they can be unit-tested. See backNavigation.js's own header.
 import { decideBackAction, shouldOfferSearchReturn, buildSearchReturn, BACK_ACTION } from "./calculations/backNavigation";
+// ADDED 28 Sep 2026 (Phase 3) — banner suppression. Pure, so it can be
+// unit-tested; see reminderSuppression.js's own header for the design.
+import {
+  REMINDER_KIND,
+  ACK_SCOPE,
+  buildMedsSignature,
+  buildSimpleSignature,
+  isBannerVisible,
+  hasOutstandingAcknowledged,
+  shouldSuppressDeviceNotification,
+  appendSignature,
+  upsertAcknowledgement,
+  normaliseAcknowledgements,
+} from "./calculations/reminderSuppression";
 import { ModuleColorRepository } from "./repositories/moduleColorRepository";
 import { useIsDesktopWidth } from "./calculations/responsive";
 // ADDED — real ask: Home's title should read "[Name]'s dashboard".
@@ -1329,6 +1343,148 @@ export default function App() {
     return () => { listenerHandle?.remove(); };
   }, []);
 
+  // ADDED 28 Sep 2026 (Phase 3, banner suppression) — see
+  // calculations/reminderSuppression.js for the whole design and why every
+  // record is keyed by a fingerprint of what was due rather than a flag.
+  //
+  // sessionDismissed is deliberately PLAIN in-memory state, never persisted.
+  // That single choice is what gives the exact behaviour asked for with no
+  // timer and no lifecycle plumbing: sending the app to the background does
+  // not tear down a Capacitor WebView, so a dismissal survives a trip to the
+  // launcher and a swipe-away-and-return, and is gone on a real close. On
+  // web, a hidden tab is still alive and a closed tab is a hard close. The
+  // earlier 30-minute dismissal was barely different from none; this is not.
+  const [sessionDismissed, setSessionDismissed] = useState([]);
+  // Acknowledgements ARE persisted, so "don't remind me about this" means it
+  // across restarts too.
+  const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
+  const [acknowledgeScopeDefault, setAcknowledgeScopeDefault] = useState("in-app");
+  // Which acknowledgement the user is currently being asked about, or null.
+  // A small sheet rather than a second icon on the banner: "don't remind me
+  // about this" is a decision with a scope attached, and burying that in an
+  // unlabelled icon is how it gets tapped by accident. See the sheet's own
+  // render for the copy.
+  const [pendingAcknowledge, setPendingAcknowledge] = useState(null);
+
+  // ADDED 28 Sep 2026 (Phase 3) — load the persisted half once the vault is
+  // available. Normalised on read rather than trusted: this is
+  // restored-from-backup data and a backup can have been written by an older
+  // build, so a malformed entry is dropped instead of being allowed to
+  // suppress a reminder it cannot be identified against.
+  useEffect(() => {
+    if (!bootReady || !isVaultUnlocked()) return;
+    (async () => {
+      const prefs = await AppPreferencesRepository.getPreferences();
+      setAcknowledgedReminders(normaliseAcknowledgements(prefs.acknowledgedReminders));
+      setAcknowledgeScopeDefault(
+        prefs.acknowledgeScopeDefault === ACK_SCOPE.BOTH ? ACK_SCOPE.BOTH : ACK_SCOPE.IN_APP
+      );
+    })();
+  }, [bootReady]);
+
+  // The current due-content fingerprint per reminder kind. Recomputed from the
+  // live due state rather than remembered, which is what makes both the
+  // suppression and the passive indicator self-correcting: take the dose and
+  // the fingerprint changes, so any silence stops applying and the dot clears.
+  const medsSignature = useMemo(
+    () => buildMedsSignature(dueMeds),
+    [dueMeds]
+  );
+  const refillSignature = useMemo(
+    () => buildSimpleSignature(REMINDER_KIND.REFILL, refillDue),
+    [refillDue]
+  );
+  const testingSignature = useMemo(
+    () => buildSimpleSignature(REMINDER_KIND.TESTING, testingDue?.test ? [testingDue.test] : []),
+    [testingDue]
+  );
+  const clinicVisitSignature = useMemo(
+    () => buildSimpleSignature(REMINDER_KIND.CLINIC_VISIT, clinicVisitDue?.visit ? [clinicVisitDue.visit] : []),
+    [clinicVisitDue]
+  );
+  const vaccinationSignature = useMemo(
+    () => buildSimpleSignature(REMINDER_KIND.VACCINATION, vaccinationDue?.vaccination ? [vaccinationDue.vaccination] : []),
+    [vaccinationDue]
+  );
+
+  const suppressState = (kind, dueCount, signature) => ({
+    dueCount,
+    signature,
+    kind,
+    sessionDismissed,
+    acknowledged: acknowledgedReminders.filter((a) => a.kind === kind).map((a) => a.signature),
+  });
+
+  // "Not now" — for the rest of this app run. Not time-based on purpose; see
+  // sessionDismissed's own comment.
+  const dismissReminder = (kind, signature, message) => {
+    if (!signature) return;
+    setSessionDismissed((prev) => appendSignature(prev, signature));
+    // The wording has to keep saying the item is STILL outstanding. The
+    // original 60s version's real defect was never the reappearing, it was
+    // that the toast read like the dose had been dealt with when nothing had
+    // been recorded - and that mistake would be far worse with a dismissal
+    // that lasts all session.
+    showNotifToast(message);
+  };
+
+  // "Don't remind me about this" — persisted, and leaving a quiet passive mark
+  // behind rather than pretending the item is done.
+  const confirmAcknowledge = async (scope) => {
+    const pending = pendingAcknowledge;
+    setPendingAcknowledge(null);
+    if (!pending?.signature) return;
+    const record = {
+      kind: pending.kind,
+      signature: pending.signature,
+      scope: scope === ACK_SCOPE.BOTH ? ACK_SCOPE.BOTH : ACK_SCOPE.IN_APP,
+      at: new Date().toISOString(),
+    };
+    const next = upsertAcknowledgement(acknowledgedReminders, record);
+    setAcknowledgedReminders(next);
+    await AppPreferencesRepository.update({ acknowledgedReminders: next });
+    showNotifToast(
+      record.scope === ACK_SCOPE.BOTH
+        ? "Understood — this reminder won't interrupt you again while it stays the same"
+        : "Understood — no more banners for this, while it stays the same"
+    );
+    // A device-scoped acknowledgement needs the pending notification
+    // withdrawn, not just the banner hidden - see
+    // shouldSuppressDeviceNotification's own comment for what that does and
+    // does not cover.
+    if (record.scope === ACK_SCOPE.BOTH) checkDueMeds();
+  };
+
+  // ADDED 28 Sep 2026 (Phase 3) — the passive warning. Derived from the live
+  // due state and the acknowledgement records, never a remembered flag, so it
+  // disappears the moment the dose is actually taken and cannot survive as a
+  // stale dot on a tab.
+  const outstandingAcknowledged = useMemo(() => {
+    const kinds = [
+      [REMINDER_KIND.MEDS, dueMeds.length, medsSignature, "medication"],
+      [REMINDER_KIND.REFILL, refillDue.length, refillSignature, "medication"],
+      [REMINDER_KIND.TESTING, testingDue ? 1 : 0, testingSignature, "healthcare"],
+      [REMINDER_KIND.CLINIC_VISIT, clinicVisitDue ? 1 : 0, clinicVisitSignature, "healthcare"],
+      [REMINDER_KIND.VACCINATION, vaccinationDue ? 1 : 0, vaccinationSignature, "healthcare"],
+    ];
+    return kinds.filter(([kind, count, signature]) =>
+      hasOutstandingAcknowledged({ dueCount: count, signature, kind, acknowledgements: acknowledgedReminders })
+    ).map(([kind, , , tabKey]) => tabKey);
+  }, [dueMeds, refillDue, testingDue, clinicVisitDue, vaccinationDue, medsSignature, refillSignature, testingSignature, clinicVisitSignature, vaccinationSignature, acknowledgedReminders]);
+
+  // ADDED 28 Sep 2026 (Phase 3) — the one-time explanation of the passive
+  // dot. Required by this project's own standing rule that icon-only UI must
+  // not be unexplained, satisfied here without nesting an interactive inside
+  // the tab (see the nav-bar render's own comment for why that isn't an
+  // option). Once per app run, not once ever: a rule the user has seen once
+  // and can no longer find is worse than one they see each session.
+  const unackExplainedRef = useRef(false);
+  useEffect(() => {
+    if (!outstandingAcknowledged.length || unackExplainedRef.current) return;
+    unackExplainedRef.current = true;
+    showNotifToast("The dot on a tab means something is still outstanding that you've stopped being reminded about");
+  }, [outstandingAcknowledged]);
+
   const onDueMedsTake = async () => {
     const result = await handleTakeAll();
     const timeStr = new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
@@ -2098,7 +2254,7 @@ export default function App() {
         // announcement) matches this project's own established pattern.
         <div role="region" aria-label="Due reminders" style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 100, fontFamily: "'Inter', sans-serif" }}>
         <div style={{ margin: "8px 10px 0", borderRadius: RADIUS.md, overflow: "hidden", boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
-          {dueMeds.length > 0 && (
+          {isBannerVisible(suppressState(REMINDER_KIND.MEDS, dueMeds.length, medsSignature)) && (
             <div ref={dueBannerCallbackRef} style={{ background: ACCENTS.medication }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <Pill size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -2143,7 +2299,8 @@ export default function App() {
                     to be inferred. Applied to all four due-state banners'
                     own X (medications/refill/testing/clinic visit) for
                     the same reason, not just this one. */}
-                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => { setDueMeds([]); showNotifToast("Hidden for now — still due, will remind you again"); }} aria-label="Dismiss due medications banner" />
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => dismissReminder(REMINDER_KIND.MEDS, medsSignature, "Hidden for now — still due. It'll be back when you next open the app.")} aria-label="Dismiss due medications banner" />
+                <button onClick={() => setPendingAcknowledge({ kind: REMINDER_KIND.MEDS, signature: medsSignature, title: dueMeds.length === 1 ? dueMeds[0].name : `${dueMeds.length} medications` })} style={{ padding: "4px 10px", borderRadius: 999, border: "1px solid rgba(255,255,255,.45)", background: "transparent", color: "#FFFFFF", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} aria-label={`Stop reminding me about ${dueMeds.length === 1 ? dueMeds[0].name : `${dueMeds.length} medications`}`}>Don't remind</button>
               </div>
             </div>
           )}
@@ -2158,7 +2315,7 @@ export default function App() {
               keeps the original, simpler set (Requested/one Snooze)
               instead. A mixed banner (both kinds due at once) shows
               both action rows, each acting only on its own group. */}
-          {refillDue.length > 0 && (() => {
+          {isBannerVisible(suppressState(REMINDER_KIND.REFILL, refillDue.length, refillSignature)) && (() => {
             const repeatingRefillDue = refillDue.filter((m) => m.usagePattern !== "prn");
             const prnRefillDue = refillDue.filter((m) => m.usagePattern === "prn");
             return (
@@ -2189,7 +2346,8 @@ export default function App() {
                     </div>
                   )}
                 </div>
-                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => { setRefillDue([]); showNotifToast("Hidden for now — still needs a refill, will remind you again"); }} aria-label="Dismiss refill banner" />
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => dismissReminder(REMINDER_KIND.REFILL, refillSignature, "Hidden for now — still needs a refill. It'll be back when you next open the app.")} aria-label="Dismiss refill banner" />
+                <button onClick={() => setPendingAcknowledge({ kind: REMINDER_KIND.REFILL, signature: refillSignature, title: refillDue.length === 1 ? refillDue[0].name : `${refillDue.length} medications` })} style={{ padding: "4px 10px", borderRadius: 999, border: "1px solid rgba(255,255,255,.45)", background: "transparent", color: "#FFFFFF", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} aria-label={`Stop reminding me about ${refillDue.length === 1 ? refillDue[0].name : `${refillDue.length} refill reminders`}`}>Don't remind</button>
               </div>
             </div>
             );
@@ -2198,7 +2356,7 @@ export default function App() {
           {/* ADDED — real ask: Testing parity. No one-tap "done" action
               — logging a real test needs a real result form, see
               onTestingLogTest's own comment above. */}
-          {testingDue && (
+          {isBannerVisible(suppressState(REMINDER_KIND.TESTING, testingDue ? 1 : 0, testingSignature)) && (
             <div ref={testingBannerCallbackRef} style={{ background: ACCENTS.healthcare, borderTop: "1px solid rgba(255,255,255,.25)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <TestTube size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -2210,7 +2368,8 @@ export default function App() {
                     <button onClick={onTestingSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
                   </div>
                 </div>
-                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => { setTestingDue(null); showNotifToast("Hidden for now — still due, will remind you again"); }} aria-label="Dismiss testing banner" />
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => dismissReminder(REMINDER_KIND.TESTING, testingSignature, "Hidden for now — still due. It'll be back when you next open the app.")} aria-label="Dismiss testing banner" />
+                <button onClick={() => setPendingAcknowledge({ kind: REMINDER_KIND.TESTING, signature: testingSignature, title: "testing" })} style={{ padding: "4px 10px", borderRadius: 999, border: "1px solid rgba(255,255,255,.45)", background: "transparent", color: "#FFFFFF", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} aria-label="Stop reminding me about testing">Don't remind</button>
               </div>
             </div>
           )}
@@ -2218,7 +2377,7 @@ export default function App() {
           {/* ADDED — real ask: Clinic visit parity. No one-tap "done"
               action — nothing to confirm ahead of the visit itself, see
               onClinicVisitView's own comment above. */}
-          {clinicVisitDue && (
+          {isBannerVisible(suppressState(REMINDER_KIND.CLINIC_VISIT, clinicVisitDue ? 1 : 0, clinicVisitSignature)) && (
             <div ref={clinicVisitBannerCallbackRef} style={{ background: ACCENTS.healthcare, borderTop: "1px solid rgba(255,255,255,.25)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <Hospital size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -2231,7 +2390,8 @@ export default function App() {
                     <button onClick={onClinicVisitSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
                   </div>
                 </div>
-                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => { setClinicVisitDue(null); showNotifToast("Hidden for now — will remind you again"); }} aria-label="Dismiss clinic visit banner" />
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => dismissReminder(REMINDER_KIND.CLINIC_VISIT, clinicVisitSignature, "Hidden for now — still coming up. It'll be back when you next open the app.")} aria-label="Dismiss clinic visit banner" />
+                <button onClick={() => setPendingAcknowledge({ kind: REMINDER_KIND.CLINIC_VISIT, signature: clinicVisitSignature, title: clinicVisitDue?.visit?.title || "your appointment" })} style={{ padding: "4px 10px", borderRadius: 999, border: "1px solid rgba(255,255,255,.45)", background: "transparent", color: "#FFFFFF", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} aria-label={`Stop reminding me about ${clinicVisitDue?.visit?.title || "your appointment"}`}>Don't remind</button>
               </div>
             </div>
           )}
@@ -2240,7 +2400,7 @@ export default function App() {
               Vaccinations had no in-app due-state banner at all, unlike
               every other real reminder type. No one-tap "done" action
               — see onVaccinationView's own comment above. */}
-          {vaccinationDue && (
+          {isBannerVisible(suppressState(REMINDER_KIND.VACCINATION, vaccinationDue ? 1 : 0, vaccinationSignature)) && (
             <div ref={vaccinationBannerCallbackRef} style={{ background: ACCENTS.healthcare, borderTop: "1px solid rgba(255,255,255,.25)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <Syringe size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -2253,7 +2413,8 @@ export default function App() {
                     <button onClick={onVaccinationSnooze} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid rgba(255,255,255,.6)", background: "transparent", color: "#FFFFFF", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Snooze 30 min</button>
                   </div>
                 </div>
-                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => { setVaccinationDue(null); showNotifToast("Hidden for now — still due, will remind you again"); }} aria-label="Dismiss vaccination banner" />
+                <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => dismissReminder(REMINDER_KIND.VACCINATION, vaccinationSignature, "Hidden for now — still due. It'll be back when you next open the app.")} aria-label="Dismiss vaccination banner" />
+                <button onClick={() => setPendingAcknowledge({ kind: REMINDER_KIND.VACCINATION, signature: vaccinationSignature, title: vaccinationDue?.vaccination?.title || vaccinationDue?.vaccination?.vaccine || "vaccination" })} style={{ padding: "4px 10px", borderRadius: 999, border: "1px solid rgba(255,255,255,.45)", background: "transparent", color: "#FFFFFF", fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} aria-label={`Stop reminding me about ${vaccinationDue?.vaccination?.title || vaccinationDue?.vaccination?.vaccine || "vaccination"}`}>Don't remind</button>
               </div>
             </div>
           )}
@@ -2374,19 +2535,42 @@ export default function App() {
           const isActive = tab.key === active;
           const isBuilt = tab.component !== null || tab.key === "home";
           const Icon = tab.icon;
+          // ADDED 28 Sep 2026 (Phase 3) — the passive "still outstanding"
+          // dot for a reminder the user has acknowledged. Derived, never a
+          // remembered flag, so taking the dose clears it - the only thing
+          // that should.
+          //
+          // Deliberately NOT its own tap target. The standing rule here is
+          // that icon-only UI gets a tap-to-reveal explanation, but this dot
+          // sits INSIDE a tab that is already role="button", and a focusable
+          // control nested inside another is the exact `nested-interactive`
+          // violation already found and fixed on Contacts' card. So the dot
+          // is aria-hidden and the information is carried by the tab's own
+          // accessible name instead, with a one-time visible explanation
+          // below - see the effect that announces it. That satisfies the rule's
+          // intent (a dot must not be unexplained) without reintroducing the
+          // violation.
+          const unacknowledgedHere = outstandingAcknowledged.filter((k) => k === tab.key).length;
+          const tabAriaLabel = unacknowledgedHere
+            ? `${tab.label} — ${unacknowledgedHere} reminder${unacknowledgedHere > 1 ? "s" : ""} you've stopped being reminded about, still outstanding`
+            : tab.label;
+          const UnackDot = unacknowledgedHere ? (
+            <span aria-hidden="true" style={{ position: "absolute", top: -2, right: -4, width: 10, height: 10, borderRadius: 999, background: ACTION.gold, border: `2px solid ${darkMode ? DARK.surface : NEUTRAL.surface}` }} />
+          ) : null;
           // ADDED 19 Aug 2026 — Home gets a raised, circular, always-
           // filled treatment (the user's ask: "circle/bump as centred"),
           // distinct from the other four flat tabs.
           if (tab.key === "home") {
             return (
-              <div key={tab.key} data-tour="tab-home" role="button" aria-label={tab.label} aria-current={isActive ? "page" : undefined} tabIndex={0}
+              <div key={tab.key} data-tour="tab-home" role="button" aria-label={tabAriaLabel} aria-current={isActive ? "page" : undefined} tabIndex={0}
                 onClick={() => { selectTab(tab.key); }}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectTab(tab.key); } }}
                 onMouseDown={startHomeLongPress} onMouseUp={cancelHomeLongPress} onMouseLeave={cancelHomeLongPress}
                 onTouchStart={startHomeLongPress} onTouchEnd={cancelHomeLongPress}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer", marginTop: -18 }}>
-                <div style={{ width: 48, height: 48, borderRadius: 999, background: resolveTabAccent(tab, darkMode), display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 10px rgba(0,0,0,.25)", border: `3px solid ${darkMode ? DARK.surface : NEUTRAL.surface}` }}>
+                <div style={{ position: "relative", width: 48, height: 48, borderRadius: 999, background: resolveTabAccent(tab, darkMode), display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 10px rgba(0,0,0,.25)", border: `3px solid ${darkMode ? DARK.surface : NEUTRAL.surface}` }}>
                   <Icon size={22} color="#FFFFFF" weight="bold" />
+                  {UnackDot}
                 </div>
               </div>
             );
@@ -2397,11 +2581,11 @@ export default function App() {
               Home is explicitly excluded — stays the raised circle
               treatment above, unchanged. */}
           return (
-            <div key={tab.key} data-tour={`tab-${tab.key}`} role="button" aria-label={tab.label} aria-current={isActive ? "page" : undefined} tabIndex={0}
+            <div key={tab.key} data-tour={`tab-${tab.key}`} role="button" aria-label={tabAriaLabel} aria-current={isActive ? "page" : undefined} tabIndex={0}
               onClick={() => { selectTab(tab.key); }}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectTab(tab.key); } }}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", opacity: isBuilt ? 1 : 0.45 }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 14px", borderRadius: 14, background: isActive ? resolveTabAccent(tab, darkMode) : "transparent" }}>
+              <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 14px", borderRadius: 14, background: isActive ? resolveTabAccent(tab, darkMode) : "transparent" }}>
                 {/* FIXED — real device bug: Phosphor's "fill" weight for
                     the Encounter tab's own Pulse icon isn't just a
                     bolder line like every other icon's fill weight —
@@ -2416,6 +2600,7 @@ export default function App() {
                     deselected) even when active, just recoloured white
                     like the others. */}
                 <Icon size={22} color={isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} weight={isActive && tab.key !== "activity" ? "fill" : "regular"} />
+                {UnackDot}
                 <span style={{ fontSize: 10, color: isActive ? "#FFFFFF" : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled), fontWeight: isActive ? 600 : 400 }}>{tab.label}</span>
               </div>
             </div>
@@ -2474,6 +2659,53 @@ export default function App() {
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             Back to search results
           </span>
+        </div>
+      )}
+
+      {/* ADDED 28 Sep 2026 (Phase 3) — the "don't remind me about this"
+          sheet. A sheet rather than a second icon because this is a decision
+          with a scope attached, and an unlabelled icon next to a plain X is
+          exactly how someone silences a medication reminder by accident.
+
+          The copy is doing real work here and is deliberately explicit about
+          two things a user could otherwise get wrong: acknowledging does NOT
+          mean the item is done, and the device option is not as absolute as it
+          sounds. See ACK_SCOPE's own comment - this app schedules one
+          notification per reminder type, so "on my device" means "stop
+          re-scheduling this while it stays the same", not "never mention this
+          medication again". Overstating that would be the dangerous kind of
+          reassuring. */}
+      {pendingAcknowledge && (
+        <div role="dialog" aria-label="Stop reminding me about this" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => setPendingAcknowledge(null)}>
+          <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
+              Stop reminding me about this
+            </div>
+            <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 6, lineHeight: 1.5 }}>
+              <strong>{pendingAcknowledge.title}</strong> is still outstanding — this doesn't mark it as done. You'll stop
+              being reminded while it stays the same, and it'll speak up again if it changes.
+            </div>
+            <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 16, lineHeight: 1.5 }}>
+              Where should it stop reminding you?
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+              {[
+                { scope: ACK_SCOPE.IN_APP, label: "In the app only", note: "No more banners. Phone notifications still fire." },
+                { scope: ACK_SCOPE.BOTH, label: "In the app and on my device", note: "Also stops this reminder's scheduled phone notification while it stays the same." },
+              ].map((option) => (
+                <button key={option.scope} onClick={() => confirmAcknowledge(option.scope)} style={{ width: "100%", textAlign: "left", padding: 12, borderRadius: 12, border: `1px solid ${acknowledgeScopeDefault === option.scope ? (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) : (darkMode ? DARK.border : NEUTRAL.border)}`, background: acknowledgeScopeDefault === option.scope ? (darkMode ? DARK.surfaceVariant : NEUTRAL.surfaceVariant) : "transparent", color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, cursor: "pointer" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{option.label}{acknowledgeScopeDefault === option.scope ? " (your default)" : ""}</div>
+                  <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>{option.note}</div>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setPendingAcknowledge(null)} style={{ width: "100%", padding: 12, borderRadius: 999, border: `1px solid ${darkMode ? DARK.border : NEUTRAL.border}`, background: "transparent", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontWeight: 600, cursor: "pointer" }}>
+              Keep reminding me
+            </button>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginTop: 10, lineHeight: 1.5, textAlign: "center" }}>
+              Your default is set in Settings → Notifications.
+            </div>
+          </div>
         </div>
       )}
 

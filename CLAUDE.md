@@ -566,6 +566,50 @@ Verified: eslint clean, encoding guard clean across 238 tracked files,
 **319 unit tests across 28 files** (was 295/26), and the fast gate green.
 Build and the 18-flow smoke suite left to CI, per this repo's CI-first loop.
 
+## Recently shipped (28 Sep 2026, latest - the Clinic Card PDF finally has a test, and it exposed a deliberate-but-unrecorded divergence)
+
+Continuing the coverage review's "never audited" list, working away from the
+notification area the other session is in. `clinicCardPdfService.js` renders
+**the artefact a clinician actually reads**, and it had no test of any kind.
+
+**What the new test pins** (8 tests, `src/storage/clinicCardPdf.test.js`):
+the single line that is the whole privacy control for the export
+(`if (visibility && visibility[key] === false) return;`), the one section that
+is gated inline rather than through the shared helper, the
+"every user-togglable section actually renders" invariant, the per-page
+**"Self-reported - not a clinical record"** disclaimer, and page numbering.
+Mutation-verified in both directions: deleting the visibility gate fails 1
+test, and replacing the safety footer fails 1.
+
+**The interesting finding: `recentContacts` is a real, user-togglable section
+that the PDF has never rendered.** `CLINIC_CARD_SECTIONS` exposes it, the
+on-screen Clinic Card renders it, and `assembleClinicCardData` does not compute
+it at all - so the toggle does nothing for the export. A user who switches
+"Recent contacts" on, exports, and finds it silently missing from the file they
+hand to a clinic.
+
+**I have NOT "fixed" this, and the reason is worth recording rather than
+leaving to chance.** The PDF is the artefact most likely to be shared, printed
+or left lying around, and it is the only place in the app where a list of the
+names of everyone you have had sex with would end up on a sheet of paper. The
+on-screen card is private; the export is not. So the omission is arguably the
+safer default, and adding the section would be a privacy *regression* dressed as
+a feature. The real defect is not the missing section - it is that the settings
+UI gives no hint the toggle does not apply to the export. That is a
+copy/affordance question for the owner, not a code fix to make unilaterally, so
+it is recorded here and pinned by a test that documents the divergence rather
+than pretending it is an oversight.
+
+A source-level guard rather than a PDF-parsing test, deliberately: the property
+worth protecting is a wiring property - every section gated by the user's own
+choice - and that survives layout refactors, which an assertion on rendered PDF
+bytes or page counts would not. `pdf-lib` also offers no text extraction, so
+"this text is absent from the PDF" would mean asserting on internals rather than
+on the thing. First version of the guard produced a false positive by only
+recognising the `section("key", ...)` form and missing the inline
+`visibility.allergies` gate; recorded at the fix rather than deleted, because it
+is the same near-miss this project keeps paying for.
+
 ## Recently shipped (28 Sep 2026, latest still - the Escape sweep had a live bug in its own most important rule)
 
 Checking the sweep's own load-bearing design decision found a real defect in
