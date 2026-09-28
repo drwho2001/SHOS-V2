@@ -156,12 +156,22 @@ after 1.
 
 **Audits & Reviews** (page `3e913572-4f67-81f9-8184-ce5f5694a0fa`, child of
 Development Index) is the single home for every audit, review, sweep and
-re-measurement. It also catalogues the older audit pages that were previously
-unindexed and therefore effectively lost.
+re-measurement. It now holds:
+
+- 5 pre-existing audit pages, catalogued so they stop being lost
+- 9 audits from the 27–28 Sep new-user session
+- **19 backfilled audits from 3–27 Sep**, transcribed from `CLAUDE.md`'s dated
+  log, each labelled *"recorded retrospectively"*
+- a coverage review of what is **not** audited
+- a list of what genuinely needs re-running, and why
 
 **Write an audit there even when the result is "nothing found."** A verified
 non-finding is a result, and it is the cheapest way to stop the same audit being
 re-run from scratch — which is exactly what happened to the palette work.
+
+**Respect the "recorded retrospectively" label.** Those 19 were transcribed, not
+re-run. Reading a 10 Sep conclusion as if it were current is the failure mode
+this page exists to prevent.
 
 The **Development Log** (`3b013572-4f67-80ab-b1a0-c665a828e241`) stays for what
 was *shipped*, not for what was *found*. Found-but-unshipped belongs in Audits.
@@ -169,7 +179,19 @@ was *shipped*, not for what was *found*. Found-but-unshipped belongs in Audits.
 Both must be appended with `PATCH /v1/blocks/{page_id}/children` (`POST` is not
 valid there, and Notion's error text for it reads exactly like an auth failure),
 then verified by paginating to the end — a successful response is not proof the
-write landed.
+write landed. **When verifying, accumulate every page of results**, not just the
+last: a reader that keeps only the final page reports a short page as a short
+document, which is the same "measured nothing, looked fine" trap as everywhere
+else in this project.
+
+## Audit re-run policy
+
+- Re-run when the **thing audited has changed materially**, and say why in the
+  new entry.
+- Do **not** re-run a clean result just because time passed. A re-run that finds
+  the same thing buries the original under noise.
+- When re-running, write a **new dated entry** rather than editing the old one.
+  The old conclusion is evidence of what was true then.
 
 ## Known facts worth not rediscovering
 

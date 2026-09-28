@@ -44,19 +44,42 @@ export const CLINIC_CARD_SECTIONS = [
 
 const DEFAULT_VISIBILITY = Object.fromEntries(CLINIC_CARD_SECTIONS.map((s) => [s.key, true]));
 
-// ADDED 27 Sep 2026 — plain getter/setter for backupService.js.
+// ADDED 28 Sep 2026 — a SEPARATE opt-in for putting recent contacts into the
+// exported PDF, deliberately not the same toggle as the on-screen section.
 //
-// These are real user settings (which sections appear on the Clinic Card a
-// clinician reads) and they were in no backup, because this file lives in
-// src/calculations/ rather than src/repositories/ and so was missed by any
-// audit that enumerated repositories. Restoring a backup on a new device
-// silently reset every toggle.
+// Why it has to be separate: the Clinic Card on screen is private - it is on
+// your own unlocked phone. The exported PDF is not. It gets shared, printed,
+// emailed to a clinic and left on a desk. A person can reasonably want to see
+// "who I've recently met" while using the app and still not want a list of those
+// people's names printed on paper they hand to a third party. Tying the two
+// together forces that choice onto them.
 //
-// The hook below is the right shape for the UI but a backup service is not a
-// React component, so it needs a non-hook accessor. Both are one line over
-// the same storage key, so the two paths cannot drift.
+// Why opt-in rather than opt-out: the section is a list of the names of everyone
+// the user has had sex with. The safest default for a shared artefact is to
+// leave it out unless someone deliberately asks for it.
+//
+// Content is deliberately MINIMAL when it is on: name plus age (marked
+// approximate where the user's own record says so). No contact methods, no
+// location, nothing else the contact record holds - a clinician does not need
+// any of it, and every extra field is something that could be read off a page
+// left lying around.
+export const EXPORT_INCLUDE_RECENT_CONTACTS_KEY = "exportIncludeRecentContacts";
+
 export async function getClinicCardVisibility() {
   return { ...DEFAULT_VISIBILITY, ...(await storage.load(STORAGE_KEY, {})) };
+}
+
+/** Read the export opt-in on its own, so the export path never has to reason
+ *  about the on-screen toggles at all. */
+export async function getExportIncludeRecentContacts() {
+  const stored = await storage.load(STORAGE_KEY, {});
+  return stored?.[EXPORT_INCLUDE_RECENT_CONTACTS_KEY] === true;
+}
+
+/** Set the export opt-in, preserving every other stored key. */
+export async function setExportIncludeRecentContacts(value) {
+  const current = (await storage.load(STORAGE_KEY, {})) || {};
+  await storage.save(STORAGE_KEY, { ...current, [EXPORT_INCLUDE_RECENT_CONTACTS_KEY]: value === true });
 }
 
 export async function setClinicCardVisibility(value) {
@@ -91,4 +114,27 @@ export function useClinicCardVisibility() {
   };
   const toggleSection = (key) => setVisibility((v) => ({ ...v, [key]: !v[key] }));
   return [visibility, setVisibility, toggleSection];
+}
+
+/**
+ * The PDF export opt-in, as a pair of hooks matching the shape above.
+ *
+ * Kept separate from `useClinicCardVisibility` on purpose rather than as
+ * convenience: the two answer different questions, and a caller that needs
+ * "will the export include contacts" must be unable to read it off the
+ * on-screen section map by accident. Same storage key, so a saved toggle
+ * cannot be lost by writing one and clobbering the other — see
+ * `setExportIncludeRecentContacts`, which merges rather than replaces.
+ */
+export function useExportIncludeRecentContacts() {
+  const [value, setValue] = useLoadedState(() => getExportIncludeRecentContacts(), [], false);
+  const toggle = (next) => {
+    setValue(next);
+    setExportIncludeRecentContacts(next);
+  };
+  return [value === true, toggle];
+}
+
+export function useToggleExportIncludeRecentContacts() {
+  return useExportIncludeRecentContacts()[1];
 }

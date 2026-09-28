@@ -38,6 +38,8 @@ import { ContraceptionRepository } from "../repositories/contraceptionRepository
 import { PregnancyRepository } from "../repositories/pregnancyRepository";
 import { exportBinaryFile } from "./fileExportHelper";
 import { getVaccinationNextDue } from "../calculations/vaccinationCalculations.js";
+import { ContactRepository } from "../repositories/contactRepository";
+import { getExportIncludeRecentContacts } from "../calculations/clinicCardVisibilityPreference";
 
 const MARGIN = 44;
 const PAGE_WIDTH = 595.28; // A4 in points
@@ -57,6 +59,38 @@ async function nameFrom(registry, id) {
   return (await registry.getById(id))?.name || "—";
 }
 
+/**
+ * Name + age only, for the exported PDF's "recent contacts" section.
+ *
+ * Deliberately does NOT return a full contact row. See the note at the call
+ * site: this list ends up on paper that gets shared, so every field that a
+ * clinician does not strictly need is one more thing that could be read by
+ * whoever picks the page up afterwards.
+ */
+async function buildRecentContactsForExport(encounters) {
+  const contacts = await ContactRepository.getAll();
+  if (!Array.isArray(contacts) || contacts.length === 0) return [];
+  const byId = new Map(contacts.map((c) => [c.id, c]));
+  const seen = new Set();
+  const out = [];
+  for (const e of encounters) {
+    for (const cid of e.attendeeIds || []) {
+      if (seen.has(cid) || !byId.has(cid)) continue;
+      seen.add(cid);
+      const c = byId.get(cid);
+      // Age is null on a contact who has never had it set, so the whole age
+      // clause is conditional rather than rendering "age unknown" for everyone.
+      const age = typeof c.age === "number" && c.age > 0 ? `${c.ageIsApprox ? "≈" : ""}${c.age}` : null;
+      out.push({
+        title: c.name || c.nickname || "Unnamed contact",
+        subtitle: [age, e.date ? `last met ${formatRelativeDate(e.date)}` : null].filter(Boolean).join(" · "),
+      });
+      if (out.length >= 8) return out;
+    }
+  }
+  return out;
+}
+
 // Assembles the exact same section data ClinicCardScreen computes for
 // its own render — same filters, same "current treatment"/"active
 // symptoms" derivation, same recency sort — so the PDF is never a
@@ -73,6 +107,10 @@ async function assembleClinicCardData() {
   const vaccinations = sortByDateDesc((await VaccinationRepository.getAll()).filter((v) => !v.isArchived));
   const overdueVaccinations = await VaccinationRepository.getOverdue();
   const activeSymptoms = await SymptomLogRepository.getActive();
+  // Read on its own, NOT off `visibility` — the export opt-in is deliberately
+  // independent of the on-screen section toggles. See the preference's own
+  // comment for why that separation is the point rather than duplication.
+  const includeRecentContactsInExport = await getExportIncludeRecentContacts();
 
   const recentTests = await Promise.all(tests.slice(0, 5).map(async (t) => {
     const resultNames = await Promise.all((t.resultIds || []).map((id) => nameFrom(ResultsRegistry, id)));
@@ -138,6 +176,31 @@ async function assembleClinicCardData() {
       alert: s.severity === "Severe",
     }))),
     recentEncounters: encounters.slice(0, 8).map((e) => ({ title: e.title || e.encounterType || "Encounter", subtitle: e.date ? formatRelativeDate(e.date) : "" })),
+    // ADDED 28 Sep 2026 — the "recent contacts" section, which the on-screen
+    // Clinic Card has always shown and this export never rendered at all.
+    //
+    // Two deliberate constraints, both privacy decisions rather than omissions:
+    //
+    //   1. OPT-IN, off by default, via its own preference and NOT the on-screen
+    //      `visibility.recentContacts` toggle. The screen is private; the PDF
+    //      is shared, printed and left on desks. Someone can reasonably want
+    //      to see this while using the app and still not want it on paper they
+    //      hand to a clinic.
+    //
+    //   2. MINIMAL CONTENT - name and age only, with the age marked
+    //      approximate where the user's own record says so. No contact
+    //      methods, no location, no phone number, none of the rest of what a
+    //      contact record holds. A clinician needs nothing more than this, and
+    //      every additional field is something that could be read off a page
+    //      someone left lying around. This list is the names of everyone the
+    //      user has had sex with, so it is the most sensitive thing the app
+    //      can put on paper.
+    //
+    // Derived from encounter attendees, deduplicated, most-recent first — the
+    // same derivation the on-screen section uses, so the two agree.
+    recentContacts: includeRecentContactsInExport
+      ? await buildRecentContactsForExport(encounters)
+      : [],
     emergency: [
       (profile.emergencyContactName || profile.emergencyContactPhone) && [profile.emergencyContactName || "Emergency contact", profile.emergencyContactPhone],
       profile.emergencyNotes && [profile.emergencyNotes, ""],
@@ -252,6 +315,14 @@ export async function generateClinicCardPdf(visibility) {
   }
   section("symptoms", "Active symptoms", data.activeSymptoms, "Nothing active right now.");
   section("encounters", "Recent encounters", data.recentEncounters, "No encounters logged yet.", data.recentEncounters.length);
+  // ADDED 28 Sep 2026 — the export opt-in. Gated on the DEDICATED preference
+  // rather than `visibility.recentContacts`, so having the section on screen
+  // never silently puts those names on paper. When it is off this renders
+  // nothing at all, not even a heading — an empty "Recent contacts" heading on
+  // a shared sheet would itself be a disclosure that the user has contacts.
+  if (data.recentContacts.length > 0) {
+    section("recentContacts", "Recent contacts", data.recentContacts, "", data.recentContacts.length);
+  }
   section("emergency", "Emergency information", data.emergency, "None recorded.");
 
   // Real footer, every page: page numbers so a printed multi-page card

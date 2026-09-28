@@ -13,7 +13,7 @@ import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { computeStock, getDoseComponents, formatDoseComponents } from "../calculations/medicationCalculations";
 import { formatRelativeDate, sortByDateDesc } from "../calculations/encounterCalculations";
 import { nowAsStoredDate, inDaysAsStoredDate } from "../calculations/dateInputHelpers";
-import { useClinicCardVisibility, CLINIC_CARD_SECTIONS } from "../calculations/clinicCardVisibilityPreference";
+import { useClinicCardVisibility, CLINIC_CARD_SECTIONS, useExportIncludeRecentContacts, useToggleExportIncludeRecentContacts } from "../calculations/clinicCardVisibilityPreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
@@ -228,6 +228,9 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // give the most details permitted, and filters restrict from this."
   // Every section defaults to visible; this only ever narrows.
   const [visibility, , toggleSection] = useClinicCardVisibility();
+  // ADDED 28 Sep 2026 — the PDF export opt-in, held separately from the
+  // on-screen section toggles on purpose. See the preference's own comment.
+  const [exportIncludeRecentContacts, toggleExportRecentContacts] = useExportIncludeRecentContacts();
   const [showVisibilitySettings, setShowVisibilitySettings] = useState(false);
   useEffect(() => { if (showVisibilitySettings) visibilityDialogRef.current?.focus(); }, [showVisibilitySettings]);
   // ADDED — real ask: "clinician-facing export" — a real PDF, not just
@@ -722,6 +725,30 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
                 </div>
               </div>
             ))}
+          </SectionCard>
+          {/* ADDED 28 Sep 2026 — the EXPORT opt-in, deliberately a separate
+              control from the on-screen "Recent contacts" toggle above.
+              Putting a list of everyone's names into a PDF is a different
+              decision from showing that list on your own phone: the export
+              gets emailed, printed and left on desks. So this starts OFF, and
+              switching the screen toggle on above does not turn it on. */}
+          <div style={{ padding: "16px 4px 4px", fontSize: 12, color: T.textSecondary }}>
+            PDF export
+          </div>
+          <SectionCard T={T}>
+            <div onClick={() => toggleExportRecentContacts(!exportIncludeRecentContacts)} role="switch" tabIndex={0} aria-checked={exportIncludeRecentContacts} aria-label="Include recent contacts in the PDF"
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExportRecentContacts(!exportIncludeRecentContacts); } }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", cursor: "pointer" }}>
+              <div style={{ flex: 1, paddingRight: 12 }}>
+                <div style={{ fontSize: 14, color: T.textPrimary }}>Include recent contacts</div>
+                <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 3 }}>
+                  Adds the names and ages of people you've recently met to the exported PDF. Off by default — that file gets shared and printed, unlike this screen. Nothing else from their contact record is included.
+                </div>
+              </div>
+              <div style={{ width: 40, height: 24, borderRadius: 999, background: exportIncludeRecentContacts ? T.actionRed : T.border, position: "relative", flexShrink: 0 }}>
+                <div style={{ position: "absolute", top: 2, left: exportIncludeRecentContacts ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />
+              </div>
+            </div>
           </SectionCard>
           <div style={{ height: 24 }} />
         </div>
