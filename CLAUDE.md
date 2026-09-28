@@ -426,7 +426,39 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
-## Recently shipped (28 Sep 2026, latest - a palette re-check whose most valuable output was four broken scans)
+## Recently shipped (28 Sep 2026, latest still - the Escape sweep had a live bug in its own most important rule)
+
+Checking the sweep's own load-bearing design decision found a real defect in
+what had just shipped. `useEscapeToClose` closes only the **topmost** registered
+overlay, and the whole reason that matters is `ConfirmDeleteCard` - the shared
+delete confirmation used at ~15 sites, which renders **on top of** an edit sheet
+(Contacts -> profile -> delete). That card was never registered with the hook,
+so the sheet underneath was the topmost registered overlay, and **Escape closed
+the sheet**: dismissing the destructive confirmation *and* discarding the form
+the user was editing, in a single keypress. That is precisely the failure the
+topmost-only rule was written to prevent, so the rule was doing nothing here.
+The card is registered now, mapping Escape to `onCancel` - the safe, reversible
+action. Escape must never confirm a destructive delete, and it must never
+destroy the surrounding form to get out of a confirmation.
+
+**The same class of miss as `export default function`, and found the same way.**
+`ConfirmDeleteCard` is not a `function X({ onClose })` sheet, so the sweep's
+signature matcher never saw it, and the sweep reported a clean-looking result.
+The follow-up that found it does not search for the sweep's shape at all - it
+asks "which components declare dialog-like ARIA and are NOT registered", which
+is the question the sweep should have been asking. It also surfaced
+`MyProfileEditScreen`, a real full-screen overlay with its own `onCancel` that
+the same matcher missed for the same reason. Both now wired; 8 new unit tests
+cover the real stacked composition (a confirmation over a sheet) rather than the
+abstract one, because that is the shape that ships.
+
+Verified: eslint clean, encoding guard clean, build + full test suite left to
+CI - this machine was down to ~336 MB free RAM and both the Vite build and
+vitest's worker pool failed with `ENOMEM`/`write ENOMEM`, which is a resource
+ceiling rather than a code fault, and is exactly the case the CI-first loop this
+repo now uses exists to handle.
+
+## Recently shipped (28 Sep 2026, later - a palette re-check whose most valuable output was four broken scans)
 
 The colour-blind-safe palette work was 13 days old, so this re-measured it
 rather than trusting the 15 Sep summary. **Result: no regressions.** All seven

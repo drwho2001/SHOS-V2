@@ -75,6 +75,7 @@ import { ContraceptionRepository } from "../repositories/contraceptionRepository
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.contacts/ACTION.red/ACTION.green at
@@ -873,10 +874,18 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
 }
 
 // ── Edit screen ──
-function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
-  const [form, setForm] = useState(profile);
-  const editSheetRef = useRef(null);
-  useEffect(() => { editSheetRef.current?.focus(); }, []);
+  function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
+    const [form, setForm] = useState(profile);
+    const editSheetRef = useRef(null);
+    useEffect(() => { editSheetRef.current?.focus(); }, []);
+    // ADDED 28 Sep 2026 — Escape-to-dismiss sweep, second pass. This is a
+    // real full-screen overlay with its own role="dialog" and an onCancel, but
+    // it is not a `function X({ onClose })` shape, so the sweep's
+    // signature-based matcher never saw it. Found by a follow-up check that
+    // looked for ANY dialog-bearing component not registered with the hook —
+    // the same class of miss as `export default function`, and the reason a
+    // coverage check is worth more than trusting a clean-looking sweep.
+    useEscapeToClose(onCancel);
   // ADDED 4 Sep 2026 — real regression caught while converting the
   // parent's profile load to async (see loadedRepositoryState.js):
   // profile now starts as DEFAULT_PROFILE for the one render before

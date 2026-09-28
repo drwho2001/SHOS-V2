@@ -1,5 +1,6 @@
 import React, { useEffect, useId, useRef } from "react";
 import { RADIUS } from "../calculations/designTokens";
+import { useEscapeToClose } from "./useEscapeToClose";
 
 // Shared delete-confirmation UI, extracted from a real live audit finding
 // (10 Sep 2026): three different confirmation patterns had accumulated
@@ -27,6 +28,23 @@ export default function ConfirmDeleteCard({
   onConfirm,
 }) {
   const accent = moduleColor || T.actionRed;
+
+  // FIXED 28 Sep 2026 — a live bug in the Escape-to-dismiss sweep, found by
+  // checking the sweep's own most load-bearing design decision.
+  //
+  // `useEscapeToClose` closes only the TOPMOST registered overlay, and the
+  // reason that matters is exactly this card: a ConfirmDeleteCard sits ON TOP
+  // of an edit sheet (Contacts -> profile -> delete). This card was never
+  // registered, so the sheet underneath was the topmost registered overlay -
+  // and Escape closed the SHEET, dismissing the destructive confirmation AND
+  // discarding the form the user was editing, in one keypress.
+  //
+  // That is precisely the failure the topmost-only rule was written to
+  // prevent, so the rule was doing nothing here. Registered now, mapping
+  // Escape to `onCancel` — the safe, reversible action. Escape must never
+  // confirm a destructive delete, and it must never destroy the surrounding
+  // form to get out of a confirmation.
+  useEscapeToClose(onCancel);
   // ADDED — real gap found via a follow-up axe-core scan on a live
   // sheet interaction (16 Sep 2026): this card, used for every real
   // destructive delete across ~15 sites app-wide, had no dialog

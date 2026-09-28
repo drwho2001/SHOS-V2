@@ -114,3 +114,34 @@ describe("useEscapeToClose", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 });
+
+describe("the real stacked shape: a confirmation card on top of an edit sheet", () => {
+  // This is the exact composition that ships: Contacts -> profile -> delete
+  // renders ConfirmDeleteCard ON TOP of ContactEditSheet. The bug this file's
+  // hook originally had nothing to do with was that the card was not
+  // registered at all, so the SHEET underneath was the topmost registered
+  // overlay - and Escape closed the sheet, discarding the confirmation AND
+  // the form, in one keypress.
+  function Sheet({ onClose }) {
+    useEscapeToClose(onClose);
+    return <div role="dialog" aria-label="Edit contact" />;
+  }
+  function ConfirmCard({ onCancel }) {
+    useEscapeToClose(onCancel);
+    return <div role="alertdialog" aria-label="Confirm delete" />;
+  }
+
+  it("Escape cancels the confirmation and leaves the sheet alone", () => {
+    const closeSheet = vi.fn();
+    const cancelConfirm = vi.fn();
+    render(
+      <div>
+        <Sheet onClose={closeSheet} />
+        <ConfirmCard onCancel={cancelConfirm} />
+      </div>
+    );
+    pressEscape();
+    expect(cancelConfirm, "the confirmation is the topmost overlay, so it is what closes").toHaveBeenCalledTimes(1);
+    expect(closeSheet, "the sheet underneath must be left intact").not.toHaveBeenCalled();
+  });
+});
