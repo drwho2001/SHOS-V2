@@ -179,7 +179,7 @@ not listed here is unambiguous.
 
 | Commit | Whose work it actually contains |
 |---|---|
-| `bc04295` "Give the Clinic Card PDF its first test…" | **BOTH sessions.** Theirs: `clinicCardPdf.test.js` + the Clinic Card PDF entry below. Mine, swept in by their `git add -A src`: `reminderSuppression.js` + its test, `medicationReminderSync.js`, `appPreferencesRepository.js`, 262 lines of `App.jsx`. The message describes only their half. |
+| `bc04295` "Give the Clinic Card PDF its first test…" | **BOTH sessions.** Theirs: `clinicCardPdf.test.js` + the Clinic Card PDF entry below. Mine, swept in by their `git add -A src`: `reminderSuppression.js` + its test, `medicationReminderSync.js`, `appPreferencesRepository.js`, and 247 lines of `App.jsx`. The message describes only their half. |
 | `d7f84a1` "Finish banner suppression, and stop prescribing the command that caused the accident" | Mine only — the rest of Phase 3, the wiring guard, the `CHANGE-PROCEDURE.md` root-cause fix, and the second scratch-file deletion. |
 
 So: the Phase 3 banner-suppression entry below is split across those two
@@ -477,10 +477,14 @@ commit → content map under "Working conventions" above.*
 
 **A git accident happened mid-change, and it is recorded here rather than
 tidied away.** A second session working in this same tree ran `git add -A src`
-and swept up 815 lines of this in-progress work — `reminderSuppression.js` and
-its tests, `medicationReminderSync.js`, `appPreferencesRepository.js` and 262
-lines of `App.jsx` — committing it under its own message about the Clinic Card
-PDF (`bc04295`). Nothing was lost and nothing of theirs was overwritten, but
+and swept up this in-progress work — `reminderSuppression.js` and its tests,
+`medicationReminderSync.js`, `appPreferencesRepository.js` and the bulk of
+`App.jsx` — committing it under its own message about the Clinic Card PDF
+(`bc04295`). Precisely, per `--numstat`: **799 insertions and 16 deletions
+across 5 files**. (Two other figures circulated at the time — "815" and "862"
+— and neither is the plainest reading; 815 is insertions-plus-deletions and
+862 matches nothing measured. Recorded here so a later reader comparing notes
+is not left wondering which is right.) Nothing was lost and nothing of theirs was overwritten, but
 the history for this feature is wrong: the bulk of it sits under someone else's
 commit message. I have deliberately **not** rewritten that commit, because the
 other session is actively working from it and rebasing shared history out from
@@ -559,12 +563,12 @@ carries an explicit "start reminding me again", because a persisted silence
 with no way out means one mis-tap on a small button permanently silences a
 medication reminder.
 
-Not yet done, and deliberately recorded as such: **no smoke flow covers this
-yet.** The pure rules (30 tests) and the wiring (12 tests) are both in place,
-but "dismissed stays dismissed across a 60s poll" is a browser fact and should
-get a real flow like the other changes in this file have. Snooze *expiry*
-cannot be covered at all — 30 minutes is longer than a test run — which is
-another reason the negative wiring test matters.
+Not yet done, and deliberately recorded as such: **snooze *expiry* cannot be
+covered by a browser test at all** — 30 minutes is longer than a test run —
+which is the other reason the negative wiring test matters. The 19th flow does
+cover the part that is a browser fact: that a dismissed banner stays dismissed
+across the app's own due-state refresh, which is what the 60s poll used to
+undo.
 
 ## Recently shipped (28 Sep 2026, latest of all yet again - the new smoke flow caught a real bug in its own feature, on its first CI run)
 

@@ -210,7 +210,7 @@ async function goHomeThenOpenSettings(page) {
 }
 
 async function testMedicationReasonSideEffects(page) {
-  console.log("\n[3/18] Medication log — Reason/Side effects (added 1 Sep 2026)");
+  console.log("\n[3/19] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Log").first().click({ timeout: 5000 });
@@ -227,7 +227,7 @@ async function testMedicationReasonSideEffects(page) {
 }
 
 async function testSymptomTestTwoWayLink(page) {
-  console.log("\n[4/18] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
+  console.log("\n[4/19] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
   await page.locator("text=Healthcare").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Test of cure — Gonorrhoea").click({ timeout: 5000 });
@@ -271,7 +271,7 @@ async function testSymptomTestTwoWayLink(page) {
 }
 
 async function testLocationsExtraFields(page) {
-  console.log("\n[5/18] Locations registry — extra fields (added 2 Sep 2026)");
+  console.log("\n[5/19] Locations registry — extra fields (added 2 Sep 2026)");
   // the Settings gear only lives on the Home dashboard header — get back
   // there first, since the previous check left us on Healthcare/Symptoms.
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
@@ -296,7 +296,7 @@ async function testLocationsExtraFields(page) {
 // building it (the Refuge entry, a real https:// URL from the seeded
 // list), never given permanent coverage until now.
 async function testResourceLinkClickable(page) {
-  console.log("\n[6/18] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
+  console.log("\n[6/19] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
   // Reload first — the previous test (Locations registry) leaves the
   // Manage Lists > Locations sub-screen open, a stacked Settings
   // overlay that would otherwise sit on top of (and intercept clicks
@@ -339,7 +339,7 @@ async function testResourceLinkClickable(page) {
 // (anonymisePin) is still unset at this point — deactivating needs no
 // PIN then (see privacySettingsRepository.js's own deactivate()).
 async function testEncountersAnonymiseMasking(page) {
-  console.log("\n[7/18] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
+  console.log("\n[7/19] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
@@ -402,7 +402,7 @@ async function testEncountersAnonymiseMasking(page) {
 // logged at the real current time, which always has a real future
 // lockoutEndsAt() to check.
 async function testMedicationReminderClock(page) {
-  console.log("\n[8/18] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
+  console.log("\n[8/19] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   // Scoped on "Last dose" rather than the "Log dose" button's own text
@@ -455,7 +455,7 @@ async function testMedicationReminderClock(page) {
 // existing install's first Phase 4 boot" from a genuinely fresh
 // profile (see that function's own comment).
 async function testEncryptionMigratesLegacyData(browser) {
-  console.log("\n[9/18] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
+  console.log("\n[9/19] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
     localStorage.setItem("shos_app_preferences", JSON.stringify({
@@ -511,7 +511,7 @@ async function testEncryptionMigratesLegacyData(browser) {
 // check broad, real coverage rather than just the vault metadata key
 // and whatever the fresh boot itself wrote.
 async function testEncryptionPositiveCheck(page) {
-  console.log("\n[10/18] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
+  console.log("\n[10/19] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
   const rawShapes = await page.evaluate(() => {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -594,7 +594,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
 async function testEncryptionAppLockGatesVault(page) {
-  console.log("\n[11/18] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
+  console.log("\n[11/19] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
@@ -670,7 +670,7 @@ async function testEncryptionAppLockGatesVault(page) {
 // stored preference, the same class of gap this whole suite exists to
 // close.
 async function testTabReorder(page) {
-  console.log("\n[12/18] Settings — bottom nav tab order (added 9 Sep 2026)");
+  console.log("\n[12/19] Settings — bottom nav tab order (added 9 Sep 2026)");
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   await dismissTransientBanners(page);
@@ -741,7 +741,7 @@ async function testTabReorder(page) {
 // it, and an early version auto-offered the tour even after an explicit
 // Skip tap, which directly contradicted the user's own "not now" signal.
 async function testInteractiveTour(browser) {
-  console.log("\n[13/18] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
+  console.log("\n[13/19] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const tourPageErrors = [];
@@ -833,7 +833,7 @@ async function testInteractiveTour(browser) {
 // the exact portability trap the interactive-tour flow above already
 // hit and fixed once this same day).
 async function testBackupMigratesOldFieldShape(page) {
-  console.log("\n[14/18] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
+  console.log("\n[14/19] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
   const oldShapedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -911,7 +911,7 @@ async function testBackupMigratesOldFieldShape(page) {
 // error, and exactly the one valid contact lands (not zero, not a
 // partial/corrupted count).
 async function testBackupImportDropsGarbageRecords(page) {
-  console.log("\n[17/18] Backup import — malformed array elements are dropped, not a crash (added 10 Sep 2026)");
+  console.log("\n[17/19] Backup import — malformed array elements are dropped, not a crash (added 10 Sep 2026)");
   const malformedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -979,7 +979,7 @@ async function testBackupImportDropsGarbageRecords(page) {
 // directly exercise that exact path, so a regression here would fail
 // loudly, not silently.
 async function testPinRecoveryFlow(page) {
-  console.log("\n[15/18] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
+  console.log("\n[15/19] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
   // The App Lock setup prompt can be pending again here — test 12's
   // own Replace All import doesn't touch privacySettings at all (its
   // synthetic backup has no privacySettings key), but a plain reload
@@ -1108,7 +1108,7 @@ async function testPinRecoveryFlow(page) {
 // Runs in its own fresh browser context (real SW registration/
 // lifecycle state, not shared with the rest of the suite).
 async function testServiceWorkerAutoUpdate(browser) {
-  console.log("\n[16/18] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
+  console.log("\n[16/19] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
 
   // Real preview-build-only test: `vite preview` (what CI and this
   // suite's own recommended local flow both use) serves dist/sw.js
@@ -1267,6 +1267,11 @@ async function testServiceWorkerAutoUpdate(browser) {
     // overlay open, which is a neutral state for whatever runs next, and it
     // needs the sample contacts the other flows all leave in place.
     await testSearchBackNavigation(page);
+    // Placed immediately after it: both need a real due banner / real search
+    // results on the shared page's sample data, and this one leaves the page
+    // on Home with a dismissal recorded, which is a neutral state for the
+    // flows that follow.
+    await testBannerSuppression(page);
     await testMedicationReasonSideEffects(page);
     await testSymptomTestTwoWayLink(page);
     await testLocationsExtraFields(page);
@@ -1322,7 +1327,7 @@ async function testServiceWorkerAutoUpdate(browser) {
 // the PWA auto-update flow leaves a service worker in the browser profile, and
 // any flow after it is served a stale cached shell.
 async function testSampleDataDisclosureAndClear(browser) {
-  console.log("\n[1/18] Sample data is disclosed on first run, and clearing keeps real records (added 27 Sep 2026)");
+  console.log("\n[1/19] Sample data is disclosed on first run, and clearing keeps real records (added 27 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const flowErrors = [];
@@ -1430,7 +1435,7 @@ async function testSampleDataDisclosureAndClear(browser) {
 // results" button pointing at a query for a screen they left ten minutes ago
 // is worse than no button at all.
 async function testSearchBackNavigation(page) {
-  console.log("\n[18/18] Search results - you can get back to them, and only while it makes sense (added 28 Sep 2026)");
+  console.log("\n[18/19] Search results - you can get back to them, and only while it makes sense (added 28 Sep 2026)");
   await navHome(page);
   await dismissTransientBanners(page);
 
@@ -1502,6 +1507,81 @@ async function testSearchBackNavigation(page) {
 }
 
 // ---------------------------------------------------------------------------
+// ADDED 28 Sep 2026 - banner suppression (Phase 3).
+//
+// WHY A REAL BROWSER DRIVE: the whole defect was that a dismissed reminder
+// came back on the 60-second poll. That is a statement about a timer and a
+// re-render over time, which no unit test can observe - the pure rules prove
+// the DECISION is right and the wiring guard proves the state is plumbed, but
+// neither can show that a banner the user closed stays closed when the poll
+// fires again. That is exactly the class the Escape sweep got wrong: the hook
+// worked, the tests passed, and the feature was not on the screens that
+// mattered.
+//
+// The obvious version of this test - dismiss, wait 65 seconds, assert - is
+// unusable. Sixty-five seconds of wall clock per run is not something a CI
+// suite should pay, and on a loaded machine it is flaky for reasons that have
+// nothing to do with the app. Instead this waits for the banner to be back if
+// it is going to be at all, and the poll is driven by the app's own real
+// visibilitychange path, which calls the identical chokepoint the 60s interval
+// does. So the thing under test is the real refresh, not a shortcut around it.
+async function testBannerSuppression(page) {
+  console.log("\n[19/19] Reminder banners - a dismissed one stays dismissed, and an acknowledged one leaves a quiet mark (added 28 Sep 2026)");
+  await navHome(page);
+  await dismissTransientBanners(page);
+
+  // The seed data's PrEP dose is genuinely due, so its banner is real rather
+  // than something this flow had to manufacture.
+  const banner = page.locator('[aria-label="Dismiss due medications banner"]');
+  const hadBanner = await banner.first().waitFor({ state: "visible", timeout: 20000 })
+    .then(() => true).catch(() => false);
+  if (!hadBanner) {
+    assert(false, "a due medication actually produces a banner to dismiss - if this fails the rest of the flow is vacuous");
+    return;
+  }
+  assert(true, "a genuinely due medication produces a banner");
+
+  // Dismiss it. This is the X, not "Take" - it must not log a dose.
+  await banner.first().click({ timeout: 8000 });
+  await banner.first().waitFor({ state: "detached", timeout: 8000 }).catch(() => {});
+  const goneNow = await page.locator('[aria-label="Dismiss due medications banner"]').count();
+  assert(goneNow === 0, "tapping close hides the banner immediately");
+
+  // Now the part that actually failed before: drive the app's own refresh
+  // chokepoint - the same call the 60s interval makes - and confirm the banner
+  // does NOT come back.
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await page.waitForTimeout(2500);
+  const backAfterRefresh = await page.locator('[aria-label="Dismiss due medications banner"]').count();
+  assert(backAfterRefresh === 0,
+    "the banner does NOT come back on the next due-state refresh - before this, every dismissal was undone within 60 seconds, which is the surest way to train someone to ignore a reminder");
+
+  // A second refresh, because the first one can land before the banner had
+  // been re-rendered at all. Two real cycles is the difference between "it
+  // happened to not have arrived yet" and "it is genuinely suppressed".
+  await page.evaluate(() => { document.dispatchEvent(new Event("visibilitychange")); });
+  await page.waitForTimeout(2500);
+  assert(await page.locator('[aria-label="Dismiss due medications banner"]').count() === 0,
+    "and it is still gone after a second refresh, not merely slow to come back");
+
+  // And no dose was silently logged by any of this. The dismissal is a UI
+  // fact and must never masquerade as handling the medication - which is the
+  // real risk here, because a dismissal that logged a dose would look like it
+  // worked right up until the next dose was missed.
+  //
+  // Checked via the toast wording rather than by inspecting the dose log: the
+  // "Take" path toasts "PrEP (...) logged at 8:00am", so its absence is a
+  // direct, discriminating signal. An earlier version of this assertion was
+  // `!/regex/.test(text) || true`, which is vacuous by construction - it can
+  // never fail - and that is the single most-recorded mistake in this repo.
+  const toasts = await page.evaluate(() => document.body.innerText);
+  assert(!/logged at/i.test(toasts),
+    "dismissing a banner did not log a dose - nothing about a dismissal touched the medication's data");
+}
+
+// ---------------------------------------------------------------------------
 // ADDED 27 Sep 2026 - Developer Tools must offer "clear sample data" as its own
 // action and must NOT leave it confusable with "reset all app data".
 //
@@ -1513,7 +1593,7 @@ async function testSearchBackNavigation(page) {
 // rest of the previous flow depended on. Its own context avoids all of that,
 // and this flow must run BEFORE the flow above for the same reason.
 async function testSampleDataClearInDeveloperTools(browser) {
-  console.log("\n[2/18] Developer Tools separates 'clear sample data' from 'reset all app data' (added 27 Sep 2026)");
+  console.log("\n[2/19] Developer Tools separates 'clear sample data' from 'reset all app data' (added 27 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const flowErrors = [];
