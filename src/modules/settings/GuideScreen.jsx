@@ -43,10 +43,18 @@ const GUIDE_SECTIONS = [
     heading: "Privacy & security features, plainly",
     intro: "A few layers, each doing a different job:",
     bullets: [
-      "App Lock (Security & Privacy → Privacy) — a PIN/biometric gate on top of your device's own encryption. Off by default, since most people already lock their phone.",
+      // FIXED 27 Sep 2026 - this said App Lock was "a PIN/biometric gate on
+      // top of your device's own encryption", which is true but badly
+      // misleading: it implies the app's records sit unencrypted until you
+      // turn App Lock on. They don't. At-rest encryption is ALWAYS on
+      // (storageAdapter encrypts every write), so a brand-new install is
+      // already encrypted. What App Lock adds is a *gate in front of* the
+      // key, so someone holding your unlocked phone can't just open the app.
+      "Your records are encrypted on this device at all times — that's always on, even before you set up App Lock.",
+      "App Lock (Settings → Security & Privacy → Privacy) — an extra gate on top of that: a PIN or biometric, so someone holding your unlocked phone can't just open the app. Off by default, since most people already lock their phone.",
       "Duress PIN — if you set one, it opens a decoy version of the app with fake data instead of your real records. A real safety feature, not a demo.",
       "Anonymise mode — masks attendee names on Contacts and Encounters, useful if someone might glance at your screen.",
-      "None of this replaces your phone's own lock screen — think of it as an extra layer.",
+      "None of this replaces your phone's own lock screen — think of App Lock as an extra layer.",
     ],
   },
   {

@@ -393,6 +393,62 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+## Recently shipped (27 Sep 2026, later still - the Guide under-promised the encryption, plus a guard so stale Settings paths can't ship again)
+
+Continuing Phase 1f. One real privacy-communication bug, one regression guard,
+and one more recurring smoke flake fixed.
+
+**The Guide told users their records were only as safe as their phone's lock
+screen.** It described App Lock as "a PIN/biometric gate on top of your device's
+own encryption" - true, but it implies the app's records sit unencrypted until
+you turn App Lock on. They do not. `storageAdapter.save()` encrypts *every*
+write, and `cryptoService` creates a device-bound, non-extractable vault slot on
+first run with no PIN required, so a brand-new install is already encrypted.
+Verified in the source before writing a word of copy. What App Lock actually
+adds is a gate *in front of* the key: someone holding your unlocked phone can't
+just open the app. The Guide now says exactly that, and the **Privacy screen's
+own App Lock description** says it too - which is where it matters most, because
+that is the screen someone opens specifically to find out how safe their
+records are, and it was understating the answer. This is the rare case where the
+bug was understating protection, which is the safer direction to be wrong in,
+but still wrong: someone could decide they needed nothing more than their phone
+lock, or conversely assume they were unprotected and avoid using the app.
+
+**A guard for the bug class, after two real instances of it shipped.** The
+onboarding and Guide screens exist to answer "where do I do X?" for someone who
+has never opened the app, so a stale path there is worse than almost anywhere:
+it confidently sends a first-time user to a screen that does not exist, and they
+have no way to know the guidance is out of date rather than their own mistake.
+The first version of `settingsPathReferences.test.js` scanned every "Settings
+→ X" across every module and checked X against the real row list. **It was
+abandoned after producing five false positives on its first run** - Android's
+own "Settings → Apps → Permissions" path, a line ending in a quote, and prose
+that merely mentions Settings. Tuning a free-text heuristic to separate those
+from genuine mistakes is the kind of unbounded churn this project has been
+burned by before, so it was replaced with an explicit table of the paths that
+are real navigation instructions, each checked against the live Settings source:
+renaming a Settings row now breaks the test instead of silently making
+onboarding wrong. Three of my own mistakes in building it are recorded at their
+fixtures, per the standing habit - a char class that couldn't cross a `;`, so a
+real `Security &amp; Privacy` section looked absent; a negative check that
+matched the very comment documenting the fix; and an escaped-quote mismatch.
+
+**A third fixed-wait smoke flake, this time in the tab-order flow.** Flow 11 read
+the bottom nav once after a fixed 800 ms wait following a `reload()` - but a
+reload re-boots the app and unlocks the vault asynchronously, so on a slow
+machine the nav is still in its previous order when read, and the flow failed
+while the app was entirely correct. Now a bounded wait on the exact state being
+asserted. This is the same class as the two App Lock assertions fixed earlier in
+this session, which makes three: worth recording that the pattern keeps
+appearing, and that the fix each time is waiting for the state rather than
+trusting a duration.
+
+Verified: vitest 266/266 across 22 files, smoke suite 17/17 against a real
+production build, eslint clean, encoding guard clean, no leaked processes. The
+new guard was mutation-verified in both directions: renaming a Settings row out
+from under the copy fails 1 test, and reintroducing the exact historical
+"Settings → Design" string fails 2.
+
 ## Recently shipped (27 Sep 2026, latest - onboarding pointed new users at a Settings screen that no longer exists)
 
 Continuing the new-user audit, and a small round: two of the three suspected

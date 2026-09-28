@@ -330,7 +330,16 @@ export function PrivacyScreen({ onClose }) {
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
             <div style={{ flex: 1, paddingRight: 12 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>App Lock</div>
-              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>Require your PIN just to open the app at all. Uses the same PIN as the Revert PIN below.</div>
+              {/* FIXED 27 Sep 2026 - the description implied App Lock is what
+                  protects the data, and that without it the records sit
+                  readable. They don't: at-rest encryption is always on (see
+                  storageAdapter's own save(), which encrypts every write, and
+                  cryptoService's device-bound slot, created on first run with
+                  no PIN). App Lock adds a gate IN FRONT of the key. Saying so
+                  here matters more than anywhere - this is the screen a user
+                  opens specifically to find out how safe their records are,
+                  and it was understating the answer. */}
+              <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2 }}>Require your PIN just to open the app at all. Your records are already encrypted on this device either way — this adds a PIN gate in front of them. Uses the same PIN as the Revert PIN below.</div>
             </div>
             <div style={{ width: 40, height: 24, borderRadius: 999, background: settings.appLockEnabled ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border), position: "relative", flexShrink: 0 }}>
               <div style={{ position: "absolute", top: 2, left: settings.appLockEnabled ? 18 : 2, width: 20, height: 20, borderRadius: 999, background: "#FFFFFF" }} />

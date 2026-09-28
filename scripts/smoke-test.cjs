@@ -690,14 +690,29 @@ async function testTabReorder(page) {
   }
   assert(await page.locator("text=Tab order needs a reload").isVisible(), "moving a tab shows the real \"reload to apply\" prompt");
 
-  await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
-  await dismissTransientBanners(page);
+    await page.reload({ waitUntil: "networkidle" });
+    // FIXED 27 Sep 2026 - this used a fixed 800ms wait, then read the nav
+    // once. A reload re-boots the app and unlocks the vault asynchronously,
+    // so on a slow machine the nav is still in its previous order when it's
+    // read, and the flow fails while the app is completely correct. Now a
+    // bounded wait on the exact state being asserted, returning as soon as
+    // Healthcare really is first.
+    await page.waitForFunction(
+      () => {
+        const nav = document.querySelector('div[style*="justify-content: space-around"][style*="position: fixed"]');
+        if (!nav || !nav.children.length) return false;
+        return (nav.children[0].getAttribute("aria-label") || nav.children[0].textContent.trim()) === "Healthcare";
+      },
+      null,
+      { timeout: 20000 }
+    ).catch(() => { /* fall through to the assert below, which reports the real order */ });
 
-  const navLabels = await page.evaluate(() => {
-    const nav = document.querySelector('div[style*="justify-content: space-around"][style*="position: fixed"]');
-    return nav ? Array.from(nav.children).map((el) => el.getAttribute("aria-label") || el.textContent.trim()) : [];
-  });
+    await dismissTransientBanners(page);
+
+    const navLabels = await page.evaluate(() => {
+      const nav = document.querySelector('div[style*="justify-content: space-around"][style*="position: fixed"]');
+      return nav ? Array.from(nav.children).map((el) => el.getAttribute("aria-label") || el.textContent.trim()) : [];
+    });
   assert(navLabels[0] === "Healthcare", "Healthcare, moved to the front, actually renders first in the real, live bottom nav after reload");
   assert(navLabels[2] === "Home", "Home stays fixed in the centre position regardless of the custom order");
 
