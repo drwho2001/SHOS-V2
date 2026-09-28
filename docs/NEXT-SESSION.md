@@ -118,6 +118,25 @@ has no handler behind it. Small and self-contained, but genuinely low value: it
 only affects a native home-screen widget on a secondary surface. Do it only
 after 1 and 2.
 
+## Notion — where things go
+
+**Audits & Reviews** (page `3e913572-4f67-81f9-8184-ce5f5694a0fa`, child of
+Development Index) is the single home for every audit, review, sweep and
+re-measurement. It also catalogues the older audit pages that were previously
+unindexed and therefore effectively lost.
+
+**Write an audit there even when the result is "nothing found."** A verified
+non-finding is a result, and it is the cheapest way to stop the same audit being
+re-run from scratch — which is exactly what happened to the palette work.
+
+The **Development Log** (`3b013572-4f67-80ab-b1a0-c665a828e241`) stays for what
+was *shipped*, not for what was *found*. Found-but-unshipped belongs in Audits.
+
+Both must be appended with `PATCH /v1/blocks/{page_id}/children` (`POST` is not
+valid there, and Notion's error text for it reads exactly like an auth failure),
+then verified by paginating to the end — a successful response is not proof the
+write landed.
+
 ## Known facts worth not rediscovering
 
 - **iOS has never been built.** There is no `ios/` directory. The user has
