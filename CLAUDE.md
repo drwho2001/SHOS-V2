@@ -146,6 +146,48 @@ oversight.
 
 ## Working conventions for this project specifically
 
+### Two sessions share this working tree — attribute your own work
+
+**The owner routinely runs two AI sessions against this same checkout at the
+same time**, and they write to the same files. That is a normal condition here,
+not an accident waiting to happen, and it has two consequences worth making
+explicit rather than rediscovering.
+
+**Log entries must identify their session.** When this file gains a "Recently
+shipped" entry, and when the Notion Development Log gains one, say which
+session wrote it. A reader comparing this file against `git log` needs to be
+able to tell whose work a commit actually contains, and today the only way to
+do that is to read every diff. Attribution is cheap at write time and
+impossible to add later without editing someone else's entry, which is the one
+thing to avoid.
+
+**Never rewrite another session's entry, and never rewrite history they are
+working from.** If a commit's message does not match its contents, document the
+mismatch in *your* entry and move on. The other session is actively building
+from that commit; rebasing shared history out from under a running process risks
+losing their work to fix something cosmetic. Decide to split history only with
+both sessions stopped.
+
+**Never `git add -A` here.** Read `git status` first and stage explicit paths.
+The full rationale and the incident are in `docs/CHANGE-PROCEDURE.md` §3; the
+short version is that a blanket stage on a tree you do not solely own commits
+someone else's half-finished work under your message, which has already happened
+here once.
+
+**Commit → content map, for the period where the two got mixed up.** Anything
+not listed here is unambiguous.
+
+| Commit | Whose work it actually contains |
+|---|---|
+| `bc04295` "Give the Clinic Card PDF its first test…" | **BOTH sessions.** Theirs: `clinicCardPdf.test.js` + the Clinic Card PDF entry below. Mine, swept in by their `git add -A src`: `reminderSuppression.js` + its test, `medicationReminderSync.js`, `appPreferencesRepository.js`, 262 lines of `App.jsx`. The message describes only their half. |
+| `d7f84a1` "Finish banner suppression, and stop prescribing the command that caused the accident" | Mine only — the rest of Phase 3, the wiring guard, the `CHANGE-PROCEDURE.md` root-cause fix, and the second scratch-file deletion. |
+
+So: the Phase 3 banner-suppression entry below is split across those two
+commits, and the Clinic Card PDF entry sits in the same commit as the first
+half of Phase 3. Neither is a sign of lost work; both are a sign of a shared
+tree. Sessions after these should leave no such map — it exists to explain the
+exception, not to become a habit.
+
 ### The change procedure — read `docs/CHANGE-PROCEDURE.md`
 
 **The algorithm to follow when changing this code exists as a file, not as
@@ -427,6 +469,11 @@ Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
 ## Recently shipped (28 Sep 2026, latest of all yet again - banner suppression, and a parallel session committing my work for me)
+
+*Written by the session that also shipped the two search-back-navigation
+entries above. Its work is split across two commits — `bc04295` (swept up
+mid-change by a parallel session) and `d7f84a1` (the rest). See the
+commit → content map under "Working conventions" above.*
 
 **A git accident happened mid-change, and it is recorded here rather than
 tidied away.** A second session working in this same tree ran `git add -A src`
