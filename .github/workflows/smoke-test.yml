@@ -9,11 +9,35 @@ on:
 # Issues: "Near-zero automated test coverage. One manual, non-CI
 # Playwright script (3 flows)... very likely why a real, four-
 # subsystem-breaking bug shipped silently for weeks before live
-# device debugging caught it." scripts/smoke-test.cjs already exists
-# and already proved useful catching real regressions this session —
-# it just never ran anywhere except a developer's own terminal. This
-# wires the SAME script, unmodified, into a real CI gate: every push
-# to main now gets it run for real, not "run it if you remember to."
+# device debugging caught it." This wires the SAME script, unmodified,
+# into a real CI gate: every push to main now gets it run for real, not
+# "run it if you remember to."
+#
+# REWRITTEN 28 Sep 2026 — this job used to hand-copy each gate:
+# `npm run lint`, `npm run check:encoding`, `npm run test`, `npm run
+# build`, then `node scripts/smoke-test.cjs`. That is the exact shape of
+# problem docs/CHANGE-PROCEDURE.md exists to prevent: two lists of "the
+# checks" that drift apart the moment one of them changes. Changing a gate
+# locally would not have changed CI, and nothing would have said so.
+#
+# It now runs `npm run verify` — the SAME script a developer runs before
+# committing. One list of checks, one implementation, and a gate that
+# cannot disagree with the procedure it documents. Concretely, that means:
+#
+#   - adding a gate to verify-changes.mjs adds it to CI, automatically
+#   - the smoke suite runs against a preview server the script starts and
+#     cleans up itself, on a generated port, instead of a hardcoded 5183
+#     that silently conflicts with a leftover local server
+#   - fixing the leak/orphaned-browser problems in the local runner fixes
+#     the CI runner at the same time
+#
+# A portability bug this immediately exposed: the local runner polled the
+# server with `curl -o NUL`, which is a WINDOWS null device. On Linux curl
+# would have created a real file called `NUL` in the repo root. It could
+# never have been caught locally, because locally the script only ever ran
+# on Windows. Now a portable Node HTTP probe instead. This is the concrete
+# argument for the two being one command: sharing code across platforms
+# surfaces portability bugs that splitting hides.
 jobs:
   smoke-test:
     runs-on: ubuntu-latest
@@ -37,73 +61,31 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # ADDED 10 Sep 2026 — real ask: "smoke lint type check... do it if
-      # needed." Runs first, fails fast (before the heavier Playwright
-      # install/build steps) — ESLint already found and helped fix 5 real
-      # bugs the day it was added (a missing import that would crash a
-      # screen on first use, a stale-closure search-filter bug, two
-      # dead-memoization constants, and a Home dashboard section that
-      # could silently never populate). `npm run typecheck` (tsc
-      # --checkJs) deliberately NOT run here — see tsconfig.json's own
-      # header for why it's a real diagnostic tool but not a clean gate
-      # on this specific untyped JS/JSX codebase today.
-      - name: Lint
-        run: npm run lint
-
-      # ADDED 25 Sep 2026 — a real, committed encoding-corruption bug got
-      # through every other gate in this file. CLAUDE.md (this repo's own
-      # source-of-truth doc) and SHOS_Vaccinations_Prototype.jsx both
-      # contained ~1,800 genuine mojibake characters, because original UTF-8
-      # bytes had been read as CP1252 and re-encoded as UTF-8. Lint, vitest,
-      # the build and all 15 smoke flows passed throughout, because they
-      # check BEHAVIOUR, not bytes — nothing in the repo could have caught
-      # it. This guard scans every git-tracked text file for the mojibake
-      # signatures and the C1-control-character fingerprint of a lossy
-      # encoding round-trip. It is deliberately tested against injected
-      # corruption rather than merely run once green: its first two
-      # versions each produced false positives on a clean repo (unpaired
-      # emoji surrogates, and a legitimately UTF-16 PowerShell manifest),
-      # and its first lead-character range missed the single most common
-      # sequence of all ("â" + "€") because U+20AC is outside 0x80-0xFF.
-      - name: Encoding guard (mojibake)
-        run: npm run check:encoding
-
-      - name: Unit tests (Vitest)
-        run: npm run test
-
       # scripts/smoke-test.cjs's own header notes this repo doesn't
       # depend on playwright directly (a dev-machine convenience, not
       # meant to bloat every real install) — installed here, in CI
       # only, the same way a developer running the script by hand
-      # already has to.
+      # already has to. `--with-deps` pulls the system libraries Chromium
+      # needs, which is the part that actually differs on ubuntu-latest.
       - name: Install Playwright + Chromium
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
 
-      - name: Build web app
-        run: npm run build
-
-      # `vite preview` serves the real production build (dist/), a
-      # closer match to what actually ships than the dev server the
-      # script's own header instructions use for local runs.
-      - name: Start preview server
-        run: nohup npx vite preview --port 5183 --strictPort > preview.log 2>&1 &
-
-      - name: Wait for the preview server to be ready
-        run: |
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:5183 -o /dev/null; then
-              echo "Preview server is up."
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "Preview server did not come up in time. Log:"
-          cat preview.log
-          exit 1
-
-      - name: Run smoke test
-        run: node scripts/smoke-test.cjs
+      # The whole gate, in one command. Runs in order: build -> lint ->
+      # unit tests -> encoding guard -> smoke suite -> docs check, and
+      # prints one pass/fail table. The docs gate needs to know what this
+      # push changed, and by CI time the change is committed, so it diffs
+      # the pushed RANGE rather than a working tree that is always clean.
+      #
+      # `npm ci` above is the only setup step that must precede it: the
+      # script deliberately does not install Playwright itself, because
+      # doing so as a side effect of a verification command would be
+      # surprising and slow.
+      - name: Full gate (build, lint, tests, encoding, smoke, docs)
+        run: npm run verify
         env:
-          SMOKE_TEST_URL: http://localhost:5183
+          DOCS_BASE_REF: ${{ github.event.before }}
+          # Make the free-RAM annotation meaningful if this ever runs on a
+          # smaller runner. Harmless where there is plenty.
+          CI: "true"

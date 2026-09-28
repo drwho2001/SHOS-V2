@@ -12,6 +12,7 @@
     "verify": "node scripts/verify-changes.mjs",
     "verify:fast": "node scripts/verify-changes.mjs --fast",
     "verify:smoke": "node scripts/verify-changes.mjs --smoke-only",
+  "verify:docs": "node scripts/verify-changes.mjs --docs-only",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

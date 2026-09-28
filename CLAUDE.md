@@ -147,17 +147,34 @@ trap and why it happens, the change loop, how to write a commit message, the
 post-push CI check, the documentation requirement, and a table of the specific
 traps in this codebase (dynamic `/src/` imports only work on a dev server,
 `SVGElement` has no `.click()`, bottom-nav tabs have no text content, and so on).
-
 `node scripts/verify-changes.mjs` (also `npm run verify`) runs the whole gate —
 build → lint → unit tests → encoding → smoke suite → a docs check — and prints a
-pass/fail table. `--fast` skips the smoke suite. **Correctness should not depend
-on anyone remembering to run the right things in the right order**, which is
-exactly how this project has repeatedly shipped a green build with a real defect
-in it.
+pass/fail table.
 
-A **pre-commit hook** (`.git/hooks/pre-commit`) blocks mojibake on every commit.
-Tested in both directions: it blocks a file containing real double-encoded bytes
-and lets a clean commit through. Bypass deliberately with `--no-verify` only.
+**CI runs that exact same script** (`smoke-test.yml` calls `npm run verify`) on
+every push, in ~11 minutes, including the full 17-flow Playwright suite. So the
+**local loop is `npm run verify:fast`** (~2 min, no smoke), and CI is the real
+gate. A full local run before every push is redundant work and, on a 4 GB
+machine, actively harmful — this project has lost hours to smoke failures that
+were pure memory starvation. Run the full local gate only to debug a smoke
+failure interactively, which is the one thing CI cannot do.
+
+Because both run one script, a gate added locally is a gate that runs in CI
+automatically. That is not tidiness: the previous CI job hand-copied each step,
+and the moment the two lists differed nothing would have said so. Sharing the
+file immediately exposed a Windows-only `curl -o NUL` that would have created a
+real `NUL` file in the repo root on Linux — a bug that splitting had made
+invisible, since locally the script only ever ran on Windows.
+
+The **docs gate is enforced, not advisory**: CI *fails* a push that changes
+`src/` without also changing `CLAUDE.md` or `docs/`. It only warns locally,
+because mid-edit "docs not updated yet" is the normal state of honest work
+rather than a defect. See `docs/CHANGE-PROCEDURE.md` §5.
+
+A **pre-commit hook** (`.git/hooks/pre-commit`) blocks mojibake on every
+commit. Tested in both directions: it blocks a file containing real
+double-encoded bytes and lets a clean commit through. Bypass deliberately with
+`--no-verify` only.
 
 ### PowerShell 5.1 is not UTF-8 — this has damaged the codebase four times
 

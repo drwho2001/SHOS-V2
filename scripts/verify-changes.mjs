@@ -32,6 +32,16 @@
 //   node scripts/verify-changes.mjs              # everything
 //   node scripts/verify-changes.mjs --fast       # skip the smoke suite
 //   node scripts/verify-changes.mjs --smoke-only # just the smoke suite
+//   node scripts/verify-changes.mjs --docs-only  # just the docs gate (CI)
+//
+// WHY --docs-only EXISTS: CI already runs lint, the encoding guard, unit tests,
+// the build and the entire smoke suite, on every push, in ~11 minutes, with no
+// local memory pressure. Running all of that again locally before each push is
+// redundant on a fast machine and actively harmful on a slow one. So the
+// intended local loop is the FAST gate plus a push, and CI is the real gate.
+// The one piece CI could not check was the docs, because by the time CI runs
+// the change is committed and the original working-tree diff was empty - it
+// passed vacuously. --docs-only checks the pushed commit range instead.
 //
 // EXIT CODES
 //   0  all requested gates passed
@@ -41,12 +51,28 @@
 import { spawnSync, spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { classifyDocsGate } from "./docsGate.js";
 import os from "node:os";
 
 const ROOT = process.cwd();
 const args = process.argv.slice(2);
 const FAST = args.includes("--fast");
 const SMOKE_ONLY = args.includes("--smoke-only");
+// Declared HERE, with the other flags, rather than down beside the docs gate
+// that consumes it. `const` is block-scoped and hoisted-but-uninitialised, so
+// gate 1 referencing DOCS_ONLY before this line throws "Cannot access
+// 'DOCS_ONLY' before initialization" on EVERY run — which it did, and which
+// was only caught because the gate was actually executed. This is the same TDZ
+// class this project has hit five separate times in App.jsx and the module
+// files, so the rule is: a flag used by more than one gate is declared once, at
+// the top, next to the others.
+const DOCS_ONLY = args.includes("--docs-only");
+// Which "what changed" question the docs gate asks. See the long comment above
+// the gate itself for why these are two different questions. Mode is chosen by
+// the presence of DOCS_BASE_REF rather than by a flag, so a CI step cannot
+// forget to opt in and silently pass vacuously.
+const baseRef = process.env.DOCS_BASE_REF || "";
+const useRange = DOCS_ONLY || Boolean(baseRef);
 
 const COLOUR = { ok: "\x1b[32m", bad: "\x1b[31m", warn: "\x1b[33m", dim: "\x1b[2m", off: "\x1b[0m" };
 const results = [];
@@ -180,10 +206,25 @@ function runSmokeSuite() {
   try {
     // Poll for the server rather than sleeping a fixed amount - boot time
     // varies by an order of magnitude between a warm and a cold machine.
+    //
+    // This deliberately does NOT shell out to `curl -o NUL`: `NUL` is a Windows
+    // null device, and on Linux curl would create a real file called NUL in the
+    // repo root. That bug would have been invisible locally (where the script
+    // only ever runs on Windows) and only appeared once this same script was
+    // run in CI, which is the whole reason the two are now the same command.
+    // A synchronous Node HTTP request is portable and dependency-free.
+    const probeSync = (target) => {
+      const probe = spawnSync(
+        process.execPath,
+        ["-e", `require("http").get(${JSON.stringify(target)},r=>process.exit(r.statusCode===200?0:1)).on("error",()=>process.exit(1))`],
+        { stdio: "ignore", timeout: 5000 }
+      );
+      return probe.status === 0;
+    };
+
     let up = false;
     for (let i = 0; i < 30; i++) {
-      const probe = run("curl", ["-s", "-o", "NUL", "-w", "%{http_code}", "--max-time", "4", url]);
-      if ((probe.stdout || "").trim() === "200") { up = true; break; }
+      if (probeSync(url)) { up = true; break; }
       sleepSync(2000);
     }
     if (!up) return { ok: false, note: `preview server never came up on ${url}` };
@@ -201,7 +242,7 @@ function runSmokeSuite() {
 }
 
 // --- gate 1: build ---------------------------------------------------------
-if (!SMOKE_ONLY) {
+if (!SMOKE_ONLY && !DOCS_ONLY) {
   gate("build", () => {
     const r = run("npm", ["run", "build"]);
     return { ok: r.status === 0, note: r.status === 0 ? "" : lastLines(r.stderr || r.stdout) };
@@ -231,7 +272,7 @@ if (!SMOKE_ONLY) {
 }
 
 // --- gate 5: smoke suite ---------------------------------------------------
-if (!FAST) {
+if (!FAST && !DOCS_ONLY) {
   // ADVISORY, NOT A HARD SKIP — and the distinction matters.
   //
   // A first version skipped the smoke suite outright below a memory floor. That
@@ -277,22 +318,45 @@ if (!FAST) {
 // Deliberately a QUESTION, not an assertion. The failure mode here is a commit
 // that changes behaviour and leaves CLAUDE.md describing the old behaviour, and
 // no script can reliably detect that - only a deliberate check can.
-if (!SMOKE_ONLY) {
-  const changed = run("git", ["diff", "--name-only", "HEAD"]).stdout || "";
-  const staged = run("git", ["diff", "--cached", "--name-only"]).stdout || "";
-  const touched = (changed + staged).split(/\r?\n/).filter(Boolean);
-  const srcChanged = touched.some((f) => f.startsWith("src/"));
-  const docChanged = touched.some((f) => /^(CLAUDE\.md|docs\/)/.test(f));
-  results.push({
-    name: "docs in sync",
-    ok: true,
-    note: srcChanged
-      ? docChanged
-        ? "source + docs both touched"
-        : "SOURCE CHANGED, DOCS NOT TOUCHED — confirm CLAUDE.md still describes current behaviour"
-      : "no source changes",
-  });
+//
+// TWO MODES, because "what changed" means different things in the two places
+// this runs. The mode is chosen by whether DOCS_BASE_REF is set, not by a flag,
+// so a CI step cannot forget to pass it and silently pass vacuously - which is
+// the one failure mode a gate must never have.
+//
+//   local (DOCS_BASE_REF unset)  - diff the working tree against HEAD, i.e.
+//                                  "does the thing I am about to commit leave
+//                                  the docs stale?" The useful question before
+//                                  committing, where the change is still
+//                                  uncommitted.
+//
+//   CI (DOCS_BASE_REF set)       - the change is already COMMITTED, so there is
+//                                  no working diff at all; the original code
+//                                  found nothing to check and passed
+//                                  vacuously. Instead diff the pushed commit
+//                                  RANGE, using the before-SHA of the push.
+//
+// `--docs-only` still exists for running just this gate quickly, and forces the
+// range mode even without the env var.
+//
+// (DOCS_ONLY, baseRef and useRange are declared at the TOP of this file with the
+// other flags — see the note there about the TDZ crash this caused.)
+if (useRange || !SMOKE_ONLY) {
+  let touched;
+  if (useRange) {
+    const ref = baseRef && !/^0+$/.test(baseRef) ? baseRef : "HEAD~1";
+    touched = run("git", ["diff", "--name-only", `${ref}..HEAD`]).stdout.split(/\r?\n/).filter(Boolean);
+  } else {
+    const changed = run("git", ["diff", "--name-only", "HEAD"]).stdout || "";
+    const staged = run("git", ["diff", "--cached", "--name-only"]).stdout || "";
+    touched = (changed + staged).split(/\r?\n/).filter(Boolean);
+  }
+  // The decision itself lives in scripts/docsGate.js so it can be unit-tested
+  // without this file's top-level code (which actually runs the whole suite)
+  // executing on import.
+  results.push({ name: "docs in sync", ...classifyDocsGate(touched, useRange) });
 }
+
 
 // --- summary ---------------------------------------------------------------
 const failed = results.filter((r) => !r.ok);

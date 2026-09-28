@@ -71,18 +71,42 @@ For each unit of work:
    this month survived the build, lint, 253 unit tests and 16 smoke flows
    because they lived in render code.
 2. **Make the change.**
-3. **Run the gate:**
+3. **Run the fast gate:**
    ```powershell
-   node scripts/verify-changes.mjs
+   node scripts/verify-changes.mjs --fast
    ```
-   One command. It runs build → lint → unit tests → encoding → smoke → a
-   docs check, and prints a pass/fail table. `--fast` skips the smoke suite.
-4. **If a gate fails, decide whether the code or the machine is at fault.**
-   Check memory *first* for anything red.
-5. **Verify the fix cannot pass vacuously.** For any new test, revert the fix
+   Build → lint → unit tests → encoding → a docs check. Takes about two
+   minutes. **This is the local loop, and it is deliberately *not* the whole
+   gate — see "Why CI is the real gate" below before adding a local full run.**
+4. **Commit and push.** CI runs the rest.
+5. **If something is red, decide whether the code or the machine is at fault.**
+   Check memory *first* for anything red in a local run.
+6. **Verify the fix cannot pass vacuously.** For any new test, revert the fix
    and confirm the test fails. A test that cannot fail when the bug is
    reintroduced is worse than no test, because it reads as coverage. This has
    caught real "coverage" three times here.
+
+### Why CI is the real gate, not a local full run
+
+`smoke-test.yml` runs `npm run verify` — the **same script**, the **same gates**,
+on **every push**, in about 11 minutes. That includes the entire 17-flow
+Playwright smoke suite, which takes ~11 minutes of wall clock on a GitHub runner
+and the better part of that plus polling overhead on a local machine.
+
+So running the full gate locally before every push is **redundant work**, and on
+a 4 GB machine it is worse than redundant: this project has repeatedly lost
+hours to smoke failures that were pure memory starvation, and the machine
+reliably has under 1 GB free while the browser is running.
+
+**The rule: local `--fast` for iteration, CI for truth.** Run the full local
+gate only when you specifically need to debug a smoke failure interactively —
+that is the one thing CI cannot do for you.
+
+Why CI runs the same script rather than its own copy of the steps: two lists of
+"the checks" drift apart the moment either changes, and nothing catches it. One
+script means a gate added locally is a gate that runs in CI, automatically. The
+concrete argument for this is in section 6 — sharing the script across
+platforms immediately exposed a Windows-only bug that splitting had hidden.
 
 ---
 
@@ -127,6 +151,21 @@ gh run list --branch main --limit 3 --json name,status,conclusion
 All three workflows must be green before the work is done: **Smoke Test**,
 **Build Android APK**, **SHOS Web Alpha**.
 
+**What each one actually covers now:**
+
+| Workflow | Covers |
+|---|---|
+| **SHOS Smoke Test** | The whole gate, via `npm run verify`: build, lint, unit tests, encoding guard, all 17 Playwright flows, and the docs check. |
+| **Build Android APK** | The one thing that genuinely cannot be checked locally — that the Java/native code compiles. |
+| **SHOS Web Alpha** | Deploys to GitHub Pages, and builds with a `/SHOS-V2/` base path, which is a genuinely different build from the root-relative one CI tests. |
+
+**A red docs gate is a real failure, not a warning.** In CI the docs check asks a
+harder question than it does locally: locally, "source changed, docs not yet" is
+the normal state of an honest edit in progress, so it only warns. In CI the
+change is already pushed, so the same state means it *shipped* with `CLAUDE.md`
+describing the old behaviour — and `CLAUDE.md` is this repo's source of truth for
+what is true right now. See section 5.
+
 For native/Android changes, a green CI build is the *only* real confirmation
 that the Java compiles — that cannot be verified from a development machine.
 
@@ -145,6 +184,28 @@ Two places, both required before the work counts as finished:
   auth failure, which previously sent a session chasing the wrong problem.
   **Then paginate to the end and confirm the content is really there** — a
   successful API response is not proof the write landed.
+
+### The docs gate is enforced, not advisory
+
+CI **fails** a push that changes `src/` without also changing `CLAUDE.md` or
+`docs/`. This is the one gate that answers a *different question* depending on
+where it runs, and the distinction is deliberate:
+
+| | Question | Source of truth | Verdict |
+|---|---|---|---|
+| Local | "Is my edit-in-progress leaving the docs stale?" | working tree vs `HEAD` | warn |
+| CI | "Did this change **ship** with stale docs?" | `before..after` push range | **fail** |
+
+A warning nobody is obliged to read is not enforcement, and moving this check
+into CI was for enforcement. The logic lives in `scripts/docsGate.js` (a
+separate file purely so it can be unit-tested without `verify-changes.mjs`'s
+top-level code — which actually runs the entire suite — executing on import) and
+is covered by `src/calculations/docsGate.test.js`.
+
+The mode is chosen by the presence of `DOCS_BASE_REF`, **not** by a flag, so a
+CI step cannot forget to opt in and silently pass vacuously. Vacuous passing was
+the original bug here: the working-tree diff is always empty in CI, so the gate
+found nothing and reported success while checking nothing at all.
 
 ---
 
@@ -167,6 +228,9 @@ These have all cost real time. They are not hypothetical.
 | Date/time values | Two conventions, deliberately different. **Stored** values are fake-UTC where the digits are literal local wall-clock time; **real instants** (`createdAt`, `updatedAt`) are genuine `new Date().toISOString()`. Use `formatStoredDate()` / `realTimestampFromStored()` / `formatInstantDate()`. Never `milliseconds / 86400000` for a calendar day. |
 | Times depend on timezone | Any date test must be checked under `Europe/London`, `UTC`, `America/New_York` and `Australia/Sydney`, and must be locale-proof. |
 | A test that cannot fail | Revert the fix; if the test still passes, it is not testing anything. |
+| Windows-only assumptions in a shared script | The local smoke runner polled its server with `curl -o NUL`. `NUL` is a **Windows** null device — on Linux, curl would have created a real file called `NUL` in the repo root. It could never have been caught locally, because locally the script only ever ran on Windows; it surfaced the moment CI ran the same file. This is the concrete pay-off of CI and local running **the same script**: platform-specific assumptions stop being invisible. Prefer Node's own APIs over shelling out to OS tools in shared scripts. |
+| A `const` flag used by two gates | Declare it once, at the top, next to the others. `verify-changes.mjs` referenced `DOCS_ONLY` from the build gate while declaring it beside the docs gate hundreds of lines later — a TDZ crash on *every* run. This project has now hit that exact class five separate times in `App.jsx` and the module files. |
+| CI deleting a file in the repo root | If a CI step ever writes into the working tree, check the job actually runs on the platform you think it does. `ubuntu-latest` behaves nothing like `windows-latest` for null devices, path separators, and process cleanup. |
 
 ---
 
