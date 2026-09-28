@@ -18,6 +18,7 @@ import {
   shouldSuppressDeviceNotification,
   appendSignature,
   upsertAcknowledgement,
+  pruneSpentAcknowledgements,
   normaliseAcknowledgements,
 } from "./reminderSuppression";
 
@@ -209,6 +210,54 @@ describe("appendSignature and upsertAcknowledgement", () => {
 
   it("ignores a record with no signature", () => {
     expect(upsertAcknowledgement([], { kind: REMINDER_KIND.MEDS, scope: ACK_SCOPE.BOTH })).toEqual([]);
+  });
+});
+
+describe("pruneSpentAcknowledgements", () => {
+  const rec = (signature) => ({ kind: REMINDER_KIND.REFILL, signature, scope: ACK_SCOPE.IN_APP, at: "x" });
+
+  it("keeps an acknowledgement while the thing is still outstanding", () => {
+    // The "not now" has to hold for as long as the refill is still waiting to
+    // be dealt with, or the whole feature is useless.
+    expect(pruneSpentAcknowledgements([rec("a")], ["a"])).toHaveLength(1);
+  });
+
+  it("spends it once the refill is dealt with", () => {
+    // Tapping Requested, tapping Cancel, or logging the refill all take it out
+    // of the outstanding set. The next time stock is genuinely low, this is a
+    // NEW situation and must remind again - which was the bug where an
+    // acknowledgement silenced that medication forever.
+    expect(pruneSpentAcknowledgements([rec("a")], [])).toHaveLength(0);
+  });
+
+  it("spends only the one that was dealt with, not the others", () => {
+    // Two medications low at once; the user deals with one. The other must
+    // stay silent.
+    expect(pruneSpentAcknowledgements([rec("a"), rec("b")], ["b"])).toEqual([rec("b")]);
+  });
+
+  it("does not mutate its input", () => {
+    const input = [rec("a")];
+    pruneSpentAcknowledgements(input, []);
+    expect(input).toHaveLength(1);
+  });
+
+  it("survives junk input", () => {
+    expect(pruneSpentAcknowledgements(null, null)).toEqual([]);
+    expect(pruneSpentAcknowledgements([null, { signature: "" }], ["a"])).toEqual([]);
+  });
+
+  it("holds a dose's silence while it is still due, and spends it once taken", () => {
+    // The full sequence the owner specified, for the case where getting it
+    // wrong would mean a missed dose rather than an annoyance.
+    const dose = rec("med_1@2026-09-28T08:00:00.000Z");
+    expect(pruneSpentAcknowledgements([dose], ["med_1@2026-09-28T08:00:00.000Z"]))
+      .toHaveLength(1);
+    expect(pruneSpentAcknowledgements([dose], [])).toHaveLength(0);
+    // Tomorrow's dose is a different signature, so yesterday's decision cannot
+    // possibly silence it.
+    expect(pruneSpentAcknowledgements([dose], ["med_1@2026-09-29T08:00:00.000Z"]))
+      .toHaveLength(0);
   });
 });
 

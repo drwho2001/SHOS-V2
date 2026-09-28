@@ -207,6 +207,39 @@ export function upsertAcknowledgement(acknowledgements, record, limit = 50) {
 }
 
 /**
+ * Drop acknowledgements that have been spent.
+ *
+ * "Spent" means the thing that was acknowledged is no longer outstanding. That
+ * is the rule the owner asked for, stated once: *stop reminding me about this
+ * lasts until the refill is dealt with.*
+ *
+ * It reads as one rule and does all the work:
+ *   - Refill: acknowledge it, then tap Requested, or Cancel, or log the refill
+ *     you collected. Any of those takes it out of the outstanding set, so the
+ *     acknowledgement is spent, and next time you are genuinely low it speaks
+ *     up. Nothing extra to store and no migration - the resolution actions
+ *     already existed.
+ *   - Vaccination / testing: the due date moves on, which is a different
+ *     signature, so the old acknowledgement no longer matches and is spent.
+ *   - Dose: acknowledged while still due, so the silence holds. Take it and it
+ *     leaves the outstanding set, so the note is spent. Tomorrow's dose has its
+ *     own signature and its own reminder, which is correct - a new dose is a
+ *     new thing and must not be silenced by yesterday's decision.
+ *
+ * It also bounds stored preferences for free, which is why the cap in
+ * appendSignature is a secondary guard rather than the primary one.
+ *
+ * @param {Array<{signature: string}>} acknowledgements
+ * @param {string[]} outstandingSignatures signatures of things due RIGHT NOW
+ * @returns {Array} a new array; the input is never mutated
+ */
+export function pruneSpentAcknowledgements(acknowledgements, outstandingSignatures) {
+  const list = Array.isArray(acknowledgements) ? acknowledgements : [];
+  const live = new Set(Array.isArray(outstandingSignatures) ? outstandingSignatures : []);
+  return list.filter((a) => a?.signature && live.has(a.signature));
+}
+
+/**
  * Normalise a stored acknowledgement, dropping anything malformed.
  *
  * Stored preferences can be restored from a backup written by an older build,

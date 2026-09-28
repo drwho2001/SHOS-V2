@@ -155,6 +155,42 @@ describe("the passive dot is explained, and is not a nested interactive", () => 
   });
 });
 
+describe("a spent acknowledgement is dropped, and only once the due state is known", () => {
+  it("prunes spent acknowledgements through the pure helper", () => {
+    // THE fix for "acknowledging silenced that medication forever". The rule is
+    // the owner's: the silence lasts until the refill is dealt with, and
+    // dealing with it is an action that already existed, so no new stored
+    // field and no migration are involved.
+    expect(APP_CODE).toMatch(/pruneSpentAcknowledgements\(/);
+  });
+
+  it("does NOT prune before a real due state has been computed", () => {
+    // The single most dangerous line in this feature. At boot, before
+    // checkDueMeds has run, every signature is still "" and so the outstanding
+    // set is EMPTY - which would tell the prune that every acknowledgement the
+    // user has ever made was spent, and silently delete all of them on the
+    // next app open. A user who stopped being reminded about a medication, on
+    // purpose, would find it back with no explanation and no way to know why.
+    //
+    // So the guard is asserted, not assumed. Both halves: the effect must
+    // check it, and something real must set it.
+    const effectStart = APP_CODE.indexOf("pruneSpentAcknowledgements(acknowledgedReminders");
+    expect(effectStart, "the prune call not found").toBeGreaterThan(-1);
+    const before = APP_CODE.slice(Math.max(0, effectStart - 400), effectStart);
+    expect(before, "the prune must be gated on the due state being known").toMatch(/if \(!dueStateReady\) return;/);
+    expect(APP_CODE, "checkDueMeds must actually set it once due state is known").toMatch(/setDueStateReady\(true\)/);
+  });
+
+  it("the prune effect cannot loop on its own write", () => {
+    // It depends on the value it writes, so without an equality check before
+    // writing it would re-fire on its own write indefinitely. Pruning only
+    // ever removes, so an unchanged length genuinely means nothing was spent.
+    const effectStart = APP_CODE.indexOf("pruneSpentAcknowledgements(acknowledgedReminders");
+    const after = APP_CODE.slice(effectStart, effectStart + 420);
+    expect(after).toMatch(/if \(kept\.length === acknowledgedReminders\.length\) return;/);
+  });
+});
+
 describe("the guards above are not vacuous", () => {
   it("comment-stripping still leaves real code, and really removes comments", () => {
     const probe = 'const a = 1;\n// const b = 2;\nconst c = 3;';

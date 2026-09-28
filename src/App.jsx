@@ -60,6 +60,7 @@ import {
   isBannerVisible,
   hasOutstandingAcknowledged,
   shouldSuppressDeviceNotification,
+  pruneSpentAcknowledgements,
   appendSignature,
   upsertAcknowledgement,
   normaliseAcknowledgements,
@@ -1308,6 +1309,13 @@ export default function App() {
         await NotificationHistoryRepository.recordIfNew({ id: n.id, title: n.title, body: n.body });
       }
     }
+    // ADDED 28 Sep 2026 (Phase 3 fix) - marks the due state as genuinely
+    // known, which is the guard the spent-acknowledgement prune below depends
+    // on. Without it the prune would run once at boot, when every signature is
+    // still the empty string because no due state has been computed yet, see
+    // an "empty outstanding set", and conclude every acknowledgement the user
+    // has ever made was spent - wiping them silently on the next app open.
+    setDueStateReady(true);
   };
 
   useEffect(() => {
@@ -1355,6 +1363,11 @@ export default function App() {
   // web, a hidden tab is still alive and a closed tab is a hard close. The
   // earlier 30-minute dismissal was barely different from none; this is not.
   const [sessionDismissed, setSessionDismissed] = useState([]);
+  // ADDED 28 Sep 2026 (Phase 3 fix) - has a real due state been computed yet?
+  // See checkDueMeds's own comment: the spent-acknowledgement prune below is
+  // actively dangerous before this is true, and would delete every
+  // acknowledgement the user has ever made on the next app open.
+  const [dueStateReady, setDueStateReady] = useState(false);
   // Acknowledgements ARE persisted, so "don't remind me about this" means it
   // across restarts too.
   const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
@@ -1394,19 +1407,44 @@ export default function App() {
     () => buildSimpleSignature(REMINDER_KIND.REFILL, refillDue),
     [refillDue]
   );
+  // ADDED 28 Sep 2026, fixed same day - D1. This used to read
+  // `testingDue?.test`, but `getTestingDueState()` returns `{ due, dueDate }`
+  // and has NO `test` property at all, so the expression was always undefined,
+  // the signature was always the empty string, and because isBannerVisible
+  // treats an empty signature as "nothing to show", the Testing due-reminder
+  // banner never rendered. Silently, and in a shipped build.
+  //
+  // Confirmed by running the real function against the real seed data, not by
+  // reading it: at a clock where testing IS due, `"test" in state` is false.
+  // The due date is both the field that actually exists and the thing that
+  // makes each occurrence distinct, so a suggested retest in six months is not
+  // silenced by an acknowledgement of this one.
   const testingSignature = useMemo(
-    () => buildSimpleSignature(REMINDER_KIND.TESTING, testingDue?.test ? [testingDue.test] : []),
+    () => buildSimpleSignature(
+      REMINDER_KIND.TESTING,
+      testingDue?.due && testingDue?.dueDate
+        ? [{ id: `testing@${testingDue.dueDate.toISOString()}` }]
+        : []
+    ),
     [testingDue]
+  );
+  // Same class of bug, same day: keyed on the vaccination's id alone, so
+  // acknowledging a vaccination silenced it PERMANENTLY - including its next
+  // dose months later. dueDate is what distinguishes one occurrence from the
+  // next, and it is already in hand.
+  const vaccinationSignature = useMemo(
+    () => buildSimpleSignature(
+      REMINDER_KIND.VACCINATION,
+      vaccinationDue?.vaccination?.id && vaccinationDue?.dueDate
+        ? [{ id: `${vaccinationDue.vaccination.id}@${vaccinationDue.dueDate.toISOString()}` }]
+        : []
+    ),
+    [vaccinationDue]
   );
   const clinicVisitSignature = useMemo(
     () => buildSimpleSignature(REMINDER_KIND.CLINIC_VISIT, clinicVisitDue?.visit ? [clinicVisitDue.visit] : []),
     [clinicVisitDue]
   );
-  const vaccinationSignature = useMemo(
-    () => buildSimpleSignature(REMINDER_KIND.VACCINATION, vaccinationDue?.vaccination ? [vaccinationDue.vaccination] : []),
-    [vaccinationDue]
-  );
-
   const suppressState = (kind, dueCount, signature) => ({
     dueCount,
     signature,
@@ -1455,7 +1493,37 @@ export default function App() {
     if (record.scope === ACK_SCOPE.BOTH) checkDueMeds();
   };
 
-  // ADDED 28 Sep 2026 (Phase 3) — the passive warning. Derived from the live
+  // ADDED 28 Sep 2026 (Phase 3 fix) — spend an acknowledgement once the thing
+  // it acknowledged is no longer outstanding, which is the owner's rule stated
+  // as one line: "stop reminding me about this lasts until the refill is dealt
+  // with." Tapping Requested, tapping Cancel, or logging the refill you
+  // collected all remove it from the outstanding set, so the note is spent and
+  // next time you are genuinely low it speaks up.
+  //
+  // This is the fix for the bug where acknowledging silenced that medication
+  // FOREVER, because the signature keyed on the record id and an id is the same
+  // in every later cycle. No new stored field and no migration: the
+  // resolution actions already existed, so the acknowledgement simply stops
+  // matching once the item is dealt with.
+  //
+  // The length check before writing is not an optimisation, it is the loop
+  // guard: this effect depends on the value it writes, so without it the
+  // effect would re-fire on its own write forever. Pruning only ever REMOVES,
+  // so an unchanged length genuinely means nothing was spent.
+  const outstandingSignatures = useMemo(
+    () => [medsSignature, refillSignature, testingSignature, clinicVisitSignature, vaccinationSignature].filter(Boolean),
+    [medsSignature, refillSignature, testingSignature, clinicVisitSignature, vaccinationSignature]
+  );
+
+  useEffect(() => {
+    if (!dueStateReady) return;
+    const kept = pruneSpentAcknowledgements(acknowledgedReminders, outstandingSignatures);
+    if (kept.length === acknowledgedReminders.length) return;
+    setAcknowledgedReminders(kept);
+    AppPreferencesRepository.update({ acknowledgedReminders: kept });
+  }, [dueStateReady, outstandingSignatures, acknowledgedReminders]);
+
+  // ADDED 28 Sep 2026 (Phase 3 fix) — the passive warning. Derived from the live
   // due state and the acknowledgement records, never a remembered flag, so it
   // disappears the moment the dose is actually taken and cannot survive as a
   // stale dot on a tab.

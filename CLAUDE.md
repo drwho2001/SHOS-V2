@@ -468,6 +468,90 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+## Recently shipped (28 Sep 2026, latest of all yet again - the Testing banner was never rendering, and a mute switch I added was dangerous)
+
+**The banner suppression feature shipped a real regression on its first CI run,
+and the smoke flow could not see it. Both halves of that sentence matter.**
+
+**`getTestingDueState()` returns `{ due, dueDate }` and has no `test` property
+at all.** The code built the Testing reminder's signature from
+`testingDue?.test`, so that was always `undefined`, the signature was always the
+empty string, and — because `isBannerVisible` treats an empty signature as
+"nothing to show" — the **Testing due-reminder banner never rendered. At all.
+Silently**, including in a published APK. A due-retest reminder being silently
+suppressed is the single worst outcome this feature could produce, and it came
+from writing code against a shape I had not read.
+
+The same mistake hit a second place the same day: the vaccination and refill
+signatures keyed on the record **id** alone, so acknowledging a vaccination
+silenced it **permanently, including its next dose months later** — precisely
+the bug `_dueSince` was added to prevent for doses, and I had not applied the
+same reasoning one function over.
+
+**Confirmed by execution, not by reading.** A new `reminderDueShapes.test.js`
+runs the real due-state functions against the real seed data at a pinned clock.
+At a date where testing genuinely *is* due, `"test" in state` is `false`. That
+file is a shape contract for all five kinds, and it is the thing that would
+have caught both bugs.
+
+**My first version of that test was itself vacuous, and the probe that caught
+it is the more useful part.** It wrapped assertions in `if (state.due)` — and at
+the real current date only refills and doses are due from the seed data, so the
+testing, vaccination and visit assertions were **skipped** and the file passed
+while checking almost nothing. The fix is a pinned clock on which everything is
+due, plus a precondition block that asserts that up front, so a future seed
+change fails **loudly** instead of quietly testing nothing. There are no
+conditionals left in it. This is the fourth recorded instance of "a gate
+measured nothing and looked green" in this project, and the first one I
+manufactured myself.
+
+**"Stop reminding me" now lasts until the refill is dealt with**, which is the
+owner's rule stated once and it does all the work: an acknowledgement is dropped
+once the thing it acknowledged is no longer outstanding. Tapping Requested,
+tapping Cancel, or logging the refill you collected all remove it from the
+outstanding set, so the note is spent and next time you are genuinely low it
+speaks up. No new stored field and no migration — the resolution actions already
+existed. A dose behaves correctly under the same rule: acknowledged while still
+due, so the silence holds; taken, so the note is spent; tomorrow's dose is a
+different signature and gets its own reminder, which is right, because a new dose
+is a new thing.
+
+**The guard on that prune is the most dangerous line in the feature, which is
+why it is asserted rather than trusted.** At boot, before any due state has been
+computed, every signature is still the empty string — so the outstanding set is
+empty, and the prune would conclude that *every acknowledgement the user has
+ever made was spent* and silently delete all of them on the next app open. A
+user who had deliberately stopped being reminded about a medication would find it
+back, with no explanation. `dueStateReady` exists solely to prevent that, and
+three separate tests pin it.
+
+**A tool of mine damaged source mid-session and the pre-commit discipline is
+the only reason it was caught cheaply.** A mutation-verification harness
+neutered `pruneSpentAcknowledgements`, went red as intended, then **crashed
+while restoring the file** because it had not been backed up — leaving a source
+file deliberately broken in the working tree. Found by reading the file rather
+than trusting the harness's own "complete" message. The harness now backs up
+every file it touches and restores in a `finally`, because a mutation tool that
+can leave the tree broken is worse than no mutation tool. Two smaller harness
+bugs fixed alongside: multi-line search patterns never match these CRLF files,
+so four mutations were silently "not applied" — and *the mutation was not
+applied* is a different failure from *the test did not go red*, and only the
+second says anything about the test.
+
+Verified: 9 mutations of this fix, all confirmed to turn the suite red —
+including restoring the exact shipped line, dropping the vaccination date from
+both the condition and the body, removing the `dueStateReady` guard, removing
+the loop guard, and neutering the pure helper. Unit tests 372 → 397 across 32
+files, eslint clean for every file this change touches.
+
+Still outstanding from the same review, and honestly recorded rather than
+folded in here: the new acknowledge sheet has **no Escape handling**, which
+re-creates the keyboard-trap defect the previous session fixed in 27 places;
+the passive dot's wording is in the tab's accessible name, which breaks the
+smoke suite's exact-match nav helper — **and that helper fails open**, so
+flows would keep passing while navigating nowhere; and the new surfaces have had
+no contrast or narrow-screen layout check.
+
 ## Recently shipped (28 Sep 2026, latest of all yet again - banner suppression, and a parallel session committing my work for me)
 
 *Written by the session that also shipped the two search-back-navigation
