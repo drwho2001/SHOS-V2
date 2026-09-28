@@ -120,11 +120,14 @@ All of the following are shipped, committed, and green on `main`.
   class, with the intent-bearing assertion untouched. If you ever find yourself
   loosening one of these guards to get green, read it twice first — this repo
   has three "coverage" tests that could never have failed.
-- **`insert_widget.txt` in the repo root is committed scratch.** A draft of a
-  CLAUDE.md entry that got `git add`ed by accident back on 21 Sep. Harmless
-  (no personal data in it) but it is clutter in a public repo and should just
-  be deleted. Deliberately left out of the Phase 2b change rather than mixed
-  into an unrelated diff.
+- **`insert_widget.txt` in the repo root was committed scratch and is now
+  gone.** A draft of a CLAUDE.md entry that got `git add`ed by accident in
+  `08a01f0` (a Notion-log session), sitting in the root of a public repo for
+  five days. Nothing referenced it; deleted rather than left for the next
+  person to find. Worth remembering as the shape of the mistake: a scratch
+  file written next to the repo, then swept up by a blanket `git add -A`
+  during an unrelated commit. This project's own `docs/CHANGE-PROCEDURE.md`
+  prescribes `git add -A`, so the habit is worth keeping an eye on.
 
 ## State: open, in the order you should take it
 
