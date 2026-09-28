@@ -40,6 +40,7 @@ import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { NEUTRAL, ACCENTS, FONT_FAMILY, RADIUS, TYPE } from "../calculations/designTokens";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useAnonymiseMode, contactName, contactSearchText } from "../calculations/anonymiseDisplay";
 // FIXED 1 Sep 2026 — real ask: "global search nav breaks as soon as
 // first letter typed." Root cause: the sort-toggle row (added 26 Aug
 // 2026) referenced `radius.full` but this module never defined or
@@ -97,7 +98,7 @@ const RESULT_META = {
 // same "don't over-engineer for a single-user app" judgment already
 // applied elsewhere in this project (e.g. the ID scheme staying
 // human-readable rather than moving to UUIDs).
-async function buildIndex() {
+  async function buildIndex(anonymise = false) {
   const results = [];
 
   // CHANGED — Phase 2 encryption groundwork: KinkRegistry is now async
@@ -121,11 +122,18 @@ async function buildIndex() {
     // Limits are deliberately excluded now; only real stated interest
     // makes a Contact findable by that kink.
     const kinkNames = (await Promise.all(c.statedKinks.map((sel) => KinkRegistry.getById(sel.kinkId)))).filter(Boolean).map((k) => k.name);
-    const searchText = [c.name, c.nickname, ...kinkNames].join(" ");
+    // FIXED 28 Sep 2026 — Anonymise mode reaches Global Search for the first
+    // time. This was the single worst gap in the 28 Sep security review: the
+    // real name went into `searchText`, so a contact was FINDABLE BY REAL NAME
+    // while masking was on. That defeats the feature rather than merely leaking
+    // it on one screen, and it is the reason the review rated this the top
+    // finding. The displayed title and city are masked too, so the row is
+    // consistent with the Contacts card rather than half-masked.
+    const searchText = [contactSearchText(c, anonymise), ...kinkNames].filter(Boolean).join(" ");
     results.push({
       type: "contact", id: c.id,
-      title: c.nickname || c.name || "Unnamed contact",
-      subtitle: c.city || "",
+      title: contactName(c, anonymise),
+      subtitle: anonymise ? "" : (c.city || ""),
       searchText,
       // ADDED 26 Aug 2026 — real ask: chronological sort/grouping.
       // Contacts have no natural "date" the way an Activity or Test
@@ -156,7 +164,11 @@ async function buildIndex() {
     // search ("piss") pulling records that never mention it.
     // Attendee names are a genuinely new match field here (Global
     // Search never resolved attendeeIds to names before this).
-    const attendeeNames = (await Promise.all((e.attendeeIds || []).map(async (id) => {
+    // FIXED 28 Sep 2026 — attendee names were resolved to their real values
+    // and indexed, so an Encounter was findable by typing a contact's real
+    // name while Anonymise mode was on. Same defect as the contact result
+    // above, on the other record type.
+    const attendeeNames = anonymise ? [] : (await Promise.all((e.attendeeIds || []).map(async (id) => {
       const contact = await ContactRepository.getById(id);
       return contact?.nickname || contact?.name;
     }))).filter(Boolean);
@@ -383,14 +395,22 @@ export default function GlobalSearchScreen({ onClose, onNavigate, initialQuery =
   // has no notion of "loaded", and adding one there for the benefit of a
   // single caller is a much larger change than this one needs.
   const [index, setIndex] = useState(null);
+  // FIXED 28 Sep 2026 — Anonymise mode, read here and threaded into the index
+  // build. Masking only the DISPLAY would be half a fix: the real name has to
+  // stay out of `searchText` too, or a contact remains findable by typing it.
+  const anonymise = useAnonymiseMode();
   useEffect(() => {
     let cancelled = false;
+    // Rebuilt when the flag flips, not just on mount, so toggling Anonymise mode
+    // takes effect the next time Search is opened rather than only after a
+    // relaunch.
+    setIndex(null);
     (async () => {
-      const built = await buildIndex();
+      const built = await buildIndex(anonymise);
       if (!cancelled) setIndex(built);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [anonymise]);
   const indexReady = index !== null;
   const results = useMemo(() => {
     const q = query.trim();

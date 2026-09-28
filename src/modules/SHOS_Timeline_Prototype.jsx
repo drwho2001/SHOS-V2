@@ -28,6 +28,7 @@ import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { formatStoredDate } from "../calculations/dateInputHelpers";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useAnonymiseMode, contactName } from "../calculations/anonymiseDisplay";
 
 // ADDED 19 Aug 2026 — Timeline (the nav-facing name; "Episode" is the
 // underlying data unit — see episodeRepository.js for the full
@@ -274,6 +275,11 @@ function SingleEncounterSelect({ value, onChange, T, items }) {
 // linked") — suggestions are ALWAYS tappable chips, NEVER auto-added,
 // per the user's explicit instruction on how linking should work here.
 function LinkedItemsSection({ label, linkedIds, onChange, candidates, nameFor, T, alertIds = [] }) {
+  // FIXED 28 Sep 2026 — Anonymise mode, read ONCE here. Reading it inside the
+  // render of each candidate chip below would be a hooks violation (a hook
+  // called inside a .map() callback), which React can turn into a real error
+  // rather than a wrong value.
+  const anonymise = useAnonymiseMode();
   return (
     <div style={{ padding: "8px 0" }}>
       {label && <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>}
@@ -292,7 +298,13 @@ function LinkedItemsSection({ label, linkedIds, onChange, candidates, nameFor, T
           {candidates.slice(0, 6).map((c) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => onChange([...linkedIds, c.id])}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.healthcareBlue}`, color: T.healthcareBlue, cursor: "pointer" }}>
-              + {c.name}
+              {/* FIXED 28 Sep 2026 — Anonymise mode. These are contact-name
+                  suggestion chips inside an Episode, and they rendered real
+                  names unconditionally: one of the seven screens the 28 Sep
+                  security review found reading the flag nowhere. Uses the
+                  `anonymise` read once at the top of this component — a hook
+                  must never be called inside this .map() callback. */}
+              + {contactName(c, anonymise)}
             </div>
           ))}
         </div>

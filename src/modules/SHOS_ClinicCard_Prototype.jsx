@@ -13,6 +13,7 @@ import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { computeStock, getDoseComponents, formatDoseComponents } from "../calculations/medicationCalculations";
 import { formatRelativeDate, sortByDateDesc } from "../calculations/encounterCalculations";
 import { nowAsStoredDate, inDaysAsStoredDate } from "../calculations/dateInputHelpers";
+import { useAnonymiseMode, ANONYMISED } from "../calculations/anonymiseDisplay";
 import { useClinicCardVisibility, CLINIC_CARD_SECTIONS, useExportIncludeRecentContacts, useToggleExportIncludeRecentContacts } from "../calculations/clinicCardVisibilityPreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository";
@@ -365,6 +366,9 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // same way `recentPartners` is. No new repository read needed beyond
   // `contacts` itself.
   const contactsRaw = useLoadedMemo(() => ContactRepository.getAll(), [], []);
+  // FIXED 28 Sep 2026 - Anonymise mode, read once here and folded into the
+  // memo below rather than applied at render time.
+  const anonymise = useAnonymiseMode();
   const recentContacts = useMemo(() => {
     const contactsById = new Map(contactsRaw.map((c) => [c.id, c]));
     const seen = new Set();
@@ -374,14 +378,24 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         if (seen.has(cid) || !contactsById.has(cid)) continue;
         seen.add(cid);
         const c = contactsById.get(cid);
-        out.push({ id: c.id, title: c.nickname || c.name || "Unnamed contact", subtitle: `Last encounter ${formatRelativeDate(e.date)}` });
+        // FIXED 28 Sep 2026 — Anonymise mode. The Clinic Card is the one
+        // screen a user deliberately hands to a clinician, so it is squarely
+        // the "someone else is looking at this" case; it listed up to eight
+        // real contact names regardless. The subtitle is suppressed too,
+        // because "Last encounter 3 days ago" next to a placeholder still
+        // discloses that this specific record is recent.
+        out.push({
+          id: c.id,
+          title: anonymise ? ANONYMISED : (c.nickname || c.name || "Unnamed contact"),
+          subtitle: anonymise ? "Recent contact" : `Last encounter ${formatRelativeDate(e.date)}`,
+        });
         if (out.length >= 8) break;
       }
       if (out.length >= 8) break;
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- withinTimeframe closes over cutoffDate, depend on that directly instead of a function recreated every render
-  }, [contactsRaw, encounters, cutoffDate]);
+  }, [contactsRaw, encounters, cutoffDate, anonymise]);
 
   return (
     <div role="dialog" aria-label="Clinic Card" ref={dialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>

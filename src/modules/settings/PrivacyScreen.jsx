@@ -264,10 +264,30 @@ export function PrivacyScreen({ onClose }) {
             </span>
           </div>
           <div style={{ fontSize: 12, color: settings.anonymiseModeActive ? "#DCDCE1" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), marginTop: 6 }}>
+            {/* CHANGED 28 Sep 2026 — scope copy, after the security review
+                measured what this toggle actually masked. The old text said
+                "across Contacts" only, which was not the problem — the problem
+                was that it read as a whole-app guarantee while the real
+                coverage was 2 of the 9 screens that render a contact's name.
+                The code now masks the other 7 as well, so the honest thing is
+                to say where it applies AND, just as importantly, where it
+                does not. The export caveat is the part a user would
+                otherwise have no way of discovering. */}
             {settings.anonymiseModeActive
-              ? "Names, photos, addresses, and car details are hidden across Contacts."
-              : "Tap right before handing your phone over — hides names, photos, addresses, and car registration in Contacts. Never turns on by itself."}
+              ? "Contact names, photos, addresses and car details are hidden across Contacts, Encounters, Global Search, Episodes, Partner Notification, My Profile and the Clinic Card."
+              : "Tap right before handing your phone over — hides contact names, photos, addresses and car registration throughout the app. Never turns on by itself."}
           </div>
+          {/* NEW 28 Sep 2026 — the limit of the promise, stated plainly. An
+              export is a file you have deliberately chosen to create, and
+              every one of them has its own explicit per-section control, so
+              Anonymise mode deliberately does not reach them; pretending
+              otherwise would override a control the user has already set.
+              Saying so is the honest fix. */}
+          {settings.anonymiseModeActive && (
+            <div style={{ fontSize: 11, color: settings.anonymiseModeActive ? "#A0A0A8" : NEUTRAL.textSecondary, marginTop: 6, lineHeight: 1.5 }}>
+              Does not change exported files — a PDF, CSV, record export or backup contains the real values, and each of those has its own include/exclude controls.
+            </div>
+          )}
         </div>
 
         {settings.anonymiseModeActive && (

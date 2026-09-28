@@ -50,6 +50,7 @@ import {
   PREP_DOXY_OPTIONS, DAYS_OF_WEEK, TIME_CONSTRAINT_TYPES, AVAILABILITY_RULE_TYPES,
   BDSM_ROLE_OPTIONS, SEXUAL_POSITION_OPTIONS,
 } from "../repositories/contactRepository";
+import { useAnonymiseMode, ANONYMISED } from "../calculations/anonymiseDisplay";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 // ADDED 26 Aug 2026 — real ask: Relationship type should be user-
@@ -176,9 +177,18 @@ function focusNextField(el) {
 // generic placeholder can't. `MASKED` covers the base tier (name,
 // city, car registration); profile pictures are hidden entirely
 // rather than shown blurred, for the same reason.
-const MASKED = "•••• hidden";
+//
+// CHANGED 28 Sep 2026 — the placeholder is now the shared one from
+// `anonymiseDisplay`, so this file and Encounters can no longer drift
+// apart, and `displayName` itself takes the flag rather than each
+// call site remembering to check. The 28 Sep security review found
+// three call sites in this file that used `displayName` without ever
+// consulting Anonymise mode — the link-a-contact picker, the profile
+// picker, and the duplicate panel.
+const MASKED = ANONYMISED;
 
-function displayName(contact) {
+function displayName(contact, anonymise = false) {
+  if (anonymise) return MASKED;
   return contact.nickname || contact.name;
 }
 
@@ -1317,6 +1327,10 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
   const [linkedIds, setLinkedIds] = useLoadedState(async () => (await ContactRepository.getById(contactId))?.linkedContactIds || [], [contactId], []);
   const [labels, setLabels] = useLoadedState(async () => (await ContactRepository.getById(contactId))?.linkedContactLabels || {}, [contactId], {});
   const linked = allContacts.filter((c) => linkedIds.includes(c.id));
+  // FIXED 28 Sep 2026 - Anonymise mode. This is the "link a contact"
+  // picker; both the current chips and the <option> list rendered real
+  // names with no flag check at all (the 28 Sep security review).
+  const anonymise = useAnonymiseMode();
   const linkable = allContacts.filter((c) => c.id !== contactId && !linkedIds.includes(c.id));
 
   const labelSuggestions = useMemo(() => {
@@ -1349,7 +1363,7 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
           {linked.map((c) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => removeLink(c.id)}
               style={{ padding: "6px 10px", borderRadius: radius.sm, fontSize: 12, background: T.surfaceVariant, color: T.textPrimary, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>{displayName(c)}{labels[c.id] ? ` — ${labels[c.id]}` : ""}</span>
+              <span>{displayName(c, anonymise)}{labels[c.id] ? ` — ${labels[c.id]}` : ""}</span>
               <X size={11} />
             </div>
           ))}
@@ -1360,7 +1374,7 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
           <select value={pickerValue} onChange={(e) => setPickerValue(e.target.value)}
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontSize: 13, marginBottom: pickerValue ? 6 : 0 }}>
             <option value="">+ Link another contact</option>
-            {linkable.map((c) => <option key={c.id} value={c.id}>{displayName(c)}</option>)}
+            {linkable.map((c) => <option key={c.id} value={c.id}>{displayName(c, anonymise)}</option>)}
           </select>
           {pickerValue && (
             <div>
@@ -1725,6 +1739,10 @@ const REDUNDANT_PLATFORM_SUGGESTIONS = ["phone", "snapchat", "fabguys", "fabswin
 
 function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   useEscapeToClose(onClose);
+  // FIXED 28 Sep 2026 — Anonymise mode. The duplicate warning below named the
+  // OTHER contact, so opening any contact's edit sheet while masking would have
+  // printed a second real name on a surface the review found was unmasked.
+  const anonymise = useAnonymiseMode();
   const isNew = !contact;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
@@ -1869,7 +1887,14 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           {possibleDuplicate && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderRadius: radius.sm, background: "#FFF3C4", marginTop: -4, marginBottom: 8 }}>
               <AlertTriangle size={13} color="#926100" />
-              <span style={{ fontSize: 12, color: "#926100" }}>Possible duplicate of "{possibleDuplicate.nickname || possibleDuplicate.name}" — check before saving a second entry.</span>
+              {/* FIXED 28 Sep 2026 — Anonymise mode. The warning itself is
+                  still shown, because "you may already have this person" is
+                  useful to know, but the OTHER person's name is not: this
+                  renders inside the edit sheet, which the review flagged as a
+                  surface that a masked contact could be opened into. */}
+              <span style={{ fontSize: 12, color: "#926100" }}>
+                Possible duplicate{anonymise ? "" : ` of "${possibleDuplicate.nickname || possibleDuplicate.name}"`} — check before saving a second entry.
+              </span>
             </div>
           )}
           <TextField T={T} label="Nickname (shown instead of name, if set)" value={form.nickname} onChange={set("nickname")} placeholder="Optional" />
@@ -2487,7 +2512,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               .map((c) => (
                 <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => onOpenContact(c.id)}
                   style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, color: T.contactsTeal, fontWeight: 600, cursor: "pointer" }}>
-                  {displayName(c)}
+                  {displayName(c, anonymise)}
                 </div>
               ))}
           </SectionCard>
@@ -2756,11 +2781,23 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
                     }}>{confidence} confidence</span>
                     <span style={{ fontSize: 11, color: T.textDisabled }}>matched: {matched.join(", ")}</span>
                   </div>
+                  {/* FIXED 28 Sep 2026 — Anonymise mode. This panel was the
+                      single worst leak the 28 Sep security review found, and
+                      the review's own re-ranking put it above the search
+                      index for a concrete reason: it printed a contact's
+                      PHONE NUMBER, not just their name. A name is something
+                      you might be willing to have read out; a phone number is
+                      a direct route to reaching that person, and this panel
+                      also offers one-tap Archive on the row beside it.
+
+                      The "matched: …" list above is deliberately left as-is: it
+                      names the FIELDS that matched, not their values, so it
+                      discloses no contact detail on its own. */}
                   {[a, b].map((entry) => (
                     <div key={entry.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}>
                       <span style={{ fontSize: 14, fontWeight: 600, color: entry.isArchived ? T.textDisabled : T.textPrimary }}>
-                        {entry.nickname || entry.name}{entry.isArchived ? " (archived)" : ""}
-                        {(entry.city || entry.phone) && <span style={{ fontSize: 11, fontWeight: 400, color: T.textDisabled }}> · {[entry.city, entry.phone].filter(Boolean).join(" · ")}</span>}
+                        {anonymise ? MASKED : (entry.nickname || entry.name)}{entry.isArchived ? " (archived)" : ""}
+                        {!anonymise && (entry.city || entry.phone) && <span style={{ fontSize: 11, fontWeight: 400, color: T.textDisabled }}> · {[entry.city, entry.phone].filter(Boolean).join(" · ")}</span>}
                       </span>
                       {!entry.isArchived && (
                         <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => { await ContactRepository.archive(entry.id); refresh(); }} style={{ fontSize: 11, fontWeight: 700, color: T.actionRed, cursor: "pointer" }}>Archive this one</span>

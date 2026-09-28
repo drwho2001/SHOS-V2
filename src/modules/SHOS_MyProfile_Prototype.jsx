@@ -24,7 +24,7 @@
 // entry would look like for you", so sharing Contacts' color makes
 // that relationship visible rather than picking an arbitrary new hue.
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { UserIcon as User, DownloadSimpleIcon as Download, CopyIcon as Copy, CheckIcon as Check, XIcon as X, CaretLeftIcon as ChevronLeft, ShareNetworkIcon as Share, MessengerLogoIcon as MessengerLogo, TelegramLogoIcon as TelegramLogo, InstagramLogoIcon as InstagramLogo, WhatsappLogoIcon as WhatsappLogo, XLogoIcon as XLogo, SnapchatLogoIcon as SnapchatLogo, CrosshairIcon as Crosshair } from "@phosphor-icons/react";
 
 // Same real-platform-logo lookup as Contacts' own copy (self-contained
@@ -60,6 +60,7 @@ import {
   PREP_DOXY_OPTIONS, DAYS_OF_WEEK, TIME_CONSTRAINT_TYPES, AVAILABILITY_RULE_TYPES,
   BDSM_ROLE_OPTIONS, SEXUAL_POSITION_OPTIONS,
 } from "../repositories/contactRepository";
+import { useAnonymiseMode, contactName } from "../calculations/anonymiseDisplay";
 import { KinkRegistry, KINK_ROLE_OPTIONS, resolveKinkSynonym, analyzeKinkEntry, getKinkRoleOptions } from "../registries/kinkRegistry";
 // ADDED — real fix: same normalizeTag Contacts/Encounters use.
 import { normalizeTag, hasPhysicalDetail, mergeCummerRow } from "../calculations/contactCalculations";
@@ -930,6 +931,16 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
   const [pronounsOptions, setPronounsOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("pronouns"), [], []);
   const [relationshipStatusOptions, setRelationshipStatusOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("relationshipStatus"), [], []);
   const allContacts = useLoadedMemo(() => ContactRepository.getAll().then((all) => all.filter((c) => !c.isArchived).map((c) => ({ id: c.id, name: c.name }))), [], []);
+  // FIXED 28 Sep 2026 — Anonymise mode. `RelationPicker` uses `i.name` for the
+  // chip, the suggestion list AND its own text filter, so masking the name here
+  // covers all three at once. Masking only the chip would have left the picker
+  // searchable by real name — the same index-level defect Global Search had.
+  // The id is deliberately preserved so the stored value still works.
+  const anonymise = useAnonymiseMode();
+  const anonymisedContactItems = useMemo(
+    () => (allContacts || []).map((c) => ({ ...c, name: contactName(c, anonymise) })),
+    [allContacts, anonymise]
+  );
   const [contraceptionOptions, setContraceptionOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
   // ADDED — real ask: contraception relevant when Gender is Female or
   // Trans-male. Exact match against these two only — not e.g. Non-
@@ -985,7 +996,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
               toggle. */}
           {form.relationshipStatus && form.relationshipStatus.trim().toLowerCase() !== "single" && (
             <RelationPicker label="Linked to" value={form.relationshipContactIds} onChange={set("relationshipContactIds")}
-              T={T} items={allContacts} placeholder="No contacts yet — add one under Contacts first" />
+              T={T} items={anonymisedContactItems} placeholder="No contacts yet — add one under Contacts first" />
           )}
           <AgeField age={form.age} onChangeAge={set("age")} T={T} />
           <CityAutocomplete label="City" value={form.city} onChange={set("city")} T={T} placeholder="Start typing a city, or use current location" />

@@ -34,6 +34,7 @@ import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 import { timeOfDay, sortByDateDesc, formatRelativeDate } from "../calculations/encounterCalculations";
 import { ContactRepository } from "../repositories/contactRepository";
+import { useAnonymiseMode, ANONYMISED } from "../calculations/anonymiseDisplay";
 import { TestingRepository } from "../repositories/testingRepository";
 // New 18 Aug 2026: real registries now exist for these fields — replaces
 // the free-text TagField stubs used until this session.
@@ -124,14 +125,16 @@ function loadEncounters() {
 function loadContacts() {
   return ContactRepository.getAll();
 }
-function contactName(contacts, id) {
+// FIXED 28 Sep 2026 — Anonymise mode. The local `MASKED` constant and its
+// "not exported from there, so duplicated here" comment are gone: the shared
+// `anonymiseDisplay` module now exports the placeholder and the name rule in
+// one place, which is the whole point of it. That duplication is how the two
+// original copies (Contacts' and this one) were able to drift.
+function contactName(contacts, id, anonymise = false) {
+  if (anonymise) return ANONYMISED;
   const c = contacts.find((c) => c.id === id);
   return c ? (c.nickname || c.name) : "Unknown";
 }
-// Same placeholder string Contacts' own Anonymise mode uses (see
-// SHOS_Contacts_Prototype.jsx's MASKED) — not exported from there, so
-// duplicated here rather than reaching across module boundaries.
-const MASKED = "•••• hidden";
 
 // ── Shared primitives (same shapes as Contacts/Medication files) ──
 
@@ -578,6 +581,10 @@ function RegistryTagPicker({ label, value, onChange, T, registry, placeholder, e
 // forget calls all needed converting.
 function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder, showLocateButton = false, contacts = null, attendeeIds = [] }) {
   const allEntries = useLoadedMemo(() => registry.getAll().then((all) => all.filter((e) => !e.isArchived)), [], []);
+  // FIXED 28 Sep 2026 — Anonymise mode, read once per component. This picker
+  // offers contacts as "so-and-so's place" suggestions, so it is both a display
+  // surface and a route to writing a real name into storage.
+  const anonymise = useAnonymiseMode();
   // Falls back to a real getById() only for a referenced entry that's
   // since been archived (so it's missing from `allEntries` above) —
   // same shape as the original synchronous version's own fallback.
@@ -661,7 +668,11 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
   const matchesEntry = (e) => {
     if (e.name.toLowerCase().includes(draftLower)) return true;
     if (e.address && e.address.toLowerCase().includes(draftLower)) return true;
-    const linked = e.relatedContactId ? contactById.get(e.relatedContactId) : null;
+    // FIXED 28 Sep 2026 — Anonymise mode. This branch made a location findable
+    // by typing a LINKED CONTACT'S REAL NAME, which is an index-level leak of
+    // exactly the kind Global Search had: the name is not on screen anywhere,
+    // but typing it still surfaces the row. Skipped while masking.
+    const linked = anonymise ? null : (e.relatedContactId ? contactById.get(e.relatedContactId) : null);
     if (linked && (linked.nickname || linked.name || "").toLowerCase().includes(draftLower)) return true;
     return false;
   };
@@ -695,12 +706,16 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
       .filter((c) => {
         if (attendeeIds.includes(c.id)) return true;
         if (!draftLower) return false;
-        const name = (c.nickname || c.name || "").toLowerCase();
+        // FIXED 28 Sep 2026 — same real-name search leak as above, on the
+        // "pick a contact for this location" suggestions. Address/city still
+        // match, because a location is the user's own place rather than a
+        // third party's identity; the person's NAME is what must not match.
+        const name = anonymise ? "" : (c.nickname || c.name || "").toLowerCase();
         return name.includes(draftLower) || (c.address || "").toLowerCase().includes(draftLower) || (c.city || "").toLowerCase().includes(draftLower);
       })
       .sort((a, b) => (attendeeIds.includes(b.id) ? 1 : 0) - (attendeeIds.includes(a.id) ? 1 : 0))
       .slice(0, 5);
-  }, [contacts, attendeeIds, draftLower, allEntries]);
+  }, [contacts, attendeeIds, draftLower, allEntries, anonymise]);
 
   const commit = async () => {
     const trimmed = draft.trim();
@@ -727,7 +742,17 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
   // — just pre-filled with that contact's real address/link instead of
   // starting blank, so it behaves like any other location from here on
   // (editable, archivable, reusable next time without contacts at all).
+  // FIXED 28 Sep 2026 — Anonymise mode. This is the one site in the file that
+  // is not merely a DISPLAY leak: it CREATES A PERSISTENT registry entry
+  // containing a contact's real name ("<real name>'s place"), and it does so in
+  // the Locations registry, where it would then outlive Anonymise mode and
+  // reappear everywhere that location is shown. Masking the label would have
+  // been worse than useless — it would have written a location literally called
+  // "•••• hidden's place" into the user's real registry. So the
+  // contact-to-location shortcut is simply not offered while masking is on;
+  // the address/city field is still there to type a place by hand.
   const tapContactSuggestion = async (contact) => {
+    if (anonymise) return;
     const contactLabel = contact.nickname || contact.name;
     const entry = await registry.findOrCreate(`${contactLabel}’s place`);
     if (!entry) return;
@@ -758,14 +783,27 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
             <div key={e.id} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapSuggestion(e)}
               role="button" tabIndex={0} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); tapSuggestion(e); } }}
               style={{ padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer" }}>
-              {e.name}
+              {/* FIXED 28 Sep 2026 — Anonymise mode. Masked ONLY when the entry
+                  is linked to a contact, because those are exactly the entries
+                  whose name embeds a third party's real name ("X's place"),
+                  possibly created before Anonymise mode was ever switched on.
+                  The user's own registry vocabulary — a Chems or Symptoms
+                  entry — is deliberately left readable, or the form would be
+                  unusable for no privacy gain. */}
+              {anonymise && e.relatedContactId ? ANONYMISED : e.name}
             </div>
           ))}
           {/* Contact-derived suggestions — dashed border marks these as
               "not a saved location yet" (tapping one creates and links
               it), a visibly different state from the solid-border
-              chips above for entries that already exist. */}
-          {contactSuggestions.map((c) => (
+              chips above for entries that already exist.
+
+              FIXED 28 Sep 2026 — Anonymise mode: the whole suggestion row is
+              withheld, not just re-labelled. Tapping one of these creates a
+              persistent location entry from the contact's real name, so
+              showing it at all while masking would leave a one-tap route to
+              writing that name into storage. */}
+          {!anonymise && contactSuggestions.map((c) => (
             <div key={`contact-${c.id}`} onMouseDown={(ev) => ev.preventDefault()} onClick={() => tapContactSuggestion(c)}
               role="button" tabIndex={0} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); tapContactSuggestion(c); } }}
               style={{ display: "flex", alignItems: "center", gap: 3, padding: "3px 9px", borderRadius: radius.full, fontSize: 11, border: `1px dashed ${T.encountersPink}`, color: T.encountersPink, cursor: "pointer" }}>
@@ -798,14 +836,21 @@ function RegistrySinglePicker({ label, value, onChange, T, registry, placeholder
 // while actively searching.
 function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
   const [query, setQuery] = useState("");
+  // FIXED 28 Sep 2026 — Anonymise mode. This is the Attendee picker inside the
+  // Encounters EDIT sheet, which the 28 Sep review flagged specifically: the
+  // list card and detail view already masked, but the form a user opens to
+  // correct a record did not, so the real names were one tap away.
+  const anonymise = useAnonymiseMode();
   const toggle = (id) => {
     const has = value.includes(id);
     onChange(has ? value.filter((v) => v !== id) : [...value, id]);
   };
   const selected = value.map((id) => contacts.find((c) => c.id === id)).filter(Boolean);
   const q = query.trim().toLowerCase();
+  // The name match is skipped while masking, so the picker is not a way to
+  // confirm a specific person's identity by trial-typing their name.
   const matches = q
-    ? contacts.filter((c) => !c.isArchived && !value.includes(c.id) && (c.name.toLowerCase().includes(q) || (c.nickname || "").toLowerCase().includes(q))).slice(0, 8)
+    ? contacts.filter((c) => !c.isArchived && !value.includes(c.id) && (anonymise ? false : (c.name.toLowerCase().includes(q) || (c.nickname || "").toLowerCase().includes(q)))).slice(0, 8)
     : [];
   // ADDED 26 Aug 2026 — real ask, decided: allow adding someone not
   // yet in Contacts, right from here, instead of blocking the whole
@@ -823,7 +868,7 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
           {selected.map((c) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => toggle(c.id)}
               style={{ padding: "6px 10px", borderRadius: radius.full, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, border: `1px solid ${T.encountersPink}`, color: T.encountersPink, background: `${T.encountersPink}15` }}>
-              {c.nickname || c.name} <X size={12} />
+              {anonymise ? ANONYMISED : (c.nickname || c.name)} <X size={12} />
             </div>
           ))}
         </div>
@@ -835,7 +880,7 @@ function AttendeePicker({ value, onChange, T, contacts, onCreatePlaceholder }) {
           {matches.map((c) => (
             <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={c.id} onClick={() => { toggle(c.id); setQuery(""); }}
               style={{ padding: "10px 12px", fontSize: 14, color: T.textPrimary, cursor: "pointer", borderBottom: `1px solid ${T.border}` }}>
-              {c.nickname || c.name}
+              {anonymise ? ANONYMISED : (c.nickname || c.name)}
             </div>
           ))}
         </div>
@@ -978,7 +1023,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
         {shown.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: T.textSecondary }}>
             <Users size={13} />
-            {anonymise ? MASKED : `${shown.join(", ")}${extra > 0 ? ` +${extra}` : ""}`}
+            {anonymise ? ANONYMISED : `${shown.join(", ")}${extra > 0 ? ` +${extra}` : ""}`}
           </div>
         )}
         {locationName && (
@@ -1079,7 +1124,14 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
     const q = query.trim().toLowerCase();
     if (q) {
       filtered = filtered.filter((e) => {
-        const attendeeNames = e.attendeeIds.map((id) => contactName(contacts, id));
+        // FIXED 28 Sep 2026 — Anonymise mode. This is the Encounters tab's OWN
+        // search box, and it matched attendee names — so an encounter stayed
+        // findable by typing a real name while masking was on. Same index-level
+        // defect Global Search had, in a second place: the name never appears
+        // on screen, but the search still confirms it. The contactName helper
+        // takes the flag rather than this being skipped, so the masking is in
+        // the one shared function.
+        const attendeeNames = anonymise ? [] : e.attendeeIds.map((id) => contactName(contacts, id));
         const kinkNames = (e.kinksInvolved || []).map((sel) => kinkNameById.get(sel.kinkId));
         return [e.title, e.encounterType, e.notes, ...attendeeNames, ...kinkNames].filter(Boolean).some((v) => v.toLowerCase().includes(q));
       });
@@ -1424,7 +1476,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
               // navigation now exists (see App.jsx's navigateToRecord).
               <div key={id} onClick={() => onNavigateToRecord?.("contacts", id)}
                 style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, color: T.encountersPink, fontWeight: 600, cursor: onNavigateToRecord ? "pointer" : "default" }}>
-                {anonymise ? MASKED : contactName(contacts, id)}
+                {anonymise ? ANONYMISED : contactName(contacts, id)}
               </div>
             ))}
         </SectionCard>

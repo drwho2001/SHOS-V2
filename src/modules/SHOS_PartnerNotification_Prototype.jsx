@@ -25,11 +25,16 @@ import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACTION, RADIUS, TYPE } from "..
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { useAnonymiseMode, contactName, ANONYMISED } from "../calculations/anonymiseDisplay";
 
 const radius = RADIUS;
 
-function contactDisplayName(c) {
-  return c.nickname || c.name || "Unnamed contact";
+// FIXED 28 Sep 2026 — Anonymise mode now reaches this screen. It derived the
+// name from the LIVE contact on every render, so masking had to be applied
+// here rather than by hiding the row — and the method detail is masked too,
+// since a username is at least as identifying as a name.
+function contactDisplayName(c, anonymise) {
+  return contactName(c, anonymise);
 }
 
 // Pulls together every real, distinct contact channel this app
@@ -47,14 +52,17 @@ function summarizeContactMethods(c) {
   return parts.join("  /  ");
 }
 
-function itemFromContact(c) {
+function itemFromContact(c, anonymise = false) {
   return {
     contactId: c.id,
-    name: contactDisplayName(c),
-    methods: summarizeContactMethods(c),
+    name: contactDisplayName(c, anonymise),
+    // FIXED 28 Sep 2026 — Anonymise mode. A contact METHOD (a SnapChat or
+    // Recon handle) is at least as identifying as a name, so it is masked
+    // alongside the name rather than left readable beside a placeholder.
+    methods: anonymise ? ANONYMISED : summarizeContactMethods(c),
     dob: "",
     age: c.age ?? null,
-    address: [c.address, c.city].filter(Boolean).join(", "),
+    address: anonymise ? ANONYMISED : [c.address, c.city].filter(Boolean).join(", "),
     notified: false,
     // FIXED 27 Sep 2026 - records that `methods` is still the auto-derived
     // snapshot rather than something the user typed, so the render path below
@@ -66,6 +74,11 @@ function itemFromContact(c) {
 
 // ── Contact picker (the "build/edit" step) ──
 function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, onCancel, T }) {
+  // FIXED 28 Sep 2026 — Anonymise mode. This screen lists every contact by
+  // name, so it is one of the places the 28 Sep security review found a real
+  // leak: the feature is documented for handing the phone to someone, and this
+  // screen would have shown the full contact list regardless.
+  const anonymise = useAnonymiseMode();
   // CHANGED 4 Sep 2026 — encryption-at-rest groundwork (see CLAUDE.md's
   // Known Issues / the Notion Development log): useLoadedMemo instead
   // of a plain useMemo, one of the ~100 real sites the audit found.
@@ -94,8 +107,12 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
   const isDesktopWidth = useIsDesktopWidth();
 
   const queryTrimmed = query.trim();
+  // FIXED 28 Sep 2026 — the filter matches on the DISPLAYED name, so while
+  // Anonymise mode is on every row reads identically and the filter is
+  // effectively inert. That is the correct behaviour: filtering to one real
+  // contact by typing their name would itself be a disclosure.
   const visible = queryTrimmed
-    ? sortedContacts.filter((c) => fuzzyIncludes(contactDisplayName(c), queryTrimmed))
+    ? sortedContacts.filter((c) => fuzzyIncludes(contactDisplayName(c, anonymise), queryTrimmed))
     : sortedContacts;
 
   const toggle = (id) => {
@@ -158,8 +175,11 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(c.id); } }}
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: `1px solid ${T.border}`, cursor: "pointer", breakInside: isDesktopWidth ? "avoid" : undefined }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: T.textPrimary }}>{contactDisplayName(c)}</div>
-                {summarizeContactMethods(c) && <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{summarizeContactMethods(c)}</div>}
+                <div style={{ fontSize: 14, fontWeight: 500, color: T.textPrimary }}>{contactDisplayName(c, anonymise)}</div>
+                {/* FIXED 28 Sep 2026 — the methods line was unmasked even once
+                    the name was fixed. A SnapChat or Recon handle identifies
+                    someone at least as strongly as a name does. */}
+                {!anonymise && summarizeContactMethods(c) && <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 2 }}>{summarizeContactMethods(c)}</div>}
               </div>
               <div style={{ width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${isSelected ? ACCENTS.healthcare : T.border}`, background: isSelected ? ACCENTS.healthcare : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {isSelected && <Check size={14} color="#FFFFFF" weight="bold" />}
@@ -213,15 +233,26 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
       const all = await ContactRepository.getAll();
       return new Map(all.map((c) => [c.id, c]));
     }, [], new Map());
-    const liveName = (item) => contactsById.get(item.contactId)
-      ? contactDisplayName(contactsById.get(item.contactId))
-      : item.name;
-    const liveMethods = (item) => (!item.methodsOverridden && contactsById.get(item.contactId))
-      ? summarizeContactMethods(contactsById.get(item.contactId))
-      : item.methods;
+    // FIXED 28 Sep 2026 — the live re-derivation is the dangerous half of
+    // this screen: even if a name was masked when the list was generated, this
+    // re-reads the REAL contact on every render and would have put it straight
+    // back on screen. `liveName`/`liveMethods` now mask, and the
+    // "showing a corrected value" hint is suppressed while masking — otherwise
+    // the hint itself discloses that a live name exists.
+    const anonymise = useAnonymiseMode();
+    const liveName = (item) => {
+      const live = contactsById.get(item.contactId);
+      return live ? contactDisplayName(live, anonymise) : (anonymise ? ANONYMISED : item.name);
+    };
+    const liveMethods = (item) => {
+      if (anonymise) return ANONYMISED;
+      return (!item.methodsOverridden && contactsById.get(item.contactId))
+        ? summarizeContactMethods(contactsById.get(item.contactId))
+        : item.methods;
+    };
     // True when at least one row is showing a corrected live value, so the UI
     // can say so rather than the user wondering why the details changed.
-    const anyLiveRefresh = list.items.some((i) => !i.methodsOverridden && contactsById.get(i.contactId) && (
+    const anyLiveRefresh = !anonymise && list.items.some((i) => !i.methodsOverridden && contactsById.get(i.contactId) && (
       contactDisplayName(contactsById.get(i.contactId)) !== i.name
       || summarizeContactMethods(contactsById.get(i.contactId)) !== i.methods
     ));

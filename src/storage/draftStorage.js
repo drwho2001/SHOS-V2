@@ -69,3 +69,43 @@ export function clearDraft(draftKey) {
     // Silently no-op.
   }
 }
+
+// ADDED 28 Sep 2026 — after the security review. Every draft is a FULL form's
+// worth of real data, including the fields that are most identifying: a new
+// contact's phone number, a new encounter's free-text notes, a test's
+// organism. `sessionStorage` is per-tab and not reachable by another app, so
+// the exposure is narrow — but it is NOT cleared when the vault locks, and
+// that is a real, concrete disclosure rather than a theoretical one:
+//
+//   - enter a duress PIN (or be made to unlock with it) and the decoy session
+//     is the SAME WebView, so any draft left over from the previous,
+//     legitimately-unlocked session is still sitting in storage;
+//   - unlock again and a half-typed Contact form silently repopulates.
+//
+// So drafts are wiped the moment the app locks, from a single call site in
+// App.jsx rather than from each of the four `setLocked(true)` paths, which
+// means a future lock path cannot forget.
+//
+// NOT DONE, deliberately, and recorded rather than quietly skipped: these
+// values are still stored as PLAINTEXT JSON, not encrypted. Encrypting them
+// needs `loadDraft` to become async (WebCrypto has no synchronous mode), and
+// `loadDraft` is called inside a `useState` initializer in all 8 module forms
+// to seed the form. Making it async means converting every one of those to the
+// async-load-then-resync pattern, touching the exact code that holds a user's
+// unsaved edits — a materially larger and riskier change than it looks, and
+// not something to do inside a privacy fix without its own pass. The gap that
+// actually mattered is the lock-time clear, which is what this does.
+export function clearAllDrafts() {
+  try {
+    // Collected first, then removed: removing while iterating a live
+    // Storage key list can skip entries as the list shifts underneath it.
+    const keys = [];
+    for (let i = 0; i < sessionStorage.length; i += 1) {
+      const key = sessionStorage.key(i);
+      if (key && key.startsWith(DRAFT_PREFIX)) keys.push(key);
+    }
+    keys.forEach((key) => sessionStorage.removeItem(key));
+  } catch {
+    // Silently no-op — see file header.
+  }
+}

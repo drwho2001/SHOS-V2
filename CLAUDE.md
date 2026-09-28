@@ -468,6 +468,116 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+## Recently shipped (28 Sep 2026, newest of all yet again - Anonymise mode masked 2 of the 9 screens that show a contact's name, and one of them printed a phone number)
+
+**A read-only security/privacy audit of this app, the first one ever, found
+that the feature you turn on right before handing your phone to someone was
+working in 2 of the 9 places a contact's name appears. It now works in all 9,
+and the limit of what it covers is stated on the Privacy screen instead of
+implied.**
+
+**The worst finding was not a name.** It was the Contacts duplicate checker,
+which printed `city · phone` next to each of two contacts it suspected were
+the same person, and offered a one-tap Archive on the row beside it. The
+re-check I did after the first pass moved it *above* the search-index bug in
+priority, for a concrete reason: a name is something you might reasonably have
+read out, a phone number is a direct route to reaching the person. This is
+also the one place the feature is arguably load-bearing rather than cosmetic,
+because it is the panel a user is most likely to open while someone else is
+holding the phone. Masked, and the "Archive this one" affordance is left in
+place deliberately - it now acts on an id, so it discloses nothing.
+
+**The second-worst was an INDEX bug, not a rendering one, and it appeared in
+three separate places.** Global Search put `c.name` and `c.nickname` straight
+into the search index; the Encounters tab's own search box matched attendee
+names; and the Encounters location picker made a venue findable by typing a
+*linked contact's real name*. In all three the name is never rendered
+anywhere, yet typing it still surfaces the record - so masking the display
+would have looked correct and done nothing. The user asking to stop the name
+being available would have got a screen that looks masked and a search that
+still answers to it. Global Search now rebuilds its index when the flag flips,
+and the Encounters branch reuses the shared helper rather than skipping, so the
+rule lives in one function.
+
+**A fourth site was a WRITE, not a display, and I nearly fixed it wrongly.**
+The Encounters location picker offered "so-and-so's place" suggestions, and
+tapping one ran `registry.findOrCreate()` - writing a persistent
+Locations entry containing a contact's real name, which would then outlive
+Anonymise mode and reappear everywhere that venue is shown. My first instinct
+was to mask the label, which would have been *worse than useless*: it would
+have written a location literally called "•••• hidden's place" into the user's
+real registry. The shortcut is now withheld while masking, and a guard asserts
+it. The related saved-entry case is handled more narrowly, masking only
+entries that have a `relatedContactId` - those are exactly the ones named after
+a person, and masking every registry entry would have made the Chems and
+Symptoms pickers unusable for no privacy gain.
+
+**The fix is one shared module rather than eight screen-local decisions,
+because the duplication is what let this happen.** `anonymiseDisplay.js` owns
+the placeholder and the name rule. Contacts and Encounters had each declared
+their own copy of the placeholder - Encounters' carried a comment explaining
+it was "not exported from there, so duplicated" - and both are now gone. The
+Privacy screen's scope line is rewritten to name where masking applies, and a
+new line states the one thing it does NOT do: **exported files keep their real
+values.** That is deliberate rather than an oversight left for later - every
+export already has its own explicit per-section control the user has set on
+purpose, so having Anonymise mode silently override it would be wrong, and the
+only honest fix is to say so. A user who exports a PDF to hand a clinician was
+previously never told.
+
+**A mutation harness caught a vacuous guard in my own work, which is the
+fifth recorded instance of that failure mode in this repo and the first one
+caught by tooling rather than by a user.** I had fixed the Encounters venue
+masking, then written tests for the other three sites and forgotten the fourth.
+Reverting it left the suite GREEN - a test that reads as coverage while
+measuring nothing. The added assertion is now the only reason that site is
+protected. All four mutations (search index, duplicate phone, duplicate name,
+venue name) are verified to turn the suite red, and the harness backs up every
+file it touches and restores in a `finally`, because the first such harness in
+this project crashed mid-restore and left a source file deliberately broken.
+
+**Two mistakes of my own, both caught by eslint before they could ship**, and
+recorded because both are the kind this file keeps paying for: I called
+`useAnonymiseMode()` inside a `.map()` callback in Timeline, which is a hooks
+violation that can become a real error rather than a wrong value; and a
+PowerShell `.Replace()` on an import anchor hit *every* occurrence, producing a
+duplicate import in My Profile - caught because the file already had two
+`import ContactRepository` lines. The rule is now firm for this work: the
+`edit` tool for anything structural, and a grep must be anchored to `^import`
+because a comment mentioning the module name matches just as well as the
+import itself. That is now the fourth recorded time a naive substring check
+matched this repo's own prose.
+
+Also in the same commit: **drafts are wiped when the app locks**, closing a
+real disclosure rather than the theoretical one I was originally asked about.
+`sessionStorage` is per-tab and unreachable by another app, but it is NOT
+cleared on lock, and a duress-PIN unlock renders the decoy session in the same
+WebView - so a half-typed Contact form or an Encounter's notes from the
+previous, legitimately-unlocked session survived it. One `useEffect` keyed on
+`locked` covers all four existing lock paths (manual, `shouldRelock` timeout,
+double-press-home, leaving the decoy) and any future one, rather than a
+handler call in each. **The drafts are still plaintext**, and that is recorded
+in `draftStorage.js` rather than glossed: encrypting them needs `loadDraft` to
+become async (WebCrypto has no sync mode) and it is called inside a `useState`
+initializer in all 8 module forms to seed them, so it means converting every
+form to async-load-then-resync - touching exactly the code holding unsaved
+edits. That is a real piece of work, not a one-line follow-up.
+
+Verified: `verify:fast` green - build, lint, **408 unit tests across 33
+files**, encoding guard clean. Full smoke suite and the APK build left to CI,
+per this repo's CI-first loop. `anonymiseModeActive` still defaults off and
+every new helper defaults to unmasked, so with the feature off all 8 screens
+render byte-identically - which is also why the other session's nav-assertion
+work (making the smoke helper fail loudly instead of passing without
+navigating) cannot be newly broken by this.
+
+Not done, recorded not skipped: `backupMigrations.js` still has no unit test
+(the audit's worst remaining gap), the widget's `SharedPreferences` sink is
+still armed-but-inert and can leak an NHS number if the bridge methods ever
+land, and the fact that a **pre-scheduled OS notification is not cancelled on
+duress entry** is now documented as a limitation rather than "fixed" - see
+the next entry.
+
 ## Recently shipped (28 Sep 2026, latest of all yet again - the Testing banner was never rendering, and a mute switch I added was dangerous)
 
 **The banner suppression feature shipped a real regression on its first CI run,

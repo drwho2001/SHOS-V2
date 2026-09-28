@@ -5,6 +5,7 @@ import { NEUTRAL_DARK as DARK } from "./calculations/designTokens";
 // ADDED — real architecture extraction, see each file's own header.
 import HomeScreen from "./modules/SHOS_Home_Prototype";
 import { exportBackup, inspectBackupFile, decryptBackupEnvelope, restoreFromParsedBackup } from "./storage/backupService";
+import { clearAllDrafts } from "./storage/draftStorage";
 // ADDED — real architecture extraction, see that file's own header.
 import TourOverlay from "./modules/InteractiveTour";
 import { PrivacySettingsRepository } from "./repositories/privacySettingsRepository";
@@ -829,6 +830,19 @@ export default function App() {
   // effect's comment for why a naive fail-open/fail-closed default
   // here isn't good enough on its own.
   const [locked, setLocked] = useState(false);
+  // FIXED 28 Sep 2026 — drafts are wiped the moment the app locks, from ONE
+  // place rather than from each of the four `setLocked(true)` call sites
+  // (manual Lock now, the shouldRelock timeout, the double-press-home
+  // shortcut, and leaving the decoy screen). Keyed on `locked` rather than
+  // called inside a handler so a future lock path inherits it for free.
+  //
+  // The concrete disclosure this closes: a duress-PIN unlock renders the
+  // decoy session in the SAME WebView, so a half-typed Contact form or an
+  // Encounter's notes from the previous, legitimately-unlocked session were
+  // still sitting in sessionStorage and would repopulate on the next unlock.
+  useEffect(() => {
+    if (locked) clearAllDrafts();
+  }, [locked]);
   // ADDED 9 Sep 2026 — real ask (18 Aug 2026 — "tab reorder" part
   // of the original Settings/Management ask). Read once at boot
   // (finishBootAfterUnlock below), applied via getOrderedTabs() at
