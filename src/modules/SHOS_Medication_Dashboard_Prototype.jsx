@@ -54,6 +54,7 @@ import { MyProfileRepository } from "../repositories/myProfileRepository";
 // intent, not derivable from LIGHT's tokens (fabBg/fabIcon are a
 // deliberate light-on-dark inversion, not an accent at all).
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACCENT_TEXT_SAFE, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 // `Info` is the shared tap-to-reveal affordance used across this app for
 // explaining a derived value (see CLAUDE.md's icon-only-UI rule). Aliased to
 // InfoIcon on import above, so it is referenced by that name here.
@@ -580,6 +581,7 @@ function btnStyle(color, variant, disabled, T) {
 // derived total match what was actually counted, same as every other
 // stock-affecting action in this app.
 function StockCorrectionSheet({ med, currentStock, onConfirm, onClose, T }) {
+  useEscapeToClose(onClose);
   const [actualStock, setActualStock] = useState(currentStock);
   const delta = actualStock - currentStock;
   const dialogRef = useRef(null);
@@ -609,6 +611,7 @@ function StockCorrectionSheet({ med, currentStock, onConfirm, onClose, T }) {
 }
 
 function QuantitySheet({ med, mode, onConfirm, onClose, T }) {
+  useEscapeToClose(onClose);
   const isRefill = mode === "refill";
   const [unitMode, setUnitMode] = useState(med.unitsPerContainer ? "container" : "unit");
   const [amount, setAmount] = useState(1);
@@ -672,6 +675,7 @@ function DateTimeField({ label, value, onChange, T }) {
 }
 
 function CorrectionSheet({ med, entry, onSave, onVoid, onClose, T }) {
+  useEscapeToClose(onClose);
   const [amount, setAmount] = useState(Math.abs(entry.delta));
   const [date, setDate] = useState(entry.date);
   const [confirmVoid, setConfirmVoid] = useState(false);
@@ -1176,6 +1180,7 @@ function DoseComponentsField({ value, onChange, T }) {
 // comment) — now goes through formatDoseComponents(), which shows the
 // raw stored text instead of NaN for that exact legacy case.
 function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
+  useEscapeToClose(onClose);
   const [doseComponents, setDoseComponents] = useState(getDoseComponents(med));
   const [unitsPerDose, setUnitsPerDose] = useState(med.unitsPerDose || 1);
   const [updateStockToo, setUpdateStockToo] = useState(false);
@@ -1430,6 +1435,7 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
 // handler before. Daily/PRN only for now — Custom Schedule exists in the data model (Doc 5 §5)
 // but there's no schedule-builder UI yet, so it's not offered here rather than half-supported. ──
 function AddMedicationSheet({ onCreate, onClose, T }) {
+  useEscapeToClose(onClose);
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
   const medicationTypeOptions = useLoadedMemo(() => CustomOptionListsRepository.getRanked("medicationType"), [], []);
@@ -1614,6 +1620,7 @@ function DoseReminderBanner({ med, onTake, onSnooze, onSkip, T }) {
 // Design's dark mode toggle, for visual consistency across the app's
 // two settings surfaces.
 function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
+  useEscapeToClose(onClose);
   const [prefs, setPrefs] = useLoadedState(() => MedicationPreferencesRepository.getPreferences(), [], DEFAULT_MEDICATION_PREFERENCES);
   const toggleReminders = async () => {
     const updated = await MedicationPreferencesRepository.updatePreferences({ doseRemindersEnabled: !prefs.doseRemindersEnabled });

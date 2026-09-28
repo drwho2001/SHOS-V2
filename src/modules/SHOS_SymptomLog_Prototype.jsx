@@ -21,6 +21,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // ADDED 19 Aug 2026 — Symptom Log (Symptoms Tracker in Notion — see
 // symptomLogRepository.js's header for the deliberate naming decision
@@ -339,6 +340,7 @@ function ReadRow({ label, value, T, alert }) {
 }
 
 function EntrySheet({ entry, onSave, onClose, T }) {
+  useEscapeToClose(onClose);
   const isNew = !entry;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);

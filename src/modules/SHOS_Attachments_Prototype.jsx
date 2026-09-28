@@ -15,6 +15,7 @@ import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 // deletes app-wide that all go through this one shared component.
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { formatStoredDate } from "../calculations/dateInputHelpers";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 
 const TYPE_OPTIONS = ["Test result", "Prescription", "ID", "Photo", "Other"];
 
@@ -72,6 +73,7 @@ function isImage(dataUrl) {
 }
 
 export default function AttachmentsScreen({ onClose, onNavigateToSource, registerModuleBackHandler }) {
+  useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = {
     ...(darkMode ? NEUTRAL_DARK : NEUTRAL),

@@ -39,6 +39,7 @@ import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 // same drift App.jsx's nav tab/quick-add button had.
 import { NEUTRAL, ACCENTS, FONT_FAMILY, RADIUS, TYPE } from "../calculations/designTokens";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 // FIXED 1 Sep 2026 — real ask: "global search nav breaks as soon as
 // first letter typed." Root cause: the sort-toggle row (added 26 Aug
 // 2026) referenced `radius.full` but this module never defined or
@@ -338,6 +339,7 @@ const TYPE_PLURAL = {
 };
 
 export default function GlobalSearchScreen({ onClose, onNavigate }) {
+  useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   // No container-level focus() here on purpose: the search input below

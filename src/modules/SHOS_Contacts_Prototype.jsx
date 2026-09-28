@@ -58,6 +58,7 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 // system already used elsewhere (Vaccine, Reason for visit, etc.).
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomplete, getContactableVia, normalizeTag, extractKinkRoleFromText, hasPhysicalDetail, mergeCummerRow } from "../calculations/contactCalculations";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 // ADDED 19 Aug 2026 — Anonymise mode. See privacySettingsRepository.js
 // for the full reasoning. Read-only from Contacts' side, same
 // one-directional pattern as every other cross-module read in this app.
@@ -322,6 +323,7 @@ function SectionCard({ title, T, children }) {
 // other module's own UI this session — doesn't import UI from
 // SHOS_MyProfile_Prototype.jsx, just the pure functions it needs.
 function ImportSharedProfileSheet({ T, onClose, onImported }) {
+  useEscapeToClose(onClose);
   const [pasteText, setPasteText] = useState("");
   const [status, setStatus] = useState(null);
   const importSheetRef = useRef(null);
@@ -1722,6 +1724,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
 const REDUNDANT_PLATFORM_SUGGESTIONS = ["phone", "snapchat", "fabguys", "fabswingers", "recon"];
 
 function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
+  useEscapeToClose(onClose);
   const isNew = !contact;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
@@ -3079,6 +3082,7 @@ function ShowRoleOnCardsToggleCard({ T }) {
 }
 
 function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacySettings, T }) {
+  useEscapeToClose(onClose);
   const settingsRef = useRef(null);
   useEffect(() => { settingsRef.current?.focus(); }, []);
 

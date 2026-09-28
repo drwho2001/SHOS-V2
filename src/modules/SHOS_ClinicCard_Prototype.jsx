@@ -29,6 +29,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE,
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { getVaccinationNextDue } from "../calculations/vaccinationCalculations";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.healthcare/ACTION.red at IMPORT time —
@@ -162,6 +163,7 @@ function StubRow({ children, T }) {
 }
 
 export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickAddWithPrefill, registerModuleBackHandler }) {
+  useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   // ADDED — real audit finding (desktop full-width sweep): this

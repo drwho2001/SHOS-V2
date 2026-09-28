@@ -24,6 +24,7 @@ import { exportTextFile } from "../storage/fileExportHelper";
 import { NEUTRAL, NEUTRAL_DARK as DARK, ACCENTS, ACTION, RADIUS, TYPE } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 
 const radius = RADIUS;
 
@@ -181,6 +182,7 @@ function ContactPickerStep({ initialSelectedIds, initialClinical, onGenerate, on
 
 // ── Checklist (the generated list itself) ──
 function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
+  useEscapeToClose(onClose);
   const [, forceRefresh] = useState(0);
   const refresh = () => forceRefresh((n) => n + 1);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -313,6 +315,7 @@ function ChecklistStep({ list, onEditContacts, onDelete, onClose, T }) {
 }
 
 export default function PartnerNotificationSheet({ testId, onClose }) {
+  useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   const sheetRef = useRef(null);

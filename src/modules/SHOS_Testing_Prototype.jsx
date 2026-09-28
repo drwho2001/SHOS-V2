@@ -58,6 +58,7 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 
@@ -581,6 +582,7 @@ function LinkPicker({ items, onPick, T, placeholder = "Search by name…" }) {
 
 // ── Add/Edit sheet ──
 function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord, T }) {
+  useEscapeToClose(onClose);
   const isNew = !testId;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);

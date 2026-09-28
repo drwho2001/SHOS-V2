@@ -24,6 +24,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { getVaccinationNextDue, isVaccinationOverdue } from "../calculations/vaccinationCalculations";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // ADDED 19 Aug 2026 — Vaccinations, real live Notion schema. Same
 // self-contained-module pattern, Healthcare blue, single Inter
@@ -407,6 +408,7 @@ function DerivedVisitLinks({ vaccinationId, onLinked, T }) {
 }
 
 function VaccinationSheet({ vaccination, onSave, onClose, T }) {
+  useEscapeToClose(onClose);
   const isNew = !vaccination;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);

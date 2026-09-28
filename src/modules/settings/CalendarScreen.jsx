@@ -17,6 +17,7 @@ import { MODULE_LABELS as TRASH_MODULE_LABELS } from "../../repositories/trashRe
 import { getCalendarEvents, groupEventsByDay } from "../../calculations/calendarCalculations";
 import { checkCalendarAvailable, syncClinicVisitsToCalendar, removeAllSyncedEvents, removeSyncedEventsFrom, listAvailableCalendars, SHOS_CALENDAR_NAME } from "../../storage/calendarSyncService";
 import { AppPreferencesRepository, DEFAULT_APP_PREFERENCES } from "../../repositories/appPreferencesRepository";
+import { useEscapeToClose } from "../../components/useEscapeToClose";
 
 const CALENDAR_MODULE_TARGETS = {
   encounters: { tab: "activity", subTab: null },
@@ -67,6 +68,7 @@ function calendarModuleAccent(moduleKey) {
 // needed for a list this short).
 
 function CalendarSyncSheet({ onClose }) {
+  useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const [appPrefs, setAppPrefs] = useLoadedState(() => AppPreferencesRepository.getPreferences(), [], DEFAULT_APP_PREFERENCES);
   const [calendarSyncError, setCalendarSyncError] = useState("");

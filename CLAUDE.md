@@ -426,6 +426,71 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+## Recently shipped (28 Sep 2026, later still - every overlay in the app was a keyboard trap, and the smoke summary couldn't prove it)
+
+**No overlay in the app could be closed with Escape.** Measured, not assumed: 55
+`role="dialog"` overlays across `src/**`, and zero of them reacted to the key.
+The only two Escape handlers in the codebase were in Option List Editor and
+Registry Management, and both cancel an *inline text edit* rather than a dialog.
+So on a desktop or web build every sheet in the app was a keyboard trap - focus
+went in, courtesy of the earlier focus-on-open work, and could not come out. The
+mobile app is largely unaffected (no hardware Escape key), which is precisely why
+it survived a month of audits: this only bites the platforms nobody was testing on.
+
+New `useEscapeToClose` hook, applied to **27 components across 12 files**, with
+7 unit tests. Three deliberate design decisions, each of which is a bug someone
+would otherwise ship:
+
+- **Only the topmost overlay closes.** Sheets stack - a confirm card on top of an
+  edit sheet - and closing the one underneath would silently discard the user's
+  work.
+- **Registration order is tracked, not inferred**, and cleaned up on unmount.
+  A naive implementation either leaves a dead handler after a sheet closes
+  (nothing responds to Escape ever again) or leaves the wrong one on top.
+- **An `enabled` flag exists** for destructive/ambiguous dialogs, which should
+  not vanish on a keypress.
+
+**Settings was hand-wired rather than swept, because the generic fix was wrong
+there.** Escape on a Settings *sub-screen* must step back one level, exactly as
+the back button does - not close all of Settings. Rather than write that
+condition twice and let the two drift, the existing back-chain was extracted
+into a single `goBackOneLevel()` used by both. It is wrapped in `useCallback`
+specifically so the effect below can depend on it honestly: listing its 20
+`show*` states as effect deps while the callback was recreated every render
+would re-register the back handler on every render.
+
+**The 18 Settings sub-screens are deliberately NOT given their own listener.**
+They already have their own `role="dialog"`, but they render *inside*
+SettingsScreen, whose Escape handles them. A second nested closer would duplicate
+the single source of truth for Settings navigation. This is why "55 overlays" and
+"27 wired" are both correct numbers rather than a discrepancy.
+
+**Two defects found by the tooling, not by reading the diff.** The first sweep
+pass silently missed every `export default function` component, because the
+signature matcher was anchored on `^function`. A coverage check found it; the
+first pass had reported a clean-looking 20. And after adding a smoke flow for
+this, a **passing** run could not be distinguished from one where the new flow
+never executed: on success the child's output is swallowed, and the
+`[N/M]`-derived count only covers top-level flows, so an inline helper silently
+ceasing to run leaves the count unchanged and the suite still green. The gate now
+also reports a count of `ok -` assertion lines, which is what makes those
+invisible helpers visible. That is the third time this project has hit a
+"measures nothing, looks green" failure, and notable that it has now appeared
+twice in the tooling rather than the app.
+
+**Two mistakes of my own, recorded because both would have shipped a broken
+flow.** The new smoke flow was first placed *before* `dismissOnboarding`, so the
+Add-contact FAB was not merely covered but absent from the DOM, and the locator
+waited out its full timeout. And the first script pass added a *second*
+`useEscapeToClose` to the screen I had just hand-wired, because its "already
+wired" check only looked at the first 600 characters of the component body.
+
+Verified live in a real browser, not just by unit test: the smoke flow opens the
+Add-contact sheet, presses Escape, and asserts the dialog is gone. The unit
+tests prove the hook works; only this proves it is *wired to the real overlays*,
+which was the part that was actually missing. vitest 288/288 across 25 files,
+eslint clean, build clean, encoding guard clean.
+
 ## Recently shipped (28 Sep 2026, later - a backlog audit that found the backlog had been lying about itself)
 
 Ran a real audit of this file's own open items rather than trusting the

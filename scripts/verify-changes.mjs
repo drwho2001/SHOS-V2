@@ -235,7 +235,27 @@ function runSmokeSuite() {
     const out = (r.stdout || "") + (r.stderr || "");
     if (r.status !== 0) return { ok: false, note: lastLines(out, 18) };
     const flows = (out.match(/^\[\d+\/\d+\]/gm) || []).length;
-    return { ok: true, note: `${flows} flows, all passed (port ${port})` };
+    // ALSO count the per-assertion "ok —" lines.
+    //
+    // WHY: on a passing run the child's output is swallowed (only a failure
+    // dumps it), so "N flows, all passed" gives no evidence of what actually
+    // executed. Worse, the `[N/M]` count only covers the top-level flows — the
+    // inline helpers called inside the main sequence (testEscapeClosesOverlay,
+    // testMedicationReasonSideEffects and a dozen others) print no label, so one
+    // of those silently ceasing to run would leave this count unchanged and the
+    // suite still green.
+    //
+    // Caught exactly that way: a passing run after adding an Escape flow could
+    // not be distinguished from one where the new flow never executed. This is
+    // the same "a gate that measures nothing still looks green" shape this
+    // project has now hit three times — and it keeps appearing in the tooling
+    // rather than the app, which is worth noticing.
+    //
+    // The assertion count makes the invisible helpers visible: each prints at
+    // least one "ok —", so this number moves when they run and stops moving
+    // when they do not.
+    const assertions = (out.match(/^\s*ok\s+./gm) || []).length;
+    return { ok: true, note: `${flows} flows, ${assertions} assertions (port ${port})` };
   } finally {
     killServer();
   }

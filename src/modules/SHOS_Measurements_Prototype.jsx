@@ -32,6 +32,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE,
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // Domain key for CustomGroupsRepository — shared mechanism, this
 // module's own namespace within it (see customGroupsRepository.js).
@@ -328,6 +329,7 @@ function LocationField({ locationType, clinicName, onLocationTypeChange, onClini
 }
 
 function MeasurementSheet({ measurement, presetType, presetLink, onSave, onClose, T }) {
+  useEscapeToClose(onClose);
   const isNew = !measurement;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
@@ -1085,6 +1087,7 @@ function detectUnitSystem(prefs) {
 }
 
 function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
+  useEscapeToClose(onClose);
   const [prefs, setPrefs] = useLoadedState(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
   const prefsRef = useRef(null);
   useEffect(() => { prefsRef.current?.focus(); }, []);

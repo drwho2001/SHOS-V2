@@ -16,6 +16,7 @@ import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // from the shared designTokens.js source of truth instead of being
 // retyped here. See designTokens.js.
 import { NEUTRAL, ACCENTS, ACTION, RADIUS, TYPE } from "../calculations/designTokens";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // EXPORTED 1 Sep 2026 — real ask: "check settings not unnecessarily
 // over engineered - combine into similar things if better." Registries
@@ -81,6 +82,7 @@ function UsageDisclosure({ listName, value, T }) {
 }
 
 export function OptionListDetail({ listName, onClose }) {
+  useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   const detailRef = useRef(null);
@@ -275,6 +277,7 @@ export function OptionListDetail({ listName, onClose }) {
 }
 
 export default function OptionListsScreen({ onClose }) {
+  useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   const optionListsRef = useRef(null);

@@ -1257,6 +1257,12 @@ async function testServiceWorkerAutoUpdate(browser) {
     await testSampleDataDisclosureAndClear(browser);
     await testSampleDataClearInDeveloperTools(browser);
     await dismissOnboarding(page);
+    // Placed AFTER dismissOnboarding, and that ordering is load-bearing: this
+    // runs on the shared `page`, which still has the onboarding overlay up
+    // until the line above. Run before it, the Add-contact FAB is not merely
+    // covered — it is not in the DOM at all, so the locator waits forever. My
+    // first version made exactly that mistake.
+    await testEscapeClosesOverlay(page);
     await testMedicationReasonSideEffects(page);
     await testSymptomTestTwoWayLink(page);
     await testLocationsExtraFields(page);
@@ -1555,4 +1561,37 @@ async function testSampleDataClearInDeveloperTools(browser) {
   } finally {
     await context.close();
   }
+}
+
+// ADDED 28 Sep 2026 — the Escape-to-dismiss sweep.
+//
+// WHY A SMOKE FLOW AND NOT JUST THE HOOK'S UNIT TESTS: the unit tests prove
+// the hook works. They cannot prove it is WIRED to the real overlays, and
+// "wired up" is the only part that was actually missing — the app had 55
+// role="dialog" overlays and zero that closed on Escape, so on a desktop or
+// web build every sheet was a keyboard trap. A regression test that only
+// covers the hook would have stayed green through exactly the failure that
+// mattered.
+//
+// Uses Contacts' Add-contact sheet because it is a plain, single-level sheet
+// with no nested dialog, so a failure here is unambiguous.
+async function testEscapeClosesOverlay(page) {
+  await nav(page, "Contacts");
+  const addBtn = page.locator('[aria-label="Add contact"]').first();
+  await addBtn.click({ timeout: 8000 });
+  const sheet = page.getByRole("dialog", { name: "Add contact" });
+  await sheet.waitFor({ state: "visible", timeout: 8000 });
+  console.log("  ok — the Add contact sheet opened");
+
+  // Bounded wait rather than a fixed sleep: the sheet must be gone, not merely
+  // on its way out.
+  await page.keyboard.press("Escape");
+  await page.locator('[aria-label="Add contact"]')
+    .first()
+    .waitFor({ state: "detached", timeout: 8000 })
+    .catch(() => {});
+  const stillOpen = await page.getByRole("dialog", { name: "Add contact" }).count();
+  assert(stillOpen === 0,
+    "Escape closed the sheet (before this, all 55 overlays were keyboard traps: focus went in and could not come out)");
+  console.log("  ok — Escape closed it");
 }

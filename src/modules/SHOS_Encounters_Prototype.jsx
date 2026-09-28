@@ -56,6 +56,7 @@ import { LocationsRepository } from "../repositories/locationsRepository";
 // reported (not location/kinks — those weren't part of the report and
 // privacySettingsRepository.js's own base tier is Contact-field-specific).
 import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../repositories/privacySettingsRepository";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -1473,6 +1474,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
 
 // ── Add/Edit sheet ──
 function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord }) {
+  useEscapeToClose(onClose);
   const isNew = !encounterId;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);

@@ -46,6 +46,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -315,6 +316,7 @@ function FreeTextSuggestField({ label, value, onChange, options, onAddNew, T, pl
   );
 }
 function BottomSheet({ title, onClose, T, children, footer }) {
+  useEscapeToClose(onClose);
   const sheetRef = useRef(null);
   useEffect(() => { sheetRef.current?.focus(); }, []);
   return (

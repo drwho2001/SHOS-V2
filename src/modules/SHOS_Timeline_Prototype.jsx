@@ -27,6 +27,7 @@ import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { formatStoredDate } from "../calculations/dateInputHelpers";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // ADDED 19 Aug 2026 — Timeline (the nav-facing name; "Episode" is the
 // underlying data unit — see episodeRepository.js for the full
@@ -826,6 +827,7 @@ function DeleteUndoToast({ toast, onUndo, onRedo, T }) {
 }
 
 export default function TimelineModule({ onClose, registerModuleBackHandler } = {}) {
+  useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "list" });

@@ -15,7 +15,7 @@
 // src/modules/settings/*.jsx (one file per screen, React.lazy-loaded
 // on first open). This file keeps the top-level SettingsScreen menu,
 // the three export sheets, and the lazy wiring. Behavior unchanged.
-import React, { useState, useEffect, Suspense, lazy, useRef } from "react";
+import React, { useState, useEffect, Suspense, lazy, useRef, useCallback } from "react";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 import { CheckIcon as Check, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, EyeIcon as Eye, EyeSlashIcon as EyeOff, DatabaseIcon as Database, TreeStructureIcon as ListTree, ShieldIcon as Shield, TrashIcon as Trash2, UploadSimpleIcon as Upload, UserIcon as User, PaletteIcon as Palette, CalendarIcon as Calendar, FileCsvIcon as FileCsv, BellIcon as Bell, LifebuoyIcon as LifeBuoy, BookOpenTextIcon as BookOpen, SlidersHorizontalIcon as SlidersHorizontal, WifiHighIcon as WifiHigh, ChartBarIcon as ChartBar, InfoIcon as Info, CompassIcon as Compass, MonitorIcon as Monitor } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../calculations/designTokens";
@@ -25,6 +25,7 @@ import { exportBackup, exportEncryptedBackup, exportBackupToChosenFolder, export
 import { isChooseFolderExportAvailable } from "../storage/fileExportHelper";
 import { exportRecordsAsCSV } from "../storage/csvExportService";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // Settings sub-screens (lazy — one chunk per screen, loaded on first open)
 const DeveloperToolsScreen = lazy(() => import("./settings/DeveloperToolsScreen"));
@@ -599,37 +600,59 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // ADDED 22 Sep 2026 — Home-screen widgets privacy settings
   const [showWidgets, setShowWidgets] = useState(false);
 
+  // CHANGED 28 Sep 2026 — extracted from the back-handler effect below so the
+  // hardware/UI back button and the Escape key can share ONE definition. They
+  // must not drift: a user who learns "Escape goes back one level" and then
+  // finds Escape closing all of Settings while the back button steps back is
+  // worse than having neither. Return true = something above was closed,
+  // false = nothing is open on top, so the caller falls through to closing the
+  // whole Settings overlay.
+  //
+  // useCallback specifically so the effect below can depend on THIS function
+  // honestly. Hoisting it without the wrapper left exhaustive-deps correct but
+  // unsatisfiable — the function closes over 20 `show*` states, so listing all
+  // of them in the effect while the callback itself was recreated every render
+  // would re-register the back handler on every single render.
+  const goBackOneLevel = useCallback(() => {
+    if (showCalendar) { setShowCalendar(false); return true; }
+    if (showAbout) { setShowAbout(false); return true; }
+    if (showTrash) { setShowTrash(false); return true; }
+    if (showStats) { setShowStats(false); return true; }
+    if (showDesign) { setShowDesign(false); return true; }
+    if (showPreferences) { setShowPreferences(false); return true; }
+    if (showPrivacy) { setShowPrivacy(false); return true; }
+    if (showNotifications) { setShowNotifications(false); return true; }
+    if (showDataNetwork) { setShowDataNetwork(false); return true; }
+    if (showResources) { setShowResources(false); return true; }
+    if (showGlossary) { setShowGlossary(false); return true; }
+    if (showGuide) { setShowGuide(false); return true; }
+    if (showAutoBackupSettings) { setShowAutoBackupSettings(false); return true; }
+    if (showManageLists) { setShowManageLists(false); return true; }
+    if (showDevTools) { setShowDevTools(false); return true; }
+    if (showSelectiveExport) { setShowSelectiveExport(false); return true; }
+    if (showCSVExport) { setShowCSVExport(false); return true; }
+    if (showEncryptedExport) { setShowEncryptedExport(false); return true; }
+    if (showWidgets) { setShowWidgets(false); return true; }
+    // CHECKED AFTER the three export sheets/Automatic backups above —
+    // they can be open "on top of" this screen (its own rows open
+    // them), so a back press has to close the topmost one first.
+    if (showBackupExport) { setShowBackupExport(false); return true; }
+    if (showMyProfile) { setShowMyProfile(false); return true; }
+    return false; // nothing open on top — let App.jsx's own fallback close all of Settings
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showBackupExport, showResources, showGlossary, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, showWidgets]);
+
+  // Escape mirrors the back button exactly, including the fall-through: if a
+  // sub-screen is open it steps back one level, and only if nothing is open on
+  // top does Escape close Settings itself.
+  useEscapeToClose(() => {
+    if (!goBackOneLevel()) onClose();
+  });
+
   useEffect(() => {
     if (!registerModuleBackHandler) return;
-    registerModuleBackHandler(() => {
-      if (showCalendar) { setShowCalendar(false); return true; }
-      if (showAbout) { setShowAbout(false); return true; }
-      if (showTrash) { setShowTrash(false); return true; }
-      if (showStats) { setShowStats(false); return true; }
-      if (showDesign) { setShowDesign(false); return true; }
-      if (showPreferences) { setShowPreferences(false); return true; }
-      if (showPrivacy) { setShowPrivacy(false); return true; }
-      if (showNotifications) { setShowNotifications(false); return true; }
-      if (showDataNetwork) { setShowDataNetwork(false); return true; }
-      if (showResources) { setShowResources(false); return true; }
-      if (showGlossary) { setShowGlossary(false); return true; }
-      if (showGuide) { setShowGuide(false); return true; }
-      if (showAutoBackupSettings) { setShowAutoBackupSettings(false); return true; }
-      if (showManageLists) { setShowManageLists(false); return true; }
-      if (showDevTools) { setShowDevTools(false); return true; }
-      if (showSelectiveExport) { setShowSelectiveExport(false); return true; }
-      if (showCSVExport) { setShowCSVExport(false); return true; }
-      if (showEncryptedExport) { setShowEncryptedExport(false); return true; }
-      if (showWidgets) { setShowWidgets(false); return true; }
-      // CHECKED AFTER the three export sheets/Automatic backups above —
-      // they can be open "on top of" this screen (its own rows open
-      // them), so a back press has to close the topmost one first.
-      if (showBackupExport) { setShowBackupExport(false); return true; }
-      if (showMyProfile) { setShowMyProfile(false); return true; }
-      return false; // nothing open on top — let App.jsx's own fallback close all of Settings
-    });
+    registerModuleBackHandler(goBackOneLevel);
     return () => registerModuleBackHandler(null);
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showBackupExport, showResources, showGlossary, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, showWidgets, registerModuleBackHandler]);
+  }, [goBackOneLevel, registerModuleBackHandler]);
 
   // CHANGED 26 Aug 2026 — real ask: chrome-level icons (export/import/
   // settings/search) should be thick black lines, not too weighty.

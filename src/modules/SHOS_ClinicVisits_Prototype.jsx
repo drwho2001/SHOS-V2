@@ -48,6 +48,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { suggestedQuantity, round2 } from "../calculations/takeHomeQuantity";
+import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // Same Healthcare blue + font conventions as Testing — applied from
 // creation, not retrofitted, per the user's standing instruction.
@@ -882,6 +883,7 @@ function AttachmentManager({ visitId, attachments, onChanged, T }) {
 
 // ── Add/Edit sheet ──
 function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, onAfterEdit, T }) {
+  useEscapeToClose(onClose);
   const isNew = !visitId;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
