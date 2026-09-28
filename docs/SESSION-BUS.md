@@ -118,7 +118,69 @@ step, which is a workflow decision rather than a technical one.
 Storage is not the obstacle: a worktree is ~5 MB of tracked files and shares
 `.git` entirely; `node_modules` can be a directory junction for ~0 cost.
 
-## Credentials
+## The gate lock — why two sessions must not run `verify` at once
+
+`verify-changes.mjs` now takes an exclusive lock for the whole run, so a second
+session **queues** rather than cancelling, breaking, or turning the run red.
+
+The reason is not gate ordering. It is two concrete writes to `dist/`:
+
+- `npm run build` (gate 1) writes the whole of `dist/`.
+- the smoke suite's service-worker flow **writes `dist/sw.js` twice** — at
+  `smoke-test.cjs:1241` with a deliberately bumped `CACHE_NAME`, then again at
+  `:1265` to restore the original it read at `:1188`.
+
+So if B's build lands inside A's flow-14 window, A writes a **stale** `sw.js`
+into B's freshly built `dist/`. Silent, survives the run, and is miserable to
+diagnose later. The lock is therefore **whole-run, not per-gate** — per-gate
+locking would be strictly worse, because it would permit exactly the
+build-while-smoke-reads pairing that causes this.
+
+Behaviour:
+
+- Waits, printing the holder, their PID, their current gate, and how long they
+  have held it. Reprints on each gate change, plus a 30s heartbeat so a long
+  silent gate does not look like a hang.
+- **A dead PID is stale** and the lock is taken over — the ordinary
+  crashed-session case.
+- A **live PID is waited on**, however nonsensical its timestamp. This was
+  originally backwards: an uninterpretable or negative `startedAt` triggered
+  takeover. Taking over is the dangerous action, because it is the one that lets
+  two runs touch `dist/` at once. Waiting is the safe failure, and the deadline
+  stops it hanging forever.
+- A live process past `SHOS_LOCK_MAX_AGE_MS` (45 min) counts as wedged and is
+  taken over.
+- Bounded by `SHOS_LOCK_WAIT_MS` (20 min). On giving up it exits **4** — distinct
+  from 1 (a gate failed) and 2 (warnings), so "blocked, nothing ran" is
+  distinguishable from "ran and went red".
+- `--no-lock` overrides. Locking is skipped entirely in CI.
+- The lock lives in `~/.shos-session-bus/`, keyed by a hash of the working-tree
+  path, so it is never committable and two separate clones do not falsely
+  serialise against each other.
+
+Set `$env:SHOS_SESSION_NAME` so the message names who is holding it.
+
+## Timestamps
+
+**Machine-to-machine, this tool uses UTC everywhere.** Stored values are UTC
+ISO-8601, and they are *displayed* as UTC by default, with the zone printed.
+That is deliberate: it is a channel between two sessions, and one shared clock
+removes a whole class of "was that before or after?" argument. It also means the
+timestamps sort correctly as plain strings.
+
+The cost is that a human reading the terminal has to convert, so `--local` is
+available on any command and changes display only:
+
+```
+node scripts/session-bridge.mjs list           # 2026-09-28 23:46:46Z  (UTC)
+node scripts/session-bridge.mjs list --local   # 29 Sept, 00:46        (local)
+```
+
+**Human-facing documents are the opposite** — `CLAUDE.md`, the Notion logs and
+`docs/*.md` prose are written in local UK time, because those are read by the
+owner, not parsed by a session. So the rule is: UTC for the bridge, local time
+for anything a person reads. Do not mix them in one file without labelling.
+
 
 The opencode server password lives in
 `~/.shos-session-bus/credentials.json`, **outside the repository on purpose** —

@@ -149,13 +149,46 @@ function messageID(msg) {
 function messageTime(msg) {
   const t = msg?.info?.time?.created || msg?.time?.created;
   if (!t) return "";
-  return new Date(t).toLocaleTimeString("en-GB", { hour12: false });
+  return stamp(new Date(t).toISOString(), false);
 }
 
 function clip(text, n) {
   if (text.length <= n) return text;
   return text.slice(0, n) + `... [${text.length} chars total]`;
 }
+
+// ── timestamps ─────────────────────────────────────────────────────────────
+//
+// Everything this tool stores is already UTC ISO-8601 (toISOString), and it is
+// displayed as UTC by default. That is a deliberate choice by the owner: this is
+// a machine-to-machine channel between two sessions, and a shared clock removes
+// a whole class of "was that before or after?" argument. It also means the
+// timestamps sort and compare correctly as plain strings.
+//
+// The cost is that a human reading the terminal has to convert. Rather than
+// quietly showing local time and making the two sessions reason in two
+// timezones, the output says which zone it is in and `--local` is available for
+// the human case. Human-facing documents (CLAUDE.md, Notion, docs prose) are the
+// opposite: those are read by the owner, so they use local UK time.
+const USE_LOCAL = process.argv.includes("--local");
+
+function stamp(iso, withDate = true) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso);
+  if (USE_LOCAL) {
+    return withDate
+      ? d.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false })
+      : d.toLocaleTimeString("en-GB", { hour12: false });
+  }
+  const isoStr = d.toISOString();
+  return withDate
+    ? `${isoStr.slice(0, 10)} ${isoStr.slice(11, 19)}Z`
+    : `${isoStr.slice(11, 19)}Z`;
+}
+
+const TZ_NOTE = USE_LOCAL ? "local" : "UTC";
+
 
 function resolvePeer(arg) {
   if (arg) return arg;
@@ -180,13 +213,12 @@ commands.list = async (args) => {
     .filter((s) => s?.id)
     .sort((a, b) => (b.time?.updated || 0) - (a.time?.updated || 0))
     .slice(0, limit);
+  if (!list.length) { console.log("(no sessions)"); return; }
+  console.log(`  (times are ${TZ_NOTE})`);
   for (const s of list) {
-    const when = new Date(s.time?.updated || Date.now())
-      .toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
     const title = (s.title || "(untitled)").replace(/\s+/g, " ");
-    console.log(`${s.id}  ${when}  ${s.parentID ? "sub" : "root"}  ${clip(title, 56)}`);
+    console.log(`${s.id}  ${stamp(new Date(s.time?.updated || Date.now()).toISOString())}  ${s.parentID ? "sub" : "root"}  ${clip(title, 56)}`);
   }
-  if (!list.length) console.log("(no sessions)");
 };
 
 commands.ask = async (args) => {
@@ -250,12 +282,13 @@ commands.read = async (args) => {
   const limit = Number(positional[1] || 8);
   const raw = await api("GET", `/session/${sessionID}/message?limit=${limit}`);
   const msgs = (Array.isArray(raw) ? raw : raw?.data || []).filter((m) => m?.info);
+  if (!msgs.length) { console.log("(no messages)"); return; }
+  console.log(`  (times are ${TZ_NOTE})`);
   for (const m of msgs) {
     const text = messageText(m);
     if (!text) continue;
     console.log(`[${messageTime(m)}] ${messageRole(m)}: ${clip(text, 1000)}`);
   }
-  if (!msgs.length) console.log("(no messages)");
 };
 
 commands.toast = async (args) => {
@@ -352,8 +385,14 @@ commands.ask = async (args) => {
 };
 
 commands.inbox = async () => {
-  const cursors = readJson(INBOX_CURSOR_PATH, {});
-  const last = cursors.noticeCursor || 0;
+  // The cursor is PER SESSION, not a single shared value. It was originally one
+  // path holding one number, so whichever session polled first advanced it and
+  // the other never saw the notice at all - a shared-consumer cursor on a
+  // two-consumer channel, which silently halves every message. Same failure
+  // shape as the claim table: state that cannot represent two readers.
+  const store = readJson(INBOX_CURSOR_PATH, {});
+  const cursors = store.cursors || {};
+  const last = cursors[ME] || 0;
   let notices = [];
   try {
     notices = existsSync(NOTICE_PATH)
@@ -361,24 +400,25 @@ commands.inbox = async () => {
       : [];
   } catch { /* a malformed line must not hide the rest */ }
   const fresh = notices.filter((n) => (n.seq || 0) > last);
-  const taskDir = TASKS_DIR;
-  const tasks = existsSync(taskDir) ? readdirSync(taskDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name) : [];
+  const tasks = existsSync(TASKS_DIR) ? readdirSync(TASKS_DIR, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name) : [];
   if (!fresh.length && !tasks.length) {
-    console.log("(nothing new)");
+    console.log(`(nothing new for ${ME})`);
     return;
   }
   if (fresh.length) {
-    console.log(`--- ${fresh.length} notice(s) ---`);
+    console.log(`--- ${fresh.length} notice(s) for ${ME} ---`);
     for (const n of fresh) {
-      console.log(`  [${n.at || ""}] ${n.from || "?"}: ${n.text}`);
+      console.log(`  [${stamp(n.at)} ${TZ_NOTE}] ${n.from || "?"}: ${n.text}`);
     }
   }
   if (tasks.length) {
-    console.log(`--- task folders (read one with: task read <slug>) ---`);
+    console.log("--- task folders (read one with: task read <slug>) ---");
     for (const t of tasks) console.log(`  ${t}`);
   }
   const next = notices.length ? (notices[notices.length - 1].seq || last) : last;
-  writeJson(INBOX_CURSOR_PATH, { noticeCursor: next, checkedAt: new Date().toISOString() });
+  cursors[ME] = next;
+  store.cursors = cursors;
+  writeJson(INBOX_CURSOR_PATH, store);
 };
 
 commands.notice = async (args) => {
@@ -516,7 +556,7 @@ commands.claims = async () => {
     const holders = v.holders || [];
     const names = holders.map((h) => (h.by === ME ? `${h.by} (me)` : h.by));
     const conflict = holders.length > 1 ? "   <-- CONFLICT, both sessions hold this" : "";
-    console.log(`  ${names.join(" + ")}  ${f}${conflict}`);
+    console.log(`  ${names.join(" + ")}  ${f}   (since ${stamp(v.holders[0]?.at)}) ${conflict}`);
   }
 };
 
@@ -542,7 +582,7 @@ commands.peer = async (args) => {
     console.log(`peer pinned -> ${args[1]}`);
   } else {
     const peer = readJson(PEER_PATH, {});
-    console.log(peer.sessionID ? `peer = ${peer.sessionID} (set ${peer.setAt})` : "(no peer pinned)");
+    console.log(peer.sessionID ? `peer = ${peer.sessionID} (set ${stamp(peer.setAt)} ${TZ_NOTE})` : "(no peer pinned)");
   }
 };
 
@@ -572,6 +612,9 @@ commands["help"] = async () => {
   claims                       show current claims
   toast <title> <message>       native TUI notification
   peer set|show                 pin the other session's id
+
+Add --local to any command to render timestamps in local time instead of UTC.
+Stored timestamps are always UTC ISO-8601; --local only changes the display.
   login <password>              write credentials (outside the repo)
 
 No command blocks. ask returns as soon as the prompt is queued, so the caller

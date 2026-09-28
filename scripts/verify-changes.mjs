@@ -49,8 +49,9 @@
 //   2  the environment cannot run the requested gates (e.g. not enough RAM)
 
 import { spawnSync, spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { classifyDocsGate } from "./docsGate.js";
 import os from "node:os";
 
@@ -84,6 +85,7 @@ const started = Date.now();
 const freeMemMB = Math.round(os.freemem() / 1024 / 1024);
 
 function gate(name, fn) {
+  noteStage(name);
   const t0 = Date.now();
   process.stdout.write(`${COLOUR.dim}running${COLOUR.off} ${name}... `);
   let r;
@@ -144,8 +146,216 @@ function sleepSync(ms) {
 /** True when something is already listening on `port`. */
 function portInUse(port) {
   const r = spawnSync("netstat", ["-ano"], { encoding: "utf8", shell: true });
-  return new RegExp(`[:.]${port}\\s+\\S+\\s+LISTENING`, "i").test(r.stdout || "");
+  return new RegExp(`[:.]${port}\\s+\\S+\s+LISTENING`, "i").test(r.stdout || "");
 }
+
+// ── cross-session gate lock ────────────────────────────────────────────────
+//
+// WHY THIS IS NEEDED, and it is not about gate ordering
+//
+// Two sessions running this script at once collide, and the harmful collision
+// is NOT "lint at the same time as the encoding guard" - those two are read-only
+// and harmless together. The dangerous one is this:
+//
+//   * `npm run build` (gate 1) writes the whole of dist/.
+//   * the smoke suite's service-worker flow WRITES dist/sw.js twice - once at
+//     smoke-test.cjs:1241 with a deliberately bumped CACHE_NAME, then again at
+//     :1265 to restore the original it read at :1188.
+//
+// So if session B's build lands inside session A's flow-14 window, A then writes
+// back the ORIGINAL sw.js - the one captured before B rebuilt - straight into
+// B's freshly built dist/. The corruption is silent, survives the run, and the
+// next person to read B's dist/ gets a service worker from a build that no
+// longer exists. That is a genuinely nasty, slow-to-diagnose failure, and it is
+// exactly the "both sessions in one tree" hazard that bit this repo once before.
+//
+// The fix is MUTUAL EXCLUSION over the whole run, not per-gate. Per-gate locking
+// would be actively worse: it would let B build while A's smoke suite reads
+// dist/, which is the exact pairing we need to prevent.
+//
+// WHY A WAIT AND NOT AN ERROR
+//
+// The owner's requirement was that a second session queues rather than
+// cancelling, breaking, or turning the run red. So this blocks, with a progress
+// message saying who holds it and what stage they are on, and a bounded wait.
+//
+// WHY OUTSIDE THE REPOSITORY
+//
+// The lock is session state, not project state. Putting it in the repo would
+// make it committable and would collide with itself under git. Keyed by a hash
+// of the working-tree path, so two separate clones of the same repo each get
+// their own lock instead of falsely serialising against each other.
+//
+// STALE LOCKS
+//
+// A session that is killed - or crashes - must not block the other one forever.
+// Two independent defences: the owning PID is probed, and there is a max-age
+// backstop for the case where a PID has been recycled onto an unrelated process.
+
+const LOCK_DIR = path.join(os.homedir(), ".shos-session-bus");
+const LOCK_PATH = path.join(
+  LOCK_DIR,
+  `verify-${createHash("sha1").update(ROOT).digest("hex").slice(0, 12)}.lock`
+);
+const LOCK_WAIT_MS = Number(process.env.SHOS_LOCK_WAIT_MS || 20 * 60 * 1000);
+const LOCK_MAX_AGE_MS = Number(process.env.SHOS_LOCK_MAX_AGE_MS || 45 * 60 * 1000);
+let holdsLock = false;
+let lockStartedAt = 0;
+
+function lockEnabled() {
+  // CI is a single runner on a fresh checkout, so there is nothing to contend
+  // with and a stale lock must never be able to hang a pipeline. --no-lock is the
+  // escape hatch for a deliberate parallel run.
+  return !process.env.CI && !args.includes("--no-lock");
+}
+
+function lockOwner() {
+  return process.env.SHOS_SESSION_NAME || `${os.userInfo().username}@${os.hostname()}`;
+}
+
+function pidAlive(pid) {
+  if (!pid) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    // EPERM means the process exists but belongs to another user.
+    return e.code === "EPERM";
+  }
+}
+
+function readLock() {
+  try {
+    return JSON.parse(readFileSync(LOCK_PATH, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function writeLock(stage) {
+  try {
+    mkdirSync(LOCK_DIR, { recursive: true });
+    writeFileSync(
+      LOCK_PATH,
+      JSON.stringify(
+        { pid: process.pid, owner: lockOwner(), stage, startedAt: lockStartedAt, cwd: ROOT },
+        null,
+        2
+      ),
+      "utf8"
+    );
+  } catch {
+    /* a lock we cannot write must not fail the run it was protecting */
+  }
+}
+
+function releaseLock() {
+  if (!holdsLock) return;
+  const cur = readLock();
+  // Only ever remove our OWN lock: if ours was judged stale and stolen while we
+  // were still running, deleting it would release the new holder's.
+  if (cur && cur.pid === process.pid) {
+    try { unlinkSync(LOCK_PATH); } catch { /* already gone */ }
+  }
+  holdsLock = false;
+}
+
+function acquireLock() {
+  if (!lockEnabled()) return true;
+  const deadline = Date.now() + LOCK_WAIT_MS;
+  let lastStage = null;
+  let lastBeat = 0;
+  for (;;) {
+    const cur = readLock();
+    if (!cur || cur.pid === process.pid) break;
+
+    // LIVENESS IS DECIDED BY THE PID, NOT BY THE CLOCK.
+    //
+    // The first version treated a malformed or negative startedAt as "stale" and
+    // took the lock over. That is exactly backwards: taking over is the
+    // dangerous action, because it is the one that lets two runs touch dist/ at
+    // once, which is the corruption this lock exists to prevent. Waiting is the
+    // safe failure - only slower - and the deadline below already stops it
+    // hanging forever. A timestamp we cannot interpret is a reason to distrust
+    // the AGE, not a reason to assume the holder is dead.
+    //
+    // So: a dead pid is stale. A live pid is waited on, however nonsensical its
+    // timestamp looks, until the wait deadline.
+    const started = Number(cur.startedAt);
+    const ageValid = Number.isFinite(started) && started > 0;
+    const age = ageValid ? Date.now() - started : NaN;
+    const ageUsable = ageValid && age >= 0;
+    const alive = pidAlive(cur.pid);
+    const wedged = alive && ageUsable && age > LOCK_MAX_AGE_MS;
+    const stale = !alive || wedged;
+    if (ageUsable === false && alive) {
+      // Said once, not every tick, because it is a warning rather than progress.
+      if (lastStage !== "unusable-timestamp") {
+        process.stdout.write(
+          `${COLOUR.warn}lock${COLOUR.off} ${cur.owner} (pid ${cur.pid}) has an unusable startedAt ` +
+          `(${JSON.stringify(cur.startedAt)}), so its age cannot be trusted. Their process is alive, so waiting. ` +
+          `If they are in fact gone, the wait ends at ${Math.round(LOCK_WAIT_MS / 1000)}s.\n`
+        );
+        lastStage = "unusable-timestamp";
+      }
+    }
+      if (stale) {
+        // Only two ways to get here, and each says which: a process that is gone
+        // (the ordinary crashed-session case) or one that is alive but has run
+        // past the max age (wedged, and the deadline would otherwise never
+        // arrive). A live-but-uninterpretable age is NOT one of them, which is
+        // the point of the logic above.
+        const why = !alive
+          ? "its process is gone"
+          : `${Math.round(age / 1000)}s old, past the ${Math.round(LOCK_MAX_AGE_MS / 1000)}s limit`;
+        process.stdout.write(
+          `${COLOUR.warn}lock${COLOUR.off} held by ${cur.owner} (pid ${cur.pid}, stage "${cur.stage}") looks abandoned - ${why} - taking it over\n`
+        );
+        break;
+      }
+
+    if (Date.now() > deadline) {
+      process.stdout.write(
+        `${COLOUR.bad}lock${COLOUR.off} gave up waiting ${Math.round(LOCK_WAIT_MS / 1000)}s for ${cur.owner}.\n` +
+        `  They are on stage "${cur.stage}". Running anyway would risk clobbering their dist/.\n` +
+        `  Re-run with --no-lock to override, or raise SHOS_LOCK_WAIT_MS.\n`
+      );
+      return false;
+    }
+
+    // Print on STAGE CHANGE, plus a heartbeat so a long silent stage does not
+    // look like a hang. The first version keyed the de-duplication on a line
+    // that embedded the elapsed seconds, so it never matched itself and printed
+    // on every tick - 84 lines of "waiting" in a three-minute wait, which
+    // buries the run's own output. Keyed on the stage alone, plus a 30s beat.
+    const now = Date.now();
+    const stageChanged = cur.stage !== lastStage;
+    const beatDue = now - lastBeat > 30_000;
+    if (stageChanged || beatDue) {
+      const held = Math.round(age / 1000);
+      process.stdout.write(
+        `${COLOUR.warn}lock${COLOUR.off} waiting for ${cur.owner} (pid ${cur.pid}) on stage "${cur.stage}", held ${held}s\n`
+      );
+      lastStage = cur.stage;
+      lastBeat = now;
+    }
+    sleepSync(2000);
+  }
+  lockStartedAt = Date.now();
+  holdsLock = true;
+  writeLock("starting");
+  // Registered as an exit handler rather than a try/finally because this script
+  // ends in several process.exit() calls, and a finally block would be skipped
+  // by them - leaving the other session blocked on a lock nobody holds.
+  process.on("exit", releaseLock);
+  return true;
+}
+
+/** Called by gate() so a waiter can see where the holder has got to. */
+function noteStage(stage) {
+  if (holdsLock) writeLock(stage);
+}
+
 
 /**
  * Run the smoke suite against a real production build, and ALWAYS clean up the
@@ -259,6 +469,17 @@ function runSmokeSuite() {
   } finally {
     killServer();
   }
+}
+
+// Take the cross-session lock before any gate runs, so the whole run - build
+// through smoke - is atomic with respect to the other session. Exit code 4 is
+// distinct from 1 (a gate failed) and 2 (gates passed with warnings), so a
+// caller can tell "blocked, nothing ran" apart from "ran and went red".
+if (!acquireLock()) {
+  process.stdout.write(
+    `${COLOUR.bad}verify did not run${COLOUR.off} - another session holds the gate lock.\n\n`
+  );
+  process.exit(4);
 }
 
 // --- gate 1: build ---------------------------------------------------------
