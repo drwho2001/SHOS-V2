@@ -166,8 +166,30 @@ change is already pushed, so the same state means it *shipped* with `CLAUDE.md`
 describing the old behaviour — and `CLAUDE.md` is this repo's source of truth for
 what is true right now. See section 5.
 
-For native/Android changes, a green CI build is the *only* real confirmation
-that the Java compiles — that cannot be verified from a development machine.
+After pushing, **read the gate's own reported verdict in the CI log, not just
+the job's exit code.** Both vacuous-pass bugs in this repo's history produced a
+completely green run. A gate that measures nothing and a gate that measures
+something and finds nothing are indistinguishable from an exit code alone:
+
+```powershell
+gh run view <run-id> --log | Select-String 'docs in sync|smoke suite|ALL GATES'
+```
+
+The expected line is `docs in sync` reporting either "source + docs both
+touched" or a genuine reason there were no source changes. If it ever reports
+"no source changes" on a push that you know edited something under `src/`, the
+gate is broken, not your commit.
+
+To reproduce CI's checkout conditions locally when debugging this specifically,
+a **real** shallow clone is required — cloning a local path ignores `--depth` in
+a way that quietly gives you full history and hides the bug:
+
+```powershell
+git clone --depth 1 https://github.com/drwho2001/SHOS-V2.git <temp>
+```
+
+**For native/Android changes, a green CI build is the *only* real confirmation
+that the Java compiles** — that cannot be verified from a development machine.
 
 ---
 
