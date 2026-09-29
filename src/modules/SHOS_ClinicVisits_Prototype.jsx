@@ -1068,7 +1068,7 @@ function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, 
                 const shouldUpdateDate = newDate > now;
                 const confirmed = window.confirm(
                   `Mark this appointment as attended?\n\n` +
-                  `${shouldUpdateDate ? `The date will update from ${newDate.toLocaleDateString()} to today.` : "The date will stay as entered."}\n` +
+                  `${shouldUpdateDate ? `The date will update from ${formatStoredDate(form.date)} to today.` : "The date will stay as entered."}\n` +
                   `Follow-up fields (next review, follow-up type) will be cleared — they're for scheduling, not for a visit that already happened.`
                 );
                 if (confirmed) {

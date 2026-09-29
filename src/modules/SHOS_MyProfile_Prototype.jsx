@@ -77,6 +77,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_S
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { formatStoredDate } from "../calculations/dateInputHelpers";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.contacts/ACTION.red/ACTION.green at
@@ -1111,7 +1112,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
           <div style={{ padding: "8px 0" }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Last tested date</div>
             <div style={{ fontSize: 14, color: T.textPrimary }}>
-              {lastTestedDate ? new Date(lastTestedDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "No tests logged yet"}
+              {lastTestedDate ? formatStoredDate(lastTestedDate) : "No tests logged yet"}
             </div>
           </div>
         </SectionCard>
@@ -1289,7 +1290,7 @@ function ProfileDataView({ profile, T }) {
             Not currently on PrEP or DoxyPEP
           </div>
         )}
-        <ReadRow label="Last tested date" value={lastTestedDate ? new Date(lastTestedDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""} T={T} />
+        <ReadRow label="Last tested date" value={lastTestedDate ? formatStoredDate(lastTestedDate) : ""} T={T} />
       </SectionCard>
       <SectionCard title="About me" T={T}>
         <ReadRow label="Note" value={profile.aboutMeNotes} T={T} />

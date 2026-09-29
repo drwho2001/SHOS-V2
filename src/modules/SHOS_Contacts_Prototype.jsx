@@ -39,7 +39,7 @@ function platformIconFor(tag) {
 }
 import { getCurrentLocationPlace, forwardGeocode } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
-import { nowAsDateString } from "../calculations/dateInputHelpers";
+import { nowAsDateString, formatStoredDate } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes, findClosestMatch, findContactDuplicateCandidates } from "../calculations/fuzzyMatch";
 import {
   ContactRepository, DEFAULT_CONTACT,
@@ -2364,7 +2364,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
                   <div key={e.id} onClick={() => onNavigateToRecord?.("activity", e.id)}
                     style={{ padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13, cursor: onNavigateToRecord ? "pointer" : "default" }}>
                     <div style={{ color: T.textPrimary, fontWeight: 600 }}>{e.title || "Untitled encounter"}</div>
-                    <div style={{ color: T.textSecondary, fontSize: 12 }}>{e.date ? new Date(e.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "No date"}</div>
+                    <div style={{ color: T.textSecondary, fontSize: 12 }}>{e.date ? formatStoredDate(e.date) : "No date"}</div>
                   </div>
                 ))}
               </>

@@ -372,6 +372,75 @@ genuine instants — verify, do not bulk-change), `clinicCardPdfService` (1), an
 the notification-text renderers. **A blanket `timeZone: "UTC"` sweep is the
 wrong fix** and has now been demonstrated wrong twice on this file alone.
 
+### t020 (part 3) — four more stored-date renders, and a guard that is explicitly not a sweep
+
+Four sites rendered a **stored** fake-UTC value through a bare local-zone
+formatter — the same shape as the export bug, found by the same enumeration:
+
+- `MyProfile` `lastTestedDate` (2 sites) — the "last tested" date on the profile.
+- `Contacts` encounter date (1) — the date on each encounter row in a contact's
+  profile.
+- `ClinicVisits` attendance confirm (1) — the `window.confirm` text saying the
+  date "will update from X to today". This one had **no format options at all**,
+  so it rendered in whatever the device's default locale is *and* shifted.
+
+All four now go through `formatStoredDate`, whose own correctness is already
+proven in `dateDisplay.test.js`. The point of routing them through the shared
+helper rather than adding `timeZone: "UTC"` inline is that the next field added
+here inherits the right treatment instead of needing the same audit again.
+
+**`storedDateRenderGuard.test.js` is deliberately NOT a sweep, and saying so is
+the important part.** It flags a stored date handed to a local `toLocale*` call
+and explicitly **excludes genuine instants** — `updatedAt`, `supersededAt`,
+`realTimestampFromStored(...)`, `new Date()`. A guard that flagged those would
+push the next person towards the blanket UTC sweep that has now been
+demonstrated wrong twice on `statsCalculations.js` alone, where
+`getContactsAddedPerMonth` buckets a real `createdAt` and is correct as written.
+
+It has four tests rather than one, because each of the others exists to stop a
+specific way this kind of guard goes wrong:
+
+- a **positive** assertion that the fixed files still call the helper, so the
+  guard cannot be satisfied by a file that stopped rendering the date at all;
+- a **non-vacuity check on the comment stripper** — this project's comments
+  quote the exact banned expression, which is the recorded reason three earlier
+  guards matched the comment documenting the fix;
+- a **counter-test** proving a genuine instant is *not* flagged, so the
+  exclusion cannot quietly narrow;
+- and it was **mutation-verified**: putting the old expression back into
+  Contacts makes it go red and name the file and line.
+
+**NEXT, and deliberately not rushed — the Menstrual `cycle` home-screen widget**
+(`SHOS_MenstrualHealth_Prototype.jsx:75-84`). Found in the same pass, and it has
+**two independent defects** rather than one:
+
+1. `nextPeriodDate.toLocaleDateString(...)` with no `timeZone` on a value
+   derived from a stored `startDate` — so the **predicted next-period date on
+   the home screen** shows the previous day west of UTC.
+2. Worse, and further up the chain:
+   `Math.floor((now - startDate) / 86400000) + 1` divides **elapsed milliseconds
+   between a real instant and a stored UTC-parsed value**, and
+   `nextPeriodDate = new Date(startDate.getTime() + avgLength * 86400000)` does
+   the same by addition. That is the recorded DST anti-pattern, and it decides
+   `cycleDay`, which in turn decides the **phase** (Menstrual / Follicular /
+   Ovulatory / Luteate). So a DST boundary can report the wrong cycle day and
+   therefore the wrong phase, on a home-screen widget, silently.
+
+It is left whole rather than half-fixed, because the over-correction here is
+genuinely subtle — a naive calendar-day conversion in the wrong direction is
+exactly as wrong as the current code — and because a health prediction deserves
+its own scoped pass with its own verification rather than being rushed at the
+end of a long session. The fix is the same pattern as `getAdherenceTrend`:
+work in the stored frame, compare days as `YYYY-MM-DD` keys, and keep "today" as
+the real instant it is.
+
+**Also still to do on t020**: `Contacts`/`Encounters`/`Medication` genuine-instant
+sites (286/295/461/1423/1955 and `updatedAt` rows — **verify, do not
+bulk-change**), `Home` line 595 (has a comment that needs reading before
+judging), `clinicCardPdfService` (1), `optionListUsage` (2), and the
+notification-text renderers. The guard covers the eight screen files above; the
+rest are calculations and exports needing their own per-value triage.
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second
