@@ -830,7 +830,19 @@ function AcknowledgeSheet({ darkMode, pending, scopeDefault, onConfirm, onClose 
     <div role="dialog" aria-label="Stop reminding me about this" onClick={handleClose}
       style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }}>
       <div ref={dialogRef} tabIndex={0} aria-describedby="acknowledge-scope-help"
-        style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }}
+        // ADDED 29 Sep 2026 — the sheet was a fixed overlay with
+        // alignItems: flex-end, no maxHeight and no overflow, so on a short
+        // viewport — a 375px-tall landscape phone, or any device with a large
+        // system font scale — the content is taller than the screen, the top of
+        // it is clipped by the viewport edge, and there is no way to scroll to
+        // the title. The user saw a sheet with its heading and first option cut
+        // off. The sheet is its own scroll container, bounded to the viewport.
+        //
+        // The bottom safe-area inset is the other half: this is a bottom sheet
+        // with a full-width action button, and on a gesture-nav device that
+        // button sat under the system bar. Same treatment the 24 Sep pass gave
+        // every other fixed overlay in the app.
+        style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", maxHeight: "100%", overflowY: "auto", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: "calc(20px + env(safe-area-inset-bottom))", fontFamily: "'Inter', sans-serif" }}
         onClick={(e) => e.stopPropagation()}>
         <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
           Stop reminding me about this

@@ -128,7 +128,7 @@ A2, and running it earlier tests the old behaviour.
 | ~~t017~~ | ~~A8~~ | **DONE** — this file |
 | **t013** | **A4** — refill second stage: `needs requesting` → `needs collecting`, with undo | `src/calculations/refillReminderSync.js` |
 | **t014** | **A5** — browser flow for the whole "stop reminding me" path | `scripts/smoke-test.cjs` |
-| **t015** | **A6** — contrast and narrow-screen check on the three new banner surfaces | `src/App.jsx` |
+| ~~t015~~ | ~~A6 — contrast + narrow-screen on the three new banner surfaces~~ | **DONE** |
 | **t016** | **A7** — one master off-switch for the whole suppression feature | `src/App.jsx`, `appPreferencesRepository.js` |
 | **t018** | **Phase C** — read-only backup-import schema audit, feeding the `backupMigrations` tests | none claimed (read-only) |
 | **t019** | **Phase C** — icon-only-UI audit, including the new nav dot | none claimed (read-only) |
@@ -197,6 +197,42 @@ Hiding a duplicate is a presentation decision; breaking a consumer is not.
 6 mutations red, including the over-correction: deleting the pill outright also
 satisfies "hidden when unanchored", so the suite asserts the anchored case still
 renders it.
+
+### t015 — the sheet that could not be scrolled, and a contrast audit that came back clean
+
+**All 18 text pairs on the acknowledge sheet pass WCAG AA**, measured rather
+than assumed — including `textDisabled` on the footer, which at 11px was the
+most likely candidate for failure. A token mutation is what makes that a result
+rather than an assumption: pushing `textDisabled` past the boundary turns the
+suite red, so the clean verdict is a measurement and not a detector that never
+fired.
+
+**The narrow-screen finding was real.** The sheet was `position: fixed` with
+`alignItems: flex-end`, **no `maxHeight` and no `overflow`** — so on a
+375px-tall landscape phone, or any device at a large system font scale, the
+content is taller than the viewport, the top is clipped by the screen edge, and
+there is no way to scroll to the title. The user would see a sheet with its
+heading and first option cut off. The sheet is now bounded to the viewport and
+is its own scroll container.
+
+**The other half was the gesture bar.** A bottom sheet with a full-width action
+button and no bottom safe-area inset puts that button under the system bar —
+the same gap the 24 Sep pass fixed across every other fixed overlay, missed
+here only because this sheet is new.
+
+The contrast audit deliberately uses the same **name-the-pairs-and-compute**
+approach as `paletteContrast.test.js` rather than a source scan: CLAUDE.md
+records four failed automated contrast scans, all reporting a clean result from
+a detector that had never fired. The maths self-checks against known WCAG
+reference pairs first, because a contrast test whose maths is wrong passes
+everything.
+
+**One mutation from this round is NOT counted.** It was specified to break the
+`contrast()` function but was pointed at `App.jsx` instead; it went red because
+adding a comment shifted the 3200-character inspection window, not because any
+maths was bypassed. It proves nothing, and the honest protection against broken
+maths is the in-file self-check against known WCAG pairs, not that mutation.
+
 
 
 
