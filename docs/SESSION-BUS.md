@@ -51,6 +51,49 @@ All of these are `node scripts/session-bridge.mjs <command>`.
 | `list [N]` / `read <sessionID> [N]` | Inspect the other session's opencode transcript. |
 | `peer set <sessionID>` | Pin the other session's id, so `inbox`-style commands can default to it. |
 
+### The pool commands
+
+The pool is the allocation record and the primary work queue — it is what
+stops two sessions picking the same task, so it is documented here rather than
+left to `--help`, which until 29 Sep omitted `edit` and `rm` entirely.
+
+| Command | Purpose |
+|---|---|
+| `pool list` | Show every task, its status and its files. |
+| `pool add "<title>" [--files=a,b]` | Add an **owner-approved** task. |
+| `pool propose "<title>" [--files=a,b]` | Propose one; `pool take` will not return it until `pool approve <id>`. |
+| `pool approve <id>` | Owner approves a proposal. |
+| `pool take` | Take the next available task; **its files are claimed automatically**. |
+| `pool allocate <id>` | Take one specific task by id. Does **not** check file claims — see below. |
+| `pool done <id>` / `block <id>` / `release <id>` | Finish, park, or hand a task back. |
+| `pool edit <id> [--title=…] [--files=…]` | Correct a task **in place**; id and history are immutable. |
+| `pool rm <id[,id]> [--all-mine]` | Delete tasks. `--all-mine` takes only the ones you allocated. |
+| `pool touch <id>` | Extend the lease for work legitimately running longer than 4h. |
+| `pool reap` | Return lease-expired tasks to the pool. |
+
+**Always pass `--files` when adding a task.** `claimFiles` is a no-op on an empty
+file list, so a task with no files carries *no* duplicate protection at all —
+and the claim is the only thing stopping two sessions editing one file at once.
+
+**`pool allocate <id>` deliberately ignores file claims**, so it is the escape
+route when a task's files are held by someone else and you have agreed to pair
+up. `pool take` *does* honour file claims and skips such a task. The two
+behaviours are not an inconsistency: `take` is the automatic path and should be
+conservative; `allocate` is the deliberate, named override.
+
+**Task ids are unique, and the generator derives from the highest existing id.**
+It used to use `pool.tasks.length + 1`, which is only correct when ids run
+1..N with no gaps. This pool starts at `t010`, so the eleventh task was issued
+`t011` — silently duplicating an existing id. Every lookup resolves by first
+match, and `rm` filters *every* task carrying the id, so one duplicate makes two
+tasks unmarkable, unhittable and jointly destructible in the file whose whole
+job is preventing duplicate work. The generator now refuses to create a
+collision rather than working around one.
+
+**Ids are reused after a `rm`.** A prose reference in a handover or notice to a
+removed id will silently start pointing at a different task. Read ids live from
+`pool list`; do not carry one forward from a document.
+
 ## The joint-work protocol
 
 The transport carries messages; the **task folder carries the actual work**.

@@ -698,7 +698,41 @@ function poolHandler(args) {
     const title = rest.filter((a) => !a.startsWith("--")).join(" ");
     const files = (args.find((a) => a.startsWith("--files=")) || "").replace("--files=", "");
     if (!title) { console.error(`Usage: pool add "<title>" [--files=a,b]`); process.exit(2); }
-    const id = `t${String(pool.tasks.length + 1).padStart(3, "0")}`;
+    // The id is derived from the HIGHEST existing id, never from the array
+    // length. The first version used `pool.tasks.length + 1`, which is only
+    // correct when ids are 1..N with no gaps and no deletions. This pool
+    // starts at t010, so ten tasks plus one produced "t011" — an id already
+    // in use, silently, as the eleventh task was added.
+    //
+    // A duplicate id is not cosmetic. Every lookup here resolves by first
+    // match — `pool done t011`, `pool take`, `pool allocate t011`, and `rm`,
+    // which filters EVERY task carrying the id and so deletes both. A single
+    // duplicated id therefore makes two tasks unmarkable, unhittable, and
+    // jointly destructible, in a file whose entire purpose is to stop two
+    // sessions picking the same work.
+    //
+    // Found by triggering it, not by reading it: I ran `pool add` and the
+    // output printed "t011" for a task I knew was new.
+    const highest = pool.tasks.reduce((max, t) => {
+      const n = parseInt(String(t.id).replace(/^\D+/, ""), 10);
+      return Number.isFinite(n) && n > max ? n : max;
+    }, 0);
+    const id = `t${String(highest + 1).padStart(3, "0")}`;
+    if (pool.tasks.some((t) => t.id === id)) {
+      // Thrown, NOT process.exit(). This whole handler runs inside
+      // withPoolLock(), whose `finally` releases the lock - and process.exit()
+      // skips `finally` entirely, so exiting here would leave pool.lock on disk
+      // and stall the next pool command for up to POOL_LOCK_STALE_MS. A guard
+      // that breaks the tool in the very case it exists to catch is not a
+      // guard. Throwing unwinds normally and lets the finally do its job; the
+      // exit code rides along on the error so "blocked, nothing ran" stays
+      // distinguishable from "ran and failed" (1).
+      const err = new Error(
+        `refusing to create ${id} - it already exists. That is a bug in this script, not something to work around.`
+      );
+      err.exitCode = 3;
+      throw err;
+    }
     pool.tasks.push({
       id,
       title,
@@ -709,7 +743,18 @@ function poolHandler(args) {
       history: [],
     });
     savePool(pool);
-    console.log(`${id} ${verb === "add" ? "approved" : "PROPOSED (needs owner approval: pool approve "}${id})  ${title}`);
+    // The one-liner this replaced read:
+    //   `${id} ${verb === "add" ? "approved" : "PROPOSED (...pool approve "}${id})  ${title}`
+    // The else-branch's paren is opened in the string and closed in the
+    // template AFTER ${id}, so BOTH branches inherited it. `add` printed
+    // "t021 approvedt021)" and `propose` printed "pool approvet021)" - the
+    // command a user is meant to copy-paste, with the id glued to the verb.
+    // Two branches, two messages, no shared paren to go wrong.
+    console.log(
+      verb === "add"
+        ? `${id} approved  ${title}`
+        : `${id} PROPOSED (inert - the owner must approve it: pool approve ${id})  ${title}`
+    );
     return;
   }
 
@@ -1271,6 +1316,8 @@ commands["help"] = async () => {
   pool approve <id>            owner approves a proposed task
   pool take                     pull the next approved task (atomic-ish)
   pool done|block|release <id>  finish, park, or hand a task back
+  pool edit <id> [--title=...] [--files=a,b]   correct a task in place, keeping its id + history
+  pool rm <id[,id]> [--all-mine]               delete tasks; --all-mine takes only the ones you allocated
   toast <title> <message>       native TUI notification
   peer set|show                 pin the other session's id
 
@@ -1294,6 +1341,15 @@ if (!fn) {
 try {
   await fn(rest);
 } catch (err) {
+  // A thrown error may carry its own exit code, so a deliberate "refused"
+  // (3 = blocked, nothing ran) stays distinguishable from a genuine failure
+  // (1). The message is printed bare in that case, because the caller already
+  // wrote a human-readable sentence and "error: refusing to create t012..." is
+  // just noise on top of it.
+  if (err.exitCode) {
+    console.error(err.message);
+    process.exit(err.exitCode);
+  }
   console.error(`error: ${err.message}`);
   process.exit(1);
 }
