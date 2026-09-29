@@ -139,6 +139,69 @@ A2, and running it earlier tests the old behaviour.
 | **t025** | **IDEA, owner** — BASHH/UK-guideline vaccine **eligibility** suggestions as a dismissable mini banner on the Vaccinations list, deeper info in Settings/Resources | `SHOS_Vaccinations_Prototype.jsx` |
 | **t026** | Vaccine reminder has **no browser flow at all** | `scripts/smoke-test.cjs` |
 
+### t026 — the 22nd smoke flow: the vaccine dose series, in a real browser
+
+No flow covered the vaccination reminder at all, so a stale `nextDue` on a
+multi-dose course could keep a phone buzzing with nothing in CI able to see it.
+The unit tests on the calculation are thorough; they still cannot see two of the
+three things that actually broke, which is why this is a browser flow and not
+just more unit coverage.
+
+**It reproduced the display bug that the unit tests were green through.** The
+reminder stopped correctly while the detail view still rendered `(OVERDUE)` in
+red on the very record whose reminder had just stopped. Only reading the real
+screen found it.
+
+**The dates are relative to today and load-bearing in a way the first version
+got wrong.** `nextDue` is set two days in the **past**, because with a future
+date the superseded-vs-overdue branch renders identically either way — a
+mutation that restored the `(OVERDUE)` bug still passed. The scenario that
+reproduces it is the realistic one: you are overdue, you get the dose early to
+catch up, and the record must stop shouting. The overdue date and the early
+dose are true at the same time, so one setup exercises both the notice and the
+display bug.
+
+**Three of this flow's assertions were measured to be vacuous, one after the
+other, and the mutations that proved it are the reason they are written the way
+they are now.** Each passed against a mutation that deleted or reverted the
+thing under test:
+
+- A page-wide search for "Next due:" or `(done)` matches the **seeded** record's
+  other doses, which are also superseded, so it succeeded regardless. Now scoped
+  by walking out from that card's own `Dose N` heading — and the number is read
+  from the editor's own field, because hardcoding "Dose 1" found nothing: the
+  seeded record's only card is numbered "Dose 2". A page-wide assertion there
+  was measuring the seed data, not the fix.
+- Matching the rendered date string would be locale-dependent, which this
+  project has been bitten by twice on this exact helper.
+
+**A mutation that applies cleanly can still test nothing.** The first version of
+the fourth mutation replaced JSX text plus two expressions with a bare
+expression, no braces — so it compiled, built, and rendered the mutation's own
+source literally, word "done" included, and the assertion passed on the
+mutation's own broken output. That is a third state beyond the recorded
+"did not apply" / "did not go red" pair, and it is the one that would have left
+a real regression uncovered while every number looked correct.
+
+Booting this flow also took three attempts, each a different wrong assumption:
+a fixed 1000ms sleep (flaky), then a role-based visibility wait (never
+resolved), then `dismissOnboarding`, which does not offer the App Lock prompt so
+the nav bar never appeared. It now uses flow 21's proven fresh-context boot
+sequence and a bounded `waitForFunction` on the DOM — the same shape the rest of
+the suite already uses. A test must never depend on how fast the machine is.
+
+4 mutations red, run in an isolated git worktree at HEAD: the display bug
+reinstated, the notice not rendering, the notice made a **block** (`canSave`
+refusing while it shows), and the superseded date deleted outright. Plus two
+consecutive clean runs, because a smoke flow that has only ever passed once has
+not been tested for flakiness.
+
+**Verified in a worktree rather than the shared tree, for a reason worth
+recording.** The shared tree was mid-edit by the other session and crashed on a
+fresh boot with `reminderSuppressionEnabled is not defined`, which blocks any
+local browser verification. Nothing of theirs was touched; the worktree is what
+CI would actually build, since their work was uncommitted.
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second

@@ -257,7 +257,7 @@ async function goHomeThenOpenSettings(page) {
 }
 
 async function testMedicationReasonSideEffects(page) {
-  console.log("\n[3/21] Medication log — Reason/Side effects (added 1 Sep 2026)");
+  console.log("\n[3/22] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Log").first().click({ timeout: 5000 });
@@ -274,7 +274,7 @@ async function testMedicationReasonSideEffects(page) {
 }
 
 async function testSymptomTestTwoWayLink(page) {
-  console.log("\n[4/21] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
+  console.log("\n[4/22] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
   await page.locator("text=Healthcare").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Test of cure — Gonorrhoea").click({ timeout: 5000 });
@@ -318,7 +318,7 @@ async function testSymptomTestTwoWayLink(page) {
 }
 
 async function testLocationsExtraFields(page) {
-  console.log("\n[5/21] Locations registry — extra fields (added 2 Sep 2026)");
+  console.log("\n[5/22] Locations registry — extra fields (added 2 Sep 2026)");
   // the Settings gear only lives on the Home dashboard header — get back
   // there first, since the previous check left us on Healthcare/Symptoms.
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
@@ -343,7 +343,7 @@ async function testLocationsExtraFields(page) {
 // building it (the Refuge entry, a real https:// URL from the seeded
 // list), never given permanent coverage until now.
 async function testResourceLinkClickable(page) {
-  console.log("\n[6/21] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
+  console.log("\n[6/22] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
   // Reload first — the previous test (Locations registry) leaves the
   // Manage Lists > Locations sub-screen open, a stacked Settings
   // overlay that would otherwise sit on top of (and intercept clicks
@@ -386,7 +386,7 @@ async function testResourceLinkClickable(page) {
 // (anonymisePin) is still unset at this point — deactivating needs no
 // PIN then (see privacySettingsRepository.js's own deactivate()).
 async function testEncountersAnonymiseMasking(page) {
-  console.log("\n[7/21] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
+  console.log("\n[7/22] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
@@ -449,7 +449,7 @@ async function testEncountersAnonymiseMasking(page) {
 // logged at the real current time, which always has a real future
 // lockoutEndsAt() to check.
 async function testMedicationReminderClock(page) {
-  console.log("\n[8/21] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
+  console.log("\n[8/22] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   // Scoped on "Last dose" rather than the "Log dose" button's own text
@@ -502,7 +502,7 @@ async function testMedicationReminderClock(page) {
 // existing install's first Phase 4 boot" from a genuinely fresh
 // profile (see that function's own comment).
 async function testEncryptionMigratesLegacyData(browser) {
-  console.log("\n[9/21] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
+  console.log("\n[9/22] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
     localStorage.setItem("shos_app_preferences", JSON.stringify({
@@ -558,7 +558,7 @@ async function testEncryptionMigratesLegacyData(browser) {
 // check broad, real coverage rather than just the vault metadata key
 // and whatever the fresh boot itself wrote.
 async function testEncryptionPositiveCheck(page) {
-  console.log("\n[10/21] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
+  console.log("\n[10/22] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
   const rawShapes = await page.evaluate(() => {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -671,7 +671,7 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
 async function testEncryptionAppLockGatesVault(page) {
-  console.log("\n[11/21] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
+  console.log("\n[11/22] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
@@ -747,7 +747,7 @@ async function testEncryptionAppLockGatesVault(page) {
 // stored preference, the same class of gap this whole suite exists to
 // close.
 async function testTabReorder(page) {
-  console.log("\n[12/21] Settings — bottom nav tab order (added 9 Sep 2026)");
+  console.log("\n[12/22] Settings — bottom nav tab order (added 9 Sep 2026)");
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   await dismissTransientBanners(page);
@@ -818,7 +818,7 @@ async function testTabReorder(page) {
 // it, and an early version auto-offered the tour even after an explicit
 // Skip tap, which directly contradicted the user's own "not now" signal.
 async function testInteractiveTour(browser) {
-  console.log("\n[13/21] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
+  console.log("\n[13/22] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const tourPageErrors = [];
@@ -910,7 +910,7 @@ async function testInteractiveTour(browser) {
 // the exact portability trap the interactive-tour flow above already
 // hit and fixed once this same day).
 async function testBackupMigratesOldFieldShape(page) {
-  console.log("\n[14/21] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
+  console.log("\n[14/22] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
   const oldShapedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -988,7 +988,7 @@ async function testBackupMigratesOldFieldShape(page) {
 // error, and exactly the one valid contact lands (not zero, not a
 // partial/corrupted count).
 async function testBackupImportDropsGarbageRecords(page) {
-  console.log("\n[17/21] Backup import — malformed array elements are dropped, not a crash (added 10 Sep 2026)");
+  console.log("\n[17/22] Backup import — malformed array elements are dropped, not a crash (added 10 Sep 2026)");
   const malformedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -1056,7 +1056,7 @@ async function testBackupImportDropsGarbageRecords(page) {
 // directly exercise that exact path, so a regression here would fail
 // loudly, not silently.
 async function testPinRecoveryFlow(page) {
-  console.log("\n[15/21] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
+  console.log("\n[15/22] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
   // The App Lock setup prompt can be pending again here — test 12's
   // own Replace All import doesn't touch privacySettings at all (its
   // synthetic backup has no privacySettings key), but a plain reload
@@ -1185,7 +1185,7 @@ async function testPinRecoveryFlow(page) {
 // Runs in its own fresh browser context (real SW registration/
 // lifecycle state, not shared with the rest of the suite).
 async function testServiceWorkerAutoUpdate(browser) {
-  console.log("\n[16/21] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
+  console.log("\n[16/22] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
 
   // Real preview-build-only test: `vite preview` (what CI and this
   // suite's own recommended local flow both use) serves dist/sw.js
@@ -1361,7 +1361,7 @@ async function testServiceWorkerAutoUpdate(browser) {
 const TZ_PROBE_TIME = "2026-03-14T00:30";
 
 async function testTimezoneWallClockRoundTrip(browser) {
-  console.log("\n[20/21] Timezone — a typed wall-clock time is stored and shown back unchanged (added 28 Sep 2026)");
+  console.log("\n[20/22] Timezone — a typed wall-clock time is stored and shown back unchanged (added 28 Sep 2026)");
 
   // London is the home case (and carries a real DST edge), New York is the
   // largest negative offset and Sydney the largest positive one — the two
@@ -1531,7 +1531,7 @@ const run = async (name, fn) => {
 // ---------------------------------------------------------------------------
 
 async function testBannerAcknowledgementPersists(browser) {
-  console.log("\n[21/21] Reminder acknowledgement - persists across a reload and leaves a quiet mark (added 29 Sep 2026)");
+  console.log("\n[21/22] Reminder acknowledgement - persists across a reload and leaves a quiet mark (added 29 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const flowErrors = [];
@@ -1703,6 +1703,12 @@ async function testBannerAcknowledgementPersists(browser) {
     await run("pin-recovery", () => testPinRecoveryFlow(page));
     await run("pwa-update", () => testServiceWorkerAutoUpdate(browser));
     await run("backup-garbage", () => testBackupImportDropsGarbageRecords(page));
+    // Own context, created inside the flow, because it drives a real add/edit
+    // on a seeded record and leaves that record changed; a shared page would
+    // hand the mutation to whatever ran next. The date arithmetic is relative
+    // to today, so re-running it tomorrow still exercises a genuinely-early
+    // dose rather than a fixed date that quietly drifts into the past.
+    await run("vaccine-doses", () => testVaccineDoseSeriesFlow(browser));
   } catch (err) {
     failed = true;
     console.error("\n" + err.message);
@@ -1748,7 +1754,7 @@ async function testBannerAcknowledgementPersists(browser) {
 // the PWA auto-update flow leaves a service worker in the browser profile, and
 // any flow after it is served a stale cached shell.
 async function testSampleDataDisclosureAndClear(browser) {
-  console.log("\n[1/21] Sample data is disclosed on first run, and clearing keeps real records (added 27 Sep 2026)");
+  console.log("\n[1/22] Sample data is disclosed on first run, and clearing keeps real records (added 27 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const flowErrors = [];
@@ -1856,7 +1862,7 @@ async function testSampleDataDisclosureAndClear(browser) {
 // results" button pointing at a query for a screen they left ten minutes ago
 // is worse than no button at all.
 async function testSearchBackNavigation(page) {
-  console.log("\n[18/21] Search results - you can get back to them, and only while it makes sense (added 28 Sep 2026)");
+  console.log("\n[18/22] Search results - you can get back to them, and only while it makes sense (added 28 Sep 2026)");
   await navHome(page);
   await dismissTransientBanners(page);
 
@@ -1953,7 +1959,7 @@ async function testSearchBackNavigation(page) {
 // A fresh context is the only honest way to observe a first-run banner, and it
 // also isolates the flow from whatever the shared page's data has become.
 async function testBannerSuppression(browser) {
-  console.log("\n[19/21] Reminder banners - a dismissed one stays dismissed, and an acknowledged one leaves a quiet mark (added 28 Sep 2026)");
+  console.log("\n[19/22] Reminder banners - a dismissed one stays dismissed, and an acknowledged one leaves a quiet mark (added 28 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const flowErrors = [];
@@ -2047,7 +2053,7 @@ async function testBannerSuppression(browser) {
 // rest of the previous flow depended on. Its own context avoids all of that,
 // and this flow must run BEFORE the flow above for the same reason.
 async function testSampleDataClearInDeveloperTools(browser) {
-  console.log("\n[2/21] Developer Tools separates 'clear sample data' from 'reset all app data' (added 27 Sep 2026)");
+  console.log("\n[2/22] Developer Tools separates 'clear sample data' from 'reset all app data' (added 27 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const flowErrors = [];
@@ -2220,4 +2226,202 @@ async function testEscapeClosesOverlay(page) {
   assert(stillOpen === 0,
     "Escape closed the sheet (before this, all 55 overlays were keyboard traps: focus went in and could not come out)");
   console.log("  ok — Escape closed it");
+}
+
+// ---------------------------------------------------------------------------
+// ADDED 29 Sep 2026 - the vaccine dose series, and the early-dose notice.
+//
+// WHY A REAL BROWSER DRIVE RATHER THAN UNIT TESTS ALONE: the bug this flow
+// exists for was reported twice, and the second report is the one that fixed it
+// - a second dose logged TWO DAYS BEFORE the first dose's due date, and the
+// reminder still fired. The calculation is thoroughly unit-tested now, but two
+// of the three things this flow asserts cannot be seen from a unit test at all:
+//
+//   1. That no OVERDUE claim survives anywhere on the record. The reminder
+//      stopped correctly while the detail view still rendered "(OVERDUE)" in
+//      red - the same wrong reasoning one level down, comparing a date to
+//      today instead of asking whether the series had moved on. Every unit
+//      test on the calculation was green while that was on screen.
+//   2. That the early-dose notice does not BLOCK. The editor's own canSave
+//      gate is what actually matters, and a pure function cannot see it.
+//
+// Also: a stale nextDue on a multi-dose course can keep a phone buzzing, and
+// until this flow existed nothing in CI could see that at all.
+//
+// The doses are written through the REAL editor, because the notice is
+// computed from the doses array as the user types, and a seeded-record read
+// would prove nothing about whether the editor calls it.
+//
+// Own context, deliberately. It adds and re-dates doses on a real seeded
+// record, so a shared page would hand that mutated record to whatever ran next.
+async function testVaccineDoseSeriesFlow(browser) {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  await page.goto(APP_URL, { waitUntil: "networkidle" });
+  await page.waitForTimeout(1000);
+  // Flow 21's own fresh-context boot sequence, copied rather than re-invented.
+  // dismissOnboarding() is the shared-page helper and is NOT sufficient here:
+  // it does not offer the App Lock prompt, so the nav bar never appears and the
+  // flow times out waiting for something that was never going to arrive. Two
+  // earlier attempts at this flow failed exactly that way.
+  for (const label of ["Skip", "Not now", "Get started"]) {
+    const b = page.getByRole("button", { name: label, exact: true });
+    if (await b.count()) { await b.first().click({ timeout: 2500 }).catch(() => {}); await page.waitForTimeout(400); }
+  }
+  await page.evaluate(() => {
+    const el = [...document.querySelectorAll('[role="button"]')]
+      .find((b) => (b.textContent || "").trim() === "Keep it for now");
+    if (el) el.click();
+  }).catch(() => {});
+  await page.waitForTimeout(600);
+  // Bounded wait on the nav bar, using the same waitForFunction shape the rest
+  // of this suite already uses, rather than a fixed sleep or a role-based
+  // visibility wait. A test must never depend on how fast the machine is, and
+  // this suite has a recorded history of exactly that flake.
+  await page.waitForFunction(
+    () => !!document.querySelector('[role="navigation"][aria-label="Main navigation"]'),
+    undefined,
+    { timeout: 20000 }
+  );
+
+  await nav(page, "Healthcare");
+  const vaccTab = page.getByRole("tab", { name: /Vaccination/i }).first();
+  await vaccTab.click({ timeout: 8000 });
+  await page.waitForTimeout(800);
+  console.log("  ok - reached the Vaccinations screen");
+
+  // The seeded Twinrix record is a real multi-dose series, which is the shape
+  // the bug needs. Divs rather than buttons because the list rows are cards.
+  const card = page.locator('div[role="button"]', { hasText: /Twinrix/i }).first();
+  if (!(await card.count())) throw new Error("no seeded Twinrix vaccination card found");
+  await card.click({ timeout: 8000 });
+  await page.waitForTimeout(800);
+  // "Edit vaccination", not "Edit" - and anchored on the aria-label rather than
+  // the visible text, because the visible label is an icon-plus-word control
+  // whose accessible name comes from the label. A /^Edit$/ match found nothing
+  // here, which is a locator that fails for a reason unrelated to the bug.
+  const editBtn = page.locator('[aria-label="Edit vaccination"]').first();
+  if (!(await editBtn.count())) throw new Error("no 'Edit vaccination' control on the detail");
+  await editBtn.click({ timeout: 8000 });
+  await page.waitForTimeout(800);
+
+  const addDose = page.getByRole("button", { name: /Add dose/i }).first();
+  if (await addDose.count()) {
+    await addDose.click();
+    await page.waitForTimeout(500);
+  }
+
+  const dateInputs = page.locator('input[type="date"][aria-label="Date"]');
+  const n = await dateInputs.count();
+  assert(n >= 2, `the dose editor has at least two dose rows (found ${n})`);
+
+  // Read the dose number this flow is about to edit, FROM the editor's own
+  // field. Hardcoding "Dose 1" was wrong: the seeded record's only card is
+  // numbered "Dose 2", so the lookup silently found nothing. And the seeded
+  // numbering is not something to rely on - it is sample data, and a future
+  // seed edit would turn a page-wide assertion into a no-op again.
+  const doseNumberInputs = page.locator('input[aria-label="Dose number"]');
+  assert((await doseNumberInputs.count()) > 0, "the dose editor exposes a Dose number field");
+  const editedDoseNumber = (await doseNumberInputs.nth(0).inputValue()).trim();
+  assert(editedDoseNumber.length > 0, "the edited dose row has a dose number");
+  console.log(`  ok - editing the dose numbered ${editedDoseNumber}`);
+  //
+  // nextDue is in the PAST, not the future, and that is load-bearing in a way
+  // the first version of this flow got wrong. With a future due date, the
+  // superseded-vs-overdue branch produces identical output either way - a
+  // mutation that restored the "(OVERDUE)" display bug still passed. The
+  // scenario that actually reproduces it is the realistic one: you are OVERDUE,
+  // you get the dose EARLY to catch up, and the record must stop shouting. The
+  // overdue date and the early dose are true at the same time, so both the
+  // notice and the display bug are exercised by one setup.
+  const iso = (d) => d.toISOString().slice(0, 10);
+  const daysAgo = (n) => {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return d;
+  };
+  const overdue = daysAgo(2);
+  const earlyGiven = daysAgo(4);
+
+  await dateInputs.nth(0).fill(iso(earlyGiven));
+  await page.waitForTimeout(300);
+  await dateInputs.nth(1).fill(iso(earlyGiven));
+  await page.waitForTimeout(300);
+
+  const nextDue = page.locator('input[type="date"][aria-label="Next due"]');
+  assert((await nextDue.count()) > 0, "the dose editor has a Next due input");
+  await nextDue.nth(0).fill(iso(overdue));
+  await page.waitForTimeout(600);
+
+  const noticeBox = page.locator('div[role="status"]', { hasText: "Dose logged early" }).first();
+  assert((await noticeBox.count()) > 0,
+    "the early-dose notice renders for a dose logged before the stated due date");
+  const body = (await noticeBox.textContent()) || "";
+  assert(/recorded either way/i.test(body),
+    `the notice states the dose is recorded either way. Got: ${JSON.stringify(body.slice(0, 160))}`);
+  console.log("  ok - the notice appears and does not read as a block");
+
+  // The load-bearing half. The editor's own gate is canSave, so the honest
+  // check is that Save is still ENABLED while the notice is on screen - not
+  // merely that a Save button exists.
+  const save = page.getByRole("button", { name: /Save changes/i }).first();
+  assert((await save.count()) > 0, "the editor has a Save changes button");
+  const disabled = await save.isDisabled();
+  assert(!disabled, "Save is still ENABLED while the early-dose notice is showing");
+  await save.click();
+  await page.waitForTimeout(1500);
+  console.log("  ok - the dose saved despite the notice (it never blocks)");
+
+  // The reported bug, asserted on the real screen rather than on the
+  // calculation. Scoped to this record, and case-SENSITIVE on the literal
+  // "(OVERDUE)" the dose card renders: an earlier version matched /OVERDUE/i
+  // and failed on the Home dashboard's "Overdue vaccinations" tile sitting
+  // behind the screen, which has nothing to do with this record.
+  //
+  // The due date this recorded is two days in the PAST, so if the superseded
+  // check is ever removed this text comes back in red - which is the whole
+  // point. A future date here would make this assertion vacuous, and the first
+  // version of this flow had exactly that bug and a mutation proved it.
+  const stillOpen = await page.getByRole("dialog", { name: /Edit vaccination/i }).count();
+  assert(stillOpen === 0, "the editor closed, so the save was accepted");
+
+  const scope = page;
+  const overdueClaim = scope.getByText(/\(OVERDUE\)/);
+  assert((await overdueClaim.count()) === 0,
+    "no (OVERDUE) claim survives on the record after the later dose was saved");
+  console.log("  ok - the earlier dose's date is no longer reported as overdue");
+
+  // And the positive half: the date is still SHOWN, as history. Asserting only
+  // the absence of OVERDUE would be satisfied by simply hiding the line, which
+  // is a different regression and a worse one - the user's own record of when
+  // they were due.
+  //
+  // Scoped to the DOSE CARD this flow actually edited, by walking out from that
+  // card's own heading. Two weaker versions of this assertion both passed
+  // against a mutation that deleted the line outright, and the reason is the
+  // same both times: the seeded record has other doses that are ALSO
+  // superseded, so any page-wide search for "(done)" or "Next due:" matches
+  // them and succeeds no matter what happened to the row under test. A
+  // page-wide assertion here was measuring the seed data, not the fix.
+  //
+  // Deliberately not matching the rendered date string: that is locale-
+  // dependent, which this project has been bitten by twice on this exact
+  // date-formatting helper.
+  const doseCard = await page.evaluate((n) => {
+    const heading = [...document.querySelectorAll("span")]
+      .find((s) => (s.textContent || "").trim() === `Dose ${n}`);
+    if (!heading) return null;
+    let el = heading;
+    for (let i = 0; i < 5 && el.parentElement; i += 1) {
+      el = el.parentElement;
+      if ((el.textContent || "").includes("Next due")) break;
+    }
+    return el.textContent || "";
+  }, editedDoseNumber);
+  assert(doseCard !== null, `the edited dose card (Dose ${editedDoseNumber}) is still rendered`);
+  assert(/done/i.test(doseCard),
+    `the edited dose is marked done on its own card, not just somewhere on the page. Card: ${JSON.stringify((doseCard || "").slice(0, 140))}`);
+  assert(!/OVERDUE/.test(doseCard),
+    `the edited dose's own card carries no OVERDUE claim. Card: ${JSON.stringify((doseCard || "").slice(0, 140))}`);
+  console.log(`  ok - dose ${editedDoseNumber} keeps its date, marked done, with no OVERDUE on its own card`);
 }
