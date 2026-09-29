@@ -111,12 +111,13 @@ export async function syncTestingReminder() {
   // kinds, and if the scheduling path below is ever changed to re-arm (which is
   // the natural "make overdue things nag louder" change) this is already
   // correct instead of silently re-introducing the bug.
+  const appPrefs = await AppPreferencesRepository.getPreferences();
   const acknowledged = normaliseAcknowledgements(
     (await AppPreferencesRepository.getPreferences()).acknowledgedReminders
   );
   if (shouldSuppressDeviceNotification(
     buildTestingSignature(await getTestingDueState()), // returns { due, dueDate }
-    acknowledged
+    acknowledged, appPrefs.reminderSuppressionEnabled !== false
   )) {
     await cancelNotification(NOTIFICATION_IDS.testingReminder);
     await updateTestWidget();

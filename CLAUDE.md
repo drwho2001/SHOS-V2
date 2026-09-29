@@ -645,6 +645,47 @@ plugin's own compilation are confirmed by CI's APK build and nothing before it
 — the first real risk in this round, since `androidx.security:security-crypto`
 is a new dependency resolving from the network.
 
+## Recently shipped (29 Sep 2026, newest of all yet again — one master switch, and the honest part is what it does NOT let you do)
+
+**The suppression feature had no way to turn off.** Phase 3 shipped "Don't
+remind me" on all five banner types, with no master control — so a user who
+wanted the feature gone had no route to it, which is the same defect as a
+persisted silence with no way back, and this repo has recorded that reasoning
+already. One switch now, defaulting to **on** because the feature shipped on: a
+default of off would silently stop hiding reminders for someone who never asked
+it to, and "the app stopped doing the thing I set up" is not an expected
+consequence of updating.
+
+**The switch is enforced in two places, not at ten call sites.**
+`isBannerVisible` and `shouldSuppressDeviceNotification` both take it as a
+parameter, and it is threaded through `suppressState` — the single helper all
+five banners already go through. Five places deciding the same thing is five
+places to forget, and the one that gets forgotten is the one nobody tests.
+
+**The half that matters most is the half that is easy to miss.** The switch also
+stops the *device* notification being cancelled, not just the banner. A switch
+that hides the banner while the phone keeps buzzing is a switch that half works,
+and the half still disclosing is the half the user turned it off to stop. All
+five device-silence call sites are asserted by count, because they come in two
+shapes and a scripted pass silently missed one of them.
+
+**The scope chips are hidden when the feature is off, which is the same principle
+as the "visibly dead control" fix elsewhere today.** Offering a choice between
+"Just in the app" and "App and device" for a feature that is switched off is a
+control that describes nothing. What is *not* done is deleting stored
+acknowledgements: turning the feature back on restores them, and the screen says
+so, because silently clearing a user's choices would be its own surprise.
+
+**One of my own tests was a constant expression and measured nothing.**
+`expect(undefined !== false).toBe(true)` reads as coverage, asserts nothing
+about the app, and eslint's `no-constant-binary-expression` caught it — which is
+a good argument for that rule being an error rather than a warning. Replaced
+with an assertion about the defensive-default merge actually producing `true`.
+
+Verified: 10 tests, all 6 mutations red — the switch ignored by either function,
+one of five call sites dropping it, the banner funnel dropping it, a missing
+field read as disabled, and the default flipping. Lint clean.
+
 ## Recently shipped (29 Sep 2026, newest of all yet again — the coordination tool got a test suite, and it found two more bugs immediately)
 
 **`session-bridge.mjs` is how two concurrent sessions avoid editing the same

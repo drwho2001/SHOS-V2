@@ -98,10 +98,11 @@ export async function syncRefillReminder() {
   // buzzing. Signature-based, so it lasts only while this exact set of
   // medications is outstanding: reorder, and a genuinely new reminder is free
   // to speak up again.
+  const appPrefs = await AppPreferencesRepository.getPreferences();
   const acknowledged = normaliseAcknowledgements(
     (await AppPreferencesRepository.getPreferences()).acknowledgedReminders
   );
-  if (shouldSuppressDeviceNotification(buildRefillSignature(needsRefill), acknowledged)) {
+  if (shouldSuppressDeviceNotification(buildRefillSignature(needsRefill), acknowledged, appPrefs.reminderSuppressionEnabled !== false)) {
     await cancelNotification(NOTIFICATION_IDS.refillReminder);
     await updateRefillWidget();
     return { scheduled: false, acknowledged: true };

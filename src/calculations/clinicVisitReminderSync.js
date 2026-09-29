@@ -94,12 +94,13 @@ export async function syncClinicVisitReminders() {
   // gap - there are TWO slots (A and B) each with their own notification id, so
   // a partial implementation would have left one of them buzzing after the user
   // said stop. Both are cancelled.
+  const appPrefs = await AppPreferencesRepository.getPreferences();
   const acknowledged = normaliseAcknowledgements(
     (await AppPreferencesRepository.getPreferences()).acknowledgedReminders
   );
   if (shouldSuppressDeviceNotification(
     buildClinicVisitSignature(await getClinicVisitDueState()), // returns { due, visit }
-    acknowledged
+    acknowledged, appPrefs.reminderSuppressionEnabled !== false
   )) {
     await cancelNotification(NOTIFICATION_IDS.clinicVisitReminderA);
     await cancelNotification(NOTIFICATION_IDS.clinicVisitReminderB);

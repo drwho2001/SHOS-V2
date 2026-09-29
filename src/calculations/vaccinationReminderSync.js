@@ -108,6 +108,7 @@ export async function syncVaccinationReminders() {
   // months early. Omitting it here is worse than it looks: suppression would
   // simply never fire, which reads as "the acknowledgement is being ignored"
   // rather than as a bug in a signature.
+  const appPrefs = await AppPreferencesRepository.getPreferences();
   const acknowledged = normaliseAcknowledgements(
     (await AppPreferencesRepository.getPreferences()).acknowledgedReminders
   );
@@ -117,7 +118,7 @@ export async function syncVaccinationReminders() {
       vaccination: soonest.vaccination,
       dueDate,
     }),
-    acknowledged
+    acknowledged, appPrefs.reminderSuppressionEnabled !== false
   )) {
     await cancelNotification(NOTIFICATION_IDS.vaccinationReminder);
     return { scheduled: false, acknowledged: true };

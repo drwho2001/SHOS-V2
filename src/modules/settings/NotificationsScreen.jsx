@@ -413,6 +413,15 @@ export function NotificationsScreen({ onClose }) {
     await AppPreferencesRepository.update({ acknowledgeScopeDefault: value });
     refresh();
   };
+  // ADDED 29 Sep 2026 (t016) - the master off-switch for the whole suppression
+  // feature. Read as `!== false` because that is the safe direction: a backup
+  // written before this field exists must not read as "off", or restoring an
+  // old backup would silently disable a feature the user set up.
+  const suppressionEnabled = appPrefs.reminderSuppressionEnabled !== false;
+  const setSuppressionEnabled = async (value) => {
+    await AppPreferencesRepository.update({ reminderSuppressionEnabled: value });
+    refresh();
+  };
   // ADDED 28 Sep 2026 (Phase 3) - the escape hatch. An acknowledgement is a
   // persisted "stop telling me", and a persisted silence with no way back is
   // exactly the kind of thing that has to be escapable: one mis-tap on a
@@ -457,6 +466,41 @@ export function NotificationsScreen({ onClose }) {
             seconds out. Promising "your phone will never mention this again"
             would be a claim the app cannot keep. See ACK_SCOPE's own comment
             in calculations/reminderSuppression.js. */}
+        {/* ADDED 29 Sep 2026 (t016) — the master off-switch, placed ABOVE the
+            scope chips because when it is off they describe nothing. Offering a
+            choice between "just in the app" and "app and device" on a feature
+            that is switched off is a control that visibly does nothing, which
+            is worse than not offering it. */}
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Stop reminding me</div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10, lineHeight: 1.5 }}>
+            Whether tapping &quot;Don&apos;t remind me&quot; on a reminder banner does anything at all. Off means banners always
+            show and your phone keeps its own notifications — the two are silenced together, not separately.
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {[
+              { value: true, label: "Allow" },
+              { value: false, label: "Turn off" },
+            ].map((option) => (
+              <button
+                key={String(option.value)}
+                onClick={() => setSuppressionEnabled(option.value)}
+                aria-label={`${option.label} stopping reminders`}
+                aria-pressed={suppressionEnabled === option.value}
+                style={{ padding: "7px 14px", borderRadius: 999, border: "1px solid " + (suppressionEnabled === option.value ? (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) : (darkMode ? DARK.border : NEUTRAL.border)), background: suppressionEnabled === option.value ? (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary) : "transparent", color: suppressionEnabled === option.value ? (darkMode ? DARK.bg : "#FFFFFF") : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary), fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          {!suppressionEnabled && (
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 10, lineHeight: 1.5 }}>
+              Reminders you stopped earlier are still remembered, and come back the moment you allow this again.
+            </div>
+          )}
+        </div>
+
+        {suppressionEnabled && (
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>When I tap &quot;Don&apos;t remind&quot;</div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginTop: 2, marginBottom: 10, lineHeight: 1.5 }}>
@@ -484,6 +528,7 @@ export function NotificationsScreen({ onClose }) {
             </div>
           )}
         </div>
+        )}
 
         {/* ADDED 3 Sep 2026 — real ask: a single master switch, distinct
             from the 5 independent per-type toggles below. Checked in

@@ -199,7 +199,12 @@ export function buildRefillSignature(medications) {
  * @returns {boolean}
  */
 export function isBannerVisible(state) {
-  const { dueCount, signature, sessionDismissed = [], acknowledged = [] } = state;
+  const { dueCount, signature, sessionDismissed = [], acknowledged = [], featureEnabled = true } = state;
+  // THE MASTER SWITCH lives here rather than at the five call sites, for the
+  // same reason the whole suppression rule lives in this file: five places
+  // deciding the same thing is five places to forget, and the one that gets
+  // forgotten is the one nobody tests.
+  if (!featureEnabled) return !!dueCount;
   if (!dueCount) return false;
   if (!signature) return false;
   if (acknowledged.includes(signature)) return false;
@@ -243,7 +248,11 @@ export function hasOutstandingAcknowledged(state) {
  * @param {Array<{signature: string, scope: string}>} acknowledgements
  * @returns {boolean}
  */
-export function shouldSuppressDeviceNotification(signature, acknowledgements) {
+export function shouldSuppressDeviceNotification(signature, acknowledgements, featureEnabled = true) {
+  // Same master switch, same reason: a setting that silences the banner but
+  // still silences the phone notification is a switch that half works, and the
+  // half that matters most for privacy is the half that keeps firing.
+  if (!featureEnabled) return false;
   if (!signature) return false;
   return (acknowledgements || []).some(
     (a) => a?.signature === signature && a?.scope === ACK_SCOPE.BOTH

@@ -1466,8 +1466,15 @@ export default function App() {
   const [dueStateReady, setDueStateReady] = useState(false);
   // Acknowledgements ARE persisted, so "don't remind me about this" means it
   // across restarts too.
-  const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
-  const [acknowledgeScopeDefault, setAcknowledgeScopeDefault] = useState("in-app");
+const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
+    const [acknowledgeScopeDefault, setAcknowledgeScopeDefault] = useState("in-app");
+    // ADDED 29 Sep 2026 (Phase 3, t016) - the master off-switch for the whole
+    // suppression feature. Defaults to TRUE, because the feature shipped on:
+    // a default of false would silently turn off something the user already
+    // had working, and "the reminders stopped hiding" is not a change anyone
+    // would expect from updating an app. Written `!== false` at every read so
+    // an older backup with no field reads as enabled rather than disabled.
+    const [reminderSuppressionEnabled, setReminderSuppressionEnabled] = useState(true);
   // Which acknowledgement the user is currently being asked about, or null.
   // A small sheet rather than a second icon on the banner: "don't remind me
   // about this" is a decision with a scope attached, and burying that in an
@@ -1485,6 +1492,7 @@ export default function App() {
     (async () => {
       const prefs = await AppPreferencesRepository.getPreferences();
       setAcknowledgedReminders(normaliseAcknowledgements(prefs.acknowledgedReminders));
+    setReminderSuppressionEnabled(prefs.reminderSuppressionEnabled !== false);
       setAcknowledgeScopeDefault(
         prefs.acknowledgeScopeDefault === ACK_SCOPE.BOTH ? ACK_SCOPE.BOTH : ACK_SCOPE.IN_APP
       );
@@ -1537,6 +1545,11 @@ export default function App() {
     dueCount,
     signature,
     kind,
+    // THE MASTER OFF-SWITCH, threaded through the one helper all five banners
+    // go through. Adding it here rather than at each call site is the whole
+    // point: five places deciding the same thing is five places to forget, and
+    // the one that gets forgotten is the one nobody tests.
+    featureEnabled: reminderSuppressionEnabled,
     sessionDismissed,
     acknowledged: acknowledgedReminders.filter((a) => a.kind === kind).map((a) => a.signature),
   });

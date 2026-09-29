@@ -207,6 +207,13 @@ export const DEFAULT_APP_PREFERENCES = {
   // than trusted, because this is restored-from-backup data and a backup can
   // have been written by an older build.
   acknowledgedReminders: [],
+  // ADDED 29 Sep 2026 (Phase 3, t016) - the master off-switch for the entire
+  // suppression feature. Defaults TRUE, because the feature shipped enabled and
+  // a default of false would silently stop hiding banners for a user who never
+  // asked it to. Read everywhere as `!== false`, so a backup written by a build
+  // that predates this field reads as enabled rather than disabling a feature
+  // the user is relying on.
+  reminderSuppressionEnabled: true,
   // The default scope offered when acknowledging. "in-app" is the default and
   // is the safe one: it stops the in-app banner without touching the OS
   // notification, which is the thing that actually fires when the app is

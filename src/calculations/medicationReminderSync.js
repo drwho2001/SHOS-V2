@@ -123,7 +123,7 @@ export async function syncMedicationReminders() {
   const { buildMedsSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } = await import("./reminderSuppression");
   const appPrefs = await AppPreferencesRepository.getPreferences();
   const acknowledged = normaliseAcknowledgements(appPrefs.acknowledgedReminders);
-  if (shouldSuppressDeviceNotification(buildMedsSignature(due), acknowledged)) {
+  if (shouldSuppressDeviceNotification(buildMedsSignature(due), acknowledged, appPrefs.reminderSuppressionEnabled !== false)) {
     await cancelNotification(NOTIFICATION_IDS.medicationReminder);
     await updateRefillWidget();
     return { scheduled: false, acknowledged: true };
