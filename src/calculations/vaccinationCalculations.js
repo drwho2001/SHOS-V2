@@ -26,9 +26,12 @@
 // records and pass them in.
 
 /**
- * Every non-empty next-due date on a vaccination, oldest first.
+ * Every next-due date on a vaccination that is still OUTSTANDING, oldest first.
  *
- * `nextDue` is a plain "YYYY-MM-DD" calendar date (a <input type="date">
+ * A next-due date on a dose that has since been followed by another dose in the
+ * same series is not outstanding, and is excluded - see the note inside.
+ *
+ * `nextDue` is a plain "YYYY-MM-DD" calendar date (an <input type="date">
  * value), NOT this app's fake-UTC full-datetime convention - there's no
  * time of day recorded, so plain string comparison is both correct and
  * chronological for this format.
@@ -51,7 +54,33 @@ export function getDoseNextDueDates(vaccination) {
   // Legacy fallback: a record that predates the dose series (or one whose
   // migration hasn't run yet) still carries the value at the top level.
   const legacy = asDay(vaccination.nextDue);
-  return [...new Set([...fromDoses, ...(legacy ? [legacy] : [])])].sort();
+  const candidates = [...new Set([...fromDoses, ...(legacy ? [legacy] : [])])].sort();
+
+  // ADDED 29 Sep 2026 — real report from the owner: the vaccine reminder kept
+  // firing after they logged a second dose, even though logging that dose is
+  // exactly what satisfied the first dose's due date.
+  //
+  // The cause is that the function above collects every `nextDue` in the series
+  // and the caller takes the EARLIEST, with no notion anywhere of a dose having
+  // actually been *given*. A dose's `nextDue` means "the dose after THIS one is
+  // due on this date" — so the moment a later dose is recorded, every earlier
+  // `nextDue` is history, not an outstanding obligation. Nothing was dropping
+  // them, so a fulfilled due date sat in the past forever and the reminder, the
+  // banner, the overdue counts, the list rows and the Clinic Card all kept
+  // reporting it.
+  //
+  // So: a next-due date at or before a date on which a dose in this same series
+  // was given has been fulfilled, and is dropped. Deliberately NOT "the last
+  // dose's nextDue wins" — that would silently discard a legitimately
+  // outstanding earlier date when a user has recorded a course in an unusual
+  // order, and this rule only ever removes something demonstrably done.
+  //
+  // A dose given EARLY does not satisfy the later one: giving dose 2 in October
+  // when dose 1 said "next due December" leaves December outstanding, because
+  // the app genuinely does not know when dose 3 is expected.
+  const givenDays = doses.map((d) => asDay(d && d.date)).filter(Boolean);
+  if (!givenDays.length) return candidates;
+  return candidates.filter((nextDue) => !givenDays.some((given) => given >= nextDue));
 }
 
 /**

@@ -133,6 +133,41 @@ A2, and running it earlier tests the old behaviour.
 | **t018** | **Phase C** — read-only backup-import schema audit, feeding the `backupMigrations` tests | none claimed (read-only) |
 | **t019** | **Phase C** — icon-only-UI audit, including the new nav dot | none claimed (read-only) |
 | **t020** | **Timezone audit** — the remaining `toLocale*` sites, per module with evidence | 7 module/calculation/storage files |
+| **t022** | **Refill pill** — rename `this refill` → `this container`, add the missing info icon, hide it when no refill is logged | Medication Dashboard, `medicationCalculations.js` |
+| ~~t021~~ | ~~Vaccination/clinic-visit due gate~~ | **DONE** |
+| ~~t023~~ | ~~Vaccine reminder fires after a later dose is given~~ | **DONE** |
+| **t025** | **IDEA, owner** — BASHH/UK-guideline vaccine **eligibility** suggestions as a dismissable mini banner on the Vaccinations list, deeper info in Settings/Resources | `SHOS_Vaccinations_Prototype.jsx` |
+| **t026** | Vaccine reminder has **no browser flow at all** | `scripts/smoke-test.cjs` |
+
+### t023 — the vaccine reminder that would not stop
+
+Real report from the owner: the reminder kept firing after they logged a second
+dose. Logging that dose *is* what satisfied the first dose's due date.
+
+`getDoseNextDueDates` collected **every** `nextDue` in the series and
+`getVaccinationNextDue` took the **earliest**, with no notion anywhere of a dose
+having actually been *given*. A dose's `nextDue` means "the dose after **this**
+one is due on this date", so the moment a later dose is recorded every earlier
+`nextDue` is history — and nothing dropped them.
+
+**One derivation, so one fix reached every consumer**: the reminder, the in-app
+banner, the overdue counts, the list rows, the Clinic Card, the PDF export and
+Stats all read these functions. Cancelling the notification in the sync file
+would have left all of the others still wrong while looking like a fix.
+
+The rule is deliberately **"at or before a dose was given"**, not "the last
+dose's nextDue wins". The second is simpler and would pass every fulfilled-case
+test while silently discarding a real outstanding date. A dose given **early**
+does not satisfy a later date — giving dose 2 in October when dose 1 said
+"December" leaves December outstanding, because the app genuinely does not know
+when dose 3 is expected.
+
+5 mutations red, including the two that a too-clever fix would fall into:
+"only the last dose's nextDue" (discards real obligations), and treating a dose
+with no `date` yet as given (pre-adding a dose row would cancel the current
+reminder). The seeded Twinrix booster is asserted to **stay** overdue, so a
+future "tidy" cannot quietly silence a real reminder.
+
 
 ### t012 (A3) — what actually shipped, and what the honest claim is
 
