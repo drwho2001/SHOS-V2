@@ -166,6 +166,23 @@ export const DEFAULT_PROFILE = {
   clinicNumber: "",
   address: "",
   nhsNumber: "",
+  // ADDED 29 Sep 2026 (t025) - HIV status as a RECORDED FACT. Not an
+  // inference and not a guess: it gates whether PrEP is relevant at all, it
+  // changes what a clinician asks, and "undetectable" versus not is a
+  // materially different situation for someone reading their own history.
+  //
+  // `null` means "not stated" and is deliberately distinct from the
+  // "untested" state, so that an unstated field falls through to the value
+  // derived from Testing records. Four states, no fifth: untested, negative,
+  // positive-undetectable, positive-high-viral-load.
+  //
+  // THIS IS NOT VACCINE ELIGIBILITY. The original framing for this work was
+  // "vaccine eligibility suggestions", and it was the wrong one: eligibility
+  // needs facts this app does not hold, and inferring them is the automated
+  // clinical risk scoring CLAUDE.md puts permanently out of scope. What ships
+  // instead is generalised guidance that links out. See
+  // calculations/hivStatusCalculations.js.
+  hivStatus: null,
 
   updatedAt: null,
 };

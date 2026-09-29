@@ -169,8 +169,25 @@ export const DEFAULT_CONTACT = {
   name: "", nickname: "", pronouns: "",
   // ADDED — real ask: trans/hetero inclusivity, same field as My
   // Profile's own gender addition — see that repository's comment.
-  gender: "",
-  age: null, ageIsApprox: false,
+    gender: "",
+    // ADDED 29 Sep 2026 (t025) - HIV status as a RECORDED FACT, on Contacts as
+    // well as My Profile. Partner notification already operates on the
+    // assumption that someone's status matters to someone else's decisions, so
+    // holding it only on the profile would be arbitrary.
+    //
+    // `hivStatus` is what the user states; `null` means "not stated", which is
+    // NOT the same as "untested" - an unstated field falls through to the
+    // value derived from Testing records, and someone tested elsewhere (or on
+    // PrEP with results held at another service) has no record here at all.
+    // Without that distinction the app would report "untested" for a person on
+    // treatment, which is the most damaging thing this feature can get wrong.
+    //
+    // Four states, no fifth: untested, negative, positive-undetectable,
+    // positive-high-viral-load. See calculations/hivStatusCalculations.js for
+    // the derivation and for why the suppressed/unsuppressed split cannot come
+    // from a test result at all.
+    hivStatus: null,
+    age: null, ageIsApprox: false,
   // ADDED 19 Aug 2026 — real gap from the Notion-vs-app audit. Stored
   // as a data URL (base64-encoded image), not a file path or upload
   // URL — there's no real backend/cloud storage in this app, so a data

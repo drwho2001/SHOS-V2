@@ -858,6 +858,83 @@ which this app already has as a real recorded type, so where none exists the
 status must read as positive-without-known-suppression rather than defaulting to
 one side. Brief at `~/.shos-session-bus/tasks/t025-hiv-status/01-scope.md`.
 
+**Three failure modes the derivation is explicitly built to avoid, each asserted.**
+"No viral load" resolves to *unsuppressed*, not suppressed — "we do not know"
+must never render as "they are well". A result the app cannot read (Pending, lost
+sample) establishes nothing rather than falling to either side. And a stated
+status **overrides** a derived one, because someone on PrEP with results held at
+another service has no record here, and a derived-only field would report
+"untested" for a person on treatment.
+
+**One real ordering bug in my own first version, caught by the test rather than
+by reading.** The viral-load check guarded `Number.isFinite(n)` *before* testing
+for the word "Undetectable" — and `Number("Undetectable")` is `NaN`, so the
+function rejected the very result it existed to recognise and reported someone on
+effective treatment as having a high viral load. The word check now comes first.
+
+**The disclosure level is a persistent third axis, not a third anonymise mode.**
+`anonymiseModeActive` and `hideFurtherEnabled` are a *temporary* hand-the-phone-
+over state acting *inside* the app. What the owner asked for is a *persistent*
+statement of how much the app may show when they are not looking — lock-screen
+notifications and home-screen widgets, content handed to the OS. Three levels
+(`masked` / `glanceable` / `detailed`), **defaulting to the most restrictive
+value**, which also matches what the widgets were just built to do, so the
+setting confirms existing behaviour rather than silently changing it on first
+run.
+
+**One resolver, and the fail-closed direction is the whole design.** The rule
+that `masked` shows only generic copy lives in `disclosureLevel.js` and nowhere
+else, because the failure this repo keeps cataloguing is one string computed in
+two places drifting silently — the Testing banner shipped dead for its entire
+life because one file computed a fingerprint the scheduler had no copy of.
+`normaliseDisclosureLevel` maps every unrecognised value, including one arriving
+from a backup written by a build predating the field, to `masked`. A privacy
+control that fails *open* shows a medication name on a lock screen, so "I do not
+recognise this setting, therefore I will show everything" is the one wrong
+direction. `glanceable` is given a `kind` and no field for clinical data to
+arrive in, so a caller that forgets to redact gets a blank line rather than a
+name.
+
+**Notification text is left unwired on purpose, and the reason is a file
+collision.** `scheduleNotification` takes `title`/`body` as parameters, so the
+text is built by the four reminder-sync callers — all of which the other session
+currently holds. Half a feature was the alternative and would have meant either
+merging into files another session is editing or shipping a setting that visibly
+does nothing. Queued as a pool task for when those are free.
+
+Verified: `verify:fast` green, **654 tests across 56 files**. All four mutations
+of the disclosure guard confirmed red, each from the fail-open direction: the
+default becoming the most exposing level, `normalise` returning `detailed` for
+an unknown value, the masked branch echoing its payload, and `glanceable` falling
+back to the full body instead of blank. All eight mutations of the HIV
+derivation red, including a non-HIV test being allowed to set the status.
+
+## Recently shipped (29 Sep 2026, newest of all yet again — the refill's second stage, and the one thing it deliberately does NOT do)
+
+**The vaccine "eligibility suggestions" idea was rescoped with the owner, and
+the original framing was the wrong one.** Eligibility means inferring facts about
+the user that this app does not hold: `myProfileRepository` has `gender` and
+`sexualPosition` and **no HIV status field at all**, and UK hepatitis-B
+eligibility turns largely on HIV status. An eligibility banner would therefore be
+a guess computed from a partial profile and displayed on a home screen — exactly
+the automated clinical risk scoring `CLAUDE.md` puts permanently out of scope. The
+owner's decision was better than either alternative offered: **generalise the
+guidance, and record HIV status properly** — four states (`negative`,
+`positive-suppressed`, `positive-unsuppressed`, `untested`), each tagged with the
+date of the test that established it, blank when unknown, on **My Profile and
+Contacts** rather than profile only.
+
+**The derivation has a trap worth stating.** Status is derived from Testing
+records, and *only* from tests whose `testingFor` includes `"HIV"`. A negative
+chlamydia result says nothing about HIV status, so a latest-test-wins rule over
+all tests would be confidently wrong — the same "one canonical owner per fact"
+discipline the repo already records. And the **suppressed/unsuppressed split is
+not derivable from an HIV test at all**: combo/fourth-generation tests give
+positive or negative and nothing finer. It comes from a viral-load measurement,
+which this app already has as a real recorded type, so where none exists the
+status must read as positive-without-known-suppression rather than defaulting to
+one side. Brief at `~/.shos-session-bus/tasks/t025-hiv-status/01-scope.md`.
+
 **The disclosure level is a persistent third axis, not a third anonymise mode.**
 `anonymiseModeActive` and `hideFurtherEnabled` are a *temporary* hand-the-phone-
 over state acting *inside* the app. What the owner asked for is a *persistent*
