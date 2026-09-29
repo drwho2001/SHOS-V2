@@ -127,7 +127,7 @@ A2, and running it earlier tests the old behaviour.
 | ~~t011~~ | ~~A2~~ | **DONE** — shipped in `fd96bd0` |
 | ~~t017~~ | ~~A8~~ | **DONE** — this file |
 | **t013** | **A4** — refill second stage: `needs requesting` → `needs collecting`, with undo | `src/calculations/refillReminderSync.js` |
-| **t014** | **A5** — browser flow for the whole "stop reminding me" path | `scripts/smoke-test.cjs` |
+| ~~t014~~ | ~~A5 — browser flow for the whole "stop reminding me" path~~ | **DONE** — flow 21, 14 assertions |
 | ~~t015~~ | ~~A6 — contrast + narrow-screen on the three new banner surfaces~~ | **DONE** |
 | **t016** | **A7** — one master off-switch for the whole suppression feature | `src/App.jsx`, `appPreferencesRepository.js` |
 | **t018** | **Phase C** — read-only backup-import schema audit, feeding the `backupMigrations` tests | none claimed (read-only) |
@@ -232,6 +232,41 @@ everything.
 adding a comment shifted the 3200-character inspection window, not because any
 maths was bypassed. It proves nothing, and the honest protection against broken
 maths is the in-file self-check against known WCAG pairs, not that mutation.
+
+### t014 — the acknowledgement path, and the one assertion that matters
+
+Flow 19 covered **dismissal**. This covers **acknowledgement**, which is a
+different promise: dismissal is in-memory and dies on a real close (the toast
+says so), while an acknowledgement is persisted, survives a reload, and leaves a
+quiet mark on the tab while the thing is still outstanding.
+
+**The load-bearing assertion is the reload.** An acknowledgement that failed to
+persist would quietly degrade into a dismissal the next time the app was
+reopened, and the user would believe they had switched something off
+permanently when they had not. No unit test can see this — it needs a real
+boot, a real write, and a real second boot, which is the whole argument for
+driving it in a browser.
+
+**And it is proven to be the ONLY assertion that catches it.** Reverting the
+persistence write makes the run red on exactly one line — the post-reload check
+— while the four assertions above it (banner hidden immediately, still hidden
+after two refreshes, no dose logged) all still pass. That matters: a test which
+only checked in-session suppression would have gone green on a build that had
+silently lost the feature. The failure is precise rather than incidental.
+
+Two more mutations red: the device-wide scope option removed (so the stronger
+promise A3 implemented becomes unreachable), and the sheet's "still outstanding"
+copy replaced with "has been handled" (so an acknowledgement reads as having
+dealt with the medication — the exact misreading the sheet exists to prevent).
+
+Also asserted, because they are the copy that makes the choice honest rather
+than a bare toggle: the narrower scope says plainly that **"Phone notifications
+still fire"**, and the sheet says the item **"is still outstanding — this doesn't
+mark it as done"**.
+
+Own context, placed next to flow 19 and ahead of the PWA flow. The two are kept
+separate on purpose: they test different promises and must not share state.
+
 
 
 
