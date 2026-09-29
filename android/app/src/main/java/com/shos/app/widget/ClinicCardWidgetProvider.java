@@ -18,7 +18,37 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
     private static final String KEY_APPT_TESTS = "clinic_appt_tests";
     private static final String KEY_APPT_DOCTYPE = "clinic_appt_doctype";
     private static final String KEY_APPT_CLINIC_NUM = "clinic_appt_clinic_num";
+    // ---------------------------------------------------------------------
+    // UNREACHABLE SINCE THIS FILE WAS WRITTEN. Nothing calls this method:
+    // the JS side reaches for a "WidgetBridge" Capacitor plugin, and no such
+    // plugin is registered in this app — the only @CapacitorPlugin here is
+    // ScreenSecurityPlugin. So the guard in clinicVisitReminderSync.js
+    // (`if (bridge && bridge.updateClinicCard)`) never passes and none of the
+    // values below are ever written. Verified 29 Sep 2026.
+    //
+    // DO NOT WIRE THIS UP WITHOUT DECIDING THE ENCRYPTION QUESTION FIRST.
+    // SharedPreferences is a PLAINTEXT XML file on disk. Every other write in
+    // this app goes through storageAdapter, which encrypts, and this app's
+    // entire privacy promise is "encrypted at rest, on your own device".
+    // Writing an NHS number here would be the single place that promise is
+    // broken, and it would be broken in the most obvious file for a future
+    // reader to open.
+    //
+    // Two further problems with the design below, both latent:
+    //   1. KEY_APPT_REVEALED lives in the same plaintext prefs, so tapping to
+    //      reveal is a PERMANENT flip, not a per-render mask. A lock-screen
+    //      widget that masks a value is security theatre if one tap in a
+    //      shoulder-surfing moment turns it off forever.
+    //   2. An NHS number on a home-screen widget is low value when the Clinic
+    //      Card itself is one tap away. Deleting these fields outright is a
+    //      product decision for the owner, not a bug fix, which is why it has
+    //      not been done unilaterally.
+    //
+    // Guarded by src/storage/widgetPlaintextSink.test.js, which fails on the
+    // change that would make this reachable rather than on the dead code.
+    // ---------------------------------------------------------------------
     private static final String KEY_APPT_NHS_NUM = "clinic_appt_nhs_num";
+
     private static final String KEY_APPT_REVEALED = "clinic_appt_revealed";
 
     @Override
