@@ -577,6 +577,62 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+## Recently shipped (29 Sep 2026, newer still — the backup-import migration had no test, and the hazard in it is a "helpful" future improvement)
+
+**`backupMigrations.js` is a data-recovery path that has been live since 9 Sep
+with no test of any kind. It now has 12, all mutation-verified — and the first
+audit of it found that its safety depended on a function it cannot see.**
+
+**The module is dormant in the ordinary sense, which is exactly why it rotted
+unnoticed.** Nothing has been renamed since it was written, so nothing exercised
+it, so nothing noticed it breaking. The day something *is* renamed is the day
+the machinery is found to be wrong, which is the worst possible moment to
+discover that a safeguard does not work.
+
+**The real hazard is a safety property that was only written down.** The
+migration deliberately refuses to split `"200mg/245mg"` into a number and a
+unit, because two numbers and no way to tell which is which would silently
+corrupt a real dose. That refusal lives in a comment. A later reader who thinks
+the comment is over-caution would be making a genuine improvement by the usual
+standards — and would be destroying data. There is now a test that fails if
+anyone parses that field, so the refusal is enforced rather than requested.
+
+**Its safety depended on an ordering between two private functions in two
+files.** `migrateCollection` did `migrations.reduce(..., item)` with no check
+that `item` was an object, so a null element threw
+`Cannot read properties of null` from inside a recovery path. The real import
+path is safe — `backupService.js`'s private `sanitizeBackupData()` runs first
+and its own comment says exactly why the order matters — but nothing *enforced*
+that, and any future caller reaching `migrateBackupData` directly would crash.
+One guard in the element check makes the module safe standalone, and it makes
+the same decision the sanitiser makes, so the two cannot disagree.
+
+**The likeliest way this mechanism fails is a typo, and a typo is invisible.**
+`migrateBackupData` guards with `if (key in migrated)`, so a registry key of
+`medication` instead of `medications` is not an error — the migration silently
+never runs, which from the outside is indistinguishable from a backup that
+genuinely needed no migration. A test fires the registry against a real
+collection, and a second fires a non-registered one to confirm it comes through
+byte-identical.
+
+Also this round: **`pool take` ignored the task id it was given.** `pool take
+t018` allocated `t014` and claimed `t014`'s files, because the argument was
+never read and the code took the first takeable task instead. Hit on first real
+use. A lost update loses a record; this is worse, because the command reports
+success and the session believes it holds the job it asked for while holding an
+unrelated job's files. It now honours a named task or refuses with the actual
+reason, naming the file when another session holds it. And a second bug in the
+same path: every refusal called `process.exit(2)` from inside the lock, which
+**skips the `finally`**, leaving a lock file behind that blocked the next call
+for ten seconds — including the other session's.
+
+Verified: `verify:fast` green — **456 tests across 38 files**, encoding guard
+clean, no mojibake. All five mutations of the migration go red: splitting the
+dose, dropping the non-record guard, breaking idempotence, typoing the registry
+key, and overwriting a user's existing note. The mutation harness derives its
+backup from each mutation's own target, after getting that wrong once this
+session and leaving a Java file broken.
+
 ## Recently shipped (29 Sep 2026, newest of all yet again — the widget NHS-number sink was one method call from being live, and my own guard was vacuous until a mutation said so)
 
 **Session B reviewed the coordination tooling I built two days ago and found a

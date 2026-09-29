@@ -71,7 +71,21 @@ const RECORD_MIGRATIONS = {
 
 function migrateCollection(items, migrations) {
   if (!Array.isArray(items) || migrations.length === 0) return items;
-  return items.map((item) => migrations.reduce((record, migrate) => migrate(record), item));
+  return items.map((item) =>
+    // Defensive on the element, not just the collection. The real import path
+    // does sanitise first — backupService.js's own `sanitizeBackupData()` is
+    // private to that file and runs before this, and its comment says so — so
+    // this guard is not load-bearing in production today. It is here because
+    // the alternative is that this module's safety depends on the ORDER of two
+    // private functions in two files, with nothing enforcing it, and a future
+    // caller reaching `migrateBackupData` directly would get a
+    // "Cannot read properties of null" from inside a data-recovery path.
+    // Skipping a non-record is the same decision the sanitiser makes, so this
+    // cannot disagree with it.
+    item && typeof item === "object" && !Array.isArray(item)
+      ? migrations.reduce((record, migrate) => migrate(record), item)
+      : item
+  );
 }
 
 // Applied once, at the very top of restoreFromParsedBackup() — the one
