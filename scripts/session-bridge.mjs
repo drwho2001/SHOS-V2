@@ -760,6 +760,89 @@ commands.pool = async (args) => {
   process.exit(2);
 };
 
+// ── friction counter: the low threshold for a second opinion ───────────────
+//
+// The owner's rule: consult the free model on MULTIPLE FAILS, STALLS, RETRIES,
+// REWORKS, or the unknown - i.e. a deliberately LOW threshold, because a session
+// grinding through the same failure three times is more expensive than one free
+// call.
+//
+// A consult is only worth anything if it carries context. "it's broken" gets a
+// generic answer, so each attempt records the goal, what was tried, and the
+// actual error, and the prompt is assembled from that history. That is the whole
+// point of counting rather than just calling: attempt 2 knows attempt 1 failed,
+// so the question can say "these have all been tried and here is what each did".
+//
+// The threshold is 2 by default - low, as asked - and is overridable because the
+// right value depends on the task. Auto-consult fires ONCE per attempt at or
+// above the threshold, so a genuinely hard problem can be re-asked rather than
+// going silent on the second failure.
+const FRICTION_DIR = join(TASKS_DIR);
+const STUCK_THRESHOLD = Number(process.env.SHOS_STUCK_THRESHOLD || 2);
+
+function frictionPath(slug) {
+  return join(TASKS_DIR, slug, "_friction.json");
+}
+
+commands.stuck = async (args) => {
+  const [slug, ...rest] = args;
+  if (!slug) {
+    console.error('Usage: stuck <slug> "<what you are trying to do>" ["<what happened>"] [--no-consult]');
+    process.exit(2);
+  }
+  const goal = rest.filter((a) => a !== "--no-consult")[0] || "(unspecified)";
+  const what = rest.filter((a) => a !== "--no-consult").slice(1).join(" ") || "(no detail given)";
+  const wantConsult = !args.includes("--no-consult");
+
+  const path = frictionPath(slug);
+  const state = readJson(path, { slug, attempts: [] });
+  state.attempts.push({
+    at: new Date().toISOString(),
+    by: ME,
+    n: state.attempts.length + 1,
+    goal,
+    outcome: what.slice(0, 600),
+  });
+  writeJson(path, state);
+
+  const n = state.attempts.length;
+  const due = n >= STUCK_THRESHOLD;
+  console.log(`recorded attempt ${n}${due ? ` (threshold is ${STUCK_THRESHOLD})` : ""} for ${slug}`);
+
+  if (!due || !wantConsult) {
+    if (due && !wantConsult) console.log("  --no-consult given, not calling the second opinion");
+    else console.log(`  ${STUCK_THRESHOLD - n} more before it will consult a second opinion`);
+    return;
+  }
+
+  // Assemble the question from the history, not from this attempt alone.
+  const history = state.attempts
+    .map((a) => `${a.n}. ${a.what || a.goal} -> ${a.outcome}`)
+    .join("\n");
+  const prompt =
+    `I am stuck on a problem and have already failed ${n} times. Here is what I was trying and what happened.\n\n` +
+    `GOAL: ${goal}\n\nATTEMPTS (all failed):\n${history}\n\n` +
+    `Give me the most likely root cause I am missing, and the one thing I should try next. ` +
+    `Be concrete. If you need information you do not have, say exactly what to check.`;
+
+  console.log(`threshold reached, consulting the second opinion on ${slug}...`);
+  writeJson(join(TASKS_DIR, slug, "_last-consult-request.json"), { at: new Date().toISOString(), by: ME, attempts: n });
+
+  // Delegates rather than duplicating the provider code: consult.mjs already
+  // owns the cost ladder, the retry policy and the key handling.
+  const { spawnSync } = await import("node:child_process");
+  const r = spawnSync(
+    process.execPath,
+    [join(import.meta.dirname, "consult.mjs"), "gemini", prompt, `--task=${slug}`],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }
+  );
+  process.stdout.write(r.stdout || "");
+  if (r.status !== 0) {
+    process.stderr.write(r.stderr || "");
+    console.log("\nthe second opinion failed - the attempts are still recorded, retry with: consult.mjs gemini \"...\" --task=" + slug);
+  }
+};
+
 commands.claim = async (args) => {
   const mode = args[0] === "release" ? "release" : "claim";
   const files = args.filter((a) => a !== "release");

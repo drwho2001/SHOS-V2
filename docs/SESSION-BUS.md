@@ -330,18 +330,89 @@ longer available`. The catalogue is not a promise that a model is callable, whic
 is why the free models are addressed by alias (`gemini-flash-latest`) rather than
 a version number.
 
-### What Gemini said when asked — and it found a real gap
+### What Gemini said when asked — and testing it changed the answer
 
 Asked what single invariant most prevents two agents corrupting each other's
 work in one tree, the answer was **full mutual exclusion on all tree mutations**,
-with a clean committed state between turns. That is stricter than the
-file-ownership partition used here, and it disagreed usefully: it pointed at
-`.git/index` and `HEAD` as **shared state**, and index-lock collision between two
-concurrent `git add` commands as a real failure mode.
+with a clean committed state between turns, on the grounds that `.git/index` and
+`HEAD` are shared and two concurrent `git add` commands collide on the index lock.
 
-That is a genuine gap, and it is not covered by the gate lock — that serialises
-`verify`, not staging. Worth deciding separately; it is a real, narrow fix
-(lock around `git add`/`git commit`) rather than a redesign.
+**Tested rather than adopted, and it does not hold up as stated.** Git's
+`index.lock` is designed for exactly this, and it fails *safe and loud*:
+
+```
+fatal: Unable to create '.../.git/index.lock': File exists.
+       Another git process seems to be running in this repository, or the
+       lock file may be stale
+```
+
+Forced deliberately, the index was left completely untouched and the error named
+its own cause. Six genuinely concurrent `git add` calls produced **zero**
+collisions, because the lock is held for microseconds. So this is a nuisance that
+announces itself, not a corruption risk — and adding a second lock around git
+would be worse than the problem, because a stale lock of *ours* would block every
+git operation in the repo.
+
+The part of Gemini's reasoning that **is** right, and which the original finding
+framed loosely, is that the real danger is not the lock at all — it is
+`git add -A` sweeping up the other session's in-flight work. That is already
+covered, by the explicit-path rule in `docs/CHANGE-PROCEDURE.md` and the
+incident that produced it (`bc04295`, 799 lines).
+
+So: no git lock. Recorded because the finding looked compelling and would have
+produced redundant machinery, which is the second time in this work that an
+outside opinion needed testing rather than adoption.
+
+## The second-opinion protocol — a deliberately low threshold
+
+The rule, from the owner: on **multiple fails, stalls, retries, reworks, or
+anything genuinely unknown**, stop grinding and ask the free model.
+
+```powershell
+node scripts\session-bridge.mjs stuck my-task "make two sessions wake each other" "POST prompt returned 200, nothing happened"
+```
+
+Attempt 1 only records. **Attempt 2 automatically calls Gemini**, and the prompt
+is assembled from *every* failed attempt, not just the latest:
+
+```
+GOAL: make two sessions wake each other
+
+ATTEMPTS (all failed):
+1. POST /api/session/{id}/prompt -> 200, B's timestamp never moved
+2. /tui/append-prompt -> typed into my own terminal
+
+Give me the most likely root cause I am missing, and the one thing to try next.
+```
+
+That assembly is the whole reason for counting rather than just calling. "It's
+broken" gets a generic answer; "these two things failed this way" gets a real
+one — and it is free.
+
+- Threshold is **2**, overridable via `SHOS_STUCK_THRESHOLD`.
+- `--no-consult` records without calling.
+- It delegates to `consult.mjs`, so the cost ladder, retry policy and key
+  handling are not duplicated. A free-tier `503` during an auto-consult is
+  handled by stepping down the ladder, not by failing the workflow.
+- Every attempt is persisted in `tasks/<slug>/_friction.json`, so a later
+  session can see that something was already ground on before trying it again.
+
+### It has already paid for itself
+
+Recording the two measured dead ends above auto-consulted Gemini, which replied:
+
+> You are confusing the OpenCode *control plane* (HTTP API / TUI automation) with
+> the *event loop* of the target process… the API endpoint you called merely
+> appended text to a buffer without sending the "Run" signal… you manipulated the
+> **active terminal's stdin**, which routed straight back to your current session.
+
+That is an independent confirmation of the finding, from a model with no access
+to this repo, arrived without being prompted to agree. Which is the honest
+argument for having the tool: the value is not that it is right, it is that it
+is a genuinely separate opinion, and it will sometimes disagree.
+
+The same mechanism caught the **over-stated** half of its own earlier advice —
+`consult.mjs` finding it. See *What Gemini said when asked* below.
 
 ## Credentials
 

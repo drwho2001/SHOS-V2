@@ -187,6 +187,49 @@ node scripts\session-bridge.mjs inbox      # notices you have not seen
 node scripts\session-bridge.mjs pool list  # approved work available
 ```
 
+**Where that state lives** (all of it outside the repository, so none of it can
+be committed by accident): the work pool and claims are
+`~/.shos-session-bus/state/`, the notice log is `~/.shos-session-bus/notices.jsonl`,
+and joint-work task folders are `~/.shos-session-bus/tasks/<slug>/`. A new
+session therefore starts with no memory of this conversation, but it inherits
+this instruction and can see everything the other session recorded.
+
+**To get a second opinion from a different model**, use the consult tool. It
+calls Gemini's free tier by default (walking down a cheaper/quieter model
+automatically when one is rate-limited), and writes the exchange where the other
+session already reads it — so a fresh outside perspective costs nothing and needs
+no session to be woken:
+
+```powershell
+node scripts\consult.mjs gemini "<a question worth challenging>" --task=<slug>
+```
+
+Its value is as a *challenger*, not a collaborator: it has no memory of this
+repo, so it will reason confidently about things it cannot see. Use it to
+challenge an approach before committing to it, not to hold state. Free tier
+first by policy; the paid OpenAI and Anthropic keys are last resort (OpenAI
+currently has no credits, and the Anthropic key needs `ANTHROPIC_WORKSPACE_ID`).
+
+**SECOND-OPINION PROTOCOL — the threshold is deliberately LOW.** On a second
+failed attempt at the same thing, a stall, a retry loop, a rework, or anything
+genuinely unknown, stop grinding and record it:
+
+```powershell
+node scripts\session-bridge.mjs stuck <slug> "<what you are trying>" ["<what happened>"]
+```
+
+The first attempt only records. The **second** automatically consults the free
+model, assembling the question from *all* the failed attempts rather than the
+latest one — which is the point, because "it's broken" gets a generic answer
+while "these two things failed this way" gets a real one. Raise the bar with
+`$env:SHOS_STUCK_THRESHOLD`. Use `--no-consult` to only record.
+
+Grinding through the same failure three times costs far more than one free call,
+so the instinct to push on is the expensive one here. An outside model that has
+not been stuck on it for an hour is frequently more useful than one more attempt
+from a session that is.
+
+
 If the pool has an approved task you are not already busy with, `pool take` it —
 it is the owner's approved queue, not self-assigned work, and allocation is
 recorded with a timestamp and a file claim BEFORE any work begins, so the other
