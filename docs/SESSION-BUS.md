@@ -414,6 +414,70 @@ is a genuinely separate opinion, and it will sometimes disagree.
 The same mechanism caught the **over-stated** half of its own earlier advice —
 `consult.mjs` finding it. See *What Gemini said when asked* below.
 
+## Lessons — durable rules, not chronology
+
+The backlog answers "what happened". This answers **"what must a future session
+not do, and what to do instead"** — worthless in a transcript, valuable as a rule.
+Kept separate on purpose: a chronological log grows without bound and gets
+skimmed, whereas this stays short enough to read in full every session.
+
+RULE: / DO: / EVIDENCE: rather than prose, because the reader is mostly an
+AI and a labelled line is retrievable where a paragraph is not. **--evidence is
+required and the tool refuses without it** — an unevidenced rule is a superstition,
+and this repo has repeatedly found those ("fixed" bugs that were not bugs, gates
+that measured nothing). If a rule's evidence expires, delete it; do not inherit it.
+
+Nine seeded from the two-session work, including the four that cost something:
+
+| Rule | Why it matters |
+|---|---|
+| Cannot wake another session | Shapes everything; saves re-measuring it |
+| CRLF + PowerShell .Replace() is a silent no-op | Cost three false test rounds |
+| Redact credentials by field-name match, not by eye | Leaked a real token |
+| Lock takeover is the *dangerous* direction | Would have permitted the corruption it prevents |
+| A listed model is not a callable model | Two 404s on "current" models |
+| Shared state must be per-session or a list | Cursor and claims bugs |
+| Don't generalise a partial test | I asserted a platform rule I'd only partly tested |
+| Test outside advice before building for it | Gemini's git claim was wrong |
+| Prose greps break on line wraps | 4th instance of a trap already recorded here |
+
+## The conversation backlog — why a new session is a continuation
+
+Every other piece of this tooling shares *state*. This one shares *reasoning*,
+and it exists because of a plain gap: a new session inherits `CLAUDE.md` and the
+shared state, but it has **no memory of any conversation that came before it**.
+Without this, the next session re-derives context the last one already paid for.
+
+```powershell
+node scripts\session-bridge.mjs backlog          # read the recent tail — do this FIRST
+node scripts\session-bridge.mjs log "<entry>" --kind=decision
+```
+
+Markdown at `~/.shos-session-bus/backlog.md`, not JSONL, because a human reads it
+too — the point is that you or the next session can pick it up without a tool.
+
+`--kind` is one of `decision`, `blocker`, `finding`, `question`, `state`, `done`,
+`mistake`. **Log what is not already durable elsewhere**: a decision and its
+reason, a dead end so nobody walks into it twice, a mistake worth not repeating,
+the state of something still open. Commits are already in git, findings already
+in `docs/`, tests in code — duplicating them here would only create a second
+place for them to go stale, which is a failure mode this repo has hit repeatedly.
+
+Each `log` also posts a one-line notice, so a session that only runs `inbox` still
+notices something changed without needing to know the backlog exists.
+
+### Reading it
+
+`backlog` defaults to the **tail** — the most recent entries — because the file
+only grows and burying current state under 200 entries is precisely how a
+handover document quietly stops being read. `backlog --all` for everything, or
+`backlog <n>` for a count.
+
+**Seeded on 29 Sep 2026** with the state of the two-session work: the measured
+session-waking blocker, the rejected git-lock advice, the UTC policy, the leaked
+credential, and the five open items. So a session starting tomorrow inherits
+that, not just a tool it does not know about.
+
 ## Credentials
 
 The opencode server password lives in

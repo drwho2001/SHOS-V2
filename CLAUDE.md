@@ -182,6 +182,8 @@ begin any new piece of work:
 
 ```powershell
 $env:SHOS_SESSION_NAME = "A"      # or "B" - do this first, claims are attributed
+node scripts\session-bridge.mjs lessons    # RULES that must not be re-learned. Read before planning.
+node scripts\session-bridge.mjs backlog    # what previous sessions decided/tried. Read before re-deriving.
 node scripts\session-bridge.mjs claims     # what files the other session holds
 node scripts\session-bridge.mjs inbox      # notices you have not seen
 node scripts\session-bridge.mjs pool list  # approved work available
@@ -190,9 +192,47 @@ node scripts\session-bridge.mjs pool list  # approved work available
 **Where that state lives** (all of it outside the repository, so none of it can
 be committed by accident): the work pool and claims are
 `~/.shos-session-bus/state/`, the notice log is `~/.shos-session-bus/notices.jsonl`,
-and joint-work task folders are `~/.shos-session-bus/tasks/<slug>/`. A new
-session therefore starts with no memory of this conversation, but it inherits
-this instruction and can see everything the other session recorded.
+the conversation backlog is `~/.shos-session-bus/backlog.md`, the durable rules
+are `~/.shos-session-bus/lessons.md`, and joint-work task folders are
+`~/.shos-session-bus/tasks/<slug>/`.
+
+**The backlog is what makes you a continuation rather than a restart.** You have
+no memory of any conversation before this one. The backlog holds what earlier
+sessions decided, what they tried that did not work, and what is still open — so
+read it first, and do not re-derive context that is already written down. If it
+looks stale or contradicts what you are told, say so rather than silently
+trusting either.
+
+**And write to it as you go.** Logging is not optional courtesy, it is the only
+reason the next session inherits anything:
+
+```powershell
+node scripts\session-bridge.mjs log "<what you decided, tried, or found out>" --kind=decision
+```
+
+`--kind` is one of `decision`, `blocker`, `finding`, `question`, `state`, `done`,
+`mistake`. Log the things that are **not already durable elsewhere** — a decision
+and its reason, a dead end so nobody walks into it twice, a mistake worth not
+repeating, or the state of something still open. Commits are already in git and
+findings already in `docs/`; duplicating those here would just create a second
+place for them to go stale. Read it with `backlog` (recent tail) or
+`backlog --all`.
+
+**And when you learn a RULE, record it as a lesson** — the class of knowledge
+that is worthless in a transcript and valuable as a rule. "X cannot be done as
+Y, so try Z, because this worked in the past":
+
+```powershell
+node scripts\session-bridge.mjs lesson "<the rule>" "<what to do instead>" --kind=cannot --evidence="<why, with the measurement>"
+```
+
+`--kind` is `cannot` / `must` / `prefer` / `verify`. **`--evidence` is required
+and the tool refuses without it** — a rule with no provenance is a superstition,
+and this repo has repeatedly found those. Read with `lessons`, or
+`lessons --grep <term>`. If a rule's evidence stops being valid, delete it; do
+not inherit it.
+
+
 
 **To get a second opinion from a different model**, use the consult tool. It
 calls Gemini's free tier by default (walking down a cheaper/quieter model

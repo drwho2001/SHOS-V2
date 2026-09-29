@@ -843,6 +843,184 @@ commands.stuck = async (args) => {
   }
 };
 
+// ── conversation backlog ───────────────────────────────────────────────────
+//
+// A new session inherits CLAUDE.md and the shared state, but it has NO memory of
+// any conversation that came before it. That is the honest boundary, and it is
+// the thing that makes handing this project to a fresh session expensive: the
+// next one re-derives context the last one already paid for.
+//
+// So every session appends here as it goes, and a new session reads it first.
+// Markdown rather than JSONL, deliberately: a human reads this too, and the
+// point is that the next session - or you - can pick it up without a tool.
+//
+// The recording rule is in CLAUDE.md, because "log it" is useless as advice; it
+// has to be an instruction the next session inherits. It is scoped to things
+// that are NOT already durable elsewhere: decisions and their reasons, things
+// tried that did not work, and the state of anything still open. Commits are
+// already in git and findings already in docs/, so duplicating them here would
+// just be a second place for them to go stale.
+
+const BACKLOG_PATH = join(HOME_DIR, "backlog.md");
+
+const KINDS = {
+  decision: "Decision",
+  blocker: "Blocker",
+  finding: "Finding",
+  question: "Question",
+  state: "State",
+  done: "Done",
+  mistake: "Mistake",
+};
+
+commands.log = async (args) => {
+  const kindArg = args.find((a) => a.startsWith("--kind="));
+  const kind = kindArg ? kindArg.split("=")[1] : "state";
+  if (!KINDS[kind]) {
+    console.error(`Unknown --kind. Use one of: ${Object.keys(KINDS).join(", ")}`);
+    process.exit(2);
+  }
+  const text = args.filter((a) => !a.startsWith("--")).join(" ");
+  if (!text) {
+    console.error('Usage: log "<entry>" [--kind=decision|blocker|finding|question|state|done|mistake]');
+    process.exit(2);
+  }
+  mkdirSync(HOME_DIR, { recursive: true });
+  if (!existsSync(BACKLOG_PATH)) {
+    writeFileSync(
+      BACKLOG_PATH,
+      "# Conversation backlog\n\n" +
+        "Durable record of decisions, dead ends, and open state, so a NEW session can\n" +
+        "pick up without re-deriving everything. Appended by every session via\n" +
+        "`session-bridge.mjs log`; read it with `session-bridge.mjs backlog`.\n\n" +
+        "Times are UTC. This file is outside the repository on purpose.\n\n---\n\n",
+      "utf8"
+    );
+  }
+  const at = new Date().toISOString();
+  appendFileSync(BACKLOG_PATH, `### ${at} — ${ME} — ${KINDS[kind]}\n${text}\n\n`, "utf8");
+
+  // Recorded as a notice too, so a session that only runs `inbox` still sees
+  // that something changed, without needing to know the backlog exists.
+  const notices = existsSync(NOTICE_PATH)
+    ? readFileSync(NOTICE_PATH, "utf8").split("\n").filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean)
+    : [];
+  const seq = (notices.length ? notices[notices.length - 1].seq || 0 : 0) + 1;
+  appendFileSync(
+    NOTICE_PATH,
+    JSON.stringify({ seq, at, from: ME, text: `${KINDS[kind]}: ${text.slice(0, 160)}` }) + "\n",
+    "utf8"
+  );
+  console.log(`logged (${KINDS[kind]}) at ${stamp(at)} — also posted as notice #${seq}`);
+};
+
+commands.backlog = async (args) => {
+  if (!existsSync(BACKLOG_PATH)) {
+    console.log("(no backlog yet - this is the first entry)");
+    return;
+  }
+  const full = args.includes("--all");
+  const body = readFileSync(BACKLOG_PATH, "utf8");
+  if (full) {
+    console.log(body);
+    return;
+  }
+  // Default is the TAIL, because the most recent state is what a new session
+  // needs and the file only grows. A full history dump is context the session
+  // will not use, and burying the current state under 200 entries is how a
+  // handover document quietly stops being read.
+  const chunks = body.split(/^### /m).filter(Boolean);
+  const header = chunks.shift() || "";
+  const want = Number((args.find((a) => /^\d+$/.test(a)) || "8"));
+  console.log(header.trim());
+  console.log(`--- most recent ${Math.min(want, chunks.length)} of ${chunks.length} entries ---\n`);
+  for (const c of chunks.slice(-want)) {
+    console.log("### " + c.trimEnd());
+    console.log("");
+  }
+  if (chunks.length > want) {
+    console.log(`(${chunks.length - want} older entries hidden - use "backlog --all" or "backlog <n>")`);
+  }
+};
+
+// ── lessons: durable rules, not chronology ─────────────────────────────────
+//
+// The backlog answers "what happened". This answers "what must a future session
+// NOT do, and what to do instead" — the class of knowledge that is worthless in
+// a transcript and valuable as a rule. Separated deliberately: a chronological
+// log grows without bound and gets skimmed, whereas this stays short enough to
+// read in full every session.
+//
+// Format is RULE / DO / WHY / EVIDENCE rather than prose, because the reader is
+// mostly an AI and a labelled line is retrievable where a paragraph is not. EVIDENCE
+// is required and not optional: an unevidenced rule is a superstition, and this
+// repo has repeatedly found those ("fixed" bugs that were not bugs, gates that
+// measured nothing). A rule whose evidence has expired should be deleted, not
+// inherited.
+
+const LESSONS_PATH = join(HOME_DIR, "lessons.md");
+const LKINDS = ["cannot", "must", "prefer", "verify"];
+
+commands.lesson = async (args) => {
+  // lesson "<what cannot be done / rule>" "<what to do instead>" --kind=cannot --evidence="..."
+  const kind = (args.find((a) => a.startsWith("--kind=")) || "").split("=")[1] || "cannot";
+  const evidence = (args.find((a) => a.startsWith("--evidence=")) || "").slice(11);
+  const positional = args.filter((a) => !a.startsWith("--"));
+  const rule = positional[0];
+  const instead = positional.slice(1).join(" ");
+  if (!rule || !instead) {
+    console.error(`Usage: lesson "<rule>" "<what to do instead>" [--kind=${LKINDS.join("|")}] [--evidence="..."]`);
+    process.exit(2);
+  }
+  if (!LKINDS.includes(kind)) {
+    console.error(`--kind must be one of: ${LKINDS.join(", ")}`);
+    process.exit(2);
+  }
+  if (!evidence) {
+    // Not pedantry: a rule with no evidence is how a wrong rule becomes
+    // permanent, because the next session has no way to tell a measured finding
+    // from an assumption.
+    console.error("refusing to record a rule with no --evidence. A rule with no provenance is a superstition.");
+    process.exit(2);
+  }
+  mkdirSync(HOME_DIR, { recursive: true });
+  if (!existsSync(LESSONS_PATH)) {
+    writeFileSync(
+      LESSONS_PATH,
+      "# Lessons — durable rules for this repo\n\n" +
+        "Read at session start. `RULE` / `DO` / `EVIDENCE` is the shape, because the\n" +
+        "reader is mostly an AI and labelled lines are retrievable where prose is not.\n\n" +
+        "If a rule's evidence is no longer valid, DELETE it. Do not inherit it.\n\n---\n\n",
+      "utf8"
+    );
+  }
+  const n = (readFileSync(LESSONS_PATH, "utf8").match(/^### L-/gm) || []).length + 1;
+  appendFileSync(
+    LESSONS_PATH,
+    `### L-${String(n).padStart(3, "0")} [${kind}] ${ME}\n` +
+      `RULE: ${rule}\nDO: ${instead}\nEVIDENCE: ${evidence}\n\n`,
+    "utf8"
+  );
+  console.log(`recorded L-${String(n).padStart(3, "0")} (${kind})`);
+};
+
+commands.lessons = async (args) => {
+  if (!existsSync(LESSONS_PATH)) {
+    console.log("(no lessons recorded yet)");
+    return;
+  }
+  const body = readFileSync(LESSONS_PATH, "utf8");
+  if (args.includes("--grep")) {
+    const q = (args[args.indexOf("--grep") + 1] || "").toLowerCase();
+    if (!q) { console.error('Usage: lessons --grep <term>'); process.exit(2); }
+    const blocks = body.split(/^### /m).filter((b) => b.toLowerCase().includes(q));
+    console.log(`${blocks.length} lesson(s) matching "${q}"`);
+    for (const b of blocks) console.log("\n### " + b.trimEnd());
+    return;
+  }
+  console.log(body);
+};
+
 commands.claim = async (args) => {
   const mode = args[0] === "release" ? "release" : "claim";
   const files = args.filter((a) => a !== "release");
@@ -948,6 +1126,10 @@ commands["help"] = async () => {
   task read <slug> [file]      read one doc, or list the folder
   task list                    list all tasks
   claim <file...>              record file ownership
+  log "<entry>" [--kind=X]     append to the conversation backlog
+  backlog [N|--all]          read recent backlog entries (what a NEW session does first)
+  lesson "<rule>" "<do instead>"     record a durable RULE/DO/EVIDENCE lesson (--evidence required)
+  lessons [--grep X]           read all lessons, or grep them
   claims                       show current claims
   pool list                    show the approved work pool
   pool add "<title>" [--files=a,b]   add an already-approved task
