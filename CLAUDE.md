@@ -381,6 +381,39 @@ otherwise it would pass trivially against a blank page. This is pool task
 `t028` for the ~130 fixed waits still remaining, done per-site with evidence
 rather than swept.
 
+**`t028`'s first real batch, and the finding is that the 130 sites were not
+where the problem was.** The defect was in a *helper*:
+`dismissTransientBanners` caught all six of its dismissal clicks with
+`.catch(() => {})`, so on a not-yet-booted app it silently did nothing,
+reported success, and the banners appeared afterwards to intercept
+`goHomeThenOpenSettings`' coordinate-based Settings click — a failure pointing
+nowhere near its cause. **Nine** call sites had papered over it with a fixed
+800 ms wait first. The helper now waits for the app, dismisses, then
+**verifies** no dismissal control remains and retries up to three times, which
+removed those nine waits because they were never the fix. A helper that can
+quietly do nothing is worse than no helper.
+
+**I had already made the "fix the symptom, not the class" mistake here, one
+commit earlier.** Flow 1 (`sample-data`, from Home) asserts a contact was
+added after a 1500 ms wait and a body-text read — byte-for-byte the same shape
+as the Developer Tools flake, one flow later. I fixed the one CI actually
+reported and left this one, which is exactly the mistake this file records as
+"a fix scoped to the symptom you happened to hit is not a fix to the class."
+The same bounded treatment then went onto two anonymise-mode data reads and a
+negative banner assertion that had waited 2500 ms. Shared `waitForText` /
+`waitForAppReady` / `waitForGone` helpers mean the fix is one place rather
+than fifty-nine; fixed waits **142 → 133**.
+
+Verified by running the full suite **twice** against a real `vite preview`
+build and comparing: 140 `ok` across 23 flows both times, zero failures, and
+the assertion count **unchanged from baseline** — which is the check that makes
+a silently-skipped helper visible at all, and the reason that number is
+reported rather than just "ALL PASSED". Not done, and stated rather than
+implied: the `visibilitychange` negative assertion in the acknowledgement flow
+can still pass without the refresh having run, and making it sound needs a
+positive hook proving the poll fired — left for whoever can do it honestly
+rather than faked.
+
 Related: killed smoke runs used to leave **orphaned `chrome-headless-shell`
 processes** (~190 MB) and `vite preview` servers behind — four of the former were
 found on this machine starving the next run. `verify-changes.mjs` now cleans up
