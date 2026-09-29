@@ -274,6 +274,75 @@ What exists instead is that each session can *look* at shared state on demand, a
 — with the instruction at the top of `CLAUDE.md` — does so unprompted at the
 start of its turn.
 
+## Getting a second opinion: `consult.mjs`
+
+The blocker for the owner vision — two sessions cross-checking each other — was
+always that **opencode cannot wake an idle session**. `consult.mjs` sidesteps
+that entirely: it never touches a session, it calls a *different model* through
+its own public API and writes the exchange where the other session already
+looks.
+
+```powershell
+node scripts/consult.mjs gemini "should this be a hook or a script?" --task=my-task
+```
+
+The answer is written to `tasks/<slug>/90-<provider>-consult.md` and to a
+machine-readable `exchanges.jsonl`, so the other session reads it on its next
+turn. That is the whole mechanism — **no session is woken, and none needs to
+be.** The trade is real and worth stating: the second opinion is a model with no
+memory of this repo, so it is genuinely an *outside* opinion rather than a
+collaborator with context. Use it to challenge an approach, not to hold state.
+
+### Cost policy, and the ladder
+
+The owner's rule is: **cheapest option first, and prefer what a subscription
+already covers.** So each provider is an ordered ladder, walked automatically
+when the current model is rate- or capacity-limited:
+
+| Provider | Ladder | Policy |
+|---|---|---|
+| `gemini` | `flash-latest` → `flash-lite-latest` → `2.5-flash-lite` → `3.1-flash-lite` | free tier — preferred |
+| `openai` | `gpt-4.1-nano` → `gpt-4.1-mini` → `gpt-5.4-mini` | paid, **last resort** |
+| `anthropic` | `claude-sonnet-4-5` | paid, workspace-scoped key — last resort |
+
+The free tier is contended enough to matter. Observed live: `gemini-flash-latest`
+returned `503 high demand`, and the tool retried once, then stepped down to
+`gemini-flash-lite-latest` and was served by `gemini-3.5-flash-lite`. Without
+the ladder that call simply fails.
+
+`--model` pins one model and will **not** silently substitute another.
+
+### Credential status, as measured on 29 Sep 2026
+
+Keys live in environment variables, never files, and are never logged or placed
+on a command line by the tool.
+
+- **Gemini — works.** Free tier. `GEMINI_API_KEY`.
+- **OpenAI — no credits.** `HTTP 429 "no credits remaining"`. Treated as a
+  hard failure, not walked, because a second model would fail identically.
+- **Anthropic — key is not a console API key.** Returns
+  `400 not scoped to a workspace`. Set `ANTHROPIC_WORKSPACE_ID` and it should
+  work; until then it is last resort and unavailable.
+
+Model naming is not guessable from documentation: `gemini-2.5-flash` and
+`gemini-2.0-flash` are both still **listed** by the API yet return `404 no
+longer available`. The catalogue is not a promise that a model is callable, which
+is why the free models are addressed by alias (`gemini-flash-latest`) rather than
+a version number.
+
+### What Gemini said when asked — and it found a real gap
+
+Asked what single invariant most prevents two agents corrupting each other's
+work in one tree, the answer was **full mutual exclusion on all tree mutations**,
+with a clean committed state between turns. That is stricter than the
+file-ownership partition used here, and it disagreed usefully: it pointed at
+`.git/index` and `HEAD` as **shared state**, and index-lock collision between two
+concurrent `git add` commands as a real failure mode.
+
+That is a genuine gap, and it is not covered by the gate lock — that serialises
+`verify`, not staging. Worth deciding separately; it is a real, narrow fix
+(lock around `git add`/`git commit`) rather than a redesign.
+
 ## Credentials
 
 The opencode server password lives in
