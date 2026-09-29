@@ -645,6 +645,55 @@ plugin's own compilation are confirmed by CI's APK build and nothing before it
 — the first real risk in this round, since `androidx.security:security-crypto`
 is a new dependency resolving from the network.
 
+## Recently shipped (29 Sep 2026, newest of all yet again — the coordination tool got a test suite, and it found two more bugs immediately)
+
+**`session-bridge.mjs` is how two concurrent sessions avoid editing the same
+file, and it had no test of any kind.** It produced five separate pool and claim
+bugs in one session, every one of them found by *using* it: `pool take` ignoring
+its id, `process.exit` skipping the lock's `finally` in 11 of 12 sites, `edit`
+claiming files on annotation, and `done` never releasing. None were found by
+reading the code, and the common cause is that there was no way to run the tool
+twice and assert on the outcome — so everything was verified by hand, one bug at
+a time, forever.
+
+**The suite is a subprocess harness, because the contract is process-level.**
+Exit codes, stdout, and `pool.lock` on disk *are* the observable behaviour, and
+an in-process call would exercise none of it. `SHOS_BUS_HOME` was added so it
+can run against a temporary directory; the default is unchanged, so normal use
+is unaffected, and one test asserts the real pool never gains a test task. Each
+of the five bugs now has a named regression test, and the `process.exit` one
+deliberately exercises **six different refusal verbs** rather than the single
+call site that was originally fixed — because that was the bug.
+
+**It found two real problems on its first run, both of them mine.** The refusal
+for a task another session holds said `t001 is doing, not approved` and never
+named the file — the one actionable part of the answer, since the status check
+fired before the ownership check. And the harness's own waiting was wrong twice:
+it first spawned `node -e` per poll, then used `Atomics.wait`, which **blocks the
+thread**, so vitest's worker could not answer its RPC and the run exited
+**non-zero with all 17 tests passing** — a green suite reporting a red gate,
+caused entirely by the thing that waits. An async timer is the fix, and the suite
+went from 73s to 14s.
+
+**All five mutations confirmed red**, each reintroducing one of the original
+bugs. Four of the five patterns *silently failed to apply* on the first attempt
+because they were written with `\n` against a CRLF file — the exact trap this
+file has now recorded several times. The harness reads the line ending off the
+file before matching, and a mutation that does not apply is reported as
+"NOT APPLIED" rather than counted as a pass.
+
+**A full-gate failure that is not a regression, recorded so nobody chases it.**
+`vaccineEarlyDoseNotice.test.js` failed twice while it passed in isolation, with
+a *different* assertion each time. The cause is the shared tree: the file it
+reads was being written by the other session a minute earlier, so the assertion
+that failed depended on which partial snapshot was read. A test that reads
+source as text is only as stable as the file. Not a defect, but the kind of
+thing that looks exactly like one at 2am.
+
+Verified: `verify:fast` green for everything this change touches — 34 tests
+across the three new/updated files, eslint clean, the real pool untouched. The
+full gate is held by the other session's in-flight edit, not by this.
+
 ## Recently shipped (29 Sep 2026, newest of all yet again — t030 was marked "done" with nothing wired, which is what a self-reported state is worth)
 
 **`t030` was found marked `done` in the work pool with zero references to the

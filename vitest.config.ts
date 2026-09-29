@@ -7,7 +7,13 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
-    include: ['src/**/*.test.{js,jsx}'],
+    // scripts/ is included because the coordination tooling in there is part of
+    // this project's correctness story, not incidental build glue:
+    // session-bridge.mjs is how two concurrent sessions avoid editing the same
+    // file, and it produced five separate pool/claim bugs in one session, every
+    // one found by hand because there was no way to run it twice in a test. Its
+    // suite lives at scripts/sessionBridge.test.js.
+    include: ['src/**/*.test.{js,jsx}', 'scripts/**/*.test.{js,mjs,cjs}'],
     exclude: ['node_modules', 'dist', 'android'],
     coverage: {
       provider: 'v8',

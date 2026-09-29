@@ -53,7 +53,13 @@ import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, rea
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const HOME_DIR = join(homedir(), ".shos-session-bus");
+// SHOS_BUS_HOME exists so the test harness can drive this against a temporary
+// directory. It was hardcoded to ~/.shos-session-bus, which made the tool
+// UNTESTABLE without risking the real two-session state: five separate pool and
+// claim bugs were found by hand in one session, all of the "works when I try it"
+// variety, because there was no way to run it twice. It defaults to the real
+// path, so nothing about normal use changes.
+const HOME_DIR = process.env.SHOS_BUS_HOME || join(homedir(), ".shos-session-bus");
 const CRED_PATH = join(HOME_DIR, "credentials.json");
 const STATE_DIR = join(HOME_DIR, "state");
 const CURSOR_PATH = join(STATE_DIR, "cursors.json");
@@ -869,13 +875,23 @@ function poolHandler(args) {
           POOL_EXIT_CODE = 2;
           return;
         }
-        if (named.status !== "approved") {
-          console.error(`${wanted} is ${named.status}, not approved - cannot take it`);
+        // Order matters here, and getting it wrong made the message useless.
+        // A task another session is holding is status "doing" with an owner, so
+        // checking the status first reported "t001 is doing, not approved" -
+        // which tells the person reading it nothing about WHY they cannot have
+        // it, and the held file was never named at all. That file is the only
+        // actionable part of the answer.
+        if (named.owner && named.owner !== ME) {
+          const clash = (named.files || []).filter((f) => heldByOthers.has(f));
+          console.error(
+            `${wanted} is already allocated to ${named.owner}` +
+              (clash.length ? ` (holds ${clash.join(", ")})` : "")
+          );
           POOL_EXIT_CODE = 2;
           return;
         }
-        if (named.owner && named.owner !== ME) {
-          console.error(`${wanted} is already allocated to ${named.owner}`);
+        if (named.status !== "approved") {
+          console.error(`${wanted} is ${named.status}, not approved - cannot take it`);
           POOL_EXIT_CODE = 2;
           return;
         }
