@@ -688,7 +688,18 @@ function allocate(t, pool) {
   console.log("  recorded now, BEFORE any work, so the other session sees it");
 }
 
-commands.pool = async (args) => withPoolLock(() => poolHandler(args));
+// POOL_EXIT_CODE rather than process.exit() inside the handler. process.exit
+// terminates immediately and SKIPS the finally block in withPoolLock, so the
+// lock file is never released and the pool stays locked until the 10s stale
+// reclaim fires - meaning every refusal briefly locks out the other session.
+// Found by leaving one behind and seeing the next call time out.
+let POOL_EXIT_CODE = 0;
+
+commands.pool = async (args) => {
+  const r = withPoolLock(() => poolHandler(args));
+  if (POOL_EXIT_CODE) process.exit(POOL_EXIT_CODE);
+  return r;
+};
 
 function poolHandler(args) {
   const [verb, ...rest] = args;
@@ -769,16 +780,56 @@ function poolHandler(args) {
   }
 
   if (verb === "take") {
-    // Only approved, unowned, and not colliding with another session's claims.
-    const claims = readJson(CLAIM_PATH, {});
-    const heldByOthers = new Set();
-    for (const [f, v] of Object.entries(claims)) {
-      for (const h of v.holders || []) if (h.by !== ME) heldByOthers.add(f);
-    }
-    const t = pool.tasks.find(
-      (x) => x.status === "approved" && !x.owner && !(x.files || []).some((f) => heldByOthers.has(f))
-    );
-    if (!t) {
+      // Only approved, unowned, and not colliding with another session's claims.
+      const claims = readJson(CLAIM_PATH, {});
+      const heldByOthers = new Set();
+      for (const [f, v] of Object.entries(claims)) {
+        for (const h of v.holders || []) if (h.by !== ME) heldByOthers.add(f);
+      }
+      const takeable = (x) =>
+        x.status === "approved" && !x.owner &&
+        !(x.files || []).some((f) => heldByOthers.has(f));
+
+      // A NAMED task is never silently swapped for a different one. This bug
+      // was hit immediately: `pool take t018` allocated t014 and claimed
+      // t014's files, because the id argument was never read and the code just
+      // took the first takeable task. That is the most dangerous shape this
+      // tool can have - a session asks for one piece of work, is told it has
+      // it, and is actually holding an unrelated task's files. A lost update
+      // loses a record; this tells someone a lie about what they own.
+      const wanted = rest.find((a) => !a.startsWith("--"));
+      if (wanted) {
+        const named = pool.tasks.find((x) => x.id === wanted);
+        if (!named) {
+          console.error(`no such task: ${wanted}`);
+          POOL_EXIT_CODE = 2;
+          return;
+        }
+        if (named.status !== "approved") {
+          console.error(`${wanted} is ${named.status}, not approved - cannot take it`);
+          POOL_EXIT_CODE = 2;
+          return;
+        }
+        if (named.owner && named.owner !== ME) {
+          console.error(`${wanted} is already allocated to ${named.owner}`);
+          POOL_EXIT_CODE = 2;
+          return;
+        }
+        const clash = (named.files || []).filter((f) => heldByOthers.has(f));
+        if (clash.length) {
+          console.error(
+            `${wanted} touches files held by another session: ${clash.join(", ")} - ` +
+              `use pool block ${wanted} instead`
+          );
+          POOL_EXIT_CODE = 2;
+          return;
+        }
+        allocate(named, pool);
+        return;
+      }
+
+      const t = pool.tasks.find(takeable);
+      if (!t) {
       const reasons = [];
       if (!pool.tasks.some((x) => x.status === "approved")) reasons.push("nothing is approved");
       if (pool.tasks.some((x) => x.status === "approved" && x.files.some((f) => heldByOthers.has(f)))) {

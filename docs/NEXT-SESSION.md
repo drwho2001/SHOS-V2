@@ -36,9 +36,19 @@ what actually prevents you and A from editing the same file at once.
 ```powershell
 node scripts\session-bridge.mjs pool list          # what exists
 node scripts\session-bridge.mjs pool take t011     # ALLOCATE, before any work
-node scripts\session-bridge.mjs pool start t011    # then start
 node scripts\session-bridge.mjs pool done t011     # when verified
 ```
+
+`pool take` **honours the task id you name**, and refuses rather than
+substituting: a missing id, an already-allocated task, or a task touching files
+another session holds all fail loudly and tell you why. *(It did not always.
+It ignored the id entirely and quietly handed you a different task with its
+files claimed — found by hitting it, and it was the most dangerous shape this
+tool could have: a lost update loses a record, this lies about what you own.)*
+
+There is no `pool start`. The verbs are `add`, `propose`, `approve`, `take`,
+`done`, `block`, `release`, `list`, `rm`, `edit`, `reap`. `pool take` is the
+allocation record and is enough; run it before you touch anything.
 
 `pool take` claims the task's files, so a second session taking an overlapping
 task is refused. **This is the only duplicate protection there is** — it works
