@@ -39,7 +39,7 @@ import { getDailyMedsState, handleTakeAll, handleSkipToday, handleSnooze } from 
 // parity" — same static-import reasoning as medicationReminderSync
 // above: these are now also called directly from in-app due-state
 // banner buttons, not just background listeners.
-import { getRefillDueMedications, handleMarkRefillRequested, handleCancelRefill, handleSnoozeRefill } from "./calculations/refillReminderSync";
+import { getRefillDueMedications, getRefillAwaitingCollection, handleUndoRefillRequest, handleMarkRefillRequested, handleCancelRefill, handleSnoozeRefill } from "./calculations/refillReminderSync";
 import { getTestingDueState, handleSnoozeTesting } from "./calculations/testingReminderSync";
 import { getVaccinationDueState, handleSnoozeVaccination } from "./calculations/vaccinationReminderSync";
 import { getClinicVisitDueState, handleSnoozeClinicVisit } from "./calculations/clinicVisitReminderSync";
@@ -77,7 +77,7 @@ import {
 import { ModuleColorRepository } from "./repositories/moduleColorRepository";
 import { useIsDesktopWidth } from "./calculations/responsive";
 // ADDED — real ask: Home's title should read "[Name]'s dashboard".
-import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HospitalIcon as Hospital, WarningIcon as AlertTriangle, EyeIcon as Eye, TestTubeIcon as TestTube, SyringeIcon as Syringe, FingerprintIcon as Fingerprint, LockIcon as Lock, XIcon as X, CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
+import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HospitalIcon as Hospital, WarningIcon as AlertTriangle, EyeIcon as Eye, TestTubeIcon as TestTube, SyringeIcon as Syringe, FingerprintIcon as Fingerprint, LockIcon as Lock, XIcon as X, CaretLeftIcon as ChevronLeft, ClockIcon as Clock } from "@phosphor-icons/react";
 // CHANGED — real Tier 1 decision: Phosphor, replacing lucide-react.
 // Every icon aliased directly in ONE import statement, back to its
 // original lucide name — deliberately one consistent pattern (not
@@ -1258,6 +1258,9 @@ export default function App() {
   // alongside stale leftover data the way an empty-but-truthy object
   // would.
   const [refillDue, setRefillDue] = useState([]);
+  // ADDED 29 Sep 2026 (t013) - refills already marked as requested but not
+  // yet collected. Passive by design: it is shown, never nagged about.
+  const [refillAwaiting, setRefillAwaiting] = useState([]);
   const [refillBannerHeight, refillBannerCallbackRef] = useMeasuredBannerHeight();
   const [testingDue, setTestingDue] = useState(null);
   const [testingBannerHeight, testingBannerCallbackRef] = useMeasuredBannerHeight();
@@ -1380,6 +1383,11 @@ export default function App() {
     // than four separate near-identical effects.
     const refill = await getRefillDueMedications();
     setRefillDue(refill);
+    // ADDED 29 Sep 2026 (t013) - the second stage, fetched alongside the first
+    // so one storage read settles both. Marking a refill "requested" filters it
+    // out of `refillDue` entirely, so without this an ordered-but-uncollected
+    // item is invisible everywhere except one line on the medication card.
+    setRefillAwaiting(await getRefillAwaitingCollection());
     const testing = await getTestingDueState();
     setTestingDue(testing.due ? testing : null);
     const clinicVisit = await getClinicVisitDueState();
@@ -2490,6 +2498,42 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               keeps the original, simpler set (Requested/one Snooze)
               instead. A mixed banner (both kinds due at once) shows
               both action rows, each acting only on its own group. */}
+
+            {/* ADDED 29 Sep 2026 (t013) — the SECOND STAGE, and deliberately a
+                separate, quieter line rather than another red banner. Marking a
+                refill "requested" filters it out of `refillDue` entirely, so an
+                ordered-but-uncollected item otherwise vanishes from Home
+                completely. This shows, it does not nag: no notification is
+                scheduled, and the line clears itself the moment a refill is
+                logged. Re-adding a timer here would be the same unsourced
+                constant the medication lockout fell into before the NHS figures
+                were found. */}
+            {refillAwaiting.length > 0 && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 16px", background: ACCENTS.medication, borderTop: "1px solid rgba(255,255,255,.25)" }}>
+                <Clock size={18} color="rgba(255,255,255,.9)" style={{ flexShrink: 0, marginTop: 1 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,.95)" }}>
+                    {refillAwaiting.length === 1
+                      ? `${refillAwaiting[0].name} — refill requested, not collected yet`
+                      : `${refillAwaiting.length} refills requested, not collected yet`}
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const r = await handleUndoRefillRequest(refillAwaiting.map((m) => m.id));
+                      showNotifToast(r.medications.length === 1
+                        ? `Reopened ${r.medications[0]} — it will remind you again`
+                        : `Reopened ${r.medications.length} refills`);
+                      checkDueMeds();
+                    }}
+                    aria-label="Undo: these refills were not ordered after all"
+                    style={{ background: "none", border: "none", padding: 0, marginTop: 3, color: "inherit", textDecoration: "underline", fontSize: 11, cursor: "pointer" }}
+                  >
+                    I didn&apos;t order these
+                  </button>
+                </div>
+              </div>
+            )}
+
           {isBannerVisible(suppressState(REMINDER_KIND.REFILL, refillDue.length, refillSignature)) && (() => {
             const repeatingRefillDue = refillDue.filter((m) => m.usagePattern !== "prn");
             const prnRefillDue = refillDue.filter((m) => m.usagePattern === "prn");

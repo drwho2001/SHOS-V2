@@ -70,6 +70,59 @@ export async function getRefillDueMedications() {
   return meds.filter((m) => computeStock(m).needsAction && !m.refillRequestedAt && !m.refillCancelledAt && !isRefillSnoozed(prefs, m.id));
 }
 
+// ADDED 29 Sep 2026 (Phase 3, t013) - the SECOND stage. Marking a refill
+// "requested" currently makes the item disappear completely: getRefillDueMedications
+// above filters it out, so the in-app banner stops, the notification stops, and
+// the only trace is one line on the medication card. If the pharmacy is out of
+// stock, or you simply forget, nothing ever brings it back - which is the same
+// silent-loss shape this feature was built to fix, one stage later.
+//
+// This is DERIVED, not a second stored flag. `refillRequestedAt` is the fact
+// ("you asked for this"); whether it is still outstanding is calculated from
+// live stock, so logging the refill retires it automatically with no second
+// write and no way for the two to disagree. That is the repo's own "store
+// facts, derive state" rule, and the reason there is no `refillCollectedAt`.
+//
+// DELIBERATELY NO TIMER. It is tempting to bring this back after N days, and
+// there is no sourced number for N - which is exactly the trap the medication
+// lockout's 0.8 and 0.2 factors fell into before the NHS figures were found.
+// So the second stage does not nag: it is a passive count, and the item clears
+// itself the moment a refill is logged. A reminder that re-appears forever is
+// the behaviour this whole feature was built to remove.
+//
+// `needsAction` is re-checked rather than assumed: if stock recovered on its own
+// (say a correction), there is nothing left to collect.
+export async function getRefillAwaitingCollection() {
+  const meds = await Promise.all(
+    (await MedicationRepository.getAll())
+      .filter((m) => !m.isArchived && m.inventoryTracked)
+      .map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) }))
+  );
+  return meds.filter(
+    (m) => !!m.refillRequestedAt && !m.refillCancelledAt && computeStock(m).needsAction
+  );
+}
+
+// ADDED 29 Sep 2026 (t013) - the way back. Marking a refill "requested" hides
+// the action that marked it, so a mis-tap on a small button had NO route out
+// except logging a refill that never happened. That is the same defect as a
+// persisted silence with no escape, which this repo has recorded as a rule
+// rather than a preference: one wrong tap must not mean a medication is
+// invisible until the user works out why.
+//
+// It clears BOTH suppression timestamps, not just `refillRequestedAt`, because
+// "I didn't order this" and "I cancelled this" are the same statement about the
+// same item, and leaving one behind would make it vanish again for a reason the
+// user cannot see.
+export async function handleUndoRefillRequest(ids = null) {
+  const meds = (await getRefillAwaitingCollection()).filter((m) => !ids || ids.includes(m.id));
+  const names = meds.map((m) => m.name);
+  for (const m of meds) {
+    await MedicationRepository.update(m.id, { refillRequestedAt: null, refillCancelledAt: null });
+  }
+  return { medications: names };
+}
+
 export async function syncRefillReminder() {
   if (!(await NotificationPreferencesRepository.getPreferences()).refillReminderEnabled) {
     await cancelNotification(NOTIFICATION_IDS.refillReminder);

@@ -645,6 +645,56 @@ plugin's own compilation are confirmed by CI's APK build and nothing before it
 — the first real risk in this round, since `androidx.security:security-crypto`
 is a new dependency resolving from the network.
 
+## Recently shipped (29 Sep 2026, newest of all yet again — the refill's second stage, and the one thing it deliberately does NOT do)
+
+**Marking a refill "requested" made it disappear completely.** It is filtered
+out of `getRefillDueMedications()`, so the in-app banner stopped, the
+notification stopped, and the only trace was one line on the medication card. If
+the pharmacy is out of stock, or you simply forget, nothing ever brought it back
+— the same silent-loss shape the feature was built to fix, one stage later.
+
+**The second stage is derived, not a second stored flag.** `refillRequestedAt` is
+the fact; whether it is still outstanding is calculated from live stock, so
+logging the refill retires it with no second write and the two can never
+disagree. That is the repo's own "store facts, derive state" rule, and it is why
+there is no `refillCollectedAt`.
+
+**It does not nag, and that is asserted rather than left to review.** No timer,
+no notification, no new scheduling path. It is tempting to bring the item back
+after N days and there is no sourced number for N — which is exactly the trap the
+medication lockout's 0.8 and 0.2 factors fell into before the NHS figures were
+found. A test greps the function for a days-derived constant and fails if one
+appears, and a second asserts the awaiting list never enters the scheduling path.
+It also deliberately does **not** reuse the refill banner's signature:
+acknowledging the red banner must not be able to hide a passive "you ordered
+this and have not collected it" line.
+
+**A mis-tap had no way back, which is the escape-hatch defect again.** The
+"Mark as requested" action hides itself once tapped, so the only route out was
+logging a refill that never happened. `handleUndoRefillRequest` clears **both**
+suppression timestamps — clearing only `refillRequestedAt` would leave the item
+vanishing again for a reason the user cannot see — and Home carries the button.
+
+**Two of my own test bugs, both fixtures asserting a shape the code never had.**
+The first used `quantity` on a log where `computeStock` reads `delta`, so it
+summed to zero and asserted nonsense. The second asserted `scheduleNotification`
+was absent from `syncRefillReminder` — where the *first* stage legitimately
+schedules. The meaningful negative, that the awaiting list is not in the
+scheduling path, is asserted instead, together with the positive that the first
+stage is still there so the negative cannot pass vacuously.
+
+**A missing icon import that eslint did not catch.** The new line uses `Clock`,
+which was not in App.jsx's Phosphor import — a render-time `ReferenceError` that
+build, lint and the whole unit suite would have shipped. Found by asking whether
+the symbol was actually imported rather than assuming, which is the same instinct
+as checking that a guard can fail.
+
+Verified: 11 tests, all 5 mutations red — the Home fetch dropping the list, undo
+clearing only one timestamp, the second stage starting to schedule its own
+notification, an unsourced timer, and cancelled items being counted. Local gate
+otherwise green; the full unit run is currently held by the other session's
+in-flight `statsCalculations` work, not by this change.
+
 ## Recently shipped (29 Sep 2026, newest of all yet again — one master switch, and the honest part is what it does NOT let you do)
 
 **The suppression feature had no way to turn off.** Phase 3 shipped "Don't
