@@ -17,6 +17,7 @@
 // across every module in one pass rather than one polished module and
 // six unbuilt ones.
 import { MODULE_LABELS } from "../repositories/trashRepository";
+import { formatStoredDate, formatStoredDateTime } from "../calculations/dateInputHelpers";
 import { exportTextFile } from "./fileExportHelper.js";
 
 // Fields never worth showing in an export, regardless of module —
@@ -42,14 +43,37 @@ function formatFieldValue(value) {
   }
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (typeof value === "object") return null; // nested objects (e.g. kink role selections) skipped — too structured for a flat summary
-  // Looks like an ISO date string — format it readably rather than showing raw ISO text.
+  // Looks like an ISO date string — format it readably rather than showing raw
+  // ISO text.
+  //
+  // FIXED 29 Sep 2026 (t020 timezone audit) — TWO bugs in these few lines, both
+  // found by running this file's output under several timezones rather than by
+  // reading it, which is the only way the second one is visible at all.
+  //
+  // 1. No `timeZone`, on a value whose digits are literal wall-clock. Every date
+  //    field on a stored record is fake-UTC in this app, so a record at 00:30
+  //    on 14 Mar exported to 13 Mar in New York. A wrong DATE on a medical
+  //    document, not a slightly-off time — and this is the artefact a clinician
+  //    is handed.
+  //
+  // 2. The date-only DETECTION was itself timezone-dependent, which is the part
+  //    an eyeball sweep misses because the code looks like it is checking the
+  //    stored shape. It asked `d.toTimeString().startsWith("00:00:00")`, i.e.
+  //    whether the parsed value is midnight IN THE DEVICE'S OWN ZONE. A
+  //    YYYY-MM-DD value parses as UTC midnight, so west of UTC it is the
+  //    previous evening and takes the date-time branch — a plain calendar date
+  //    gained a time on it purely because of where the user was standing.
+  //
+  // Both are fixed by using the shape the value was STORED in (`length <= 10`),
+  // and the shared helpers, which already carry the UTC treatment and are the
+  // one place in this codebase where a stored date is rendered.
+  //
+  // Worth noting WHY there is no instant-versus-stored ambiguity to resolve
+  // here: createdAt/updatedAt are in ALWAYS_HIDDEN_FIELDS, so they are never
+  // exported at all. Every date that reaches this function is a stored value.
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
-    const d = new Date(value);
-    if (!isNaN(d.getTime())) {
-      return d.toTimeString().startsWith("00:00:00") && value.length <= 10
-        ? d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
-        : d.toLocaleString(undefined, { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
-    }
+    if (isNaN(new Date(value).getTime())) return String(value);
+    return value.length <= 10 ? formatStoredDate(value) : formatStoredDateTime(value);
   }
   return String(value);
 }

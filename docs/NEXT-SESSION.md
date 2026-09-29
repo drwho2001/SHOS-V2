@@ -234,6 +234,60 @@ off the file first, and reports a pattern it failed to apply as
 distinction is the whole point: a mutation that did not apply and a test that
 did not go red are different failures, and only the second says anything.
 
+### t020 (part 1 of N) — the record export was shifting dates on a clinician's document
+
+Read-only enumeration of every `toLocale*` site outside the shared helpers
+(39 of them), then triaged **by hand** rather than by name, because a per-line
+count cannot see a `timeZone` argument on a following line. The first cluster
+fixed is the highest-stakes one in the app: the export a clinician is handed.
+
+`recordExportService.js` had **two independent bugs in eight lines**, and only
+running the output under several timezones reveals the second:
+
+1. **No `timeZone`** on a value whose digits are literal wall-clock. Every date
+   field on a stored record is fake-UTC in this app, so a record at 00:30 on
+   14 Mar exported to **13 Mar** in New York. A wrong *date* on a medical
+   document, not a slightly-off time.
+2. **The date-only detection was itself timezone-dependent** — the part an
+   eyeball sweep cannot see, because the code *looks* like it is checking the
+   stored shape. It asked `d.toTimeString().startsWith("00:00:00")`, i.e. whether
+   the parsed value is midnight **in the device's own zone**. A `YYYY-MM-DD`
+   value parses as UTC midnight, so west of UTC it is the previous evening and
+   takes the date-time branch: a plain calendar date gained a time on it purely
+   because of where the user was standing.
+
+Fixed by using the shape the value was **stored in** (`length <= 10`) and the
+shared `formatStoredDate`/`formatStoredDateTime` helpers.
+
+**Why there was no stored-versus-instant ambiguity to resolve here**, which is
+what made the fix small: `createdAt`/`updatedAt` are in `ALWAYS_HIDDEN_FIELDS`,
+so they are never exported. Every date reaching that function is a stored value.
+A test now asserts the instants stay *out* of the export, so unhiding one later
+is a deliberate decision rather than a silent one.
+
+Green in seven zones including `Asia/Kolkata` (+05:30) and `Pacific/Chatham`
+(+12:45); red in New York, Sydney, Kolkata and Chatham before the fix, which is
+what makes it evidence rather than assertion. 3 mutations red, each
+reintroducing the exact defect — including restoring the subtler
+timezone-dependent detection.
+
+**One of those three mutations "passed" first, and the assertion was the thing
+at fault.** The test looked for an `am`/`pm` suffix to catch an invented time;
+this en-GB machine renders midnight as `00:00`, not `12:00 am`, so it matched
+nothing. Matching the clock pattern directly is the locale-independent form, and
+this project has now been bitten by precisely that twice.
+
+**Still to do on t020** — the remaining ~35 sites, each needing the same
+per-value triage rather than a sweep: `statsCalculations` bucket labels (4, worth
+doing next — a chart can be labelled with the wrong *month*), `MyProfile`
+`lastTestedDate` (2), `Contacts` encounter date (1), `ClinicVisits` attendance
+preview (1), `MenstrualHealth` next-period prediction (1), `optionListUsage` (2),
+`Home` line 595 (has a comment that needs reading before judging),
+`Medication` 286/295/461/1423/1955 (appear to be genuine instants — verify, do
+not bulk-change), and the notification-text renderers. **A blanket
+`timeZone: "UTC"` sweep is the wrong fix** and would break the genuine-instant
+sites, which is why this is per-site and per-value.
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second
