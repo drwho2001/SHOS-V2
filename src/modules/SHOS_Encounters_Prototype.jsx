@@ -22,7 +22,7 @@ import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon a
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
-import { nowAsDateTimeLocalString } from "../calculations/dateInputHelpers";
+import { nowAsDateTimeLocalString, formatStoredDate, formatStoredDateTime } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import {
@@ -999,7 +999,7 @@ function EncounterCard({ encounter, contacts, T, onClick, selectMode = false, se
           </div>
           <div style={{ fontSize: 12, color: T.textSecondary, display: "flex", alignItems: "center", gap: 4 }}>
             <span>
-              {encounter.date ? `${new Date(encounter.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · ${formatRelativeDate(encounter.date)}` : "No date"}
+              {encounter.date ? `${formatStoredDate(encounter.date)} · ${formatRelativeDate(encounter.date)}` : "No date"}
               {encounter.encounterType ? " · " : ""}
             </span>
             {encounter.encounterType && (() => {
@@ -1415,7 +1415,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
             live, not assumed), so this detail view had zero headings
             of its own. Same real <h1> treatment as the landing title. */}
         <h1 style={{ fontFamily: "'Inter', sans-serif", ...TYPE.recordTitle, margin: 0, color: T.textPrimary, flex: 1, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 8px" }}>
-          {encounter.title || (encounter.date ? new Date(encounter.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Encounter")}
+          {encounter.title || (encounter.date ? formatStoredDate(encounter.date) : "Encounter")}
         </h1>
         <div style={{ position: "relative", flexShrink: 0 }}>
           <MoreVertical size={20} color={T.encountersPink} style={{ cursor: "pointer" }} onClick={() => setMenuOpen((o) => !o)} role="button" tabIndex={0} aria-haspopup="true" aria-expanded={menuOpen} aria-label="More options" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setMenuOpen((o) => !o); } }} />
@@ -1434,7 +1434,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
       </div>
       {encounter.title && encounter.date && (
         <div style={{ padding: "0 16px", marginTop: -8, marginBottom: 8, fontSize: 12, color: T.textSecondary, textAlign: "center" }}>
-          {new Date(encounter.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+          {formatStoredDate(encounter.date)}
         </div>
       )}
 
@@ -1462,7 +1462,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
           {/* ADDED — real ask: optional end date/time, for multi-day or
               particularly long encounters — see the Edit form's own
               comment for why this data already existed with no UI. */}
-          <ReadRow label="Ends" value={encounter.dateEnd ? new Date(encounter.dateEnd).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : null} T={T} />
+          <ReadRow label="Ends" value={encounter.dateEnd ? formatStoredDateTime(encounter.dateEnd) : null} T={T} />
           <ReadRow label="Would meet again" value={encounter.wouldMeetAgain} T={T} />
           <ReadRow label="Enjoyment rating" value={encounter.enjoymentRating} T={T} />
         </SectionCard>

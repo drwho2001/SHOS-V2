@@ -604,6 +604,97 @@ land, and the fact that a **pre-scheduled OS notification is not cancelled on
 duress entry** is now documented as a limitation rather than "fixed" - see
 the next entry.
 
+## Recently shipped (28 Sep 2026, latest of all yet again - a typed time was showing the WRONG DATE, and my own test contributed zero to the assertion count)
+
+**The ask: whatever time a user types is wall-clock in their own timezone, is
+displayed back as that, and any calculation follows it rather than being out by
+however many hours the device's offset is.** It found a real bug on the first
+run, and the interesting part is *which* bug, because I had already guessed
+wrong about the more obvious one.
+
+**I was ready to "fix" code that was correct.** `exposureWindows.js`'s
+`daysBetween` is `(new Date(test.date) - new Date(encounterDate)) / 86400000` —
+textbook `milliseconds / 86400000`, the exact anti-pattern this file records as a
+standing rule after the September DST bug, and it feeds a real clinical
+"am I covered yet" verdict. Run under four timezones it agrees everywhere. A
+Z-suffixed string parses to an **absolute instant**, so both values shift
+together and the difference cancels; this is a true *duration*, not a
+calendar-day comparison, so `/86400000` is right. Left alone. A "fix" here would
+have been a change with no defect behind it, and a diff with no reason behind it
+is the hardest kind to review six months on.
+
+**The real bug was four display sites and one derivation, all the same shape.**
+An encounter logged at **00:30 on 14 Mar showed "13 Mar 2026" in New York** — a
+wrong *date* on a medical record, not a slightly-off time. Five places in
+`SHOS_Encounters_Prototype.jsx` rendered a stored value with
+`toLocaleDateString`/`toLocaleString` and no `timeZone: "UTC"`, so the browser
+re-applied the device's offset to digits that were already local. And
+`timeOfDay()` used a local `getHours()` on that same fake-UTC value, filing a
+00:30 encounter under **"Evening"** for anyone west of UTC. All five now route
+through `formatStoredDate`/`formatStoredDateTime` or a UTC getter. The failure
+has two directions and they are not symmetric: a time just after midnight
+renders as the *previous* day at negative offsets, and an evening time as the
+*next* day at positive ones — so testing only one of the two would pass while
+half the world stays broken.
+
+**My new browser flow's first version measured nothing and looked green, and I
+built the fifth instance of that failure in this project.** It used a local
+`check()` helper so that one bad timezone would not hide the other two — and
+`check()` did not log the `  ok - ` line that this suite's own reported
+assertion count is derived from. The flow passed and added **zero** to the
+tally. It is now the fifth recorded instance of "a gate that measured nothing
+and looked like it measured something", the first one in this file, and the
+first one I have manufactured rather than inherited. `check()` logs on success
+exactly like `assert()` does.
+
+**Two of my own mistakes in the same flow, both of which would have shipped a
+green run that tested nothing.** The Edit step guessed
+`[aria-label="Edit Encounter"], text=Edit`, which mixes a CSS selector with a
+text engine and therefore throws — wrapped in `.catch(() => {})` "to be safe",
+so the throw was swallowed and the flow instead reported the baffling symptom of
+an empty input field. And the per-zone failures were originally fail-fast, which
+would have hidden the entire shape of the bug behind whichever zone was listed
+first: **New York fails the date and the time-of-day, Sydney fails only the
+time-of-day, London passes everything.** That shape is the whole diagnosis, and
+it takes one run to see — which is why the flow now collects every zone's
+failures and throws them together.
+
+**Verified by actually seeing it fail, which is the only verification that
+counts here.** Reverting both fixes, rebuilding and re-running the flow goes red
+in exactly the pattern above. That is the check a passing test has to survive,
+because a test that has only ever passed has not been tested. Four further
+mutations of the new unit layer are confirmed red too, and the fifth *failed to
+apply* (a multi-line pattern against a CRLF file) and was reported as "this
+mutation tests nothing" rather than quietly counted as a pass — the distinction
+between "the mutation did not apply" and "the test did not go red" is the whole
+point. `exposureWindows.test.js` is untouched, which is itself the record that
+the non-finding above was a decision rather than an oversight.
+
+**The flow boots the real app three times, once per timezone**, because a device
+timezone is a browser-context property and no unit test can prove which helper a
+real screen actually routes through — this app has been bitten by exactly that
+before, the same date rendering as "1 Mar" in London and "28 Feb" in New York
+because a few call sites had each worked it out privately. Two assertion layers
+because each covers what the other cannot: 6 unit tests across six zones
+including `Asia/Kolkata` (+05:30) and `Pacific/Chatham` (+12:45), which no
+whole-hour zone in the flow can catch, and a real 20th smoke flow. Plus a
+`SMOKE_ONLY=<name>` filter, so a single flow can be run on a machine that cannot
+afford twenty; an unmatched name runs **nothing** rather than everything, so a
+typo can never masquerade as a full green run.
+
+Verified: 419 tests across 34 files, fast gate green, and the flow itself run
+locally against a real `vite preview` build — 12 assertions, three timezones,
+and confirmed red when the fix is reverted.
+
+**Not done, recorded rather than folded in:** this audited **Encounters** only,
+because that is what the flow drives. A whole-tree scan still finds ~40 further
+`toLocale*` call sites with no `timeZone` on the same line, in Medication
+Dashboard, Home, Contacts, Clinic Visits, Stats and others. The per-line count is
+unreliable on its own — it cannot see a `timeZone` on a following line, and many
+of those sites are legitimately formatting real instants — so that needs the same
+evidence-driven treatment per module, not a mechanical sweep. A3 (device silence
+for the other four reminder types) is parked with no edits made.
+
 ## Recently shipped (28 Sep 2026, latest of all yet again - two more of my own bugs, both from one mistake: I never checked how the codebase already did it)
 
 **The Testing banner shipped broken. The next two items I picked were broken in

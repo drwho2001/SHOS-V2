@@ -21,9 +21,18 @@
 // If the user confirms the exact original bucket boundaries later, adjust
 // here only — nothing else depends on the specific cutoffs.
 export function timeOfDay(dateString) {
-  if (!dateString) return "—";
+  if (!dateString) return "-";
   const d = new Date(dateString);
-  const hour = d.getHours();
+  // getUTCHours, NOT getHours, and that is not a stylistic preference. A
+  // stored date in this app is a deliberate "Z"-suffixed LIE: the digits are
+  // literal wall-clock time and the Z is not true UTC (dateInputHelpers.js
+  // documents this at length). A local getter therefore re-applies the
+  // device's real UTC offset to a value that was already local, so a
+  // 00:30 encounter reads as 19:30 and files itself under "Evening" for
+  // anyone west of UTC. Reading the digits back with the UTC getter is the
+  // read-back-correctly equivalent, and is what makes this bucket the same
+  // answer in London, New York and Sydney.
+  const hour = d.getUTCHours();
   if (hour < 5) return "Late Night";
   if (hour < 12) return "Morning";
   if (hour < 17) return "Afternoon";
