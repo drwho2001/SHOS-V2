@@ -79,6 +79,62 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const add = (home, title, files) =>
   bus("A", home, "pool", "add", title, ...(files ? [`--files=${files}`] : []));
 
+describe("a stale lease is described honestly", () => {
+  // The bug this pins. `pool list` labelled an expired task as
+  // "ABANDONED, owner process gone", which is a claim the tool cannot make:
+  // liveness is a wall-clock LEASE, because the recorded PID belongs to a
+  // `node session-bridge.mjs` process that exited milliseconds after allocation
+  // and is deliberately never consulted. A session that had been working
+  // normally for longer than the lease was therefore described as dead, and
+  // `pool reap` would have handed its files to whoever asked next - which is
+  // the duplicated work the pool exists to prevent. The message also said
+  // "process gone" while doing no process check at all, so a reader could
+  // reasonably trust it and act on it.
+  const withShortLease = (home) => {
+    const r = spawnSync(process.execPath, [BRIDGE, "pool", "add", "leased"], {
+      encoding: "utf8",
+      env: { ...process.env, SHOS_BUS_HOME: home, SHOS_SESSION_NAME: "A" },
+    });
+    expect(r.status).toBe(0);
+  };
+
+  it("does not claim a process is gone when it has not checked for one", () => {
+    const home = fresh();
+    withShortLease(home);
+    // Expire the lease by hand rather than by waiting four hours.
+    const p = join(home, "state", "pool.json");
+    const pool = JSON.parse(readFileSync(p, "utf8"));
+    pool.tasks[0].status = "doing";
+    pool.tasks[0].owner = "B";
+    pool.tasks[0].touchedAt = new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString();
+    writeFileSync(p, JSON.stringify(pool));
+
+    const { out } = bus("A", home, "pool", "list");
+    expect(out).not.toMatch(/ABANDONED/i);
+    expect(out).not.toMatch(/process gone/i);
+    // And it must say what is actually true, plus the way out.
+    expect(out).toMatch(/UNTOUCHED/i);
+    expect(out).toMatch(/pool touch/);
+  });
+
+  it("touch extends a lease, so long-running work is not reaped mid-flight", () => {
+    const home = fresh();
+    withShortLease(home);
+    const p = join(home, "state", "pool.json");
+    const pool = JSON.parse(readFileSync(p, "utf8"));
+    const staleAt = new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString();
+    pool.tasks[0].status = "doing";
+    pool.tasks[0].owner = "B";
+    pool.tasks[0].touchedAt = staleAt;
+    writeFileSync(p, JSON.stringify(pool));
+
+    const { code, out } = bus("B", home, "pool", "touch", pool.tasks[0].id);
+    expect(code).toBe(0);
+    expect(out).toMatch(/lease extended/i);
+    expect(poolOf(home).tasks[0].touchedAt).not.toBe(staleAt);
+  });
+});
+
 afterAll(() => roots.forEach((r) => rmSync(r, { recursive: true, force: true })));
 
 describe("the pool lock", () => {

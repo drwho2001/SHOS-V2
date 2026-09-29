@@ -1079,8 +1079,16 @@ if (verb === "done" || verb === "block" || verb === "release") {
   }
 
   if (verb === "reap") {
-    // A session that dies mid-task must not park it forever. The owner's PID is
-    // recorded at allocation, so liveness is checkable rather than a guess.
+    // A session that dies mid-task must not park it forever.
+    //
+    // Liveness here is a LEASE on wall-clock time, not a process check, and
+    // the message it used to print said otherwise. Two sessions running a
+    // normal day's work allocated a task and kept working it for longer than
+    // POOL_LEASE_MS, so `pool list` labelled live, actively-edited work as
+    // "ABANDONED, owner process gone" and `pool reap` would have handed the
+    // files to whoever asked next - precisely the duplicated work this pool
+    // exists to prevent. The PID cannot be used (see the note above
+    // isStale), so the honest thing is to say what is actually measured.
     let n = 0;
     for (const t of pool.tasks) {
       if (isStale(t)) {
@@ -1104,7 +1112,7 @@ if (verb === "done" || verb === "block" || verb === "release") {
     for (const t of pool.tasks) {
       let mark = t.status === "approved" && !t.owner ? " <- available" : "";
       if (isStale(t)) {
-        mark = " <- ABANDONED, owner process gone (run: pool reap)";
+            mark = ` <- UNTOUCHED for over ${Math.round(POOL_LEASE_MS / 60000)}min (lease expired, not a process check - run: pool touch t${t.id.replace(/\D/g, "")} to extend, or pool reap to hand it back)`;
       }
       const who = t.owner || "";
       console.log(`  ${t.id}  ${t.status.padEnd(9)} ${(who + " ").padEnd(18)}${clip(t.title, 44)}  at ${stamp(t.at)}${mark}`);
