@@ -480,6 +480,28 @@ export function PrivacyScreen({ onClose }) {
                 ? "Set. Entering this PIN on the App Lock screen — instead of your real one — opens a convincing but empty, fake version of the app. Your real data stays completely untouched, just not shown. There's no way back to real data from inside a decoy session — close and reopen the app, then enter your REAL PIN."
                 : "A second PIN, different from your real one, for a \"someone is making me unlock my phone\" situation. Entering it opens a fake, empty-looking app instead of your real data — nothing is deleted or changed, it just isn't shown."}
             </div>
+            {/* ADDED 29 Sep 2026 — stated rather than left implied, because the
+                copy directly above says the real data is "completely
+                untouched", which is true of the app's records and NOT true of
+                reminders your phone has already scheduled to fire by itself. A
+                pre-scheduled Android alarm is independent of the app: entering
+                the duress PIN cannot cancel it, and it will still appear on the
+                lock screen. In the exact situation this feature exists for, a
+                medication alert popping up is a disclosure — and a user who
+                believes the decoy is total may reasonably not think to check
+                their notification shade.
+
+                Deliberately NOT fixed, only stated. Cancelling scheduled
+                notifications on duress entry was considered and rejected: a
+                coerced user could then be denied a medication reminder, which
+                is a health consequence rather than a privacy one, and Android
+                gives no way to ask the OS "was this actually seen?". The
+                honest options are therefore to disclose, or to have the user
+                turn notifications off beforehand — which is a choice, not a
+                silent default. */}
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10, marginTop: -4 }}>
+              One thing the decoy can't cover: reminders your phone has already scheduled will still fire, because a phone alarm is set independently of the app. A medication alert set up beforehand will still appear on your lock screen.
+            </div>
             {settingDuressPin ? (
               <>
                 <div style={{ position: "relative", marginBottom: 8 }}>

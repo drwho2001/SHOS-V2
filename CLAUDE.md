@@ -577,6 +577,111 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+## Recently shipped (29 Sep 2026, newest of all yet again — the widget NHS-number sink was one method call from being live, and my own guard was vacuous until a mutation said so)
+
+**Session B reviewed the coordination tooling I built two days ago and found a
+real bug plus the mistake that led to it. Both are fixed, and one of the two
+mechanisms I had just celebrated turned out to be the problem.**
+
+**The lost-update was real, and I had claimed the pool was safe.** Every pool
+verb is a read of the whole file, a change in memory, then a whole-file write,
+so two sessions mutating at the same moment means the second silently discards
+the first one's change — no error, no warning, a task record simply vanishes.
+Eight concurrent adds from two sessions left one task. Worse than the git
+index-lock collision, which at least announces itself. Now serialised with a
+lock created via `O_EXCL` (`fs open "wx"`), which is atomic: the filesystem
+guarantees exactly one creator wins. A plain existsSync-then-write would race in
+precisely the way the thing it protects does, which would be a poor joke in a
+file whose subject is that failure. Re-tested with 8 real concurrent writers:
+9/9 survive.
+
+**The cause was my own convenience shortcut.** There was no `pool rm`, so the
+only way I could clear some test tasks was deleting `pool.json` wholesale —
+which is what destroyed B's in-flight allocation, and I did it without telling
+anyone. B saw it as a clobbered lease and a corrupted state file, which is
+exactly what it was. A tool that forces a destructive action instead of a narrow
+one is a design bug, and it is now `pool rm` and `pool edit` (added same day:
+a task could be *replaced* but never *corrected*, because rm-then-add changes
+the id and loses the history). Files are the input to the duplicate-claim
+guarantee, so `pool edit --files=` releases then re-claims rather than leaving
+the claim table disagreeing with the pool.
+
+**The handover was instructing a new session to rebuild a shipped feature.** It
+listed banner suppression under "State: open". It shipped, with the
+acknowledgement sheet and the Testing banner fix. Every other figure in it had
+also decayed: smoke flows quoted as 18, B's report said 20, **the real number is
+21**; unit tests 321/28 against 422/34; Notion blocks 1123, then 1151, and
+**1164** measured across 12 pages. Four values for one quantity in a single
+session is not bookkeeping drift, it is four people copying from each other
+instead of counting — so the transferable half is now a lesson: a figure
+inherited from a previous document is a claim, not a measurement. I also had to
+write a temp script to file rather than inline, because PowerShell expands `$/gm`
+inside double quotes and silently mangled a regex into a confident wrong answer.
+
+**B also reported that `CHANGE-PROCEDURE.md` prescribes `git add -A`. It does
+not** — line 117 already reads "never `git add -A`" and line 127 is a section
+devoted to it. The false claim is in the handover, line 130, which was training
+every new session to distrust a file that is correct. Corrected at source, and
+the new file names the exact line so the next reader does not "fix" the
+procedure.
+
+**The widget NHS-number sink is unreachable, verified rather than assumed — and
+that is the whole problem.** `ClinicCardWidgetProvider` would write an NHS
+number into `SharedPreferences`, a plaintext XML file on disk, which would be
+the one place this app's "encrypted at rest" promise breaks. There is no
+`WidgetBridge` Capacitor plugin anywhere in the Java source — the only
+`@CapacitorPlugin` is `ScreenSecurityPlugin` — so the JS guard
+`if (bridge && bridge.updateClinicCard)` never passes. But every provider is
+registered in the manifest and does nothing at all, so implementing that missing
+bridge is the obvious next move for anyone who opens the directory. The guard
+therefore fails on **the change that would make it reachable**, not on the dead
+code, because deleting the field is a product decision rather than a bug fix.
+Both routes in are covered: adding the plugin, and calling the sink natively,
+which would bypass the plugin check. A second latent problem is documented at
+the sink: `KEY_APPT_REVEALED` lives in the same plaintext prefs, so "tap to
+reveal" is a permanent flip, not a per-render mask.
+
+**The duress screen now says what it cannot cover.** The copy directly above it
+promised the real data is "completely untouched" — true of the app's records,
+and false of a reminder your phone has already scheduled to fire by itself. A
+pre-scheduled Android alarm is independent of the app: entering the duress PIN
+cannot cancel it, and it will appear on the lock screen anyway. In the exact
+situation the feature exists for, a medication alert popping up is a disclosure.
+Stated rather than fixed, because cancelling it could deny a coerced user a
+medication reminder, which is a health consequence rather than a privacy one.
+
+**My own guard was vacuous, and only the mutation check caught it.** The first
+version of that test deleted the user-visible disclosure and stayed green,
+because the rationale comment quotes "already scheduled", "still fire" and
+"lock screen" — so the comment satisfied the assertions once the UI line was
+gone. That is the **third** recorded instance in this repo of a guard matching
+the comment documenting the fix, and the first where the comment was written in
+the same edit as the fix, by the same hand, in a test file whose header cites
+that lesson as its reason to exist. The UI assertions now run against
+comment-stripped source; the one test that checks the rationale comment says so
+explicitly, and the stripper is proven non-vacuous. **The same mutation that
+passed before now goes red.**
+
+**A mutation harness left source broken, repeating a mistake already recorded in
+this file.** Two mutations wrote to two different Java files; the harness
+backed up one, so `NextDoseWidgetProvider.java` was left with injected code and
+`verify:fast` failed on it. Restored from git, re-verified, and recorded again
+with that evidence — because the rule already existed and reading it was not
+the same as applying it. Derive the backup from each mutation's own target.
+
+Verified: `verify:fast` green — build, lint, **444 tests across 37 files**,
+encoding guard over tracked files, inherited-instruction gate. Widget guard
+mutation-verified in both directions (adding the plugin, and native wiring, each
+turns the suite red). Duress guard mutation-verified by deleting the
+disclosure. The comment-only Java change cannot be compiled on this machine, so
+CI's APK build is the confirmation for that half.
+
+Not done, recorded rather than folded in: `backupMigrations.js` still has no
+unit test and is gated on the Phase C schema audit; the widget's NHS-number
+field itself is still present, pending an owner decision on whether a
+home-screen widget should show it at all; and the drafts are still plaintext
+(cleared on lock, not encrypted).
+
 ## Recently shipped (28 Sep 2026, newest of all yet again - Anonymise mode masked 2 of the 9 screens that show a contact's name, and one of them printed a phone number)
 
 **A read-only security/privacy audit of this app, the first one ever, found
