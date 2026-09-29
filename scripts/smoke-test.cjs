@@ -51,6 +51,42 @@ function assert(cond, msg) {
   console.log("  ok — " + msg);
 }
 
+// ---------------------------------------------------------------------------
+// ADDED 29 Sep 2026 (t028) - bounded waits, replacing fixed guesses.
+//
+// A `waitForTimeout(N)` is a claim about how fast the machine is. It is fine
+// after a click whose effect is synchronous, and it is a lie wherever what
+// follows is an ASSERTION on state the app loads asynchronously - which,
+// since the encryption groundwork made every module async, is most of this
+// suite. The reference failure is `sample-data-devtools`: a 1500ms guess, then
+// a body-text read, then an assert that a user's own contact had survived a
+// clear. It passed in isolation and went red in CI's sequential run, reporting
+// a data-loss regression that did not exist.
+//
+// These two helpers are the fix, in one place rather than 59. A NEGATIVE
+// assertion still needs a positive anchor - "the banner is gone" must not be
+// checked before anything proves the app rendered at all, or it passes
+// trivially against a blank page - so the negative sites below wait for the
+// thing that should disappear by its own state, or for the nav first.
+// ---------------------------------------------------------------------------
+
+const APP_ANCHOR = '[role="navigation"][aria-label="Main navigation"]';
+
+/** Bounded wait for text the next assertion is going to read. */
+async function waitForText(page, text, timeout = 20000) {
+  await page.waitForFunction((t) => document.body.innerText.includes(t), text, { timeout });
+}
+
+/** Bounded wait for the app to be interactive again after a goto/reload. */
+async function waitForAppReady(page, timeout = 20000) {
+  await page.waitForSelector(APP_ANCHOR, { timeout });
+}
+
+/** Bounded wait for a locator to be gone - the sound form of a negative. */
+async function waitForGone(page, locator, timeout = 20000) {
+  await locator.first().waitFor({ state: "hidden", timeout });
+}
+
 async function dismissOnboarding(page) {
   await page.goto(APP_URL, { waitUntil: "networkidle" });
   await page.waitForTimeout(1000);
@@ -179,38 +215,62 @@ async function navHome(page) {
 }
 
 async function dismissTransientBanners(page) {
-  await page.locator('[aria-label="Dismiss due medications banner"]').first().click({ timeout: 2000 }).catch(() => {});
-  await page.locator('[aria-label="Dismiss refill banner"]').first().click({ timeout: 2000 }).catch(() => {});
-  await page.locator('[aria-label="Dismiss testing banner"]').first().click({ timeout: 2000 }).catch(() => {});
-  await page.locator('[aria-label="Dismiss clinic visit banner"]').first().click({ timeout: 2000 }).catch(() => {});
-  await page.locator('[aria-label="Dismiss vaccination banner"]').first().click({ timeout: 2000 }).catch(() => {});
-  await page.locator('[aria-label="Dismiss update notice"]').first().click({ timeout: 2000 }).catch(() => {});
-  // ADDED 27 Sep 2026 - the first-run sample-data banner. It is NOT a
-  // position:fixed overlay like the five above, so it was missed when this
-  // helper was written, and its absence broke flow 3 in a confusing way: the
-  // banner adds content to Home, and goHomeThenOpenSettings() reaches the
-  // Settings gear by a fixed pixel coordinate, so a taller Home changed what
-  // sat at that point and the click landed on nothing.
+  // CHANGED 29 Sep 2026 (t028) - the defect this whole helper had was
+  // silence. Every dismissal below is `.catch(() => {})`, so if the app had
+  // not rendered its banners yet, the helper did nothing at all, reported
+  // success, and the banners appeared afterwards to intercept the
+  // coordinate-based Settings click in goHomeThenOpenSettings - a failure
+  // that pointed nowhere near its cause. Eight call sites papered over it
+  // with a fixed 800ms wait first, which is a guess about machine speed.
   //
-  // Confirmed by A/B rather than guessed: with the banner stashed the whole
-  // suite passes 15/15; with it restored, flow 3 fails.
-  //
-  // Dispatched in-page rather than clicked, which is load-bearing: the banner
-  // sits below the fold on a 390x844 viewport, so an ordinary Playwright click
-  // SCROLLS it into view first - and goHomeThenOpenSettings() then reaches the
-  // gear by a fixed coordinate that assumes Home is scrolled to the top.
-  // Clicking it properly broke every flow that opens Settings, with an error
-  // message ("a click on Manage lists intercepted by the Settings dialog")
-  // that pointed nowhere near the real cause.
-  //
-  // Dismissed via "Keep it for now" rather than the clear action, so the sample
-  // data survives for the flows that still need it.
-  await page.evaluate(() => {
-    const el = [...document.querySelectorAll('[role="button"]')]
-      .find((b) => (b.textContent || "").trim() === "Keep it for now");
-    if (el) el.click();
-  }).catch(() => {});
-  await page.waitForTimeout(300);
+  // So: wait for the app to be genuinely ready, then VERIFY the banners are
+  // gone rather than assuming the clicks landed. A helper that can quietly do
+  // nothing is worse than no helper.
+  await waitForAppReady(page);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.locator('[aria-label="Dismiss due medications banner"]').first().click({ timeout: 2000 }).catch(() => {});
+    await page.locator('[aria-label="Dismiss refill banner"]').first().click({ timeout: 2000 }).catch(() => {});
+    await page.locator('[aria-label="Dismiss testing banner"]').first().click({ timeout: 2000 }).catch(() => {});
+    await page.locator('[aria-label="Dismiss clinic visit banner"]').first().click({ timeout: 2000 }).catch(() => {});
+    await page.locator('[aria-label="Dismiss vaccination banner"]').first().click({ timeout: 2000 }).catch(() => {});
+    await page.locator('[aria-label="Dismiss update notice"]').first().click({ timeout: 2000 }).catch(() => {});
+    // ADDED 27 Sep 2026 - the first-run sample-data banner. It is NOT a
+    // position:fixed overlay like the five above, so it was missed when this
+    // helper was written, and its absence broke flow 3 in a confusing way: the
+    // banner adds content to Home, and goHomeThenOpenSettings() reaches the
+    // Settings gear by a fixed pixel coordinate, so a taller Home changed what
+    // sat at that point and the click landed on nothing.
+    //
+    // Confirmed by A/B rather than guessed: with the banner stashed the whole
+    // suite passes 15/15; with it restored, flow 3 fails.
+    //
+    // Dispatched in-page rather than clicked, which is load-bearing: the banner
+    // sits below the fold on a 390x844 viewport, so an ordinary Playwright click
+    // SCROLLS it into view first - and goHomeThenOpenSettings() then reaches the
+    // gear by a fixed coordinate that assumes Home is scrolled to the top.
+    // Clicking it properly broke every flow that opens Settings, with an error
+    // message ("a click on Manage lists intercepted by the Settings dialog")
+    // that pointed nowhere near the real cause.
+    //
+    // Dismissed via "Keep it for now" rather than the clear action, so the sample
+    // data survives for the flows that still need it.
+    await page.evaluate(() => {
+      const el = [...document.querySelectorAll('[role="button"]')]
+        .find((b) => (b.textContent || "").trim() === "Keep it for now");
+      if (el) el.click();
+    }).catch(() => {});
+    // VERIFY, bounded. If a dismissal is still on screen the app was not
+    // actually ready, so try again rather than proceeding and failing three
+    // steps later for a reason that points at nothing.
+    const left = await page.evaluate(() =>
+      document.querySelectorAll(
+        '[aria-label="Dismiss due medications banner"],[aria-label="Dismiss refill banner"],' +
+        '[aria-label="Dismiss testing banner"],[aria-label="Dismiss clinic visit banner"],' +
+        '[aria-label="Dismiss vaccination banner"],[aria-label="Dismiss update notice"]'
+      ).length
+    );
+    if (left === 0) return;
+  }
 }
 
 // ADDED 9 Sep 2026 — real regression found live while expanding the
@@ -351,7 +411,6 @@ async function testResourceLinkClickable(page) {
   // real bottom-tab screen via the existing resume-last-tab feature,
   // same trick openSettingsPrivacyScreen below already relies on.
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
   await dismissTransientBanners(page);
   await goHomeThenOpenSettings(page);
   await page.locator("text=Resources", { exact: true }).click({ timeout: 5000 });
@@ -367,7 +426,6 @@ async function testResourceLinkClickable(page) {
   // Resources (like every Settings sub-screen) is only ever reached
   // from Home's gear icon.
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
   await dismissTransientBanners(page);
 }
 
@@ -389,9 +447,11 @@ async function testEncountersAnonymiseMasking(page) {
   console.log("\n[7/23] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
-  await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
-  await page.waitForTimeout(500);
-  let text = await page.evaluate(() => document.body.innerText);
+    await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
+    // CHANGED 29 Sep 2026 (t028) - was waitForTimeout(500), in front of an
+    // assertion reading the encounter's rendered attendees.
+    await waitForText(page, "Sauna trip");
+    let text = await page.evaluate(() => document.body.innerText);
   assert(text.includes("Sam"), "before Anonymise mode, the real attendee name shows in the encounter's Attendees section");
 
   await goHomeThenOpenSettings(page);
@@ -402,13 +462,14 @@ async function testEncountersAnonymiseMasking(page) {
   assert((await page.evaluate(() => document.body.innerText)).includes("Anonymise mode is ON"), "Anonymise mode turns on");
 
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
   await dismissTransientBanners(page);
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
-  await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
-  await page.waitForTimeout(500);
-  text = await page.evaluate(() => document.body.innerText);
+    await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
+    // CHANGED 29 Sep 2026 (t028) - the same bounded wait on the state the
+    // assertion below reads, rather than a second guess at how fast this is.
+    await waitForText(page, "Sauna trip");
+    text = await page.evaluate(() => document.body.innerText);
   assert(text.includes("•••• hidden"), "with Anonymise mode on, the encounter's Attendees section shows the masked placeholder");
   assert(!text.includes("Sam"), "the real attendee name no longer appears anywhere on the encounter detail screen");
 
@@ -419,7 +480,6 @@ async function testEncountersAnonymiseMasking(page) {
   await page.waitForTimeout(500);
   assert(!(await page.evaluate(() => document.body.innerText)).includes("Anonymise mode is ON"), "Anonymise mode turns back off cleanly, leaving the suite in a clean state");
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
   await dismissTransientBanners(page);
 }
 
@@ -749,7 +809,6 @@ async function testEncryptionAppLockGatesVault(page) {
 async function testTabReorder(page) {
   console.log("\n[12/23] Settings — bottom nav tab order (added 9 Sep 2026)");
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
   await dismissTransientBanners(page);
   await goHomeThenOpenSettings(page);
   await page.locator("text=Preferences", { exact: true }).first().click({ timeout: 5000 });
@@ -802,7 +861,6 @@ async function testTabReorder(page) {
     await page.waitForTimeout(200);
   }
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
   await dismissTransientBanners(page);
 }
 
@@ -935,7 +993,6 @@ async function testBackupMigratesOldFieldShape(page) {
   await fileInput.setInputFiles({ name: "old-shape-backup.json", mimeType: "application/json", buffer: Buffer.from(fileContent) });
   await page.waitForTimeout(1500); // finishImport() reloads the page itself
   await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(1000);
   await dismissTransientBanners(page);
 
   await goHomeThenOpenSettings(page);
@@ -954,7 +1011,6 @@ async function testBackupMigratesOldFieldShape(page) {
   // and persisted, so a fresh load returns straight to Home with the
   // real bottom nav available, same as any real relaunch would.
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(1000);
   await dismissTransientBanners(page);
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
@@ -1006,7 +1062,6 @@ async function testBackupImportDropsGarbageRecords(page) {
   // guarantees a clean Home start, same defensive pattern already used
   // mid-suite elsewhere in this file.
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(1000);
   await dismissTransientBanners(page);
 
   await goHomeThenOpenSettings(page);
@@ -1814,7 +1869,14 @@ async function testSampleDataDisclosureAndClear(browser) {
     await page.getByLabel("Full name", { exact: false }).first().fill("ZZZ Smoke Real Contact");
     await page.waitForTimeout(250);
     await page.getByRole("button", { name: /^add contact$/i }).last().click({ timeout: 5000 });
-    await page.waitForTimeout(1500);
+    // CHANGED 29 Sep 2026 (t028) - was waitForTimeout(1500). Saving writes to
+    // an async repository and the list re-reads it asynchronously, so this was
+    // a guess about machine speed in front of an assertion. This is the SAME
+    // shape as the sample-data-devtools flake that went red in CI one flow
+    // later, and the previous fix had left it in place because CI only failed
+    // the one the owner happened to hit - which is the "a fix scoped to the
+    // symptom you happened to hit is not a fix to the class" mistake.
+    await waitForText(page, "ZZZ Smoke Real Contact");
     assert((await page.evaluate(() => document.body.innerText)).includes("ZZZ Smoke Real Contact"),
       "a real contact was added through the real Contacts form");
 
@@ -1823,7 +1885,12 @@ async function testSampleDataDisclosureAndClear(browser) {
     await page.getByText("This app starts with sample data", { exact: false }).first()
       .waitFor({ state: "visible", timeout: 15000 });
     await page.getByRole("button", { name: "Clear the sample data" }).first().click({ timeout: 5000 });
-    await page.waitForTimeout(2500);
+    // CHANGED 29 Sep 2026 (t028) - was waitForTimeout(2500) followed by a
+    // NEGATIVE assertion. Bounded, and it waits for the banner's own state to
+    // become hidden rather than guessing how long a clear takes. A negative
+    // assertion that runs before anything proves the app rendered can pass
+    // against a blank page, so the wait is on the thing that must disappear.
+    await waitForGone(page, page.getByText("This app starts with sample data"));
     assert(!(await page.evaluate(() => document.body.innerText)).includes("This app starts with sample data"),
       "the banner is gone once the sample data is cleared");
     console.log("  ok — clearing removes the sample data and dismisses the banner");
