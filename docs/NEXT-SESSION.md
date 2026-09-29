@@ -1,33 +1,85 @@
 # Handover — new session
 
-Written 28 Sep 2026 at the end of a working session, for a session starting
-with **no context at all**. Everything below is verifiable against the repo;
-nothing here is from memory.
+Written 29 Sep 2026 by session **A** for **session B**, which starts with no
+context at all. Every figure below was measured, not copied. Where a number is
+marked "measured", it was counted from the repo in this session; a number that
+merely looks authoritative elsewhere in this project has been wrong before.
 
-## Read these three things first
+## Read these first
 
-1. **`CLAUDE.md`** — architecture rules, current state, and a dated log of what
-   shipped and why. It is the source of truth for *what is true right now*.
-2. **`docs/CHANGE-PROCEDURE.md`** — the commit/push algorithm. It exists as a
-   file precisely so that correctness does not depend on anyone remembering.
-3. **This file** — where the work actually stands.
+1. **`CLAUDE.md`** — architecture rules, current state, and the dated log of
+   what shipped and why. Source of truth for *what is true right now*.
+2. **`docs/CHANGE-PROCEDURE.md`** — the commit/push algorithm, and the
+   shared-tree rules. It exists as a file so correctness does not depend on
+   anyone remembering.
+3. **`docs/SESSION-BUS.md`** — how the two sessions coordinate. **Read this
+   before you touch any file.**
+4. **This file** — where the work stands.
+
+Then, before planning anything:
+
+```powershell
+$env:SHOS_SESSION_NAME = "B"      # do this first
+node scripts\session-bridge.mjs lessons
+node scripts\session-bridge.mjs backlog
+node scripts\session-bridge.mjs claims
+node scripts\session-bridge.mjs inbox
+node scripts\session-bridge.mjs pool list
+```
+
+## Take your work from the pool — do not work from a list in a document
+
+**Every unit of work below is in the approved pool, and the pool is the
+allocation record.** A task list in a handover is a *description*; the pool is
+what actually prevents you and A from editing the same file at once.
+
+```powershell
+node scripts\session-bridge.mjs pool list          # what exists
+node scripts\session-bridge.mjs pool take t011     # ALLOCATE, before any work
+node scripts\session-bridge.mjs pool start t011    # then start
+node scripts\session-bridge.mjs pool done t011     # when verified
+```
+
+`pool take` claims the task's files, so a second session taking an overlapping
+task is refused. **This is the only duplicate protection there is** — it works
+only if the task was added with its files. Tasks with no `--files` claim
+nothing, and that limitation is written into their title rather than left for
+you to discover.
+
+**Take exactly one task at a time, and finish it before taking another.** A task
+held open across a context reset is a task whose files are locked against
+somebody who cannot tell why.
+
+## Measured state, 29 Sep 2026
+
+| Quantity | Value | How it was measured |
+|---|---|---|
+| Unit tests | **422 across 34 files** | `npm run verify:fast` |
+| Smoke flows | **21** | `run("…")` registrations in `smoke-test.cjs`, not test definitions |
+| Notion Development Log | **1164 blocks** | full pagination, 12 pages |
+| Approved pool tasks | **10**, `t010`–`t019` | `pool list` |
+| `main` | clean and pushed at `e680768` | `git log` |
+
+**All of these have been stated wrongly in this project already.** Smoke flows
+has had 18 and 20 quoted; the true count is 21. The Notion page was quoted as
+1123 and then 1151; it is 1164. If you need a number, count it. If you cannot
+count it, say so — do not carry one forward and let it harden into a fact.
 
 ## The one most important thing to know
 
 **CI is the real gate. The local loop is `npm run verify:fast`.**
 
-`smoke-test.yml` runs `npm run verify` — the *same script* a developer runs
-before committing — on every push, in ~12 minutes, with no local memory
-pressure. It runs build, lint, unit tests, the encoding guard, the full 18-flow
-Playwright suite, and the docs check.
+`smoke-test.yml` runs `npm run verify` — the same script — on every push, in
+~12 minutes, with no local memory pressure: build, lint, unit tests, encoding
+guard, all 21 Playwright flows, docs check.
 
-Why this matters concretely: the machine this was developed on has 4 GB and
-regularly drops to **~350 MB free**, at which point the Vite build dies with
-`ENOMEM` and vitest's worker pool cannot spawn. That is a resource ceiling, not
-a code fault. Do not kill the user's Chrome to fix it. Push and let CI verify.
+This machine has 4 GB and regularly drops to **~350 MB free**, at which point
+Vite dies with `ENOMEM` and vitest cannot spawn workers. That is a resource
+ceiling, not a code fault. **Do not kill the user's Chrome to fix it.** Push and
+let CI verify.
 
-**After pushing, read the gate's own reported verdict in the CI log, not the
-exit code:**
+After pushing, read the gate's **reported verdict in the log**, not the exit
+code:
 
 ```powershell
 gh run list --branch main --limit 3
@@ -37,207 +89,159 @@ gh run view $id --log | Select-String 'unit tests|smoke suite|docs in sync|ALL G
 
 ## The second most important thing to know
 
-**This project has hit "a gate measured nothing and still looked green" three
+**This project has hit "a gate measured nothing and still looked green" five
 times.** Twice the bug was in the tooling, not the app. A passing result is not
 evidence until you have read what it reported.
 
-1. The docs gate diffed the working tree, which is *always* empty in CI — so it
-   passed while checking nothing. Then again after `actions/checkout`'s default
-   shallow clone made the commit range unresolvable. Both fixed; an
-   unresolvable range is now a hard failure.
-2. The smoke summary counted `[N/M]` lines, which only cover top-level flows. An
-   inline helper silently ceasing to run left the count unchanged. It now also
-   counts assertion lines.
-3. A palette contrast scanner reported "the detector is proven working because
-   the safe count is non-zero" while that count was **zero**.
+1. The docs gate diffed the working tree, which is *always* empty in CI.
+2. A shallow clone made the commit range unresolvable, so it passed vacuously.
+3. The smoke summary counted `[N/M]` lines, which miss inline helpers. It now
+   also counts assertion lines.
+4. A palette scanner printed "the detector is proven working because the safe
+   count is non-zero" while that count was **zero**.
+5. `nav()` failed *open*: a tab not matching meant `nav()` silently did nothing
+   and the flow reported success having navigated nowhere. Now it throws.
 
 Corollary: **a scan that finds nothing has usually found nothing for the wrong
-reason.** Prove the detector fires before reporting a clean result.
+reason.** Prove the detector fires before reporting clean.
 
-## State: done
+## Your task list
 
-All of the following are shipped, committed, and green on `main`.
+Ordered. `t011` before `t015` — the browser flow for A5 depends on the fix in
+A2, and running it earlier tests the old behaviour.
 
-- **Sample data is disclosed and safely clearable.** A first-run Home banner
-  states the real record count and that the data is not the user's;
-  `clearSampleData()` removes exactly the seed ids and keeps everything the user
-  added; Developer Tools has a separate clear beside a reset that is explicitly
-  labelled as also destroying the user's records.
-- **Onboarding accuracy.** It was sending first-time users to
-  "Settings → Design", a screen that has not existed since the 16 Sep
-  reorg (the row is "Colour scheme"). A `settingsPathReferences.test.js` guard
-  now fails if a Settings row is renamed out from under onboarding/Guide copy.
-- **The Guide no longer under-promises encryption.** At-rest encryption is
-  *always* on; App Lock adds a gate in front of the key. Verified in source
-  before any copy was written.
-- **Search no longer claims "No matches" before it has searched.** The index
-  fallback was an empty array, indistinguishable from a real empty result.
-- **Every overlay is dismissible with Escape** — 27 components via
-  `useEscapeToClose`, including the shared `ConfirmDeleteCard` and
-  `MyProfileEditScreen`. Only the topmost overlay closes; registration order is
-  tracked and cleaned up on unmount. Settings is hand-wired to share one
-  `goBackOneLevel()` with its back button.
-- **Search results can be got back to** (Phase 2b, the item that was #1 on
-  the previous handover's list). A record opened from a result carries a
-  visible "Back to search results" control, and the back chain returns there
-  too. The origin is threaded through `navigateTo`'s third parameter, which
-  defaults to `null` — so every *other* record link in the app clears it, and
-  a stale button cannot follow the user around the session. The decisions live
-  in `src/calculations/backNavigation.js` (pure, unit-tested); the wiring is
-  guarded by `searchBackNavigationWiring.test.js`, because a unit test cannot
-  see whether a function is reached. All mutations verified to turn the suite
-  red.
-- **The 18th smoke flow found a real bug in its own feature on its first CI
-  run**, which is the single most useful thing in this batch and worth
-  understanding rather than just noting. The clearing rule had been
-  implemented in `navigateTo` only — and the bottom nav and quick-add call
-  `setActive` directly, so tapping a different tab left the button on screen.
-  Every unit test stayed green throughout, because all of them were examining
-  the code that worked. `selectTab(tabKey)` is now the one way this file
-  switches tab for a user-initiated navigation, and it clears the context.
-  **If you add a tab switch, use `selectTab`, not `setActive`** — and note
-  that `navigateTo` is a separate path (used by search results and deep
-  links) which also clears.
-- **Palette re-verified, no regressions.** `paletteContrast.test.js` names the
-  four accents and self-checks its own maths against known WCAG pairs.
-- CI/local unification, enforced docs gate, encoding pre-commit hook,
-  `scripts/verify-changes.mjs`, Notion log current.
+| Pool | Task | Files you may touch |
+|---|---|---|
+| **t011** | **A2** — move the unacknowledged-dot explanation out of the tab's accessible name into `aria-describedby` against real visually-hidden DOM content; make the smoke `nav()` **assert** `aria-current` changed, throwing with the real tab names when it did not | `src/App.jsx`, `scripts/smoke-test.cjs` |
+| **t017** | **A8** — rewrite this handover's stale claims (see below) | `docs/NEXT-SESSION.md` |
+| **t015** | **A5** — browser flow for the whole "stop reminding me" path. **After t011** | `scripts/smoke-test.cjs` |
+| **t013** | **A4** — refill second stage: `needs requesting` → `needs collecting`, with undo | `src/calculations/refillReminderSync.js` |
+| **t012** | **A3** — device-silence for the four remaining reminder types. **Read the due-state shape first** — see the trap below | four `*ReminderSync.js` files |
+| **t014** | **A6** — contrast and narrow-screen check on the three new banner surfaces | `src/App.jsx` |
+| **t016** | **A7** — one master off-switch for the whole suppression feature | `src/App.jsx`, `appPreferencesRepository.js` |
+| **t018** | **Phase C** — read-only backup-import schema audit, feeding the `backupMigrations` tests | none claimed (read-only) |
+| **t019** | **Phase C** — icon-only-UI audit, including the new nav dot | none claimed (read-only) |
 
-## Two things found while doing the item above, worth knowing
+### t017 — the specific false claims in *this* file, now measured
 
-- **The back-handler effects' dependency arrays were already wrong, before
-  this change.** `goBackOneLevel` reads `clinicCardReturnTab` and neither
-  effect that re-registers the back listener listed it. It happened not to
-  bite only because `markClinicCardReturn()` and `navigateToRecord()` batch
-  into one commit, so `active` changed in the same tick and the effect
-  re-registered anyway — correctness by coincidence of React batching, not by
-  design. Fixed, and a test now pins that both effects declare the same list.
-  If you add state to `goBackOneLevel`, add it there too; the `eslint-disable`
-  on those effects will not tell you.
-- **`recordNavigationWiring.test.js` fired on a legitimate change**, which is
-  what a guard is for. It asserted the exact call `navigateTo(tabKey, subTab)`
-  and the search-origin argument broke it. It was widened by one character
-  class, with the intent-bearing assertion untouched. If you ever find yourself
-  loosening one of these guards to get green, read it twice first — this repo
-  has three "coverage" tests that could never have failed.
-- **`insert_widget.txt` in the repo root was committed scratch and is now
-  gone.** A draft of a CLAUDE.md entry that got `git add`ed by accident in
-  `08a01f0` (a Notion-log session), sitting in the root of a public repo for
-  five days. Nothing referenced it; deleted rather than left for the next
-  person to find. Worth remembering as the shape of the mistake: a scratch
-  file written next to the repo, then swept up by a blanket `git add -A`
-  during an unrelated commit. This project's own `docs/CHANGE-PROCEDURE.md`
-  prescribes `git add -A`, so the habit is worth keeping an eye on.
+- "**321 unit tests across 28 files**" → **422 across 34**.
+- "**18 smoke flows**" → **21**.
+- "Notion … current total: **1123** blocks" → **1164**.
+- "**Phase 3 — banner suppression**" is listed under *open*. **It shipped.** The
+  whole banner-suppression feature, its acknowledgement sheet, and the Testing
+  banner fix are on `main`. This is the single most misleading thing in the old
+  handover: a new session would rebuild work that already exists.
+- "**This project's own `docs/CHANGE-PROCEDURE.md` prescribes `git add -A`**" —
+  **this is false about CHANGE-PROCEDURE.md.** It is line 130 of *this* file that
+  says it. `CHANGE-PROCEDURE.md` line 117 already reads
+  `git add <explicit paths>   # never git add -A`, and line 127 is a section
+  devoted to it. **Do not "fix" the procedure file; the error is here.**
 
-## State: open, in the order you should take it
+### The trap in t012 (A3)
 
-### 1. Phase 3 — retention (the largest remaining feature)
+**Verify the due-state shape before writing a line of it.** The Testing reminder
+was silently suppressed for its entire life because the code read
+`getTestingDueState().test`, and that function returns `{ due, dueDate }` — it
+has no `test` property at all. The signature was therefore always `""`, and
+`isBannerVisible` treats an empty signature as "nothing to show". The banner
+**never rendered**, including in a published APK.
 
-None of this exists yet. In rough priority order for a real user:
+`reminderDueShapes.test.js` exists to stop this recurring: it runs the real due
+state functions against real seed data at a pinned clock, and asserts a
+precondition up front so a future seed change fails loudly instead of quietly
+skipping the interesting cases. Run it before you build on these shapes.
 
-- Banner suppression — due-reminder banners currently reappear on every poll
-  until acted on, which trains people to ignore them.
-- Overdue deferral — an overdue item stays overdue with no way to defer.
-- **"Since you were last here"** — the owner's own framing of retention. Build
-  this *last*, and only after 1 and 2, because it is only meaningful once the
-  banners stop nagging.
-- App Lock grace — being locked straight out of the app is hostile on a daily
-  medication app.
-- Refill undo — marking a refill requested should be reversible.
+## What A is doing, so you do not duplicate it
 
-### 2. Phase 2c — the inert `reveal-clinic` route
+A is working on the security and data-integrity items, in files that do **not**
+overlap the list above:
 
-`src/calculations/deepLinkRoutes.js` maps `/reveal-clinic` to an action that
-has no handler behind it. Small and self-contained, but genuinely low value: it
-only affects a native home-screen widget on a secondary surface. Do it only
-after 1.
+- the Android widget `SharedPreferences` sink — comment plus a guard test;
+- the duress-mode notification limitation — documenting it in the Privacy
+  screen;
+- `src/storage/backupMigrations.js` tests, **gated on t018**, which is yours.
+
+Claims are visible in real time via `claims`. If you need a file A holds, say
+so in `notices` rather than editing it.
+
+## Known facts worth not rediscovering
+
+- **iOS has never been built.** No `ios/` directory. Needs macOS/Xcode and an
+  Apple Developer account. Record it; do not pretend it is covered.
+- **Android `minSdkVersion = 24`** (Android 7.0) — a very wide range, never
+  compatibility-tested. Device-blocked.
+- **Offline resilience is fine.** Both disclosed network calls (Nominatim,
+  GitHub) fail with plain-language messages. Do not re-audit.
+- **The singular "Encounter" label is deliberate.** Consistent across the
+  bottom-nav tab, the screen `<h1>` and the Global Search group, and it matches
+  "Medication" and "Healthcare". Do not "fix" it.
+- **Partner Notification is reachable only from a positive test.** A deliberate
+  clinical gate. A shortcut would dilute the "no clutter or alarm on sensitive
+  health data" decision.
+- **The Glossary already defines** PrEP, PEP, DoxyPEP, Doxy, TOC, C&S, window
+  period, BASHH, MGen, HSV, HPV. The jargon sweep is done.
+- **`export const ACTION` spreads from `DEFAULT_ACTION_COLORS`.** Parsing the
+  ACTION block for literal hex returns nothing useful and `ACTION.red` comes
+  back `undefined`. Read `DEFAULT_ACTION_COLORS`.
+- **Per-module `T.*` tokens** come from each module's own `buildLight()`, not
+  from `designTokens.js`. This is why automated contrast scanning of the source
+  kept failing. The colours were measured by hand for that reason.
+- **Anonymise mode is screen-side only.** It masks all 9 contact-name surfaces
+  and its index entries, but **exports keep real values** — stated on the
+  Privacy screen. Do not "extend" it into export; that is a deliberate
+  decision, not an oversight.
+- **Duress mode does not cancel scheduled OS notifications.** Re-checked and
+  deliberately left alone: a pre-scheduled Android alarm is independent of the
+  app, and cancelling it could deny a coerced user their medication reminder,
+  which is a health consequence rather than a privacy one.
 
 ## Notion — where things go
 
-**Audits & Reviews** (page `3e913572-4f67-81f9-8184-ce5f5694a0fa`, child of
-Development Index) is the single home for every audit, review, sweep and
-re-measurement. It now holds:
-
-- 5 pre-existing audit pages, catalogued so they stop being lost
-- 9 audits from the 27–28 Sep new-user session
-- **19 backfilled audits from 3–27 Sep**, transcribed from `CLAUDE.md`'s dated
-  log, each labelled *"recorded retrospectively"*
-- a coverage review of what is **not** audited
-- a list of what genuinely needs re-running, and why
-
-**Write an audit there even when the result is "nothing found."** A verified
-non-finding is a result, and it is the cheapest way to stop the same audit being
-re-run from scratch — which is exactly what happened to the palette work.
-
-**Respect the "recorded retrospectively" label.** Those 19 were transcribed, not
-re-run. Reading a 10 Sep conclusion as if it were current is the failure mode
-this page exists to prevent.
-
-The **Development Log** (`3b013572-4f67-80ab-b1a0-c665a828e241`) stays for what
-was *shipped*, not for what was *found*. Found-but-unshipped belongs in Audits.
-
-Both must be appended with `PATCH /v1/blocks/{page_id}/children` (`POST` is not
-valid there, and Notion's error text for it reads exactly like an auth failure),
-then verified by paginating to the end — a successful response is not proof the
-write landed. **When verifying, accumulate every page of results**, not just the
-last: a reader that keeps only the final page reports a short page as a short
-document, which is the same "measured nothing, looked fine" trap as everywhere
-else in this project.
+- **Audits & Reviews** (`3e913572-4f67-81f9-8184-ce5f5694a0fa`) is the single
+  home for every audit, review, sweep and re-measurement. **Write an audit
+  there even when the result is "nothing found"** — a verified non-finding is a
+  result, and it is the cheapest way to stop the same audit being re-run from
+  scratch, which is what happened to the palette work.
+- **Respect the "recorded retrospectively" label.** Those entries were
+  transcribed from `CLAUDE.md`, not re-run. Reading a 10 Sep conclusion as
+  current is the failure mode the page exists to prevent.
+- The **Development Log** (`3b013572-4f67-80ab-b1a0-c665a828e241`, **1164
+  blocks** measured) is for what was *shipped*. Found-but-unshipped goes in
+  Audits.
+- Append with **`PATCH /v1/blocks/{page_id}/children`**. `POST` is not valid
+  there and Notion's error text reads exactly like an auth failure, which has
+  already cost a session two integrations' worth of time. **Paginate to the end
+  to verify** — a successful response is not proof the write landed, and
+  **accumulate every page**, or a long page reads as a short one.
+- `node scripts\notion-log.mjs append "Development Log" "<entry>"` does this
+  with the paginated verification built in.
 
 ## Audit re-run policy
 
 - Re-run when the **thing audited has changed materially**, and say why in the
   new entry.
-- Do **not** re-run a clean result just because time passed. A re-run that finds
-  the same thing buries the original under noise.
+- Do **not** re-run a clean result just because time passed.
 - When re-running, write a **new dated entry** rather than editing the old one.
   The old conclusion is evidence of what was true then.
 
-## Known facts worth not rediscovering
-
-- **iOS has never been built.** There is no `ios/` directory. The user has
-  always described iOS as secondary-but-real. It needs macOS/Xcode and an Apple
-  Developer account, so it cannot be fixed from a dev machine. Record it, don't
-  pretend it is covered.
-- **Android `minSdkVersion = 24`** (Android 7.0) — a very wide device range,
-  never compatibility-tested. Device-blocked.
-- **Offline resilience is fine** — checked, both disclosed network calls
-  (Nominatim, GitHub) fail with plain-language messages. Do not re-audit.
-- **The singular "Encounter" label is deliberate**, not a typo. It is consistent
-  across the bottom-nav tab, the screen `<h1>` and the Global Search group, and
-  matches "Medication" and "Healthcare". Do not "fix" it.
-- **Partner Notification is reachable only from a positive test.** That is a
-  deliberate clinical gate. A discoverability shortcut would dilute the "no
-  clutter or alarm on sensitive health data" decision.
-- **The Glossary already defines** PrEP, PEP, DoxyPEP, Doxy, TOC, C&S, window
-  period, BASHH, MGen, HSV, HPV. The jargon sweep is done.
-- **`export const ACTION` spreads from `DEFAULT_ACTION_COLORS`.** Parsing the
-  ACTION block for literal hexes returns nothing useful and `ACTION.red` comes
-  back `undefined`. Read `DEFAULT_ACTION_COLORS`.
-- **Per-module `T.*` tokens** come from each module's own `buildLight()`, not
-  from `designTokens.js`. This is why automated contrast scanning of the source
-  kept failing. The colours were measured by hand for that reason.
-- **Notion Development Log**, page `3b013572-4f67-80ab-b1a0-c665a828e241`.
-  Append with **`PATCH /v1/blocks/{page_id}/children`** (`POST` is not valid
-  there and Notion's error text reads like an auth failure). Then paginate to
-  the end and confirm — a successful response is not proof it landed. Current
-  total: 1123 blocks.
-
 ## Waiting on the owner, not actionable by an agent
 
-- **Device testing**: #68 safe-area gaps, Accessibility Item 7 (notch/status
-  bar), Android 7–10 compatibility. All need the physical device.
+- **Device testing**: #68 safe-area gaps, Accessibility Item 7, Android 7–10
+  compatibility. All need the physical device.
 - **Rotate the Notion token** — deliberately deferred by the owner.
-- **Encoding-repair dry run on real data.** `scripts/repair-personal-data-encoding.cjs`
-  is built and proven on synthetic data but has never touched real data. Dry run
-  is read-only and safe; `--apply` dumps a **plaintext** backup that must be
-  deleted afterwards. `backups/` is gitignored precisely because this is a
-  public repo.
-- **Play Store keystore.** Only needed for Play Store. The project has only a
-  *debug* key, which Play rejects. Losing a release key means never being able
-  to update the listing again, and it is a secret that must not be generated in
-  a shared workspace. Worth asking whether Play Store is wanted at all — the app
-  is private, encrypted and single-user, and GitHub Releases needs no key.
+- **Encoding-repair dry run on real data.**
+  `scripts/repair-personal-data-encoding.cjs` is proven on synthetic data and
+  has never touched real data. Dry run is read-only and safe; `--apply` dumps a
+  **plaintext** backup that must be deleted afterwards. `backups/` is gitignored
+  because this is a public repo.
+- **Play Store keystore.** The project has only a *debug* key, which Play
+  rejects. Losing a release key means never updating the listing again, and it
+  must not be generated in a shared workspace. Worth asking whether Play Store
+  is wanted at all — the app is private, encrypted, single-user, and GitHub
+  Releases needs no key.
+- **Credential rotation** for the opencode password and the GitHub OAuth token,
+  both exposed in transcript. Explicitly deferred to end stage. Do not
+  re-raise it, and **never write either value into a tracked file.**
 
 ## Standing rules that are easy to break
 
@@ -245,11 +249,17 @@ else in this project.
   braces and mangled labels. Anchor on component signatures, or edit by hand.
 - **Never round-trip source through PowerShell `Get-Content`/`Set-Content`.**
   PS 5.1 is not UTF-8 and has damaged this codebase four times. Use the editor
-  or a Node script.
-- **A new repository must be wired into `backupService.js` in the same change.**
-  This has been missed three separate times.
+  or a Node script. **This includes inline `node -e`**: `$` is a PowerShell
+  variable even inside double quotes, so a regex ending `$/gm` is silently
+  mangled and the script then reports a confident wrong answer.
+- **A PowerShell `Start-Job` does not inherit the working directory.** A
+  concurrency test written that way reported 8 lost writes when all 8 jobs had
+  in fact died with `MODULE_NOT_FOUND`. Pass an absolute path and capture job
+  output.
+- **A new repository must be wired into `backupService.js` in the same
+  change.** Missed three times.
 - **A new test must be proven able to fail.** Revert the fix and confirm it
-  goes red. Three "coverage" tests here never could.
+  goes red. Three "coverage" tests here never could have.
 - **Icons are Phosphor**, never `lucide-react`. **Type/colour tokens live in
   `designTokens.js`**; raw hex is a bug.
 - **Dates:** never `milliseconds / 86400000` for calendar arithmetic — it is
@@ -257,10 +267,41 @@ else in this project.
   are fake-UTC by design; see that file.
 - **Do not kill the user's Chrome or unrelated apps** to free RAM. The phone
   connection and the server on port 4096 must stay up.
+- **Never `git add -A`** in this repo. Two sessions share the tree.
+
+## When you are stuck
+
+The threshold is deliberately low. On a second failed attempt, a stall, or a
+retry loop, record it and let the outside model answer:
+
+```powershell
+node scripts\session-bridge.mjs stuck <slug> "what you are trying" "what happened"
+```
+
+The first attempt only records. **The second automatically consults Gemini**,
+assembled from *all* failed attempts rather than the latest. A model that has
+not been stuck on it for an hour is more useful than one more attempt.
+
+Grinding through the same failure three times costs far more than one free
+call, so the instinct to push on is the expensive one. Use it as a
+**challenger**: it has no memory of this repo and will reason confidently about
+things it cannot see.
+
+Log decisions and findings as you go:
+
+```powershell
+node scripts\session-bridge.mjs log "<what you decided or found>" --kind=decision
+```
+
+Log what is **not** already durable in git or `docs/`. And when you learn a
+**rule** — "X cannot be done as Y, so do Z, because…" — record it as a lesson
+with evidence. `--evidence` is required; a rule with no provenance is a
+superstition, and this repo has repeatedly found those.
 
 ## Current git state
 
-`main` is clean and pushed. All three workflows green: 321 unit tests across 28
-files, 18 smoke flows, docs gate reporting a real measurement. The flow/assertion
-counts CI prints are the ones to read — a green exit code alone has lied here
-three times.
+`main` is clean and pushed at `e680768`. The gate is green locally: build, lint,
+422 unit tests across 34 files, encoding guard, inherited-instruction check.
+**The last full CI run predates the current `main`** — the flow/assertion counts
+CI prints are the ones to trust, because a green exit code alone has lied here
+five times.
