@@ -502,7 +502,22 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
                 <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 1 }}>streak</div>
               </div>
               <AdherencePill T={T} label="7-day" hit={adherence.sevenDay.hit} expected={adherence.sevenDay.expected} info="Based on your actual dose log from the last 7 days — hit vs. days a dose was actually due." />
-              <AdherencePill T={T} label="this refill" hit={adherence.sinceRefill.hit} expected={adherence.sinceRefill.expected} />
+              {/* Labelled "this container", not "this refill", because that is what
+                  the maths measures: the window is anchored on your last logged
+                  refill but CAPPED AND WRAPPED at daysPerContainer - one
+                  container's worth of doses - so a 6-month PrEP supply would
+                  otherwise dilute the rate, and a 2-container refill would
+                  report a span the number never covered. The old label
+                  implied "since I last refilled", which it is not.
+
+                  Hidden entirely when no refill has been logged: there is no
+                  container to measure from, so sinceRefill falls back to the
+                  7-day figures, and the pill was displaying the same number
+                  twice under two different labels - which reads as two
+                  independent pieces of evidence and is neither. */}
+              {adherence.sinceRefillAnchored && (
+                <AdherencePill T={T} label="this container" hit={adherence.sinceRefill.hit} expected={adherence.sinceRefill.expected} info="From your last logged refill, capped at one container's worth of doses — so a long supply doesn't dilute the rate. If you reorder, this starts again with the new container." />
+              )}
             </div>
               );
             })()

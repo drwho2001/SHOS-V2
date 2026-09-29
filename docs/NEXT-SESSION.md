@@ -133,7 +133,7 @@ A2, and running it earlier tests the old behaviour.
 | **t018** | **Phase C** — read-only backup-import schema audit, feeding the `backupMigrations` tests | none claimed (read-only) |
 | **t019** | **Phase C** — icon-only-UI audit, including the new nav dot | none claimed (read-only) |
 | **t020** | **Timezone audit** — the remaining `toLocale*` sites, per module with evidence | 7 module/calculation/storage files |
-| **t022** | **Refill pill** — rename `this refill` → `this container`, add the missing info icon, hide it when no refill is logged | Medication Dashboard, `medicationCalculations.js` |
+| ~~t022~~ | ~~Refill pill~~ | **DONE** — now "this container" |
 | ~~t021~~ | ~~Vaccination/clinic-visit due gate~~ | **DONE** |
 | ~~t023~~ | ~~Vaccine reminder fires after a later dose is given~~ | **DONE** |
 | **t025** | **IDEA, owner** — BASHH/UK-guideline vaccine **eligibility** suggestions as a dismissable mini banner on the Vaccinations list, deeper info in Settings/Resources | `SHOS_Vaccinations_Prototype.jsx` |
@@ -167,6 +167,37 @@ when dose 3 is expected.
 with no `date` yet as given (pre-adding a dose row would cancel the current
 reminder). The seeded Twinrix booster is asserted to **stay** overdue, so a
 future "tidy" cannot quietly silence a real reminder.
+
+### t022 — the pill that said "this refill" and meant "this container"
+
+Found by reading the maths while answering the owner's question about the
+explanation text, not by a report.
+
+**The label was wrong, not merely terse.** The window anchors on your last
+logged refill but is **capped and wrapped at `daysPerContainer`** — one
+container's worth of doses. So "this refill" implied a span the number never
+delivered: a 6-month PrEP supply would dilute the rate across the whole supply,
+and anyone ordering **2 containers at once** (the refill quantity is entered in
+containers and can be >1) saw a figure labelled "this refill" that could not
+span their refill. Now "this container".
+
+**The pill had no info icon at all** — its 7-day sibling has had one since
+16 Sep, which is why the label was the only place the distinction could even be
+made. It now explains the cap, which is the fact the old label got wrong.
+
+**A second defect, found on the way: the pill was showing a duplicate.** With no
+refill logged, `sinceRefill` falls back to the 7-day numbers, so the card
+displayed the **same figure twice under two different labels**. Two identical
+numbers side by side read as two independent pieces of evidence. A new
+`sinceRefillAnchored` flag lets the UI hide the pill when there is no container
+to measure from — while the underlying fallback is deliberately left alone, so
+anything else reading `sinceRefill` still gets a value rather than `undefined`.
+Hiding a duplicate is a presentation decision; breaking a consumer is not.
+
+6 mutations red, including the over-correction: deleting the pill outright also
+satisfies "hidden when unanchored", so the suite asserts the anchored case still
+renders it.
+
 
 
 ### t012 (A3) — what actually shipped, and what the honest claim is

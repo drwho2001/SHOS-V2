@@ -318,7 +318,9 @@ export function computeAdherence(med) {
     ? Math.round(med.unitsPerContainer / dailyConsumptionForContainer)
     : null;
   let sinceRefill;
+  let sinceRefillAnchored = false;
   if (lastRefill) {
+    sinceRefillAnchored = true;
     const refillDay = new Date(lastRefill.date); refillDay.setHours(0, 0, 0, 0);
     // FIXED 26 Sep 2026 — made DST-correct for consistency with the two fixes
     // above, and covered by a test. Being straight about this one: dividing
@@ -346,7 +348,13 @@ export function computeAdherence(med) {
     sinceRefill = sevenDay;
   }
 
-  return { streak, sevenDay, sinceRefill };
+  // `sinceRefillAnchored` exists so the UI can tell whether the "this
+  // container" figure is really measuring a container. With no refill logged
+  // there is nothing to measure a container from, so `sinceRefill` falls back
+  // to the 7-day numbers - and a UI that labelled those "this refill" was
+  // showing the same figure twice under two different names, which reads as
+  // two independent pieces of evidence and is neither.
+  return { streak, sevenDay, sinceRefill, sinceRefillAnchored };
 }
 
 // New 18 Aug 2026, per the user's ask: prevents accidentally logging the
