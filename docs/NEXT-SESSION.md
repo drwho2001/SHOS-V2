@@ -441,6 +441,86 @@ judging), `clinicCardPdfService` (1), `optionListUsage` (2), and the
 notification-text renderers. The guard covers the eight screen files above; the
 rest are calculations and exports needing their own per-value triage.
 
+### t020 (part 4) — the cycle widget, and a contraception interval that was a day out
+
+The widget I deliberately left whole last round got its own pass, as it deserved.
+**Five defects across two features in one file**, and the reason they all survived
+is the same: the logic was **inline, inside an async function, behind a Capacitor
+plugin bridge**, in a large JSX file — so none of it could be reached by a test
+without a device. Extracting it is half the job; the call site then has to be
+proven, and it is (see the wiring assertions below).
+
+**`cycleWidgetCalculations.js`, pure and testable.** Three defects in the widget:
+
+1. `cycleDay` divided **elapsed milliseconds** between a real instant and a
+   stored fake-UTC value. At 22:00 on the start date most of the world is on
+   day 1, and the maths said day 2. Since `phase` is derived from `cycleDay`,
+   the home screen reported the **wrong phase**, not just the wrong number.
+2. The predicted next-period date was rendered with no `timeZone`, so west of UTC
+   it showed the previous day.
+3. **Not a timezone bug at all**, and the argument for extracting the function:
+   `avgLength * 86400000` with **no null guard**, while
+   `getAverageCycleLengthDays()` returns `null` below two logged cycles.
+   `null * anything` is `0`, so the prediction collapsed onto the start date and
+   the widget told a user with one recorded cycle that their next period was due
+   **the day their last one started**. No number of timezone variants would ever
+   have found this one.
+
+**And a fourth defect the first guard accidentally revealed.** Bounding the
+widget-body assertion correctly surfaced two other `86400000` uses in the same
+file. One (`setNextDueDate`) is stored-vs-stored and correct. The other,
+`daysForUnit`, was a **frame mismatch**: `fromDate` is stored fake-UTC, so
+parsing gives UTC midnight, but `getDate()`/`setMonth()` are **local** operations
+on it. In New York a stored `2026-01-31` is 30 Jan 19:00 local, so the whole
+calendar walk ran a day ahead:
+
+| stored start | +1 month | was | should be |
+|---|---|---|---|
+| 2026-01-31 | | **29 days** | 28 |
+| 2026-03-31 | | **31 days** | 30 |
+
+Those land in a stored contraception `intervalDays` that **drives a reminder** —
+the user is reminded on the wrong day, and the number stored is not what they
+asked for. UTC and Sydney were already correct, which is the signature of a frame
+mismatch rather than a maths error. Now on the UTC frame throughout, and
+**exported so it can be tested at all**.
+
+**Three of my own mistakes in this round, all caught by running rather than
+reading:**
+
+- I treated a day-number as if it were a millisecond timestamp, so every
+  prediction landed in **1970**. The extraction is what made it catchable.
+- Two of my own tests asserted zone-specific local dates built from UTC
+  instants, so they only held in New York. One of them claimed in a comment that
+  "midday UTC is unambiguous in every zone the suite runs" — **false**, and
+  `Pacific/Chatham` (+12:45) proved it: at that offset 12:00 UTC is already
+  00:45 the *next* local day, so day 2 was correct and the test was the bug. A
+  45-minute offset is the only reason that zone is in the suite, and it caught a
+  false universality claim in three lines. Every such fixture is now built from
+  **local components**, so "the local day is the stored day" holds everywhere.
+- I expected 6 months from 30 Sep to be 183 days. It is 181 (2027 is not a leap
+  year). The code was right and my arithmetic was wrong — which is precisely the
+  "just add 30 days a month" idea the function exists to prevent, so the
+  correction is recorded at the fixture.
+
+**The wiring guard hit this project's most repeated failure mode in a new dress.**
+Its first version sliced the function body with
+`indexOf("async function", start + 10)`, which returns **-1** when the target is
+the last such function — and `slice(start, -1)` silently returns everything to
+end-of-file, so the guard matched **its own explanatory comment** two hundred
+lines away. The second version bounded correctly but stopped at the next
+*async* function, picking up two unrelated ones. It now bounds on any
+top-level function, strips comments first, and carries a **non-vacuity check on
+the stripper** — because the comment above the widget's fix quotes `86400000`
+verbatim, so without stripping the first assertion fails on its own
+documentation. This is the fourth-plus recorded instance of a guard matching the
+comment that documents the fix.
+
+**5 mutations red** on the widget, including the null-average bug, the
+elapsed-milliseconds revert, the missing `timeZone`, the 1970 day-number bug, and
+the widget silently going back to inline arithmetic. Both files green in eight
+zones including `Pacific/Chatham` (+12:45) and `Asia/Kathmandu` (+05:45).
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second

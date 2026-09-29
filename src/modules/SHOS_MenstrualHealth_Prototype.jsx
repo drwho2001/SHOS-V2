@@ -46,6 +46,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { getCycleDayForWidget, getCyclePhase, getNextPeriodDayKey, formatWidgetDayKey } from "../calculations/cycleWidgetCalculations";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 
 let WidgetBridge = null;
@@ -75,13 +76,29 @@ async function updateCycleWidget() {
       if (activeCycles.length > 0) {
         const latest = activeCycles[0];
         const avgLength = await MenstrualCycleRepository.getAverageCycleLengthDays();
-        const startDate = latest.startDate ? new Date(latest.startDate) : new Date();
-        const now = new Date();
-        const cycleDay = Math.max(1, Math.floor((now - startDate) / (1000 * 60 * 60 * 24)) + 1);
-        const phase = cycleDay <= 7 ? "Menstrual" : cycleDay <= 14 ? "Follicular" : cycleDay <= 21 ? "Ovulatory" : "Luteal";
-        const nextPeriodDate = new Date(startDate.getTime() + avgLength * 24 * 60 * 60 * 1000);
-        const nextPeriod = nextPeriodDate.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-        await bridge.updateCycle({ day: cycleDay, phase, nextPeriod });
+        // FIXED 29 Sep 2026 (t020) - three defects, all moved into
+        // cycleWidgetCalculations.js so they are testable at all. This logic
+        // used to live inline here, behind a plugin bridge, inside an async
+        // function in a large JSX file, which is why none of it could be
+        // exercised without a device.
+        //
+        // 1. cycleDay divided ELAPSED MILLISECONDS between a real instant and a
+        //    stored fake-UTC value. At 22:00 on the start date most of the
+        //    world is on day 1, but the maths said day 2 - and phase is derived
+        //    from cycleDay, so the home screen reported the wrong PHASE.
+        // 2. the predicted date was rendered with no timeZone, so west of UTC
+        //    it showed the previous day.
+        // 3. NOT A TIMEZONE BUG, and the one no amount of running timezone
+        //    variants would have found: `avgLength * 86400000` with no null
+        //    guard, while getAverageCycleLengthDays() returns null below two
+        //    logged cycles. `null * anything` is 0, so the prediction collapsed
+        //    onto the start date and the widget told a user with one recorded
+        //    cycle that their next period was due the day their last one began.
+        const cycleDay = getCycleDayForWidget(latest.startDate);
+        if (cycleDay === null) return;
+        const phase = getCyclePhase(cycleDay);
+        const nextPeriod = formatWidgetDayKey(getNextPeriodDayKey(latest.startDate, avgLength));
+        await bridge.updateCycle({ day: cycleDay, phase, nextPeriod: nextPeriod || null });
       }
     }
   } catch (e) {
@@ -583,16 +600,34 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
 // converted at entry time, so there's no second unit field anywhere
 // to drift out of sync with it.
 const INTERVAL_UNITS = { Days: 1, Weeks: 7 };
-function daysForUnit(value, unit, fromDate) {
+// FIXED 29 Sep 2026 (t020) - and EXPORTED so it can be tested at all.
+//
+// This mixed two frames. `fromDate` is a STORED fake-UTC value, so parsing it
+// gives UTC midnight, but `getDate()` and `setMonth()` are LOCAL operations on
+// that instant. In New York, a stored "2026-01-31" is 30 Jan 19:00 local, so the
+// calendar arithmetic ran a day ahead of the day the user actually entered:
+//
+//   1 month from 31 Jan  ->  29 days   (correct: 28)
+//   1 month from 31 Mar  ->  31 days   (correct: 30)
+//
+// Both of those land in a stored contraception `intervalDays` that drives a
+// reminder, so the user is reminded on the wrong day. Measured across zones
+// rather than reasoned about: UTC and Sydney were already correct, and New York
+// was wrong, which is the signature of a frame mismatch rather than a maths
+// error.
+//
+// The whole calculation is now on the UTC frame, since every input is a stored
+// wall-clock day.
+export function daysForUnit(value, unit, fromDate) {
   if (unit === "Months") {
     const due = new Date(fromDate);
-    const startDay = due.getDate();
-    due.setMonth(due.getMonth() + value);
-    // Real month-length edge case: setMonth can roll over (e.g. 31
-    // Jan + 1 month → 3 Mar, not 28/29 Feb) — pull back to the last
+    const startDay = due.getUTCDate();
+    due.setUTCMonth(due.getUTCMonth() + value);
+    // Real month-length edge case: setUTCMonth can roll over (e.g. 31
+    // Jan + 1 month -> 3 Mar, not 28/29 Feb) - pull back to the last
     // day of the intended month instead, same fix medicationRepository.js's
     // own interval math would need if it ever grew month support.
-    if (due.getDate() !== startDay) due.setDate(0);
+    if (due.getUTCDate() !== startDay) due.setUTCDate(0);
     return Math.round((due - new Date(fromDate)) / 86400000);
   }
   return value * (INTERVAL_UNITS[unit] || 1);
