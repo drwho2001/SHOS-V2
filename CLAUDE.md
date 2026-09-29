@@ -1,4 +1,4 @@
-﻿# SHOS — Sexual Health Operating System
+# SHOS — Sexual Health Operating System
 
 A personal sexual health + lifestyle tracker for one user, not a clinical
 record system. React 18 + Vite + Capacitor 8, shipping as both an Android

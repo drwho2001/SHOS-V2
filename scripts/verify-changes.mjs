@@ -22,6 +22,8 @@
 //                         stale-closure bugs before they reached a device.
 //   3. unit tests       - pure logic. Includes mutation-verified coverage.
 //   4. encoding guard   - mojibake. Catches PowerShell 5.1 double-encoding,
+//   5. instructions    - CLAUDE.md is what a new session inherits; a missing
+//                       instruction fails silently, so it is gated like mojibake.
 //                         which is otherwise invisible to every other gate
 //                         because the result is still valid UTF-8.
 //   5. smoke suite      - real navigation in a real browser against a real
@@ -508,6 +510,18 @@ if (!SMOKE_ONLY && !DOCS_ONLY) {
   // --- gate 4: encoding ---------------------------------------------------
   gate("encoding guard", () => {
     const r = run("npm", ["run", "--silent", "check:encoding"]);
+    return { ok: r.status === 0, note: r.status === 0 ? "" : lastLines(r.stdout || r.stderr) };
+  });
+
+  // --- gate 5: inherited instructions -------------------------------------
+  // CLAUDE.md is the ONLY thing a new session inherits. If an instruction goes
+  // missing the session does not fail - it just does something already known to
+  // be wrong, silently, which is how five of these drifted without anyone
+  // noticing. The encoding guard above is in the same family and the same
+  // reasoning: a recurring silent failure gets a gate, not a reminder to be
+  // more careful.
+  gate("inherited instructions", () => {
+    const r = run("node", ["scripts/check-instructions.mjs"]);
     return { ok: r.status === 0, note: r.status === 0 ? "" : lastLines(r.stdout || r.stderr) };
   });
 }
