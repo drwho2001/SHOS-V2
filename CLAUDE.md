@@ -659,16 +659,43 @@ time-of-day, London passes everything.** That shape is the whole diagnosis, and
 it takes one run to see — which is why the flow now collects every zone's
 failures and throws them together.
 
-**Verified by actually seeing it fail, which is the only verification that
-counts here.** Reverting both fixes, rebuilding and re-running the flow goes red
-in exactly the pattern above. That is the check a passing test has to survive,
-because a test that has only ever passed has not been tested. Four further
-mutations of the new unit layer are confirmed red too, and the fifth *failed to
-apply* (a multi-line pattern against a CRLF file) and was reported as "this
-mutation tests nothing" rather than quietly counted as a pass — the distinction
-between "the mutation did not apply" and "the test did not go red" is the whole
-point. `exposureWindows.test.js` is untouched, which is itself the record that
-the non-finding above was a decision rather than an oversight.
+**The first CI run went red in BOTH gates, and it was my test, not the app.** The
+flow failed in **all three** timezones — including London, the one zone that had
+nothing wrong with it, which is the clue that gave it away. The unit failure was
+at the line asserting `/14 Mar 2026/`. Cause: these helpers format with an
+`undefined` locale, so the date is `14 Mar 2026` on this UK machine and
+`Mar 14, 2026` on CI's en-US one. **I had already caught and fixed exactly this
+in the DST test above, then wrote the same literal into three other places from
+memory.** A test that only passes on the machine that wrote it is not a test.
+
+**And then I made it worse while trying to verify the fix, which is the sixth
+recorded instance of that failure and the second I built inside this one
+change.** Having found a locale problem, my obvious move was to set
+`LANG=en_US.UTF-8` and re-run. It passed — and I nearly recorded that as proof.
+Checking whether the locale had actually changed rather than trusting the green
+showed `Intl` still resolving **en-GB**: `LANG`/`LC_ALL` do not affect Node's
+default locale on Windows at all. So that run measured nothing, and had I not
+probed it, the "verified" claim would have shipped as a lie. Three honest
+replacements: the assertion helpers now **test themselves** against both
+spellings and are proven to *reject* the shifted day, so locale-independence is
+demonstrable rather than asserted; a browser context takes a real locale, so
+`SMOKE_LOCALE=en-US` reproduces CI's exact condition on demand, and the flow was
+re-verified green in all three timezones under it; and the flow's date check
+now accepts either ordering while still rejecting `13 Mar` / `Mar 13`, so it
+stays discriminating.
+
+Verified by actually seeing it fail, which is the only verification that
+counts here. Reverting both fixes, rebuilding and re-running the flow goes red
+in exactly the pattern above — **and it goes red under en-US too**, which is
+the assertion CI had already caught, re-proved after I rewrote it twice. That is
+the check a passing test has to survive, because a test that has only ever
+passed has not been tested. Four further mutations of the new unit layer are
+confirmed red too, and the fifth *failed to apply* (a multi-line pattern against
+a CRLF file) and was reported as "this mutation tests nothing" rather than
+quietly counted as a pass — the distinction between "the mutation did not apply"
+and "the test did not go red" is the whole point. `exposureWindows.test.js` is
+untouched, which is itself the record that the non-finding above was a decision
+rather than an oversight.
 
 **The flow boots the real app three times, once per timezone**, because a device
 timezone is a browser-context property and no unit test can prove which helper a

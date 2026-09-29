@@ -1358,6 +1358,15 @@ async function testTimezoneWallClockRoundTrip(browser) {
     const context = await browser.newContext({
       viewport: { width: 390, height: 844 },
       timezoneId: zone,
+      // SMOKE_LOCALE lets the suite be run under a different locale. This
+      // exists because CI is en-US and a developer machine here is en-GB, and
+      // that difference broke this flow on its first CI run: a date assertion
+      // written against the en-GB spelling passed locally and failed in all
+      // three timezones at once, which looked exactly like the real bug and
+      // wasn't. A browser context takes a REAL locale, so the failure is now
+      // reproducible on demand instead of only on CI:
+      //   SMOKE_LOCALE=en-US npm run smoke
+      locale: process.env.SMOKE_LOCALE || undefined,
     });
     const page = await context.newPage();
     const pageErrors = [];
@@ -1390,8 +1399,23 @@ async function testTimezoneWallClockRoundTrip(browser) {
       await page.waitForTimeout(600);
       const detail = await page.evaluate(() => document.body.innerText);
 
-      check(detail.includes("14 Mar 2026"),
-        `${zone}: the date shown is the date that was typed (14 Mar 2026)`);
+      // Locale-independent on purpose, and this is the SECOND time this
+      // change fell into the same trap. The date renders with an `undefined`
+      // locale, so it is "14 Mar 2026" on a UK machine and "Mar 14, 2026" on
+      // CI's en-US one. My first version asserted the en-GB literal and
+      // passed locally while failing in ALL THREE zones — including London,
+      // which is the one zone that had nothing wrong with it. I had already
+      // caught and fixed exactly this in the unit layer an hour earlier, then
+      // wrote it again from memory.
+      //
+      // Both orderings are accepted rather than parsing a locale-dependent
+      // string, and the SHIFTED day is asserted absent so the check stays
+      // discriminating: with the bug, New York rendered 13 Mar and this fails.
+      const correctDate = detail.includes("14 Mar 2026") || detail.includes("Mar 14, 2026");
+      const shiftedDate = detail.includes("13 Mar 2026") || detail.includes("Mar 13, 2026");
+      check(correctDate && !shiftedDate,
+        `${zone}: the date shown is 14 Mar 2026, the day that was typed`);
+
       check(detail.includes("Late Night"),
         `${zone}: 00:30 is filed under "Late Night", not shifted into another part of the day`);
 
