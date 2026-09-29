@@ -906,17 +906,26 @@ function poolHandler(args) {
       return;
   }
 
-  if (verb === "done" || verb === "block" || verb === "release") {
-    const t = pool.tasks.find((x) => x.id === rest[0]);
-    if (!t) { console.error(`no such task: ${rest[0]}`); throw new PoolExit(2); }
-    if (verb === "done") t.status = "done";
-    else if (verb === "block") t.status = "blocked";
-    else { t.status = "approved"; t.owner = null; }
-    t.history.push({ at: new Date().toISOString(), by: ME, to: t.status });
-    savePool(pool);
-    console.log(`${t.id} -> ${t.status}${t.owner ? ` (owner ${t.owner})` : ""}`);
-    return;
-  }
+if (verb === "done" || verb === "block" || verb === "release") {
+      const t = pool.tasks.find((x) => x.id === rest[0]);
+      if (!t) { console.error(`no such task: ${rest[0]}`); throw new PoolExit(2); }
+      // A task that is no longer being worked on must not keep holding its
+      // files. `done` and `block` both mean "I am not touching this now", and
+      // `release` means exactly that in words - so all three give the files
+      // back. This was missing, and it is a slow, quiet failure: a completed
+      // task left its files claimed, so the other session could not pick up
+      // follow-up work in the same area, and the pool froze a file at a time
+      // with no error anywhere. It is the same shape as the annotation bug
+      // above - a claim outliving the state that justified it.
+      releaseFiles(t.files);
+      if (verb === "done") t.status = "done";
+      else if (verb === "block") t.status = "blocked";
+      else { t.status = "approved"; t.owner = null; }
+      t.history.push({ at: new Date().toISOString(), by: ME, to: t.status });
+      savePool(pool);
+      console.log(`${t.id} -> ${t.status}${t.owner ? ` (owner ${t.owner})` : ""} (files released)`);
+      return;
+    }
 
   if (verb === "allocate") {
     const t = pool.tasks.find((x) => x.id === rest[0]);
@@ -1018,18 +1027,31 @@ function poolHandler(args) {
     // ("--files=a,b"), not the bare flag, so it never matches. Use a prefix
     // test. Caught by running it rather than reading it.
     const filesArg = args.find((a) => a.startsWith("--files="));
-    if (filesArg !== undefined) {
-      const files = filesArg
-        .slice("--files=".length)
-        .split(",").map((f) => f.trim()).filter(Boolean);
-      // Files are part of the duplicate-claim guarantee, so changing them has to
-      // move the claim rather than leave the old one behind. Doing it silently
-      // would mean the claim table and the pool disagree about what is held.
+  if (filesArg !== undefined) {
+    const files = filesArg
+      .slice("--files=".length)
+      .split(",").map((f) => f.trim()).filter(Boolean);
+    // CLAIMS FOLLOW ALLOCATION, NOT ANNOTATION. The first version claimed here
+    // unconditionally, so recording a file list on a task you had merely
+    // annotated LOCKED those files - and because `take` refuses a task whose
+    // files another session holds, that quietly stopped the other session from
+    // taking the task at all. It bit immediately: annotating t025's scope
+    // claimed four files against a task I had not allocated and did not intend
+    // to start, blocking B from picking it up.
+    //
+    // So a claim is only moved when this task is MINE and in flight. Editing
+    // the file list of an approved, unowned task is a plan change; the claim
+    // happens when it is taken, and is released when it is done.
+    const mine = t.owner === ME && t.status === "doing";
+    if (mine) {
       releaseFiles(t.files);
-      t.files = files;
-      claimFiles(t.files);
-      changes.push(`files (${files.length ? files.join(",") : "none"})`);
+      claimFiles(files);
     }
+    t.files = files;
+    changes.push(
+      `files (${files.length ? files.join(",") : "none"})${mine ? "" : " - plan only, no claim moved"}`
+    );
+  }
     if (!changes.length) {
       console.log("nothing to change. Use --title=... and/or --files=a,b");
       return;
