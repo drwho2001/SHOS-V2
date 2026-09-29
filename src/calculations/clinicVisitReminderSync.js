@@ -25,6 +25,8 @@ import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmall
 import { NotificationPreferencesRepository, isClinicVisitSnoozed } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
 import { realTimestampFromStored } from "./dateInputHelpers";
+import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
+import { buildClinicVisitSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } from "./reminderSuppression";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -83,6 +85,25 @@ async function syncOneSlot({ visit, enabled, hoursBefore, notificationId, label 
 export async function syncClinicVisitReminders() {
   const prefs = await NotificationPreferencesRepository.getPreferences();
   const visit = await getSoonestBookedVisit();
+
+  // ADDED 29 Sep 2026 (Phase 3 / A3) - device-silence, previously wired only for
+  // medications. Same honest scope as testing: syncOneSlot already cancels once
+  // it is inside the window, so there is no repeat to suppress here. This makes
+  // the banner's promise hold on all four kinds, and covers a genuine
+  // gap - there are TWO slots (A and B) each with their own notification id, so
+  // a partial implementation would have left one of them buzzing after the user
+  // said stop. Both are cancelled.
+  const acknowledged = normaliseAcknowledgements(
+    (await AppPreferencesRepository.getPreferences()).acknowledgedReminders
+  );
+  if (shouldSuppressDeviceNotification(
+    buildClinicVisitSignature(await getClinicVisitDueState()),
+    acknowledged
+  )) {
+    await cancelNotification(NOTIFICATION_IDS.clinicVisitReminderA);
+    await cancelNotification(NOTIFICATION_IDS.clinicVisitReminderB);
+    return { scheduled: false, acknowledged: true };
+  }
 
   const resultA = await syncOneSlot({
     visit,

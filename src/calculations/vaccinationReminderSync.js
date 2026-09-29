@@ -21,6 +21,8 @@ import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmall
 import { NotificationPreferencesRepository, isVaccinationSnoozed } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
 import { soonestDueVaccination } from "./vaccinationCalculations";
+import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
+import { buildVaccinationSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } from "./reminderSuppression";
 
 // nextDue is a plain "YYYY-MM-DD" calendar date (a <input type="date">
 // value — see SHOS_Vaccinations_Prototype.jsx's own isOverdue(), which
@@ -84,6 +86,32 @@ export async function syncVaccinationReminders() {
   // refillReminderSync use, rather than a future timestamp that's
   // actually in the past.
   const at = dueDate <= new Date() ? new Date(Date.now() + 3000) : dueDate;
+
+  // ADDED 29 Sep 2026 (Phase 3 / A3). Same real bug as refill, same cause: `at`
+  // is 3 seconds out whenever the dose is already due, and this runs on the
+  // 60s poll, so an overdue vaccination re-armed the notification endlessly
+  // while the banner said it was dealt with. The signature carries the due
+  // DATE as well as the id, so acknowledging this dose does not silence the
+  // booster six months out - which is the bug the vaccination signature
+  // originally shipped with.
+  // The shape passed here MUST be the one the banner passes, or the two
+  // fingerprints differ and the comparison can never match - silently, and
+  // looking exactly like "the user acknowledged but we ignored it". The banner
+  // is handed `getVaccinationDueState()`'s `{ due, vaccination, dueDate }`;
+  // `soonest` is `{ vaccination, nextDue }`, so dueDate is rebuilt from the same
+  // `nextDueAsDate` call the banner uses. Same value, same toISOString(), same
+  // signature.
+  const acknowledged = normaliseAcknowledgements(
+    (await AppPreferencesRepository.getPreferences()).acknowledgedReminders
+  );
+  if (shouldSuppressDeviceNotification(
+    buildVaccinationSignature({ vaccination: soonest.vaccination, dueDate }),
+    acknowledged
+  )) {
+    await cancelNotification(NOTIFICATION_IDS.vaccinationReminder);
+    return { scheduled: false, acknowledged: true };
+  }
+
   await scheduleNotification({
     id: NOTIFICATION_IDS.vaccinationReminder,
     title: "Vaccination due",

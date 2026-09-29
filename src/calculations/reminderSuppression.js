@@ -104,6 +104,65 @@ export function buildSimpleSignature(kind, items) {
 }
 
 /**
+ * The four non-medication signatures, each in ONE place.
+ *
+ * These existed only as inline expressions in App.jsx while the sync functions
+ * that schedule the OS notification had no idea they existed. That gap is not
+ * hypothetical: it is exactly how the Testing banner shipped broken. The banner
+ * read `getTestingDueState().test`, a property the function has never had - it
+ * returns `{ due, dueDate }` - so the signature was always "" and
+ * `isBannerVisible` treats an empty signature as "nothing to show", and the
+ * banner never rendered at all, including in a published APK. The vaccination
+ * one failed the same day for the same reason, keyed on id alone so it silenced
+ * every future dose.
+ *
+ * The lesson is not "read the shape first", which is advice. It is that a
+ * fingerprint computed in two places will drift, and the drift is silent in
+ * both directions: too narrow and the banner never appears, too broad and a
+ * reminder is silenced forever. So the banner and the scheduler now call the
+ * same function with the same due state, and there is nothing left to keep in
+ * step. A test asserts both call sites still use these, because a guard that
+ * only checks the helper is correct would not notice someone re-inlining it.
+ *
+ * @param {object|null|undefined} dueState as returned by getXDueState()
+ * @returns {string} "" when nothing is due, which is never a match
+ */
+export function buildTestingSignature(dueState) {
+  return buildSimpleSignature(
+    REMINDER_KIND.TESTING,
+    dueState?.due && dueState?.dueDate
+      ? [{ id: `testing@${dueState.dueDate.toISOString()}` }]
+      : []
+  );
+}
+
+/**
+ * Keyed on the due DATE, not the id alone: a vaccination is a course, and
+ * acknowledging "this dose" must not silence "the booster in six months".
+ */
+export function buildVaccinationSignature(dueState) {
+  return buildSimpleSignature(
+    REMINDER_KIND.VACCINATION,
+    dueState?.vaccination?.id && dueState?.dueDate
+      ? [{ id: `${dueState.vaccination.id}@${dueState.dueDate.toISOString()}` }]
+      : []
+  );
+}
+
+/** A booked visit is a single occurrence, so its id alone is a real instance. */
+export function buildClinicVisitSignature(dueState) {
+  return buildSimpleSignature(
+    REMINDER_KIND.CLINIC_VISIT,
+    dueState?.visit ? [dueState.visit] : []
+  );
+}
+
+/** Refill is a set, so the signature covers every medication currently due. */
+export function buildRefillSignature(medications) {
+  return buildSimpleSignature(REMINDER_KIND.REFILL, medications);
+}
+
+/**
  * Decide whether a banner should be on screen.
  *
  * Order matters here and it is the substance of the feature: an

@@ -112,15 +112,56 @@ A2, and running it earlier tests the old behaviour.
 
 | Pool | Task | Files you may touch |
 |---|---|---|
-| **t011** | **A2** — move the unacknowledged-dot explanation out of the tab's accessible name into `aria-describedby` against real visually-hidden DOM content; make the smoke `nav()` **assert** `aria-current` changed, throwing with the real tab names when it did not | `src/App.jsx`, `scripts/smoke-test.cjs` |
-| **t017** | **A8** — rewrite this handover's stale claims (see below) | `docs/NEXT-SESSION.md` |
-| **t015** | **A5** — browser flow for the whole "stop reminding me" path. **After t011** | `scripts/smoke-test.cjs` |
+| **t012** | **A3** — device-silence for the four remaining reminder types. **DONE 29 Sep, B** | four `*ReminderSync.js` files |
+| ~~t010~~ | ~~A1~~ | **DONE** — shipped in `fd96bd0` |
+| ~~t011~~ | ~~A2~~ | **DONE** — shipped in `fd96bd0` |
+| ~~t017~~ | ~~A8~~ | **DONE** — this file |
 | **t013** | **A4** — refill second stage: `needs requesting` → `needs collecting`, with undo | `src/calculations/refillReminderSync.js` |
-| **t012** | **A3** — device-silence for the four remaining reminder types. **Read the due-state shape first** — see the trap below | four `*ReminderSync.js` files |
-| **t014** | **A6** — contrast and narrow-screen check on the three new banner surfaces | `src/App.jsx` |
+| **t014** | **A5** — browser flow for the whole "stop reminding me" path | `scripts/smoke-test.cjs` |
+| **t015** | **A6** — contrast and narrow-screen check on the three new banner surfaces | `src/App.jsx` |
 | **t016** | **A7** — one master off-switch for the whole suppression feature | `src/App.jsx`, `appPreferencesRepository.js` |
 | **t018** | **Phase C** — read-only backup-import schema audit, feeding the `backupMigrations` tests | none claimed (read-only) |
 | **t019** | **Phase C** — icon-only-UI audit, including the new nav dot | none claimed (read-only) |
+| **t020** | **Timezone audit** — the remaining `toLocale*` sites, per module with evidence | 7 module/calculation/storage files |
+
+### t012 (A3) — what actually shipped, and what the honest claim is
+
+Device-silence is now wired for **all five** kinds. It was previously wired only
+for medications, so "also stop my phone notifying me" silently did nothing on
+the other four banners.
+
+**The four fingerprints moved out of `App.jsx` and into
+`reminderSuppression.js`** as `buildRefillSignature` / `buildTestingSignature` /
+`buildVaccinationSignature` / `buildClinicVisitSignature`. This is the real fix,
+not tidiness: the Testing banner shipped broken *because* the fingerprint lived
+in one file while the scheduler had no copy of it. Two files computing one
+string will drift, and the drift is silent in both directions — too narrow and
+the banner never appears, too broad and a reminder is silenced forever.
+
+**Only two of the four were a live bug, and the comments say which.** Measured
+by reading each scheduling path, not assumed:
+
+- **refill and vaccination** scheduled at `now + 3s` and re-armed on **every**
+  60-second poll. The banner said "stop reminding me" and the device kept
+  buzzing. That is a real user-facing bug, now fixed.
+- **testing and clinic-visit** already cancel once they are past their window,
+  so there was no repeat to suppress. Their value is consistency plus a guard
+  against a future change that re-introduces it. The comments say exactly that
+  rather than claiming a fix.
+
+**The clinic-visit one has two reminder slots** (A and B) with separate
+notification ids, so a partial implementation would have left one buzzing after
+the user said stop. Both are cancelled, and a test asserts it.
+
+**One guard fired on this change and was updated, not loosened.**
+`reminderDueShapes.test.js` asserted the vaccination fingerprint was keyed on
+the due date by looking for the text `dueDate` within 260 characters of
+`vaccinationSignature` *in `App.jsx`*. That is proximity, not meaning, and it
+now asserts the invariant against the function that actually computes the
+fingerprint, plus that `App.jsx` calls it. **Stronger than what it replaced** —
+and proven so: a variant where `dueDate` appears only in a *comment* while
+being ignored satisfies the old proximity check and fails the new one.
+
 
 ### t017 — the specific false claims in *this* file, now measured
 

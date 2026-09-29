@@ -163,6 +163,10 @@ describe("App.jsx's signature expressions use properties that actually exist", (
   // verbatim - which is what makes them valuable and what makes a raw
   // substring check report a fixed bug as still present.
   const APP = readFileSync(path.join(process.cwd(), "src", "App.jsx"), "utf8");
+// The four non-medication fingerprints moved here from App.jsx on 29 Sep, so
+// the assertions about them have to look here. See the tests below.
+const SUPPRESSION_CODE = readFileSync(
+  path.join(process.cwd(), "src", "calculations", "reminderSuppression.js"), "utf8");
   const APP_CODE = APP.split("\n")
     .filter((l) => {
       const t = l.trim();
@@ -178,15 +182,31 @@ describe("App.jsx's signature expressions use properties that actually exist", (
   });
 
   it("keys the testing signature off the due date", () => {
-    expect(APP_CODE, "the testing signature must include the due date, which is what makes each occurrence distinct")
-      .toMatch(/REMINDER_KIND\.TESTING/);
-    expect(APP_CODE).toMatch(/testingSignature[\s\S]{0,220}dueDate/);
+    // The formula MOVED on 29 Sep: it used to be an inline expression in
+    // App.jsx, which is exactly how the Testing banner shipped broken - the
+    // fingerprint lived in one file while the scheduler that has to match it had
+    // no copy of it. It now lives in reminderSuppression.js and App.jsx calls
+    // it.
+    //
+    // So this now asserts the invariant against the file that owns the formula
+    // AND that App.jsx really uses it. That is strictly stronger than the
+    // version it replaces: the old one could be satisfied by the text "dueDate"
+    // appearing near the signature in a file that no longer computes it, which
+    // is precisely how a guard stops meaning anything.
+    expect(SUPPRESSION_CODE, "the testing fingerprint must include the due date, which is what makes each occurrence distinct")
+      .toMatch(/buildTestingSignature[\s\S]{0,400}dueDate/);
+    expect(APP_CODE, "App.jsx must use the shared builder, or the banner and the scheduler can drift again")
+      .toMatch(/buildTestingSignature\(/);
   });
 
   it("keys the vaccination signature off the due date, not just the record id", () => {
-    // Otherwise acknowledging a vaccination silences every future dose of it.
-    expect(APP_CODE).toMatch(/REMINDER_KIND\.VACCINATION/);
-    expect(APP_CODE).toMatch(/vaccinationSignature[\s\S]{0,260}dueDate/);
+    // Otherwise acknowledging a vaccination silences every future dose of it -
+    // which is the bug the original vaccination signature shipped with, keyed on
+    // the record id alone. Same relocation as above, same strengthened form.
+    expect(SUPPRESSION_CODE, "the vaccination fingerprint must include the due date")
+      .toMatch(/buildVaccinationSignature[\s\S]{0,400}dueDate/);
+    expect(APP_CODE, "App.jsx must use the shared builder")
+      .toMatch(/buildVaccinationSignature\(/);
   });
 
   it("the comment-stripping used above is not itself vacuous", () => {

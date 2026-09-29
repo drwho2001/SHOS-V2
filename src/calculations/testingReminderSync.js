@@ -26,6 +26,8 @@ import { ResultsRegistry } from "../registries/resultsRegistry";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName, TESTING_ACTION_TYPE_ID } from "../storage/notificationService";
 import { NotificationPreferencesRepository, isTestingSnoozed } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
+import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
+import { buildTestingSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } from "./reminderSuppression";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -96,6 +98,29 @@ export async function syncTestingReminder() {
     // doxyPepSync.js uses for its own overdue case.
     await cancelNotification(NOTIFICATION_IDS.testingReminder);
     return { scheduled: false, overdue: true };
+  }
+
+  // ADDED 29 Sep 2026 (Phase 3 / A3) - device-silence, previously wired only for
+  // medications.
+  //
+  // HONEST SCOPE, because the two look identical and are not. For refill and
+  // vaccination this fixes a live bug: those schedule `at: now + 3s` and so
+  // re-armed on every poll. This function does NOT - it cancels once the
+  // suggested date has passed, so there is no repeat to suppress. What this
+  // buys is consistency and a guard: the banner's promise now holds on all four
+  // kinds, and if the scheduling path below is ever changed to re-arm (which is
+  // the natural "make overdue things nag louder" change) this is already
+  // correct instead of silently re-introducing the bug.
+  const acknowledged = normaliseAcknowledgements(
+    (await AppPreferencesRepository.getPreferences()).acknowledgedReminders
+  );
+  if (shouldSuppressDeviceNotification(
+    buildTestingSignature(await getTestingDueState()),
+    acknowledged
+  )) {
+    await cancelNotification(NOTIFICATION_IDS.testingReminder);
+    await updateTestWidget();
+    return { scheduled: false, acknowledged: true };
   }
 
   // Re-scheduling under the same fixed id naturally replaces whatever

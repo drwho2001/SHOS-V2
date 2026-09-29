@@ -62,7 +62,10 @@ import {
   REMINDER_KIND,
   ACK_SCOPE,
   buildMedsSignature,
-  buildSimpleSignature,
+  buildRefillSignature,
+  buildTestingSignature,
+  buildVaccinationSignature,
+  buildClinicVisitSignature,
   isBannerVisible,
   hasOutstandingAcknowledged,
   shouldSuppressDeviceNotification,
@@ -1485,7 +1488,7 @@ export default function App() {
     [dueMeds]
   );
   const refillSignature = useMemo(
-    () => buildSimpleSignature(REMINDER_KIND.REFILL, refillDue),
+    () => buildRefillSignature(refillDue),
     [refillDue]
   );
   // ADDED 28 Sep 2026, fixed same day - D1. This used to read
@@ -1500,30 +1503,22 @@ export default function App() {
   // The due date is both the field that actually exists and the thing that
   // makes each occurrence distinct, so a suggested retest in six months is not
   // silenced by an acknowledgement of this one.
+  // These four used to be inline expressions that existed ONLY here, while the
+  // sync functions scheduling the OS notification had no copy of them at all -
+  // which is how the Testing banner shipped never rendering (it read a
+  // `.test` property `getTestingDueState()` has never had). The formula now
+  // lives in reminderSuppression.js and the scheduler calls the same function,
+  // so a banner and the notification it suppresses cannot disagree.
   const testingSignature = useMemo(
-    () => buildSimpleSignature(
-      REMINDER_KIND.TESTING,
-      testingDue?.due && testingDue?.dueDate
-        ? [{ id: `testing@${testingDue.dueDate.toISOString()}` }]
-        : []
-    ),
+    () => buildTestingSignature(testingDue),
     [testingDue]
   );
-  // Same class of bug, same day: keyed on the vaccination's id alone, so
-  // acknowledging a vaccination silenced it PERMANENTLY - including its next
-  // dose months later. dueDate is what distinguishes one occurrence from the
-  // next, and it is already in hand.
   const vaccinationSignature = useMemo(
-    () => buildSimpleSignature(
-      REMINDER_KIND.VACCINATION,
-      vaccinationDue?.vaccination?.id && vaccinationDue?.dueDate
-        ? [{ id: `${vaccinationDue.vaccination.id}@${vaccinationDue.dueDate.toISOString()}` }]
-        : []
-    ),
+    () => buildVaccinationSignature(vaccinationDue),
     [vaccinationDue]
   );
   const clinicVisitSignature = useMemo(
-    () => buildSimpleSignature(REMINDER_KIND.CLINIC_VISIT, clinicVisitDue?.visit ? [clinicVisitDue.visit] : []),
+    () => buildClinicVisitSignature(clinicVisitDue),
     [clinicVisitDue]
   );
   const suppressState = (kind, dueCount, signature) => ({

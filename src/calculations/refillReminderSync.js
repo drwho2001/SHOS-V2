@@ -23,6 +23,11 @@ import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmall
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { MedicationPreferencesRepository, isRefillSnoozed } from "../repositories/medicationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
+import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
+// Pure module, no imports of its own, so this cannot cycle - and a static
+// import matches this file's style rather than medicationReminderSync's
+// dynamic one.
+import { buildRefillSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } from "./reminderSuppression";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -80,6 +85,28 @@ export async function syncRefillReminder() {
   }
 
   const names = needsRefill.map((m) => m.name).join(", ");
+
+  // ADDED 29 Sep 2026 (Phase 3 / A3) - device-silence, which was wired ONLY for
+  // medications, so "also stop my phone notifying me" silently did nothing on
+  // this banner.
+  //
+  // This is the kind where the bug is real rather than theoretical, and it is
+  // worth being precise about why. The schedule below uses `at: now + 3s`, and
+  // this function runs on the 60-second poll, on mount, and on data change -
+  // so while a refill is outstanding the phone was re-armed three seconds out
+  // over and over. The banner said "stop reminding me" and the device kept
+  // buzzing. Signature-based, so it lasts only while this exact set of
+  // medications is outstanding: reorder, and a genuinely new reminder is free
+  // to speak up again.
+  const acknowledged = normaliseAcknowledgements(
+    (await AppPreferencesRepository.getPreferences()).acknowledgedReminders
+  );
+  if (shouldSuppressDeviceNotification(buildRefillSignature(needsRefill), acknowledged)) {
+    await cancelNotification(NOTIFICATION_IDS.refillReminder);
+    await updateRefillWidget();
+    return { scheduled: false, acknowledged: true };
+  }
+
   await scheduleNotification({
     id: NOTIFICATION_IDS.refillReminder,
     title: "Refill needed",
