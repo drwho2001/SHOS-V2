@@ -271,11 +271,26 @@ what makes it evidence rather than assertion. 3 mutations red, each
 reintroducing the exact defect — including restoring the subtler
 timezone-dependent detection.
 
-**One of those three mutations "passed" first, and the assertion was the thing
-at fault.** The test looked for an `am`/`pm` suffix to catch an invented time;
-this en-GB machine renders midnight as `00:00`, not `12:00 am`, so it matched
-nothing. Matching the clock pattern directly is the locale-independent form, and
-this project has now been bitten by precisely that twice.
+**The locale trap bit this change THREE times, and the second and third were two
+lines apart in the same file.** Every one of them was an assertion that passed
+on this machine and failed on CI:
+
+1. The "no invented time" test looked for an `am`/`pm` suffix. This en-GB
+   machine renders midnight as `00:00`, not `12:00 am`, so it matched nothing and
+   the mutation it was written to catch sailed through.
+2. The very next assertion asserted `0{1,2}:30` — correct for en-GB's `0:30`,
+   never matching CI's en-US `12:30 AM`. It shipped green locally and took the
+   smoke run red.
+3. The fix for (2) accepts exactly the two known renderings of `00:30` and no
+   others, plus a **guard on the guard** that proves the pattern rejects an
+   invented time — because a pattern loose enough to pass on the bug is as
+   useless as one pinned to a single runner.
+
+`LANG`/`LC_ALL` do not affect Node's default locale on Windows, so (2) cannot be
+reproduced locally *at all*. That is the lesson worth taking: when a test cannot
+be reproduced in a second locale on the machine, the assertion has to be correct
+**by construction** across the renderings that exist, not tuned until it passes
+locally. A green local run proves nothing about the spelling.
 
 **Still to do on t020** — the remaining ~35 sites, each needing the same
 per-value triage rather than a sweep: `statsCalculations` bucket labels (4, worth
