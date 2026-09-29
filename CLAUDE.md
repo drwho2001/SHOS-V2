@@ -174,6 +174,32 @@ short version is that a blanket stage on a tree you do not solely own commits
 someone else's half-finished work under your message, which has already happened
 here once.
 
+**When two sessions are working this tree, check the shared state before you
+start, and announce what you take.** This project routinely runs two AI sessions
+in one checkout, and the coordination is in `scripts/session-bridge.mjs`
+(documented in `docs/SESSION-BUS.md`). At the start of a turn, and before you
+begin any new piece of work:
+
+```powershell
+$env:SHOS_SESSION_NAME = "A"      # or "B" - do this first, claims are attributed
+node scripts\session-bridge.mjs claims     # what files the other session holds
+node scripts\session-bridge.mjs inbox      # notices you have not seen
+node scripts\session-bridge.mjs pool list  # approved work available
+```
+
+If the pool has an approved task you are not already busy with, `pool take` it —
+it is the owner's approved queue, not self-assigned work, and allocation is
+recorded with a timestamp and a file claim BEFORE any work begins, so the other
+session cannot duplicate it. `npm run verify` takes an exclusive lock for the
+whole run, so if you are queued behind the other session, do something else
+rather than cancelling or forcing it.
+
+**These sessions do not wake each other.** Prompting one does not prompt the
+other; the owner prompts both. Two live paths were measured and failed - a
+server-side prompt does not start an idle TUI session, and the TUI endpoints are
+directory-scoped rather than session-scoped, so they cannot be targeted. Do not
+assume work done in one session has been seen by the other.
+
 **Commit → content map, for the period where the two got mixed up.** Anything
 not listed here is unambiguous.
 
@@ -612,10 +638,21 @@ changed** after clicking, dumping the real tab names when it can't find one. A
 helper that can quietly do nothing is worse than no helper: it turns a broken
 locator into a green run.
 
-**Expect the first CI run of this to possibly go red, and that would be the
-guard working.** Any flow that was passing *because* `nav()` silently did
-nothing will now fail honestly. That is the intended outcome, not a regression,
-and the fix is in the flow rather than in the helper.
+**I predicted CI would go red here, and it did not — the correction is more
+useful than the prediction.** I warned that any flow passing *because* `nav()`
+silently did nothing would now fail honestly, and that this would be the guard
+working. CI came back green: 413 tests across 33 files, 19 flows, 95 assertions —
+the assertion count *unchanged*, so no flow had been relying on the no-op.
+
+The reason is that the blind spot was **latent, not active**. `nav()` only
+stops matching when a tab's name changes, which happens only while an
+unacknowledged dot is on screen — and no flow reaches that state yet, because
+nothing has acknowledged a reminder in any of them. So this was a preventative
+fix rather than a rescue, and the honest strength of the "a gate measured
+nothing" claim here is weaker than the other three: a suite that passes while
+navigating nowhere is a real and demonstrated failure mode, but this instance of
+it had not yet had the chance to fire. It would have, on the first run after
+someone used the feature by hand.
 
 **An existing guard fired red on this change, and was updated rather than
 loosened.** `reminderSuppressionWiring.test.js` asserted the dot's explanation

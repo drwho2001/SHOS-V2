@@ -504,6 +504,262 @@ commands.task = async (args) => {
   process.exit(2);
 };
 
+// ── work pool ──────────────────────────────────────────────────────────────
+//
+// The owner's framing: while session A is queued behind B on the verify lock, A
+// should be doing its OTHER work rather than sitting there, and the list of
+// things it may pick up should be ones the owner has APPROVED.
+//
+// The approval gate is the whole design. Without it this is a machine handing
+// itself objectives, which is how a small task turns into a large unrequested
+// refactor. With it, a session can only ever start from work the owner has
+// explicitly blessed, and `proposed` items are inert until then.
+//
+// States: proposed -> approved -> doing -> done, with `blocked` as a park.
+// `pool take` only ever hands out an `approved` task, and never one whose files
+// another session already claims - so pulling work cannot create the very
+// collision the claim table exists to prevent.
+//
+// CONCURRENCY IS BEST-EFFORT AND SAID SO. Two sessions calling `take` in the
+// same instant can both read the same `approved` task. There is no OS-level
+// lock here, so this uses an optimistic read-claim-write-reread: whichever
+// session's claim is still present when it re-reads keeps it, the other backs
+// off. The window is milliseconds and the failure mode is a duplicated task,
+// not a corrupted file - so it is documented rather than over-engineered.
+// The verify lock in verify-changes.mjs is the case that actually needed real
+// mutual exclusion, and it has it.
+
+const POOL_PATH = join(STATE_DIR, "pool.json");
+
+function loadPool() {
+  const p = readJson(POOL_PATH, {});
+  return Array.isArray(p.tasks) ? p : { tasks: [] };
+}
+
+function savePool(pool) {
+  writeJson(POOL_PATH, pool);
+}
+
+// Allocation is recorded BEFORE any work starts, with a timestamp and the files
+// involved, and those files are claimed into the shared claim table as part of
+// the same action. That is the owner's requirement and it closes a real gap:
+// `pool take` used to mark a task `doing` without claiming its files, so the
+// claim table and the pool could disagree - the pool saying "A has it" while
+// the file table still read as free for B to take. Two sources of truth that
+// can drift is the exact failure class this whole tool keeps hitting.
+//
+// The owner's PID is recorded for information only, and is DELIBERATELY NOT used
+// to decide liveness. The first version used it, and that was wrong in a way
+// only a real run exposed: this is a CLI, so the recorded pid belongs to a
+// `node session-bridge.mjs` process that exits milliseconds later. Every
+// allocation therefore looked abandoned to the next session, and `pool reap`
+// would have handed back tasks that were actively being worked on - causing
+// precisely the duplicated work the pool exists to prevent.
+//
+// Staleness is therefore a LEASE on wall-clock time: an allocation is fresh for
+// POOL_LEASE_MS, and `pool touch` extends it for long-running work. That is
+// honest about what can actually be observed from a CLI.
+
+const POOL_LEASE_MS = Number(process.env.SHOS_POOL_LEASE_MS || 4 * 60 * 60 * 1000);
+
+function isStale(t) {
+  if (t.status !== "doing") return false;
+  const at = Date.parse(t.touchedAt || t.at || "");
+  if (!Number.isFinite(at)) return true;
+  return Date.now() - at > POOL_LEASE_MS;
+}
+
+function claimFiles(files) {
+  if (!files || !files.length) return;
+  const store = readJson(CLAIM_PATH, {});
+  for (const f of files) {
+    const holders = (store[f]?.holders || []).filter((h) => h.by !== ME);
+    if (!holders.some((h) => h.by === ME)) {
+      store[f] = { holders: [...holders, { by: ME, at: new Date().toISOString(), via: "pool" }] };
+    }
+  }
+  writeJson(CLAIM_PATH, store);
+}
+
+function releaseFiles(files) {
+  if (!files || !files.length) return;
+  const store = readJson(CLAIM_PATH, {});
+  for (const f of files) {
+    if (!store[f]) continue;
+    const kept = (store[f].holders || []).filter((h) => h.by !== ME);
+    if (kept.length) store[f] = { holders: kept };
+    else delete store[f];
+  }
+  writeJson(CLAIM_PATH, store);
+}
+
+// The single write path for "this session has taken this task". Every route
+// into a claim goes through here - `pool take` and `pool allocate` alike - so
+// the timestamp, the pid, the file claims and the history entry cannot drift
+// apart between the two commands. The owner's requirement was that this happen
+// BEFORE any work starts, so the other session sees the allocation rather than
+// discovering duplicated work afterwards.
+function allocate(t, pool) {
+  const at = new Date().toISOString();
+  t.status = "doing";
+  t.owner = ME;
+  t.at = at;
+  t.touchedAt = at;
+  t.history.push({ at, by: ME, to: "doing", note: "allocated before any work started" });
+  claimFiles(t.files);
+  savePool(pool);
+  // Optimistic re-read. The pool has no OS-level lock, so two sessions could in
+  // principle allocate the same task in the same instant; whichever allocation
+  // is still present on re-read keeps it, the other backs off and gives the
+  // files back rather than both proceeding.
+  const after = loadPool().tasks.find((x) => x.id === t.id);
+  if (!after || after.owner !== ME) {
+    releaseFiles(t.files);
+    console.log(`lost the race for ${t.id} to another session - not taking it`);
+    return;
+  }
+  console.log(`allocated ${t.id} at ${stamp(at)} (pid ${process.pid}): ${t.title}`);
+  if (t.files.length) console.log(`  claimed: ${t.files.join(", ")}`);
+  console.log("  recorded now, BEFORE any work, so the other session sees it");
+}
+
+commands.pool = async (args) => {
+  const [verb, ...rest] = args;
+  const pool = loadPool();
+
+  if (verb === "add" || verb === "propose") {
+    const title = rest.filter((a) => !a.startsWith("--")).join(" ");
+    const files = (args.find((a) => a.startsWith("--files=")) || "").replace("--files=", "");
+    if (!title) { console.error(`Usage: pool add "<title>" [--files=a,b]`); process.exit(2); }
+    const id = `t${String(pool.tasks.length + 1).padStart(3, "0")}`;
+    pool.tasks.push({
+      id,
+      title,
+      files: files ? files.split(",").map((f) => f.trim()).filter(Boolean) : [],
+      status: verb === "add" ? "approved" : "proposed",
+      owner: null,
+      at: new Date().toISOString(),
+      history: [],
+    });
+    savePool(pool);
+    console.log(`${id} ${verb === "add" ? "approved" : "PROPOSED (needs owner approval: pool approve "}${id})  ${title}`);
+    return;
+  }
+
+  if (verb === "approve") {
+    const t = pool.tasks.find((x) => x.id === rest[0]);
+    if (!t) { console.error(`no such task: ${rest[0]}`); process.exit(2); }
+    t.status = "approved";
+    t.history.push({ at: new Date().toISOString(), by: ME, to: "approved" });
+    savePool(pool);
+    console.log(`${t.id} approved - a session may now pull it`);
+    return;
+  }
+
+  if (verb === "take") {
+    // Only approved, unowned, and not colliding with another session's claims.
+    const claims = readJson(CLAIM_PATH, {});
+    const heldByOthers = new Set();
+    for (const [f, v] of Object.entries(claims)) {
+      for (const h of v.holders || []) if (h.by !== ME) heldByOthers.add(f);
+    }
+    const t = pool.tasks.find(
+      (x) => x.status === "approved" && !x.owner && !(x.files || []).some((f) => heldByOthers.has(f))
+    );
+    if (!t) {
+      const reasons = [];
+      if (!pool.tasks.some((x) => x.status === "approved")) reasons.push("nothing is approved");
+      if (pool.tasks.some((x) => x.status === "approved" && x.files.some((f) => heldByOthers.has(f)))) {
+        reasons.push(`the approved ones are on files held by another session: ${pool.tasks.filter((x) => x.status === "approved" && x.files.some((f) => heldByOthers.has(f))).map((x) => x.id).join(", ")}`);
+      }
+      console.log(`nothing to take${reasons.length ? ` (${reasons.join("; ")})` : ""}`);
+      return;
+    }
+      allocate(t, pool);
+      return;
+  }
+
+  if (verb === "done" || verb === "block" || verb === "release") {
+    const t = pool.tasks.find((x) => x.id === rest[0]);
+    if (!t) { console.error(`no such task: ${rest[0]}`); process.exit(2); }
+    if (verb === "done") t.status = "done";
+    else if (verb === "block") t.status = "blocked";
+    else { t.status = "approved"; t.owner = null; }
+    t.history.push({ at: new Date().toISOString(), by: ME, to: t.status });
+    savePool(pool);
+    console.log(`${t.id} -> ${t.status}${t.owner ? ` (owner ${t.owner})` : ""}`);
+    return;
+  }
+
+  if (verb === "allocate") {
+    const t = pool.tasks.find((x) => x.id === rest[0]);
+    if (!t) { console.error(`no such task: ${rest[0]}`); process.exit(2); }
+    // An owner may allocate a proposed task to themselves, but cannot make a
+    // proposal self-approving - that is the whole point of the approval gate.
+    if (t.status === "proposed") {
+      console.error(`${t.id} is only proposed - the owner must approve it first (pool approve ${t.id})`);
+      process.exit(2);
+    }
+    if (t.owner && t.owner !== ME) {
+      console.error(`${t.id} is already allocated to ${t.owner} since ${stamp(t.at)} - not taking it`);
+      process.exit(3);
+    }
+    allocate(t, pool);
+    return;
+  }
+
+  if (verb === "touch") {
+    // Extends the lease for work that legitimately runs longer than the default.
+    // Without this a long task would be reaped out from under a session that is
+    // still working on it.
+    const t = pool.tasks.find((x) => x.id === rest[0]);
+    if (!t) { console.error(`no such task: ${rest[0]}`); process.exit(2); }
+    if (t.status !== "doing") { console.error(`${t.id} is ${t.status}, not doing`); process.exit(2); }
+    t.touchedAt = new Date().toISOString();
+    t.history.push({ at: t.touchedAt, by: ME, to: "lease extended" });
+    savePool(pool);
+    console.log(`${t.id} lease extended to ${stamp(t.touchedAt)} (${Math.round(POOL_LEASE_MS / 60000)}min)`);
+    return;
+  }
+
+  if (verb === "reap") {
+    // A session that dies mid-task must not park it forever. The owner's PID is
+    // recorded at allocation, so liveness is checkable rather than a guess.
+    let n = 0;
+    for (const t of pool.tasks) {
+      if (isStale(t)) {
+        const was = t.owner;
+        t.status = "approved";
+        t.owner = null;
+        releaseFiles(t.files);
+        t.history.push({ at: new Date().toISOString(), by: ME, to: "approved (reaped: lease expired)" });
+        console.log(`  reaped ${t.id} (was ${was}) - untouched for over ${Math.round(POOL_LEASE_MS / 60000)}min, back in the pool`);
+        n += 1;
+      }
+    }
+    savePool(pool);
+    if (!n) console.log("(nothing to reap)");
+    return;
+  }
+
+  if (verb === "list" || !verb) {
+    if (!pool.tasks.length) { console.log("(pool is empty)"); return; }
+    console.log(`  (times are ${TZ_NOTE})`);
+    for (const t of pool.tasks) {
+      let mark = t.status === "approved" && !t.owner ? " <- available" : "";
+      if (isStale(t)) {
+        mark = " <- ABANDONED, owner process gone (run: pool reap)";
+      }
+      const who = t.owner || "";
+      console.log(`  ${t.id}  ${t.status.padEnd(9)} ${(who + " ").padEnd(18)}${clip(t.title, 44)}  at ${stamp(t.at)}${mark}`);
+    }
+    return;
+  }
+
+  console.error("Usage: pool add|propose|approve|take|done|block|release|list ...");
+  process.exit(2);
+};
+
 commands.claim = async (args) => {
   const mode = args[0] === "release" ? "release" : "claim";
   const files = args.filter((a) => a !== "release");
@@ -610,6 +866,12 @@ commands["help"] = async () => {
   task list                    list all tasks
   claim <file...>              record file ownership
   claims                       show current claims
+  pool list                    show the approved work pool
+  pool add "<title>" [--files=a,b]   add an already-approved task
+  pool propose "<title>"         propose one; inert until the owner approves it
+  pool approve <id>            owner approves a proposed task
+  pool take                     pull the next approved task (atomic-ish)
+  pool done|block|release <id>  finish, park, or hand a task back
   toast <title> <message>       native TUI notification
   peer set|show                 pin the other session's id
 

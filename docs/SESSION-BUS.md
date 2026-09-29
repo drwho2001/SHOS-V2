@@ -181,6 +181,100 @@ node scripts/session-bridge.mjs list --local   # 29 Sept, 00:46        (local)
 owner, not parsed by a session. So the rule is: UTC for the bridge, local time
 for anything a person reads. Do not mix them in one file without labelling.
 
+## Doing other work while you wait for the lock
+
+The gate lock makes a second session *wait*. Waiting is the safe failure, but a
+session blocked on a full `verify` run can still be doing something useful. The
+work pool is how: a queue of tasks the owner has **approved**, which a session
+can pull when it is otherwise idle.
+
+```powershell
+node scripts/session-bridge.mjs pool propose "Widen the Global Search index"   # inert
+node scripts/session-bridge.mjs pool approve t001                              # owner's call
+node scripts/session-bridge.mjs pool take                                       # pull one
+node scripts/session-bridge.mjs pool list
+node scripts/session-bridge.mjs pool done t001
+```
+
+**The approval gate is the entire design.** `propose` creates a task that is
+*inert* — `pool take` will not return it, and says so. Only `approved` tasks are
+handed out. Without that gate the tool is a machine assigning itself objectives,
+which is how a small task becomes a large unrequested refactor.
+
+`pool take` also refuses a task whose files another session already claims, and
+names the reason. So pulling work cannot manufacture the collision the claim
+table exists to prevent — a session cannot pull the task it was just told not to
+touch.
+
+### What it does not do
+
+**It does not make an idle session autonomous.** A session only pulls work when
+it is running, which means when you prompt it. The realistic pattern is: prompt a
+session, and it starts by checking the pool. The gate lock plus the pool together
+mean one session can be mid-verify while the other gets on with a different
+approved task — but a session you never prompt still does nothing.
+
+### Concurrency is best-effort, and said so
+
+Two sessions calling `pool take` in the same instant can both read the same
+approved task. There is no OS-level lock here, so it uses an optimistic
+read-claim-write-reread: whichever claim is still present on re-read keeps it,
+the other backs off and says it lost the race. The window is milliseconds and the
+failure mode is a duplicated task, not a corrupted file. That is a deliberate
+trade — the thing that genuinely needs real mutual exclusion is the `dist/`
+write, and that has it.
+
+## Allocation is recorded before any work starts
+
+The owner's requirement, and the sharpest thing about the pool: a session must
+record that it has taken a task — **with a timestamp and the files involved** —
+*before* it starts working, so the other session sees the allocation rather than
+discovering duplicated work afterwards.
+
+So `pool take` and `pool allocate` both route through one `allocate()` function
+that, in a single action:
+
+1. sets status `doing`, owner, and a UTC timestamp,
+2. **claims the task's files into the shared claim table**,
+3. appends to the task's history.
+
+Step 2 is the part that was missing. The pool used to say "A has it" while the
+file table still read as free for B — two sources of truth that can drift, which
+is the exact failure class this tool keeps hitting. They now agree.
+
+```powershell
+node scripts/session-bridge.mjs pool allocate t001   # exits 3 if B already has it
+node scripts\session-bridge.mjs pool take            # pull the next available
+node scripts\session-bridge.mjs claims               # see every held file, with times
+```
+
+### Staleness is a lease, not a process check
+
+The first version stored the allocating PID and used it to decide whether a task
+had been abandoned. **That was wrong, and only a real run exposed it:** this is a
+CLI, so the recorded pid belongs to a `node session-bridge.mjs` process that
+exits milliseconds later. Every allocation read as abandoned the moment it was
+made, and `pool reap` would have handed back tasks that were actively being
+worked on — causing precisely the duplicated work the pool exists to prevent.
+
+Staleness is therefore a time-based **lease**: an allocation is fresh for four
+hours (`SHOS_POOL_LEASE_MS`), and `pool touch <id>` extends it for genuinely long
+work. That is honest about what can be observed from a command line.
+
+## Sessions do not wake each other
+
+Worth stating plainly, because it is the thing most likely to be assumed:
+
+**Prompting session A does not prompt session B.** Both must be prompted by the
+owner. This was measured, not assumed — see *What does not work* above. There is
+no mechanism by which work started in one appears in the other, and pretending
+otherwise would produce two sessions confidently diverging.
+
+What exists instead is that each session can *look* at shared state on demand, and
+— with the instruction at the top of `CLAUDE.md` — does so unprompted at the
+start of its turn.
+
+## Credentials
 
 The opencode server password lives in
 `~/.shos-session-bus/credentials.json`, **outside the repository on purpose** —
