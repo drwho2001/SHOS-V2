@@ -45,6 +45,8 @@ function platformIconFor(tag) {
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { TestingRepository } from "../repositories/testingRepository";
+import { MeasurementRepository } from "../repositories/measurementRepository";
+import { ResultsRegistry } from "../registries/resultsRegistry";
 import { getCurrentLocationPlace, forwardGeocode } from "../storage/locationService";
 import {
   buildProfileShare, exportProfileShare,
@@ -61,6 +63,7 @@ import {
   BDSM_ROLE_OPTIONS, SEXUAL_POSITION_OPTIONS,
 } from "../repositories/contactRepository";
 import { useAnonymiseMode, contactName } from "../calculations/anonymiseDisplay";
+import { deriveHivStatus, resolveHivStatus, describeHivStatus, HIV_STATUS_OPTIONS } from "../calculations/hivStatusCalculations";
 import { KinkRegistry, KINK_ROLE_OPTIONS, resolveKinkSynonym, analyzeKinkEntry, getKinkRoleOptions } from "../registries/kinkRegistry";
 // ADDED — real fix: same normalizeTag Contacts/Encounters use.
 import { normalizeTag, hasPhysicalDetail, mergeCummerRow } from "../calculations/contactCalculations";
@@ -904,6 +907,19 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
   // async — getAutoLastTestedDate() was called straight in the render
   // body below.
   const lastTestedDate = useLoadedMemo(() => getAutoLastTestedDate(), [], null);
+  // ADDED 29 Sep 2026 (t025) — the derived half of HIV status. Resolved with
+  // the user's stated value on top, because a stated status always wins.
+  //
+  // `null` as the not-yet-loaded sentinel, NOT a default status. A fallback of
+  // "untested" would render a confident "Untested / unknown" for the moment
+  // before the records arrive, and on this particular fact that is the most
+  // misleading thing the app could briefly say — it reads as "you're clear".
+  // The same fix Global Search needed for "no matches" before it had searched.
+  const hivResolved = useLoadedMemo(
+    () => resolveHivStatus(form.hivStatus, deriveHivStatus(profileTests, hivResultNames, profileMeasurements)),
+    [form.hivStatus, profileTests, hivResultNames, profileMeasurements],
+    null
+  );
   const set = (field) => (value) => setForm((f) => ({ ...f, [field]: value }));
   // FIXED — real ask: "think my profile kinks and limits haven't
   // actually saved/disappear after a while." Root cause: RegistryTagPicker's
@@ -938,6 +954,16 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
   // searchable by real name — the same index-level defect Global Search had.
   // The id is deliberately preserved so the stored value still works.
   const anonymise = useAnonymiseMode();
+  // ADDED 29 Sep 2026 (t025) — the data the HIV status row derives from.
+  // Kept as its own reads rather than folded into the ones above, so the
+  // derivation is fed the same shape a pure test can pass by hand.
+  const profileTests = useLoadedMemo(() => TestingRepository.getAll(), [], []);
+  const hivResultNames = useLoadedMemo(
+    () => ResultsRegistry.getAll().then((rs) => new Map(rs.map((r) => [r.id, r.name]))),
+    [],
+    new Map()
+  );
+  const profileMeasurements = useLoadedMemo(() => MeasurementRepository.getAll(), [], []);
   const anonymisedContactItems = useMemo(
     () => (allContacts || []).map((c) => ({ ...c, name: contactName(c, anonymise) })),
     [allContacts, anonymise]
@@ -1114,6 +1140,42 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
             <div style={{ fontSize: 14, color: T.textPrimary }}>
               {lastTestedDate ? formatStoredDate(lastTestedDate) : "No tests logged yet"}
             </div>
+          </div>
+
+          {/* ADDED 29 Sep 2026 (t025) — HIV status, in the section that already
+              holds sexual-health status rather than a new card of its own.
+
+              Shown RESOLVED, not derived: a stated status wins over the one
+              derived from Testing records, because someone tested elsewhere, or
+              on PrEP with results held at another service, has no record in
+              this app at all — and a derived-only field would report "untested"
+              for a person on treatment, which is the most damaging thing this
+              can get wrong.
+
+              The override control is offered for that same reason, and it is
+              labelled as an override rather than as the field itself, so a
+              reader can tell a recorded status from a derived one. */}
+          <div style={{ padding: "8px 0" }}>
+            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>HIV status</div>
+            <div style={{ fontSize: 14, color: T.textPrimary, marginBottom: 6 }}>
+              {anonymise
+                ? "••••• hidden"
+                : hivResolved
+                  ? describeHivStatus(hivResolved)
+                  : "Loading…"}
+            </div>
+            {!anonymise && hivResolved?.source === "stated" && (
+              <div style={{ fontSize: 11, color: T.textDisabled, fontStyle: "italic", marginBottom: 6 }}>
+                Entered by you, not derived from a test in this app.
+              </div>
+            )}
+            <SelectField
+              label="Override if tested elsewhere"
+              value={form.hivStatus || ""}
+              onChange={(v) => set("hivStatus")(v || null)}
+              options={[{ value: "", label: "Use my test records" }, ...HIV_STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))]}
+              T={T}
+            />
           </div>
         </SectionCard>
 

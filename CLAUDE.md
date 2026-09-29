@@ -900,76 +900,62 @@ collision.** `scheduleNotification` takes `title`/`body` as parameters, so the
 text is built by the four reminder-sync callers — all of which the other session
 currently holds. Half a feature was the alternative and would have meant either
 merging into files another session is editing or shipping a setting that visibly
-does nothing. Queued as a pool task for when those are free.
+does nothing. Queued as a pool task for when those are free. The resolver's own
+fail-closed direction is asserted rather than assumed: all four of its mutations
+go red, each taken from the direction that would leak — the default becoming the
+most exposing level, `normalise` returning `detailed` for an unknown value, the
+masked branch echoing its payload, and `glanceable` falling back to the full body
+instead of blank.
 
-Verified: `verify:fast` green, **654 tests across 56 files**. All four mutations
-of the disclosure guard confirmed red, each from the fail-open direction: the
-default becoming the most exposing level, `normalise` returning `detailed` for
-an unknown value, the masked branch echoing its payload, and `glanceable` falling
-back to the full body instead of blank. All eight mutations of the HIV
-derivation red, including a non-HIV test being allowed to set the status.
+**Two of the three screens now show it, and the third is a deliberate design
+decision rather than an omission.** My Profile resolves stated-over-derived and
+labels an entered value as such, so a reader can tell a recorded status from an
+inferred one. A **contact's** status is stated-only and never derived — the
+derivation reads the *owner's* test records, so applying it to a contact would
+report the owner's results as someone else's status. That is not a gap waiting
+to be filled; it is the only honest answer, and the row says "Not recorded"
+rather than "untested" so a blank never becomes a claim about someone else. It
+is also the one row there masked under Anonymise mode while its neighbours in
+the same card are not, a real asymmetry and a deliberate one: PrEP status and a
+last-tested date are useful in a conversation with that person, whereas
+disclosing someone's HIV status to a third party is a decision with
+consequences they may not have made.
 
-## Recently shipped (29 Sep 2026, newest of all yet again — the refill's second stage, and the one thing it deliberately does NOT do)
+**The not-yet-loaded case was its own bug, caught before it shipped.** An
+`useLoadedMemo` fallback of "untested" would have rendered a confident "Untested
+/ unknown" for the moment before the records arrived, and on this particular
+fact that reads as *you are clear*. The sentinel is `null` and the row shows a
+loading state instead — the same fix Global Search needed for "no matches" before
+it had searched, and a reminder that a benign-looking default is only benign on
+a screen where the wrong answer is not a medical claim.
 
-**The vaccine "eligibility suggestions" idea was rescoped with the owner, and
-the original framing was the wrong one.** Eligibility means inferring facts about
-the user that this app does not hold: `myProfileRepository` has `gender` and
-`sexualPosition` and **no HIV status field at all**, and UK hepatitis-B
-eligibility turns largely on HIV status. An eligibility banner would therefore be
-a guess computed from a partial profile and displayed on a home screen — exactly
-the automated clinical risk scoring `CLAUDE.md` puts permanently out of scope. The
-owner's decision was better than either alternative offered: **generalise the
-guidance, and record HIV status properly** — four states (`negative`,
-`positive-suppressed`, `positive-unsuppressed`, `untested`), each tagged with the
-date of the test that established it, blank when unknown, on **My Profile and
-Contacts** rather than profile only.
+Verified: `verify:fast` green, **667 tests across 57 files**. All eight
+mutations of the derivation red, including a non-HIV test being allowed to set
+the status; all six mutations of the new UI guard red, including removing the
+displayed status while leaving the control that sets it. Two of those six
+mutations **failed to apply** on the first pass — multi-line patterns against
+these CRLF files — and are reported as NOT APPLIED rather than counted as
+passes, because the most important check of all (does the guard catch the status
+ceasing to be displayed?) had not actually run.
 
-**The derivation has a trap worth stating.** Status is derived from Testing
-records, and *only* from tests whose `testingFor` includes `"HIV"`. A negative
-chlamydia result says nothing about HIV status, so a latest-test-wins rule over
-all tests would be confidently wrong — the same "one canonical owner per fact"
-discipline the repo already records. And the **suppressed/unsuppressed split is
-not derivable from an HIV test at all**: combo/fourth-generation tests give
-positive or negative and nothing finer. It comes from a viral-load measurement,
-which this app already has as a real recorded type, so where none exists the
-status must read as positive-without-known-suppression rather than defaulting to
-one side. Brief at `~/.shos-session-bus/tasks/t025-hiv-status/01-scope.md`.
+**And a fourth recorded instance of the PowerShell encoding trap, this time
+caught by the gate rather than by a user.** Removing a duplicate entry from this
+file via `Get-Content` / `Set-Content` decoded it as CP1252 and re-encoded it
+as UTF-8, corrupting **1143 lines** — essentially the whole document. The
+encoding guard failed the run immediately and the pre-commit hook would have
+blocked the commit; the file was restored from git and the edit redone with a
+Node script. This is the trap `CLAUDE.md` itself has now recorded four times,
+and the fifth instance is a reminder that "I know about this" is not the same
+as "this time it didn't happen" — the same reasoning as a mutation that does not
+apply being reported rather than counted.
 
-**The disclosure level is a persistent third axis, not a third anonymise mode.**
-`anonymiseModeActive` and `hideFurtherEnabled` are a *temporary* hand-the-phone-
-over state acting *inside* the app. What the owner asked for is a *persistent*
-statement of how much the app may show when they are not looking — lock-screen
-notifications and home-screen widgets, content handed to the OS. Three levels
-(`masked` / `glanceable` / `detailed`), **defaulting to the most restrictive
-value**, which also matches what the widgets were just built to do, so the
-setting confirms existing behaviour rather than silently changing it on first
-run.
-
-**One resolver, and the fall-closed direction is the whole design.** The rule
-that `masked` shows only generic copy lives in `disclosureLevel.js` and nowhere
-else, because the failure this repo keeps cataloguing is one string computed in
-two places drifting silently — the Testing banner shipped dead for its entire
-life because one file computed a fingerprint the scheduler had no copy of.
-`normaliseDisclosureLevel` maps every unrecognised value, including one arriving
-from a backup written by a build predating the field, to `masked`. A privacy
-control that fails *open* shows a medication name on a lock screen, so "I do not
-recognise this setting, therefore I will show everything" is the one wrong
-direction. `glanceable` is given a `kind` and no field for clinical data to
-arrive in, so a caller that forgets to redact gets a blank line rather than a
-name.
-
-**Notification text is left unwired on purpose, and the reason is a file
-collision.** `scheduleNotification` takes `title`/`body` as parameters, so the
-text is built by the four reminder-sync callers — all of which the other session
-currently holds. Half a feature was the alternative and would have meant either
-merging into files another session is editing or shipping a setting that visibly
-does nothing. Queued as a pool task for when those are free.
-
-Verified: `verify:fast` green, **537 tests across 45 files**. All four mutations
-of the disclosure guard confirmed red, each from the fail-open direction: the
-default becoming the most exposing level, `normalise` returning `detailed` for
-an unknown value, the masked branch echoing its payload, and `glanceable` falling
-back to the full body instead of blank.
+**The duplicate itself was real, and the earlier note that it was fixed was
+wrong.** Two entries carried the identical heading "the refill's second stage",
+but only one contained refill work: the other was an earlier, shorter draft of
+this very t025 entry, pasted under a copy-pasted heading. So the previously
+recorded "duplicated entry fixed" was not true at the time it was written, which
+is the same lesson this file keeps learning about claims inherited from earlier
+documents being measurements rather than assertions.
 
 ## Recently shipped (29 Sep 2026, newer still — the smoke failure was a two-second wait, and my own lock fix was one of fifteen call sites)
 

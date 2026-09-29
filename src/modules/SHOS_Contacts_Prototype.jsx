@@ -51,6 +51,7 @@ import {
   BDSM_ROLE_OPTIONS, SEXUAL_POSITION_OPTIONS,
 } from "../repositories/contactRepository";
 import { useAnonymiseMode, ANONYMISED } from "../calculations/anonymiseDisplay";
+import { isValidHivStatus, describeHivStatus, HIV_STATUS_OPTIONS } from "../calculations/hivStatusCalculations";
 import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 // ADDED 26 Aug 2026 — real ask: Relationship type should be user-
@@ -446,11 +447,12 @@ function SuggestField({ label, value, onChange, options, onAddNew, T, placeholde
   );
 }
 
-function SelectField({ label, value, onChange, options, T }) {
+function SelectField({ label, value, onChange, options, T, helper }) {
   return (
     <div style={{ padding: "8px 0" }}>
-      <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
-      <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
+        <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>{label}</div>
+        {helper && <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 4, fontStyle: "italic" }}>{helper}</div>}
+        <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
         {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
@@ -1743,6 +1745,11 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   // OTHER contact, so opening any contact's edit sheet while masking would have
   // printed a second real name on a surface the review found was unmasked.
   const anonymise = useAnonymiseMode();
+  // ADDED 29 Sep 2026 (t025) — the only way a contact's HIV status gets set.
+  // On the read view it is shown masked under Anonymise mode; the EDIT sheet
+  // is deliberately not additionally gated, because entering it is already an
+  // explicit act by the owner on their own record, exactly the same reasoning
+  // the sheet's own comment above records for a contact's real name.
   const isNew = !contact;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
@@ -2047,6 +2054,25 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           )}
           <MultiSelectChips T={T} label="Known to be on" value={form.knownPrepDoxy} onChange={set("knownPrepDoxy")} options={PREP_DOXY_OPTIONS} />
           <TextField T={T} label="Last tested date (if known)" value={form.lastTestedDate} onChange={set("lastTestedDate")} type="date" helper="Often unknown — leave blank, no pressure." />
+          {/* ADDED 29 Sep 2026 (t025) — stated, never derived: see
+              ContactProfile's own comment for why deriving a contact's status
+              from the owner's own test records would be meaningless. The
+              helper text says plainly that blank is a real answer here,
+              because the alternative default puts an unverified claim on
+              someone else's record.
+
+              String options, matching this file's own SelectField (which
+              renders `options.map(opt => <option value={opt}>)`) — the
+              {value,label} shape used on My Profile is that file's own
+              separate component, not a shared contract. */}
+          <SelectField
+            T={T}
+            label="HIV status (if known)"
+            value={form.hivStatus || ""}
+            onChange={(v) => set("hivStatus")(HIV_STATUS_OPTIONS.find((o) => o.value === v) ? v : null)}
+            options={[...HIV_STATUS_OPTIONS.map((o) => o.value), "Not known / not recorded"]}
+            helper="Only what you actually know."
+          />
         </SectionCard>
 
         <SectionCard T={T} title="Kink">
@@ -2171,6 +2197,22 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
   const [privacy] = useLoadedState(() => PrivacySettingsRepository.getSettings(), [], DEFAULT_PRIVACY_SETTINGS);
   const anonymise = privacy.anonymiseModeActive;
   const hideFurther = anonymise && privacy.hideFurtherEnabled;
+  // ADDED 29 Sep 2026 (t025) — a contact's HIV status is STATED ONLY, and
+  // deliberately not derived the way My Profile's is.
+  //
+  // The derivation on My Profile reads the user's OWN Testing records. Applied
+  // to a contact it would read the user's tests and report them as someone
+  // else's status — so the "derive it" half is simply absent here, and the
+  // absence is the honest answer rather than a gap waiting to be filled. A
+  // contact is either recorded as having a status or is not recorded.
+  //
+  // Null means "not recorded", which is shown as such and never as "untested":
+  // those are different claims, and quietly substituting the second for the
+  // first would put a word in someone's mouth on their own record.
+  const contactHivStatus = useMemo(() => {
+    if (!isValidHivStatus(contact?.hivStatus)) return null;
+    return { status: contact.hivStatus, since: null, source: "stated" };
+  }, [contact?.hivStatus]);
   // ADDED — real ask: toggle to reveal blank fields, so it's obvious
   // what's actually missing rather than silently absent.
   const [showBlankFields, setShowBlankFields] = useState(false);
@@ -2462,6 +2504,27 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           )}
           <ReadRow T={T} label="Known to be on" value={contact.knownPrepDoxy} />
           <ReadRow T={T} label="Last tested" value={contact.lastTestedDate} />
+          {/* ADDED 29 Sep 2026 (t025) — HIV status. MASKED under Anonymise
+              mode, unlike the rows above it, and that asymmetry is
+              deliberate: "known to be on PrEP" and a last-tested date are
+              useful in a conversation with this person, whereas someone's
+              HIV status is the single most sensitive fact this app can hold
+              about them, and disclosing it to a third party is a decision
+              with real consequences that the person themselves may not have
+              made. Resolved (stated-over-derived) for the same reason as My
+              Profile, and a null sentinel rather than a default so a contact
+              with no test records yet never reads as "untested" mid-load. */}
+          <ReadRow
+            T={T}
+            label="HIV status"
+            value={
+              hideFurther || anonymise
+                ? MASKED
+                : contactHivStatus
+                  ? describeHivStatus(contactHivStatus)
+                  : "Not recorded"
+            }
+          />
         </SectionCard>
 
         <SectionCard T={T} title="Kink">
