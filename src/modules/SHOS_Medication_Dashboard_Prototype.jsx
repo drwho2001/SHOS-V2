@@ -38,7 +38,7 @@ formatDoseComponents } from "../calculations/medicationCalculations";
 // it after" case. Same shared "Now" helper and plain-string-slicing
 // safety already established by Encounters'/Clinic Visits' own
 // DateTimeField — no Date-object round-trip, no silent BST/UTC shift.
-import { nowAsDateTimeLocalString, nowAsStoredDateTime, realTimestampFromStored } from "../calculations/dateInputHelpers";
+import { nowAsDateTimeLocalString, nowAsStoredDateTime, realTimestampFromStored, daysSinceStoredDay } from "../calculations/dateInputHelpers";
 // ADDED 19 Aug 2026 — real ask: allergies visible "± medications at
 // the top" too, not just on Clinic Card. Read-only here — Allergies
 // itself is edited on My Profile, this is just a visibility surface.
@@ -151,7 +151,17 @@ const radius = RADIUS;
 function formatLastDose(dateStr) {
   if (!dateStr) return "No doses logged";
   const d = new Date(dateStr);
-  const diffDays = Math.floor((Date.now() - d.getTime()) / 86400000);
+  // FIXED 29 Sep 2026 (t020) - the DAY label was wrong, not the time. The
+  // formatter below already had timeZone:"UTC" from an earlier fix, so a dose
+  // taken at 23:00 showed the right clock time on the wrong day: the day count
+  // divided elapsed milliseconds between a real instant and a stored wall-clock,
+  // so "Yesterday" could read "2d ago" west of UTC.
+  //
+  // This is the same shape as the (OVERDUE) defect found earlier the same day -
+  // the calculation got fixed and the TEXT that renders it did not. Which is the
+  // argument for routing the label through the canonical primitive rather than
+  // computing it locally: there is now no local copy left to be wrong.
+  const diffDays = daysSinceStoredDay(dateStr) ?? 0;
   const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: "UTC" });
   const dayLabel = diffDays <= 0 ? "Today" : diffDays === 1 ? "Yesterday" : `${diffDays}d ago`;
   return `${dayLabel} at ${time}`;
@@ -177,7 +187,9 @@ function dayLabel(dateStr) {
 // the literal wall-clock digits instead of re-shifting them.
 function timeLabel(dateStr) { return new Date(dateStr).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: "UTC" }); }
 function daysFromNow(dateStr) {
-  const diffDays = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+  // FIXED 29 Sep 2026 (t020) - see formatLastDose above. Same function, same
+  // bug, second call site.
+  const diffDays = daysSinceStoredDay(dateStr) ?? 0;
   return diffDays <= 0 ? "today" : diffDays === 1 ? "yesterday" : `${diffDays}d ago`;
 }
 // Builds the shape the UI has always expected — a medication with its own

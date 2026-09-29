@@ -8,6 +8,13 @@
 // where a stat references a clinical benchmark. Pure functions only —
 // callers pass in already-loaded repository data, same separation as
 // doxyPepCalculations.js.
+//
+// ADDED 29 Sep 2026 (t020): the calendar-day primitives now come from
+// dateInputHelpers, which owns the stored-frame vs real-instant question. This
+// file had its own private copies of them, written hours earlier in the same
+// session while fixing the same class of bug - the reason the canonical versions
+// exist at all.
+import { storedDayKey, localDayKey, calendarDaysBetween, daysSinceStoredDay } from "./dateInputHelpers";
 
 // ── Activity ──
 
@@ -70,19 +77,31 @@ export const BASHH_TESTING_INTERVAL_DAYS = 90;
 export const BASHH_TESTING_SOURCE_URL = "https://www.bashh.org/_userfiles/pages/files/resources/bashh_summary_guidance_on_stis_testing_2023.pdf";
 
 export function getTestingFrequencyStats(tests) {
-  const real = tests.filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date));
+  // FIXED 29 Sep 2026 (t020) - a real-instant-vs-stored-wall-clock comparison,
+  // and a "days since" computed by dividing elapsed milliseconds by 86400000.
+  //
+  // BOTH mattered clinically rather than cosmetically. `withinBashhInterval` is
+  // the field that says whether the user is still inside the routine testing
+  // interval, and it is derived from `daysSinceLast`, which was off by a day in
+  // whichever direction the device's offset happened to push it. A test logged
+  // at 23:00 on 25 Sep read 7 days later on 3 Oct in any zone behind UTC, rather
+  // than the 8 the user's own calendar says.
+  const now = new Date();
+  const todayKey = localDayKey(now);
+  const real = tests.filter((t) => !t.isArchived && t.date && storedDayKey(t.date) <= todayKey)
+    .sort((a, b) => (storedDayKey(a.date) < storedDayKey(b.date) ? -1 : 1));
   if (real.length < 2) {
     const lastDate = real[0]?.date || null;
-    const daysSinceLast = lastDate ? Math.floor((Date.now() - new Date(lastDate).getTime()) / 86400000) : null;
+    const daysSinceLast = daysSinceStoredDay(lastDate, now);
     return { averageIntervalDays: null, daysSinceLast, testCount: real.length, withinBashhInterval: daysSinceLast !== null ? daysSinceLast <= BASHH_TESTING_INTERVAL_DAYS : null };
   }
   const gaps = [];
   for (let i = 1; i < real.length; i++) {
-    gaps.push((new Date(real[i].date) - new Date(real[i - 1].date)) / 86400000);
+    gaps.push(calendarDaysBetween(storedDayKey(real[i - 1].date), storedDayKey(real[i].date)));
   }
   const averageIntervalDays = Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length);
   const lastDate = real[real.length - 1].date;
-  const daysSinceLast = Math.floor((Date.now() - new Date(lastDate).getTime()) / 86400000);
+  const daysSinceLast = daysSinceStoredDay(lastDate, now);
   return { averageIntervalDays, daysSinceLast, testCount: real.length, withinBashhInterval: daysSinceLast <= BASHH_TESTING_INTERVAL_DAYS };
 }
 
@@ -115,13 +134,18 @@ const TREND_THRESHOLD = 0.2;
 const RECENT_GAP_COUNT = 2;
 
 export function getTestingIntervalTrend(tests) {
-  const real = tests.filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date));
+  // FIXED 29 Sep 2026 (t020) - same mixed-frame comparison and same elapsed-ms
+  // divide as getTestingFrequencyStats above, applied to the trend figure.
+  const now = new Date();
+  const todayKey = localDayKey(now);
+  const real = tests.filter((t) => !t.isArchived && t.date && storedDayKey(t.date) <= todayKey)
+    .sort((a, b) => (storedDayKey(a.date) < storedDayKey(b.date) ? -1 : 1));
   if (real.length < 2) return { currentGapVsAverage: null, recentTrend: null };
 
   const gaps = [];
-  for (let i = 1; i < real.length; i++) gaps.push((new Date(real[i].date) - new Date(real[i - 1].date)) / 86400000);
+  for (let i = 1; i < real.length; i++) gaps.push(calendarDaysBetween(storedDayKey(real[i - 1].date), storedDayKey(real[i].date)));
   const averageIntervalDays = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-  const daysSinceLast = Math.floor((Date.now() - new Date(real[real.length - 1].date).getTime()) / 86400000);
+  const daysSinceLast = daysSinceStoredDay(real[real.length - 1].date, now);
 
   // 1. Current gap vs. own average — a real ratio, not just a boolean,
   // so the UI can say by how much rather than just "yes/no".
@@ -263,9 +287,15 @@ export function getAdherenceTrend(medications, monthsBack = 6) {
   // YYYY-MM-DD keys rather than as local-midnight epochs. "Today" is still the
   // real now — a real instant is genuinely the user's local day, and the
   // current month is truncated at it either way.
+  // The day-key helpers now live in dateInputHelpers, because this file had its
+  // own private copy written hours before the canonical one existed - the third
+  // copy of this logic in a single day, two of them mine. `dayKey` is kept only
+  // because it converts a UTC-DERIVED Date (a month boundary built with
+  // Date.UTC), which is not the same thing as `storedDayKey` (which reads stored
+  // digits) or `localDayKey` (the device's own day).
   const dayKey = (d) =>
     `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
-  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const todayKey = localDayKey(now);
 
   for (let i = monthsBack - 1; i >= 0; i--) {
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
@@ -384,10 +414,14 @@ export function getTestsBySite(tests, topN = 8) {
 // that's "happened" yet, same real/scheduled distinction every other
 // stat in this file already applies (see getTestingFrequencyStats).
 export function getClinicVisitStats(visits) {
-  const real = visits.filter((v) => !v.isArchived && v.date && !v.isFutureAppointment && new Date(v.date) <= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date));
+  // FIXED 29 Sep 2026 (t020) - same mixed-frame comparison and elapsed-ms
+  // divide as the two testing functions above.
+  const now = new Date();
+  const todayKey = localDayKey(now);
+  const real = visits.filter((v) => !v.isArchived && v.date && !v.isFutureAppointment && storedDayKey(v.date) <= todayKey);
   if (real.length === 0) return { visitCount: 0, daysSinceLast: null };
-  const lastDate = real[real.length - 1].date;
-  const daysSinceLast = Math.floor((Date.now() - new Date(lastDate).getTime()) / 86400000);
+  const lastDate = real.reduce((a, b) => (storedDayKey(a.date) > storedDayKey(b.date) ? a : b)).date;
+  const daysSinceLast = daysSinceStoredDay(lastDate, now);
   return { visitCount: real.length, daysSinceLast };
 }
 

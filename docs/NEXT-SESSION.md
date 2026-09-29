@@ -521,6 +521,84 @@ elapsed-milliseconds revert, the missing `timeZone`, the 1970 day-number bug, an
 the widget silently going back to inline arithmetic. Both files green in eight
 zones including `Pacific/Chatham` (+12:45) and `Asia/Kathmandu` (+05:45).
 
+### t020 (part 5) — the last of the class, and the guard that found a site my grep had missed
+
+**The canonical primitives now live in `dateInputHelpers.js`**, which already
+answered "which frame is this date in?" for *rendering* and did not answer it
+for *arithmetic*. So the same day-key logic existed in **three places on one
+day** — and two of the three were written by me, hours apart, while fixing the
+same bug. That is recorded at the primitives themselves, because it is the
+clearest argument in this project for a canonical home: the duplication was not
+an oversight, it was what happens without one.
+
+`storedDayKey` / `localDayKey` / `calendarDaysBetween` / `daysSinceStoredDay`.
+24 tests, green in six zones. The two that matter most:
+
+- `daysSinceStoredDay` is the shape most of the app's "days since" figures need,
+  and the one that was being written inline in five places. **Day 1 is the stored
+  day itself — 0 days ago, not 1.**
+- Every fixture is built from **local date components**, because a test that
+  asserts a specific local date is only true in one timezone. That mistake now
+  has three recorded instances.
+
+**Six more sites fixed, and one site confirmed CORRECT — which matters as much.**
+
+| Site | Verdict |
+|---|---|
+| `statsCalculations` ×3 | `daysSinceLast` — **clinical**: it decides `withinBashhInterval` |
+| `Home` ×3 | cycle days-since, contraception days-since / days-until |
+| `Medication Dashboard` ×2 | the "Today / Yesterday / 3d ago" label on every card |
+| `Contacts` | `daysSinceLastInteraction` — decides the red **inactive** badge |
+| `Testing` | `isRecentTest`, the 90-day window behind the faded old-record treatment |
+| `Encounters` ×2 + `ClinicCard` ×3 | timeframe filters |
+| **`backupService`** | **correct, left alone** — see below |
+
+**The one site a sweep would have broken.** `backupService` computes "days since
+last backup" from a timestamp written with `new Date().toISOString()` — a **real
+instant** against a **real clock**, so instant-minus-instant is correct. Its
+`sinceLastTest` filter in Encounters is likewise two stored values compared
+together, which was already right. Both are now *asserted* to stay correct, so a
+future sweep has to break them on purpose rather than by accident.
+
+**The medication card is the same defect shape as the `(OVERDUE)` one, which
+matters more than the count of sites.** The time formatter in that file already
+had `timeZone: "UTC"` from an earlier fix, so a dose taken at 23:00 showed the
+**right clock time on the wrong day** — the calculation was fixed once and the
+text that renders it was not. That is the second instance of "fix the maths,
+miss the label", and the reason both now route through the canonical primitive
+rather than computing a local copy.
+
+### The guard, and three ways it was wrong before it was right
+
+`storedDateArithmeticGuard.test.js` bans elapsed-millisecond arithmetic between a
+real instant and a stored value, in screens, calculations **and storage**. It
+found a site my manual search had missed: `isRecentTest` compared against a
+millisecond *window constant* rather than dividing by `86400000`, so every grep
+for the anti-pattern skipped it. **A guard that only catches the sites you
+already found is a list, not a guard** — which is the whole argument for one.
+
+Its three failures, each found by deliberately breaking it:
+
+1. **The pattern only matched one form.** `Date.now() - d.getTime()` and
+   `Date.now() - new Date(dateStr).getTime()` are two different real
+   regressions; a pattern matching the second let the first through, and widening
+   it to the second **lost** the first. Both are matched now.
+2. **It never scanned `src/storage`** — the only place the one *correct* site
+   lives — so the "does it exclude real instants?" test was passing
+   **vacuously**. Removing the exclusion changed nothing, which is exactly what a
+   vacuous test looks like.
+3. **Its error messages pointed at the wrong line.** The comment stripper deleted
+   comments outright, so line numbers were from the *stripped* source:
+   `backupService.js:331` for a line that is 692 in the file. An error message
+   that sends someone to the wrong line is worse than none, so the stripper now
+   blanks comment content while preserving every newline.
+
+4 mutations red, including the full-stripper version. Two earlier mutations were
+**partial** — one neutered only the block-comment stage of a two-stage stripper,
+and the line-comment stage masked it. Reported as partial rather than counted as
+a pass, because "the mutation did not apply" and "the test did not go red" are
+different failures and only the second says anything about the test.
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second

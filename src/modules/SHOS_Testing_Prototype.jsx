@@ -61,6 +61,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
+import { daysSinceStoredDay } from "../calculations/dateInputHelpers";
 
 // ADDED 19 Aug 2026 — Healthcare blue (#4A80F0), per Doc 2's design
 // system exactly: "Healthcare & Clinical (blue — unified) ... Testing,
@@ -143,12 +144,24 @@ function formatDate(iso) {
 // interval — the owner's own suggested threshold, not guessed). `allTests`
 // should be the FULL unfiltered set (not a search-filtered list) so
 // rank is computed correctly.
-const RECENT_TEST_WINDOW_MS = 90 * 24 * 60 * 60 * 1000;
+// FIXED 29 Sep 2026 (t020) - was RECENT_TEST_WINDOW_MS = 90 * 24 * 60 * 60 *
+// 1000, a millisecond window compared against a stored wall-clock value. "Within
+// 90 days" is a calendar question, and it is now asked in days.
+const RECENT_TEST_WINDOW_DAYS = 90;
 function isRecentTest(test, allTests) {
   if (!test.date) return false;
-  const withinWindow = Date.now() - new Date(test.date).getTime() <= RECENT_TEST_WINDOW_MS;
+  // FIXED 29 Sep 2026 (t020) - found by the new structural guard, NOT by a
+  // manual search: this line compares against a millisecond window constant
+  // rather than dividing by 86400000, so a grep for the anti-pattern missed it.
+  // That is the argument for a guard over a hand-written list.
+  //
+  // "Within 90 days" is a question about calendar days, and it was being asked
+  // of a wall-clock value on one side and a real clock on the other, so a test
+  // exactly 90 days old rendered as recent or faded depending on the device's
+  // offset. This figure decides the faded treatment on old records.
+  const withinWindow = (daysSinceStoredDay(test.date) ?? Infinity) <= RECENT_TEST_WINDOW_DAYS;
   if (withinWindow) return true;
-  const rank = [...allTests].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).findIndex((t) => t.id === test.id);
+  const rank = [...allTests].sort((a, b) => (a.date < b.date ? 1 : -1)).findIndex((t) => t.id === test.id);
   return rank !== -1 && rank < 2;
 }
 

@@ -25,9 +25,12 @@ import {
   getCyclePhase,
   getNextPeriodDayKey,
   formatWidgetDayKey,
-  storedDayKey,
-  localDayKey,
 } from "./cycleWidgetCalculations.js";
+// The day-key primitives moved to dateInputHelpers when this became the third
+// copy of them written in a day. Re-pointed here deliberately rather than
+// re-exported from cycleWidgetCalculations: a re-export would leave two doors
+// to one fact, and "single entry, multiple access" means exactly one.
+import { storedDayKey, localDayKey } from "./dateInputHelpers";
 
 // Source-level wiring assertions. This project has shipped a feature whose hook
 // worked perfectly in unit tests while a sweep silently failed to attach it to

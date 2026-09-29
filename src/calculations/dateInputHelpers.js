@@ -158,3 +158,79 @@ export function formatInstantDateTime(iso) {
   const d = new Date(iso);
   return `${d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}, ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// CALENDAR-DAY PRIMITIVES
+//
+// ADDED 29 Sep 2026 (t020). This file already answers "which frame is this
+// date in?" for rendering - formatStoredDate reads a stored wall-clock value in
+// UTC, formatInstantDate reads a real instant locally. It did NOT answer that
+// question for ARITHMETIC, so the same day-key logic was written three times
+// in one day: here, in cycleWidgetCalculations.js, and in statsCalculations.js.
+// Two of those three were written hours apart in the same session, by the same
+// person, fixing the same bug class. That is precisely the duplication this
+// module exists to prevent, and it is recorded here so the next person does not
+// add a fourth.
+//
+// The distinction that matters, and is easy to lose:
+//
+//   A STORED value holds the user's own wall-clock day. Its calendar day is the
+//   digits they typed, read with NO conversion.
+//   A REAL INSTANT is a moment. Its calendar day depends on the device's zone.
+//
+//   So `localDayKey` is not "the same kind of thing" as `storedDayKey` - it is
+//   deliberately the other frame. Questions a person answers in their own days
+//   ("how many days since I last tested") MUST combine the two, which is
+//   `calendarDaysBetween(storedDayKey(x), localDayKey(now))`.
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * The calendar day a STORED value names, as YYYY-MM-DD.
+ *
+ * Never shifts. A stored "2026-09-01" is the 1st, in every timezone, because
+ * that is the day the user typed. Returns null for anything that is not a
+ * usable date, so callers must handle absence rather than reading "Invalid
+ * Date" out of a Number.
+ */
+export function storedDayKey(storedIso) {
+  if (typeof storedIso !== "string" || storedIso.length < 10) return null;
+  if (storedIso.slice(4, 5) !== "-" || storedIso.slice(7, 8) !== "-") return null;
+  return storedIso.slice(0, 10);
+}
+
+/** Today in the USER'S OWN timezone, as YYYY-MM-DD. */
+export function localDayKey(now = new Date()) {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+/**
+ * Whole calendar days from `fromKey` to `toKey`, both YYYY-MM-DD.
+ *
+ * Calendar arithmetic on UTC midnight, NOT elapsed milliseconds. Dividing an
+ * elapsed span by 86400000 is the anti-pattern this project has been bitten by
+ * repeatedly: the answer shifts with the device's offset and by an hour across
+ * a DST boundary, and it is the reason a fully-dosed month once read 97%.
+ *
+ * Returns null if either side is unusable, so a caller cannot accidentally
+ * treat "no data" as "zero days ago".
+ */
+export function calendarDaysBetween(fromKey, toKey) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fromKey || "") || !/^\d{4}-\d{2}-\d{2}$/.test(toKey || "")) return null;
+  return Math.round(Date.parse(`${toKey}T00:00:00Z`) / 86400000) - Math.round(Date.parse(`${fromKey}T00:00:00Z`) / 86400000);
+}
+
+/**
+ * How many days have passed since a STORED value, in the user's own days.
+ *
+ * This is the shape most of the app's "days since" figures need, and the one
+ * that was being written inline in at least five places, each with its own
+ * version of the bug. Day 1 is the stored day itself - 0 days ago, not 1.
+ *
+ * `now` is a parameter so tests can pin it without faking the global clock, and
+ * defaults to the real now so call sites stay readable.
+ */
+export function daysSinceStoredDay(storedIso, now = new Date()) {
+  const from = storedDayKey(storedIso);
+  if (!from) return null;
+  return calendarDaysBetween(from, localDayKey(now));
+}

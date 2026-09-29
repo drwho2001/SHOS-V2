@@ -29,6 +29,7 @@ import { NEUTRAL, ACCENTS, ACTION, ACCENT_TEXT_SAFE, RADIUS, TYPE, deriveLightAc
 // at module scope — see medsBlue/healthcareColor/actionRedColor/
 // actionGreenColor/homeColor just after the darkMode hook.
 import { formatRelativeDate } from "../calculations/encounterCalculations";
+import { storedDayKey, localDayKey, calendarDaysBetween, daysSinceStoredDay } from "../calculations/dateInputHelpers";
 // ADDED — real ask: a "status at a glance" visual layer, the biggest
 // opportunity surfaced by comparing SHOS against similar apps (Natural
 // Cycles' day-status colour, XtrkR's adherence rings) — trading a
@@ -702,13 +703,25 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // — this is exactly why methods with no real interval (a continuous
   // pill, a multi-year IUD) correctly get no ring at all rather than a
   // guessed one, same "not enough data" honesty as every other ring.
-  const cycleDaysSince = lastPeriod?.startDate ? Math.round((new Date() - new Date(lastPeriod.startDate)) / 86400000) : null;
+  // FIXED 29 Sep 2026 (t020) - three elapsed-milliseconds calculations against
+  // STORED fake-UTC values, on the first screen the user sees. In New York a
+  // "days since" was short by up to a day, and "days until due" long by one,
+  // because a real instant and a stored wall-clock day were being subtracted
+  // from each other directly.
+  //
+  // They now go through the canonical primitives, and - the part that actually
+  // made them a bug worth fixing once - the three of them were three SEPARATE
+  // hand-rolled versions of the same mistake, so there was no single place that
+  // could be right.
+  const cycleDaysSince = lastPeriod?.startDate ? daysSinceStoredDay(lastPeriod.startDate) : null;
   const cycleOverdue = avgCycleLength != null && cycleDaysSince != null && cycleDaysSince > avgCycleLength;
   const contraSpanDays = contraceptionDue?.startDate && contraceptionDue?.nextDueDate
-    ? Math.round((new Date(contraceptionDue.nextDueDate) - new Date(contraceptionDue.startDate)) / 86400000)
+    ? calendarDaysBetween(storedDayKey(contraceptionDue.startDate), storedDayKey(contraceptionDue.nextDueDate))
     : null;
-  const contraDaysSince = contraceptionDue?.startDate ? Math.round((new Date() - new Date(contraceptionDue.startDate)) / 86400000) : null;
-  const contraDaysUntilDue = contraceptionDue?.nextDueDate ? Math.round((new Date(contraceptionDue.nextDueDate) - new Date()) / 86400000) : null;
+  const contraDaysSince = contraceptionDue?.startDate ? daysSinceStoredDay(contraceptionDue.startDate) : null;
+  const contraDaysUntilDue = contraceptionDue?.nextDueDate
+    ? calendarDaysBetween(localDayKey(), storedDayKey(contraceptionDue.nextDueDate))
+    : null;
   const contraOverdue = contraDaysUntilDue != null && contraDaysUntilDue < 0;
 
   const SummaryRow = ({ label, value, onClick, moduleColor }) => (

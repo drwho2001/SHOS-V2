@@ -6,6 +6,10 @@ import {
   nowAsStoredDate,
   inDaysAsStoredDate,
   realTimestampFromStored,
+  storedDayKey,
+  localDayKey,
+  calendarDaysBetween,
+  daysSinceStoredDay,
 } from './dateInputHelpers';
 
 describe('dateInputHelpers', () => {
@@ -169,6 +173,96 @@ describe('dateInputHelpers', () => {
         });
       }
       expect(offenders).toEqual([]);
+    });
+  });
+});
+// ADDED 29 Sep 2026 (t020) - the calendar-day primitives, which exist because
+// the same day-key logic had been written in THREE places in one day (twice by
+// me, hours apart, while fixing the same bug class). These are the tests that
+// make the third copy unnecessary.
+//
+// Fixtures are built from LOCAL date components, not UTC strings, so that "the
+// local day is X" is true in every timezone. A version of this file asserted
+// that noon UTC is the same day everywhere, which is false and which
+// Pacific/Chatham (+12:45) proved.
+describe('calendar-day primitives', () => {
+  describe('storedDayKey', () => {
+    it('reads the day the user typed, in every timezone', () => {
+      // A stored "2026-09-01" is UTC midnight, which is 31 August in the west.
+      // The key must be the digits, never the shifted day.
+      expect(storedDayKey('2026-09-01')).toBe('2026-09-01');
+      expect(storedDayKey('2026-09-01T14:30:00.000Z')).toBe('2026-09-01');
+    });
+
+    it('refuses anything that is not a usable date', () => {
+      // null rather than a bogus key, so a caller cannot turn "no data" into a
+      // NaN that later compares false against everything and looks like a
+      // deliberate answer.
+      expect(storedDayKey(null)).toBeNull();
+      expect(storedDayKey('')).toBeNull();
+      expect(storedDayKey('nonsense')).toBeNull();
+      expect(storedDayKey('2026/09/01')).toBeNull();
+      expect(storedDayKey(12345)).toBeNull();
+    });
+  });
+
+  describe('localDayKey', () => {
+    it('is the device"s own day', () => {
+      expect(localDayKey(new Date(2026, 8, 1, 0, 30, 0))).toBe('2026-09-01');
+      expect(localDayKey(new Date(2026, 8, 1, 23, 59, 0))).toBe('2026-09-01');
+      expect(localDayKey()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+  });
+
+  describe('calendarDaysBetween', () => {
+    it('counts whole days, not elapsed hours', () => {
+      expect(calendarDaysBetween('2026-09-01', '2026-09-04')).toBe(3);
+      expect(calendarDaysBetween('2026-09-04', '2026-09-01')).toBe(-3);
+    });
+
+    it('is exact across a month and a year boundary', () => {
+      expect(calendarDaysBetween('2026-08-31', '2026-09-01')).toBe(1);
+      expect(calendarDaysBetween('2026-12-31', '2027-01-01')).toBe(1);
+      expect(calendarDaysBetween('2024-02-28', '2024-03-01')).toBe(2); // leap year
+      expect(calendarDaysBetween('2026-02-28', '2026-03-01')).toBe(1);
+    });
+
+    it('crossing a DST boundary still counts calendar days', () => {
+      // This is the whole point. An elapsed-milliseconds divide is an hour short
+      // across a DST change, and Math.floor turns that into a whole day lost -
+      // the bug that made a fully-dosed month read 97%.
+      expect(calendarDaysBetween('2026-03-28', '2026-03-30')).toBe(2);
+      expect(calendarDaysBetween('2026-10-31', '2026-11-02')).toBe(2);
+    });
+
+    it('returns null rather than guessing on bad input', () => {
+      expect(calendarDaysBetween(null, '2026-09-01')).toBeNull();
+      expect(calendarDaysBetween('2026-09-01', null)).toBeNull();
+      expect(calendarDaysBetween('nope', '2026-09-01')).toBeNull();
+    });
+  });
+
+  describe('daysSinceStoredDay', () => {
+    it('the day itself is 0 days ago, not 1', () => {
+      expect(daysSinceStoredDay('2026-09-01', new Date(2026, 8, 1, 23, 0, 0))).toBe(0);
+    });
+
+    it('counts in the user"s own days, which is what a person means', () => {
+      // THE CASE THAT WAS WRONG. A test logged at 23:00 on 25 Sep, read 8 days
+      // later at 09:00 on 3 Oct, is EIGHT days in the user's frame. Dividing
+      // elapsed milliseconds between a real instant and the stored wall-clock
+      // gave 7 in any zone behind UTC, and that figure decides a clinical
+      // "still within the BASHH testing interval" verdict.
+      expect(daysSinceStoredDay('2026-09-25T23:00:00.000Z', new Date(2026, 9, 3, 9, 0, 0))).toBe(8);
+    });
+
+    it('agrees with a plain count on a mid-morning record', () => {
+      expect(daysSinceStoredDay('2026-09-01T09:30:00.000Z', new Date(2026, 8, 4, 9, 30, 0))).toBe(3);
+    });
+
+    it('is null with no date, never a number that compares as "recent"', () => {
+      expect(daysSinceStoredDay(null, new Date(2026, 8, 1))).toBeNull();
+      expect(daysSinceStoredDay('', new Date(2026, 8, 1))).toBeNull();
     });
   });
 });

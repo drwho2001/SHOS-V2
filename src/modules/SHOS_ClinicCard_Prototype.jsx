@@ -199,10 +199,21 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   const [customDate, setCustomDate] = useState("");
   const visibilityDialogRef = useRef(null);
   const cutoffDate = useMemo(() => {
+    // FIXED 29 Sep 2026 (t020) - every branch here produced a REAL instant
+    // (`.toISOString()`) except `sinceLastTest`, and those real instants were
+    // then compared as STRINGS against stored fake-UTC dates. That is a
+    // wall-clock value being compared with a moment, in text, silently.
+    //
+    // The comparison below is `dateStr >= cutoff`, and the fix is to keep both
+    // sides in the stored frame: a day boundary from `inDaysAsStoredDate` is the
+    // user's own local day expressed as a stored value, which is exactly what
+    // `dateStr` is. `customDate` is a stored date already, so it needs no
+    // `.toISOString()` round trip - that conversion was itself a source of the
+    // shift.
     if (timeframe === "sinceLastTest") return lastTestDate;
-    if (timeframe === "30days") return new Date(Date.now() - 30 * 86400000).toISOString();
-    if (timeframe === "90days") return new Date(Date.now() - 90 * 86400000).toISOString();
-    if (timeframe === "custom" && customDate) return new Date(customDate).toISOString();
+    if (timeframe === "30days") return inDaysAsStoredDate(-30);
+    if (timeframe === "90days") return inDaysAsStoredDate(-90);
+    if (timeframe === "custom" && customDate) return customDate;
     return null;
   }, [timeframe, customDate, lastTestDate]);
   const withinTimeframe = (dateStr) => !cutoffDate || !dateStr || dateStr >= cutoffDate;

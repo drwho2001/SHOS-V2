@@ -22,17 +22,13 @@
 // reduced to the user's LOCAL day, because "which day of my cycle am I on" is a
 // question a person answers in their own days. That is not the same frame as the
 // stored value, and pretending otherwise is the bug.
-
-/** Reduce a Date to the user's own local calendar day, as YYYY-MM-DD. */
-export function localDayKey(now = new Date()) {
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
-
-/** Reduce a STORED date value to its own day, as YYYY-MM-DD. Never shifts. */
-export function storedDayKey(storedIso) {
-  if (typeof storedIso !== "string" || storedIso.length < 10) return null;
-  return storedIso.slice(0, 10);
-}
+//
+// The day-key primitives themselves are NOT defined here. They live in
+// dateInputHelpers, which owns the stored-frame vs real-instant question for the
+// whole app - because this file's own copies were the second and third versions
+// written in a single day, which is the duplication the canonical module exists
+// to stop.
+import { storedDayKey, localDayKey, calendarDaysBetween } from "./dateInputHelpers";
 
 const dayNumber = (key) => Math.round(Date.parse(`${key}T00:00:00Z`) / 86400000);
 

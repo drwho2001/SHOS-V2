@@ -22,7 +22,7 @@ import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon a
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
-import { nowAsDateTimeLocalString, formatStoredDate, formatStoredDateTime } from "../calculations/dateInputHelpers";
+import { nowAsDateTimeLocalString, formatStoredDate, formatStoredDateTime, inDaysAsStoredDate } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import {
@@ -1111,12 +1111,25 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
     let filtered = base;
     if (dateFilter) {
       const dated = base.filter((e) => e.date);
+      // FIXED 29 Sep 2026 (t020) - these filtered by comparing a STORED
+      // wall-clock date against a cutoff derived from the real clock. Both sides
+      // became instants, which is at least self-consistent, but the stored value
+      // is not an instant, so a record just inside the window could fall outside
+      // it - or the reverse - by up to 14 hours.
+      //
+      // `inDaysAsStoredDate` already returns a local-calendar day boundary in
+      // stored format, so both sides are now the same kind of string in the same
+      // frame, compared lexicographically. "Last 7 days" now means what a person
+      // reading the filter thinks it means.
+      //
+      // The `sinceLastTest` branch is deliberately LEFT ALONE: both sides there
+      // are stored dates already, which was the one case that was right.
       if (dateFilter === "week") {
-        const cutoff = Date.now() - 7 * 86400000;
-        filtered = dated.filter((e) => new Date(e.date).getTime() >= cutoff);
+        const cutoff = inDaysAsStoredDate(-7);
+        filtered = dated.filter((e) => e.date >= cutoff);
       } else if (dateFilter === "month") {
-        const cutoff = Date.now() - 30 * 86400000;
-        filtered = dated.filter((e) => new Date(e.date).getTime() >= cutoff);
+        const cutoff = inDaysAsStoredDate(-30);
+        filtered = dated.filter((e) => e.date >= cutoff);
       } else if (dateFilter === "sinceLastTest") {
         filtered = lastTestDate ? dated.filter((e) => new Date(e.date).getTime() >= new Date(lastTestDate).getTime()) : dated;
       }

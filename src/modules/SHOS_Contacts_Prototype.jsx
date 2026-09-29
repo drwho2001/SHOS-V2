@@ -39,7 +39,7 @@ function platformIconFor(tag) {
 }
 import { getCurrentLocationPlace, forwardGeocode } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
-import { nowAsDateString, formatStoredDate } from "../calculations/dateInputHelpers";
+import { nowAsDateString, formatStoredDate, daysSinceStoredDay } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes, findClosestMatch, findContactDuplicateCandidates } from "../calculations/fuzzyMatch";
 import {
   ContactRepository, DEFAULT_CONTACT,
@@ -1481,9 +1481,13 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
   // a real perf fix, this used to call contactEncounterSummary(encounters,
   // contact.id) right here, a full encounters rescan per card, every
   // render) rather than a separate calculation.
-  const daysSinceLastInteraction = summary.lastInteraction
-    ? Math.floor((Date.now() - new Date(summary.lastInteraction).getTime()) / 86400000)
-    : null;
+  // FIXED 29 Sep 2026 (t020) - `lastInteraction` is an encounter date, i.e. a
+  // STORED fake-UTC value, and it was being subtracted from the real clock as if
+  // it were an instant. Off by up to a day in either direction, which matters
+  // here more than most places: this figure decides the red "inactive" badge
+  // against a user-configurable threshold, so being a day out is a contact
+  // wrongly marked inactive at 89 days, or wrongly active at 91.
+  const daysSinceLastInteraction = daysSinceStoredDay(summary.lastInteraction);
   // CHANGED 19 Aug 2026 — real ask: threshold is now configurable
   // (Settings → Preferences), was hardcoded at 90. Also real ask: a
   // manual override for a genuine one-off/anonymous contact that will
