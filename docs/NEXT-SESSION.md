@@ -450,7 +450,7 @@ plugin bridge**, in a large JSX file — so none of it could be reached by a tes
 without a device. Extracting it is half the job; the call site then has to be
 proven, and it is (see the wiring assertions below).
 
-**`cycleWidgetCalculations.js`, pure and testable.** Three defects in the widget:
+**`menstrualCalculations.js`, pure and testable.** Three defects in the widget:
 
 1. `cycleDay` divided **elapsed milliseconds** between a real instant and a
    stored fake-UTC value. At 22:00 on the start date most of the world is on
@@ -598,6 +598,45 @@ Its three failures, each found by deliberately breaking it:
 and the line-comment stage masked it. Reported as partial rather than counted as
 a pass, because "the mutation did not apply" and "the test did not go red" are
 different failures and only the second says anything about the test.
+
+### Two module-boundary moves, and the refactor deliberately NOT done
+
+Once the day primitives were canonical, the duplication that had motivated a
+broader structural pass was **gone** — so the pass was mostly not needed. Two
+real violations of the project's own three-layer split remained, and those were
+cheap enough to fix honestly:
+
+**`daysForUnit` was pure interval arithmetic exported from a `.jsx` component
+file**, which exists in `contraceptionCalculations.js` now. It was exported from
+a component *only* so it could be tested at all, and importing a `.jsx` module to
+test its arithmetic is the smell rather than the fix. `INTERVAL_UNITS` moved with
+it and is **exported**, because the interval editor has a second consumer of the
+same fact — a second copy of that table is how a screen ends up offering
+"Fortnights" while the calculation silently treats it as days. A new
+`describeInterval()` came with it for the same reason: a component was about to
+grow its own copy of how to phrase an interval.
+
+**`cycleWidgetCalculations.js` → `menstrualCalculations.js`**, and the functions
+lost their `ForWidget` suffix: `getCycleDay` and `formatDayKeyForDisplay`. The
+module holds *general* cycle maths, and a `ForWidget` name would have stopped
+other screens treating it as the canonical owner — which is precisely the
+"each place invents its own derivation" problem the primitives just solved.
+Renamed with `git mv` so history follows, and every reference updated including
+the one in this file.
+
+The block was removed by **index span with the content verified**, not by a
+long string match: it was 36 lines of comment-heavy source, and an exact-match
+edit on that is how this project has damaged files before. The script asserted
+the span contained the expected markers and had not overrun into the component
+before writing, and it wrote nothing if either check failed.
+
+**What was deliberately skipped, and why.** Moving *every* derivation into a
+per-domain module — moving `daysSinceLast` into `testingCalculations.js`, the
+adherence maths into `medicationCalculations.js`, and so on. It is churn on a
+working codebase with a parallel session live in the tree, and the duplication it
+would have removed is already removed. The date primitives did that job. Recorded
+here so a future session does not read "the domain modules should own every
+derivation" as a standing instruction and spend a day on it.
 
 ### t023 — the vaccine reminder that would not stop
 

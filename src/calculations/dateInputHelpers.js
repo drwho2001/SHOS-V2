@@ -166,7 +166,7 @@ export function formatInstantDateTime(iso) {
 // date in?" for rendering - formatStoredDate reads a stored wall-clock value in
 // UTC, formatInstantDate reads a real instant locally. It did NOT answer that
 // question for ARITHMETIC, so the same day-key logic was written three times
-// in one day: here, in cycleWidgetCalculations.js, and in statsCalculations.js.
+// in one day: here, in menstrualCalculations.js, and in statsCalculations.js.
 // Two of those three were written hours apart in the same session, by the same
 // person, fixing the same bug class. That is precisely the duplication this
 // module exists to prevent, and it is recorded here so the next person does not

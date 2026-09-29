@@ -21,14 +21,14 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
-  getCycleDayForWidget,
+  getCycleDay,
   getCyclePhase,
   getNextPeriodDayKey,
-  formatWidgetDayKey,
-} from "./cycleWidgetCalculations.js";
+  formatDayKeyForDisplay,
+} from "./menstrualCalculations.js";
 // The day-key primitives moved to dateInputHelpers when this became the third
 // copy of them written in a day. Re-pointed here deliberately rather than
-// re-exported from cycleWidgetCalculations: a re-export would leave two doors
+// re-exported from menstrualCalculations: a re-export would leave two doors
 // to one fact, and "single entry, multiple access" means exactly one.
 import { storedDayKey, localDayKey } from "./dateInputHelpers";
 
@@ -67,10 +67,10 @@ describe("the widget actually calls the extracted logic", () => {
     const body = widgetBody();
     expect(body, "updateCycleWidget exists").not.toBeNull();
 
-    expect(body, "must use the pure cycle-day helper").toMatch(/getCycleDayForWidget\(/);
+    expect(body, "must use the pure cycle-day helper").toMatch(/getCycleDay\(/);
     expect(body, "must use the pure phase helper").toMatch(/getCyclePhase\(/);
     expect(body, "must use the pure prediction helper").toMatch(/getNextPeriodDayKey\(/);
-    expect(body, "must use the UTC-safe formatter").toMatch(/formatWidgetDayKey\(/);
+    expect(body, "must use the UTC-safe formatter").toMatch(/formatDayKeyForDisplay\(/);
   });
 
   it("no elapsed-milliseconds division between an instant and a stored date survives", () => {
@@ -94,7 +94,7 @@ describe("the widget actually calls the extracted logic", () => {
     // pass for the wrong reason. Proven by checking real code survives it, and
     // that a banned expression living in a comment is NOT reported.
     const body = widgetBody();
-    expect(body).toMatch(/getCycleDayForWidget/);
+    expect(body).toMatch(/getCycleDay/);
     expect(stripComments("// 86400000 is banned\nconst x = 1;")).not.toMatch(/86400000/);
   });
 });
@@ -112,7 +112,7 @@ describe("cycle day - the user's own day, not elapsed milliseconds from UTC", ()
     // local components makes "the local day is the stored day" true everywhere.
     const localMiddayOnStart = new Date(2026, 8, 10, 12, 0, 0);
     expect(localDayKey(localMiddayOnStart)).toBe("2026-09-10");
-    expect(getCycleDayForWidget("2026-09-10", localMiddayOnStart)).toBe(1);
+    expect(getCycleDay("2026-09-10", localMiddayOnStart)).toBe(1);
   });
 
   it("the next calendar day is day 2, even late at night on the start day", () => {
@@ -131,16 +131,16 @@ describe("cycle day - the user's own day, not elapsed milliseconds from UTC", ()
     // and therefore only held in New York.
     const lateEveningOnStartDay = new Date(2026, 8, 10, 22, 0, 0);
     expect(localDayKey(lateEveningOnStartDay)).toBe("2026-09-10");
-    expect(getCycleDayForWidget("2026-09-10", lateEveningOnStartDay)).toBe(1);
-    expect(getCycleDayForWidget("2026-09-10", new Date(2026, 8, 10, 23, 59, 0))).toBe(1);
-    expect(getCycleDayForWidget("2026-09-10", new Date(2026, 8, 11, 0, 1, 0))).toBe(2);
+    expect(getCycleDay("2026-09-10", lateEveningOnStartDay)).toBe(1);
+    expect(getCycleDay("2026-09-10", new Date(2026, 8, 10, 23, 59, 0))).toBe(1);
+    expect(getCycleDay("2026-09-10", new Date(2026, 8, 11, 0, 1, 0))).toBe(2);
   });
 
   it("counts whole calendar days, not elapsed 24-hour blocks", () => {
     // 09:30 on 11 Sep is under half a day after 09:30 on 10 Sep, yet it is
     // unambiguously the second day of the cycle.
     const morningNextDay = new Date(2026, 8, 11, 9, 30, 0);
-    expect(getCycleDayForWidget("2026-09-10", morningNextDay)).toBe(2);
+    expect(getCycleDay("2026-09-10", morningNextDay)).toBe(2);
   });
 
   it("never reports zero or a negative day for a future-dated record", () => {
@@ -148,14 +148,14 @@ describe("cycle day - the user's own day, not elapsed milliseconds from UTC", ()
     // "day -3" on a home-screen widget is worse than a clamped 1. Local
     // components again, for the same reason as the test above.
     const now = new Date(2026, 8, 10, 12, 0, 0);
-    expect(getCycleDayForWidget("2026-09-20", now)).toBe(1);
+    expect(getCycleDay("2026-09-20", now)).toBe(1);
   });
 
   it("declines to answer without a usable start date", () => {
     const now = new Date(2026, 8, 10, 12, 0, 0);
-    expect(getCycleDayForWidget(null, now)).toBeNull();
-    expect(getCycleDayForWidget("", now)).toBeNull();
-    expect(getCycleDayForWidget("nonsense", now)).toBeNull();
+    expect(getCycleDay(null, now)).toBeNull();
+    expect(getCycleDay("", now)).toBeNull();
+    expect(getCycleDay("nonsense", now)).toBeNull();
   });
 
   it("reads the stored day without shifting it", () => {
@@ -224,14 +224,14 @@ describe("the prediction renders on the day it names", () => {
     // padded form is the locale trap this project has now fallen into three
     // times. What must hold is that the output names the 1st and not the 31st
     // of the previous month - which is exactly what a missing timeZone does.
-    const rendered = formatWidgetDayKey("2026-09-01");
+    const rendered = formatDayKeyForDisplay("2026-09-01");
     expect(rendered, "must name the 1st").toMatch(/\b1\b/);
     expect(rendered, "must not name the previous month's last day").not.toMatch(/31/);
   });
 
   it("returns null rather than a broken string for a bad key", () => {
-    expect(formatWidgetDayKey(null)).toBeNull();
-    expect(formatWidgetDayKey("not-a-date")).toBeNull();
+    expect(formatDayKeyForDisplay(null)).toBeNull();
+    expect(formatDayKeyForDisplay("not-a-date")).toBeNull();
   });
 });
 

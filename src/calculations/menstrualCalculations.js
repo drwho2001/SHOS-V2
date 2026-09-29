@@ -40,7 +40,7 @@ const dayNumber = (key) => Math.round(Date.parse(`${key}T00:00:00Z`) / 86400000)
  * has not started yet, or a future-dated record, must not report day 0 or a
  * negative - a widget showing "day -3" is worse than showing nothing.
  */
-export function getCycleDayForWidget(startDateStored, now = new Date()) {
+export function getCycleDay(startDateStored, now = new Date()) {
   const start = storedDayKey(startDateStored);
   if (!start) return null;
   return Math.max(1, dayNumber(localDayKey(now)) - dayNumber(start) + 1);
@@ -97,7 +97,7 @@ export function getNextPeriodDayKey(startDateStored, avgLengthDays) {
  * stored-frame arithmetic. The one place this must not be copied is a value
  * that is genuinely a real instant, where the device's own zone is right.
  */
-export function formatWidgetDayKey(dayKey) {
+export function formatDayKeyForDisplay(dayKey) {
   if (!dayKey) return null;
   const d = new Date(`${dayKey}T00:00:00Z`);
   if (Number.isNaN(d.getTime())) return null;

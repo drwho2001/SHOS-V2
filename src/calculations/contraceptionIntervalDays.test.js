@@ -17,7 +17,12 @@
 // so the user is reminded on the wrong day, and the number stored is simply not
 // what they asked for.
 import { describe, it, expect } from "vitest";
-import { daysForUnit } from "../modules/SHOS_MenstrualHealth_Prototype.jsx";
+// Re-pointed 29 Sep 2026 (t020) when daysForUnit moved out of the component.
+// It was originally exported from SHOS_MenstrualHealth_Prototype.jsx purely so
+// it could be tested at all, which is a boundary the project's own
+// repository/calculation/sync split forbids - pure arithmetic in a component.
+// Importing from a .jsx module to test it is the smell, not the fix.
+import { daysForUnit } from "./contraceptionCalculations.js";
 
 describe("a month interval is the real number of days in that month", () => {
   it("31 Jan + 1 month is 28 days, in 2026", () => {

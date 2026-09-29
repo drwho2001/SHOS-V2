@@ -46,7 +46,8 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
-import { getCycleDayForWidget, getCyclePhase, getNextPeriodDayKey, formatWidgetDayKey } from "../calculations/cycleWidgetCalculations";
+import { getCycleDay, getCyclePhase, getNextPeriodDayKey, formatDayKeyForDisplay } from "../calculations/menstrualCalculations";
+import { daysForUnit, INTERVAL_UNITS, CONTRACEPTION_INTERVAL_UNITS } from "../calculations/contraceptionCalculations";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 
 let WidgetBridge = null;
@@ -77,7 +78,7 @@ async function updateCycleWidget() {
         const latest = activeCycles[0];
         const avgLength = await MenstrualCycleRepository.getAverageCycleLengthDays();
         // FIXED 29 Sep 2026 (t020) - three defects, all moved into
-        // cycleWidgetCalculations.js so they are testable at all. This logic
+        // menstrualCalculations.js so they are testable at all. This logic
         // used to live inline here, behind a plugin bridge, inside an async
         // function in a large JSX file, which is why none of it could be
         // exercised without a device.
@@ -94,10 +95,10 @@ async function updateCycleWidget() {
         //    logged cycles. `null * anything` is 0, so the prediction collapsed
         //    onto the start date and the widget told a user with one recorded
         //    cycle that their next period was due the day their last one began.
-        const cycleDay = getCycleDayForWidget(latest.startDate);
+        const cycleDay = getCycleDay(latest.startDate);
         if (cycleDay === null) return;
         const phase = getCyclePhase(cycleDay);
-        const nextPeriod = formatWidgetDayKey(getNextPeriodDayKey(latest.startDate, avgLength));
+        const nextPeriod = formatDayKeyForDisplay(getNextPeriodDayKey(latest.startDate, avgLength));
         await bridge.updateCycle({ day: cycleDay, phase, nextPeriod: nextPeriod || null });
       }
     }
@@ -598,40 +599,14 @@ function CycleTab({ T, isPregnant, openAddOnMount, onConsumedQuickAdd, openRecor
 // repository itself only ever stores intervalDays (see
 // contraceptionRepository.js) — this is purely an input convenience,
 // converted at entry time, so there's no second unit field anywhere
-// to drift out of sync with it.
-const INTERVAL_UNITS = { Days: 1, Weeks: 7 };
-// FIXED 29 Sep 2026 (t020) - and EXPORTED so it can be tested at all.
-//
-// This mixed two frames. `fromDate` is a STORED fake-UTC value, so parsing it
-// gives UTC midnight, but `getDate()` and `setMonth()` are LOCAL operations on
-// that instant. In New York, a stored "2026-01-31" is 30 Jan 19:00 local, so the
-// calendar arithmetic ran a day ahead of the day the user actually entered:
-//
-//   1 month from 31 Jan  ->  29 days   (correct: 28)
-//   1 month from 31 Mar  ->  31 days   (correct: 30)
-//
-// Both of those land in a stored contraception `intervalDays` that drives a
-// reminder, so the user is reminded on the wrong day. Measured across zones
-// rather than reasoned about: UTC and Sydney were already correct, and New York
-// was wrong, which is the signature of a frame mismatch rather than a maths
-// error.
-//
-// The whole calculation is now on the UTC frame, since every input is a stored
-// wall-clock day.
-export function daysForUnit(value, unit, fromDate) {
-  if (unit === "Months") {
-    const due = new Date(fromDate);
-    const startDay = due.getUTCDate();
-    due.setUTCMonth(due.getUTCMonth() + value);
-    // Real month-length edge case: setUTCMonth can roll over (e.g. 31
-    // Jan + 1 month -> 3 Mar, not 28/29 Feb) - pull back to the last
-    // day of the intended month instead, same fix medicationRepository.js's
-    // own interval math would need if it ever grew month support.
-    if (due.getUTCDate() !== startDay) due.setUTCDate(0);
-    return Math.round((due - new Date(fromDate)) / 86400000);
-  }
-  return value * (INTERVAL_UNITS[unit] || 1);
-}
+
+// MOVED 29 Sep 2026 (t020) to ../calculations/contraceptionCalculations.js.
+// This was pure interval arithmetic with no I/O, living in a component file
+// only because it was untestable there. The project's own
+// repository/calculation/sync split puts pure logic in calculations/, and a
+// component is not a module other code should import arithmetic from. The
+// frame bug it used to carry - 1 month from 31 Jan computing 29 days west of
+// UTC, stored and used to schedule a reminder - is documented at its new home.
 function ContraceptionSheet({ entry, onSave, onClose, T }) {
   const isNew = !entry;
   const [methodOptions, setMethodOptions] = useLoadedState(() => CustomOptionListsRepository.getRanked("contraception"), [], []);
@@ -716,7 +691,7 @@ function ContraceptionSheet({ entry, onSave, onClose, T }) {
             style={{ flex: 1, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }} />
           <select value={intervalUnit} onChange={(e) => changeIntervalUnit(e.target.value)}
             style={{ padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14 }}>
-            <option>Days</option><option>Weeks</option><option>Months</option>
+            {CONTRACEPTION_INTERVAL_UNITS.map((u) => <option key={u}>{u}</option>)}
           </select>
         </div>
       </div>
