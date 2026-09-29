@@ -236,7 +236,152 @@ export function isDoseDateSuperseded(doses, index) {
  * WITH a source, the notice picks it up automatically and gains the "outside
  * the recommended interval" sentence; until then it points at the clinic.
  */
-export const VACCINE_INTERVAL_GUIDANCE = Object.freeze({});
+export const VACCINE_INTERVAL_GUIDANCE = Object.freeze({
+  // -----------------------------------------------------------------------
+  // ADDED 29 Sep 2026 (t032) — real, sourced UK minimum intervals.
+  //
+  // THIS TABLE WAS EMPTY ON PURPOSE, and that was correct. It shipped empty
+  // because this project has already had to throw out two clinical constants
+  // that looked deliberate and turned out to have no source at all, and a
+  // wrong interval is not a wrong number on a screen: it is someone
+  // concluding a dose they actually received was wasted. Filling it is only
+  // legitimate because every entry below carries a document and a date, and
+  // a test fails if one ever does not.
+  //
+  // THE NUMBER IS THE FASTEST VALID UK SCHEDULE, NOT THE ROUTINE ONE. This is
+  // the single most important decision in the file. It is a floor, not a
+  // target, so it can only ever fire on a dose that is earlier than EVERY
+  // schedule the guidance permits. A user on an accelerated or outbreak
+  // schedule is therefore never wrongly warned — and that was the entire
+  // argument for it, arrived at by pushing back on a second model's claim
+  // that a "shortest interval" is unsound.
+  //
+  // Hep B is the clearest case. UK guidance allows 0,1,6 (routine), 0,1,2,12
+  // (accelerated) AND 0, 7 days, 21 days (very rapid, Engerix B only, 18+).
+  // An earlier draft of this file used 28/140, taken from the routine
+  // schedule — which would have falsely warned on the very rapid one.
+  //
+  // NO GRACE PERIOD. A second model suggested adding a 4-day grace window and
+  // cited it to "CDC/Green Book". Asked for the document, it retracted it: it
+  // is a US CDC rule and does not exist in the UK, where the published
+  // minimum is the limit. Do not reintroduce a tolerance here without a UK
+  // citation, for the same reason the 0.8 and 0.2 medication constants were
+  // removed.
+  // -----------------------------------------------------------------------
+
+  "Hepatitis A": {
+    floor: { 1: 180 },
+    // 0, 6-12 months. A single dose is also used in some circumstances
+    // (outbreaks, over 40s with chronic liver disease) - the app stores no
+    // schedule, so a one-dose course simply never trips this.
+    source: "UKHSA Green Book, chapter 17 (Hepatitis A), updated 15 January 2024",
+    sourceUrl: "https://www.gov.uk/government/publications/hepatitis-a-the-green-book-chapter-17",
+    checkedOn: "2026-09-29",
+  },
+
+  "Hepatitis B": {
+    floor: { 1: 7, 2: 14 },
+    routine: { 1: 28, 2: 140 },
+    // 0,1,6 routine; 0,1,2,12 accelerated; 0, 7 days, 21 days very rapid
+    // (Engerix B only, aged 18+, used for rapid protection e.g. PWID and
+    // prison). There is NO routine booster for immunocompetent adults who
+    // completed a primary course - a 5-year booster is for people who inject
+    // drugs and healthcare/lab workers only, so the app must never imply one.
+    source: "UKHSA Green Book, chapter 18 (Hepatitis B), updated 24 February 2026",
+    sourceUrl: "https://www.gov.uk/government/publications/hepatitis-b-the-green-book-chapter-18",
+    checkedOn: "2026-09-29",
+  },
+
+  "Hepatitis A/B": {
+    floor: { 1: 7, 2: 14 },
+    routine: { 1: 28, 2: 140 },
+    // Twinrix and equivalents: a combined product, scheduled as hepatitis B
+    // because that is the schedule the same antigens are given on. In the
+    // app's own seed data as "Hepatitis A/B vaccine (Twinrix)".
+    source:
+      "UKHSA Green Book, chapter 18 (Hepatitis B), updated 24 February 2026 - combined Hep A/B products follow the hepatitis B schedule",
+    sourceUrl: "https://www.gov.uk/government/publications/hepatitis-b-the-green-book-chapter-18",
+    checkedOn: "2026-09-29",
+  },
+
+  HPV: {
+    floor: { 1: 28, 2: 28 },
+    // 3-dose schedule for people who are HIV-positive or immunosuppressed is
+    // 0, 1, 4-6 months. The dose 2 -> 3 minimum is ONE month, not three: the
+    // guidance allows a 1-month gap where a patient is unlikely to return,
+    // so storing 3 months would falsely warn on a legitimate dose.
+    // Note also that the UK routine schedule became a SINGLE dose for
+    // eligible under-25s from 1 September 2023, so one HPV dose is often a
+    // complete course. The app therefore says NOTHING about completeness.
+    source: "UKHSA Green Book, chapter 18a (HPV), updated 20 June 2023",
+    sourceUrl: "https://www.gov.uk/government/publications/human-papillomavirus-hpv-the-green-book-chapter-18a",
+    checkedOn: "2026-09-29",
+  },
+
+  Mpox: {
+    floor: { 1: 28 },
+    // MVA-BN. The guidance states 28 days is the minimum interval required
+    // for a sufficient immune response, and that a dose given sooner may
+    // lead to a reduced response.
+    source:
+      "UKHSA Green Book, chapter 29 (Smallpox and mpox) / GOV.UK mpox vaccination: information for healthcare practitioners",
+    sourceUrl:
+      "https://www.gov.uk/government/publications/vaccination-against-mpox-information-for-healthcare-practitioners",
+    checkedOn: "2026-09-29",
+  },
+
+  // The SAME product (4CMenB / Bexsero) used for two different indications
+  // with different courses, which is why these are two separate entries and
+  // not one. Merged, a user's first gonorrhoea dose reads as a meningitis B
+  // booster. They are separate options in the app's own vaccine list, and the
+  // seed data already titles them "... vaccine (4CMenB)".
+  "Meningitis B": {
+    floor: { 1: 28, 2: 28 },
+    // 2 primary doses at least 4 weeks apart, then a booster at least 4
+    // weeks after dose 2, on or after the first birthday. Bexsero and
+    // Trumenba are NOT interchangeable - 28 days between them.
+    source: "UKHSA 4CMenB Patient Group Direction v8.0, valid from 1 July 2025 (Green Book chapter 22)",
+    sourceUrl:
+      "https://www.england.nhs.uk/east-of-england/wp-content/uploads/sites/47/2025/06/PGD19_MenB-v8.0_July2025.pdf",
+    checkedOn: "2026-09-29",
+  },
+
+  Gonorrhoea: {
+    floor: { 1: 28 },
+    // 4CMenB given to prevent gonorrhoea in GBMSM. A national selective
+    // programme from 1 August 2025. Two doses, at least 4 weeks apart, NO
+    // booster. The guidance is explicit that there is no licensed vaccine
+    // against N. gonorrhoeae and that this is a second use of a MenB vaccine.
+    source: "UKHSA Green Book, Gonorrhoea chapter, 11 June 2025",
+    sourceUrl: "https://www.gov.uk/government/publications/gonorrhoea-the-green-book-chapter",
+    checkedOn: "2026-09-29",
+  },
+});
+
+/** Normalised lookup, because the app's option list is free text. */
+const GUIDANCE_BY_NORMALISED_NAME = new Map(
+  Object.entries(VACCINE_INTERVAL_GUIDANCE).map(([name, entry]) => [
+    name.trim().toLowerCase(),
+    entry,
+  ]),
+);
+
+/**
+ * Sourced minimum interval for a vaccine, or null.
+ *
+ * FAIL-CLOSED AND EXACT ON PURPOSE. This is a clinical number, so a loose
+ * match is how you get the wrong vaccine: a substring rule once made
+ * "Hepatitis A" resolve to the hepatitis B entry, which would have warned
+ * about the wrong vaccine entirely. Matching here is exact after trimming
+ * and lowercasing, and anything unrecognised returns null so the notice
+ * simply does not claim a gap. Silence is the correct answer when the app
+ * does not know what was given.
+ */
+export function getIntervalGuidance(vaccineName) {
+  if (typeof vaccineName !== "string") return null;
+  return GUIDANCE_BY_NORMALISED_NAME.get(vaccineName.trim().toLowerCase()) || null;
+}
+
 
 /**
  * Was a dose logged EARLIER than the previous dose's own stated due date?
@@ -263,7 +408,7 @@ export const VACCINE_INTERVAL_GUIDANCE = Object.freeze({});
  * single interval, and comparing a third dose against a first dose's date would
  * report every well-formed course as early.
  */
-export function getEarlyDoseNotice(doses, index) {
+export function getEarlyDoseNotice(doses, index, vaccineName) {
   if (!Array.isArray(doses) || index == null) return null;
   const current = doses[index];
   const previous = doses[index - 1];
@@ -274,20 +419,67 @@ export function getEarlyDoseNotice(doses, index) {
       ? v.slice(0, 10)
       : "";
   const given = day(current.date);
+  if (!given) return null;
+
+  // ---------------------------------------------------------------------
+  // FIXED 29 Sep 2026 (t032) — THE TABLE WAS STRUCTURALLY UNREACHABLE.
+  //
+  // This function read `previous.vaccineName`, but doses do not carry that
+  // field — the vaccine name lives on the RECORD. So the lookup was always
+  // `undefined`, `guidance` was always null, and the sourced interval could
+  // never be consulted no matter what was in the table. Filling the table
+  // alone would have changed nothing at all. It is the same failure this
+  // project has been bitten by twice: a value computed in one file with no
+  // copy of it anywhere the consumer could see.
+  //
+  // So the name is now passed in by the caller, from the record.
+  // ---------------------------------------------------------------------
+  const guidance = getIntervalGuidance(vaccineName);
+
+  // Sourced FLOOR check: is this dose closer to the previous one than the
+  // fastest valid UK schedule allows? This is the only part of the feature
+  // that rests on a clinical number, and it is a sufficient condition - a
+  // dose below the floor is outside every schedule the guidance permits, so
+  // it cannot fire on a legitimate dose.
+  //
+  // dosePosition is 1 for the second dose, 2 for the third, and so on.
+  const dosePosition = index;
+  const previousDate = day(previous.date);
+  if (previousDate) {
+    const floor = guidance?.floor?.[dosePosition] ?? null;
+    if (Number.isFinite(floor)) {
+      const gapDays = Math.round(
+        (Date.parse(`${given}T00:00:00Z`) - Date.parse(`${previousDate}T00:00:00Z`)) / 86400000,
+      );
+      if (gapDays >= 0 && gapDays < floor) {
+        return {
+          kind: "below-minimum",
+          gapDays,
+          minIntervalDays: floor,
+          // The day count is deliberately NOT returned for display. A second
+          // model was right about this: on a mis-keyed date "42 days early"
+          // is noise, and on a near-miss it manufactures disproportionate
+          // anxiety. The number is used to decide, not to scold with.
+          guidance,
+        };
+      }
+    }
+  }
+
   const expected = day(previous.nextDue);
   // No due date on the previous dose, so there is no schedule to be early
   // against - the honest answer is silence, not a warning about nothing.
-  if (!given || !expected) return null;
+  if (!expected) return null;
   if (given >= expected) return null;
 
   // Calendar-day difference, not elapsed milliseconds: the two values are
   // plain YYYY-MM-DD dates, and dividing a DST-crossing span by 86400000 to get
-  // a day count is the exact bug this project recorded in medication adherence.
+  // a day count is the exact bug this project recorded in medication
+  // adherence. Both sides parse as UTC midnight, so this is whole days.
   const daysEarly = Math.round(
     (Date.parse(`${expected}T00:00:00Z`) - Date.parse(`${given}T00:00:00Z`)) / 86400000,
   );
   if (!(daysEarly > 0)) return null;
 
-  const guidance = VACCINE_INTERVAL_GUIDANCE[previous.vaccineName] || null;
-  return { kind: "early", daysEarly, expectedOn: expected, guidance };
+  return { kind: "before-due-date", daysEarly, expectedOn: expected, guidance };
 }

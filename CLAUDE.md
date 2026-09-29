@@ -879,6 +879,72 @@ of the wiring guard confirmed red: resolving then scheduling the raw text anyway
 the web path left undisclosed, a call site losing its `kind`, and the detailed
 level's clinical text deleted rather than masked.
 
+## Recently shipped (29 Sep 2026, newest of all yet again — the vaccine table ships with real numbers, and the notice could never have used them)
+
+**t032 at last, and the first thing found was that the table was structurally
+unreachable.** `getEarlyDoseNotice` read `previous.vaccineName`, but a dose
+object does not carry that field — the vaccine name lives on the *record*. So
+the lookup was always `undefined`, `guidance` was always `null`, and filling the
+table would have changed nothing at all. It is the same failure this file
+records twice already: a value computed in one file with no copy anywhere the
+consumer can see. The name is now passed down from the record.
+
+**The number stored is the FASTEST valid UK schedule, not the routine one, and
+that is the whole design.** It is a floor, not a target, so it can only fire on a
+dose that is earlier than *every* schedule the guidance permits — which means an
+accelerated or outbreak course is never wrongly warned. Hep B proves why: UK
+guidance allows 0,1,6, 0,1,2,12 **and** 0,7d,21d, so my first draft's 28/140 (the
+routine figures) would have falsely warned on the very rapid schedule. Corrected
+to 7/14 before it ever shipped.
+
+**A second model proposed a 4-day grace period, cited it to "CDC/Green Book",
+and retracted it when challenged** — it is a US CDC rule and does not exist in
+the UK, where the published minimum is the limit. This is the fourth recorded
+instance of an unsourced clinical constant in this project, and the first where
+the challenger admitted it rather than defending it.
+
+**Its other three findings were adopted, and one is a real bug class:** the
+notice compared a dose against *the user's own stored due date*, so a mistyped
+due date produced a warning about a dose that was fine. The copy is reworded to
+the only question a user can act on — "your clinic can tell you whether it still
+counts" — and it no longer prints a day count, because on a mis-keyed date "42
+days early" is noise and on a near-miss it manufactures anxiety. The notice now
+also fires on the *sourced floor* independently of any due date.
+
+**Deliberately says nothing about whether a course is complete.** One HPV dose is
+often a complete course since the UK went single-dose in Sept 2023, and
+immunosuppression is broader than the HIV status the app now records, so
+completeness is a clinical determination this app has no business making.
+Hepatitis B likewise has **no routine booster** — five-year boosters are for
+people who inject drugs and healthcare/lab staff only.
+
+**"Meningitis B" and "Gonorrhoea" are separate entries on purpose.** Both are
+4CMenB, but the courses differ — meningitis B is 2 doses plus a booster,
+gonorrhoea is 2 doses with none — and merged, a user's first gonorrhoea dose
+reads as a booster. That 4CMenB is now given nationally to prevent gonorrhoea in
+GBMSM was confirmed in the Green Book's own June 2025 chapter, not assumed.
+
+**The guard that protected this was replaced with a stricter one, not deleted.**
+It used to assert the table was *empty*, which was right while it was: the point
+is that no unsourced clinical number reaches a user. "Empty" would now only stop
+the feature shipping. It now asserts, per entry, that there is a real
+`gov.uk`/`nhs.uk` document, a `checkedOn` date and a positive floor — and name
+matching is **exact after trimming**, because a substring rule once made
+"Hepatitis A" resolve to the hepatitis B entry.
+
+**A guard matched my own comment for the fourth recorded time in this repo.** The
+"makes no clinical verdict" assertion scans the notice source as text, and the
+comment explaining the new wording contains the word "invalid" — on the very
+commit that added it, which is the worst version of that mistake. It now strips
+comments first, and the stripper is proven non-vacuous rather than assumed.
+Two existing guards fired on this change and were widened by exactly the
+legitimate amount, with the assertions that matter left intact.
+
+Verified: `verify:fast` green, **747 tests across 61 files**. All eight
+mutations red, including restoring the dead `previous.vaccineName` lookup, the
+routine intervals, the merged 4CMenB entry, and a loose substring match.
+Exchange with the second model is in `~/.shos-session-bus/tasks/t032/`.
+
 ## Recently shipped (29 Sep 2026, newest of all yet again — t025 rescoped away from "eligibility", and a disclosure level that is not another Anonymise mode)
 
 **The vaccine "eligibility suggestions" idea was rescoped with the owner, and

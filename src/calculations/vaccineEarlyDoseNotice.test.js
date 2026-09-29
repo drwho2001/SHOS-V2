@@ -7,11 +7,12 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import {
-  getEarlyDoseNotice,
-  isDoseDateSuperseded,
-  VACCINE_INTERVAL_GUIDANCE,
-} from "./vaccinationCalculations.js";
+  import {
+    getEarlyDoseNotice,
+    getIntervalGuidance,
+    isDoseDateSuperseded,
+    VACCINE_INTERVAL_GUIDANCE,
+  } from "./vaccinationCalculations.js";
 
 const series = (doses) => doses;
 
@@ -109,29 +110,82 @@ describe("early dose notice - fires only on a genuine early dose", () => {
 });
 
 describe("clinical interval guidance is sourced or absent - never invented", () => {
-  it("ships empty, so no unsourced clinical number can reach a user", () => {
-    // THE load-bearing assertion in this file. The owner asked for a warning
-    // "if outside BASHH or other clinical recommendations", and honouring that
-    // literally means writing down real minimum intervals. They are not written
-    // down, because this project has already had to throw out two clinical
-    // constants that looked deliberate and turned out to have no source at all.
+  it("gives every entry a real source document, a URL and a date it was checked", () => {
+    // REPLACED 29 Sep 2026 (t032). This used to assert the table was EMPTY,
+    // which was the right guard while there was nothing in it: the whole point
+    // was that no unsourced clinical number could reach a user, and this
+    // project has already had to throw out two clinical constants that looked
+    // deliberate and turned out to have no source at all.
     //
-    // A wrong interval is not a wrong number on a screen. It is someone
-    // concluding a dose they actually received was insufficient, or that their
-    // course is invalid. So the table starts empty and this test fails the day
-    // anybody fills it in, forcing the source to be added with it.
-    expect(Object.keys(VACCINE_INTERVAL_GUIDANCE)).toEqual([]);
+    // Now that it is populated, "empty" is no longer a property worth
+    // asserting - it would only stop the feature shipping. The STRONGER
+    // property is that nothing can be ADDED without a citable source, which is
+    // what this asserts now, per entry.
+    const entries = Object.entries(VACCINE_INTERVAL_GUIDANCE);
+    expect(entries.length).toBeGreaterThan(0);
+
+    for (const [name, entry] of entries) {
+      expect(typeof entry.source, `${name} needs a source`).toBe("string");
+      expect(entry.source.trim().length, `${name} source is empty`).toBeGreaterThan(20);
+      expect(
+        entry.sourceUrl,
+        `${name} needs a sourceUrl`,
+      ).toMatch(/^https:\/\/(www\.)?(gov|nhs|england\.nhs)\.?uk\//);
+      expect(entry.checkedOn, `${name} needs a checkedOn date`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(entry.floor && typeof entry.floor === "object", `${name} needs a floor`).toBe(true);
+      for (const [doseNo, days] of Object.entries(entry.floor)) {
+        // Object.entries gives STRING keys, so this is the only correct way to
+        // assert the key is a dose position. An earlier version of this test
+        // used Number.isInteger on the key and failed on its own fixture.
+        expect(Number.isInteger(Number(doseNo)), `${name} floor keys must be dose positions`).toBe(true);
+        expect(Number(doseNo)).toBeGreaterThan(0);
+        expect(Number.isFinite(days), `${name} floor[${doseNo}] must be a number`).toBe(true);
+        expect(days).toBeGreaterThan(0);
+      }
+    }
   });
 
   it("is frozen, so a caller cannot add guidance at runtime and bypass the source check", () => {
     // The other way in. Without this, any module could quietly push an
     // unsourced interval into the table and the notice would then present it
-    // as clinical guidance, with the empty-table test still green.
+    // as clinical guidance, with the sourced-entry test still green.
     expect(() => {
       "use strict";
-      VACCINE_INTERVAL_GUIDANCE["Hepatitis B"] = { minIntervalDays: 28, source: "invented" };
+      VACCINE_INTERVAL_GUIDANCE["Hepatitis B"] = { floor: { 1: 28 }, source: "invented" };
     }).toThrow();
-    expect(Object.keys(VACCINE_INTERVAL_GUIDANCE)).toEqual([]);
+  });
+
+  it("matches a vaccine by EXACT name only, never loosely", () => {
+    // A substring rule once made "Hepatitis A" resolve to the hepatitis B
+    // entry, which would have warned about the wrong vaccine entirely. On a
+    // clinical number, a wrong match is worse than no match.
+    expect(getIntervalGuidance("Hepatitis B")).toBeTruthy();
+    expect(getIntervalGuidance("  hepatitis b  ")).toBeTruthy();
+    expect(getIntervalGuidance("Hepatitis A")).not.toBe(getIntervalGuidance("Hepatitis B"));
+    expect(getIntervalGuidance("Hepatitis")).toBeNull();
+    expect(getIntervalGuidance("Meningitis B vaccine (4CMenB)")).toBeNull();
+    expect(getIntervalGuidance(undefined)).toBeNull();
+  });
+
+  it("gives the two 4CMenB indications different courses, because the courses differ", () => {
+    // Same product, two indications. Merged, a user's first gonorrhoea dose
+    // reads as a meningitis B booster.
+    const menb = getIntervalGuidance("Meningitis B");
+    const gon = getIntervalGuidance("Gonorrhoea");
+    expect(menb.floor[1]).toBe(28);
+    expect(menb.floor[2]).toBe(28); // the booster
+    expect(gon.floor[1]).toBe(28);
+    expect(gon.floor[2]).toBeUndefined(); // no booster on that course
+  });
+
+  it("stores the FASTEST valid UK schedule, so an accelerated course is never warned", () => {
+    // Hep B allows 0,1,6 routine, 0,1,2,12 accelerated and 0,7d,21d very
+    // rapid. An earlier draft stored the routine 28/140, which would have
+    // falsely warned on the very rapid schedule.
+    const hepB = getIntervalGuidance("Hepatitis B");
+    expect(hepB.floor[1]).toBe(7);
+    expect(hepB.floor[2]).toBe(14);
+    expect(hepB.routine[1]).toBeGreaterThan(hepB.floor[1]);
   });
 
   it("reports guidance as absent rather than guessing, while still reporting the fact", () => {
@@ -143,9 +197,13 @@ describe("clinical interval guidance is sourced or absent - never invented", () 
       { doseNumber: 1, date: "2026-08-01", nextDue: "2026-09-01" },
       { doseNumber: 2, date: "2026-08-30" },
     ]);
-    const notice = getEarlyDoseNotice(doses, 1);
-    expect(notice.guidance).toBeNull();
-    expect(notice.daysEarly).toBe(2);
+    const notice = getEarlyDoseNotice(doses, 1, "Hepatitis B");
+    expect(notice).not.toBeNull();
+    // 29 days apart, and the hepatitis B floor is 7, so this is NOT below a
+    // published minimum - it is only earlier than the user's own due date.
+    expect(notice.kind).toBe("before-due-date");
+    expect(notice.guidance).toBeTruthy();
+    expect(notice.guidance).toBe(getIntervalGuidance("Hepatitis B"));
   });
 });
 
@@ -163,7 +221,12 @@ describe("the notice is actually rendered, and rendered as an advisory", () => {
     // The duplication this prevents is the one this file's whole existence is
     // about: a second copy of a date comparison, which is how the 23-hour
     // DST-shortened day count got into the codebase in the first place.
-    expect(src, "EarlyDoseNotice must call getEarlyDoseNotice").toMatch(/getEarlyDoseNotice\(doses, index\)/);
+      // WIDENED 29 Sep 2026 (t032), not loosened: the call gained a third
+      // argument (the record's vaccine name, because a dose object does not
+      // carry one and the previous code read a field that never existed). The
+      // assertion that matters - it calls the shared pure function rather than
+      // re-deriving the comparison inline - is unchanged.
+      expect(src, "EarlyDoseNotice must call getEarlyDoseNotice").toMatch(/getEarlyDoseNotice\(doses, index, vaccineName\)/);
     expect(src, "the notice must not compare dates inline").not.toMatch(/Date\.parse\([^)]*doses/);
   });
 
@@ -171,7 +234,19 @@ describe("the notice is actually rendered, and rendered as an advisory", () => {
     // The single most important sentence in the feature. If this is ever
     // reworded into something that sounds like the save is in question, the
     // feature has stopped being non-blocking regardless of the code above.
-    expect(src).toMatch(/recorded either way/);
+      // REWORDED 29 Sep 2026 (t032). The old phrase "recorded either way" was
+      // one clause in a longer accusatory sentence. The copy now opens by
+      // saying the same thing in the user's terms - that it is fine if the
+      // dose was offered early - and this still guards the single property
+      // that matters: nothing here may read as the save being in question.
+      // The guard firing is the point; it fired here because the wording
+      // genuinely changed, and the change was checked rather than reverted.
+      expect(src).toMatch(/fine if it was offered to you early|recorded either way/);
+      // And the accusatory framing must not come back.
+      expect(src).not.toMatch(/outside the recommended minimum interval for this vaccine/);
+      // No day count is shown. A second model was right: on a mis-keyed date
+      // "42 days early" is noise, and on a near-miss it manufactures anxiety.
+      expect(src).not.toMatch(/Logged \$\{days\} before/);
   });
 
   it("uses role=status, not an assertive alert", () => {
@@ -182,15 +257,37 @@ describe("the notice is actually rendered, and rendered as an advisory", () => {
     expect(noticeBlock, "no assertive role inside the notice").not.toMatch(/role="alert"/);
   });
 
-  it("makes no clinical verdict while the guidance table is empty", () => {
-    // If someone hardcodes "this is too soon" into the copy, the empty
-    // guidance table stops meaning anything - the app would be asserting a
-    // clinical conclusion it has no source for. The unguarded branch must not
-    // contain a verdict word.
-    const noticeBlock = src.slice(src.indexOf("function EarlyDoseNotice"), src.indexOf("function DoseByDose"));
-    expect(noticeBlock).not.toMatch(/too soon|invalid|ineffective|will not count|unsufficient/i);
+    // The stripper is what makes a NEGATIVE assertion about copy meaningful.
+    // This repo has now hit four times the case where a guard matched the
+    // comment written to document the fix - and this one did it on the very
+    // commit that added the comment explaining the new wording, which is the
+    // worst version of it. A raw substring check over source that is this
+    // heavily commented can only ever pass by accident.
+    const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+
+    it("the comment stripper is non-vacuous, or the negative checks below are hollow", () => {
+      const block = src.slice(src.indexOf("function EarlyDoseNotice"), src.indexOf("function DoseByDose"));
+      expect(block).toContain("getEarlyDoseNotice");
+      expect(block, "the block should contain comments for stripping to matter").toMatch(/\/\//);
+      expect(stripComments(block)).not.toMatch(/\/\//);
+    });
+
+    it("makes no clinical verdict in the copy the user reads", () => {
+      // REWORDED 29 Sep 2026 (t032). This used to be "while the guidance table
+      // is empty" and asserted the same thing: the copy must never assert a
+      // clinical conclusion. The table is now populated, but the property is
+      // unchanged and still the important one - the app can PROVE from the
+      // user's own data that a dose was early, and it cannot prove what that
+      // means. Only the unguarded branch matters: with a sourced entry the
+      // copy may reference the interval, without one it must not judge.
+      const noticeBlock = stripComments(
+        src.slice(src.indexOf("function EarlyDoseNotice"), src.indexOf("function DoseByDose")),
+      );
+      expect(noticeBlock).not.toMatch(/too soon|invalid|ineffective|will not count|unsufficient|wasted/i);
+      // And it must not hand down a verdict the other way either.
+      expect(noticeBlock).not.toMatch(/is fine,? (you|this) (are|are protected)/i);
+    });
   });
-});
 
 describe("a superseded dose is not shown as OVERDUE", () => {
   // Found by reading the real screen in a real browser, not by reading the

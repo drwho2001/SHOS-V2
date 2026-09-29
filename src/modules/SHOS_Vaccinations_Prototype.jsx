@@ -263,19 +263,34 @@ function VaccineField({ value, onChange, options, onAddNew, T }) {
 //    editing a date, and an assertive announcement fires on every keystroke
 //    that crosses the boundary. Polite is correct for a non-urgent observation
 //    the user is already looking at.
-function EarlyDoseNotice({ doses, index, T }) {
-  const notice = getEarlyDoseNotice(doses, index);
-  if (!notice) return null;
+  function EarlyDoseNotice({ doses, index, vaccineName, T }) {
+    const notice = getEarlyDoseNotice(doses, index, vaccineName);
+    if (!notice) return null;
 
-  const days = `${notice.daysEarly} day${notice.daysEarly === 1 ? "" : "s"}`;
-  const body = notice.guidance
-    ? `Logged ${days} before the ${formatDate(notice.expectedOn)} due date on the previous dose. That is outside the recommended minimum interval for this vaccine — worth checking with your clinic.`
-    : `Logged ${days} before the ${formatDate(notice.expectedOn)} due date on the previous dose. The dose is recorded either way — if it was offered to you early, or you had it to hand, that is the right thing to log. If you were expecting to wait, your clinic can confirm whether the interval affects this course.`;
+    // REWORDED 29 Sep 2026 (t032) after a second-model review. The old copy
+    // said "Logged N days before the previous dose's due date. That is outside
+    // the recommended minimum interval" and it was wrong in three ways at once:
+    // the day count is noise on a mis-keyed date and manufactured anxiety on a
+    // near-miss; "outside the recommended interval" is an accusatory verdict;
+    // and it phrased the gap backwards, since a due date belongs to the dose
+    // being given, not the previous one.
+    //
+    // What replaced it is the only question the user can act on, and it does
+    // not claim the dose was wasted or invalid - which is a clinical
+    // determination this app has no business making.
+    let body;
+    if (notice.kind === "below-minimum") {
+      body = notice.guidance
+        ? "This dose was closer to the previous one than the usual gap for this vaccine. Your clinic can tell you whether it still counts."
+        : "This dose was closer to the previous one than expected. Your clinic can confirm whether it still counts.";
+    } else {
+      body = `This dose was logged before the date set for the previous one. That is fine if it was offered to you early or you had it to hand - your clinic can confirm whether the gap affects this course.`;
+    }
 
-  return (
-    <div
-      role="status"
-      style={{ marginTop: 8, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant }}
+    return (
+      <div
+        role="status"
+        style={{ marginTop: 8, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant }}
     >
       <div style={{ fontSize: 12, fontWeight: 700, color: T.textPrimary, marginBottom: 2 }}>Dose logged early</div>
       <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.45 }}>{body}</div>
@@ -284,7 +299,10 @@ function EarlyDoseNotice({ doses, index, T }) {
 }
 
 // Dose-by-dose series editor — manages the doses[] array for a vaccine series
-function DoseByDose({ doses, onChange, T }) {
+// vaccineName is the RECORD's vaccine, passed down because a dose object
+// does not carry it - and getEarlyDoseNotice previously read it off the dose,
+// which meant its sourced lookup could never resolve. See t032.
+function DoseByDose({ doses, onChange, vaccineName, T }) {
   const addDose = () => {
     const nextNumber = (doses?.length || 0) + 1;
     const newDose = {
@@ -368,7 +386,7 @@ function DoseByDose({ doses, onChange, T }) {
             <textarea value={dose.notes ?? ""} onChange={(e) => updateDose(index, "notes", e.target.value)} rows={2} aria-label="Dose notes"
               style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
-          <EarlyDoseNotice doses={doses} index={index} T={T} />
+          <EarlyDoseNotice doses={doses} index={index} vaccineName={vaccineName} T={T} />
         </div>
       ))}
       <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={addDose} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: radius.full, background: T.healthcareBlue, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer", marginTop: 8 }}>
@@ -553,7 +571,7 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
             onAddNew={(v) => { CustomOptionListsRepository.add("vaccine", v).then(setVaccineOptions); }} T={T} />
           <MultiSelectChips label="Reason" value={form.reason} onChange={set("reason")} options={vaccinationReasonOptions} listName="vaccinationReason" T={T} />
           {/* REPLACED legacy doseNumber/date/nextDue with DoseByDose for series tracking */}
-          <DoseByDose doses={form.doses} onChange={set("doses")} T={T} />
+          <DoseByDose doses={form.doses} onChange={set("doses")} vaccineName={form.vaccine} T={T} />
           <TextField label="Provider" value={form.provider} onChange={set("provider")} T={T} placeholder="e.g. Sexual Health Clinic" />
           {/* FIXED 1 Sep 2026 — real ask: "Vaccination log symptoms not
               correct type." MultiSelectChips is a plain string-toggle
