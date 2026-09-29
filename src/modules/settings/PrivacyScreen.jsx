@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft, EyeIcon as Eye, EyeSlashIcon as EyeOff, LockIcon as Lock } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
+import { DISCLOSURE_LEVELS, normaliseDisclosureLevel } from "../../calculations/disclosureLevel";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../../calculations/responsive";
@@ -53,7 +54,23 @@ export function PrivacyScreen({ onClose }) {
     return () => { cancelled = true; };
   }, []);
 
-  const refresh = async () => setSettings(await PrivacySettingsRepository.getSettings());
+  const refresh = async () => {
+    const next = await PrivacySettingsRepository.getSettings();
+    setSettings(next);
+    // Reconcile the optimistic disclosure value from what was actually stored,
+    // so a failed write cannot leave the control showing a level that was never
+    // saved. A control that lies about persisted state is the same failure this
+    // repo keeps cataloguing in other places.
+    setDisclosureLevel(normaliseDisclosureLevel(next?.disclosureLevel));
+  };
+
+// ADDED 29 Sep 2026 — the disclosure level is held separately from `settings`
+// so the control repaints immediately on tap instead of waiting for a storage
+// round-trip. `refresh()` then reconciles it from what was actually persisted,
+// so a failed write cannot leave the UI claiming a level it did not save.
+const [disclosureLevel, setDisclosureLevel] = useState(
+  () => normaliseDisclosureLevel(settings?.disclosureLevel)
+);
 
   const activate = async () => { await PrivacySettingsRepository.activate(); refresh(); };
   const toggleScreenshots = async () => {
@@ -249,6 +266,52 @@ export function PrivacyScreen({ onClose }) {
           <Lock size={18} color={darkMode ? DARK.textSecondary : NEUTRAL.textSecondary} style={{ flexShrink: 0, marginTop: 1 }} />
           <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, lineHeight: 1.5 }}>
             SHOS has no account, no server, and no cloud sync — everything below only ever exists on this device. That's not just a preference you could turn off: there's genuinely nowhere else for it to go. Many comparable apps route usage data through third-party analytics or advertising services; this one structurally can't.
+          </div>
+        </div>
+
+        {/* ADDED 29 Sep 2026 — the owner's own ask: a persistent, user-chosen
+            level of disclosure for everything OUTSIDE the app. Deliberately
+            placed ABOVE Anonymise mode, and labelled so the two cannot be
+            confused, because they answer different questions:
+              - This one: how much may this app show when you are not looking?
+              - Anonymise mode: hide things from someone holding my phone NOW?
+            Anonymise mode is temporary and acts inside the app. This is
+            persistent and acts on the lock screen and the home screen. */}
+        <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>
+            Lock screen &amp; home screen detail
+          </div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
+            How much your notifications and home-screen widgets say without you opening the app. This is separate from Anonymise mode below, which is a temporary way of hiding things from someone holding your phone right now.
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }} role="radiogroup" aria-label="Lock screen and home screen detail">
+            {DISCLOSURE_LEVELS.map((level) => {
+              const active = disclosureLevel === level.id;
+              return (
+                <button
+                  key={level.id}
+                  role="radio"
+                  aria-checked={active}
+                  onClick={async () => {
+                    setDisclosureLevel(level.id);
+                    await PrivacySettingsRepository.update({ disclosureLevel: level.id });
+                    refresh();
+                  }}
+                  style={{
+                    flex: "1 1 90px", padding: "8px 10px", borderRadius: 999,
+                    border: `1px solid ${active ? ACCENTS.home : (darkMode ? DARK.border : NEUTRAL.border)}`,
+                    background: active ? ACCENTS.home : "transparent",
+                    color: active ? "#FFFFFF" : (darkMode ? DARK.textSecondary : NEUTRAL.textSecondary),
+                    fontWeight: 600, fontSize: 12, cursor: "pointer",
+                  }}
+                >
+                  {level.label}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
+            {(DISCLOSURE_LEVELS.find((l) => l.id === disclosureLevel) || DISCLOSURE_LEVELS[0]).blurb}
           </div>
         </div>
 

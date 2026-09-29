@@ -49,9 +49,28 @@ import { getDuressPin, setDuressPinMirror, getGraceMinutesPref, setGraceMinutesP
 const STORAGE_KEY = "shos_privacy_settings";
 
 export const DEFAULT_PRIVACY_SETTINGS = {
-  anonymiseModeActive: false,
-  anonymisePin: "",
-  hideFurtherEnabled: false,
+    anonymiseModeActive: false,
+    anonymisePin: "",
+    hideFurtherEnabled: false,
+    // ADDED 29 Sep 2026 - the owner's own ask, and deliberately NOT a
+    // boolean: "levels of disclosure/sensitivity" on the surfaces OUTSIDE
+    // the app (lock-screen notifications, home-screen widgets).
+    //
+    // THIS IS NOT ANOTHER ANONYMISE MODE. Anonymise mode is a temporary
+    // "someone is making me unlock my phone" state, switched on and off
+    // around one situation, and it masks fields INSIDE the app. This is a
+    // PERSISTENT statement of how much this app is allowed to show when you
+    // are not looking at it, and it governs content the app hands to the OS.
+    // They are different axes and both are needed - the two existing fields
+    // above stay exactly as they are.
+    //
+    // Default is the most restrictive value, which is a decision rather than
+    // a shrug: a lock screen and a home screen are the two places someone
+    // else can see your phone without unlocking it, and encryption at rest
+    // protects neither. Masked-by-default also matches what the widgets were
+    // built to do, so the setting confirms the existing behaviour instead of
+    // quietly changing it on first run.
+    disclosureLevel: "masked",
   // ADDED 19 Aug 2026 — App Lock, real ask: gate opening the app
   // itself behind a PIN, distinct from Anonymise mode (which masks
   // specific fields while the app IS open and handed over — App Lock
