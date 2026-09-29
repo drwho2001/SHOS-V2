@@ -132,6 +132,7 @@ export async function syncTestingReminder() {
     body: "Routine retest suggested around now — 3 months after your last negative test.",
     at: dueDate,
     actionTypeId: TESTING_ACTION_TYPE_ID,
+    kind: "Testing reminder",
     smallIcon: moduleSmallIconName("healthcare"),
     iconColor: ACCENTS.healthcare,
   });
@@ -180,6 +181,7 @@ export async function handleSnoozeTesting() {
     body: "Reminder snoozed",
     at: new Date(Date.now() + 30 * 60000),
     actionTypeId: TESTING_ACTION_TYPE_ID,
+    kind: "Testing reminder",
     smallIcon: moduleSmallIconName("healthcare"),
     iconColor: ACCENTS.healthcare,
   });

@@ -129,6 +129,7 @@ export async function syncVaccinationReminders() {
     body: `${soonest.vaccination.vaccine || soonest.vaccination.title || "Vaccine dose"} — next dose due`,
     at,
     actionTypeId: VACCINATION_ACTION_TYPE_ID,
+    kind: "Vaccination reminder",
     smallIcon: moduleSmallIconName("healthcare"),
     iconColor: ACCENTS.healthcare,
   });
@@ -148,6 +149,7 @@ export async function handleSnoozeVaccination() {
     body: "Reminder snoozed",
     at: new Date(Date.now() + 30 * 60000),
     actionTypeId: VACCINATION_ACTION_TYPE_ID,
+    kind: "Vaccination reminder",
     smallIcon: moduleSmallIconName("healthcare"),
     iconColor: ACCENTS.healthcare,
   });

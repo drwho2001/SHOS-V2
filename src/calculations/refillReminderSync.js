@@ -113,6 +113,7 @@ export async function syncRefillReminder() {
     body: `${names} — running low, time to reorder`,
     at: new Date(Date.now() + 3000),
     actionTypeId: REFILL_ACTION_TYPE_ID,
+    kind: "Refill reminder",
     smallIcon: moduleSmallIconName("medication"),
     iconColor: ACCENTS.medication,
   });
@@ -192,6 +193,7 @@ export async function handleSnoozeRefill(minutes = 30, ids = null) {
     body: names ? `${names} — running low, time to reorder` : "Reminder snoozed",
     at: new Date(Date.now() + minutes * 60000),
     actionTypeId: REFILL_ACTION_TYPE_ID,
+    kind: "Refill reminder",
     smallIcon: moduleSmallIconName("medication"),
     iconColor: ACCENTS.medication,
   });

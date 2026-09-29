@@ -645,6 +645,53 @@ plugin's own compilation are confirmed by CI's APK build and nothing before it
 — the first real risk in this round, since `androidx.security:security-crypto`
 is a new dependency resolving from the network.
 
+## Recently shipped (29 Sep 2026, newest of all yet again — t030 was marked "done" with nothing wired, which is what a self-reported state is worth)
+
+**`t030` was found marked `done` in the work pool with zero references to the
+resolver outside its own file. The work had never been done.** The disclosure
+level shipped in the previous round was visible in Privacy, movable, and did
+nothing at all — the precise state the task was created to prevent, reached
+because someone marked it done in error. Worth stating plainly: **a pool entry
+saying "done" is a self-report with nothing behind it**, so where a state
+matters it is worth verifying rather than reading. Caught by grepping for the
+resolver's callers, not by any tool.
+
+**The wiring went into `scheduleNotification`, not into 14 call sites.** That is
+the design decision. The failure this repo keeps cataloguing is one rule computed
+in several places drifting silently — the Testing banner shipped dead for its
+entire life because one file computed a fingerprint the scheduler had no copy
+of. If each reminder sync file decided for itself, "masked" would acquire a
+slightly different meaning per reminder type and nobody would find out until a
+lock screen leaked something. The callers now only declare **what kind** of
+reminder it is, which is non-clinical by construction, and one function owns how
+much of it is allowed out.
+
+**DoxyPEP is included even though the task did not list it.** It is a real
+reminder carrying real content, so wiring five of six would have left one
+leaking at the masked level — a half-done privacy feature, which is worse than
+none because it looks finished. 14 call sites across 6 files, verified by count
+rather than by eye: each file's `actionTypeId` anchors matched its
+`scheduleNotification` count exactly, so the insertion could not land elsewhere.
+
+**Both delivery paths are asserted, by a source-level guard.** A unit test proves
+the resolver's decisions; it cannot prove the resolver is *reached* — the gap this
+repo has been bitten by twice before, a full Escape feature whose hook worked
+perfectly in tests while a sweep failed to attach it, and a palette scanner
+reporting "no regressions" from a detector that had never fired. The guard
+asserts the resolved value is what gets scheduled, on **both** native and web,
+because disclosing one and not the other means the feature silently does nothing
+on a platform.
+
+**One of my own guards failed for the wrong reason, and I fixed the guard rather
+than loosening it.** The web-path assertion matched `showWebNotification`'s own
+function *declaration*, which legitimately has that parameter list. Anchored with
+a negative lookbehind to exclude the signature.
+
+Verified: `verify:fast` green, **566 tests across 47 files**. All four mutations
+of the wiring guard confirmed red: resolving then scheduling the raw text anyway,
+the web path left undisclosed, a call site losing its `kind`, and the detailed
+level's clinical text deleted rather than masked.
+
 ## Recently shipped (29 Sep 2026, newest of all yet again — t025 rescoped away from "eligibility", and a disclosure level that is not another Anonymise mode)
 
 **The vaccine "eligibility suggestions" idea was rescoped with the owner, and

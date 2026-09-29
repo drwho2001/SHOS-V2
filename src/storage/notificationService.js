@@ -754,8 +754,35 @@ async function showWebNotification({ id, title, body, actionTypeId }) {
 // silently swallowed by quiet hours or a vacation pause — that would
 // make the one tool for verifying notifications work itself
 // unreliable during the exact windows someone might want to check it.
-export async function scheduleNotification({ id, title, body, at, actionTypeId, smallIcon, iconColor, bypassGlobalGates = false }) {
-  let effectiveAt = new Date(at);
+export async function scheduleNotification({ id, title, body, at, actionTypeId, smallIcon, iconColor, bypassGlobalGates = false, kind }) {
+    // ADDED 29 Sep 2026 - the disclosure level is applied HERE, in the one
+    // function every notification goes through, rather than at each of the ~15
+    // call sites that build the text.
+    //
+    // Why here: the failure this repo keeps cataloguing is one rule computed in
+    // several places drifting silently. If each reminder sync file decided for
+    // itself, "masked" would acquire a slightly different meaning per reminder
+    // type, and nobody would find out until a lock screen leaked something.
+    // The callers now only declare WHAT KIND of reminder this is, which is
+    // non-clinical by construction, and this function owns how much of it is
+    // allowed out.
+    //
+    // `kind` is optional and defaults to undefined, which resolveDisclosure
+    // treats as an empty string at the glanceable level - a blank line rather
+    // than the body. That is the safe direction: a caller added later without
+    // thinking about disclosure gets less, not more.
+    const { resolveDisclosure, getDisclosureLevel } = await import("../calculations/disclosureLevel");
+    const disclosed = resolveDisclosure(await getDisclosureLevel(), {
+        title,
+        body,
+        kind,
+        // A masked notification that is completely blank is worse than useless -
+        // the user asked to be reminded, and cannot tell a hidden reminder from
+        // a broken one. So the generic line says something is waiting.
+        maskedTitle: "SHOS",
+        maskedBody: "Open the app to see what's due.",
+    });
+    let effectiveAt = new Date(at);
   if (!bypassGlobalGates) {
     const { NotificationPreferencesRepository, notificationsGloballyEnabled, isWithinQuietHours, quietHoursEndAfter } = await import("../repositories/notificationPreferencesRepository");
     const notifPrefs = await NotificationPreferencesRepository.getPreferences();
@@ -786,7 +813,7 @@ export async function scheduleNotification({ id, title, body, at, actionTypeId, 
       // chase further; this just stops the app from making Doze worse
       // than the OS already allows.
       await withTimeout(plugin.schedule({
-        notifications: [{ id, title, body, schedule: { at: effectiveAt, allowWhileIdle: true }, ...(actionTypeId ? { actionTypeId } : {}), ...(smallIcon ? { smallIcon } : {}), ...(iconColor ? { iconColor } : {}) }],
+        notifications: [{ id, title: disclosed.title, body: disclosed.body, schedule: { at: effectiveAt, allowWhileIdle: true }, ...(actionTypeId ? { actionTypeId } : {}), ...(smallIcon ? { smallIcon } : {}), ...(iconColor ? { iconColor } : {}) }],
       }), 8000, "schedule()");
       return true;
     } catch (err) {
@@ -800,7 +827,7 @@ export async function scheduleNotification({ id, title, body, at, actionTypeId, 
   const delay = Math.max(0, effectiveAt.getTime() - Date.now());
   const timeoutId = setTimeout(() => {
     webTimeouts.delete(id);
-    showWebNotification({ id, title, body, actionTypeId });
+    showWebNotification({ id, title: disclosed.title, body: disclosed.body, actionTypeId });
   }, delay);
   webTimeouts.set(id, timeoutId);
   return true;

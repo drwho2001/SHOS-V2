@@ -139,6 +139,7 @@ export async function syncMedicationReminders() {
       body: `${names} — due now`,
       at: new Date(Date.now() + 3000),
       actionTypeId: MEDICATION_ACTION_TYPE_ID,
+      kind: "Medication reminder",
       smallIcon: moduleSmallIconName("medication"),
       iconColor: ACCENTS.medication,
     });
@@ -154,6 +155,7 @@ export async function syncMedicationReminders() {
       body: `${earliest.med.name} — due at ${new Date(earliest.unlockAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`,
       at: earliest.unlockAt,
       actionTypeId: MEDICATION_ACTION_TYPE_ID,
+      kind: "Medication reminder",
       smallIcon: moduleSmallIconName("medication"),
       iconColor: ACCENTS.medication,
     });
@@ -270,6 +272,7 @@ export async function handleSnooze() {
     body: "Reminder snoozed",
     at: new Date(Date.now() + prefs.snoozeMinutes * 60000),
     actionTypeId: MEDICATION_ACTION_TYPE_ID,
+    kind: "Medication reminder",
       smallIcon: moduleSmallIconName("medication"),
       iconColor: ACCENTS.medication,
   });

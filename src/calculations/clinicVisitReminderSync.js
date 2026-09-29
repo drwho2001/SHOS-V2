@@ -76,6 +76,7 @@ async function syncOneSlot({ visit, enabled, hoursBefore, notificationId, label 
     body: `${visit.title || "Appointment"} — ${label}`,
     at: reminderAt,
     actionTypeId: CLINIC_VISIT_ACTION_TYPE_ID,
+    kind: "Clinic appointment",
     smallIcon: moduleSmallIconName("healthcare"),
     iconColor: ACCENTS.healthcare,
   });
@@ -211,6 +212,7 @@ export async function handleSnoozeClinicVisit() {
     body,
     at,
     actionTypeId: CLINIC_VISIT_ACTION_TYPE_ID,
+    kind: "Clinic appointment",
     smallIcon: moduleSmallIconName("healthcare"),
     iconColor: ACCENTS.healthcare,
   });
@@ -220,6 +222,7 @@ export async function handleSnoozeClinicVisit() {
     body,
     at,
     actionTypeId: CLINIC_VISIT_ACTION_TYPE_ID,
+    kind: "Clinic appointment",
     smallIcon: moduleSmallIconName("healthcare"),
     iconColor: ACCENTS.healthcare,
   });

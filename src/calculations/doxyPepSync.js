@@ -101,6 +101,7 @@ export async function syncDoxyPepAlert() {
     body: "It's been close to 72 hours since your last qualifying activity — take your DoxyPEP dose if you haven't already.",
     at: status.deadline,
     actionTypeId: DOXYPEP_ACTION_TYPE_ID,
+    kind: "DoxyPEP reminder",
     // FIXED 10 Sep 2026 — real audit finding: this used "home"
     // (teal), but Home's own real in-app DoxyPEP banner has always
     // used medsBlue (ACCENTS.medication) — a genuine mismatch between
@@ -165,6 +166,7 @@ export function handleSnoozeDoxy() {
     body: "Reminder snoozed",
     at: new Date(Date.now() + 30 * 60000),
     actionTypeId: DOXYPEP_ACTION_TYPE_ID,
+    kind: "DoxyPEP reminder",
     smallIcon: moduleSmallIconName("medication"),
     iconColor: ACCENTS.medication,
   });
