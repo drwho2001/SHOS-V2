@@ -198,6 +198,26 @@ Hiding a duplicate is a presentation decision; breaking a consumer is not.
 satisfies "hidden when unanchored", so the suite asserts the anchored case still
 renders it.
 
+**And the same window now has a ring on Home**, making the trio the owner asked
+for: Last test, 7-day adherence, This container. `getOverallContainerAdherence`
+in `statsCalculations.js` is a deliberate **sibling** of `getOverallAdherence`
+rather than a parameter on it — the two windows answer different questions, and
+a blended single number is the "wellness score" this file's header refuses to
+invent.
+
+**The subtle part is which medications may contribute.** `computeAdherence()`
+falls back to the 7-day figures when a medication has no logged refill, so
+averaging `sinceRefill.pct` without filtering on `sinceRefillAnchored` would put
+7-day rates into a number labelled "this container" — the same mislabelling the
+card was just fixed for, reproduced one screen over. Seven mutations red, and
+the two that matter are that exact leak and the over-correction that hides the
+ring entirely (which also satisfies "gated on a real measurement").
+
+Verified in a real browser, not just by unit test: **7-day renders 33%, this
+container 35%** — a genuinely different window rather than a second copy of the
+same figure, which is the only reason a third ring earns its place.
+
+
 ### t015 — the sheet that could not be scrolled, and a contrast audit that came back clean
 
 **All 18 text pairs on the acknowledge sheet pass WCAG AA**, measured rather

@@ -153,6 +153,38 @@ export function getOverallAdherence(medications, computeAdherenceFn) {
   return Math.round(rates.reduce((sum, a) => sum + a.sevenDay.pct, 0) / rates.length);
 }
 
+/**
+ * The same average, but over the "this container" window instead of 7 days.
+ *
+ * Deliberately a sibling of getOverallAdherence rather than a parameter on it:
+ * the two windows answer different questions - "am I on top of it this week"
+ * and "am I keeping up across a whole supply" - and a blended single number
+ * would be the kind of "one wellness score" this file's own header refuses to
+ * invent.
+ *
+ * The `sinceRefillAnchored` filter is the important part, and it mirrors the
+ * medication card's own gate. computeAdherence() falls back to the 7-day
+ * figures when a medication has no logged refill, so WITHOUT this filter a
+ * medication nobody has ever refilled would contribute its 7-day rate to a
+ * figure labelled "this container" - which is the same class of bug as
+ * labelling those numbers "this refill" on the card. Nothing to measure a
+ * container from means nothing to show, so it is excluded rather than
+ * substituted.
+ *
+ * @param {Array} medications with their `logs` already attached
+ * @param {Function} computeAdherenceFn passed in, not imported, matching
+ *   getOverallAdherence and keeping the two provably in step
+ * @returns {number|null} null when no medication is anchored
+ */
+export function getOverallContainerAdherence(medications, computeAdherenceFn) {
+  const rates = (medications || [])
+    .filter((m) => m && !m.isArchived && m.usagePattern !== "prn")
+    .map((m) => computeAdherenceFn(m))
+    .filter((a) => a?.sinceRefillAnchored && typeof a.sinceRefill?.pct === "number");
+  if (rates.length === 0) return null;
+  return Math.round(rates.reduce((sum, a) => sum + a.sinceRefill.pct, 0) / rates.length);
+}
+
 // DoxyPEP compliance: of qualifying encounters that started a real
 // countdown, what fraction had a dose logged before the 72h window
 // closed. Reuses the same qualifying-activity definition as

@@ -42,7 +42,7 @@ import { formatRelativeDate } from "../calculations/encounterCalculations";
 // decision-making" boundary (see testingCalculations.js's comment)
 // means each ring stays a plain fact about one thing, not a computed
 // judgment blending several into one number.
-import { getTestingFrequencyStats, getOverallAdherence, BASHH_TESTING_INTERVAL_DAYS } from "../calculations/statsCalculations";
+import { getTestingFrequencyStats, getOverallAdherence, getOverallContainerAdherence, BASHH_TESTING_INTERVAL_DAYS } from "../calculations/statsCalculations";
 import { computeAdherence } from "../calculations/medicationCalculations";
 import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService";
 import { countSampleData, clearSampleData } from "../repositories/clearSampleData";
@@ -194,6 +194,10 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   // not a second separate fetch.
   const [testingStats, setTestingStats] = useState(null);
   const [adherence, setAdherence] = useState(null);
+  // The third ring of the trio: the "this container" window. Null means no
+  // medication has a logged refill, so there is nothing to measure a container
+  // from - and this app shows no empty rings on a fresh install.
+  const [containerAdherence, setContainerAdherence] = useState(null);
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showClinicCard, setShowClinicCard] = useState(false);
   // ADDED 15 Sep 2026 — real report: back-navigation-to-Clinic-Card fix,
@@ -464,6 +468,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       // reused here rather than assumed.
       const medsWithLogs = await Promise.all(meds.map(async (med) => ({ ...med, logs: await LogRepository.getForMedication(med.id) })));
       setAdherence(getOverallAdherence(medsWithLogs, computeAdherence));
+      setContainerAdherence(getOverallContainerAdherence(medsWithLogs, computeAdherence));
       const doseLogs = (await LogRepository.getAll()).filter((l) => l.type === "dose" && !l.voided);
       const sortedLogs = [...doseLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
       const lastLog = sortedLogs[0];
@@ -847,7 +852,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           once there's real data for at least one ring (same "not
           enough data" honesty as everywhere else in this app — no
           empty/zero rings on a fresh install). */}
-      {(testingStats?.testCount > 0 || adherence != null || (menstrualTrackingEnabled && ((cycleDaysSince != null && avgCycleLength != null) || contraSpanDays != null))) && (() => {
+      {(testingStats?.testCount > 0 || adherence != null || containerAdherence != null || (menstrualTrackingEnabled && ((cycleDaysSince != null && avgCycleLength != null) || contraSpanDays != null))) && (() => {
         // ADDED — the 4 ring elements built once, referenced by both
         // the mobile single-card layout and the desktop split-card
         // layout below, so the two can never drift out of sync with
@@ -872,6 +877,22 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         const adherenceRing = adherence != null ? (
           <StatusRing key="adherence" pct={adherence} color={medsBlue} centerText={`${adherence}%`} caption="7-day adherence"
             info="Doses actually logged vs. doses due, across every tracked medication, over the last 7 days."
+            onClick={() => onNavigateToRecord("medication")} />
+        ) : null;
+        // The third of the trio. The owner's ask: 7-day adherence and last test
+        // are both short-horizon, and neither says whether a whole supply is
+        // being kept up with — which is the window that actually runs out.
+        //
+        // Same colour as its 7-day sibling on purpose: this is the same
+        // underlying measure over a longer window, so two different colours
+        // would imply two different meanings. The caption and the info text are
+        // what distinguish them, and that is where the container cap is
+        // explained - the same wording as the medication card, because a number
+        // that is labelled two different ways in two places is the defect this
+        // project keeps finding.
+        const containerRing = containerAdherence != null ? (
+          <StatusRing key="container" pct={containerAdherence} color={medsBlue} centerText={`${containerAdherence}%`} caption="This container"
+            info="Doses logged vs. doses due across the current container — from your last refill, capped at one container's worth."
             onClick={() => onNavigateToRecord("medication")} />
         ) : null;
         const cycleRing = menstrualTrackingEnabled && cycleDaysSince != null && avgCycleLength != null ? (
@@ -915,16 +936,16 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
               // Mobile is untouched below — the exact prior single-card
               // markup, byte-for-byte.
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 16, marginBottom: 24 }}>
-                {(testingRing || adherenceRing) && (
-                  <div style={cardStyle}>{testingRing}{adherenceRing}</div>
-                )}
+      {(testingRing || adherenceRing || containerRing) && (
+        <div style={cardStyle}>{testingRing}{adherenceRing}{containerRing}</div>
+      )}
                 {(cycleRing || contraRing) && (
                   <div style={cardStyle}>{cycleRing}{contraRing}</div>
                 )}
               </div>
             ) : (
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: "16px 8px", marginBottom: 24 }}>
-                {testingRing}{adherenceRing}{cycleRing}{contraRing}
+                {testingRing}{adherenceRing}{containerRing}{cycleRing}{contraRing}
               </div>
             )}
           </>
