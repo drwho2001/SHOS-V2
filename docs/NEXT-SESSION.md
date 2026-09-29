@@ -303,6 +303,75 @@ not bulk-change), and the notification-text renderers. **A blanket
 `timeZone: "UTC"` sweep is the wrong fix** and would break the genuine-instant
 sites, which is why this is per-site and per-value.
 
+### t020 (part 2) — the Stats screen was quietly a month out, and a perfect month read 97%
+
+The triage by **value** rather than by name paid for itself immediately: the
+three month-bucketing functions in `statsCalculations.js` are **not** the same
+bug, and a sweep would have broken the third.
+
+- `getActivitiesPerMonth` buckets `e.date` — a **stored** fake-UTC value.
+  **Bug.** Read through local `getMonth()`, a stored `2026-09-01` (UTC midnight
+  = 20:00 on 31 Aug in New York) landed in the **August** bar.
+- `getClinicVisitsPerMonth` buckets `v.date` — same bug.
+- `getContactsAddedPerMonth` buckets `c.createdAt` — a **real instant**, so the
+  local getters are *correct*. **Left alone deliberately**, and
+  `statsMonthBucketTimezone.test.js` has a counter-test for it, because a test
+  covering only the two broken functions would not catch the regression a
+  blanket sweep introduces.
+
+This is worse than the export bug it was found alongside. A wrong date on one
+exported record is visible to one person. A chart that is quietly one month out
+for **every first-of-the-month record** is read as fact, and the current month's
+bar is the one people actually look at.
+
+**The buckets stay on the LOCAL calendar on purpose** — they are the user's own
+"this month", and stored values are wall-clock, so a user in Sydney logging
+1 Sep means 1 Sep. Moving the buckets to UTC as well would make a 1 Sep record
+fall outside the window and **vanish**, which is the over-correction a test
+explicitly guards.
+
+**The third shape had no `toLocale*` anywhere near it, and was the worst of the
+three.** `getAdherenceTrend` walked days with `setDate`/`setHours(0,0,0,0)` —
+local operations — over stored fake-UTC strings, and divided elapsed
+milliseconds for `totalDays`. Two failures compounded: a stored `2026-08-31` was
+floored to **30 August** local, and the last day of a month could be credited to
+the previous one, changing two adjacent percentages rather than nudging one.
+
+**The measurable symptom: a fully-dosed August read 97% in New York.** The app
+telling someone their perfect month was not perfect — silent, because a number
+that looks like a real adherence change is exactly what a user cannot
+second-guess. This is the recorded DST adherence bug **reintroduced through a
+different door**, which is the argument for per-value triage over a sweep.
+
+The whole chain is now in the **stored** frame: month boundaries, the day walk
+and the dose-day set are all UTC, compared as `YYYY-MM-DD` keys. "Today" is
+still the real now, because a real instant genuinely is the user's local day.
+The bucket *label* also needed `timeZone: "UTC"` — with a UTC month boundary,
+rendering it locally would shift the label itself.
+
+**One mutation "passed" and the honest answer is that it is not a defect.**
+Rewriting the two `Date.parse(...)/86400000` calls as a single elapsed
+milliseconds subtract-and-divide is *behaviourally identical* here, because two
+UTC midnights always differ by an exact multiple of 86400000. It is reported as
+green-as-expected rather than counted as a failure, which is the same
+distinction this project already records for the `daysSince` trap. A second
+mutation, flooring the range endpoints to **local** midnight, is the real DST
+hazard and does go red.
+
+A third mutation removed the "today" truncation and **passed every other
+assertion** — nothing pinned that a half-finished current month is measured over
+the days that have actually happened rather than run to month end. Now pinned:
+with "now" on the 15th, one dose reads 7%, not 3%.
+
+**Still to do on t020** — the remaining ~30 sites, each needing the same
+per-value triage: `MyProfile` `lastTestedDate` (2), `Contacts` encounter date
+(1), `ClinicVisits` attendance preview (1), `MenstrualHealth` next-period
+prediction (1), `optionListUsage` (2), `Home` line 595 (has a comment that needs
+reading before judging), `Medication` 286/295/461/1423/1955 (appear to be
+genuine instants — verify, do not bulk-change), `clinicCardPdfService` (1), and
+the notification-text renderers. **A blanket `timeZone: "UTC"` sweep is the
+wrong fix** and has now been demonstrated wrong twice on this file alone.
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second

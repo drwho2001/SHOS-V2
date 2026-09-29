@@ -19,8 +19,19 @@ export function getActivitiesPerMonth(encounters, monthsBack = 6) {
     buckets.push({ label: d.toLocaleDateString(undefined, { month: "short", year: "2-digit" }), year: d.getFullYear(), month: d.getMonth(), count: 0 });
   }
   encounters.filter((e) => !e.isArchived && e.date).forEach((e) => {
+    // FIXED 29 Sep 2026 (t020) — e.date is a STORED fake-UTC value, so its
+    // calendar month is the UTC one. Read through the local getters it was
+    // filed under the PREVIOUS month west of UTC: a stored "2026-09-01" is UTC
+    // midnight, which is 20:00 on 31 Aug in New York, so every first-of-the-month
+    // encounter silently landed in the wrong bar with nothing visibly wrong.
+    //
+    // The BUCKETS deliberately stay on the local calendar. They are the user's
+    // own "this month", and the stored values are wall-clock, so a user in
+    // Sydney logging 1 Sep means 1 Sep - reading the buckets in UTC would
+    // instead make a 1 Sep record fall outside the window and vanish, which is
+    // the over-correction this test file guards against explicitly.
     const d = new Date(e.date);
-    const bucket = buckets.find((b) => b.year === d.getFullYear() && b.month === d.getMonth());
+    const bucket = buckets.find((b) => b.year === d.getUTCFullYear() && b.month === d.getUTCMonth());
     if (bucket) bucket.count++;
   });
   return buckets;
@@ -234,31 +245,61 @@ export function getDoxyPepComplianceRate(encounters, doxyDoseLogs, isQualifyingE
 export function getAdherenceTrend(medications, monthsBack = 6) {
   const now = new Date();
   const buckets = [];
+  // FIXED 29 Sep 2026 (t020) — the entire day-walk below was local arithmetic
+  // over values that are STORED fake-UTC strings, and the result was a fully
+  // dosed August reading 97% in New York: the app telling someone their perfect
+  // month was not perfect. Silent, because a number that looks like a real
+  // adherence change is exactly what a user cannot second-guess.
+  //
+  // The two failures compounded. `setHours(0,0,0,0)` floored each stored dose
+  // to midnight in the DEVICE's zone, so a stored "2026-08-31" (UTC midnight =
+  // 20:00 on 30 Aug local) was filed under 30 August; and `totalDays` was an
+  // elapsed-milliseconds divide, the exact shape of the DST adherence bug this
+  // project already fixed once in medicationCalculations.js, reintroduced
+  // through a different door.
+  //
+  // So the whole chain now works in the STORED frame: month boundaries, the day
+  // walk, and the dose-day set are all UTC, and days are compared as
+  // YYYY-MM-DD keys rather than as local-midnight epochs. "Today" is still the
+  // real now — a real instant is genuinely the user's local day, and the
+  // current month is truncated at it either way.
+  const dayKey = (d) =>
+    `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
   for (let i = monthsBack - 1; i >= 0; i--) {
-    const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-    const rangeEnd = monthEnd < now ? monthEnd : now;
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    const monthStartKey = dayKey(monthStart);
+    const lastDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i + 1, 0));
+    const lastDayKey = dayKey(lastDay);
+    // The window ends at the earlier of "the end of this month" and "today",
+    // compared as calendar days so the truncation cannot slip a day.
+    const rangeEndKey = lastDayKey < todayKey ? lastDayKey : todayKey;
     let sumPct = 0, countMeds = 0;
+
     medications.filter((m) => !m.isArchived && m.usagePattern !== "prn").forEach((m) => {
-      const start = m.startDate ? new Date(m.startDate) : null;
-      const effectiveStart = start && start > monthStart ? start : monthStart;
-      if (effectiveStart > rangeEnd) return; // medication didn't exist yet this month
-      const totalDays = Math.floor((rangeEnd - effectiveStart) / 86400000) + 1;
+      const startKey = typeof m.startDate === "string" ? m.startDate.slice(0, 10) : "";
+      const effectiveStartKey = startKey > monthStartKey ? startKey : monthStartKey;
+      if (effectiveStartKey > rangeEndKey) return; // medication didn't exist yet this month
+      const totalDays =
+        Math.round(Date.parse(`${rangeEndKey}T00:00:00Z`) / 86400000) -
+        Math.round(Date.parse(`${effectiveStartKey}T00:00:00Z`) / 86400000) + 1;
       if (totalDays <= 0) return;
       const doseDays = new Set(
-        (m.logs || []).filter((l) => l.type === "dose" && !l.voided).map((l) => {
-          const d = new Date(l.date); d.setHours(0, 0, 0, 0); return d.getTime();
-        })
+        (m.logs || [])
+          .filter((l) => l.type === "dose" && !l.voided)
+          .map((l) => (typeof l.date === "string" ? l.date.slice(0, 10) : ""))
+          .filter(Boolean),
       );
       let hit = 0;
       for (let d = 0; d < totalDays; d++) {
-        const day = new Date(effectiveStart); day.setDate(day.getDate() + d); day.setHours(0, 0, 0, 0);
-        if (doseDays.has(day.getTime())) hit++;
+        const key = dayKey(new Date(Date.parse(`${effectiveStartKey}T00:00:00Z`) + d * 86400000));
+        if (doseDays.has(key)) hit++;
       }
       sumPct += (hit / totalDays) * 100;
       countMeds++;
     });
-    buckets.push({ label: monthStart.toLocaleDateString(undefined, { month: "short", year: "2-digit" }), pct: countMeds > 0 ? Math.round(sumPct / countMeds) : null });
+    buckets.push({ label: monthStart.toLocaleDateString(undefined, { month: "short", year: "2-digit", timeZone: "UTC" }), pct: countMeds > 0 ? Math.round(sumPct / countMeds) : null });
   }
   return buckets;
 }
@@ -358,8 +399,12 @@ export function getClinicVisitsPerMonth(visits, monthsBack = 6) {
     buckets.push({ label: d.toLocaleDateString(undefined, { month: "short", year: "2-digit" }), year: d.getFullYear(), month: d.getMonth(), count: 0 });
   }
   visits.filter((v) => !v.isArchived && v.date && !v.isFutureAppointment).forEach((v) => {
+    // FIXED 29 Sep 2026 (t020) — same shape as getActivitiesPerMonth above, and
+    // the same reason: v.date is a STORED fake-UTC value, read through the local
+    // getters it landed in the previous month west of UTC. The buckets stay
+    // local, so a stored date is matched by its own stored calendar month.
     const d = new Date(v.date);
-    const bucket = buckets.find((b) => b.year === d.getFullYear() && b.month === d.getMonth());
+    const bucket = buckets.find((b) => b.year === d.getUTCFullYear() && b.month === d.getUTCMonth());
     if (bucket) bucket.count++;
   });
   return buckets;
@@ -375,6 +420,14 @@ export function getContactsAddedPerMonth(contacts, monthsBack = 6) {
     buckets.push({ label: d.toLocaleDateString(undefined, { month: "short", year: "2-digit" }), year: d.getFullYear(), month: d.getMonth(), count: 0 });
   }
   contacts.filter((c) => c.createdAt).forEach((c) => {
+    // DELIBERATELY LEFT ALONE, and this is the point worth recording.
+    // createdAt is a GENUINE INSTANT, not a stored wall-clock value, so the
+    // device's own month is the correct one and the local getters below are
+    // right. The two functions above needed UTC getters; this one must NOT be
+    // given them, and a blanket sweep across "all the toLocale/getMonth sites"
+    // would have broken it. statsMonthBucketTimezone.test.js has a counter-test
+    // for exactly that, because a test that only covered the broken functions
+    // would not catch the regression the sweep introduces.
     const d = new Date(c.createdAt);
     const bucket = buckets.find((b) => b.year === d.getFullYear() && b.month === d.getMonth());
     if (bucket) bucket.count++;
