@@ -645,7 +645,44 @@ plugin's own compilation are confirmed by CI's APK build and nothing before it
 — the first real risk in this round, since `androidx.security:security-crypto`
 is a new dependency resolving from the network.
 
-## Recently shipped (29 Sep 2026, newer still — the backup-import migration had no test, and the hazard in it is a "helpful" future improvement)
+## Recently shipped (29 Sep 2026, newer still — the smoke failure was a two-second wait, and my own lock fix was one of fifteen call sites)
+
+**The bridge's first CI run went red, and the cause was not the bridge.** The
+smoke suite failed at flow 11 with a 15-second timeout waiting for the Privacy
+row. `openSettingsPrivacyScreen` had **two** fixed waits, both wrong in the same
+direction: an 800ms guess that the app had booted, and a 700ms wait after
+clicking Unlock — which does a real PBKDF2-100k vault re-wrap, measured at
+~1.1s in this suite's own PIN-recovery flow. On a loaded runner the app is still
+on the lock screen, the PIN branch is skipped or the unlock is unfinished, and
+every later step operates on the lock screen. The failure surfaces at the Privacy
+row because that is the first thing that is genuinely absent, not because
+Settings is broken. Both are now bounded waits on the state being relied on.
+**The previous commit was green**, and the only web-reachable change in mine sits
+inside `if (bridge && bridge.updateNextDose)`, which cannot be true on web — so
+the diagnosis is evidence-based rather than assumed, but CI is the confirmation.
+
+**This is the same bug class this file records repeatedly, in a function nobody
+had swept.** ~130 `waitForTimeout` calls remain across the suite. That is not
+swept blindly — a mechanical conversion of 130 sites is exactly the broad
+unverifiable change these notes warn against — so it is pool task `t028` at XL
+effort, to be done per-site with evidence.
+
+**My own lock fix was one of fifteen call sites, and I reported it as fixed.**
+The `process.exit()`-inside-`withPoolLock` bug skips the `finally` that deletes
+`pool.lock`. I found it, fixed it for `pool take`, wrote a commit message saying
+the class was fixed, and left **11 more** identical call sites in the same
+handler. Hit it again within the hour, on `pool edit`. A refusal there locked
+the *other* session out for ten seconds. The whole handler now throws a
+`PoolExit` sentinel and the dispatcher exits after the lock is released;
+verified across six refusal verbs plus a bad id, each exiting 2 and leaving no
+lock behind. The transferable part: a fix scoped to the symptom you happened to
+hit is not a fix to the class, and a commit message claiming otherwise is worse
+than the original bug because it stops the next reader looking.
+
+Verified: `verify:fast` green, 486 tests across 41 files, encoding clean. The
+smoke suite and the flake fix are for CI to confirm.
+
+## Recently shipped (29 Sep 2026, newest of all yet again — the backup-import migration had no test, and the hazard in it is a "helpful" future improvement)
 
 **`backupMigrations.js` is a data-recovery path that has been live since 9 Sep
 with no test of any kind. It now has 12, all mutation-verified — and the first

@@ -695,8 +695,28 @@ function allocate(t, pool) {
 // Found by leaving one behind and seeing the next call time out.
 let POOL_EXIT_CODE = 0;
 
+// A refusal inside the pool must not exit the process directly: withPoolLock's
+// `finally` is what deletes pool.lock, and process.exit() skips `finally`. The
+// first version of this fix corrected exactly ONE call site (pool take) and left
+// ~14 others still leaking the lock, so a refused command locked the OTHER
+// session out for ten seconds. The whole handler now throws this instead, and
+// the dispatcher turns it into an exit code after the lock is released.
+class PoolExit extends Error {
+  constructor(code) {
+    super(`pool exit ${code}`);
+    this.code = code;
+  }
+}
+
+
 commands.pool = async (args) => {
-  const r = withPoolLock(() => poolHandler(args));
+  let r;
+  try {
+    r = withPoolLock(() => poolHandler(args));
+  } catch (e) {
+    if (e instanceof PoolExit) process.exit(e.code);
+    throw e;
+  }
   if (POOL_EXIT_CODE) process.exit(POOL_EXIT_CODE);
   return r;
 };
@@ -708,7 +728,7 @@ function poolHandler(args) {
   if (verb === "add" || verb === "propose") {
     const title = rest.filter((a) => !a.startsWith("--")).join(" ");
     const files = (args.find((a) => a.startsWith("--files=")) || "").replace("--files=", "");
-    if (!title) { console.error(`Usage: pool add "<title>" [--files=a,b]`); process.exit(2); }
+    if (!title) { console.error(`Usage: pool add "<title>" [--files=a,b]`); throw new PoolExit(2); }
     // The id is derived from the HIGHEST existing id, never from the array
     // length. The first version used `pool.tasks.length + 1`, which is only
     // correct when ids are 1..N with no gaps and no deletions. This pool
@@ -771,7 +791,7 @@ function poolHandler(args) {
 
   if (verb === "approve") {
     const t = pool.tasks.find((x) => x.id === rest[0]);
-    if (!t) { console.error(`no such task: ${rest[0]}`); process.exit(2); }
+    if (!t) { console.error(`no such task: ${rest[0]}`); throw new PoolExit(2); }
     t.status = "approved";
     t.history.push({ at: new Date().toISOString(), by: ME, to: "approved" });
     savePool(pool);
@@ -888,7 +908,7 @@ function poolHandler(args) {
 
   if (verb === "done" || verb === "block" || verb === "release") {
     const t = pool.tasks.find((x) => x.id === rest[0]);
-    if (!t) { console.error(`no such task: ${rest[0]}`); process.exit(2); }
+    if (!t) { console.error(`no such task: ${rest[0]}`); throw new PoolExit(2); }
     if (verb === "done") t.status = "done";
     else if (verb === "block") t.status = "blocked";
     else { t.status = "approved"; t.owner = null; }
@@ -900,16 +920,16 @@ function poolHandler(args) {
 
   if (verb === "allocate") {
     const t = pool.tasks.find((x) => x.id === rest[0]);
-    if (!t) { console.error(`no such task: ${rest[0]}`); process.exit(2); }
+    if (!t) { console.error(`no such task: ${rest[0]}`); throw new PoolExit(2); }
     // An owner may allocate a proposed task to themselves, but cannot make a
     // proposal self-approving - that is the whole point of the approval gate.
     if (t.status === "proposed") {
       console.error(`${t.id} is only proposed - the owner must approve it first (pool approve ${t.id})`);
-      process.exit(2);
+      throw new PoolExit(2);
     }
     if (t.owner && t.owner !== ME) {
       console.error(`${t.id} is already allocated to ${t.owner} since ${stamp(t.at)} - not taking it`);
-      process.exit(3);
+      throw new PoolExit(3);
     }
     allocate(t, pool);
     return;
@@ -920,8 +940,8 @@ function poolHandler(args) {
     // Without this a long task would be reaped out from under a session that is
     // still working on it.
     const t = pool.tasks.find((x) => x.id === rest[0]);
-    if (!t) { console.error(`no such task: ${rest[0]}`); process.exit(2); }
-    if (t.status !== "doing") { console.error(`${t.id} is ${t.status}, not doing`); process.exit(2); }
+    if (!t) { console.error(`no such task: ${rest[0]}`); throw new PoolExit(2); }
+    if (t.status !== "doing") { console.error(`${t.id} is ${t.status}, not doing`); throw new PoolExit(2); }
     t.touchedAt = new Date().toISOString();
     t.history.push({ at: t.touchedAt, by: ME, to: "lease extended" });
     savePool(pool);
@@ -964,9 +984,9 @@ function poolHandler(args) {
     // so a task cannot be corrected in place, only replaced. Id and history are
     // deliberately immutable; only the mutable fields are touched.
     const id = rest.find((a) => !a.startsWith("--"));
-    if (!id) { console.error("Usage: pool edit <id> [--title=...] [--files=a,b]"); process.exit(2); }
+    if (!id) { console.error("Usage: pool edit <id> [--title=...] [--files=a,b]"); throw new PoolExit(2); }
     const t = pool.tasks.find((x) => x.id === id);
-    if (!t) { console.error(`no such task: ${id}`); process.exit(2); }
+    if (!t) { console.error(`no such task: ${id}`); throw new PoolExit(2); }
     const changes = [];
     const title = (args.find((a) => a.startsWith("--title=")) || "").slice(8);
     if (title) { t.title = title; changes.push("title"); }
@@ -1055,7 +1075,7 @@ function poolHandler(args) {
   }
 
   console.error("Usage: pool add|propose|approve|take|done|block|release|list ...");
-  process.exit(2);
+  throw new PoolExit(2);
 };
 
 // ── friction counter: the low threshold for a second opinion ───────────────

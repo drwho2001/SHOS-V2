@@ -605,13 +605,43 @@ async function testEncryptionPositiveCheck(page) {
 // needs to land.
 async function openSettingsPrivacyScreen(page, unlockPin) {
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
+  // FIXED 29 Sep 2026 - both waits in this helper were fixed durations, and both
+  // were wrong in the same direction. This flow failed on CI with a 15s timeout
+  // waiting for the Privacy row, which is the signature of a helper that never
+  // actually opened Settings rather than of a Settings bug.
+  //
+  // 1. The 800ms boot guess. If the app has not rendered yet, the lock-screen
+  //    text is absent, so the PIN branch below is skipped entirely and the
+  //    helper goes on to click around a screen nobody is looking at.
+  // 2. The 700ms wait after clicking Unlock. Unlocking does a real
+  //    PBKDF2-100k vault re-wrap; this suite measured ~1.1s for the same
+  //    operation in the PIN-recovery flow, and those five PBKDF2 waits were
+  //    already converted to bounded waits for exactly this reason. This one
+  //    was missed, and leaving it meant a loaded CI runner stayed on the lock
+  //    screen and failed several steps later pointing at entirely the wrong
+  //    cause.
+  //
+  // Both now wait for the state actually being relied on, which is the same
+  // rule the rest of this suite was already fixed to follow.
+  await page.waitForFunction(
+    () =>
+      document.body.innerText.includes("Enter PIN to unlock") ||
+      !!document.querySelector('[role="navigation"][aria-label="Main navigation"]'),
+    undefined,
+    { timeout: 20000 }
+  );
   if (unlockPin) {
     const bodyText = await page.evaluate(() => document.body.innerText);
     if (bodyText.includes("Enter PIN to unlock")) {
       await page.fill('input[type="password"]', unlockPin);
       await page.locator('button:has-text("Unlock")').click({ timeout: 5000 });
-      await page.waitForTimeout(700);
+      // Wait for the lock screen to actually be gone, rather than guessing how
+      // long the vault re-wrap takes.
+      await page.waitForFunction(
+        () => !document.body.innerText.includes("Enter PIN to unlock"),
+        undefined,
+        { timeout: 20000 }
+      );
     }
   }
     await dismissTransientBanners(page);
