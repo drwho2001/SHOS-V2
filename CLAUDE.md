@@ -929,7 +929,7 @@ loading state instead — the same fix Global Search needed for "no matches" bef
 it had searched, and a reminder that a benign-looking default is only benign on
 a screen where the wrong answer is not a medical claim.
 
-Verified: `verify:fast` green, **667 tests across 57 files**. All eight
+Verified: `verify:fast` green, **697 tests across 58 files**. All eight
 mutations of the derivation red, including a non-HIV test being allowed to set
 the status; all six mutations of the new UI guard red, including removing the
 displayed status while leaving the control that sets it. Two of those six
@@ -948,6 +948,28 @@ Node script. This is the trap `CLAUDE.md` itself has now recorded four times,
 and the fifth instance is a reminder that "I know about this" is not the same
 as "this time it didn't happen" — the same reasoning as a mutation that does not
 apply being reported rather than counted.
+
+**The other half of the rescope, and the file that makes "guidance, not
+eligibility" structural rather than a matter of careful wording.**
+`hepBGuidance.js` returns publicly-published advice or nothing, and three rules
+are enforced by tests rather than left to a later reader's judgement: it never
+emits a verdict about the individual (a regex on the rendered copy, applied
+across ten status inputs including garbage from a future backup), **negative,
+untested and no-status all get byte-identical wording** because the difference
+between them is not a fact this app can establish, and it returns `null` once
+hepatitis B is on file, since advising someone about a vaccine they already
+have logged is noise in an app that is explicitly no-alarm. The status it reads
+is the owner's, resolved stated-over-derived through the same call My Profile
+displays, so the guidance cannot disagree with the value the user can see and
+correct.
+
+**A real bug in my own first regex, caught by the test in the same commit.**
+`hep\s*\(?[ab]\)?` matches "Hep**a**titis A" as hepatitis B, because the
+character class lands on the "a" of "atitis" — so someone who had Hepatitis A
+logged would have had the hepatitis B banner suppressed, and the guidance
+withheld on the strength of a letter. Caught by the `does not match` half of a
+loose-matching test rather than by reading the pattern, which is the fourth time
+in this repo that a test's *negative* case has earned its keep.
 
 **The duplicate itself was real, and the earlier note that it was fixed was
 wrong.** Two entries carried the identical heading "the refill's second stage",

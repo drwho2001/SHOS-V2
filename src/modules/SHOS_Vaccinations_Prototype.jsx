@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X } from "@phosphor-icons/react";
 import { VaccinationRepository, DEFAULT_VACCINATION } from "../repositories/vaccinationRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
@@ -15,6 +15,12 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString, formatStoredDate, formatInstantDate } from "../calculations/dateInputHelpers";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { getHepatitisBGuidance, isHepatitisB } from "../calculations/hepBGuidance";
+import { deriveHivStatus, resolveHivStatus } from "../calculations/hivStatusCalculations";
+import { MyProfileRepository } from "../repositories/myProfileRepository";
+import { TestingRepository } from "../repositories/testingRepository";
+import { MeasurementRepository } from "../repositories/measurementRepository";
+import { ResultsRegistry } from "../registries/resultsRegistry";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -738,6 +744,32 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
   // width" — see the list container's own comment below for the fix.
   const isDesktopWidth = useIsDesktopWidth();
   const allSorted = useMemo(() => [...vaccinations].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), [vaccinations]);
+  // ADDED 29 Sep 2026 (t025) - the owner's own records, so the guidance can
+  // distinguish someone whose recorded status is positive from everyone else.
+  const profileTests = useLoadedMemo(() => TestingRepository.getAll(), [], []);
+  const profileMeasurements = useLoadedMemo(() => MeasurementRepository.getAll(), [], []);
+  const resultNameById = useLoadedMemo(
+    () => ResultsRegistry.getAll().then((rs) => new Map(rs.map((r) => [r.id, r.name]))),
+    [],
+    new Map()
+  );
+  // ADDED 29 Sep 2026 (t025) - pure call, so the guidance logic is unit
+  // testable without a render. Null means "nothing useful to add here".
+  // Reads the owner's HIV status from My Profile, stated-over-derived, using
+  // the same resolution My Profile's own screen displays - so the guidance
+  // can never disagree with the value the user can see and correct.
+  const ownerHivStatus = useLoadedMemo(
+    () =>
+      MyProfileRepository.getProfile().then((p) =>
+        resolveHivStatus(p?.hivStatus, deriveHivStatus(profileTests, resultNameById, profileMeasurements))
+      ),
+    [],
+    null
+  );
+  const hepatitisBGuidance = useMemo(
+    () => (ownerHivStatus ? getHepatitisBGuidance({ hivStatus: ownerHivStatus, hasHepB: allSorted.some(isHepatitisB) }) : null),
+    [ownerHivStatus, allSorted]
+  );
   const overdueCount = allSorted.filter((v) => isVaccinationOverdue(v)).length;
   // ADDED 26 Aug 2026 — real ask: search within module, rolled out to
   // every module that didn't already have it. Deliberately kept
@@ -810,6 +842,30 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
           {selectMode ? "Done" : "Select"}
         </span>
       </div>
+      {/* ADDED 29 Sep 2026 (t025) - generalised vaccine guidance. This is
+          deliberately NOT an eligibility banner. Eligibility means inferring
+          facts the app does not hold - and the biggest one, HIV status, is
+          exactly why t025 added it as a recorded fact instead - so an
+          eligibility verdict computed from a partial profile would be the
+          automated clinical risk scoring CLAUDE.md puts permanently out of
+          scope. What this says is the stable, publicly-published advice,
+          with a link out, and it never claims anything about the individual.
+          See hepBGuidance.js. */}
+      {hepatitisBGuidance && (
+        <div role="region" aria-label="Hepatitis B guidance"
+          style={{ margin: "12px 16px 4px", padding: 12, borderRadius: 10, background: T.surfaceVariant, border: `1px solid ${T.border}` }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary, marginBottom: 4 }}>
+            {hepatitisBGuidance.title}
+          </div>
+          <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.45 }}>
+            {hepatitisBGuidance.body}
+          </div>
+          <a href={hepatitisBGuidance.link} target="_blank" rel="noreferrer"
+            style={{ display: "inline-block", marginTop: 8, fontSize: 12, color: T.healthcareBlue, fontWeight: 600 }}>
+            Read the NHS guidance
+          </a>
+        </div>
+      )}
       {/* ADDED 26 Aug 2026 — real ask: bulk action toolbar. */}
       {selectMode && (
         <div style={{ background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
