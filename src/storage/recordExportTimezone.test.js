@@ -66,10 +66,31 @@ describe("record export - a stored date must not move", () => {
     });
     const rendered = DATE_ROW(html, "Date");
     expect(hasDate(html, 2026, "Mar", 14)).toBe(true);
-    // `hour: "numeric"` renders 00:30 as "0:30" in en-GB, so the pattern is the
-    // wall clock's own value rather than a zero-padded guess - asserting "00:30"
-    // would fail on a correct export purely for formatting.
-    expect(rendered).toMatch(/(^|[^\d])(0{1,2}):30\b/);
+    // `hour: "numeric"` renders the wall clock 00:30 as "0:30" on this en-GB
+    // machine and as "12:30 AM" on CI's en-US. THIS FILE HAS ALREADY BEEN
+    // BITTEN BY THAT TWICE — once with an am/pm suffix that matched nothing
+    // locally, and then with `0{1,2}:30` in this very line, which passed here
+    // and failed on CI. LANG/LC_ALL do not affect Node's default locale on
+    // Windows, so it cannot be reproduced locally at all; the only correct
+    // response is an assertion that is right in every locale BY CONSTRUCTION.
+    // So: accept both known renderings of the same wall clock, and no others.
+    expect(rendered, `expected the wall clock 00:30, got ${JSON.stringify(rendered)}`)
+      .toMatch(/(^|[^\d])(0{1,2}|12)[:.]30\b/);
+  });
+
+  it("the clock assertion above is neither too loose nor too tight", () => {
+    // The pattern accepts exactly the renderings of 00:30 that en-GB and en-US
+    // produce, and rejects an invented time. A guard on the guard, because a
+    // pattern that is merely "something with a colon" would pass on the bug it
+    // exists to catch - and one that hardcodes a single locale's spelling fails
+    // on the other runner, which is precisely what happened twice.
+    const ok = (s) => /(^|[^\d])(0{1,2}|12)[:.]30\b/.test(s);
+    expect(ok("14 Mar 2026, 0:30")).toBe(true);    // en-GB
+    expect(ok("Mar 14, 2026, 12:30 AM")).toBe(true); // en-US
+    // The actual bug: a date-only value that gained a time on it.
+    expect(ok("13 Mar 2026, 7:00 pm")).toBe(false);
+    expect(ok("14 Mar 2026, 9:30 pm")).toBe(false);
+    expect(ok("14 Mar 2026")).toBe(false);
   });
 
   it("renders a plain calendar date WITHOUT inventing a time on it", () => {
