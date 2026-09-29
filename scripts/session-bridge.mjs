@@ -49,7 +49,7 @@
 // never be commit-able. The password is never logged, never echoed, and never
 // placed on a command line by this script.
 
-import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, readdirSync, openSync, closeSync, unlinkSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -530,6 +530,71 @@ commands.task = async (args) => {
 // mutual exclusion, and it has it.
 
 const POOL_PATH = join(STATE_DIR, "pool.json");
+const POOL_LOCK = join(STATE_DIR, "pool.lock");
+
+/**
+ * Serialise a read-modify-write of the pool.
+ *
+ * B found a genuine lost-update here on 29 Sep and was right to call it the one
+ * that caused real harm. Every pool verb is a read of the whole file, a change in
+ * memory, then a whole-file write - so two sessions mutating at the same moment
+ * means the second write silently discards the first one's change. No error, no
+ * warning: a task record just disappears. That is worse than an index-lock
+ * collision, which at least announces itself.
+ *
+ * The lock is created with O_EXCL ("wx"), which is atomic: the filesystem
+ * guarantees exactly one creator wins. A plain existsSync-then-write would race
+ * exactly the way the thing it is protecting does, which would be a poor joke in
+ * a file whose whole subject is that failure.
+ *
+ * Stale locks are reclaimed on age, and a process that dies holding one cannot
+ * block the pool permanently. The wait is short because the critical section is
+ * a few milliseconds of file I/O - unlike the verify lock, where it wraps a
+ * multi-minute test run.
+ */
+const POOL_LOCK_STALE_MS = 10_000;
+
+function withPoolLock(fn) {
+  mkdirSync(STATE_DIR, { recursive: true });
+  const deadline = Date.now() + 5000;
+  let fd = null;
+  for (;;) {
+    try {
+      fd = openSync(POOL_LOCK, "wx");
+      break;
+    } catch (e) {
+      if (e.code !== "EEXIST") throw e;
+      // Reclaim if the holder is gone. Not a PID check: same reason as the pool
+      // lease - this is a short-lived CLI, so its process is always gone by now.
+      let stale = false;
+      try {
+        stale = Date.now() - statSync(POOL_LOCK).mtimeMs > POOL_LOCK_STALE_MS;
+      } catch {
+        stale = true;
+      }
+      if (stale) {
+        try { unlinkSync(POOL_LOCK); } catch { /* someone else won the reclaim */ }
+        continue;
+      }
+      if (Date.now() > deadline) {
+        throw new Error("pool is locked by another session and did not release within 5s - try again");
+      }
+      sleepSyncMs(25);
+    }
+  }
+  try {
+    return fn();
+  } finally {
+    try { closeSync(fd); } catch { /* already closed */ }
+    try { unlinkSync(POOL_LOCK); } catch { /* already gone */ }
+  }
+}
+
+function sleepSyncMs(ms) {
+  const sab = new SharedArrayBuffer(4);
+  Atomics.wait(new Int32Array(sab), 0, 0, ms);
+}
+
 
 function loadPool() {
   const p = readJson(POOL_PATH, {});
@@ -623,7 +688,9 @@ function allocate(t, pool) {
   console.log("  recorded now, BEFORE any work, so the other session sees it");
 }
 
-commands.pool = async (args) => {
+commands.pool = async (args) => withPoolLock(() => poolHandler(args));
+
+function poolHandler(args) {
   const [verb, ...rest] = args;
   const pool = loadPool();
 
@@ -719,6 +786,35 @@ commands.pool = async (args) => {
     t.history.push({ at: t.touchedAt, by: ME, to: "lease extended" });
     savePool(pool);
     console.log(`${t.id} lease extended to ${stamp(t.touchedAt)} (${Math.round(POOL_LEASE_MS / 60000)}min)`);
+    return;
+  }
+
+  if (verb === "rm") {
+    // Added 29 Sep after it became clear there was no way to REMOVE a task, and
+    // the only available workaround was deleting pool.json wholesale - which
+    // clobbered the other session's lease and read as data loss. A tool should
+    // never force a destructive action that a narrow one would replace.
+    // Split on commas as well as spaces: `pool rm t001,t002` is the obvious way
+    // to call this, and the first version accepted the argument and matched
+    // nothing, reporting "removed 0" - a command that silently does nothing is
+    // the failure mode this file keeps cataloguing.
+    const ids = rest
+      .filter((a) => !a.startsWith("--"))
+      .flatMap((a) => a.split(","))
+      .map((a) => a.trim())
+      .filter(Boolean);
+    const withOwner = rest.includes("--all-mine");
+    const targets = withOwner ? pool.tasks.filter((t) => t.owner === ME).map((t) => t.id) : ids;
+    if (!targets.length) { console.log("(nothing to remove)"); return; }
+    const known = new Set(pool.tasks.map((t) => t.id));
+    const missing = targets.filter((id) => !known.has(id));
+    if (missing.length) console.log(`  not found (ignored): ${missing.join(", ")}`);
+    const hit = targets.filter((id) => known.has(id));
+    if (!hit.length) { console.log("(nothing to remove)"); return; }
+    for (const id of hit) releaseFiles((pool.tasks.find((t) => t.id === id) || {}).files);
+    pool.tasks = pool.tasks.filter((t) => !hit.includes(t.id));
+    savePool(pool);
+    console.log(`removed ${hit.length} task(s): ${hit.join(", ")}`);
     return;
   }
 
