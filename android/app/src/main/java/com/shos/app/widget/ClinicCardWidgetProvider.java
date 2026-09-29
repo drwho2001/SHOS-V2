@@ -59,14 +59,16 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
     }
 
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = WidgetPrefs.get(context);
         String title = prefs.getString(KEY_APPT_TITLE, "No upcoming appointment");
         String date = prefs.getString(KEY_APPT_DATE, "");
         String location = prefs.getString(KEY_APPT_LOCATION, "");
         String tests = prefs.getString(KEY_APPT_TESTS, "");
         String docType = prefs.getString(KEY_APPT_DOCTYPE, "");
         String clinicNum = prefs.getString(KEY_APPT_CLINIC_NUM, "");
-        String nhsNum = prefs.getString(KEY_APPT_NHS_NUM, "");
+        // The NHS number is never stored, so it is never read either. The
+        // sensitive row renders masked unless revealed, and the revealed branch
+        // hides the NHS line outright - see the branch below.
         boolean revealed = prefs.getBoolean(KEY_APPT_REVEALED, false);
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.clinic_card_widget);
@@ -80,7 +82,12 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
             if (revealed) {
                 views.setTextViewText(R.id.widget_clinic_doctype, docType);
                 views.setTextViewText(R.id.widget_clinic_clinic_num, clinicNum);
-                views.setTextViewText(R.id.widget_clinic_nhs_num, nhsNum);
+                // The NHS number is NEVER stored any more - WidgetBridgePlugin
+                // ignores the field and the provider has no parameter for it.
+                // The row is hidden rather than left blank, because an empty
+                // line next to a revealed doc type reads as a bug rather than a
+                // deliberate omission.
+                views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
                 views.setViewVisibility(R.id.widget_clinic_sensitive_row, android.view.View.VISIBLE);
             } else {
                 views.setTextViewText(R.id.widget_clinic_doctype, "••••• tap to reveal");
@@ -124,9 +131,17 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
+    // The nhsNum PARAMETER AND ITS KEY ARE GONE, not merely left unwritten.
+    // The bridge used to pass a real NHS number here and this method stored it
+    // in SharedPreferences - the one place this app's "encrypted at rest"
+    // promise would have broken. The Clinic Card is one tap away and already
+    // holds the value, so the widget has no reason to keep a copy of a
+    // national identifier. Removing the parameter rather than passing "" makes
+    // it impossible to reintroduce by accident, and
+    // src/storage/widgetPlaintextSink.test.js asserts the write is absent.
     public static void updateClinicCard(Context context, String title, String date, String location,
-                                        String tests, String docType, String clinicNum, String nhsNum) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                                        String tests, String docType, String clinicNum) {
+        SharedPreferences prefs = WidgetPrefs.get(context);
         prefs.edit()
             .putString(KEY_APPT_TITLE, title)
             .putString(KEY_APPT_DATE, date)
@@ -134,7 +149,6 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
             .putString(KEY_APPT_TESTS, tests)
             .putString(KEY_APPT_DOCTYPE, docType)
             .putString(KEY_APPT_CLINIC_NUM, clinicNum)
-            .putString(KEY_APPT_NHS_NUM, nhsNum)
             .putBoolean(KEY_APPT_REVEALED, false)
             .apply();
 

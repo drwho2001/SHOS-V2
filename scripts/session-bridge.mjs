@@ -779,6 +779,50 @@ function poolHandler(args) {
     return;
   }
 
+  if (verb === "pairs") {
+    // Reads as a work-allocation view rather than a reordering. The point is
+    // NOT to make the list tidy - it is that neither session should be stuck on
+    // something large while the other finishes something trivial, and that the
+    // two in a pair must touch unrelated files. Size alone does not give you
+    // that: pairing by size is how two sessions end up in the same feature.
+    const open = pool.tasks.filter((t) => t.status !== "done");
+    const byPair = new Map();
+    for (const t of open) {
+      const key = t.pair || "unpaired";
+      if (!byPair.has(key)) byPair.set(key, []);
+      byPair.get(key).push(t);
+    }
+    // A group of more than two is a CHAIN, not a pair: those tasks share a
+    // feature and must be done one after another by one session, so they are
+    // always ordered last regardless of their size. Ranking a chain by its
+    // largest member is what put the suppression chain above everything else in
+    // the first version of this view - three tasks that cannot be parallelised
+    // were displayed as though they were the biggest thing to do first.
+    const RANK = { S: 0, M: 1, L: 2, XL: 3 };
+    const isChain = (k) => byPair.get(k).length > 2;
+    const rank = (k) => {
+      if (isChain(k)) return 99;
+      const sizes = byPair.get(k).map((t) => t.effort || "?").filter((e) => e in RANK);
+      return sizes.length ? Math.max(...sizes.map((e) => RANK[e])) : 9;
+    };
+    for (const key of [...byPair.keys()].sort((a, b) => rank(a) - rank(b))) {
+      const group = byPair.get(key);
+      const tag = isChain(key) ? "  (CHAIN - one session, in order, NOT parallel work)" : "";
+      console.log(`\n  ${key}   [${group.map((t) => t.effort || "?").join("/")}]${tag}`);
+      for (const t of group) {
+        const who = t.owner ? ` -> ${t.owner}` : "";
+        const n = (t.files || []).length;
+        console.log(
+          `    ${t.id} ${String(t.effort || "?").padEnd(2)} ${t.status.padEnd(8)}${who}  ` +
+            `${n ? n + " file(s)" : "NO FILES CLAIMED"}`
+        );
+        console.log(`         ${t.title.slice(0, 84)}`);
+      }
+      if (group.length === 1) console.log("         (solo - either session may take it)");
+    }
+    return;
+  }
+
   if (verb === "take") {
       // Only approved, unowned, and not colliding with another session's claims.
       const claims = readJson(CLAIM_PATH, {});
@@ -926,6 +970,30 @@ function poolHandler(args) {
     const changes = [];
     const title = (args.find((a) => a.startsWith("--title=")) || "").slice(8);
     if (title) { t.title = title; changes.push("title"); }
+    // effort: S | M | L | XL - rough size, used to pair work so neither session
+    // is stuck on something huge while the other finishes something trivial.
+    const effortArg = args.find((a) => a.startsWith("--effort="));
+    if (effortArg !== undefined) {
+      const v = effortArg.slice("--effort=".length).toUpperCase();
+      if (!["S", "M", "L", "XL"].includes(v)) {
+        console.error(`--effort must be one of S, M, L, XL (got "${v}")`);
+        POOL_EXIT_CODE = 2;
+        return;
+      }
+      t.effort = v;
+      changes.push(`effort=${v}`);
+    }
+    // pair: the other task in this pair must be similar effort and, more
+    // importantly, touch UNRELATED files. Pairing by size alone is how two
+    // sessions end up in the same feature; the file spread is the constraint
+    // that actually prevents a collision.
+    const pairArg = args.find((a) => a.startsWith("--pair="));
+    if (pairArg !== undefined) {
+      const v = pairArg.slice("--pair=".length).trim();
+      if (v === "none" || v === "") delete t.pair;
+      else t.pair = v;
+      changes.push(`pair=${v || "none"}`);
+    }
     // `args.includes("--files=")` is wrong: args holds the full argument
     // ("--files=a,b"), not the bare flag, so it never matches. Use a prefix
     // test. Caught by running it rather than reading it.

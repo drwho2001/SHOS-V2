@@ -23,7 +23,7 @@ public class TestWidgetProvider extends AppWidgetProvider {
     }
 
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = WidgetPrefs.get(context);
         String lastTest = prefs.getString(KEY_LAST_TEST, "No tests logged");
         String retestDue = prefs.getString(KEY_RETEST_DUE, "-");
 
@@ -45,7 +45,7 @@ public class TestWidgetProvider extends AppWidgetProvider {
     }
 
     public static void updateTest(Context context, String lastTest, String retestDue) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = WidgetPrefs.get(context);
         prefs.edit()
             .putString(KEY_LAST_TEST, lastTest)
             .putString(KEY_RETEST_DUE, retestDue)

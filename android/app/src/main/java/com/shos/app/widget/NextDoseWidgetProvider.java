@@ -21,7 +21,7 @@ public class NextDoseWidgetProvider extends AppWidgetProvider {
     }
 
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = WidgetPrefs.get(context);
         String nextDoseTime = prefs.getString(KEY_NEXT_DOSE_TIME, "--:--");
         String medName = prefs.getString(KEY_MED_NAME, "Medication");
 
@@ -33,7 +33,7 @@ public class NextDoseWidgetProvider extends AppWidgetProvider {
     }
 
     public static void updateNextDose(Context context, String medName, String nextDoseTime) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = WidgetPrefs.get(context);
         prefs.edit()
             .putString(KEY_MED_NAME, medName)
             .putString(KEY_NEXT_DOSE_TIME, nextDoseTime)

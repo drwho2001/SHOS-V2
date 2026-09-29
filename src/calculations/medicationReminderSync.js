@@ -184,6 +184,31 @@ async function updateRefillWidget() {
     if (bridge && bridge.updateRefill) {
       await bridge.updateRefill({ count, nextRefill });
     }
+
+    // The next-dose widget had a provider, a layout, a manifest receiver and a
+    // bridge method, and no caller anywhere in src/ - so it has never once
+    // displayed anything. Wired here because this function already runs on
+    // every medication-state recompute.
+    //
+    // Masked by default, which is the owner's explicit decision: the widget
+    // shows WHEN, never the medication name, and the name is one tap away in
+    // the app. A home-screen widget that names your medication is readable by
+    // anyone glancing at your unlocked phone, and encrypting the file at rest
+    // does nothing about that - it protects the file, not the screen. The
+    // persisted disclosure-level control that should ultimately drive this is
+    // separate work and belongs in PrivacyScreen, not here.
+    if (bridge && bridge.updateNextDose) {
+      const state = await getDailyMedsState();
+      const nextUnlock = state.upcoming[0]?.unlockAt;
+      await bridge.updateNextDose({
+        medName: "",
+        nextDoseTime: state.due.length
+          ? "Dose due now"
+          : nextUnlock
+            ? `Next at ${new Date(nextUnlock).toTimeString().slice(0, 5)}`
+            : "",
+      });
+    }
   } catch (e) {
     // Widget bridge not available (web) — ignore
     console.debug("Widget update skipped:", e);

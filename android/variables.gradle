@@ -13,4 +13,12 @@ ext {
     androidxJunitVersion = '1.3.0'
     androidxEspressoCoreVersion = '3.7.0'
     cordovaAndroidVersion = '14.0.1'
+    // Encrypted widget storage. The home-screen widgets used to plan on plain
+    // SharedPreferences, which is an unencrypted XML file on disk - the one
+    // place this app's "everything is encrypted at rest" promise would break.
+    // EncryptedSharedPreferences uses an Android Keystore-backed key, which
+    // matters specifically for widgets: they update from a cold-started
+    // process via AppWidgetProvider.onUpdate, so they cannot use this app's own
+    // Data Key (non-extractable, in-memory only, per cryptoService.js).
+    androidxSecurityCryptoVersion = '1.1.0-alpha06'
 }

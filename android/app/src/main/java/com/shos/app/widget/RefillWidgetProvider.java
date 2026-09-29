@@ -23,7 +23,7 @@ public class RefillWidgetProvider extends AppWidgetProvider {
     }
 
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = WidgetPrefs.get(context);
         int refillCount = prefs.getInt(KEY_REFILL_COUNT, 0);
         String nextRefill = prefs.getString(KEY_NEXT_REFILL, "No refills due");
 
@@ -51,7 +51,7 @@ public class RefillWidgetProvider extends AppWidgetProvider {
     }
 
     public static void updateRefill(Context context, int count, String nextRefillMed) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = WidgetPrefs.get(context);
         prefs.edit()
             .putInt(KEY_REFILL_COUNT, count)
             .putString(KEY_NEXT_REFILL, nextRefillMed)

@@ -24,7 +24,7 @@ public class CycleWidgetProvider extends AppWidgetProvider {
     }
 
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = WidgetPrefs.get(context);
         int cycleDay = prefs.getInt(KEY_CYCLE_DAY, 0);
         String phase = prefs.getString(KEY_CYCLE_PHASE, "No cycle data");
         String nextPeriod = prefs.getString(KEY_NEXT_PERIOD, "—");
@@ -53,7 +53,7 @@ public class CycleWidgetProvider extends AppWidgetProvider {
     }
 
     public static void updateCycle(Context context, int day, String phase, String nextPeriod) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = WidgetPrefs.get(context);
         prefs.edit()
             .putInt(KEY_CYCLE_DAY, day)
             .putString(KEY_CYCLE_PHASE, phase)

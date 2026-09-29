@@ -46,26 +46,69 @@ const CLINIC = readFileSync(path.join(WIDGET_DIR, "ClinicCardWidgetProvider.java
 const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
 describe("the widget NHS-number sink is not reachable", () => {
-  it("no WidgetBridge Capacitor plugin exists on the Java side", () => {
-    const bridgePlugins = ALL_JAVA.filter((f) =>
-      /@CapacitorPlugin\s*\(\s*name\s*=\s*"WidgetBridge"/.test(f.src)
-    );
-    // This is the single point at which the whole path becomes live: with a
-    // registered plugin, bridge.updateClinicCard would resolve and the JS
-    // guard `if (bridge && bridge.updateClinicCard)` would pass.
-    expect(
-      bridgePlugins.map((f) => path.relative(process.cwd(), f.path))
-    ).toEqual([]);
+  // NOTE, 29 Sep 2026: the invariant below CHANGED SHAPE when the bridge was
+  // built. It used to assert "no WidgetBridge plugin exists", which was true,
+  // and was precisely why the sink was unreachable. The plugin now exists -
+  // building it was the point - so that assertion would be false by design and
+  // keeping it would have meant deleting the guard.
+  //
+  // What the guard protects never changed: the NHS number must never reach
+  // widget storage. The route changed from "there is no route" to "there is a
+  // route, and the bridge deliberately refuses to use it", which is the
+  // stronger assertion - it now survives the bridge being written, and would
+  // catch someone 'fixing' the bridge by forwarding the field it is handed.
+  it("the bridge discards the NHS number rather than forwarding it", () => {
+    const plugin = ALL_JAVA.find((f) => f.path.endsWith("WidgetBridgePlugin.java"));
+    expect(plugin, "WidgetBridgePlugin.java should exist - the bridge is built").toBeTruthy();
+    const code = codeOnly(plugin.src);
+    expect(code).toMatch(/updateClinicCard/);
+    // The final argument of the provider call is the nhsNum parameter. It must
+    // be an empty string, never opt(call, "nhsNum") or getString("nhsNum").
+    const at = code.indexOf("ClinicCardWidgetProvider.updateClinicCard");
+    const callSite = code.slice(at, code.indexOf(");", at));
+    expect(callSite).not.toMatch(/nhsNum/i);
   });
 
-  it("no Java code calls the clinic-card sink directly", () => {
-    // Guards against wiring it natively instead of via a plugin, which would
-    // bypass the check above entirely.
-    const callers = ALL_JAVA.filter(
-      (f) => !f.path.endsWith("ClinicCardWidgetProvider.java") &&
-        /ClinicCardWidgetProvider\.updateClinicCard\s*\(/.test(codeOnly(f.src))
+  it("no Java code writes an NHS-number key to widget storage", () => {
+    // Independent of the bridge, and by any route: reading the key is fine,
+    // putting a real value into it is not.
+    const writers = ALL_JAVA.filter((f) =>
+      /\.putString\(\s*KEY_APPT_NHS_NUM\s*,/.test(codeOnly(f.src))
     );
-    expect(callers.map((f) => path.relative(process.cwd(), f.path))).toEqual([]);
+    expect(writers.map((f) => path.relative(process.cwd(), f.path))).toEqual([]);
+  });
+
+  it("widget storage is encrypted, not plain SharedPreferences", () => {
+    // The other half of the promise. EncryptedSharedPreferences uses a
+    // Keystore-backed key - the only kind a widget can read from a cold-started
+    // process, since the app's own vault key is non-extractable and in-memory
+    // only. See WidgetPrefs.java.
+    //
+    // WidgetPrefs itself is excluded: it is the helper, and its one plain call
+    // is the documented last-resort fallback for when the Keystore is
+    // unavailable (which would otherwise crash every widget update). The
+    // separate assertion below still requires the encrypted path to exist, so
+    // excluding the helper cannot make this vacuous.
+    const providers = ALL_JAVA.filter(
+      (f) => f.path.includes(`${path.sep}widget${path.sep}`) && !f.path.endsWith("WidgetPrefs.java")
+    );
+    const plain = providers.filter((f) =>
+      /getSharedPreferences\(\s*PREFS_NAME\s*,\s*Context\.MODE_PRIVATE\s*\)/.test(codeOnly(f.src))
+    );
+    expect(plain.map((f) => path.basename(f.path))).toEqual([]);
+    const helper = ALL_JAVA.find((f) => f.path.endsWith("WidgetPrefs.java"));
+    expect(helper, "WidgetPrefs.java should exist").toBeTruthy();
+    expect(helper.src).toMatch(/EncryptedSharedPreferences\.create/);
+  });
+
+  it("the bridge is registered with Capacitor, or the JS guard can never pass", () => {
+    // The single line whose absence is why this feature did not work at all.
+    // registerPlugin("WidgetBridge") in JS only resolves to a real method if
+    // the class is registered in MainActivity; without it every update method
+    // is undefined and the providers stay exactly as dead as they were.
+    const main = ALL_JAVA.find((f) => f.path.endsWith(`MainActivity.java`));
+    expect(main, "MainActivity.java should exist").toBeTruthy();
+    expect(main.src).toMatch(/registerPlugin\(\s*WidgetBridgePlugin\.class\s*\)/);
   });
 
   it("documents the hazard at the sink itself, so the next reader is warned", () => {

@@ -577,6 +577,74 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+## Recently shipped (29 Sep 2026, newest of all yet again — the widgets have never worked, not once, and one missing line is why)
+
+**Ten home-screen widgets have been registered in the manifest since the day
+they were built. Seven of them have never displayed anything, and the cause is a
+single line that did not exist.** `ScreenSecurityPlugin` was registered in
+`MainActivity.onCreate()`; no `WidgetBridge` plugin was, anywhere. The JS calls
+Capacitor's own `registerPlugin("WidgetBridge")`, which only resolves to a real
+method if the native class is registered there — so `bridge.updateNextDose` was
+`undefined`, the guard `if (bridge && bridge.updateNextDose)` silently did
+nothing, and no provider method was ever invoked. Verified rather than assumed:
+zero Java callers of any `WidgetProvider.update*` method.
+
+**Three of the ten widgets did work throughout, which is why this looked
+installed.** The QuickAdd contact/encounter/medication widgets are pure launch
+Intents and read no data, so they were never affected. Ten minus three is seven
+dead, and one of those seven — `NextDoseWidgetProvider` — had a provider, a
+layout, a receiver and, after this change, a bridge method, and **no caller
+anywhere in `src/`**. It is now wired, masked by default.
+
+**The encryption decision, and why the app's own vault key could not be used.**
+`AppWidgetProvider.onUpdate()` is a BroadcastReceiver that routinely runs with
+the app process dead, and `cryptoService`'s Data Key is deliberately
+non-extractable and held in memory only while the app runs. A cold-started
+widget process therefore cannot reach it, and re-implementing the vault for
+widgets would mean a second key on disk, which is worse rather than better. The
+owner's decision was `EncryptedSharedPreferences` (AndroidX Security Crypto),
+which uses a Keystore-backed key readable from any process on the device. All
+14 plaintext `getSharedPreferences` call sites across the 7 data providers now
+route through one `WidgetPrefs` helper, which also handles the real upgrade
+edge: a device with a leftover plaintext file would make `create()` throw and
+take every widget down on first update, so the plaintext file is deleted once
+and the create retried.
+
+**The NHS number is gone from the widget entirely — parameter, key and all.** It
+used to be forwarded by the JS and stored by the provider. The bridge now
+accepts the field for call-shape compatibility and ignores it, and the provider
+method has no such parameter, so it cannot come back by accident. The Clinic
+Card is one tap away and already holds the value; a home-screen widget has no
+reason to keep a copy of a national identifier.
+
+**Masked by default, which is the owner's separate decision from encryption and
+is not the same problem.** A widget that names your medication is readable by
+anyone glancing at your unlocked phone, and encrypting the file at rest does
+nothing about that — it protects the file, not the screen. The next-dose widget
+therefore shows the *time* and never the medication name. The persisted control
+for this is deliberately **not** in the widget: the owner asked for a
+user-controlled disclosure level, and it belongs in `PrivacyScreen`, extending
+the existing two-tier anonymise model rather than duplicating it (that model is
+a temporary hand-the-phone-over mode; a disclosure level is persistent). Pool
+task `t027`.
+
+**The sink guard's invariant changed shape, and keeping the old one would have
+meant deleting it.** `widgetPlaintextSink.test.js` asserted "no WidgetBridge
+plugin exists", which was true and was the only reason the NHS number was safe.
+Building the bridge made that false by design. The protected property never
+changed — the NHS number must never reach widget storage — so the assertions
+became: the bridge discards the field, no Java code writes the key, storage is
+encrypted, and the bridge is registered in `MainActivity`. That last one now
+guards the exact line whose absence caused the whole problem. All four
+mutations confirmed red, including forwarding the NHS number and unregistering
+the plugin.
+
+Verified: `verify:fast` green, eslint clean, encoding guard clean. **Native code
+cannot be compiled on this machine**, so the new Gradle dependency and the
+plugin's own compilation are confirmed by CI's APK build and nothing before it
+— the first real risk in this round, since `androidx.security:security-crypto`
+is a new dependency resolving from the network.
+
 ## Recently shipped (29 Sep 2026, newer still — the backup-import migration had no test, and the hazard in it is a "helpful" future improvement)
 
 **`backupMigrations.js` is a data-recovery path that has been live since 9 Sep

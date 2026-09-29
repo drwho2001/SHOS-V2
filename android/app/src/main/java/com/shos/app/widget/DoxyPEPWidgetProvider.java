@@ -23,7 +23,7 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
     }
 
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = WidgetPrefs.get(context);
         String status = prefs.getString(KEY_DOXY_STATUS, "No active window");
         long expiry = prefs.getLong(KEY_DOXY_EXPIRY, 0);
 
@@ -60,7 +60,7 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
     }
 
     public static void updateDoxyPEP(Context context, String status, long expiryMs) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = WidgetPrefs.get(context);
         prefs.edit()
             .putString(KEY_DOXY_STATUS, status)
             .putLong(KEY_DOXY_EXPIRY, expiryMs)

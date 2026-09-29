@@ -36,9 +36,20 @@ public class MainActivity extends BridgeActivity {
   // ScreenSecurityPlugin — registered here, before super.onCreate() per
   // Capacitor's own plugin-registration contract, so it's available the
   // moment the WebView can reach it.
+  // WidgetBridgePlugin - registered here for the SAME reason as
+  // ScreenSecurityPlugin above, and this is not optional bookkeeping: the JS
+  // side calls Capacitor's own `registerPlugin("WidgetBridge")`, and that only
+  // resolves to a real method if the native class has been registered in
+  // MainActivity. Without this line `bridge.updateNextDose` is undefined, the
+  // JS guard `if (bridge && bridge.updateNextDose)` silently does nothing, and
+  // the home-screen widgets stay exactly as dead as they have been since they
+  // were built. That is the whole reason this feature did not work: the
+  // provider half, the manifest receiver, the layout and the JS call site all
+  // existed, and the one line that joins them did not.
   @Override
   public void onCreate(Bundle savedInstanceState) {
     registerPlugin(ScreenSecurityPlugin.class);
+    registerPlugin(WidgetBridgePlugin.class);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
     super.onCreate(savedInstanceState);
   }

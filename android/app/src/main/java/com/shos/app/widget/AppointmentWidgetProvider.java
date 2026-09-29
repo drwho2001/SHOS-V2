@@ -23,7 +23,7 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
     }
 
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = WidgetPrefs.get(context);
         int apptCount = prefs.getInt(KEY_APPT_COUNT, 0);
         String nextAppt = prefs.getString(KEY_NEXT_APPT, "No appointments");
 
@@ -51,7 +51,7 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
     }
 
     public static void updateAppointment(Context context, int count, String nextAppt) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = WidgetPrefs.get(context);
         prefs.edit()
             .putInt(KEY_APPT_COUNT, count)
             .putString(KEY_NEXT_APPT, nextAppt)
