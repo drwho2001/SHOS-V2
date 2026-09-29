@@ -818,6 +818,44 @@ function poolHandler(args) {
     return;
   }
 
+  if (verb === "edit") {
+    // Narrow, non-destructive update. Added because the alternative for changing
+    // a task was `rm` then `add`, which changes its id and loses its history -
+    // so a task cannot be corrected in place, only replaced. Id and history are
+    // deliberately immutable; only the mutable fields are touched.
+    const id = rest.find((a) => !a.startsWith("--"));
+    if (!id) { console.error("Usage: pool edit <id> [--title=...] [--files=a,b]"); process.exit(2); }
+    const t = pool.tasks.find((x) => x.id === id);
+    if (!t) { console.error(`no such task: ${id}`); process.exit(2); }
+    const changes = [];
+    const title = (args.find((a) => a.startsWith("--title=")) || "").slice(8);
+    if (title) { t.title = title; changes.push("title"); }
+    // `args.includes("--files=")` is wrong: args holds the full argument
+    // ("--files=a,b"), not the bare flag, so it never matches. Use a prefix
+    // test. Caught by running it rather than reading it.
+    const filesArg = args.find((a) => a.startsWith("--files="));
+    if (filesArg !== undefined) {
+      const files = filesArg
+        .slice("--files=".length)
+        .split(",").map((f) => f.trim()).filter(Boolean);
+      // Files are part of the duplicate-claim guarantee, so changing them has to
+      // move the claim rather than leave the old one behind. Doing it silently
+      // would mean the claim table and the pool disagree about what is held.
+      releaseFiles(t.files);
+      t.files = files;
+      claimFiles(t.files);
+      changes.push(`files (${files.length ? files.join(",") : "none"})`);
+    }
+    if (!changes.length) {
+      console.log("nothing to change. Use --title=... and/or --files=a,b");
+      return;
+    }
+    t.history.push({ at: new Date().toISOString(), by: ME, to: `edited: ${changes.join(", ")}` });
+    savePool(pool);
+    console.log(`edited ${t.id}: ${changes.join(", ")}`);
+    return;
+  }
+
   if (verb === "reap") {
     // A session that dies mid-task must not park it forever. The owner's PID is
     // recorded at allocation, so liveness is checkable rather than a guess.
