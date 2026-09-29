@@ -97,7 +97,7 @@ export async function syncClinicVisitReminders() {
     (await AppPreferencesRepository.getPreferences()).acknowledgedReminders
   );
   if (shouldSuppressDeviceNotification(
-    buildClinicVisitSignature(await getClinicVisitDueState()),
+    buildClinicVisitSignature(await getClinicVisitDueState()), // returns { due, visit }
     acknowledged
   )) {
     await cancelNotification(NOTIFICATION_IDS.clinicVisitReminderA);

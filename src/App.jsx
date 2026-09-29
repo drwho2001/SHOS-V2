@@ -1607,9 +1607,15 @@ export default function App() {
     const kinds = [
       [REMINDER_KIND.MEDS, dueMeds.length, medsSignature, "medication"],
       [REMINDER_KIND.REFILL, refillDue.length, refillSignature, "medication"],
-      [REMINDER_KIND.TESTING, testingDue ? 1 : 0, testingSignature, "healthcare"],
-      [REMINDER_KIND.CLINIC_VISIT, clinicVisitDue ? 1 : 0, clinicVisitSignature, "healthcare"],
-      [REMINDER_KIND.VACCINATION, vaccinationDue ? 1 : 0, vaccinationSignature, "healthcare"],
+    // `? 1 : 0` on the STATE OBJECT counted any vaccination/visit/retest as
+    // due, because the object is truthy even when it reports `due: false` - so
+    // a booster due in six months showed a permanent banner. Counting the
+    // `due` flag instead matches how meds and refill already work, because an
+    // array LENGTH is 0 when nothing is due; these three return an object, so
+    // they have to say so explicitly.
+    [REMINDER_KIND.TESTING, testingDue?.due ? 1 : 0, testingSignature, "healthcare"],
+    [REMINDER_KIND.CLINIC_VISIT, clinicVisitDue?.due ? 1 : 0, clinicVisitSignature, "healthcare"],
+    [REMINDER_KIND.VACCINATION, vaccinationDue?.due ? 1 : 0, vaccinationSignature, "healthcare"],
     ];
     return kinds.filter(([kind, count, signature]) =>
       hasOutstandingAcknowledged({ dueCount: count, signature, kind, acknowledgements: acknowledgedReminders })
@@ -2500,7 +2506,7 @@ export default function App() {
           {/* ADDED — real ask: Testing parity. No one-tap "done" action
               — logging a real test needs a real result form, see
               onTestingLogTest's own comment above. */}
-          {isBannerVisible(suppressState(REMINDER_KIND.TESTING, testingDue ? 1 : 0, testingSignature)) && (
+          {isBannerVisible(suppressState(REMINDER_KIND.TESTING, testingDue?.due ? 1 : 0, testingSignature)) && (
             <div ref={testingBannerCallbackRef} style={{ background: ACCENTS.healthcare, borderTop: "1px solid rgba(255,255,255,.25)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <TestTube size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -2521,7 +2527,7 @@ export default function App() {
           {/* ADDED — real ask: Clinic visit parity. No one-tap "done"
               action — nothing to confirm ahead of the visit itself, see
               onClinicVisitView's own comment above. */}
-          {isBannerVisible(suppressState(REMINDER_KIND.CLINIC_VISIT, clinicVisitDue ? 1 : 0, clinicVisitSignature)) && (
+          {isBannerVisible(suppressState(REMINDER_KIND.CLINIC_VISIT, clinicVisitDue?.due ? 1 : 0, clinicVisitSignature)) && (
             <div ref={clinicVisitBannerCallbackRef} style={{ background: ACCENTS.healthcare, borderTop: "1px solid rgba(255,255,255,.25)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <Hospital size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -2544,7 +2550,7 @@ export default function App() {
               Vaccinations had no in-app due-state banner at all, unlike
               every other real reminder type. No one-tap "done" action
               — see onVaccinationView's own comment above. */}
-          {isBannerVisible(suppressState(REMINDER_KIND.VACCINATION, vaccinationDue ? 1 : 0, vaccinationSignature)) && (
+          {isBannerVisible(suppressState(REMINDER_KIND.VACCINATION, vaccinationDue?.due ? 1 : 0, vaccinationSignature)) && (
             <div ref={vaccinationBannerCallbackRef} style={{ background: ACCENTS.healthcare, borderTop: "1px solid rgba(255,255,255,.25)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 16px" }}>
                 <Syringe size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />

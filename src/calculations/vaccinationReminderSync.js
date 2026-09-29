@@ -99,13 +99,24 @@ export async function syncVaccinationReminders() {
   // looking exactly like "the user acknowledged but we ignored it". The banner
   // is handed `getVaccinationDueState()`'s `{ due, vaccination, dueDate }`;
   // `soonest` is `{ vaccination, nextDue }`, so dueDate is rebuilt from the same
-  // `nextDueAsDate` call the banner uses. Same value, same toISOString(), same
-  // signature.
+  // `nextDueAsDate` call the banner uses, and `due` is the same comparison the
+  // banner's own state would have made.
+  //
+  // `due` is load-bearing, not decoration. buildVaccinationSignature requires
+  // it, because a booster due in six months still has an id and a dueDate and
+  // would otherwise produce a fingerprint - and the banner would show for six
+  // months early. Omitting it here is worse than it looks: suppression would
+  // simply never fire, which reads as "the acknowledgement is being ignored"
+  // rather than as a bug in a signature.
   const acknowledged = normaliseAcknowledgements(
     (await AppPreferencesRepository.getPreferences()).acknowledgedReminders
   );
   if (shouldSuppressDeviceNotification(
-    buildVaccinationSignature({ vaccination: soonest.vaccination, dueDate }),
+    buildVaccinationSignature({
+      due: dueDate <= new Date(),
+      vaccination: soonest.vaccination,
+      dueDate,
+    }),
     acknowledged
   )) {
     await cancelNotification(NOTIFICATION_IDS.vaccinationReminder);

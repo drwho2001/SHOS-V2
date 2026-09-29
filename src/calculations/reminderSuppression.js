@@ -124,8 +124,19 @@ export function buildSimpleSignature(kind, items) {
  * step. A test asserts both call sites still use these, because a guard that
  * only checks the helper is correct would not notice someone re-inlining it.
  *
+ * AND EVERY ONE OF THEM REQUIRES `due`, not merely a record existing. That is
+ * the second half of the same bug, and it is a *false positive* rather than a
+ * false negative, which is the harder direction: a vaccination due in six
+ * months still has an id and a dueDate, so a builder keyed on those alone
+ * returns a non-empty fingerprint, and the banner renders months early. The
+ * caller passes `dueCount: vaccinationDue ? 1 : 0`, and the state object is
+ * truthy even when it says `due: false` - so an empty fingerprint is the only
+ * thing standing between a booked booster and a permanent banner. The two
+ * working kinds (meds, refill) get this right for free by counting an ARRAY
+ * length, which is 0 when nothing is due.
+ *
  * @param {object|null|undefined} dueState as returned by getXDueState()
- * @returns {string} "" when nothing is due, which is never a match
+ * @returns {string} "" when nothing is DUE, which is never a match
  */
 export function buildTestingSignature(dueState) {
   return buildSimpleSignature(
@@ -143,17 +154,26 @@ export function buildTestingSignature(dueState) {
 export function buildVaccinationSignature(dueState) {
   return buildSimpleSignature(
     REMINDER_KIND.VACCINATION,
-    dueState?.vaccination?.id && dueState?.dueDate
+    dueState?.due && dueState?.vaccination?.id && dueState?.dueDate
       ? [{ id: `${dueState.vaccination.id}@${dueState.dueDate.toISOString()}` }]
       : []
   );
 }
 
-/** A booked visit is a single occurrence, so its id alone is a real instance. */
+/**
+ * A booked visit is a single occurrence, so its id alone is a real instance.
+ *
+ * `due` is required here too, and that is the fix for a banner that appeared
+ * for a visit three weeks out with a 24-hour reminder window:
+ * getClinicVisitDueState() returns `{ due: false, visit }` for exactly that
+ * case - a real visit, outside its own reminder window. An earlier version keyed
+ * on `visit` alone, so the banner said "upcoming clinic appointment" weeks
+ * before the appointment was due to be thought about.
+ */
 export function buildClinicVisitSignature(dueState) {
   return buildSimpleSignature(
     REMINDER_KIND.CLINIC_VISIT,
-    dueState?.visit ? [dueState.visit] : []
+    dueState?.due && dueState?.visit ? [dueState.visit] : []
   );
 }
 

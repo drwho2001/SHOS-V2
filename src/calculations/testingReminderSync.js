@@ -115,7 +115,7 @@ export async function syncTestingReminder() {
     (await AppPreferencesRepository.getPreferences()).acknowledgedReminders
   );
   if (shouldSuppressDeviceNotification(
-    buildTestingSignature(await getTestingDueState()),
+    buildTestingSignature(await getTestingDueState()), // returns { due, dueDate }
     acknowledged
   )) {
     await cancelNotification(NOTIFICATION_IDS.testingReminder);
