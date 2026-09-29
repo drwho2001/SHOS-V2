@@ -202,6 +202,38 @@ fresh boot with `reminderSuppressionEnabled is not defined`, which blocks any
 local browser verification. Nothing of theirs was touched; the worktree is what
 CI would actually build, since their work was uncommitted.
 
+### The suite was under-reporting itself, and a structural guard now says so
+
+The 22nd flow shipped green and CI's summary still read **"21 flows"** — because
+it had no `console.log("\n[NN/NN] …")` header, and `verify-changes.mjs` derives
+the reported count by counting output lines matching `/^\[\d+\/\d+\]/`. All 14 of
+its assertions ran; the number was simply wrong.
+
+**The guard built to prevent that immediately found a pre-existing one.**
+`smokeSuiteSelfCheck.test.js` compares registered `run(...)` calls against
+declared titles, and found 23 registrations against 22 titles. The odd one out
+was `run("escape")` — the Escape-closes-an-overlay flow, which has had **no
+title since it shipped**. So the suite has been running 23 flows while reporting
+21–22, and deleting the Escape flow outright would not have moved the number
+either. That is the project's most repeated failure mode — a gate that measures
+nothing and looks like it measured something — and here it was hiding coverage
+the suite was actually providing.
+
+Four more structural checks came with it: titles contiguous from 1 with no gaps
+or duplicates, the declared total matching the flow count, and `SMOKE_ONLY`
+still refusing to report success when its filter matches nothing. 4 mutations
+red, each reintroducing the exact defect: a flow losing its title, a flow
+deleted from the run list while its title stayed, a duplicated number, and
+`SMOKE_ONLY` allowed to match nothing.
+
+**And the mutation harness hit this file's own recorded CRLF trap while being
+written to test it.** Three of four patterns were written with `\n` against a
+CRLF file, so they silently did not apply. The harness now reads the line ending
+off the file first, and reports a pattern it failed to apply as
+"PATTERN NOT FOUND — tests nothing, NOT a pass" rather than counting it. The
+distinction is the whole point: a mutation that did not apply and a test that
+did not go red are different failures, and only the second says anything.
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second
