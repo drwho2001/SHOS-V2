@@ -2461,9 +2461,27 @@ async function testVaccineDoseSeriesFlow(browser) {
   const noticeBox = page.locator('div[role="status"]', { hasText: "Dose logged early" }).first();
   assert((await noticeBox.count()) > 0,
     "the early-dose notice renders for a dose logged before the stated due date");
-  const body = (await noticeBox.textContent()) || "";
-  assert(/recorded either way/i.test(body),
-    `the notice states the dose is recorded either way. Got: ${JSON.stringify(body.slice(0, 160))}`);
+    // CHANGED 29 Sep 2026 (t032). The copy was reworded, and it was reworded
+    // on purpose: "Logged N days before the previous dose's due date. That is
+    // outside the recommended interval" is an accusatory verdict about a dose
+    // the user actually received, and a second model was right that the day
+    // count adds noise and anxiety for no gain.
+    //
+    // This assertion therefore now checks the PROPERTY rather than the
+    // wording: the notice must point the user at their clinic and must not
+    // tell them the dose was wasted. That holds on both branches - the one
+    // that fires on the user's own due date, and the one that fires on the
+    // sourced published minimum, which is the branch this fixture now takes
+    // since the notice no longer depends on a typed due date being correct.
+    const body = (await noticeBox.textContent()) || "";
+    assert(/your clinic can (tell you|confirm)/i.test(body),
+      `the notice points at the clinic rather than judging the dose. Got: ${JSON.stringify(body.slice(0, 160))}`);
+    assert(!/wasted|will not count|too soon|invalid/i.test(body),
+      `the notice must not tell the user the dose did not count. Got: ${JSON.stringify(body.slice(0, 160))}`);
+    // No day count: on a mis-keyed date it is noise, on a near-miss it
+    // manufactures disproportionate anxiety.
+    assert(!/\d+\s+days?\s+early/i.test(body),
+      `the notice must not print a day count. Got: ${JSON.stringify(body.slice(0, 160))}`);
   console.log("  ok - the notice appears and does not read as a block");
 
   // The load-bearing half. The editor's own gate is canSave, so the honest
