@@ -2180,10 +2180,33 @@ async function testSampleDataClearInDeveloperTools(browser) {
       const b = page.getByRole("button", { name: label, exact: true });
       if (await b.count()) { await b.first().click({ timeout: 2500 }).catch(() => {}); await page.waitForTimeout(400); }
     }
-    await page.waitForTimeout(1500);
+    // CHANGED 29 Sep 2026 - this was a fixed 1500ms wait, and it is the
+    // reason this flow went red on CI while passing in isolation. The
+    // assertion below reads the Contacts list, whose repositories are ASYNC
+    // (every module went async in the encryption groundwork), so a
+    // machine-speed guess is the wrong thing to depend on: on a loaded runner
+    // the list had not rendered yet and the flow reported a data-loss
+    // regression that did not exist.
+    //
+    // Confirmed rather than assumed: the same commit passed this flow in
+    // isolation locally, and CI runs all 23 flows sequentially on a slower
+    // machine. A test must never depend on how fast the machine is - which is
+    // the same rule the two App Lock assertions and the PIN-recovery waits
+    // were fixed under, and the reason t028 exists for the ~130 fixed waits
+    // still remaining. Fixed per-site with evidence, not swept.
+    //
+    // A NEGATIVE assertion ("the banner is gone") is only meaningful once
+    // something positive has proved the app actually booted, so that is what
+    // is waited for - the nav bar - rather than guessing at a duration.
+    await page.waitForSelector('[role="navigation"][aria-label="Main navigation"]', { timeout: 20000 });
     assert(!(await page.evaluate(() => document.body.innerText)).includes("This app starts with sample data"),
       "the sample data is still gone after a reload — the clear genuinely persisted");
     await nav(page, "Contacts");
+    // Bounded wait on the state actually being asserted: the real contact
+    // being present in the list. Returns the moment it appears.
+    await page
+      .waitForFunction((n) => document.body.innerText.includes(n), "ZZZ DevTools Real Contact", { timeout: 20000 })
+      .catch(() => {});
     const contacts = await page.evaluate(() => document.body.innerText);
     assert(contacts.includes("ZZZ DevTools Real Contact"),
       "the user's own contact survived clearing from Developer Tools too");

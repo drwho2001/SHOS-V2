@@ -367,6 +367,20 @@ machine.** Two App Lock assertions were guessing at timing with a fixed
 bounded `waitForFunction` on the state actually asserted. **A test must never
 depend on how fast the machine is.**
 
+**The fifth instance, and the first one where a green local run was the
+evidence rather than a distraction.** The `sample-data-devtools` flow asserted
+that a user's own contact survived clearing sample data, after a full
+`page.goto` and a fixed `waitForTimeout(1500)`. It passed in isolation
+locally and went red in CI — reporting a data-loss regression that did not
+exist, on the most alarming assertion in the suite. The Contacts list is
+async (every module went async in the encryption groundwork), so a
+machine-speed guess is simply the wrong thing to depend on. It is now a
+bounded wait on the state asserted, and because "the banner is gone" is a
+*negative* assertion, it first waits for a *positive* anchor (the nav bar) —
+otherwise it would pass trivially against a blank page. This is pool task
+`t028` for the ~130 fixed waits still remaining, done per-site with evidence
+rather than swept.
+
 Related: killed smoke runs used to leave **orphaned `chrome-headless-shell`
 processes** (~190 MB) and `vite preview` servers behind — four of the former were
 found on this machine starving the next run. `verify-changes.mjs` now cleans up
