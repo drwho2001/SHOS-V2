@@ -155,18 +155,65 @@ banner, the overdue counts, the list rows, the Clinic Card, the PDF export and
 Stats all read these functions. Cancelling the notification in the sync file
 would have left all of the others still wrong while looking like a fix.
 
-The rule is deliberately **"at or before a dose was given"**, not "the last
-dose's nextDue wins". The second is simpler and would pass every fulfilled-case
-test while silently discarding a real outstanding date. A dose given **early**
-does not satisfy a later date — giving dose 2 in October when dose 1 said
-"December" leaves December outstanding, because the app genuinely does not know
-when dose 3 is expected.
+The rule is **series position relative to the last dose actually given** — a
+`nextDue` is superseded by a later dose in the series *having been given*, and
+the only live dates are that last given dose's own `nextDue` plus anything after
+it. Earliest of those wins.
 
-5 mutations red, including the two that a too-clever fix would fall into:
-"only the last dose's nextDue" (discards real obligations), and treating a dose
-with no `date` yet as given (pre-adding a dose row would cancel the current
-reminder). The seeded Twinrix booster is asserted to **stay** overdue, so a
-future "tidy" cannot quietly silence a real reminder.
+**This rule took two wrong attempts to arrive at, and both are worth reading
+because the reasoning in each looked sound.** The first dropped a `nextDue` only
+when some dose was given *on or after* it, reasoning that an early dose "cannot
+have satisfied a later due date, because the app does not know when dose 3 is
+expected". True, and irrelevant: the question is not whether the LATER date is
+satisfied but whether the EARLIER dose still needs doing. The owner's second
+report killed it — the second dose was logged **two days before** the first
+dose's due date and the reminder still fired, because taking a dose early is
+ordinary rather than an edge case.
+
+The over-correction to "only the last dose's `nextDue`" was also wrong, and a
+**long-standing test in `vaccinationCalculations.test.js` caught it, not me**: a
+user who has entered the whole schedule up front and has not had dose 1 yet is
+not overdue-free, they are at the start. Both failures were date *comparisons*;
+the fix is series *position*. 6 mutations red, covering the original bug, the
+first wrong fix, the over-correction, dropped series ordering, the legacy
+fulfilment guard, and latest-instead-of-earliest.
+
+**A real browser then found what no unit test could**: the reminder stopped
+correctly while the detail view still rendered `(OVERDUE)` in red on the very
+record whose reminder had just stopped — the same wrong reasoning one level
+down, comparing `dose.nextDue` to today instead of asking whether the series had
+moved on. `isDoseDateSuperseded()` is a separate function from
+`getDoseNextDueDates` on purpose: "is any of this outstanding" and "is THIS line
+still live" are different questions, and deriving the second from the first is
+how the red text was wrong in the first place. A superseded date now reads
+`(done)` in neutral type.
+
+### The early-dose notice — an advisory, and the guidance table stays empty
+
+The owner also asked to be **told** when a dose was logged early, "if outside
+BASHH or other clinical recommendations", without blocking the save.
+`getEarlyDoseNotice()` reports the arithmetic fact the app can prove from the
+user's **own** data and says nothing about whether it is medically wrong.
+
+**`VACCINE_INTERVAL_GUIDANCE` ships deliberately empty, and a test fails the
+day anyone fills it in.** Honouring "outside BASHH" literally means writing down
+minimum intervals for Hep A, Hep B and 4CMenB from memory, and this project has
+already had to throw out two clinical constants that looked deliberate and turned
+out to have no source at all. A wrong interval is not a wrong number on a
+screen — it is someone concluding a dose they actually received was
+insufficient. The table is frozen, so a module cannot quietly push an unsourced
+interval in at runtime and leave the empty-table test green.
+
+The notice **never blocks**: the editor's own `canSave` gate is untouched, the
+copy says the dose is recorded either way, and a test asserts that sentence is
+present so a reword can never quietly turn it into a veto. It compares against
+the dose **immediately** before, since a course is a sequence and comparing dose
+3 against dose 1 would flag every well-formed course as early.
+
+Verified in a real browser, 10 checks: the notice renders and states how early;
+**Save is still enabled while it is showing**; the save completes and the editor
+closes; and after saving, the record carries no `(OVERDUE)` claim and an empty
+"Next due" summary.
 
 ### t022 — the pill that said "this refill" and meant "this container"
 

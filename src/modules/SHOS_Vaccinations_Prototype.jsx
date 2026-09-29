@@ -23,7 +23,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
-import { getVaccinationNextDue, isVaccinationOverdue } from "../calculations/vaccinationCalculations";
+import { getVaccinationNextDue, isVaccinationOverdue, getEarlyDoseNotice, isDoseDateSuperseded } from "../calculations/vaccinationCalculations";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // ADDED 19 Aug 2026 — Vaccinations, real live Notion schema. Same
@@ -224,6 +224,59 @@ function VaccineField({ value, onChange, options, onAddNew, T }) {
   );
 }
 
+// ADDED 29 Sep 2026 — a non-blocking note when a dose is logged BEFORE the
+// previous dose's own stated due date.
+//
+// The owner's report was that a second dose logged two days early did not
+// cancel the reminder; that half is fixed in vaccinationCalculations.js. This
+// is the other half, and it exists because that fix is SILENT — a silent fix
+// reads as "the app always had this right", which leaves a user who took a
+// dose early with no idea it was worth noticing.
+//
+// Three things are deliberate and each is a decision, not an implementation
+// detail:
+//
+// 1. IT NEVER BLOCKS. There is no way to dismiss past it, no validation that
+//    rejects the save, and nothing that prevents the dose being recorded. A
+//    person who genuinely had a dose early — offered one, travelling, or simply
+//    had it to hand — is recording a fact, not making a mistake. The worst
+//    possible outcome of this feature would be someone who actually received a
+//    dose being unable to log it. It renders as a plain informational line, the
+//    same shape as doseTimingAdvisory() on the medication side.
+//
+// 2. IT SAYS WHAT IT KNOWS AND STOPS THERE. The app can prove, from the user's
+//    own data, that this dose was early. It cannot prove whether that is
+//    medically wrong, because VACCINE_INTERVAL_GUIDANCE is deliberately empty —
+//    see the note there on why no minimum interval is written down without a
+//    source. So the copy states the fact and points at the clinic, and gains a
+//    "outside the recommended interval" sentence only if a sourced entry ever
+//    exists. It is neutral rather than amber/red for the same reason: an alert
+//    colour on an unverified observation is itself a clinical claim.
+//
+// 3. role="status" rather than role="alert". This appears WHILE someone is
+//    editing a date, and an assertive announcement fires on every keystroke
+//    that crosses the boundary. Polite is correct for a non-urgent observation
+//    the user is already looking at.
+function EarlyDoseNotice({ doses, index, T }) {
+  const notice = getEarlyDoseNotice(doses, index);
+  if (!notice) return null;
+
+  const days = `${notice.daysEarly} day${notice.daysEarly === 1 ? "" : "s"}`;
+  const body = notice.guidance
+    ? `Logged ${days} before the ${formatDate(notice.expectedOn)} due date on the previous dose. That is outside the recommended minimum interval for this vaccine — worth checking with your clinic.`
+    : `Logged ${days} before the ${formatDate(notice.expectedOn)} due date on the previous dose. The dose is recorded either way — if it was offered to you early, or you had it to hand, that is the right thing to log. If you were expecting to wait, your clinic can confirm whether the interval affects this course.`;
+
+  return (
+    <div
+      role="status"
+      style={{ marginTop: 8, padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant }}
+    >
+      <div style={{ fontSize: 12, fontWeight: 700, color: T.textPrimary, marginBottom: 2 }}>Dose logged early</div>
+      <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.45 }}>{body}</div>
+    </div>
+  );
+}
+
 // Dose-by-dose series editor — manages the doses[] array for a vaccine series
 function DoseByDose({ doses, onChange, T }) {
   const addDose = () => {
@@ -309,6 +362,7 @@ function DoseByDose({ doses, onChange, T }) {
             <textarea value={dose.notes ?? ""} onChange={(e) => updateDose(index, "notes", e.target.value)} rows={2} aria-label="Dose notes"
               style={{ width: "100%", padding: "8px 10px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box", resize: "vertical" }} />
           </div>
+          <EarlyDoseNotice doses={doses} index={index} T={T} />
         </div>
       ))}
       <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={addDose} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: radius.full, background: T.healthcareBlue, color: "#FFFFFF", fontSize: 13, fontWeight: 700, cursor: "pointer", marginTop: 8 }}>
@@ -620,11 +674,22 @@ function VaccinationDetail({ vaccinationId, onBack, onEdit, T, triggerDelete, re
                 </div>
                 {dose.provider && <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 2 }}>Provider: {dose.provider}</div>}
                 {dose.injectionSite && <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 2 }}>Injection site: {dose.injectionSite}</div>}
-                {dose.nextDue && (
-                  <div style={{ fontSize: 12, color: dose.nextDue < new Date().toISOString().slice(0, 10) ? T.actionRed : T.textSecondary, fontWeight: dose.nextDue < new Date().toISOString().slice(0, 10) ? 700 : 400, marginBottom: 2 }}>
-                    Next due: {formatDate(dose.nextDue)} {dose.nextDue < new Date().toISOString().slice(0, 10) ? "(OVERDUE)" : ""}
-                  </div>
-                )}
+                {dose.nextDue && (() => {
+                  // The same reasoning error as the reminder bug, one level down.
+                  // This compared dose.nextDue to today directly, so a date the
+                  // user had already dealt with - by having the next dose,
+                  // however early - still rendered "(OVERDUE)" in red. The
+                  // reminder had stopped, and the record was still shouting.
+                  const superseded = isDoseDateSuperseded(v.doses, index);
+                  const past = dose.nextDue < new Date().toISOString().slice(0, 10);
+                  const flag = superseded ? "(done)" : past ? "(OVERDUE)" : "";
+                  const alert = !superseded && past;
+                  return (
+                    <div style={{ fontSize: 12, color: alert ? T.actionRed : T.textSecondary, fontWeight: alert ? 700 : 400, marginBottom: 2 }}>
+                      Next due: {formatDate(dose.nextDue)} {flag}
+                    </div>
+                  );
+                })()}
                 {dose.notes && <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 4 }}>{dose.notes}</div>}
               </div>
             ))}

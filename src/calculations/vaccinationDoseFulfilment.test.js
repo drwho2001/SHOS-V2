@@ -61,9 +61,19 @@ describe("a dose given after an earlier due date satisfies it", () => {
     expect(getVaccinationNextDue(onTheDay)).toBeNull();
   });
 
-  it("a three-dose course resolves to the LAST outstanding date", () => {
-    // The realistic Hepatitis A/B shape: dose 1 due, dose 2 given, dose 3 still
-    // to come. Only dose 2's nextDue is live.
+  it("a later dose with its own nextDue supplies the outstanding date instead", () => {
+    // The course is not finished - it has genuinely moved on, and the new date
+    // is the one that should nag.
+    const onCourse = {
+      doses: [
+        { doseNumber: 1, date: "2026-03-01T10:00:00.000Z", nextDue: "2026-04-01" },
+        { doseNumber: 2, date: "2026-05-01T10:00:00.000Z", nextDue: "2026-10-15" },
+      ],
+    };
+    expect(getVaccinationNextDue(onCourse)).toBe("2026-10-15");
+  });
+
+  it("a three-dose course resolves to the LAST dose's date", () => {
     const course = {
       doses: [
         { doseNumber: 1, date: "2026-03-01T10:00:00.000Z", nextDue: "2026-04-01" },
@@ -71,25 +81,47 @@ describe("a dose given after an earlier due date satisfies it", () => {
         { doseNumber: 3, date: "2026-11-01T10:00:00.000Z" },
       ],
     };
-    // dose 1's 2026-04-01 is satisfied by the May dose. dose 2's 2026-10-15 is
-    // satisfied by the November dose. Nothing outstanding - course complete.
+    // Course complete: the last dose has no nextDue, so nothing is outstanding.
     expect(getDoseNextDueDates(course)).toEqual([]);
+  });
 
-    // But if the third dose has NOT been given, dose 2's date stands.
-    const inProgress = {
+  it("a course with NO dose given at all still has its earliest date outstanding", () => {
+    // THE case that killed the over-correction, and it is a long-standing test
+    // in vaccinationCalculations.test.js that caught it rather than me.
+    //
+    // The first attempt at this fix took only the LAST dose's nextDue, which
+    // looks obviously right and silently breaks this: a user who has entered the
+    // whole schedule up front and has not had dose 1 yet is not overdue-free,
+    // they are just at the start. The earliest date is genuinely still live.
+    //
+    // So the rule is position relative to the last dose ACTUALLY GIVEN, not
+    // "the last row" — and both earlier attempts got that wrong in opposite
+    // directions, one leaving a stale nag and one silencing a course nobody had
+    // started.
+    const planned = { doses: [{ nextDue: "2026-01-01" }, { nextDue: "2028-01-01" }] };
+    expect(getVaccinationNextDue(planned)).toBe("2026-01-01");
+    expect(isVaccinationOverdue(planned, "2026-09-26")).toBe(true);
+  });
+
+  it("a partly-started course takes the earliest of the last given dose and what follows", () => {
+    // Dose 1 given, its own follow-up due in August, dose 2 already planned for
+    // November. August is the next real thing, and taking the earliest keeps
+    // that stable rather than jumping ahead to the planned row.
+    const mid = {
       doses: [
-        { doseNumber: 1, date: "2026-03-01T10:00:00.000Z", nextDue: "2026-04-01" },
-        { doseNumber: 2, date: "2026-05-01T10:00:00.000Z", nextDue: "2026-10-15" },
+        { doseNumber: 1, date: "2026-07-01T10:00:00.000Z", nextDue: "2026-08-01" },
+        { doseNumber: 2, nextDue: "2026-11-01" },
       ],
     };
-    expect(getVaccinationNextDue(inProgress)).toBe("2026-10-15");
+    expect(getVaccinationNextDue(mid)).toBe("2026-08-01");
   });
 });
 
 describe("a genuinely outstanding due date is NOT dropped", () => {
-  // The half that matters most, and the shape a too-clever fix would break.
-  // "Just take the last dose's nextDue" passes every test above and silently
-  // discards real obligations.
+  // The half that matters most, and the shape BOTH earlier fixes broke - one
+  // from each direction. "Keep every nextDue" left a stale nag after an early
+  // dose; "just take the last dose's nextDue" passed every test below and
+  // silently discarded a course nobody had started.
 
   it("an unfulfilled overdue date still reports overdue", () => {
     const overdue = {
@@ -102,17 +134,44 @@ describe("a genuinely outstanding due date is NOT dropped", () => {
     expect(soonestDueVaccination([overdue])).not.toBeNull();
   });
 
-  it("a dose given EARLY does not satisfy a later due date", () => {
-    // Dose 2 given in October when dose 1 said "next due December". The app
-    // genuinely does not know when dose 3 is expected, so December is still
-    // the honest outstanding date and must survive.
+  it("a dose given EARLY still supersedes the earlier dose's due date", () => {
+    // The owner's SECOND report, two days after the first: the second dose was
+    // logged 2 days BEFORE the first dose's due date, and the reminder still
+    // fired. The first fix reasoned that an early dose "cannot have satisfied a
+    // later due date, because the app does not know when dose 3 is expected" -
+    // true, and irrelevant. The question is not whether the LATER date is
+    // satisfied; it is whether the EARLIER dose still needs doing. Once a later
+    // dose exists it does not, however early it was given, and taking a dose
+    // early is ordinary rather than an edge case.
+    //
+    // This test previously asserted the OPPOSITE and was the reason the bug
+    // survived the first fix. It is here in that form deliberately: the wrong
+    // reasoning was a considered, argued position, not an oversight, and it
+    // took a real report to overturn it.
     const early = {
       doses: [
-        { doseNumber: 1, date: "2026-07-01T10:00:00.000Z", nextDue: "2026-12-01" },
-        { doseNumber: 2, date: "2026-10-01T10:00:00.000Z" },
+        { doseNumber: 1, date: "2026-08-01T10:00:00.000Z", nextDue: "2026-09-01" },
+        { doseNumber: 2, date: "2026-08-30T10:00:00.000Z" },
       ],
     };
-    expect(getVaccinationNextDue(early)).toBe("2026-12-01");
+    expect(getDoseNextDueDates(early), "the earlier dose's due date is superseded by the later dose existing")
+      .toEqual([]);
+    expect(getVaccinationNextDue(early)).toBeNull();
+    expect(isVaccinationOverdue(early, TODAY)).toBe(false);
+    expect(soonestDueVaccination([early])).toBeNull();
+  });
+
+  it("but the LAST dose's own nextDue is still outstanding", () => {
+    // The distinction that keeps this from over-correcting into silence: what
+    // is superseded is the EARLIER dose's date, never the current one.
+    const stillGoing = {
+      doses: [
+        { doseNumber: 1, date: "2026-08-01T10:00:00.000Z", nextDue: "2026-09-01" },
+        { doseNumber: 2, date: "2026-08-30T10:00:00.000Z", nextDue: "2026-12-01" },
+      ],
+    };
+    expect(getVaccinationNextDue(stillGoing)).toBe("2026-12-01");
+    expect(isVaccinationOverdue(stillGoing, TODAY)).toBe(false);
   });
 
   it("a future due date is untouched", () => {
@@ -125,17 +184,18 @@ describe("a genuinely outstanding due date is NOT dropped", () => {
     expect(isVaccinationOverdue(future, TODAY)).toBe(false);
   });
 
-  it("a dose with no date yet is a planned dose, not a fulfilled one", () => {
-    // A user can add the next dose row before actually having it. That row has
-    // no `date`, so it must not satisfy anything - otherwise pre-adding a dose
-    // would silently cancel the reminder for the current one.
-    const planned = {
+  it("series order is by doseNumber, not by array position", () => {
+    // The editor numbers doses as it adds them, and a hand-edited or legacy row
+    // may not be numbered at all. If the last row is taken by array position
+    // rather than series order, a re-ordered array silently changes which date
+    // nags - with no error and no visible difference.
+    const reordered = {
       doses: [
-        { doseNumber: 1, date: "2026-07-01T10:00:00.000Z", nextDue: "2026-08-01" },
-        { doseNumber: 2, nextDue: "2026-11-01" },
+        { doseNumber: 2, date: "2026-05-01T10:00:00.000Z", nextDue: "2026-10-15" },
+        { doseNumber: 1, date: "2026-03-01T10:00:00.000Z", nextDue: "2026-04-01" },
       ],
     };
-    expect(getDoseNextDueDates(planned)).toEqual(["2026-08-01", "2026-11-01"]);
+    expect(getDoseNextDueDates(reordered)).toEqual(["2026-10-15"]);
   });
 
   it("the seeded Twinrix booster still reports overdue", () => {
