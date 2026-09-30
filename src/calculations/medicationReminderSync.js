@@ -172,13 +172,39 @@ export async function syncMedicationReminders() {
 
 async function updateRefillWidget() {
   try {
-    const { MedicationRepository } = await import("../repositories/medicationRepository");
-    const { getRefillDueMedications } = await import("./medicationCalculations");
-    const { MedicationPreferencesRepository } = await import("../repositories/medicationPreferencesRepository");
+    // FIXED 30 Sep 2026 (audit) — this had THREE stacked defects and the
+    // combination was completely silent.
+    //
+    //   const { getRefillDueMedications } = await import("./medicationCalculations");
+    //   ...
+    //   const refillDue = getRefillDueMedications(meds, prefs);
+    //
+    // 1. WRONG MODULE. medicationCalculations.js does not export
+    //    getRefillDueMedications at all — it lives in ./refillReminderSync,
+    //    which is where every other caller in the codebase already imports it
+    //    from (App.jsx, and refillReminderSync's own internal uses).
+    // 2. NOT AWAITED. The real function is async and loads its own data.
+    // 3. WRONG ARITY. It takes no arguments at all, so `meds` and `prefs` were
+    //    both passed to a function that ignores them.
+    //
+    // The TypeError from (1) was thrown on line 181 and swallowed by the
+    // catch at the bottom of this function — so everything AFTER it never ran,
+    // including `bridge.updateNextDose` a few lines below. That means the
+    // next-dose widget, which CLAUDE.md records as "wired, masked by default",
+    // has still never once displayed anything: the wiring shipped, the comment
+    // described it as working, and the only proof was that the code existed.
+    //
+    // This is the third recorded instance in this repo of a fix being recorded
+    // as shipped on the strength of the code being present rather than having
+    // been run. The difference here is that it is also the third instance of
+    // that stale claim being acted on.
+    const { getRefillDueMedications } = await import("./refillReminderSync");
 
-    const meds = await MedicationRepository.getAll();
-    const prefs = await MedicationPreferencesRepository.getPreferences();
-    const refillDue = getRefillDueMedications(meds, prefs);
+    // Awaited, and called with no arguments — the real signature. `meds` and
+    // `prefs` are gone entirely rather than left passed-and-ignored, because
+    // two of the three repositories they needed were imported solely for a
+    // call that never happened.
+    const refillDue = await getRefillDueMedications();
     const count = refillDue.length;
     const nextRefill = count > 0 ? refillDue[0].name : "No refills due";
 
@@ -212,8 +238,21 @@ async function updateRefillWidget() {
       });
     }
   } catch (e) {
-    // Widget bridge not available (web) — ignore
-    console.debug("Widget update skipped:", e);
+    // CHANGED 30 Sep 2026 (audit) — this catch is the reason the bug above was
+    // invisible for so long, and the reason is worth recording. Its comment
+    // said "Widget bridge not available (web) — ignore", so a TypeError thrown
+    // three lines earlier by a bad import was logged at `debug` level, which is
+    // below the threshold anyone looks at, and then execution fell through to
+    // the end of the function - skipping everything below, including the
+    // next-dose widget update. The catch is still correct (web genuinely has no
+    // bridge, and throwing would break the web build), so the fix is to make the
+    // failure VISIBLE rather than to remove the safety net.
+    //
+    // Deliberately console.warn and not console.error: the web case really is
+    // expected and should not look like a defect, but warn is visible by default
+    // where debug was not, so a real error stops being indistinguishable from a
+    // missing bridge.
+    console.warn("Widget update skipped:", e);
   }
 }
 
