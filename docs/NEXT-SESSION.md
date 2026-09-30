@@ -19,7 +19,9 @@ only thing left in the pool needs a physical phone — see "Needs a human" below
 | Android APK | built and published |
 | Web build | deployed |
 
-Local tree clean. Pool contains exactly one open item.
+Local tree clean. **The pool holds 13 open items, not one** — see the
+correction at the end of this handover, which is B's error and worth reading
+before planning anything.
 
 ## What B shipped
 
@@ -129,13 +131,45 @@ happening) and `docs/DEVICE-TEST-CHECKLIST.md` (the long form).
 - `npm run typecheck` reports ~450 findings and is **not** a gate. Do not suggest
   TypeScript as a small next fix.
 
-## Nothing is queued
+## The pool is not empty — B got this wrong twice
 
-The pool is empty apart from t039. If you want more work, the honest options are
-(a) run the t039 device check, or (b) commission a fresh audit — noting that A
-and B independently auditing the same areas this week produced overlapping
-findings, and last week's standing argument was that a second pair of eyes earns
-its keep auditing *unreviewed* areas rather than re-reading recent work.
+An earlier version of this handover said "the pool is empty apart from t039".
+**That was false.** There were already **11 further approved tasks** in the
+pool when B wrote it, from another session's audit: `t042`–`t052`.
+
+The cause is worth recording, because it is a mistake this repo has already
+paid for in a different costume. B did not misread the pool. B *filtered* it:
+
+```
+node scripts\session-bridge.mjs pool list |
+  Select-String "t03[6-9]|t04[01]"
+```
+
+That pattern matches `t036`–`t041` and **stops at `t041`**. Eleven tasks
+existed beyond it and the grep was built from the ids B already knew about, so
+the query guaranteed it could not find them. The output was clean, the
+conclusion drawn from it was confident, and it was wrong.
+
+This is the same shape as a guard scanning the wrong directory, and as a test
+asserting a shape the code never had: **a check that is confidently reporting on
+a set it was constructed to miss.** The tell is that B "verified" emptiness with
+a *narrowed* query rather than reading the full list.
+
+`node scripts\session-bridge.mjs pool list` costs one command. Do not narrow it.
+
+## Nothing is queued — CORRECTED, it is not nothing
+
+The pool holds **`t039`–`t053`**, thirteen open items:
+
+- `t039` — device-verify the vaccination calendar fix (**needs a human**)
+- `t042`–`t047` — HIGH/MEDIUM, from a security audit (standing instruction: do
+  not re-raise these)
+- `t048`–`t050`, `t052` — CLARITY items
+- `t051` — AUDIT, clipboard exfiltration
+- `t053` — **new**, the "one owner per derived fact" audit B added. Brief at
+  `~/.shos-session-bus/tasks/t053-derived-fact-owners/01-scope.md`. Read-only
+  first, second opinion required before any fix, and it deliberately claims no
+  files so it cannot block A.
 
 ---
 
