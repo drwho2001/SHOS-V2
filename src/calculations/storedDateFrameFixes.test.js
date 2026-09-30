@@ -136,11 +136,28 @@ describe("formatRelativeDate compares days, not milliseconds", () => {
     for (const tz of ZONES) {
       process.env.TZ = tz;
       pin(new Date(2026, 8, 30, 12, 0, 0).toISOString());
-      // 15 days out, so the relative half reads "in 2 weeks". The DATE is the
-      // part that was wrong: read off a shifted instant it could print 14 Oct
-      // in one zone and 15 Oct in another.
-      const out = formatRelativeDate("2026-10-15T09:00:00.000Z");
-      expect(out, `TZ=${tz}`).toContain("15 Oct");
+        // 15 days out, so the relative half reads "in 2 weeks". The DATE is the
+        // part that was wrong: read off a shifted instant it could print 14 Oct in
+        // one zone and 15 Oct in another.
+        //
+        // THE DAY NUMBER ONLY, and that is a deliberate narrowing. This
+        // assertion originally read `toContain("15 Oct")`, passed locally, and
+        // FAILED in CI - because formatRelativeDate formats with the DEVICE's
+        // default locale: this UK machine renders "15 Oct (in 2 weeks)" and
+        // CI's en-US renders "Oct 15, 2026 (in 2 weeks)". Same value, two
+        // spellings.
+        //
+        // Matching the month name too is not a fix, just a narrower version of
+        // the same mistake: it then fails on de-DE, which prints "15. Okt.". So
+        // assert the DAY - which is the thing that was actually wrong - and the
+        // relative half, which is this function's own wording and therefore
+        // locale-independent. This is the second assertion in this one file that
+        // only held on the machine that wrote it; the first two were caught
+        // locally and this one needed CI, which is why the gate runs there.
+        const out = formatRelativeDate("2026-10-15T09:00:00.000Z");
+        expect(out, `TZ=${tz}`).toMatch(/\b15\b/);
+        expect(out, `TZ=${tz}`).not.toMatch(/\b14\b|\b16\b/);
+        expect(out, `TZ=${tz}`).toContain("in 2 weeks");
     }
   });
 
