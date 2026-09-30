@@ -462,10 +462,16 @@ machine-speed guess is simply the wrong thing to depend on. It is now a
 bounded wait on the state asserted, and because "the banner is gone" is a
 *negative* assertion, it first waits for a *positive* anchor (the nav bar) —
 otherwise it would pass trivially against a blank page. This is pool task
-`t028` for the fixed waits still remaining — **129 live calls** (133 raw, 4
-comment-only; measured 30 Sep 2026 with
-`grep -c 'waitForTimeout(' scripts/smoke-test.cjs`) — done per-site with evidence
-rather than swept.
+`t028` for the fixed waits still remaining — **120 live calls** as of 30 Sep
+2026, down from 144. Re-measure with a *comment-stripped* count, which is the
+only method that survives a fix's own "was waitForTimeout(N)" comment: a naive
+`grep -c` counts those and reports no change at all, which is exactly what
+happened to my own scanner mid-task. Done per-site with evidence rather than
+swept, and **both risky classes are now closed**: waits in front of an
+assertion, and waits in front of an `if (count())` branch (the latter is the
+worse one — it skips the step and the flow still passes). Of what remains,
+~9 sit in front of a real read and the rest are waits before a click, which
+Playwright's own locator retry already covers.
 
 **`t028`'s first real batch, and the finding is that the 130 sites were not
 where the problem was.** The defect was in a *helper*:
@@ -499,11 +505,21 @@ Verified by running the full suite **twice** against a real `vite preview`
 build and comparing: 140 `ok` across 23 flows both times, zero failures, and
 the assertion count **unchanged from baseline** — which is the check that makes
 a silently-skipped helper visible at all, and the reason that number is
-reported rather than just "ALL PASSED". Not done, and stated rather than
-implied: the `visibilitychange` negative assertion in the acknowledgement flow
-can still pass without the refresh having run, and making it sound needs a
-positive hook proving the poll fired — left for whoever can do it honestly
-rather than faked.
+reported rather than just "ALL PASSED". **MEASURED 30 Sep 2026 (t030-era
+re-triage, 3 further batches): the `visibilitychange` negative assertions
+cannot be fixed from the test side, and this is now a measurement rather than
+an open question.** Dispatching the refresh produces **zero DOM mutations** (a
+`MutationObserver` on `body` with `childList`/`subtree`/`attributes`/
+`characterData`, 2500 ms window, after dismissing every banner), because the
+app is idle and React does not re-render when no state changed. So there is no
+positive signal to assert on: an "the app did something" guard would fail every
+single run, and the absence assertion is vacuous *by necessity* rather than by
+oversight. The only real fix is an app-side testability hook — a last-poll
+timestamp or counter attribute written by the refresh handler in `App.jsx` —
+which is a product change made purely for testing and was not made unilaterally.
+Five assertions share this shape (`scripts/smoke-test.cjs` L1699/1716/1724/
+2114/2123). Re-probe before revisiting: it is cheap, and the answer may change
+if the refresh path ever renders.
 
 Related: killed smoke runs used to leave **orphaned `chrome-headless-shell`
 processes** (~190 MB) and `vite preview` servers behind — four of the former were
@@ -789,11 +805,17 @@ not evidence.** Roughly a third of the volatile figures were wrong:
 
 - **Flow count said 18 in one place and 17 in another** (and the historical log
   records a *third* correction of this figure). Actual: **23**.
-- **"142 → 133" fixed waits** — no counting method reproduced either endpoint.
-  Actual: **144 → 133** (14 removed, 11 net), and **129 live calls** remain.
-  *Even the re-measure disagreed*: the first pass said 134 raw, the
-  comment-stripped count said 129, and a third method said 133 — which is why
-  the number now ships with its command rather than on its own.
+  - **"142 → 133" fixed waits** — no counting method reproduced either endpoint.
+    Actual, at the time of that audit: **144 → 133** (14 removed, 11 net).
+    *Even the re-measure disagreed*: the first pass said 134 raw, the
+    comment-stripped count said 129, and a third method said 133 — which is why
+    the number now ships with its command rather than on its own.
+    **SUPERSEDED 30 Sep 2026 by three further t028 batches, now 120 live.**
+    The comment-stripped method is the only correct one, and the reason is worth
+    keeping: a fix for a fixed wait is *written* as a comment saying "was
+    `waitForTimeout(600)`", so a naive scanner counts each removal as a wait
+    still present. My own t028 scanner made exactly that mistake and reported
+    five fixes as no change at all until I added the stripper to it.
 - **"Nine call sites"** papered over with an 800 ms wait, where the code's own
   comment said "eight" and the diff removes **six**.
 - **"16 rows across 8 sections"** in Settings — wrong *on the day it was
