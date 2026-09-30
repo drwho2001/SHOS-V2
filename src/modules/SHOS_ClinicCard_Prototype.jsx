@@ -178,7 +178,23 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // FIXED — real pre-existing bug found while wiring MyProfileRepository:
   // TestingRepository went async in an earlier batch this session, but
   // this chained .filter() straight onto .getAll() was missed then.
-  const tests = useLoadedMemo(async () => sortByDateDesc((await TestingRepository.getAll()).filter((t) => !t.isArchived)), [], []);
+  // FIXED 30 Sep 2026 (t053) - a future-dated test was being allowed to
+    // become `lastTestDate` below, because this filter excluded only archived
+    // tests. `tests` is sorted newest-first, so a booked or future-dated test
+    // sorted to index 0 and became "the most recent test".
+    //
+    // That then fed `cutoffDate` for the "Since last test" timeframe, and
+    // `withinTimeframe` keeps records at or after the cutoff - so a cutoff in
+    // the future filtered out EVERY encounter, contact and test. The user
+    // selected "Since last test" and got a silently empty card: no error, no
+    // explanation, just nothing.
+    //
+    // The rule was not invented here. testingRepository.js already states it -
+    // "a test dated in the future can never be marked most recent" - and Home,
+    // My Profile and the Encounters filter all exclude future tests. This was
+    // the only one of the four that did not, so the fix is to make it agree
+    // rather than to decide anything new.
+    const tests = useLoadedMemo(async () => sortByDateDesc((await TestingRepository.getAll()).filter((t) => !t.isArchived && !(t.date && new Date(t.date) > new Date()))), [], []);
   const encounters = useLoadedMemo(async () => sortByDateDesc(await EncounterRepository.getAll()), [], []);
   const [profile, setProfile] = useLoadedState(() => MyProfileRepository.getProfile(), [], DEFAULT_PROFILE);
 

@@ -1321,6 +1321,78 @@ dropping the `voided` filter, which is the load-bearing rule, since a voided dos
 is one the user explicitly marked as *not taken* and counting it would report a
 dose that never happened.
 
+### t053 finding 3 — "the most recent test" had four owners and one disagreed
+
+The sharpest example of the class so far, because the rule was never in doubt —
+it was already written down and enforced, just somewhere the broken consumer
+never looked.
+
+`testingRepository.js` states it outright: *"a test dated in the future can
+never be marked most recent"* — `mostRecent: isFuture ? false : data.mostRecent`.
+The test date input has no `max`, so future-dated tests are fully reachable.
+
+**Home, My Profile and Encounters all excluded future-dated tests. Clinic Card
+did not.** Its `tests` array is sorted newest-first, so a booked test sorted to
+index 0 and became `lastTestDate` — which becomes the cutoff for the "Since last
+test" timeframe, and `withinTimeframe` keeps records *at or after* the cutoff.
+A cutoff in the future therefore filters out **every** encounter, contact and
+test.
+
+The user selected "Since last test" and got a silently empty card. No error, no
+explanation. That is the same failure shape the repo has recorded twice already
+— Global Search reporting "no matches" before it had searched, and an HIV status
+rendering a confident "untested" before records arrived.
+
+This is not one rule in four places. It is **one rule in the repository, and
+three consumers that independently re-derive the concept anyway** — and the one
+that re-derived it worst was the only one not reading the rule that already
+existed. Nothing had to be invented to fix it; the fourth consumer just had to
+agree with the other three.
+
+**I nearly reported this wrong.** Reading `const lastTestDate = tests[0]?.date`
+with no sort, I concluded Clinic Card reported the wrong date — and was about to
+say so. Fourteen lines earlier it loads its own tests through `sortByDateDesc`,
+so `tests[0]` *is* sorted and the real defect was narrower than I'd assumed.
+Verified against the source rather than shipping the first reading.
+
+### The tooling mistake underneath it: my own comment stripper deleted code
+
+The guard for this took **four attempts**, and the failure modes are the most
+valuable part:
+
+1. Whole-file scanning flagged My Profile's *unfiltered* test load — which
+   legitimately feeds `deriveHivStatus()`, a different derived fact. The guard
+   was wrong, not the code.
+2. A regex over the filter expression silently matched **zero** loads in My
+   Profile, because it cannot span the nested parens in
+   `new Date().toISOString().slice()`. The assertion still reported a confident
+   result.
+3. **Worst:** the block-comment regex matched a `/*` and a distant `*/` and
+   blanked out real **code**. It erased the body of `getAutoLastTestedDate`,
+   *including the line under test*, then reported "no filtered test load found".
+
+   My "stripper is non-vacuous" check **passed**, because it only inspected one
+   file where nothing happened to break. A guard that proves one file is
+   readable has not proved the stripper works.
+
+**A stripper that deletes its own subject still produces confident output** — the
+same shape as every "measured nothing and looked green" failure in this project,
+one level deeper, because the damage was invisible rather than merely unchecked.
+
+So the stripper was deleted rather than patched, and the assertions are now
+positive and code-anchored: a line must both open a filtered load *and* carry
+statement syntax, which a comment cannot satisfy. Where comment ranges are
+genuinely needed this repo already uses `@babel/parser`
+(`components/iconOnlyUIAudit.test.js`). A regex is not a parser, and this file
+is the evidence.
+
+The rule also turned out to exist in **four** spellings, not the three I first
+recorded — Clinic Card and Encounters use instant comparisons in *opposite
+directions* (`>` vs `<=`), Home and My Profile compare date strings. The guard
+accepts the three valid forms and **deliberately rejects `>=`**, since that
+would admit a future test and it sits close enough to `<=` to be smuggled in by
+a careless edit.
+
 ### t053 finding 0 — the date class is closed, and the comments now say so
 
 Before finding anything new, the class behind seven of the day's bugs was swept
