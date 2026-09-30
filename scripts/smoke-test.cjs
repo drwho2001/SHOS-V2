@@ -345,8 +345,14 @@ async function testSymptomTestTwoWayLink(page) {
   await page.locator("text=Edit").first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
   await page.mouse.wheel(0, 900);
-  await page.waitForTimeout(400);
+  // CHANGED 30 Sep 2026 (t028) - was waitForTimeout(400) before a branch that
+  // decides whether to link a chip. The branch's own `else` logs "already
+  // linked from a previous run", so if the scroll had not settled the flow
+  // takes the skip path and reports a pass for a step it never did. Bounded
+  // wait for the chip to actually be there, so the branch decision is not a
+  // race - the skip then genuinely means "already linked".
   const chip = page.locator("text=+ Discharge + discomfort");
+  await chip.first().waitFor({ state: "visible", timeout: 10000 }).catch(() => {});
   if (await chip.count() > 0) {
     // CHANGED 15 Sep 2026 — real bug found in the TEST itself, not the
     // app: this hardcoded "· Aug" as part of the expected post-link
@@ -901,7 +907,19 @@ async function testInteractiveTour(browser) {
   page.on("pageerror", (err) => tourPageErrors.push(err.message));
 
   await page.goto(APP_URL, { waitUntil: "networkidle" });
-  await page.waitForTimeout(1000);
+  // CHANGED 30 Sep 2026 (t028) - was waitForTimeout(1000). This loop is a
+  // genuine SILENT NO-OP risk: if the app has not booted, all three counts
+  // below are 0, the loop breaks immediately, onboarding is never completed,
+  // and the flow fails several steps later asserting about the tour - pointing
+  // nowhere near "the app had not loaded".
+  //
+  // The anchor is the ONBOARDING UI, not the nav bar. This flow deliberately
+  // boots to a fresh install, so the nav bar does not exist until onboarding
+  // has been completed - an earlier attempt at this fix waited for the nav bar
+  // and could never succeed, which is a reminder that a "bounded wait" is only
+  // better than a fixed one if it waits for something that actually appears.
+  await page.locator("text=Skip").first()
+    .waitFor({ state: "visible", timeout: 20000 });
   // Complete onboarding for real (Next through every slide, "No" on any
   // question) rather than Skip — only a genuine completion auto-offers
   // the tour.
@@ -2387,7 +2405,14 @@ async function testVaccineDoseSeriesFlow(browser) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   await page.goto(APP_URL, { waitUntil: "networkidle" });
-  await page.waitForTimeout(1000);
+  // CHANGED 30 Sep 2026 (t028) - was waitForTimeout(1000), and the loop below
+  // is the same silent-no-op shape as the tour flow's: every click is guarded
+  // by a count and every click swallows its own failure, so a not-yet-booted
+  // app means all three labels miss, nothing is dismissed, and the flow carries
+  // on to a later assertion. This context is also fresh, so it boots to
+  // onboarding - the anchor has to be the onboarding controls, not the nav bar.
+  await page.locator("text=Skip").first()
+    .waitFor({ state: "visible", timeout: 20000 });
   // Flow 21's own fresh-context boot sequence, copied rather than re-invented.
   // dismissOnboarding() is the shared-page helper and is NOT sufficient here:
   // it does not offer the App Lock prompt, so the nav bar never appears and the
@@ -2432,13 +2457,22 @@ async function testVaccineDoseSeriesFlow(browser) {
   const editBtn = page.locator('[aria-label="Edit vaccination"]').first();
   if (!(await editBtn.count())) throw new Error("no 'Edit vaccination' control on the detail");
   await editBtn.click({ timeout: 8000 });
-  await page.waitForTimeout(800);
 
+  // CHANGED 30 Sep 2026 (t028) - was waitForTimeout(800) then
+  // `if (await addDose.count()) { click }`. That is the worst combination in
+  // this file: adding a dose is this flow's entire purpose, and a not-yet-
+  // rendered edit sheet meant the count was 0, the whole step was silently
+  // skipped, and the flow went on to pass. The same shape as the
+  // dismissTransientBanners helper that shipped a day earlier and the nav()
+  // helper this repo already records failing open.
+  //
+  // "Add dose / booster" is unconditional in the edit sheet - its absence is a
+  // real defect, not an expected state - so this waits, bounded, and THROWS
+  // rather than skipping. Same shape as the editBtn guard two lines above.
   const addDose = page.getByRole("button", { name: /Add dose/i }).first();
-  if (await addDose.count()) {
-    await addDose.click();
-    await page.waitForTimeout(500);
-  }
+  await addDose.waitFor({ state: "visible", timeout: 10000 });
+  await addDose.click();
+  await page.waitForTimeout(500);
 
   const dateInputs = page.locator('input[type="date"][aria-label="Date"]');
   const n = await dateInputs.count();
