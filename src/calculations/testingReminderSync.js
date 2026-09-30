@@ -1,3 +1,4 @@
+import { isDayKeyDue, formatDayKey } from "./dateInputHelpers";
 // testingReminderSync.js
 //
 // PLAIN-LANGUAGE PURPOSE
@@ -57,13 +58,15 @@ export async function getTestingDueState() {
   const resultNameById = new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name]));
   const suggested = suggestedRoutineRetestDate(mostRecent, resultNameById);
   if (!suggested) return { due: false };
+  // FIXED 30 Sep 2026 (t037). `suggested` is a "YYYY-MM-DD" day key meaning the
+  // USER'S OWN calendar day, but `new Date(dayKey)` parses it as UTC midnight.
+  // Comparing that to a real `new Date()` made the retest due from 00:00 UTC,
+  // not from local midnight: in Sydney the reminder fired 11 hours early, in
+  // New York 5 hours late. Compared as DAY KEYS instead, so it becomes due on
+  // the user's own day.
   const dueDate = new Date(suggested);
-  // FIXED — real bug: "Snooze 30 min" only ever rescheduled the native
-  // notification — nothing here checked it, so the in-app banner never
-  // actually dismissed. See notificationPreferencesRepository.js's own
-  // isTestingSnoozed() comment.
   if (isTestingSnoozed(await NotificationPreferencesRepository.getPreferences())) return { due: false, dueDate };
-  return { due: dueDate <= new Date(), dueDate };
+  return { due: isDayKeyDue(suggested), dueDate };
 }
 
 export async function syncTestingReminder() {
@@ -155,7 +158,13 @@ async function updateTestWidget() {
         const resultNameById = new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name]));
         const suggested = suggestedRoutineRetestDate(mostRecent, resultNameById);
         const lastTest = mostRecent.date;
-        const retestDue = suggested ? new Date(suggested).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "—";
+        const retestDue = suggested
+          // FIXED 30 Sep 2026 (t037) - formatted in the UTC frame because
+          // `suggested` is a DAY KEY, which is a UTC-anchored calendar day by
+          // definition. Formatted in local time it shows the WRONG DAY east of
+          // UTC: "2026-12-01" is 1 Dec 01:00 in Sydney and prints as 2 December.
+          ? formatDayKey(suggested, { weekday: true })
+          : "—";
 
         await bridge.updateTest({ lastTest, retestDue });
       } else {

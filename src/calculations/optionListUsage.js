@@ -1,3 +1,4 @@
+import { formatStoredDate } from "./dateInputHelpers";
 // optionListUsage.js
 //
 // PLAIN-LANGUAGE PURPOSE
@@ -27,15 +28,27 @@ import { MyProfileRepository } from "../repositories/myProfileRepository.js";
 import { MeasurementRepository } from "../repositories/measurementRepository.js";
 import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository.js";
 
-const label = {
+// EXPORTED 30 Sep 2026 (t037) so the two date-rendering entries can be tested. 
+// They were unreachable before: findRecordsUsingOptionValue is async and reaches 
+// through repositories, so the labels could not be asserted at all - which is how a 
+// stored date ended up formatted in local time on two of them with nothing to 
+// catch it. Same reason daysForUnit was moved out of its component.
+//
+// The two entries fixed here are measurement and cycle: both read a STORED date off the
+// record and formatted it with new Date(x).toLocaleDateString([]) with no UTC frame,
+// so a measurement logged at 23:30 on 31 August printed as 1 Sept 2026 in London.
+// Both now go through formatStoredDate, the helper the rest of the app uses.
+// The empty-array locale argument also coerced to the device default rather than doing
+// anything, which is part of why this was easy to miss.
+export const label = {
   medication: (r) => r.name || "Untitled medication",
   clinicVisit: (r) => r.title || "Untitled clinic visit",
   test: (r) => r.title || "Untitled test",
   vaccination: (r) => r.title || "Untitled vaccination",
   episode: (r) => r.title || "Untitled episode",
   contact: (r) => r.name || "Unnamed contact",
-  measurement: (r) => (r.date ? `${r.type || "Measurement"} · ${new Date(r.date).toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" })}` : r.type || "Measurement"),
-  cycle: (r) => (r.startDate ? `Cycle starting ${new Date(r.startDate).toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" })}` : "Cycle"),
+  measurement: (r) => (r.date ? `${r.type || "Measurement"} · ${formatStoredDate(r.date)}` : r.type || "Measurement"),
+  cycle: (r) => (r.startDate ? `Cycle starting ${formatStoredDate(r.startDate)}` : "Cycle"),
 };
 
 // moduleKey is used only to route a "view this record" tap — matches

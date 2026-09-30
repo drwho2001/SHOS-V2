@@ -129,6 +129,8 @@ export function contactEncounterSummaries(encounters) {
   return summaries;
 }
 
+import { storedDayKey, localDayKey, calendarDaysBetween } from "./dateInputHelpers";
+
 // Default shape for a contact with no encounters at all — matches
 // exactly what contactEncounterSummary(encounters, contactId) returns
 // for such a contact, so callers reading from contactEncounterSummaries()
@@ -140,10 +142,36 @@ export const EMPTY_ENCOUNTER_SUMMARY = { count: 0, averageEnjoyment: null, highe
 // component spec's described format.
 export function formatRelativeDate(dateString) {
   if (!dateString) return "—";
-  const then = new Date(dateString);
-  const now = new Date();
-  const diffMs = now - then;
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  // FIXED 30 Sep 2026 (t037). This compared a REAL instant against a STORED
+  // one and divided the result by 86,400,000:
+  //
+  //   const then = new Date(dateString);   // stored fake-UTC, parsed as an instant
+  //   const now = new Date();               // a real instant
+  //   const diffDays = Math.floor((now - then) / 86400000);
+  //
+  // `dateString` in this app is fake-UTC — the digits are the user's own
+  // wall-clock and the trailing "Z" is a deliberate lie (dateInputHelpers.js's
+  // header). Parsing one gives an instant shifted by the device's real UTC
+  // offset, so `now - then` is wrong by that offset and then FLOORED to a whole
+  // day. In Pacific/Chatham that is a 12-hour error, which is enough to push an
+  // appointment due later today across the boundary and print "yesterday" or
+  // "tomorrow" for a date that is neither.
+  //
+  // This is the function behind the Clinic Card's next-due and overdue rows AND
+  // its PDF export, so the wrong word reaches a clinician's printout.
+  //
+  // The fix is to compare DAYS, not milliseconds: reduce both sides to their own
+  // day keys and difference those. `now` becomes the user's LOCAL today (it is
+  // a real instant) and `dateString` becomes the STORED day (it is a wall-clock
+  // value), and the sign convention is unchanged — positive means past, which is
+  // what every branch below already assumes.
+  const todayKey = localDayKey();
+  const thenKey = storedDayKey(dateString);
+  if (!thenKey) return "—";
+  // Positive = the stored day is in the past.
+  const diffDays = calendarDaysBetween(thenKey, todayKey);
+
   // CHANGED 15 Sep 2026 — real ask, true globally since every future-
   // date display in the app (Clinic Card's "next due"/overdue rows,
   // its PDF export, and anywhere else this shared function is called)
@@ -156,7 +184,17 @@ export function formatRelativeDate(dateString) {
     const futureDays = -diffDays;
     if (futureDays === 0) return "today";
     if (futureDays === 1) return "tomorrow";
-    const calendarDate = then.toLocaleDateString(undefined, { month: "short", day: "numeric", year: then.getFullYear() === now.getFullYear() ? undefined : "numeric" });
+    // Formatted from the stored DAY KEY in the UTC frame, and the year is
+    // omitted by comparing the STORED year against the user's CURRENT local
+    // year. The old line read the year off a shifted instant, so a new-year
+    // appointment could print its year on one side of the boundary and not the
+    // other.
+    const storedYear = Number(thenKey.slice(0, 4));
+    const currentYear = Number(todayKey.slice(0, 4));
+    const calendarDate = new Date(`${thenKey}T00:00:00Z`).toLocaleDateString(undefined, {
+      month: "short", day: "numeric", timeZone: "UTC",
+      year: storedYear === currentYear ? undefined : "numeric",
+    });
     let relative;
     if (futureDays < 7) relative = `in ${futureDays} days`;
     else if (futureDays < 30) { const weeks = Math.round(futureDays / 7); relative = `in ${weeks} week${weeks === 1 ? "" : "s"}`; }

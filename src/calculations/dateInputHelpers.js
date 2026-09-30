@@ -234,3 +234,42 @@ export function daysSinceStoredDay(storedIso, now = new Date()) {
   if (!from) return null;
   return calendarDaysBetween(from, localDayKey(now));
 }
+
+/**
+ * Is a "YYYY-MM-DD" DAY KEY due yet, in the user's own calendar?
+ *
+ * ADDED 30 Sep 2026 (t037). A day key is a UTC-anchored calendar day, so
+ * `new Date(dayKey)` is UTC midnight - and comparing THAT against a real
+ * `new Date()` makes a reminder due from 00:00 UTC rather than from the user's
+ * local midnight. In Sydney a retest was due 11 hours early; in New York, 5
+ * hours late. The Testing retest reminder did exactly this, and the comparison
+ * lived inside an async function that reaches repositories, so no test could
+ * reach it: the rule is here now so it can be.
+ *
+ * Compared as day keys, which is the only frame in which "today" is meaningful.
+ */
+export function isDayKeyDue(dayKey, todayKey = localDayKey()) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey || "")) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(todayKey || "")) return false;
+  return dayKey <= todayKey;
+}
+
+/**
+ * Renders a "YYYY-MM-DD" DAY KEY for display, in the UTC frame.
+ *
+ * The sibling of formatStoredDate, which takes a full stored value. A day key
+ * parsed on its own lands on UTC midnight, so formatting it in local time shows
+ * the WRONG DAY everywhere east of UTC: "2026-12-01" is 1 Dec 01:00 in Sydney and
+ * prints as 2 December.
+ *
+ * `weekday: true` adds the short weekday name, which the notification copy wants
+ * and formatStoredDate deliberately does not carry.
+ */
+export function formatDayKey(dayKey, { weekday = false, locale } = {}) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey || "")) return "-";
+  const d = new Date(`${dayKey}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return "-";
+  const opts = { day: "numeric", month: "short", timeZone: "UTC" };
+  if (weekday) opts.weekday = "short";
+  return d.toLocaleDateString(locale, opts);
+}

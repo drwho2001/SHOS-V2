@@ -1285,6 +1285,21 @@ function UpdateDoseSheet({ med, onConfirm, onClose, T }) {
 }
 
 function MedicationEditSheet({ med, onSave, onClose, T }) {
+  // FIXED 30 Sep 2026 (t036). This was the only one of the seven full-screen
+  // sheets in this file with neither piece - no role="dialog" and no Escape
+  // handling - so a screen reader was never told this was a dialog, and Escape
+  // did not close it. The other six (Correct stock level, Log refill, Edit
+  // entry, Update dose, Add medication, Medication settings) all had both.
+  //
+  // It is a straightforward omission rather than a deliberate exception: the
+  // sheet gained its draft autosave in a later change and the dialog treatment
+  // was never carried across. It is NOT covered by escapeMountAudit, which is
+  // deliberately narrow over three named always-mounted components.
+  //
+  // Escape closing an edit form is safe here specifically because the draft
+  // survives: this sheet already autosaves to draftStorage under
+  // medEdit_<id>, so dismissing it loses nothing the user typed.
+  useEscapeToClose(onClose);
   // ADDED 19 Aug 2026 — real in-app editable option lists.
   // getRanked, not get: suggestion chips surface newly-added and
   // most-frequently-picked options first (real ask, 3 Sep 2026).
@@ -1337,8 +1352,10 @@ function MedicationEditSheet({ med, onSave, onClose, T }) {
       defaultRefillQuantity: defaultRefillContainers * (form.unitsPerContainer || 0),
     });
   };
+  const dialogRef = useRef(null);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
   return (
-    <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
+    <div ref={dialogRef} role="dialog" aria-label="Edit medication" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       {/* CHANGED 19 Aug 2026 — same fix Contacts got: Save was buried at
           the end of scrollable content, so once the sheet grew past one
           screenful (Route/Dose/Reason fields added it further this

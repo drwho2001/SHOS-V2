@@ -44,7 +44,21 @@ export function suggestedRoutineRetestDate(test, resultNameById) {
   // guidance — standard PrEP monitoring requires HIV testing every 3
   // months, the SAME cadence as everything else, not less often. One
   // uniform 3-month interval for every test now.
+  // FIXED 30 Sep 2026 (t037). `test.date` is a STORED fake-UTC value, so
+  // `new Date(test.date)` is shifted by the device's real UTC offset, and
+  // `setMonth` is a LOCAL calendar walk on that shifted instant. West of UTC
+  // the walk runs a day behind, so the suggested retest date is a day early.
+  //
+  // This is the same defect as the month-heading bug fixed the same day, in a
+  // CLINICAL function: the retest date is what the reminder fires on and what
+  // the Testing screen prints.
+  //
+  // The rollover guard is the same one contraceptiveCalculations.js's daysForUnit
+  // uses: setUTCMonth from 30 Nov lands on 30 Feb, which does not exist, and
+  // rolls forward into March.
   const d = new Date(test.date);
-  d.setMonth(d.getMonth() + 3);
+  const startDay = d.getUTCDate();
+  d.setUTCMonth(d.getUTCMonth() + 3);
+  if (d.getUTCDate() !== startDay) d.setUTCDate(0);
   return d.toISOString().slice(0, 10);
 }
