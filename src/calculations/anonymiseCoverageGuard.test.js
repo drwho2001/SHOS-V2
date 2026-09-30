@@ -116,7 +116,7 @@ describe("no module re-introduces a hand-typed masking placeholder", () => {
     // The stronger form of the check in anonymiseDisplay.test.js, applied here
     // as a backstop. The original bug was a FIVE-dot placeholder next to the
     // shared FOUR-dot one, which the exact-literal check did not match.
-    const local = /["'][•*\.][^"']*hidden["']/;
+    const local = /["'][•*.][^"']*hidden["']/;
     const offenders = [];
     for (const f of fs.readdirSync(MODULES)) {
       if (!f.endsWith(".jsx")) continue;

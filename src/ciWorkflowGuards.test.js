@@ -41,6 +41,31 @@ describe("every workflow file is valid YAML", () => {
       expect(read(f).includes("\t"), `${f} contains a tab`).toBe(false);
     }
   });
+
+  it("no `#` comment sits inside an `if: |` block scalar", () => {
+    // ADDED 30 Sep 2026 after shipping exactly this bug. Inside a YAML block
+    // scalar, `#` is LITERAL TEXT, not a comment - so an explanatory comment
+    // written inside `if: |` becomes part of the expression, and GitHub
+    // rejects the whole workflow. It failed to load on a real push.
+    //
+    // The important part: the "parses as YAML" test above PASSED while the
+    // workflow was broken. The file genuinely is valid YAML. YAML validity and
+    // GitHub Actions expression validity are different properties, and only the
+    // second one matters - so "it parses" is not sufficient evidence that a
+    // workflow works, which is worth stating because it looked like it was.
+    for (const f of fs.readdirSync(WF)) {
+      const lines = read(f).split(/\r?\n/);
+      let inBlock = false;
+      lines.forEach((line, i) => {
+        if (/^\s*if:\s*\|\s*$/.test(line)) inBlock = true;
+        else if (inBlock && /^\s*#/.test(line)) {
+          throw new Error(`${f}:${i + 1} has a comment inside an "if: |" block scalar, where # is literal text`);
+        }
+        // The block ends at the next key at lower-or-equal indentation.
+        else if (inBlock && /^\s{0,4}\S+:\s/.test(line) && !/^\s{6,}/.test(line)) inBlock = false;
+      });
+    }
+  });
 });
 
 describe("a red gate must actually block a published artefact", () => {

@@ -1158,7 +1158,17 @@ function ActivityLanding({ T, onOpenEncounter, onAdd, encounters, refresh, delet
     // dependency happened to change, the same "stale closure on an
     // async-resolved value" bug class this app's own history has found
     // and fixed many times over.
-  }, [encounters, showArchived, dateFilter, query, contacts, lastTestDate, kinkNameById]);
+    //
+    // FIXED 30 Sep 2026 (audit) — `anonymise` was added to the body above (on
+    // 28 Sep, to stop attendee names leaking into this search) but NOT to this
+    // dependency list. Half a fix: the memo read the flag and would not
+    // recompute when it changed, so a user who turned Anonymise mode on while
+    // this list was mounted kept the unmasked attendee names in the searchable
+    // set until some unrelated input happened to change. Exactly the same
+    // defect as the one found in Symptom Log in the same round, in the sibling
+    // module — which is why it is worth stating that the 28 Sep audit fixed the
+    // expression without fixing the dependency.
+  }, [encounters, showArchived, dateFilter, query, contacts, lastTestDate, kinkNameById, anonymise]);
   // ADDED — real ask: desktop grid grouped consecutively by month, since
   // "visible" is already newest-first this is a plain contiguous grouping,
   // see dateGrouping.js.

@@ -8,18 +8,28 @@ on:
 
 jobs:
   opencode:
+    # ADDED 30 Sep 2026 (audit) — the author restriction below is the half that
+    # matters most here, and the comment explaining it deliberately sits OUTSIDE
+    # the `if` block rather than inside it. Inside a YAML block scalar (`if: |`)
+    # a `#` is LITERAL TEXT, not a comment, so the first version of this put its
+    # own explanation inside the expression and the workflow failed to load at
+    # all. It is worth recording that the guard in
+    # src/ciWorkflowGuards.test.js did not catch it: the file is perfectly valid
+    # YAML, and that guard asserts the file parses. YAML validity and GitHub
+    # Actions expression validity are different things, and only the second one
+    # matters. The guard now checks for a `#` inside any `if:` block.
+    #
+    # On the threat: this repo is PUBLIC, so "anybody who can post a comment" is
+    # anybody on the internet, and this job holds a live OPENCODE_API_KEY.
+    # Without the restriction a stranger could post "/oc" on any issue and have
+    # the owner's key spent on their prompt. Single-owner project, so restricting
+    # it to the owner costs nothing real.
     if: |
       (contains(github.event.comment.body, ' /oc') ||
       startsWith(github.event.comment.body, '/oc') ||
       contains(github.event.comment.body, ' /opencode') ||
       startsWith(github.event.comment.body, '/opencode'))
       &&
-      # ADDED 30 Sep 2026 (audit) — the author restriction, which is the half
-      # that matters most here. This repo is PUBLIC, so "anybody who can post
-      # a comment" is anybody on the internet, and this job holds a live
-      # OPENCODE_API_KEY. Without this, a stranger could post "/oc" on any
-      # issue and have the owner's key spent on their prompt. Single-owner
-      # project, so restricting to the owner costs nothing real.
       github.event.comment.user.login == 'drwho2001'
     runs-on: ubuntu-latest
     permissions:

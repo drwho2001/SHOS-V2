@@ -777,6 +777,36 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+**The new CI gate immediately earned its keep, and found two things on its first
+run — one of them mine, from the very commit that added it.** Turning lint into
+a blocking gate exposed a `react-hooks/exhaustive-deps` warning that had been
+sitting unfixed since **28 Aug**: App.jsx registers the native `appUrlOpen`
+deep-link listener once on mount with an `[]` dependency list, while the handler
+it registers calls `handleQuickAdd` and `navigateTo`, both re-created on every
+render. That is not a cosmetic warning — the listener was permanently holding
+**stale closures**, so a widget tap arriving a minute after boot would route
+through functions captured at mount time. The `[]` list stays, because
+re-registering a native listener on every render would be worse; the handler now
+reads the current pair through a ref declared at component level. My first
+attempt put the `useRef` *inside* the effect body and eslint correctly rejected
+it: a `useEffect` callback is still a callback, so a hook cannot be called
+inside one.
+
+**And the gate change itself broke a workflow on its first push.** `opencode.yml`
+failed to load entirely, because I had written the explanatory comment for the
+new author restriction *inside* an `if: |` block scalar — where `#` is **literal
+text, not a comment** — so my own explanation became part of the expression. The
+lesson is not "don't put comments in YAML". It is that
+**`src/ciWorkflowGuards.test.js` passed while the workflow was broken**, because
+the file genuinely is valid YAML. YAML validity and GitHub Actions expression
+validity are different properties, and only the second determines whether a
+workflow runs at all. "It parses" looked like sufficient evidence and was not —
+which is the same shape as every other time in this file where a check reported
+green on something that had not actually been exercised. The guard now rejects a
+`#` inside any `if:` block.
+
+## Recently shipped (30 Sep 2026, newest of all yet again - an audit of this file, because it nearly caused the destruction of working code)
+
 ## Recently shipped (30 Sep 2026, newest of all yet again — a four-audit round that found a silent data-destroyer, an advisory CI gate, and the third "shipped but never run" claim)
 
 **The worst bug found in this project to date, in the one file every repository

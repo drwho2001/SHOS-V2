@@ -2189,11 +2189,27 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     // a URL (they never did - providers set action-only intents, fixed
     // alongside this). clinic-card routes resolve null on purpose (no
     // App-level opener exists yet - documented open, not silent).
+    // FIXED 30 Sep 2026 (audit) — this effect registered the native
+    // `appUrlOpen` listener once on mount with an `[]` dependency list, while
+    // the handler it registered calls `handleQuickAdd` and `navigateTo`. Both
+    // are re-created on every render and close over current state, so the
+    // listener was permanently holding STALE versions of both.
+    //
+    // That is a real bug, not just a lint warning, and the warning had been
+    // sitting unfixed since 28 Aug because nothing ran lint as a blocking gate.
+    // A widget tap or an App Shortcut arriving even a minute after boot would
+    // route through a closure captured at mount — the exact "stale closure from
+    // a missing effect dependency" class this file records repeatedly.
+    //
+    // The fix keeps the `[]` list, because re-registering a native listener on
+    // every render would be worse: the ref always holds the CURRENT functions,
+    // so the single long-lived listener routes correctly however old it is.
     const routeShortcutUrl = (urlString) => {
       const route = resolveDeepLinkRoute(urlString);
       if (!route) return;
-      if (route.type === "quickAdd") handleQuickAdd(route.tab, route.target);
-      else if (route.type === "navigate") navigateTo(route.tab, route.subTab);
+      // Read through the ref rather than closing over the render's copies.
+      if (route.type === "quickAdd") deepLinkHandlers.current.handleQuickAdd(route.tab, route.target);
+      else if (route.type === "navigate") deepLinkHandlers.current.navigateTo(route.tab, route.subTab);
       else if (route.type === "action" && route.action === "revealClinicCard") {
         // Handled by ClinicCardWidgetProvider's reveal intent
       }
@@ -2233,6 +2249,20 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     setNavResetCount((c) => c + 1);
     setSearchReturn(searchReturn);
   };
+
+  // FIXED 30 Sep 2026 (audit) — declared at COMPONENT level, not inside the
+  // deep-link effect above. My first attempt put `useRef` inside the effect
+  // body, and eslint was right to reject it: a useEffect callback is still a
+  // callback, so a hook cannot be called inside one. It is here instead, next to
+  // navigateTo, because that is where both values it holds are defined.
+  //
+  // The mount-once `appUrlOpen` listener is registered with an `[]` dependency
+  // list while its handler calls handleQuickAdd and navigateTo — both re-created
+  // every render and closing over current state. The ref always holds the
+  // current pair, so the single long-lived listener routes correctly however old
+  // it is, without re-registering a native listener on every render.
+  const deepLinkHandlers = useRef({ handleQuickAdd, navigateTo });
+  deepLinkHandlers.current = { handleQuickAdd, navigateTo };
 
   // ADDED — real ask: "linked encounter should be actually linked",
   // "attendees should link through to contact card", both directions.

@@ -118,7 +118,7 @@ describe("anonymiseDisplay", () => {
     // allows ZERO masking characters, and all of those are literally the
     // string "hidden". Requiring at least one masking character at the START
     // is what separates a placeholder from an enum value.
-    const localPlaceholder = /["'][•*\.][^"']*hidden["']/;
+    const localPlaceholder = /["'][•*.][^"']*hidden["']/;
     for (const f of files) {
       const stripped = readFileSync(join(modulesDir, f), "utf8")
         .replace(/\/\*[\s\S]*?\*\//g, "")
