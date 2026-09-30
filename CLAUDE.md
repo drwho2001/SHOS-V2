@@ -3,8 +3,13 @@
 A personal sexual health + lifestyle tracker for one user, not a clinical
 record system. React 18 + Vite + Capacitor 8, shipping as both an Android
 APK and a web/PWA build. **No backend, no cloud, no accounts** — every
-byte lives in the device's own `localStorage`. That's not a gap to fill;
-it's the actual privacy guarantee this app is built on.
+  byte lives in the device's own `localStorage`. That's not a gap to fill;
+  it's the actual privacy guarantee this app is built on. (One correction as
+  of 30 Sep 2026: the *mechanism* is no longer only `localStorage` — the home-
+  screen widgets write to Android's `EncryptedSharedPreferences`, deliberately,
+  so a widget can read them from a cold-started process. Still device-local,
+  still no cloud, no accounts; only the storage medium named here is out of
+  date.)
 
 This file is a durable, current-state reference — architecture rules,
 where things live, and open issues. It is deliberately *not* a full
@@ -18,22 +23,57 @@ keep this file's "Known issues" section honest as things get fixed.
 ## Starting a new session — read this first
 
 1. Read this file in full — it's the current-state snapshot.
-2. Check the Notion "Development" log's most recent entries (workspace
+2. **Before you act on anything this file says is NOT done, grep for it.**
+   See the standing rule below — this is the single most destructive
+   thing you can get wrong here, and it has already happened once.
+3. Check the Notion "Development" log's most recent entries (workspace
    "Sexual Health Operating System (SHOS)" → Backend files →
    "Development") for anything since this file's "Recently shipped"
    date below — a prior session may have shipped real work there that
    this file hasn't caught up to yet.
-3. `git log --oneline -20` against the actual repo to cross-check —
+4. `git log --oneline -20` against the actual repo to cross-check —
    Notion and this file both describe *intended* current state; the
    git history is what's actually shipped. If they disagree, trust the
    repo and fix the docs, not the other way around.
-4. When you finish real work in this session: update this file's
+5. When you finish real work in this session: update this file's
    "Known issues"/"Recently shipped" sections in the same change, AND
    append a dated entry to the Notion "Development" log in the same
    voice/density as existing entries (see that page's own history for
    the pattern — one dense paragraph per date, real specifics, not a
    bullet summary). Don't let either drift stale again — that's
    exactly the gap that made this section necessary in the first place.
+
+### STANDING RULE (added 30 Sep 2026) — never state in the live sections that something is not done
+
+**An instruction file is an action space, not a diary. Writing "X is not
+attempted yet" into it is a loaded weapon aimed at the next session.**
+
+A language model reading this file is biased toward completion. A line
+saying a feature is outstanding reads as an instruction to go and build it —
+even when the feature shipped hours ago. So:
+
+- **Do not write negative status claims into the live sections** (lines
+  1–648). No "not implemented", "not wired", "still open", "deliberately
+  NOT attempted yet", "no test covers this".
+- **If work is genuinely outstanding, it belongs in the work pool**, not
+  here: `node scripts/session-bridge.mjs pool list`. That is the live
+  to-do list, it is timestamped, and it has an owner. A prose claim in
+  here has none of those properties.
+- **This happened, on 30 Sep 2026.** This file said the Escape-to-dismiss
+  work was "deliberately NOT attempted yet"; it had shipped the same day
+  across 20 files. A session believed it, rebuilt the hook from scratch,
+  and **overwrote the shipped implementation and its tests.** Reverted via
+  `git checkout`; nothing lost. Both stale lines now carry a correction
+  saying so, and this rule exists because of that incident.
+- **A negative claim is never corrected by being made vaguer.** Delete it
+  and point at the pool. "Possibly not wired" is still an invitation.
+
+**Corollary: every number in the live sections is a claim, not a
+measurement.** If a figure matters enough to act on, write the command
+that produces it next to it, so the next reader can re-check in one keystroke
+rather than trusting it. Roughly a third of the volatile figures in this file
+were wrong when audited on 30 Sep — see the "30 Sep 2026 audit" entry in
+"Recently shipped" for the list and the method.
 
 ## Who this is for
 
@@ -54,9 +94,11 @@ oversight.
 
 ## Architecture rules (do not violate silently)
 
-- **Four-layer model**: `Registries` (define entities — Contacts,
-  Locations, Medications, Symptoms, Organisms, Results, Kinks,
-  Protection, Chems) → `Records` (document events — Encounters, Testing,
+- **Four-layer model**: `Registries` (define entities — Kinks, Chems,
+  Organisms, Results, Protection, Symptoms; **Contacts, Locations and
+  Medications are NOT registries** — they are repositories, corrected
+  30 Sep 2026, and the three of them on the wrong layer here went uncorrected
+  for a month) → `Records` (document events — Encounters, Testing,
   Clinic Visits, Medication Log, Symptoms, Vaccinations, Attachments) →
   `Workflow` (cross-cutting operational state — refill prediction,
   follow-up tracking; not a separate storage tier) → `Workspaces`
@@ -69,12 +111,19 @@ oversight.
   status are always *calculated*, never hand-typed. One canonical owner
   per fact.
 - **Repository / calculation / sync three-layer split**, applied
-  consistently: a repository is pure data access (localStorage in,
-  localStorage out); a calculations file is pure business logic, no I/O;
-  a sync file (where one exists) is the one place real data and a real
-  side effect (a scheduled notification, a calendar write) meet. This
-  pattern is why real bugs this session could be root-caused to an exact
-  line instead of guessed at — preserve it in new code.
+       consistently: a repository is pure data access (localStorage in,
+       localStorage out); a calculations file is pure business logic, no I/O;
+       a sync file (where one exists) is the one place real data and a real
+       side effect (a scheduled notification, a calendar write) meet. This
+       pattern is why real bugs this session could be root-caused to an exact
+       line instead of guessed at — preserve it in new code.
+       **AUDITED 30 Sep 2026: the "no I/O" half is aspirational, not current.**
+       Seven non-sync files in `src/calculations/` import repositories or
+       storage directly — `anonymiseDisplay`, `disclosureLevel`,
+       `optionListUsage`, `orphanReferenceCheck`, `registryUsage`,
+       `clinicCardVisibilityPreference`, `darkModePreference`. New code should
+       still follow the rule; just do not read it as a description of what is
+       there today, or you will "fix" a file that was working.
 - **Defensive-default merge on every read** (`{...DEFAULTS, ...stored}`)
   — every repository's `getPreferences()`/`getAll()` equivalent does
   this, so adding a field later never breaks a previously-saved record.
@@ -104,7 +153,14 @@ oversight.
 ## Where things live
 
 - `src/modules/` — one file per feature area (`SHOS_<Feature>_Prototype.jsx`).
-  19 modules as of this writing: Contacts, Encounters, Medication
+  **20 module files** as of 30 Sep 2026 (this line said 19 and then named only
+  14; the six it omitted are `SHOS_ClinicVisits_`, `SHOS_Testing_`,
+  `SHOS_SymptomLog_`, `SHOS_Vaccinations_`, `SHOS_MenstrualHealth_` and
+  `SHOS_Measurements_`, which `SHOS_Healthcare_Prototype.jsx` imports as
+  **peer modules**, not as parts of one file). Also in this directory, and
+  missed by the "one file per feature area" pattern: `InteractiveTour.jsx`, and
+  a `settings/` subdirectory of **19 extracted Settings sub-screens**.
+  Named: Contacts, Encounters, Medication
   Dashboard, Healthcare (Testing/Clinic Visits/Menstrual&Contraception&
   Pregnancy/Symptoms/Vaccinations shell), Home, Settings, Global Search,
   My Profile, Clinic Card, Attachments, Timeline (renamed from
@@ -113,15 +169,37 @@ oversight.
   Management, Option List Editor. `App.jsx` is shell-only (routing,
   global state, notification banners) — Home/Healthcare/Settings were
   deliberately extracted out of it; a large `App.jsx` again would mean
-  that extraction regressed.
+  that extraction regressed. **Measured 30 Sep 2026: this claim is now only
+  half true and the directive is inverted.** The extraction happened, but
+  `App.jsx` is **~3050 lines** and defines 9 more top-level components beyond
+  the shell — `AppLockScreen`, `DecoyHome`, `AppLockPrompt`,
+  `OnboardingScreen`, `AcknowledgeSheet` and others — none of which is
+  routing, global state or notification banners. `App()` alone runs ~880 to
+  EOF. So the real rule is not "keep it small" but "extract further", and
+  a new session reading "a large App.jsx would mean the extraction
+  regressed" will conclude the opposite of what is true.
+- `src/registries/` — the Registries layer of the four-layer model
+  (Kinks, Chems, Organisms, Protection, Results, Symptoms + a factory).
+  Was **entirely missing from this list** until 30 Sep 2026, despite being
+  named 50 lines earlier as layer 1.
+- `src/components/` — shared UI/hook primitives. Was missing from this list
+  too; it holds `ConfirmDeleteCard.jsx` (described in this file's own Known
+  Issues as "the app's first real shared UI component") and
+  `useEscapeToClose.js`.
 - `src/repositories/` — one per data domain, `localStorageAdapter`-backed.
 - `src/calculations/` — pure business logic + `*ReminderSync.js` files
-  (the notification scheduling glue for Medication/DoxyPEP/Testing/
-  Refill/Clinic-visit reminders).
-- `src/storage/` — cross-cutting native/platform services
-  (`notificationService.js`, `backupService.js`, `biometricAuthService.js`,
-  `locationService.js`, `calendarSyncService.js`, `fileExportHelper.js`,
-  `updateCheckService.js`).
+  (the notification scheduling glue for Medication/Testing/Refill/
+  Clinic-visit/**Vaccination** reminders — 5 files; the vaccination one was
+  missing from this list until 30 Sep 2026. Note the DoxyPEP reminder is
+  `doxyPepSync.js`, which does **not** match the `*ReminderSync.js` pattern
+  this bullet names, so the glob and the prose disagree).
+- `src/storage/` — cross-cutting native/platform services, **17 files, not
+  the 7 listed here** (this list omitted `storageAdapter.js` and
+  `cryptoService.js`, which the two bullets either side depend on by name).
+  Beyond the named seven: `storageAdapter.js`, `cryptoService.js`,
+  `clinicCardPdfService.js`, `recordExportService.js`, `draftStorage.js`,
+  `screenSecurityService.js`, `csvExportService.js`,
+  `profileShareService.js`, `installPromptService.js`, `backupMigrations.js`.
 - `android/` — the Capacitor-generated native Android project.
   `MainActivity.java` and `AndroidManifest.xml` are hand-edited in
   places (FLAG_SECURE, allowBackup, font-scale wiring) — real native
@@ -133,7 +211,11 @@ oversight.
   `scripts/smoke-test.cjs` against a real `vite preview` build on every
   push — the one piece of automated regression coverage this project
   has, now actually gated rather than manual-only.
-- `scripts/smoke-test.cjs` — 18 flows. **These run on every push in CI**
+- `scripts/smoke-test.cjs` — **23 flows** (measured 30 Sep 2026; this line
+  said 18, and a second line in this file said 17 — the same figure
+  contradicted twice, which is how the "18/20/21" correction chain started).
+  Re-measure with: `grep -c 'await run(' scripts/smoke-test.cjs`
+  **These run on every push in CI**
   (`.github/workflows/smoke-test.yml` calls `npm run verify`, which is this
   same script), so you do not need to run them by hand before committing — the
   local loop is `npm run verify:fast`. Run the full local gate
@@ -306,11 +388,13 @@ post-push CI check, the documentation requirement, and a table of the specific
 traps in this codebase (dynamic `/src/` imports only work on a dev server,
 `SVGElement` has no `.click()`, bottom-nav tabs have no text content, and so on).
 `node scripts/verify-changes.mjs` (also `npm run verify`) runs the whole gate —
-build → lint → unit tests → encoding → smoke suite → a docs check — and prints a
+build → lint → unit tests → encoding → inherited-instructions → smoke suite →
+a docs check — **six** gates; the "inherited instructions" one was missing
+from this list until 30 Sep 2026 — and prints a
 pass/fail table.
 
 **CI runs that exact same script** (`smoke-test.yml` calls `npm run verify`) on
-every push, in ~11 minutes, including the full 17-flow Playwright suite. So the
+every push, in ~11 minutes, including the full **23-flow** Playwright suite. So the
 **local loop is `npm run verify:fast`** (~2 min, no smoke), and CI is the real
 gate. A full local run before every push is redundant work and, on a 4 GB
 machine, actively harmful — this project has lost hours to smoke failures that
@@ -378,7 +462,9 @@ machine-speed guess is simply the wrong thing to depend on. It is now a
 bounded wait on the state asserted, and because "the banner is gone" is a
 *negative* assertion, it first waits for a *positive* anchor (the nav bar) —
 otherwise it would pass trivially against a blank page. This is pool task
-`t028` for the ~130 fixed waits still remaining, done per-site with evidence
+`t028` for the fixed waits still remaining — **129 live calls** (133 raw, 4
+comment-only; measured 30 Sep 2026 with
+`grep -c 'waitForTimeout(' scripts/smoke-test.cjs`) — done per-site with evidence
 rather than swept.
 
 **`t028`'s first real batch, and the finding is that the 130 sites were not
@@ -387,10 +473,13 @@ where the problem was.** The defect was in a *helper*:
 `.catch(() => {})`, so on a not-yet-booted app it silently did nothing,
 reported success, and the banners appeared afterwards to intercept
 `goHomeThenOpenSettings`' coordinate-based Settings click — a failure pointing
-nowhere near its cause. **Nine** call sites had papered over it with a fixed
-800 ms wait first. The helper now waits for the app, dismisses, then
+nowhere near its cause. **Six** call sites had papered over it with a fixed
+800 ms wait first (measured 30 Sep 2026; this line said "nine" and the code
+comment in `dismissTransientBanners` said "eight" — three numbers for one
+change, and the six 800 ms waits removed by the diff is the one the git
+history supports). The helper now waits for the app, dismisses, then
 **verifies** no dismissal control remains and retries up to three times, which
-removed those nine waits because they were never the fix. A helper that can
+removed those waits because they were never the fix. A helper that can
 quietly do nothing is worse than no helper.
 
 **I had already made the "fix the symptom, not the class" mistake here, one
@@ -402,7 +491,9 @@ reported and left this one, which is exactly the mistake this file records as
 The same bounded treatment then went onto two anonymise-mode data reads and a
 negative banner assertion that had waited 2500 ms. Shared `waitForText` /
 `waitForAppReady` / `waitForGone` helpers mean the fix is one place rather
-than fifty-nine; fixed waits **142 → 133**.
+than fifty-nine; fixed waits **144 → 133** (measured 30 Sep 2026 by counting
+the file at the two commits that bracket the change — this line said
+142 → 133, and **no counting method reproduced either endpoint**).
 
 Verified by running the full suite **twice** against a real `vite preview`
 build and comparing: 140 `ok` across 23 flows both times, zero failures, and
@@ -610,7 +701,12 @@ this date; summarized here for durability.
 - **Accessibility — Batch 1 (high-priority items) COMPLETE as of 21 Sep 2026:**
   - Item 1 (desktop grid): DONE
   - Item 2 (keyboard operability per-row): DONE
-  - Item 3 (sheet `role="dialog"` + focus mgmt): DONE — 51 `role="dialog"` across 37 files (corrected 25 Sep 2026; the previous "~52 across 19 modules" figure was wrong). All of them now have a working focus path. Two deliberate exceptions: GlobalSearch focuses its own search input via `autoFocus` (a container-level `focus()` there would fight that and pull focus off the field on every open), and Home/Healthcare no longer put a second dialog on their Episodes wrappers, since `TimelineModule`'s own root is that dialog and now owns focus-on-open.
+  - Item 3 (sheet `role="dialog"` + focus mgmt): DONE — **53 `role="dialog"`
+  across 38 files** (re-measured 30 Sep 2026 by stripping comments and
+  counting over `src/**` excluding tests; this line said 51, and before that
+  "~52 across 19 modules" conflated the module *files* with a dialog count).
+  `App.jsx` alone contributes 4, including the 28 Sep `AcknowledgeSheet`, which
+  is the site both earlier counts missed. All of them now have a working focus path. Two deliberate exceptions: GlobalSearch focuses its own search input via `autoFocus` (a container-level `focus()` there would fight that and pull focus off the field on every open), and Home/Healthcare no longer put a second dialog on their Episodes wrappers, since `TimelineModule`'s own root is that dialog and now owns focus-on-open.
   - Item 4 (sub-screen `<h1>`): DONE — 58 real JSX `<h1>` across 39 files (corrected 25 Sep 2026; "38 titles across 17 modules" mislabelled the 38 module *files* containing an h1 as if it were a title count). Includes the 7 edit/detail sheets converted 25 Sep 2026. GlobalSearch is the only module file with no `<h1>`; it carries `role="dialog"`/`aria-label` instead.
   - Item 5 (contrast fixes): DONE (Guide tour button, Meds locked-dose button, InteractiveTour "Next" button) — all three re-verified present in source this session.
   - Item 6 (live regions for search/filter): DONE — exactly 10 locations (corrected 25 Sep 2026: the earlier "live regions beyond 10 done" was not true).
@@ -619,7 +715,7 @@ this date; summarized here for durability.
 
 - **Audit Findings (25 Sep 2026) — read-only sweep of high-stakes/unreviewed areas:**
   - **ErrorBoundary (main.jsx:147-163)** — ALREADY FIXED (Phase 4). Encrypted `shos_app_preferences` detected via `iv`+`ciphertext` shape, dynamically imports `cryptoService.js`, decrypts, clears navigation state, re-encrypts. No action needed.
-  - **darkModePreference.js (calculations:89-95)** — ALREADY CORRECT. `syncDarkModePreferenceFromStorage()` called in `App.jsx:938` after vault unlock in `finishBootAfterUnlock()`. One-shot self-correction from `systemPrefersDark()` fallback works; async `await storage.load()` handles Phase 3 adapter. No action needed.
+  - **darkModePreference.js (calculations:89-95)** — ALREADY CORRECT. `syncDarkModePreferenceFromStorage()` called in `App.jsx` (line **1058** as of 30 Sep 2026; this file said `App.jsx:938`, which by then was a *comment* mentioning the function — so the stale reference landed on something that looked plausible) after vault unlock in `finishBootAfterUnlock()`. One-shot self-correction from `systemPrefersDark()` fallback works; async `await storage.load()` handles Phase 3 adapter. No action needed.
   - **Module sheets `role="dialog"`** — COMPLETE for the sheet set that
     audit covered. Medication Dashboard has 6 dialog sheets, not 7:
     `MedicationEditSheet` is a full-screen sheet that never got the treatment
@@ -628,11 +724,15 @@ this date; summarized here for durability.
     reader following the reference found nothing. A dangling cross-reference
     is worse than no cross-reference: it implies a record that was never
     written.
-  - **Widget deep-linking (native)** — 10 providers registered in the manifest, but only 9 use `com.shos.app://` (corrected 25 Sep 2026: `NextDoseWidgetProvider` has no Intent/tap action at all). `deepLinkRoutes.js` has 12 distinct positive routes across 7 hosts, asserted by 17 expectations in 5 test blocks (5 of them negative `toBeNull`) — "17 routes" conflated assertions with routes. The `reveal-clinic` route is mapped but inert (an empty `if` in `App.jsx:1726`). **Web gaps**: there is genuinely no `shos://` or `URLSearchParams` handling anywhere in `src/`; what is missing on web is only the URL *delivery* mechanism, not the route logic (corrected 25 Sep 2026: the earlier "8 of 10 routes unimplemented on web/PWA" was stale and contradicted entries above it in this same file).
+  - **Widget deep-linking (native)** — 10 providers registered in the manifest, but only 9 use `com.shos.app://` (corrected 25 Sep 2026: `NextDoseWidgetProvider` has no Intent/tap action at all). `deepLinkRoutes.js` has 12 distinct positive routes across 7 hosts, asserted by 17 expectations in 5 test blocks (5 of them negative `toBeNull`) — "17 routes" conflated assertions with routes. The `reveal-clinic` route is mapped but inert (a comment-only branch in `App.jsx`, line **2157** as of 30 Sep 2026; this file said `App.jsx:1726`, now ~430 lines earlier). **Web gaps**: `shos://` is genuinely absent from `src/`, and no `com.shos.app://` route reaches the web by URL — what is missing on web is only the URL *delivery* mechanism, not the route logic. (CORRECTED 30 Sep 2026: this line said there is "no `URLSearchParams` handling anywhere in `src/`", which is false — `notificationService.js:306` reads `?notifAction=` and replays it, and has since 3 Sep. It is a notification-action handler, not a deep-link router, so the surrounding intent survives; only the literal claim was wrong, and a literal is exactly what the next session greps for. The earlier "8 of 10 routes unimplemented on web/PWA" was already stale.)
   - **Draft storage (storage/draftStorage.js)** — 8 module files use sessionStorage (Contacts, Encounters, Testing, ClinicVisits, SymptomLog, Vaccinations, Measurements, Medication Dashboard). Sensitive data, ephemeral (cleared on save/tab close). Deliberately out of Phase 4 scope; no migration path if encryption extends here.
-  - **Duplicate patterns needing standardization**: RegistryTagPicker (4 copies: Testing, MyProfile, Contacts, Encounters), Date/Time "Now" button (10 files), per-module field components (corrected 25 Sep 2026: SelectField 9 copies, DateTimeField 3, AgeField 2, RelationPicker 5 — none reach "10+"; the AgeField figure was off by 5x), FAB buttons (12 sites).
+  - **Duplicate patterns needing standardization**: RegistryTagPicker (4 copies: Testing, MyProfile, Contacts, Encounters), Date/Time "Now" button (10 files), per-module field components (re-measured 30 Sep 2026: SelectField **8** copies, DateTimeField 3, AgeField 2, RelationPicker 5, plus a 9th of the same shape named `SelectRow` in Medication Dashboard — none reach "10+"; the AgeField figure was off by 5x), FAB buttons (12 sites).
   - **Accessibility exhaustive (17 Sep axe-core + 25 Sep follow-up)**: Sub-screen `<h1>` complete (58 across 39 files); live regions are exactly 10 locations and no more; contrast violations fixed (Guide raw hex, Meds 50% opacity, InteractiveTour fixed); module sheets `role="dialog"` complete.
-  - **Settings navigation** — 16 rows across 8 sections (corrected 25 Sep 2026: the long-standing "22 rows" figure predates the 16 Sep Backup-&-Export consolidation and the Units-screen removal). Test flakes from banner interception (fixed in helper); a crypto-timing wait in flow 13 was still a fixed 500ms plus a non-retrying count and is now a bounded wait (25 Sep 2026). Healthcare sub-tab discoverability (Menstrual/Contraception gated behind toggle).
+  - **Settings navigation** — **17 rows across 8 sections** (re-measured 30 Sep
+  2026: this line said 16, and was wrong on the day it was written — a
+  "Widgets" row was added 22 Sep, three days before the 25 Sep audit. The 8
+  sections figure is correct. The long-standing "22 rows" predates the 16 Sep
+  Backup-&-Export consolidation and the Units-screen removal). Test flakes from banner interception (fixed in helper); a crypto-timing wait in flow 13 was still a fixed 500ms plus a non-retrying count and is now a bounded wait (25 Sep 2026). Healthcare sub-tab discoverability (Menstrual/Contraception gated behind toggle).
   - **Overlays — three genuine UX gaps. ESCAPE NOW RESOLVED; the other two still open.**
     - **Escape-to-dismiss: RESOLVED 28 Sep 2026 — see "Recently shipped" below. THIS LINE PREVIOUSLY SAID IT WAS STILL OPEN, AND IT HAD SHIPPED THE SAME DAY.** 20 files are wired to `useEscapeToClose` (`git grep -l useEscapeToClose HEAD -- src`), it has its own 8-test suite, and the shared delete confirmation is registered so Escape *cancels* rather than confirming. A session on 30 Sep acted on this stale line, rebuilt the hook from scratch and **overwrote the shipped implementation** before noticing — the third recorded instance in this file of an inherited claim being treated as a measurement. **Grep the code before trusting a status line here**, especially one describing work as "deliberately NOT attempted yet".
     - **Worth checking, NOT a confirmed bug: does any wired sheet mount while closed?** `useEscapeToClose(onClose, enabled)` registers on *mount*, so a sheet that is permanently mounted and merely hidden would sit on the stack and swallow the Escape press of the sheet beneath it. A static scan of the 20 wired files finds 15 call sites whose component is rendered without an `&&` guard at its direct render site — but many of those sit inside a parent that is itself conditional, so that count is a **question, not a finding**. Needs per-site reading or a browser check. Confirmed in neither direction.
@@ -645,6 +745,72 @@ this date; summarized here for durability.
 
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
+
+## Recently shipped (30 Sep 2026, newest of all yet again — an audit of this file, because it nearly caused the destruction of working code)
+
+**The incident that prompted it.** This file said the Escape-to-dismiss work was
+"deliberately NOT attempted yet". It had shipped the same day across 20 files. A
+session believed it, rebuilt the hook from scratch, and **overwrote the shipped
+implementation and its test file** before noticing. Reverted via `git checkout`;
+nothing lost. That is the third recorded instance here of an inherited claim
+being treated as a measurement, and the most expensive one, because the cost
+was not a wrong number but working code about to be destroyed.
+
+**A second model was asked what would have prevented it, and its sharpest point
+became the standing rule above.** A language model is biased toward completion,
+so "X is not attempted yet" in an instruction file reads as a *task*, not a
+status. Silence is neutral; a false negative is a destruction command. The same
+model also argued, correctly, against my first instinct: a test that greps this
+file for known counts and fails on mismatch is *worse than the disease* — it
+creates build friction over prose, and the next session removes the test rather
+than recount the repo. The mechanism adopted instead is a **convention**: any
+figure worth acting on carries the command that measures it, so a reader can
+re-check in one keystroke instead of trusting it.
+
+**So the live sections were audited, empirically, with three agents working in
+parallel plus my own checks — and every finding was re-verified against the
+code before acting, because the project's own rule is that a sub-agent report is
+not evidence.** Roughly a third of the volatile figures were wrong:
+
+- **Flow count said 18 in one place and 17 in another** (and the historical log
+  records a *third* correction of this figure). Actual: **23**.
+- **"142 → 133" fixed waits** — no counting method reproduced either endpoint.
+  Actual: **144 → 133** (14 removed, 11 net), and **129 live calls** remain.
+  *Even the re-measure disagreed*: the first pass said 134 raw, the
+  comment-stripped count said 129, and a third method said 133 — which is why
+  the number now ships with its command rather than on its own.
+- **"Nine call sites"** papered over with an 800 ms wait, where the code's own
+  comment said "eight" and the diff removes **six**.
+- **"16 rows across 8 sections"** in Settings — wrong *on the day it was
+  written*; a Widgets row had been added three days earlier. Actual: **17**.
+- **51 `role="dialog"`** — actual **53 across 38 files** (the 28 Sep
+  `AcknowledgeSheet`, plus a file-count correction).
+- **SelectField "9 copies"** — actual **8** definitions.
+- **"19 modules", naming 14** — actual **20** files, and six of them are peer
+  modules imported by `SHOS_Healthcare_Prototype.jsx`, not parts of it.
+- **"App.jsx is shell-only … a large App.jsx would mean the extraction
+  regressed"** — the directive is now **inverted**: the extraction happened, and
+  `App.jsx` is ~3050 lines with 9 further top-level components, none of them
+  routing, global state or banners. A new session would conclude the opposite of
+  what is true.
+- **`src/registries/` and `src/components/` were missing from "Where things
+  live" entirely** — the first is layer 1 of the four-layer model named 50 lines
+  earlier. `src/storage/` listed 7 of 17 files, omitting the two that the
+  adjacent bullets depend on by name.
+- **"no `URLSearchParams` handling anywhere in `src/`"** — false since 3 Sep.
+- **The four-layer model listed Contacts, Locations and Medications as
+  registries**; they are repositories. That error sat here for a month.
+- **"a calculations file is pure business logic, no I/O"** — seven non-sync
+  files in `src/calculations/` import repositories or storage. The rule is
+  sound; it is not a description of the current tree, and reading it as one
+  invites "fixing" files that work.
+
+**What is deliberately NOT done.** No automated counting test, for the reason
+above. And no wholesale rewrite: the `Recently shipped` half of this file is
+institutional memory — it records *why* each decision was made, which is
+precisely what a session cannot reconstruct — so it stays, and the corrections
+above are marked in place with the reason rather than silently edited, since a
+correction with no explanation is the kind that goes stale again.
 
 ## Recently shipped (29 Sep 2026, newest of all yet again — the widgets have never worked, not once, and one missing line is why)
 
