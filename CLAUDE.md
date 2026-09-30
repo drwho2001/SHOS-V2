@@ -735,7 +735,22 @@ this date; summarized here for durability.
   Backup-&-Export consolidation and the Units-screen removal). Test flakes from banner interception (fixed in helper); a crypto-timing wait in flow 13 was still a fixed 500ms plus a non-retrying count and is now a bounded wait (25 Sep 2026). Healthcare sub-tab discoverability (Menstrual/Contraception gated behind toggle).
   - **Overlays — three genuine UX gaps. ESCAPE NOW RESOLVED; the other two still open.**
     - **Escape-to-dismiss: RESOLVED 28 Sep 2026 — see "Recently shipped" below. THIS LINE PREVIOUSLY SAID IT WAS STILL OPEN, AND IT HAD SHIPPED THE SAME DAY.** 20 files are wired to `useEscapeToClose` (`git grep -l useEscapeToClose HEAD -- src`), it has its own 8-test suite, and the shared delete confirmation is registered so Escape *cancels* rather than confirming. A session on 30 Sep acted on this stale line, rebuilt the hook from scratch and **overwrote the shipped implementation** before noticing — the third recorded instance in this file of an inherited claim being treated as a measurement. **Grep the code before trusting a status line here**, especially one describing work as "deliberately NOT attempted yet".
-    - **Worth checking, NOT a confirmed bug: does any wired sheet mount while closed?** `useEscapeToClose(onClose, enabled)` registers on *mount*, so a sheet that is permanently mounted and merely hidden would sit on the stack and swallow the Escape press of the sheet beneath it. A static scan of the 20 wired files finds 15 call sites whose component is rendered without an `&&` guard at its direct render site — but many of those sit inside a parent that is itself conditional, so that count is a **question, not a finding**. Needs per-site reading or a browser check. Confirmed in neither direction.
+    - **RESOLVED 30 Sep 2026 (t035) — CONFIRMED, and a real bug, though not the
+      one this line feared.** `useEscapeToClose(onClose, enabled)` registers on
+      *mount*, and three sheets are mounted permanently and close via a falsy
+      prop rather than by unmounting: `TestEditSheet`, `VisitEditSheet` and
+      `MeasurementPreferencesSheet`. A closed sheet on a LIFO stack does not trap
+      the key — only the top entry ever acts, so it *misdirects* it. On the
+      Testing list, Escape reached `TestEditSheet`'s `onClose`, which is
+      `setScreen({ name: "landing" })`, so **pressing Escape on a list navigated
+      the user off the list.** All three now pass their real open state, using
+      the `enabled` parameter the hook already had. The earlier one-level-up
+      static scan also flagged `PartnerNotificationSheet`, `TimelineModule` and
+      `InlineMeasurementSheet`; reading them showed all three sit inside
+      conditional parents one level further up, so those were **false
+      positives** — recorded because a scan that over-flags is worse than no
+      scan, because the next session deletes the test. Guarded narrowly over the
+      three confirmed components only.
     - **Two back-button traps** and **six level-skipping overlays** — recorded by the same 25 Sep audit, not independently re-verified since. Genuine but unquantified; same reasoning applies.
 
 - **Desktop font-size/empty-space (#93) — see the 15/16 Sep entries under

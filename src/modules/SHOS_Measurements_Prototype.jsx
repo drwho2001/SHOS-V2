@@ -1086,8 +1086,11 @@ function detectUnitSystem(prefs) {
   return isImperial ? "imperial" : "metric";
 }
 
-function MeasurementPreferencesSheet({ onClose, onManageGroups, T }) {
-  useEscapeToClose(onClose);
+  function MeasurementPreferencesSheet({ isOpen, onClose, onManageGroups, T }) {
+    // FIXED 30 Sep 2026 (t035) - rendered unconditionally with its close action
+    // being `setShowPreferences(false)`, so it registered on the Escape stack
+    // even when the preferences sheet was not showing.
+    useEscapeToClose(onClose, isOpen);
   const [prefs, setPrefs] = useLoadedState(() => MeasurementPreferencesRepository.getPreferences(), [], DEFAULT_MEASUREMENT_PREFERENCES);
   const prefsRef = useRef(null);
   useEffect(() => { prefsRef.current?.focus(); }, []);
@@ -1264,7 +1267,7 @@ export default function MeasurementsModule({ openAddOnMount = false, onConsumedQ
       {screen.name === "add" && <MeasurementSheet T={T} measurement={null} presetType={screen.presetType} onSave={createMeasurement} onClose={backToList} />}
       {screen.name === "edit" && editingMeasurement && <MeasurementSheet T={T} measurement={editingMeasurement} onSave={saveMeasurement} onClose={() => setScreen({ name: "detail", id: screen.id })} />}
       {showPreferences && (
-        <MeasurementPreferencesSheet T={T} onClose={() => setShowPreferences(false)} onManageGroups={() => { setShowPreferences(false); setShowManageGroups(true); }} />
+        <MeasurementPreferencesSheet T={T} isOpen={showPreferences} onClose={() => setShowPreferences(false)} onManageGroups={() => { setShowPreferences(false); setShowManageGroups(true); }} />
       )}
       {showManageGroups && (
         <ManageGroupsScreen T={T} domain={GROUP_DOMAIN} allMembers={allTypesEverUsed} onBack={() => setShowManageGroups(false)} onChanged={() => setGroupsVersion((v) => v + 1)} />

@@ -882,8 +882,11 @@ function AttachmentManager({ visitId, attachments, onChanged, T }) {
 }
 
 // ── Add/Edit sheet ──
-function VisitEditSheet({ visitId, prefillData, onClose, onSaved, onBeforeEdit, onAfterEdit, T }) {
-  useEscapeToClose(onClose);
+function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBeforeEdit, onAfterEdit, T }) {
+  // FIXED 30 Sep 2026 (t035) - same defect as Testing's TestEditSheet: this
+  // sheet is mounted permanently and closes via a falsy `visitId`, so a CLOSED
+  // sheet sat on the Escape stack and could swallow or misdirect the key.
+  useEscapeToClose(onClose, isOpen);
   const isNew = !visitId;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
@@ -1831,6 +1834,7 @@ export default function ClinicVisitsModule({ openAddOnMount = false, onConsumedQ
   } else if (screen.name === "edit") {
     screenContent = (
       <VisitEditSheet T={T} visitId={screen.id} prefillData={!screen.id ? addPrefill : null}
+      isOpen={screen.name === "add" || screen.name === "edit"}
         onClose={() => setScreen(screen.id ? { name: "detail", id: screen.id } : { name: "landing" })}
         // FIXED 27 Sep 2026 - same omission as Encounters/Testing: refresh()
         // existed and was wired to the delete paths, but saving never called

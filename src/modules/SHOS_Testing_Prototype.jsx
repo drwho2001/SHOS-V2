@@ -594,8 +594,15 @@ function LinkPicker({ items, onPick, T, placeholder = "Search by name…" }) {
 }
 
 // ── Add/Edit sheet ──
-function TestEditSheet({ testId, prefillData, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord, T }) {
-  useEscapeToClose(onClose);
+function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord, T }) {
+  // FIXED 30 Sep 2026 (t035) - this sheet is mounted PERMANENTLY and closes via
+  // a falsy `testId` prop, so registering unconditionally put a CLOSED sheet on
+  // the Escape stack. The stack is LIFO, so the real consequence was not a
+  // trapped key but a WRONG one: on the Testing list, Escape reached this
+  // sheet's onClose, which is `setScreen({ name: "landing" })` - so pressing
+  // Escape on a list navigated you off the list. `enabled` is passed the real
+  // open state, which the hook has always supported.
+  useEscapeToClose(onClose, isOpen);
   const isNew = !testId;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
@@ -1563,6 +1570,7 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
   } else if (screen.name === "edit") {
     screenContent = (
       <TestEditSheet T={T} testId={screen.id} prefillData={!screen.id ? addPrefill : null}
+     isOpen={screen.name === "add" || screen.name === "edit"}
         onClose={() => setScreen(screen.id ? { name: "detail", id: screen.id } : { name: "landing" })}
         // FIXED 27 Sep 2026 - refresh() was defined and wired to the delete
         // paths, but the SAVE path never called it, so a new or edited Test
