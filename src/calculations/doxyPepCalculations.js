@@ -41,6 +41,7 @@
 // actual act (Oral/Anal/Vaginal/Rimming) instead, same as any other
 // encounter.
 import { realTimestampFromStored } from "./dateInputHelpers";
+import { latestLogOfType } from "./medicationCalculations";
 
 export const DOXYPEP_QUALIFYING_POSITIONS = [
   "Oral - giving", "Oral - receiving",
@@ -85,9 +86,11 @@ export function findDoxyPepMedication(medications) {
 // that came before it, and the next qualifying encounter after that
 // starts a fresh window.
 export function getDoxyPepStatus(encounters, doxyDoseLogs, now = new Date()) {
-  const lastDose = [...(doxyDoseLogs || [])]
-    .filter((l) => l.type === "dose" && !l.voided)
-    .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+// Owner's helper rather than a seventh inline copy of "newest non-voided
+    // log of type X" - see latestLogOfType in medicationCalculations.js. This
+    // one matters more than most: the value below starts a 72-hour
+    // post-exposure prophylaxis deadline.
+    const lastDose = latestLogOfType({ logs: doxyDoseLogs || [] }, "dose");
   // realTimestampFromStored, not a plain new Date().getTime(): dose/
   // encounter dates are this app's stored fake-UTC strings (see
   // dateInputHelpers.js) — parsing them the plain way and comparing

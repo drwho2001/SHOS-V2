@@ -10,7 +10,7 @@ import { ResultsRegistry } from "../registries/resultsRegistry";
 import { EncounterRepository } from "../repositories/encounterRepository";
 import { ContactRepository } from "../repositories/contactRepository";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
-import { computeStock, getDoseComponents, formatDoseComponents } from "../calculations/medicationCalculations";
+import { computeStock, getDoseComponents, formatDoseComponents, latestLogOfType } from "../calculations/medicationCalculations";
 import { formatRelativeDate, sortByDateDesc } from "../calculations/encounterCalculations";
 import { nowAsStoredDate, inDaysAsStoredDate } from "../calculations/dateInputHelpers";
 import { useAnonymiseMode, ANONYMISED } from "../calculations/anonymiseDisplay";
@@ -565,7 +565,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
             // a "100mg × 2" expression, per the user's own preference.
             const doseText = formatDoseComponents(getDoseComponents(m), m.unitsPerDose || 1);
             const doseLabel = doseText ? `${m.name} ${doseText}` : m.name;
-            const lastDose = m.logs.filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+            const lastDose = latestLogOfType(m, "dose");
             const subtitleParts = [m.medicationType, m.route].filter(Boolean);
             if (lastDose) subtitleParts.push(`last taken ${formatRelativeDate(lastDose.date)}`);
             return <Row T={T} key={m.id} title={doseLabel} subtitle={subtitleParts.join(" · ")} alert={stock.tracked && stock.needsAction} color={ACCENTS.medication} onTap={() => setPendingNav({ tab: "medication", recordId: m.id, label: m.name, moduleLabel: "Medication" })} />;

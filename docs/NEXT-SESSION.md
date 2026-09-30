@@ -1265,6 +1265,62 @@ files were fine while the check meant to prove it threw. Fixed rather than
 deleted: a restoration check that cannot run is not a check. Restoration then
 confirmed independently via `git status`, not by trusting the harness's word.
 
+### t053 finding 2 — "the most recent non-voided dose" was written out seven times
+
+`latestLogOfType(med, type)` now has one owner. Before it, the same expression
+existed inline in **seven** places: twice inside the calculation files that own
+the rules depending on it (`medicationCalculations.js`, `medicationReminderSync.js`),
+and five times across `ClinicCard` and the Medication Dashboard.
+
+All seven were logically identical, so this was a **latent** split-brain rather
+than a live bug — which is exactly the point. They agreed by coincidence, not by
+construction. The dose lockout is safety-relevant (NHS missed-dose guidance), and
+its most important input was being derived independently in five places. The
+first time one of them gains a filter, the reminder can stop firing while the
+button still shows unlocked, or the reverse, and nothing fails.
+
+The one that mattered most was the seventh: `getDoxyPepStatus`, whose result
+starts a **72-hour post-exposure prophylaxis deadline**.
+
+**My enumeration was wrong twice, and both errors were mine.**
+
+1. I first reported "six copies, byte-identical". The real number was **seven** —
+   the `doxyPepCalculations` one is formatted across three lines, so a
+   single-line pattern could not see it. Then the replacement sweep turned up
+   **six more sites**, which turned out to be genuinely different facts (all
+   doses, the earliest dose, a day-key set, a global latest across medications).
+   They share only the *filter*, not the fact.
+
+   So the honest total is: **seven** duplicated copies of one fact, now
+   consolidated, plus **six** sites that legitimately want different facts and
+   share only the `(l) => l.type === "dose" && !l.voided` predicate. That second
+   group is **recorded, not changed** — collapsing it would mean a
+   `nonVoidedLogsOfType()` primitive threaded through the adherence maths, which
+   is heavily tested and is a separate decision, not a free refactor.
+
+   The lesson is the one this project already keeps paying for: **enumerate the
+   concept, not a pattern that happens to match it.** A regex for the expression
+   I already knew about could not find the copies that were formatted
+   differently, and "6, all identical" was a confident, wrong measurement.
+
+2. A PowerShell multi-line string replacement failed to parse on the first
+   attempt, and a second attempt silently replaced only 1 of 3 sites because two
+   used `m.logs` rather than `med.logs`. Neither was noticed by the tool
+   reporting success — both were caught by re-grepping afterwards rather than
+   trusting the edit. Exactly the regex-over-source hazard the change procedure
+   warns about, avoided only because the result was verified independently.
+
+**A tie could have changed silently.** The originals used `.sort(desc)[0]`, and
+`Array.prototype.sort` is stable, so equal timestamps resolved to the *first*
+such log in array order. A linear scan written with `>=` would have quietly
+started returning the *last*. Both are defensible; changing it unnoticed is not,
+so the behaviour is pinned by a test in both directions.
+
+Mutation-verified: five mutations, all red, none failed to apply — including
+dropping the `voided` filter, which is the load-bearing rule, since a voided dose
+is one the user explicitly marked as *not taken* and counting it would report a
+dose that never happened.
+
 ### t053 finding 0 — the date class is closed, and the comments now say so
 
 Before finding anything new, the class behind seven of the day's bugs was swept

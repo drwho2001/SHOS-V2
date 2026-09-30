@@ -31,7 +31,7 @@ import { useIsDesktopWidth } from "../calculations/responsive";
 import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../repositories/medicationPreferencesRepository";
 import { LogRepository, REASON_OPTIONS, SIDE_EFFECT_OPTIONS } from "../repositories/logRepository";
 import { computeStock, computeAdherence, nextDoseEstimate, 
-isDoseLockedOut,   lockoutEndsEstimate, lockoutEndsAt, getNextNotificationTime, effectiveDoseIntervalHours, getDoseComponents, doseTimingAdvisory, 
+isDoseLockedOut,   lockoutEndsEstimate, lockoutEndsAt, getNextNotificationTime, effectiveDoseIntervalHours, getDoseComponents, doseTimingAdvisory, latestLogOfType, 
 formatDoseComponents } from "../calculations/medicationCalculations";
 // ADDED — real ask: Correction Sheet needs to change WHEN a dose was
 // logged, not just how much, for the "forgot to log at the time, adding
@@ -311,7 +311,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
   const [confirmDelete, setConfirmDelete] = useState(false);
   const stock = computeStock(med);
   const adherence = computeAdherence(med);
-  const lastDose = [...med.logs].filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+  const lastDose = latestLogOfType(med, "dose");
   const requested = !!med.refillRequestedAt;
   const nextDose = lastDose ? nextDoseEstimate(med, lastDose.date, reminderTimingMode) : null;
   // ADDED — real ask: "no where to see what time next alarm will
@@ -2174,7 +2174,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   const allDailyMeds = useMemo(() => activeMeds.filter((m) => m.usagePattern === "daily"), [activeMeds]);
   const dueDailyMeds = useMemo(() => activeMeds.filter((m) => {
     if (m.usagePattern !== "daily") return false;
-    const lastDose = [...m.logs].filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    const lastDose = latestLogOfType(m, "dose");
     return !lastDose || !isDoseLockedOut(m, lastDose.date);
   }), [activeMeds]);
 
@@ -2185,7 +2185,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
     const locked = allDailyMeds.filter((m) => !dueDailyMeds.includes(m));
     if (locked.length === 0) return null;
     const estimates = locked.map((m) => {
-      const lastDose = [...m.logs].filter((l) => l.type === "dose" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+      const lastDose = latestLogOfType(m, "dose");
       return lastDose ? lockoutEndsEstimate(m, lastDose.date) : null;
     }).filter(Boolean);
     return estimates[0] || null;

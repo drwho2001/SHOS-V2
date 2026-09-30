@@ -21,6 +21,53 @@
 // reasoned about on their own.
 import { realTimestampFromStored } from "./dateInputHelpers";
 
+/**
+ * The most recent non-voided log of a given type for a medication.
+ *
+ * ADDED 30 Sep 2026 - found by the t053 "one owner per derived fact" audit.
+ *
+ * This existed inline in SIX places, spanning this file, medicationReminderSync.js
+ * and three module files:
+ *
+ *   medicationCalculations.js:312        lastRefill
+ *   medicationReminderSync.js:73         lastDose
+ *   SHOS_ClinicCard_Prototype.jsx:568     lastDose
+ *   SHOS_Medication_Dashboard_...:314    lastDose
+ *   SHOS_Medication_Dashboard_...:2177   lastDose
+ *   SHOS_Medication_Dashboard_...:2188   lastDose
+ *
+ * All six were logically identical, so this is a LATENT split-brain rather than
+ * a live bug - they agree today. That is the point worth recording: they agreed
+ * by coincidence, not by construction. Two of the six were inside the very files
+ * that own the rules depending on them, so the dose lockout - which is
+ * safety-relevant, being built on NHS missed-dose guidance - had its most
+ * important input derived independently in five places. The first time one of
+ * them gains a filter (a new log type, a different meaning of "voided"), the
+ * reminder can stop firing while the button still shows unlocked, or the
+ * reverse, and nothing would fail.
+ *
+ * The "voided" filter is the load-bearing part and the reason this was worth
+ * consolidating: a voided dose is one the user explicitly marked as not taken,
+ * so including it would report a dose as taken that was not. That is exactly
+ * the kind of rule that must be written once.
+ *
+ * @param {object} med  a medication record with a `logs` array
+ * @param {string} type the log type to pick, e.g. "dose" or "refill"
+ * @returns {object|undefined} the newest matching log, or undefined
+ */
+export function latestLogOfType(med, type) {
+  if (!med || !Array.isArray(med.logs)) return undefined;
+  // filter() already returns a new array, so sorting it cannot mutate
+  // med.logs. (Two of the six originals spread defensively for this reason,
+  // which is harmless but implies the risk was real.)
+  let newest;
+  for (const log of med.logs) {
+    if (!log || log.type !== type || log.voided) continue;
+    if (!newest || new Date(log.date) > new Date(newest.date)) newest = log;
+  }
+  return newest;
+}
+
 // ADDED 16 Sep 2026 — real gap: a combination product (PrEP —
 // Emtricitabine 200mg/Tenofovir DP 245mg; co-codamol — Paracetamol
 // 500mg/Codeine 30mg) has more than one active ingredient at its own
@@ -309,7 +356,7 @@ export function computeAdherence(med) {
   const expected7 = computeExpectedDoseDays(med, doseDays, 7, today);
   const sevenDay = windowStats(doseDays, 7, today, expected7);
 
-  const lastRefill = [...med.logs].filter((l) => l.type === "refill" && !l.voided).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+  const lastRefill = latestLogOfType(med, "refill");
   // CHANGED 18 Aug 2026 — real feedback: "since refill" used to span the
   // FULL days elapsed since the last refill log entry, treating one
   // refill as one continuous block. That's wrong for meds dispensed in
