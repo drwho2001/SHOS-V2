@@ -1353,6 +1353,23 @@ export default function App() {
     window.addEventListener("shos:storage-save-failed", onSaveFailed);
     return () => window.removeEventListener("shos:storage-save-failed", onSaveFailed);
   }, []);
+  // ADDED 30 Sep 2026 (audit) — the READ side of the same class, and the more
+  // serious half. storageAdapter's load() used to collapse every failure into
+  // "return the fallback", and for 16 of the 34 real call sites that fallback
+  // is the fabricated seed array. A decrypt failure therefore handed the app
+  // demo data, which the next persist() then wrote straight over the user's
+  // real records. load() no longer does that, and it now refuses to save over
+  // a key it could not read — but "your records exist and this app can't read
+  // them" is not something to swallow, so it says so plainly and names the one
+  // action that resolves it. Deliberately NOT auto-dismissing, same as the
+  // save-failure banner above: a medical record being unreadable is not a
+  // transient notice, and it must survive until the user has seen it.
+  const [readFailedBanner, setReadFailedBanner] = useState(null);
+  useEffect(() => {
+    const onReadFailed = (event) => setReadFailedBanner(event.detail?.message || "Unknown error");
+    window.addEventListener("shos:storage-read-failed", onReadFailed);
+    return () => window.removeEventListener("shos:storage-read-failed", onReadFailed);
+  }, []);
   const [notifToast, setNotifToast] = useState(null);
   const notifToastTimerRef = useRef(null);
   const showNotifToast = (message) => {
@@ -2438,6 +2455,25 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
             <div style={{ fontSize: 12, marginTop: 2, color: "rgba(255,255,255,.9)" }}>Your device may be low on storage. Check the Storage section in Settings → Developer tools, and try freeing up space.</div>
           </div>
           <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setSaveFailedBanner(null)} aria-label="Dismiss storage save-failed banner" />
+        </div>
+      )}
+
+      {/* ADDED 30 Sep 2026 (audit) — the read-failure counterpart. Deliberately
+          a SEPARATE banner from the one above rather than sharing it: the two
+          have different causes (device full vs. records that will not decrypt)
+          and completely different remedies, and a user told to "free up
+          storage" when their records are actually unreadable would be sent
+          down the wrong path entirely. Same zIndex as the save banner above —
+          both are rare, non-recurring, and must outrank the due-reminder
+          banners without touching their height-offset measurement code. */}
+      {readFailedBanner && (
+        <div role="alert" style={{ position: "fixed", top: "env(safe-area-inset-top)", left: 16, right: 16, marginTop: 10, display: "flex", alignItems: "flex-start", gap: 10, background: "#8A2D2D", color: "#FFFFFF", padding: "12px 14px", borderRadius: RADIUS.md, boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 150, fontFamily: "'Inter', sans-serif" }}>
+          <AlertTriangle size={20} color="#FFFFFF" style={{ flexShrink: 0, marginTop: 1 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>Some of your records could not be read</div>
+            <div style={{ fontSize: 12, marginTop: 2, color: "rgba(255,255,255,.9)" }}>Your existing records have been left alone — nothing has been written over them. Saving new entries is paused until this is sorted, so check Settings → Developer tools → Error log for the detail before clearing sample data or resetting anything.</div>
+          </div>
+          <X size={18} color="rgba(255,255,255,.85)" style={{ cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }} onClick={() => setReadFailedBanner(null)} aria-label="Dismiss storage read-failed banner" />
         </div>
       )}
 
