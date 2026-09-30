@@ -775,6 +775,79 @@ attach it, and a disclosure resolver wired to nothing.
 Verified: 14 tests, 7 of 8 mutations red, the survivor documented as equivalent
 rather than counted as a pass. Lint and encoding clean.
 
+### Every "September" heading was wrong for one evening a month
+
+`monthLabel()` in `dateGrouping.js` renders the month heading on **eight**
+month-grouped lists — Vaccinations, Encounters, Testing, Clinic Visits, Timeline,
+Symptom Log (twice) and Attachments. It read a stored date and formatted it
+without naming the frame, so the device's local zone re-applied the real UTC
+offset to digits that are the user's own wall-clock time.
+
+Measured in Europe/London rather than reasoned about: a vaccination logged at
+**23:30 on 31 August grouped under "September 2026"**. A month heading a
+clinician reads, on the one screen whose job is summarising a period, wrong in
+the one direction the UK can see. One property — `timeZone: "UTC"` — is the
+whole defect, and it is exactly what `formatStoredDate` already does.
+
+All eight call sites pass a *record* date (`a.date`, `v.date`, `e.date`,
+`e.dateStarted`, `e.dateResolved`, `t.date`, `resolvedDate`) and none passes a
+real instant, so naming the frame here is unambiguous rather than a guess.
+
+**Why it survived the audit written to catch exactly this.** `storedDateRenderGuard`
+scans a hardcoded list of **eight module files** and nothing else, so
+`dateGrouping.js` — in `src/calculations/` — was invisible to it. The guard was
+working; it was simply pointed somewhere that did not include the bug.
+
+**The scope gap is measured, not guessed, and deliberately not closed here.**
+Widening that guard to all of `src/calculations/` surfaces **13** sites needing
+per-site judgement, and several are real instants *on purpose* —
+`realTimestampFromStored(...)` and `unlockAt` from `lockoutEndsAt()` are
+deliberately real, and a blanket rule would flag them. That is a separate pass
+with per-site evidence, not something to sweep in while fixing one function.
+Recorded at the guard so the next session starts from a count instead of a
+hunch.
+
+Verified: 7 tests across six timezones including `Pacific/Chatham` (+12:45) and
+`Asia/Kathmandu` (+05:45), covering both boundary directions (late evening and
+early morning, which fail in opposite directions), date-only values, year
+boundaries, DST transitions in both seasons, `Date` objects as well as strings,
+and the honest "Undated" label. Reverting the one property turns the suite red.
+
+### t034 — vaccinations are dated from a field the module stopped maintaining
+
+Found while picking up "the other half of the date work", and it corrects a
+claim of my own: **I listed the Clinic Card date filters as outstanding. They
+were fixed in t020 yesterday.** This is a different bug behind the same area.
+
+The vaccine record moved from one flat date to a dose series. The migration
+copies the old fields into a single-element `doses[]` and deletes
+`injectionSite`/`provider`/`nextDue`/`doseNumber` — but deliberately leaves the
+top-level `date`, because other code read it. The form now writes **only** dose
+dates, so:
+
+- **A newly created vaccination has no top-level `date` at all.**
+  `calendarCalculations.js:35` filters on `v.date`, so it is **silently absent
+  from the phone calendar** — the one consumer that leaves the device. And
+  `monthLabel(undefined)` returns "Undated", so it files itself under an Undated
+  heading in the Vaccinations list.
+- **An edited one keeps its pre-series date.** Five consumers read the stale
+  top-level field — Clinic Card timeframe filter and sort, the Vaccinations month
+  grouping, Global Search's subtitle *and* its sort date, and the calendar —
+  while the Clinic Card **display** already shows the derived value via
+  `getVaccinationNextDue`. So the card's own heading and its own row disagree.
+
+Second opinion taken first and it agreed on all four questions, adding two
+useful points: keep the legacy fallback inside the derivation but stop *writing*
+the field going forward, and do not run a destructive data migration unasked.
+Agreed and recorded at the task rather than acted on.
+
+Plan: one exported derivation in `vaccinationCalculations.js` — latest
+**non-superseded** dose date (a superseded dose is void, so it is not the date
+the record counts as given), with a legacy fallback to the top-level field —
+used by all five consumers, per this repo's own one-canonical-owner rule and
+because a reminder banner here once shipped permanently dead for exactly this
+reason. Not started; this entry is the scoping.
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second

@@ -30,9 +30,28 @@ export function groupConsecutive(items, getKey) {
 // "Undated" for anything that doesn't parse, so a record with a blank/
 // malformed date still renders (in its own honestly-labeled group)
 // rather than being silently dropped.
+//
+// FIXED 30 Sep 2026 - the missing `timeZone: "UTC"`, which is the whole defect
+// in one property. This function reads STORED dates, which in this app are
+// fake-UTC: the digits are the user's own wall-clock time and the trailing "Z"
+// is a deliberate lie (see dateInputHelpers.js's header). Reading one back
+// without naming the frame hands it to the device's LOCAL zone, which re-applies
+// the real UTC offset to digits that were never in UTC. A vaccination logged at
+// 23:30 on 31 August is therefore read as 1 September in London and grouped
+// under the wrong month, in a heading a clinician reads.
+//
+// Every one of the eight call sites passes a record date - a.date, v.date,
+// e.date, e.dateStarted, e.dateResolved, t.date, resolvedDate - and none
+// passes a real instant, so naming the frame here is unambiguous. `timeZone:
+// "UTC"` is exactly what formatStoredDate does for the same reason.
+//
+// Found while chasing a different vaccination bug: dateGrouping.js is a
+// calculations/ file that the storedDateRenderGuard does not scan, so the guard
+// that exists specifically to catch this could not see it. It is added to that
+// guard's scope in the same change.
 export function monthLabel(dateInput) {
   if (!dateInput) return "Undated";
   const d = new Date(dateInput);
   if (isNaN(d.getTime())) return "Undated";
-  return d.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  return d.toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
 }
