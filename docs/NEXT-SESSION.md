@@ -1008,6 +1008,28 @@ has never been watched happening (six, each with the specific thing to try).
 
 Deliberately short. A long checklist is a checklist nobody reads.
 
+### A test that only worked on my own machine — the third one in a single file
+
+The t037 suite went green locally and went red in CI, which is the whole reason
+the gate runs there. The assertion read `toContain("15 Oct")` against
+`formatRelativeDate`, which formats with the **device's default locale**: this
+UK machine renders "15 Oct (in 2 weeks)" and CI's en-US renders "Oct 15, 2026
+(in 2 weeks)". Same value, two spellings.
+
+The first attempt at fixing it matched the month name too — which is not a fix,
+just a narrower version of the same mistake, and it fails on de-DE's
+"15. Okt.". The assertion now checks the **day number**, which is the thing that
+was actually wrong, plus the relative half, which is the function's own wording
+and therefore locale-independent. Verified it still *rejects* 14 and 16 October,
+so it is not merely permissive — an assertion that accepts anything is the
+mirror-image version of this failure.
+
+This was the **second** assertion in that one file that only held on the machine
+that wrote it; the first two were caught by running locally and fixed before
+pushing. Third time today that a green local result meant my assertion was
+wrong rather than the code being right, and the third was the only one the
+development machine could not have caught on its own.
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second
