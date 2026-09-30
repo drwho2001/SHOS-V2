@@ -444,10 +444,31 @@ both on every exit path.
   delegated retroactive audit ran 17 Sep 2026 and found and fixed 3
   genuine gaps (Contacts' transport/hosts/linked/flagged icon row and
   `MethodIcons`, Timeline's `EpisodeCard` positive-result dot,
-  MenstrualHealth's `FlowDrops` hover-only title) — see "Recently
-  shipped" below for the full list. Still not claimed exhaustive
-  (the audit itself covered `src/modules/*.jsx` + `App.jsx`, not every
-  possible icon-only element) — flag a genuine gap if one surfaces.
+   MenstrualHealth's `FlowDrops` hover-only title) — see "Recently
+   shipped" below for the full list. **That audit is now EXHAUSTIVE and
+   permanently gated** (29 Sep, pool `t019`): `src/components/
+   iconOnlyUIAudit.test.js` parses every module with `@babel/parser`
+   (not regex — four audits in this repo failed on exactly that), finds
+   every interactive element whose only visible content is an icon, and
+   asserts the set matches a reviewed list where **each entry must carry
+   a written reason**. One real gap found and fixed: Contacts' favourite
+   star was a bare `<div onClick>` with no role, no `tabIndex` and no
+   name, so it was unreachable by keyboard and announced as nothing. It
+   survived the 17 Sep `nested-interactive` fix on the very same card,
+   which is the transferable part: a fix that changes a card's semantics
+   should re-examine the controls sitting inside it.
+   **Two resolved cases, recorded so neither is re-litigated**: (a) a
+   chevron at the end of a row that carries its own visible label is that
+   row's own "opens something" symbol, not an unexplained icon; (b) the
+   bottom-nav reminder dot is *not* given a tap target on purpose — a
+   focusable control inside a tab is a `nested-interactive` violation, so
+   the dot is `aria-hidden`, the tab's own accessible name carries the
+   count, and a once-per-run toast explains it. A notification badge on a
+   tab is about as universal as the gear this rule already carves out.
+   **When adding an affordance, assert it says something, not merely that
+   the attribute exists** — the first version of that assertion passed
+   against `aria-label={undefined}`, which is the same defect it was
+   written to prevent.
 - **Verify a write actually landed** — don't trust a tool call's success
   alone; confirm state changed for anything that matters (this applies
   to Notion edits and to code changes alike).
@@ -612,8 +633,9 @@ this date; summarized here for durability.
   - **Duplicate patterns needing standardization**: RegistryTagPicker (4 copies: Testing, MyProfile, Contacts, Encounters), Date/Time "Now" button (10 files), per-module field components (corrected 25 Sep 2026: SelectField 9 copies, DateTimeField 3, AgeField 2, RelationPicker 5 — none reach "10+"; the AgeField figure was off by 5x), FAB buttons (12 sites).
   - **Accessibility exhaustive (17 Sep axe-core + 25 Sep follow-up)**: Sub-screen `<h1>` complete (58 across 39 files); live regions are exactly 10 locations and no more; contrast violations fixed (Guide raw hex, Meds 50% opacity, InteractiveTour fixed); module sheets `role="dialog"` complete.
   - **Settings navigation** — 16 rows across 8 sections (corrected 25 Sep 2026: the long-standing "22 rows" figure predates the 16 Sep Backup-&-Export consolidation and the Units-screen removal). Test flakes from banner interception (fixed in helper); a crypto-timing wait in flow 13 was still a fixed 500ms plus a non-retrying count and is now a bounded wait (25 Sep 2026). Healthcare sub-tab discoverability (Menstrual/Contraception gated behind toggle).
-  - **Overlays — three genuine UX gaps, still OPEN.** Corrected and re-verified 28 Sep 2026, because this line previously said these were "logged as their own batch above" and **no such batch existed anywhere in this file**. The real, current state:
-    - **No overlay is dismissible with Escape.** Measured, not assumed: 57 `role="dialog"` overlays exist across `src/modules/**` and `src/App.jsx`, and **zero** of them close on Escape. The only two `Escape` handlers in the codebase are in Option List Editor and Registry Management, and both cancel an *inline text edit*, not a dialog. This is the one overlay finding cleanly worth doing, and it is deliberately NOT attempted yet: a sweep across 57 overlays is exactly the broad mechanical change this file warns against, so it wants its own pass with its own verification rather than being folded into an unrelated round.
+  - **Overlays — three genuine UX gaps. ESCAPE NOW RESOLVED; the other two still open.**
+    - **Escape-to-dismiss: RESOLVED 28 Sep 2026 — see "Recently shipped" below. THIS LINE PREVIOUSLY SAID IT WAS STILL OPEN, AND IT HAD SHIPPED THE SAME DAY.** 20 files are wired to `useEscapeToClose` (`git grep -l useEscapeToClose HEAD -- src`), it has its own 8-test suite, and the shared delete confirmation is registered so Escape *cancels* rather than confirming. A session on 30 Sep acted on this stale line, rebuilt the hook from scratch and **overwrote the shipped implementation** before noticing — the third recorded instance in this file of an inherited claim being treated as a measurement. **Grep the code before trusting a status line here**, especially one describing work as "deliberately NOT attempted yet".
+    - **Worth checking, NOT a confirmed bug: does any wired sheet mount while closed?** `useEscapeToClose(onClose, enabled)` registers on *mount*, so a sheet that is permanently mounted and merely hidden would sit on the stack and swallow the Escape press of the sheet beneath it. A static scan of the 20 wired files finds 15 call sites whose component is rendered without an `&&` guard at its direct render site — but many of those sit inside a parent that is itself conditional, so that count is a **question, not a finding**. Needs per-site reading or a browser check. Confirmed in neither direction.
     - **Two back-button traps** and **six level-skipping overlays** — recorded by the same 25 Sep audit, not independently re-verified since. Genuine but unquantified; same reasoning applies.
 
 - **Desktop font-size/empty-space (#93) — see the 15/16 Sep entries under
@@ -2116,14 +2138,18 @@ written. A future session following either would have concluded the work was
 done, on the strength of a sentence pointing at nothing.
 
 **Re-measured the overlay gaps rather than restating them, and the real number
-is worse than the claim.** The file said "no Escape anywhere"; there are in fact
-two Escape handlers, both in Option List Editor and Registry Management, and both
-cancel an *inline text edit* rather than a dialog. So the true finding is
-sharper: **57 `role="dialog"` overlays, zero dismissible by Escape.** Recorded
-with the measurement and the reason it is still not attempted - a 57-site
-mechanical sweep is exactly the broad unverifiable change this file warns
-against, so it wants its own pass. The other two (two back-button traps, six
-level-skipping overlays) are recorded as unquantified, from the same audit, not
+    is worse than the claim.** The file said "no Escape anywhere"; there are in fact
+    two Escape handlers, both in Option List Editor and Registry Management, and both
+    cancel an *inline text edit* rather than a dialog. So the true finding was
+    sharper: **57 `role="dialog"` overlays, zero dismissible by Escape.** Recorded
+    with the measurement and the reason it was not attempted then - a 57-site
+    mechanical sweep is exactly the broad unverifiable change this file warns
+    against, so it wanted its own pass. **[CORRECTED 28 Sep 2026: that pass
+    happened, and shipped — see the Escape entry in "Recently shipped". This
+    entry is left as the audit record, but "not attempted" is no longer true,
+    and a session on 30 Sep read it as open and nearly rebuilt shipped code.]**
+    The other two (two back-button traps, six level-skipping overlays) are
+    recorded as unquantified, from the same audit, not
 independently re-verified.
 
 **Two stale figures, one of them in a comment whose entire purpose is
