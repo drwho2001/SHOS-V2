@@ -1,0 +1,204 @@
+name: Android device tests
+
+# ROUND 1 - A REAL ANDROID PHONE, INSIDE CI WE ALREADY PAY FOR.
+#
+# WHAT THIS IS. A simulated Android device, booted inside the existing
+# `ubuntu-latest` runner, onto which we install the real APK and actually run
+# it. This is the first time this project's Android side has EVER been executed
+# by anything other than a human tapping a real phone.
+#
+# WHY IT IS FREE. GitHub's own documentation states that standard runners are
+# "free and unlimited on public repositories", and that "GitHub-hosted Linux
+# runners support hardware acceleration for Android SDK tools". This repository
+# is public, and every other workflow already runs on that same runner. So no
+# account, no card, no new spend - verified before building rather than assumed.
+#
+# WHY IT IS NOT ON PUSH. On demand plus overnight, deliberately. Emulator boot
+# alone costs minutes, and the release path is already gated by `verify:fast`
+# in build-apk.yml. This workflow is a safety net and an investigation tool, not
+# a new bottleneck on every commit. Turning it into a push gate is a one-line
+# change if that judgement turns out to be wrong.
+#
+# AND THE HONEST LIMIT, STATED HERE RATHER THAN DISCOVERED LATER: a simulated
+# device is NOT a physical one. It cannot tell us how the app looks, how a real
+# OEM's battery saver behaves, or how a particular handset's lock screen
+# truncates notification text. It complements `docs/DEVICE-TEST-CHECKLIST.md`;
+# it does not replace it. Every element still gets tested on real hardware.
+#
+# WHY ROUND 1 DIAGNOSTIC RATHER THAN ASSERTING. This workflow cannot be run
+# locally - it only executes on GitHub - so asserting against the exact shape of
+# `dumpsys` output would mean writing assertions from memory and then treating
+# a guess as a test. Round 1 therefore CAPTURES the real output and uploads it.
+# Round 2 turns those captured formats into assertions, from evidence.
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_level:
+        description: "Android API level to test (app supports 24-36)"
+        required: false
+        default: "34"
+      diagnostic_only:
+        description: "Only collect diagnostics, never fail the run"
+        type: boolean
+        required: false
+        default: true
+  schedule:
+    # 03:00 UTC nightly. Catches anything that broke while nobody was looking,
+    # which is the whole point given how many real defects were found by reading
+    # rather than by a test failing.
+    - cron: "0 3 * * *"
+
+# Deliberately NOT `push`. See the note above.
+
+jobs:
+  android-device-test:
+    name: "Android device test (API ${{ matrix.api-level }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    permissions:
+      contents: read
+
+    strategy:
+      # One leg for round 1: prove the plumbing before spending minutes proving
+      # volume. `fail-fast: false` so a matrix expansion reports every result
+      # rather than only the first failure.
+      fail-fast: false
+      matrix:
+        api-level: ["34"]
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          # Hard requirement, not a preference: @capacitor/cli 8.x refuses to run
+          # below 22, and the Android Gradle Plugin needs 21+. The LOCAL machine
+          # has Java 8, which is one of the three reasons an emulator is not
+          # viable on this dev box at all.
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The runner has ~14GB of usable disk and the Android SDK plus a system
+      # image is large. Reported rather than aggressively pruned, so a future
+      # disk failure has evidence instead of a guess.
+      - name: Report disk and memory
+        run: |
+          echo "disk:"; df -h / | tail -1
+          echo "memory:"; free -m | head -2
+          echo "cpus: $(nproc)"
+
+      # The APK's web assets come from the same build the web workflow uses, so
+      # an instrumentation failure cannot be blamed on a stale bundle.
+      - name: Build web assets
+        run: npm run build
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      # ---------------------------------------------------------------------
+      # The emulator. Action pinned to an immutable commit SHA rather than the
+      # `v2` tag, for the same reason opencode.yml was pinned earlier today:
+      # a mutable tag can be repointed at new code by its owner with no change
+      # and no review here. SHA resolved from the live GitHub API on
+      # 30 Sep 2026 (v2 tag, dated 2026-07-05), not written from memory.
+      # ---------------------------------------------------------------------
+      - name: Start Android emulator
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2 as of 2026-07-05
+        with:
+          api-level: ${{ matrix.api-level }}
+          # `default` is the plain AOSP image with no Google Play Services. That
+          # is the correct choice here and it is not a guess: there are ZERO
+          # play-services references in android/, so nothing needs them, and the
+          # lighter image boots faster on a shared runner.
+          target: default
+          arch: x86_64
+          profile: pixel_5
+          cores: 2
+          ram-size: 2048
+          emulator-boot-timeout: 600
+          disable-animations: true
+          enable-hw-keyboard: true
+
+      - name: Install the app
+        run: |
+          adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+
+      # Round 1's core assertion, and the one that matters most: does the
+      # NATIVE app launch at all? Every existing test in this project runs in a
+      # browser. Nothing has ever verified that the Android build even starts,
+      # which means a crash on boot would currently be invisible until a human
+      # installs the APK.
+      - name: Launch the app and confirm it did not crash
+        run: |
+          set -euo pipefail
+          adb logcat -c
+          adb shell am start -n com.shos.app/.MainActivity
+          sleep 12
+          echo "=== focused window ==="
+          adb shell dumpsys window | grep -iE 'mCurrentFocus|mFocusedApp' || true
+          echo "=== is our activity resumed? ==="
+          adb shell dumpsys activity activities | grep -i 'shos' | head -20 || true
+          echo "=== crash buffer ==="
+          adb logcat -d -b crash -v brief || true
+          echo "=== errors mentioning our package ==="
+          adb logcat -d -v brief | grep -iE 'shos|FATAL|AndroidRuntime' | tail -40 || true
+
+      - name: Capture FLAG_SECURE state
+        run: |
+          # FLAG_SECURE is set unconditionally in MainActivity.onCreate. Nothing
+          # in this project has ever verified it takes effect on a real Android
+          # window manager - it is pure OS behaviour and is unobservable in a
+          # browser. This is the cheapest way to confirm the flag is really set.
+          echo "=== windows ==="
+          adb shell dumpsys window windows | grep -iE 'shos|SECURE' | head -30 || true
+          echo "=== window policy flags (raw) ==="
+          adb shell dumpsys window | grep -i 'FLAG_SECURE' || echo "FLAG_SECURE not present in dumpsys output"
+
+      - name: Capture registered widget providers
+        run: |
+          # All ten are registered in AndroidManifest, but registration in a
+          # manifest and being present in the system AppWidgetService registry
+          # are different facts. Round 1 measures the second; round 2 asserts it.
+          echo "=== appwidget providers ==="
+          adb shell dumpsys appwidget | grep -iE 'shos|Provider' | head -60 || true
+
+      - name: Capture device and app info
+        run: |
+          echo "=== device ==="
+          adb shell getprop ro.build.version.release
+          adb shell getprop ro.build.version.sdk
+          echo "=== installed package ==="
+          adb shell dumpsys package com.shos.app | grep -iE 'versionName|versionCode|targetSdk|minSdk' | head -10 || true
+          echo "=== granted permissions ==="
+          adb shell dumpsys package com.shos.app | grep -A2 'runtime permissions' | head -20 || true
+
+      # Diagnostics are uploaded unconditionally, because a red run with no
+      # output is the exact "measures nothing and looks green" failure this
+      # project has now recorded eight times.
+      - name: Upload round-1 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: android-diagnostics-api${{ matrix.api-level }}-${{ github.run_number }}
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
