@@ -88,6 +88,11 @@ import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../calculations/responsive";
+// FIXED 30 Sep 2026 (audit) — Home had NO reference to Anonymise mode at all,
+// so the "Newest contact" row printed a real name while the feature was on.
+// See the comment at that row for why that matters more on Home than anywhere
+// else.
+import { useAnonymiseMode, ANONYMISED } from "../calculations/anonymiseDisplay";
 
 // ADDED 3 Sep 2026 — real ask: fix the Safari/iOS gesture-gated
 // permission bug (see this file's own comment on notifPermStatus
@@ -148,6 +153,12 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
 
 function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, registerModuleBackHandler, onLockNow, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen }) {
   const isDesktopWidth = useIsDesktopWidth();
+  // ADDED 30 Sep 2026 (audit) — hooks must be called unconditionally at the top
+  // of a component, which is why this sits here rather than next to the row it
+  // serves. Calling it lower down, or inside the JSX, would be a rules-of-hooks
+  // violation that renders conditionally - the same class of mistake this repo
+  // has hit on a `.map()` callback before.
+  const anonymise = useAnonymiseMode();
   const [darkMode] = useDarkModePreference();
   // Same convention as every other module's own DARK theme object —
   // reuses Medication's own hand-picked dark default ("#5B85F5") so
@@ -981,7 +992,24 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             last-encounter, because the row directly above already reports
             the most recent encounter and duplicating it here would be the
             kind of redundant entry point this list exists to avoid. */}
-        <SummaryRow label="Newest contact" moduleColor={ACCENTS.contacts} value={lastContact ? `${lastContact.name} · ${formatRelativeDate(lastContact.createdAt)}` : "None yet"} onClick={lastContact ? () => onNavigateToRecord("contacts", lastContact.id) : undefined} />
+        {/* FIXED 30 Sep 2026 (audit) — real leak. This row prints a contact's
+            REAL NAME while Anonymise mode is on, and this module had no
+            reference to the flag whatsoever (grep: 0 hits), so it was not an
+            oversight in the masking expression — the whole feature was simply
+            absent from the one screen a person sees first.
+
+            That matters more here than anywhere else it could be wrong:
+            Anonymise mode is the control you turn on right before handing the
+            phone to someone, and Home is the app's landing surface. The Privacy
+            screen's own scope line lists seven surfaces where masking applies
+            and Home was not one of them, so the copy did not even claim to
+            cover this.
+
+            Uses the shared helper's ANONYMISED placeholder rather than a local
+            one, which is the whole point of that module: the original bug was
+            two hand-duplicated placeholders drifting apart, and a third local
+            copy here would rebuild exactly that. */}
+        <SummaryRow label="Newest contact" moduleColor={ACCENTS.contacts} value={lastContact ? `${anonymise ? ANONYMISED : lastContact.name} · ${formatRelativeDate(lastContact.createdAt)}` : "None yet"} onClick={lastContact ? () => onNavigateToRecord("contacts", lastContact.id) : undefined} />
         <SummaryRow label="Last medication dose" moduleColor={medsBlue} value={lastDose ? `${lastDose.name} · ${formatDoseTime(lastDose.date)}` : "None yet"} />
         <SummaryRow label="Last test" moduleColor={healthcareColor} value={lastTest ? `${lastTest.title || lastTest.testingFor.join("/") || "Test"} · ${formatRelativeDate(lastTest.date)}` : "None yet"} onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined} />
         <SummaryRow label="Next clinic visit" moduleColor={healthcareColor} value={nextVisit ? `${(nextVisit.reasonForVisit || []).join("/") || nextVisit.title || "Visit"} · ${formatExactDate(nextVisit.date)}` : "No future visit booked — BASHH advises 3/12 monthly testing"} onClick={nextVisit ? () => onNavigateToRecord("healthcare", nextVisit.id, "clinicVisits") : () => onQuickAdd("healthcare", "clinicVisits", { isFutureAppointment: true })} />

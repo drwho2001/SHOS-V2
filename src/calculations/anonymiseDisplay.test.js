@@ -102,15 +102,32 @@ describe("anonymiseDisplay", () => {
     // the shared module. Comments are stripped first, because this file's own
     // comments discuss the removed constant by name.
     const dupes = [];
+    // CHANGED 30 Sep 2026 (audit) — this used to look for the EXACT literal
+    // '"•••• hidden"'. A module had drifted to FIVE dots ("••••• hidden"),
+    // which is not a substring of the four-dot version, so the guard passed
+    // while the drift it exists to prevent was sitting in the tree.
+    //
+    // A guard that misses its own target is worse than none: it reports
+    // the invariant is held. So the check is now structural rather than an
+    // exact match: any string literal that BEGINS with masking characters
+    // and ends in "hidden" counts as a local placeholder, whatever the dot
+    // count.
+    //
+    // The first version of this used `[...]*` and matched 43 sites, every
+    // one of them `visibility: "hidden"` in an inline style - because `*`
+    // allows ZERO masking characters, and all of those are literally the
+    // string "hidden". Requiring at least one masking character at the START
+    // is what separates a placeholder from an enum value.
+    const localPlaceholder = /["'][•*\.][^"']*hidden["']/;
     for (const f of files) {
       const stripped = readFileSync(join(modulesDir, f), "utf8")
         .replace(/\/\*[\s\S]*?\*\//g, "")
         .replace(/\/\/.*$/gm, "");
-      if (stripped.includes('"•••• hidden"')) {
+      if (localPlaceholder.test(stripped)) {
         dupes.push(f);
       }
     }
-    expect(dupes).toEqual([]);
+    expect(dupes, `these modules define their own masking placeholder instead of importing ANONYMISED: ${dupes.join(", ")}`).toEqual([]);
 
     // Proves the comment-stripper above still sees real code, so the
     // negative check cannot itself pass vacuously — the failure mode this

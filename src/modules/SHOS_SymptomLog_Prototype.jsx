@@ -13,6 +13,9 @@ import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString, formatStoredDate, formatInstantDate } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
+// FIXED 30 Sep 2026 (audit) — the Related-encounters search index was built from
+// attendee names with no anonymise check. See the comment at that index.
+import { useAnonymiseMode } from "../calculations/anonymiseDisplay";
 // CHANGED 20 Aug 2026 — real design-unification pass: values read
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
@@ -341,6 +344,10 @@ function ReadRow({ label, value, T, alert }) {
 
 function EntrySheet({ entry, onSave, onClose, T }) {
   useEscapeToClose(onClose);
+  // ADDED 30 Sep 2026 (audit) — top of the component, unconditionally, because
+  // a hook called further down or inside a render branch violates the rules of
+  // hooks and this value feeds a `useLoadedMemo` dependency list.
+  const anonymise = useAnonymiseMode();
   const isNew = !entry;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
@@ -378,9 +385,21 @@ function EntrySheet({ entry, onSave, onClose, T }) {
   // a contact's name finds it even though it isn't in the visible label.
   const contacts = useLoadedMemo(() => ContactRepository.getAll(), [], []);
   const encounters = useLoadedMemo(async () => [...(await EncounterRepository.getAll())].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((e) => {
-    const attendeeNames = (e.attendeeIds || []).map((id) => contacts.find((c) => c.id === id)?.nickname || contacts.find((c) => c.id === id)?.name).filter(Boolean);
+    // FIXED 30 Sep 2026 (audit) — real leak, and the DISPLAY half of it was
+    // already fine. The rendered `name` is the encounter's own title, never a
+    // contact's name, so masking the label would have looked correct and done
+    // nothing: these names go into `searchText`, which is what the Related
+    // encounters picker matches on. A user who turned Anonymise mode on could
+    // still type a partner's real name and get the encounter back.
+    //
+    // That is the same shape as the Global Search and Encounters-tab index
+    // leaks fixed on 28 Sep, and it is why the rule lives in one shared helper
+    // rather than being re-derived here. This module had zero references to the
+    // flag, so this was the feature being absent rather than an expression
+    // getting it wrong.
+    const attendeeNames = anonymise ? [] : (e.attendeeIds || []).map((id) => contacts.find((c) => c.id === id)?.nickname || contacts.find((c) => c.id === id)?.name).filter(Boolean);
     return { id: e.id, name: `${e.title || e.encounterType || "Encounter"} · ${formatDate(e.date)}`, searchText: attendeeNames.join(" ").toLowerCase() };
-  }), [contacts], []);
+  }), [contacts, anonymise], []);
   const tests = useLoadedMemo(async () => [...(await TestingRepository.getAll())].filter((t) => !t.isArchived).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map((t) => ({ id: t.id, name: `${t.title || (t.testingFor || []).join("/") || "Test"} · ${formatDate(t.date)}` })), [], []);
 
   const doSave = () => {

@@ -62,7 +62,13 @@ import {
   PREP_DOXY_OPTIONS, DAYS_OF_WEEK, TIME_CONSTRAINT_TYPES, AVAILABILITY_RULE_TYPES,
   BDSM_ROLE_OPTIONS, SEXUAL_POSITION_OPTIONS,
 } from "../repositories/contactRepository";
-import { useAnonymiseMode, contactName } from "../calculations/anonymiseDisplay";
+// FIXED 30 Sep 2026 (audit) — ANONYMISED added to this import: the HIV status row
+// carried its own hand-typed placeholder with FIVE dots where the shared one has
+// four. It still masked, so nothing leaked — but a second private copy is
+// precisely what let the original two implementations drift, and the guard
+// meant to prevent it tested for the exact four-dot literal, which a five-dot
+// drift does not match. A guard that misses its own target is worse than none.
+import { useAnonymiseMode, contactName, ANONYMISED } from "../calculations/anonymiseDisplay";
 import { deriveHivStatus, resolveHivStatus, describeHivStatus, HIV_STATUS_OPTIONS } from "../calculations/hivStatusCalculations";
 import { KinkRegistry, KINK_ROLE_OPTIONS, resolveKinkSynonym, analyzeKinkEntry, getKinkRoleOptions } from "../registries/kinkRegistry";
 // ADDED — real fix: same normalizeTag Contacts/Encounters use.
@@ -1159,7 +1165,7 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>HIV status</div>
             <div style={{ fontSize: 14, color: T.textPrimary, marginBottom: 6 }}>
               {anonymise
-                ? "••••• hidden"
+                ? ANONYMISED
                 : hivResolved
                   ? describeHivStatus(hivResolved)
                   : "Loading…"}
