@@ -777,6 +777,99 @@ this date; summarized here for durability.
 Full evidence trail for these lives in the build-audit artifact from
 this date; summarized here for durability.
 
+## Recently shipped (30 Sep 2026, newest of all yet again — a four-audit round that found a silent data-destroyer, an advisory CI gate, and the third "shipped but never run" claim)
+
+**The worst bug found in this project to date, in the one file every repository
+routes through.** `storageAdapter.load()`'s catch block returned `fallback` for
+*every* kind of failure, and for **16 of the 34** real call sites that fallback
+is the **seed array** — the fabricated demo contacts, encounters and tests. So a
+wrong Data Key, a cleared IndexedDB, or corrupted ciphertext handed the app
+demo data, that data *became* the repository's in-memory state, and the next
+`persist()` re-encrypted demo+new straight over the real ciphertext. Every
+record, gone, with a `console.error` nobody sees — and the three causes are
+indistinguishable from a genuine first install, so there was no signal at all
+before it had already happened.
+
+The fix has two halves and **the second is the one that actually prevents the
+loss**: returning an empty container stops fabrication, but an empty array saved
+over real ciphertext destroys it just as permanently. So a key that could not be
+read is *quarantined* and `save()` refuses it, leaving the real ciphertext on
+disk and letting a transient cause self-heal on the next read. The subtlety
+that makes it safe: a merely-**locked** vault must not be treated as corruption.
+`cryptoService` throws a distinct `"Vault is not unlocked"` message for that, and
+it is *routine* — `App.jsx`'s own `checkDueMeds` comment records that this app
+really does read storage during boot and while the lock screen is up.
+Quarantining there would have blocked every save in the app for the whole
+session, a far worse failure than the one being fixed. 15 tests, all 6 mutations
+red, plus a control that stays green.
+
+**The CI gate was advisory, and the reason is a GitHub Actions limitation rather
+than an oversight anyone would spot.** `build-apk.yml` and `web-alpha.yml` ran
+**no test, no lint and no build verification at all** — straight from `npm
+install` to gradle to a **public release**. The reassuring reading is that
+`smoke-test.yml` covers them. It does not, and cannot: **`needs:` only works
+between jobs inside one workflow**, so one workflow can never depend on another.
+The gate now lives *inside* each publishing workflow (`verify:fast` — build,
+lint, unit tests, encoding, docs — the things that would actually produce a
+broken APK), and is **push-only** so the `checkout_sha` bisect feature keeps
+working. Also in that commit: `npm install` → `npm ci`, `release_tag` moved out
+of a shell body in a `contents: write` job and into `env:`, a `permissions:`
+block on the one workflow that lacked one, and `anomalyco/opencode@latest` —
+a **mutable third-party tag holding a live API key on a public repo** —
+SHA-pinned to a commit resolved from the live API rather than written from
+memory, with the trigger restricted to the owner. 14 new tests, 8 mutations red.
+*Stated rather than implied:* the `actions/*` steps are still on mutable
+major-version tags and deliberately **not** guarded, because a test that failed
+forever on an unfixed item would just get deleted.
+
+**The third "shipped but never run" claim in this file, and the same shape as
+the Escape one.** `updateRefillWidget()` destructured `getRefillDueMedications`
+from `medicationCalculations.js` — which does not export it; it lives in
+`refillReminderSync.js`, where every other caller already imported it from. It
+also wasn't awaited, and was passed two arguments by a function that takes none.
+The `TypeError` was swallowed by a `catch` commented "Widget bridge not
+available (web)", so **`bridge.updateNextDose` never ran** and the next-dose
+widget that this file recorded as "wired, masked by default" still had never
+displayed anything. Now guarded statically: every relative dynamic `import()` in
+`calculations`/`repositories`/`storage` is resolved to its target and each
+destructured name checked against what that module actually exports.
+
+**Two Anonymise-mode gaps, three weeks after the audit that closed the first
+batch.** Home's "Newest contact" row printed a **real name** while the feature
+was on, and Home had *no reference to the flag at all* — this is not a masking
+expression got wrong, the feature was absent from the app's landing screen. And
+Symptom Log's "Related encounters" search index was built from attendee names
+with no check, where **the display was already correct** — so masking the label
+would have looked like a fix and changed nothing: you could turn Anonymise mode
+on and still find an encounter by typing your partner's real name. That is the
+part a visual check cannot catch, and it is why the rule lives in one helper.
+The third finding was **a guard that missed its own target**: My Profile had a
+five-dot placeholder beside the shared four-dot one, and the check for exactly
+four dots did not match five. A guard that misses its own target is worse than
+no guard, because it reports the invariant held.
+
+**Four of my own mistakes, each recorded where it happened**, because the
+recurring theme is that instrumentation is where this project leaks. A
+`localStorage` mock that was *defined but never installed*, which made results
+look shifted between tests. A mutation harness whose first control targeted
+`name: SHOS-debug.apk`, a string that **does not exist in that workflow** — I had
+written it from memory instead of reading the file. A `console.warn` guard
+scoped to end-of-file that passed while the catch was still on `console.debug`,
+caught only because mutation testing made it go green when it should go red.
+And the **eighth recorded instance of the comment-matching class**: a guard
+asserting the wrong-module import was gone, doing a substring test for exactly
+that pairing — which the fix's own comment satisfies, so it went **red on the
+commit that fixed the bug**.
+
+**The encoding trap, sixth recorded instance, and the most instructive one yet
+because of how it surfaced.** `verify:fast` passed — *including the encoding
+guard* — because that guard only scans **git-tracked** files, and the file was
+new and unstaged. Staging made it tracked; the pre-commit hook caught four
+double-encoded em-dashes immediately. **A brand-new file is completely
+unprotected until it is staged**, which makes staging the step that *exposes*
+the problem rather than the step that causes it.
+
+
 ## Recently shipped (30 Sep 2026, newest of all yet again — an audit of this file, because it nearly caused the destruction of working code)
 
 **The incident that prompted it.** This file said the Escape-to-dismiss work was
@@ -866,7 +959,23 @@ installed.** The QuickAdd contact/encounter/medication widgets are pure launch
 Intents and read no data, so they were never affected. Ten minus three is seven
 dead, and one of those seven — `NextDoseWidgetProvider` — had a provider, a
 layout, a receiver and, after this change, a bridge method, and **no caller
-anywhere in `src/`**. It is now wired, masked by default.
+anywhere in `src/`**. **CORRECTED 30 Sep 2026: "It is now wired, masked by
+default" was FALSE when written here, and stayed false until this date — the
+THIRD recorded instance in this file of a fix being recorded as shipped on the
+strength of the code existing rather than having been run.** The call site was
+present and the comment above it described it as working; it had never executed.
+`updateRefillWidget()` destructured `getRefillDueMedications` from
+`medicationCalculations.js`, which does not export it (it lives in
+`refillReminderSync.js`), called the real async function **without `await`**, and
+passed it **two arguments when it takes none**. The `TypeError` was swallowed by
+a `catch` commented "Widget bridge not available (web)", so everything below it —
+including `bridge.updateNextDose` — never ran. All three defects are fixed, the
+catch now logs at `warn` rather than `debug` so a real error stops being
+indistinguishable from a missing bridge, and
+`src/calculations/dynamicImportShape.test.js` now checks statically that every
+relative dynamic `import()` destructures a symbol its target actually exports.
+**Verified still never run on a real device** — that is the part only
+`docs/DEVICE-TEST-CHECKLIST.md` can close.
 
 **The encryption decision, and why the app's own vault key could not be used.**
 `AppWidgetProvider.onUpdate()` is a BroadcastReceiver that routinely runs with
