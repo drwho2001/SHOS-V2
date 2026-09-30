@@ -29,6 +29,32 @@ on:
 permissions:
   contents: write
 
+# ADDED 29 Sep 2026 after observing a real failure, not a hypothetical one.
+#
+# This job does `git push origin latest --force` so that `git checkout latest`
+# hands out current code rather than whatever the tag happened to be set to -
+# the original reason the step exists, when the tag was found frozen 3 weeks
+# behind while the release body kept updating correctly. That force-push is the
+# one part of this workflow that is NOT concurrency-safe, and two sessions
+# pushing minutes apart reliably breaks it: the later run has its tag ref
+# rejected and the job dies at that step, BEFORE the release is published. So
+# the newer commit gets no APK at all, and the previously-published asset stays
+# up looking current.
+#
+# Measured, not predicted: on 29 Sep two runs started 3 minutes apart
+# (3209e42, then efe4200 on top of it) and the second one failed with
+# "error: failed to push some refs" at "Force-update the release tag". This
+# project pushes from two sessions routinely, so the collision is the normal
+# case rather than the edge one.
+#
+# `cancel-in-progress: false` is deliberate and is the whole point. Cancelling
+# would reintroduce the exact bug above - a cancelled run leaves the tag and the
+# asset describing different commits. Queueing instead means the second run
+# waits, then tags and publishes the newer commit, which is the state we want.
+concurrency:
+  group: build-apk-release
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
