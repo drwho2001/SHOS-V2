@@ -638,6 +638,80 @@ would have removed is already removed. The date primitives did that job. Recorde
 here so a future session does not read "the domain modules should own every
 derivation" as a standing instruction and spend a day on it.
 
+### t019 — the icon-only-UI rule is now exhaustive, and one real bug fell out
+
+Second opinion taken first, per the standing habit, and it was **wrong on all
+three counts** until challenged with this repo's own measurements. It proposed
+TypeScript, which has been measured here at ~450 findings and deliberately kept
+as a diagnostic rather than a gate; it called the existing nav-dot design a
+"rationalisation" while recommending the design we had already built; and it
+recommended a one-off JSON manifest that a human signs off on once, which is
+precisely the "a check somebody runs once is not a check" trap. Its one
+contribution worth keeping was rewording the rule so the nav-dot case is not
+re-litigated — that is now in `CLAUDE.md`.
+
+**The audit is a gate, not a list.** `src/components/iconOnlyUIAudit.test.js`
+parses every module with `@babel/parser` (already present via Vite — no new
+dependency) and asserts the set of interactive elements whose only visible
+content is an icon matches a reviewed list, where **each entry must carry a
+written reason**. A new one fails the build. A verdict with an empty reason
+fails too, so the list cannot grow by pasting a line in without deciding.
+
+**One genuine gap.** The favourite star on a contact card was a bare
+`<div onClick>` with no `role`, no `tabIndex`, no `aria-label` and no key
+handler — unreachable by keyboard, and announced as nothing at all. It survived
+the 17 Sep `nested-interactive` fix **on the very same card**, which is the
+transferable part: that fix moved the card's own semantics and nobody looked at
+the controls sitting inside it.
+
+**The star's fix is only safe because of the earlier fix.** A `<button>` there
+would have been a genuine `nested-interactive` violation before 17 Sep, because
+the card's own button was the ancestor. That fix made the card's button a
+*sibling* at `zIndex: -1`, so a real `<button>` is now correct. The two changes
+are complementary, and doing either alone would have been wrong.
+
+**The scanner had five defects, all found by disbelieving its own output.** Each
+would have shipped a wrong audit:
+
+1. Text detection understood only a bare string literal, so every conditional,
+   number and template read as "no text" — 15 correct elements were reported as
+   unexplained, including a `<button>` whose entire content is a Pill icon and
+   the words "Log dose". Acting on that list would have meant editing correct
+   code.
+2. A carve-out list written with the wrong icon names (`CaretRight` where the
+   code says `ChevronRight`), matching nothing.
+3. Classifying icons by their **local alias**. This repo aliases every icon —
+   `import { CaretRightIcon as ChevronRight }` — so the whole carve-out list was
+   being compared against names that do not exist in the source.
+4. JSX nested inside an expression container was not walked for text, so a
+   collapsible header showing a count read as textless.
+5. **The worst one: "the scanner cannot tell" was counted in the same bucket as
+   "this element has no text."** A guess reported as a finding. Those are now a
+   separate undecidable bucket and are never counted as gaps.
+
+A self-check now proves text detection sees all six expression forms, because
+defect 5's mirror image — a detector that returns `""` for everything — would
+report every icon as unexplained and look *productive* rather than broken.
+
+**Mutation testing found a real weakness in my own guard.** The assertion on the
+star was `/aria-label=/`, and it passed happily against
+`aria-label={undefined}` — the attribute name was still there with no value,
+which is the exact defect it was written to prevent. Now asserts the
+state-dependent form and both label strings. All 7 mutations red, none
+unapplied.
+
+**And the mutation harness itself was wrong three times before it was right**,
+which is the more useful half. It spawned `npx`, which Windows cannot launch
+(ENOENT), and its catch turned that into exit 1 — *identical* to "the tests
+failed" — so it reported four mutations as "RED ok" having run nothing at all.
+It only looked right because I checked the baseline, which is why the harness now
+refuses to count any mutation unless the baseline is green. Two further
+mutations never applied: multi-line anchors against CRLF files.
+
+Verified: 5 tests green, lint clean, encoding guard clean. Local `verify:fast`
+is red on `src/components/escapeCoverage.test.js`, which is the other session's
+untracked in-flight file and is not in this commit.
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second

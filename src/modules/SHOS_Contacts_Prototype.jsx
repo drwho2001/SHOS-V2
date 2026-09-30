@@ -1559,12 +1559,40 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
       {/* ADDED 26 Aug 2026 — real ask: favourite contacts, star icon
           per the user's preference over a pin. Own click handler with
           stopPropagation so tapping the star toggles the favourite
-          without also opening the profile (the card's own onClick). */}
+          without also opening the profile (the card's own onClick).
+
+          FIXED 29 Sep 2026 (t019, icon-only-UI audit): this was a bare <div>
+          with an onClick and no semantics at all — no role, no tabIndex, no
+          aria-label, no key handler. A keyboard user could not reach it and a
+          screen reader announced nothing at all. It survived the 17 Sep
+          nested-interactive fix on this same card, which is the lesson: that
+          fix moved the CARD's semantics and nobody looked at the controls
+          sitting inside it.
+
+          Now a real <button>. That is safe here specifically BECAUSE of that
+          earlier fix — the card's own button is a SIBLING at zIndex -1, not an
+          ancestor, so a button here is not a button inside a button. Before
+          that change a <button> here would have been exactly the
+          nested-interactive violation, so this is the two fixes being
+          complementary rather than either being wrong.
+
+          The label states the ACTION and the resulting STATE ("Add … to
+          favourites" / "Remove … from favourites") rather than just "favourite",
+          because a screen-reader user otherwise cannot tell which way pressing
+          it will go. No tap-to-reveal caption is added: fill-vs-outline and
+          gold-vs-grey are two independent channels already, so the state is
+          not conveyed by colour alone, and a star-as-favourite is about as
+          universal as the gear and person the rule already carves out. */}
       {!selectMode && onToggleFavourite && (
-        <div onClick={(e) => { e.stopPropagation(); onToggleFavourite(contact.id); }}
-          style={{ position: "absolute", top: 10, right: 10, cursor: "pointer", zIndex: 2 }}>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onToggleFavourite(contact.id); }}
+          aria-label={contact.favourited
+            ? `Remove ${contact.name} from favourites`
+            : `Add ${contact.name} to favourites`}
+          style={{ position: "absolute", top: 10, right: 10, zIndex: 2, cursor: "pointer", background: "transparent", border: "none", padding: 2, lineHeight: 0, color: "inherit" }}>
           <Star size={17} weight={contact.favourited ? "fill" : "regular"} color={contact.favourited ? "#E8A33D" : T.textDisabled} />
-        </div>
+        </button>
       )}
       {selectMode && (
         <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selected ? T.contactsTeal : T.border}`, background: selected ? T.contactsTeal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
