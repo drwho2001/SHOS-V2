@@ -25,6 +25,41 @@ const base = {
 };
 
 describe("decideBackAction", () => {
+  it("dismisses the import modal before anything underneath it", () => {
+    // t038. This is the "level-skipping overlay" half of the 25 Sep finding,
+    // confirmed by reading the render rather than trusted from the note. The
+    // "Import backup" dialog is a full-screen role="dialog" at zIndex 998, and it
+    // was not in this chain at all — so back fell through to HOME, switching tab
+    // while the modal stayed on screen, still blocking the tab the user landed
+    // on. The user would have to find the X or tap the backdrop to escape.
+    expect(decideBackAction({ ...base, active: "contacts", showImportDialog: true }))
+      .toBe(BACK_ACTION.IMPORT_DIALOG);
+    // On Home too, which is where the old fall-through landed.
+    expect(decideBackAction({ ...base, active: "home", showImportDialog: true }))
+      .toBe(BACK_ACTION.IMPORT_DIALOG);
+    // And it outranks the tab change in both directions.
+    expect(decideBackAction({ ...base, active: "medication", showImportDialog: true, hasClinicCardReturn: true }))
+      .toBe(BACK_ACTION.IMPORT_DIALOG);
+  });
+
+  it("still prefers the module's own handler and the other overlays over it", () => {
+    // A module sheet open with the import modal up is a combination the UI does
+    // not currently produce, but the ORDERING must not regress: the module's own
+    // handler is the more local decision, and Settings/Search sit above <main>.
+    expect(decideBackAction({ ...base, moduleHandled: true, showImportDialog: true }))
+      .toBe(BACK_ACTION.MODULE);
+    expect(decideBackAction({ ...base, showSettings: true, showImportDialog: true }))
+      .toBe(BACK_ACTION.SETTINGS);
+    expect(decideBackAction({ ...base, showSearch: true, showImportDialog: true }))
+      .toBe(BACK_ACTION.SEARCH);
+  });
+
+  it("behaves exactly as before when no import modal is open", () => {
+    // Guards against the new branch leaking into unrelated paths.
+    expect(decideBackAction({ ...base, active: "contacts" })).toBe(BACK_ACTION.HOME);
+    expect(decideBackAction({ ...base, active: "home" })).toBe(BACK_ACTION.NONE);
+  });
+
   it("goes home from another tab, and does nothing from home", () => {
     expect(decideBackAction({ ...base, active: "contacts" })).toBe(BACK_ACTION.HOME);
     // The "nothing left" case is what makes the caller show the

@@ -1838,6 +1838,11 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
       moduleHandled: !!(moduleBackHandlerRef.current && moduleBackHandlerRef.current()),
       showSettings,
       showSearch,
+      // t038: the "Import backup" modal is a full-screen dialog at zIndex 998
+      // that was not in this chain, so back fell through to HOME — switching tab
+      // while the modal stayed up, still blocking the new tab. Verified by
+      // reading the render, not from the 25 Sep note that flagged it.
+      showImportDialog: showImportModeDialog,
       hasClinicCardReturn: !!clinicCardReturnTab,
       hasSearchReturn: !!searchReturn,
       active,
@@ -1845,6 +1850,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
     if (action === BACK_ACTION.MODULE) return true;
     if (action === BACK_ACTION.SETTINGS) { setShowSettings(false); return true; }
     if (action === BACK_ACTION.SEARCH) { setShowSearch(false); return true; }
+    if (action === BACK_ACTION.IMPORT_DIALOG) { setShowImportModeDialog(false); return true; }
     // Real report fix (15 Sep 2026) — see clinicCardReturnTab's own
     // comment above: once the record you were navigated to from Clinic
     // Card has no further internal screen of its own left to pop

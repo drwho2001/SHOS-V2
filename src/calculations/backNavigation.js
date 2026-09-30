@@ -25,6 +25,10 @@ export const BACK_ACTION = {
   CLINIC_CARD: "clinic-card",
   // Reopen Global Search with the query that produced the record now open.
   SEARCH_RETURN: "search-return",
+  // Dismiss the App-level "Import backup" modal. ADDED 30 Sep 2026 (t038).
+  // It is a full-screen role="dialog" at zIndex 998, so back walking past it to
+  // another tab leaves a modal stranded on top of the new tab, still blocking it.
+  IMPORT_DIALOG: "import-dialog",
   // Fall back to Home, because we are on some other tab.
   HOME: "home",
   // Nothing left to go back to — the caller shows the "press back again to
@@ -53,8 +57,9 @@ export function decideBackAction(state) {
     showSettings,
     showSearch,
     hasClinicCardReturn,
-    hasSearchReturn,
-    active,
+  hasSearchReturn,
+  showImportDialog,
+  active,
   } = state;
 
   // 1. The module's own handler always wins. It is the most local decision
@@ -68,6 +73,11 @@ export function decideBackAction(state) {
   //    anything underneath them is touched.
   if (showSettings) return BACK_ACTION.SETTINGS;
   if (showSearch) return BACK_ACTION.SEARCH;
+  // The import modal is the last App-level overlay opened and it sits at
+  // zIndex 998 over everything, so it must close before any tab change
+  // underneath it. Without this, back walked past it to another tab and left a
+  // modal stranded on top, still blocking the screen the user landed on.
+  if (showImportDialog) return BACK_ACTION.IMPORT_DIALOG;
 
   // 4 & 5. Return-to-where-you-came-from. Deliberately AFTER the module's own
   //    handler above, for the same reason the Clinic Card return already is:

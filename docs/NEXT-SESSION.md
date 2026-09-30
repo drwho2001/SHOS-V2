@@ -931,6 +931,83 @@ function signature.
 Verified: 32 tests across the derivation, the wiring guard and the calendar; **11
 of 11 mutations red**. Encoding guard and lint clean.
 
+### t038 — the month-old overlay findings, re-verified rather than trusted
+
+The 25 Sep audit recorded "two back-button traps and six level-skipping overlays"
+and explicitly never verified or counted them. A second model argued for
+discarding them as stale; that was refused and the model conceded, because this
+repo has a recorded incident where a stale line saying a feature was NOT built
+caused a session to rebuild it and overwrite the shipped code. An unverified
+old finding is a landmine.
+
+**Re-derived rather than believed.** App-level overlays: Settings and Search
+are in the chain; the five due-reminder banners are dismissible cards, not
+overlays. Every one of the **16 modules with internal screens** registers a back
+handler — checked, not assumed, and no module was missing one. So there is no
+back-button trap in the sense the note meant.
+
+**One genuine level-skip found and fixed.** The "Import backup" modal is a
+full-screen `role="dialog"` at `zIndex: 998` and was not in the back chain at
+all. Pressing back with it open fell through to HOME: the tab switched while the
+modal stayed on screen, still blocking the tab the user had landed on, and the
+only escape was finding the X or tapping the backdrop. It is now `BACK_ACTION.
+IMPORT_DIALOG`, ordered below the module handler and below Settings/Search, with
+three test cases covering it and a mutation confirming the branch is
+load-bearing.
+
+**It could not be fixed with `useEscapeToClose`, and that is the transferable
+part.** That hook is keydown-only — it registers a `keydown` listener and
+nothing else. The Android back button arrives through Capacitor's `backButton`
+event and `goBackOneLevel`, which never sees it. So the fix belongs in the
+decision function, which is the platform where the bug actually bites and is
+already unit-tested. A guard that looks right on desktop and does nothing on the
+phone is the same defect in a different costume.
+
+**The remaining counts are closed with a reason rather than kept alive.** The
+"two / six" figures were never recorded as specific locations, so they cannot be
+re-derived — and the mechanism they described, an ad-hoc chain of states, has
+been replaced by a pure, unit-tested `decideBackAction`. This satisfies the task's
+own acceptance criteria: one fixed, the rest closed with a reason. "Probably
+still true" is not left sitting as a resting state.
+
+### t040 — both cross-tree guards now look at the shared folder
+
+`storedDateRenderGuard` scanned **eight hardcoded module files and nothing
+else**, so the month-heading bug fixed the same day — in `dateGrouping.js`, in
+`src/calculations/` — was invisible to the check written specifically to catch
+it. The guard was working; it was pointed somewhere the bug was not. That is now
+the fifth time today a check passed while not looking at the right place.
+
+It could not simply be repointed: the module scan keys off module-shaped
+variable names (`e.date`, `v.startDate`) that do not appear in calculation
+files, so reusing it as-is would under-detect nearly everything. And the sites
+that are there are correct on purpose, so a blanket rule would push people
+towards the UTC sweep that is wrong for real instants.
+
+So the guard now **encodes the t037 triage** rather than re-deriving it: a site
+in that folder must either be one of the app's own canonical formatters, or
+match a reviewed entry that says why it is correct. Every entry must have been
+actually consulted — a stale allowlist entry fails — and every entry must carry a
+substantive reason, because an entry without one is a suppression, which is how
+those files got into trouble. Verified by injecting a new unreviewed offender
+and confirming the widened scope goes red.
+
+The window also went from 3 lines to 6, because the canonical formatters put
+`timeZone: "UTC"` on a later line of a multi-line options object and the
+3-line version flagged the app's own correct code — the exact "detector that
+never fired" shape, inside the guard written to prevent it.
+
+### t041 — device testing now has somewhere to land
+
+New `docs/DEVICE-TESTING.md`. The owner tests on a real phone at random commit
+stages, and until now a device-only finding became a task only if one of us
+happened to be looking — which is why two notch/status-bar items sat for a month
+with no owner. The doc separates what genuinely cannot be checked from a
+development machine (three items, each with why) from what is proved in code but
+has never been watched happening (six, each with the specific thing to try).
+
+Deliberately short. A long checklist is a checklist nobody reads.
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second
