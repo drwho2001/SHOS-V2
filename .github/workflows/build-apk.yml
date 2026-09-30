@@ -79,7 +79,41 @@ jobs:
           java-version: 21
 
       - name: Install dependencies
-        run: npm install
+        # FIXED 30 Sep 2026 (audit) — was `npm install`, which re-resolves
+        # within semver ranges. Combined with the fact that this workflow ran
+        # no tests at all, that meant the APK published to a public release
+        # could be built from a dependency tree nobody had verified. npm ci
+        # installs exactly the lockfile. smoke-test.yml and web-alpha.yml
+        # already used npm ci; this was the odd one out.
+        run: npm ci
+
+      # ADDED 30 Sep 2026 (audit) — THE gate this workflow never had.
+      #
+      # THE FINDING: build-apk.yml runs on every push to main and performed no
+      # test, no lint and no build verification of any kind — it went straight
+      # from npm install to gradle to a PUBLIC release. smoke-test.yml is the
+      # one gated workflow, and the natural conclusion ("it must be covered")
+      # was wrong in a way worth stating: `needs:` works only BETWEEN JOBS in
+      # the same workflow, so one workflow can never depend on another. Making
+      # this gate real means putting the gate INSIDE the publishing workflow.
+      #
+      # `verify:fast` rather than the full `verify` on purpose: it is build,
+      # lint, unit tests, encoding guard and the docs check — the things that
+      # would actually produce a broken APK — and it takes ~2 minutes instead
+      # of ~12. The full 23-flow Playwright suite still runs in smoke-test.yml,
+      # so running it a second time here would double CI time to re-derive a
+      # verdict rather than add coverage. What this gate does NOT cover is
+      # stated here rather than left to look comprehensive.
+      #
+      # `push` ONLY, deliberately. workflow_dispatch + checkout_sha exists so
+      # the owner can bisect a real device crash by building OLD commits
+      # against the CURRENT workflow file. Gating those would run today's tests
+      # against last month's source, which fails by construction and would
+      # break the bisect feature outright. A manual bisect build is also
+      # explicitly not something to publish over `latest`.
+      - name: Gate (build, lint, unit tests, encoding, docs)
+        if: github.event_name == 'push'
+        run: npm run verify:fast
 
       - name: Build the web app
         run: npm run build
@@ -115,10 +149,20 @@ jobs:
       # correctly too) keeps `git checkout latest` honest with what the
       # release page actually claims.
       - name: Force-update the release tag to this commit
+        env:
+          # FIXED 30 Sep 2026 (audit) — moved out of the shell body. GitHub
+          # expands `${{ }}` BEFORE the shell runs, so interpolating the input
+          # directly put attacker-controllable text inside a command that runs
+          # with `contents: write` and force-pushes a tag. Passing it through
+          # `env:` makes it a variable the shell expands as data, so quotes or
+          # `$(...)` in the value are inert. Exploiting the old form needed
+          # workflow_dispatch rights, so severity was capped — but this job
+          # holds write access to the repository and there was no reason to
+          # leave the injection path open.
+          RELEASE_TAG: ${{ github.event.inputs.release_tag || 'latest' }}
         run: |
-          TAG="${{ github.event.inputs.release_tag || 'latest' }}"
-          git tag -f "$TAG"
-          git push origin "$TAG" --force
+          git tag -f "$RELEASE_TAG"
+          git push origin "$RELEASE_TAG" --force
 
       - name: Publish APK to release
         uses: softprops/action-gh-release@v2

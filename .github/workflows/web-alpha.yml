@@ -21,11 +21,27 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v5
         with:
-          node-version: 20
+          # FIXED 30 Sep 2026 (audit) — was 20, while smoke-test.yml and
+          # build-apk.yml both use 22. smoke-test.yml's own comment records
+          # that this exact inconsistency was once fixed and this file was
+          # missed. 22 is the version @capacitor/cli 8.x hard-requires, so
+          # the web build was the only artifact produced on a Node the rest
+          # of the project has already moved off.
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      # ADDED 30 Sep 2026 (audit) — see the matching step in build-apk.yml for
+      # the full finding. Short version: this workflow deployed to GitHub Pages
+      # with no test, no lint and no build verification, so a red smoke-test
+      # run still published the web build. `needs:` cannot span workflows, so
+      # the gate has to live inside the publishing workflow. Push-only, so a
+      # manual dispatch is never blocked by a gate it didn't need.
+      - name: Gate (build, lint, unit tests, encoding, docs)
+        if: github.event_name == 'push'
+        run: npm run verify:fast
 
       - name: Build web app
         run: npm run build -- --base=/SHOS-V2/
