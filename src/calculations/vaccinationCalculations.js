@@ -1,3 +1,5 @@
+import { storedDayKey } from "./dateInputHelpers";
+
 // Pure vaccination derived-state helpers.
 //
 // ADDED 25 Sep 2026 after an audit found a real, silent break introduced by
@@ -482,4 +484,123 @@ export function getEarlyDoseNotice(doses, index, vaccineName) {
   if (!(daysEarly > 0)) return null;
 
   return { kind: "before-due-date", daysEarly, expectedOn: expected, guidance };
+}
+// getVaccinationDate — the ONE place that answers "when was this vaccination
+// given?", because five consumers had each grown their own answer and they
+// disagreed.
+//
+// THE BUG (pool t034)
+//
+// The vaccine record moved from one flat date to a dose series. The migration
+// copies the old flat fields into a single-element doses[] and DELETES
+// injectionSite/provider/nextDue/doseNumber — but deliberately leaves the
+// top-level `date`, because other code read it. The edit form now writes ONLY
+// dose dates. So the top-level date has two states, and both are wrong:
+//
+//   1. A record created since the series landed has NO top-level date at all.
+//      calendarCalculations.js filtered on `v.date`, so a vaccination the user
+//      had genuinely recorded was SILENTLY ABSENT from the phone calendar —
+//      the one consumer that leaves the device. monthLabel(undefined) returns
+//      "Undated", so it also filed itself under an Undated heading.
+//
+//   2. A record whose doses were edited keeps the pre-series date forever. Five
+//      consumers read that stale value — the Clinic Card timeframe filter and
+//      sort, the Vaccinations month grouping, Global Search's subtitle AND its
+//      sort date, and the calendar — while the Clinic Card DISPLAY already
+//      showed the derived value via getVaccinationNextDue. So the card's own
+//      section heading and its own rows disagreed with each other.
+//
+// This is the same class as the reminder break documented at the top of this
+// file: a value with two owners, where one of them stopped being maintained.
+// That break is why this is a single exported function rather than five
+// call-site patches.
+//
+// WHY "LATEST NON-SUPERSEDED DOSE", not just "latest dose"
+// -------------------------------------------------------
+// isDoseDateSuperseded() already exists and says a dose row is void when a LATER
+// row in the series has actually been given - that is what happens when someone
+// restarts a course or corrects an entry. A superseded dose is not a dose the
+// record should be dated by, so the answer has to skip it. This was the one
+// design question put to a second model, which agreed: a void dose is not the
+// clinical date of the vaccination.
+//
+// THE RETURNED SHAPE, and why it is not simply the dose's string
+// -----------------------------------------------------------
+// A dose date comes from <input type="date">, so it is "YYYY-MM-DD". The
+// top-level legacy date is a full fake-UTC timestamp. Those two cannot be
+// compared with `>=` as strings: "2026-09-01" >= "2026-09-01T00:00:00.000Z" is
+// FALSE, because the shorter string sorts first, so a record sitting exactly on
+// a "last 30 days" boundary is dropped. Returning one consistent stored-frame
+// shape removes that trap for every caller at once, rather than leaving five
+// places to each remember it.
+
+/**
+ * Normalise any stored date shape to one comparable stored-frame value.
+ *
+ * `time` is the dose's own HH:mm when there is one. Otherwise the time is taken
+ * from the value itself if it carries one - which matters for the legacy
+ * top-level date, a full "2025-11-04T09:00:00.000Z". Discarding that and
+ * rebuilding from the day key alone turned a 09:00 vaccination into midnight,
+ * which is the wrong time on a calendar event. Found by this derivation's own
+ * test, not by reading the code: the first version returned 00:00 for a legacy
+ * record whose stored value plainly said 09:00.
+ */
+function toStored(value, time) {
+  const day = storedDayKey(value);
+  if (!day) return null;
+  const fromDose = typeof time === "string" && /^\d{2}:\d{2}$/.test(time) ? time : null;
+  // slice(11,16) is the "HH:mm" of a full timestamp, and "" for a date-only
+  // value. Index 11, not 10: position 10 is the "T" separator, so slice(10,16)
+  // yields "T09:00" and fails the check below. That off-by-one passed my eye
+  // twice and was caught only because the test asserted a real clock time.
+  const fromValue = value.length >= 16 && /^\d{2}:\d{2}$/.test(value.slice(11, 16)) ? value.slice(11, 16) : null;
+  return `${day}T${fromDose || fromValue || "00:00"}:00.000Z`;
+}
+
+/**
+ * When was this vaccination given?
+ *
+ * Returns a stored-frame fake-UTC string, or null when the record genuinely has
+ * no usable date — the caller decides what to show, and `monthLabel` already
+ * renders null as an honest "Undated" rather than dropping the record.
+ */
+export function getVaccinationDate(vaccination) {
+  if (!vaccination) return null;
+
+  const doses = Array.isArray(vaccination.doses) ? vaccination.doses : [];
+
+  // The LATEST DATED DOSE, chosen by maximum date rather than by taking the last
+  // row.
+  //
+  // The first version walked backwards from the end of the array and returned the
+  // first row it found with a date. That has two problems, and mutation testing
+  // is what found both.
+  //
+  // 1. It assumed the rows are in date order. Someone adding doses
+  //    retrospectively, or correcting an entry, can leave them out of order -
+  //    and then "last row" is not "latest date", so a record would be dated by
+  //    the wrong dose. Maximum-by-date is order-independent and cannot be wrong
+  //    that way.
+  //
+  // 2. It carried an `isDoseDateSuperseded` check that could never be false on
+  //    the row it actually returned. Superseded means "some LATER row has a
+  //    date", so walking backwards the first dated row you meet is by definition
+  //    not superseded - the check was unreachable, and deleting it changed no
+  //    behaviour at all. The "latest non-superseded" rule is not a separate
+  //    filter to apply here; it IS the maximum date, because a superseded dose
+  //    is always an earlier one. That is why the rule Gemini was asked to confirm
+  //    needs no code of its own.
+  let best = null;
+  let bestDay = null;
+  for (const d of doses) {
+    if (!d || typeof d.date !== "string") continue;
+    const day = storedDayKey(d.date);
+    if (!day) continue;
+    if (bestDay === null || day > bestDay) { bestDay = day; best = d; }
+  }
+  if (best) return toStored(best.date, best.time);
+
+  // Legacy fallback: a record that predates the dose series, or one whose
+  // migration has not run yet, still carries the value at the top level.
+  return toStored(vaccination.date, null);
 }

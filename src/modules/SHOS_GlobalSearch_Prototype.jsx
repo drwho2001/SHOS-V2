@@ -18,6 +18,7 @@ import { MenstrualCycleRepository } from "../repositories/menstrualCycleReposito
 import { ContraceptionRepository } from "../repositories/contraceptionRepository";
 import { PregnancyRepository } from "../repositories/pregnancyRepository";
 import { formatRelativeDate } from "../calculations/encounterCalculations";
+import { getVaccinationDate } from "../calculations/vaccinationCalculations";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
 // ADDED — real bug found in the user's own testing: kinks were never
@@ -219,14 +220,20 @@ const RESULT_META = {
     });
   });
 
-  (await VaccinationRepository.getAll()).filter((v) => !v.isArchived).forEach((v) => {
-    const searchText = [v.title, v.vaccine, v.provider, v.notes].join(" ");
-    results.push({
-      type: "vaccination", id: v.id,
-      title: v.title || v.vaccine || "Vaccination",
-      subtitle: v.date ? formatRelativeDate(v.date) : "",
-      searchText,
-      date: v.date || null,
+    (await VaccinationRepository.getAll()).filter((v) => !v.isArchived).forEach((v) => {
+      const searchText = [v.title, v.vaccine, v.provider, v.notes].join(" ");
+      // FIXED 30 Sep 2026 (t034) - derive the date rather than reading
+      // `v.date`, which the dose-series work stopped maintaining. It affected
+      // BOTH fields here: the subtitle showed nothing at all for a record with
+      // no top-level date, and the `date` field is what the result list sorts
+      // by, so such a record also sorted into an arbitrary position.
+      const when = getVaccinationDate(v);
+      results.push({
+        type: "vaccination", id: v.id,
+        title: v.title || v.vaccine || "Vaccination",
+        subtitle: when ? formatRelativeDate(when) : "",
+        searchText,
+        date: when,
     });
   });
 

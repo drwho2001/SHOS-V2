@@ -29,7 +29,7 @@ import { PregnancyRepository } from "../repositories/pregnancyRepository";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
-import { getVaccinationNextDue } from "../calculations/vaccinationCalculations";
+import { getVaccinationNextDue, getVaccinationDate } from "../calculations/vaccinationCalculations";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
@@ -360,7 +360,20 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // Shows recent vaccinations plus any overdue boosters/next-dues in
   // red — same Action State convention as the rest of this screen.
   const vaccinationsRaw = useLoadedMemo(() => VaccinationRepository.getAll(), [], []);
-  const vaccinations = sortByDateDesc((Array.isArray(vaccinationsRaw) ? vaccinationsRaw : []).filter((v) => !v.isArchived && withinTimeframe(v.date)));
+  // FIXED 30 Sep 2026 (t034) - read through getVaccinationDate, not `v.date`.
+  // The stale field made the Clinic Card's own section heading and its own rows
+  // disagree: the row display already derived the date via getVaccinationNextDue
+  // (fixed 29 Sep) while the filter and the sort still read the pre-dose-series
+  // value. Mapped first so the derivation runs once per record rather than once
+  // in the filter and again in the sort key - the shape that lets the two drift
+  // apart a second time.
+  const vaccinations = sortByDateDesc(
+    (Array.isArray(vaccinationsRaw) ? vaccinationsRaw : [])
+      .map((v) => ({ v, when: getVaccinationDate(v) }))
+      .filter(({ v, when }) => !v.isArchived && withinTimeframe(when))
+      .map(({ v }) => v),
+    (v) => getVaccinationDate(v)
+  );
   const overdueVaccinations = useLoadedMemo(() => VaccinationRepository.getOverdue(), [], []);
 
   const recentPartners = encounters.filter((e) => withinTimeframe(e.date)).slice(0, 8).map((e) => ({

@@ -1,3 +1,4 @@
+import { getVaccinationDate } from "./vaccinationCalculations";
 // calendarCalculations.js
 //
 // PLAIN-LANGUAGE PURPOSE
@@ -32,9 +33,25 @@ export function getCalendarEvents({ encounters, tests, clinicVisits, vaccination
     events.push({ date: v.date, moduleKey: "clinicVisits", id: v.id, title: v.title || (v.reasonForVisit || []).join("/") || "Clinic visit" });
   });
 
-  vaccinations.filter((v) => !v.isArchived && v.date).forEach((v) => {
-    events.push({ date: v.date, moduleKey: "vaccinations", id: v.id, title: v.title || v.vaccine || "Vaccination" });
-  });
+  // FIXED 30 Sep 2026 (t034) - read through the derivation, not `v.date`.
+  //
+  // This was the worst of the five stale readers, because it is the only one
+  // that LEAVES the device. A vaccination created since the dose series landed
+  // has no top-level `v.date` at all, so `&& v.date` was false and the record
+  // was dropped here - a vaccination the user had genuinely recorded was simply
+  // absent from their phone calendar, with nothing on screen to explain it. And
+  // an edited record kept its pre-series date, so the event written to the
+  // calendar was wrong rather than missing.
+  //
+  // Mapped first so the derivation is called once per record rather than once in
+  // the filter and again in the body, which is the shape that lets the two drift
+  // apart again.
+  vaccinations
+    .map((v) => ({ v, when: getVaccinationDate(v) }))
+    .filter(({ v, when }) => !v.isArchived && when)
+    .forEach(({ v, when }) => {
+      events.push({ date: when, moduleKey: "vaccinations", id: v.id, title: v.title || v.vaccine || "Vaccination" });
+    });
 
   symptomEntries.filter((e) => !e.isArchived && e.dateStarted).forEach((e) => {
     events.push({ date: e.dateStarted, moduleKey: "symptomLog", id: e.id, title: e.title || "Symptom entry" });

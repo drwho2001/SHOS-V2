@@ -174,6 +174,19 @@ export function formatRelativeDate(dateString) {
 
 // Sorts encounters newest-first — the default order for Activity
 // Landing (Doc 4 §3a) and any per-contact timeline.
-export function sortByDateDesc(encounters) {
-  return [...encounters].sort((a, b) => new Date(b.date) - new Date(a.date));
+// `when` is an optional accessor for the value to order by, defaulting to the
+// record's own `.date`. ADDED 30 Sep 2026 (t034): a vaccination's real date is
+// DERIVED (see vaccinationCalculations.js's getVaccinationDate) rather than
+// read from a top-level field the dose-series work stopped maintaining, and
+// without a way to pass that in the Clinic Card's vaccination list would have
+// kept sorting on the stale value. Optional so every existing call site is
+// unchanged.
+//
+// Note the comparison is `new Date(x) - new Date(y)` on two STORED values, which
+// is correct here even though stored dates are fake-UTC: both sides carry the
+// same offset, so it cancels and this is a true ordering. It is NOT the
+// day-count case, where dividing an elapsed span by 86400000 is the anti-pattern
+// this project has been bitten by.
+export function sortByDateDesc(encounters, when = (x) => x.date) {
+  return [...encounters].sort((a, b) => new Date(when(b)) - new Date(when(a)));
 }

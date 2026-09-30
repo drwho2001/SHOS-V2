@@ -848,6 +848,89 @@ used by all five consumers, per this repo's own one-canonical-owner rule and
 because a reminder banner here once shipped permanently dead for exactly this
 reason. Not started; this entry is the scoping.
 
+### t034 — a vaccination you recorded never reached your phone calendar
+
+The vaccine record moved from one flat date to a dose series. The migration
+copies the old fields into `doses[]` and deletes `injectionSite`, `provider`,
+`nextDue` and `doseNumber` — but deliberately **leaves** the top-level `date`,
+because other code read it. The form now writes only dose dates, so that field
+has two states and both are wrong:
+
+- **A record created since the series landed has no top-level `date` at all.**
+  `calendarCalculations.js` filtered on `v.date`, so it was **silently absent
+  from the phone calendar** — the one consumer that leaves the device, with
+  nothing on screen to say so. It also filed itself under an "Undated" month
+  heading in the Vaccinations list.
+- **An edited record keeps its pre-series date forever.** Five consumers read
+  that stale value — Clinic Card filter and sort, the Vaccinations month
+  grouping, Global Search's subtitle *and* its sort date, and the calendar —
+  while the Clinic Card **display** already derived the date via
+  `getVaccinationNextDue`. So the card's own section heading and its own rows
+  disagreed with each other.
+
+**One derivation, five consumers.** `getVaccinationDate(vaccination)` in
+`vaccinationCalculations.js`, because a value with two owners is exactly the
+break documented at the top of that file — the reminder that once shipped
+permanently dead because a field moved under eleven readers. The five call sites
+were patched individually anyway, which is unavoidable, but they now all read
+one function rather than five interpretations of the same question.
+
+**The returned shape is part of the contract.** A dose date arrives from
+`<input type="date">` as `YYYY-MM-DD`; the legacy value is a full fake-UTC
+timestamp. Compared as strings, `"2026-09-01" >= "2026-09-01T00:00:00.000Z"` is
+**false** — the shorter string sorts first — so a record sitting exactly on a
+"last 30 days" boundary would be dropped. One consistent returned shape removes
+that trap for every caller instead of leaving five places to remember it.
+
+**Three of my own mistakes, and the tests are what caught all three.**
+
+1. The legacy fallback rebuilt the value from the day key alone, discarding the
+   time — a vaccination logged at 09:00 became midnight on the calendar.
+2. Fixing that, I sliced the time from index 10, which is the `T` separator, not
+   the first digit. `slice(11,16)`. It passed my eye twice and was caught only
+   because one test asserts a real clock time.
+3. I picked the **last row** of the series rather than the **latest date**, and
+   carried an `isDoseDateSuperseded` check that could never be false on the row
+   it actually returned — walking backwards from the end, the first dated row is
+   by definition not superseded, so the check was unreachable and deleting it
+   changed nothing. Choosing by maximum date is order-independent and is what
+   the "latest non-superseded" rule actually means: a superseded dose is always
+   an *earlier* one, so it is never the maximum. Nothing on screen assumes the
+   user entered the doses in order.
+
+**The wiring guard had three holes of its own, all found by mutation testing.**
+
+- Its region window only looked *forwards* from an anchor, so for the calendar
+  and the Clinic Card the stale expression sits *before* the anchor and three
+  mutations passed while the guard sat there green. A guard not looking where
+  the bug is is worse than none, because it looks like coverage.
+- It asserted only that the name `getVaccinationDate` appeared in each file, so
+  replacing the import with a local `const getVaccinationDate = () => null`
+  satisfied it — a stub that makes every consumer silently do nothing.
+- `sortByDateDesc` now takes an optional accessor. Cloning the array and sorting
+  it without one is valid JavaScript that quietly reverts to `.date`, which is
+  exactly what happened, and exactly what a reviewer would not spot. The call
+  site's second argument is now asserted.
+
+**A file-wide ban produced four false positives**, because three other record
+types in those same files legitimately read a top-level `v.date` — clinic visits
+and symptom entries maintain their own. The ban is scoped to each file's
+vaccination region instead. The region is found by anchor and is asserted
+non-empty, because a guard pointing at the wrong place passes quietly.
+
+**And the mutation harness had a bug that mattered more than any of them.** One
+mutation kept surviving and I could not see why. Its anchor line appears in
+*two* functions, and `String.replace` hits only the first — so the mutation was
+landing in `getDoseNextDueDates` and leaving the function under test untouched.
+**The mutation applied; it just applied to the wrong place**, which is far more
+dangerous than one that fails to apply, because the harness confidently reported
+"not caught" and the real cause was a broken experiment. My manual spot-check
+inherited the identical mistake and agreed with it. Anchors now include the
+function signature.
+
+Verified: 32 tests across the derivation, the wiring guard and the calendar; **11
+of 11 mutations red**. Encoding guard and lint clean.
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second

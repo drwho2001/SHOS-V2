@@ -29,7 +29,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
-import { getVaccinationNextDue, isVaccinationOverdue, getEarlyDoseNotice, isDoseDateSuperseded } from "../calculations/vaccinationCalculations";
+import { getVaccinationNextDue, isVaccinationOverdue, getEarlyDoseNotice, isDoseDateSuperseded, getVaccinationDate } from "../calculations/vaccinationCalculations";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // ADDED 19 Aug 2026 — Vaccinations, real live Notion schema. Same
@@ -957,7 +957,7 @@ function VaccinationsLanding({ onOpen, onAdd, T, vaccinations, refresh, deleteTo
           )}
           {/* ADDED — real ask: desktop grid grouped consecutively by
               month, see dateGrouping.js. */}
-          {groupConsecutive(sorted, (v) => monthLabel(v.date)).map((group) => (
+          {groupConsecutive(sorted, (v) => monthLabel(getVaccinationDate(v))).map((group) => (
             <div key={group.key} style={{ marginBottom: 16 }}>
               <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{group.key}</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>
