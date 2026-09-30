@@ -1,4 +1,145 @@
-# Handover — new session
+# Handover — session B → session A (30 Sep 2026, end of day)
+
+Written by session **B** at the point the tree was clean, CI was green, and the
+approved task list was exhausted. This supersedes the B-oriented handover
+further down, which is kept unedited for the record.
+
+**Where things stand: everything B was asked to do is shipped and green. The
+only thing left in the pool needs a physical phone — see "Needs a human" below.**
+
+## Verified state, measured not assumed
+
+`12783ee`, all three workflows green:
+
+| Gate | Result |
+|---|---|
+| Unit tests | **837 across 69 files** |
+| Browser flows | **23 flows, 142 assertions** |
+| Build / lint / encoding | pass |
+| Android APK | built and published |
+| Web build | deployed |
+
+Local tree clean. Pool contains exactly one open item.
+
+## What B shipped
+
+B's four commits, in order:
+
+| Commit | What |
+|---|---|
+| `b62464a` | **t036** medication edit sheet dialog semantics + **t037** seven date fixes |
+| `82e402d` | **t038** import-dialog back chain, **t040** guard scope, **t041** device checklist |
+| `bd7f1a7` | locale-independent date assertion (CI caught the original) |
+| `12783ee` | docs entry for the above |
+
+Earlier the same day, before this handover: `876786c` (t020 date-frame audit),
+`2071802` (t019 icon gate), `8f7f6e2` (midnight refresh), `3209e42` (domain date
+refactor), `266dfaa` (APK workflow race), `4069365` (`monthLabel` timezone),
+`8fd7a6d` (t034 vaccination calendar), `da43dd4` (t028 counts measured).
+A's own work that day: `54ba397`, `a6d251c`.
+
+## What works — checked, not inferred
+
+- **Every gate, locally and in CI.** `npm run verify:fast` is the working loop;
+  the full gate runs in CI on every push.
+- **The stored-date convention now has derived primitives.** `isDayKeyDue()`,
+  `formatDayKey()`, `realTimestampFromStored()`. New code stops re-deriving
+  frame arithmetic by hand — that was the source of seven of the day's bugs.
+- **t034: vaccinations reach the calendar.** `getVaccinationDate()` is the one
+  owner; Clinic Card, list grouping, Global Search and export all read it. New
+  records work with no migration. **Never yet seen on a real phone** — t039.
+- **t023: the vaccine schedule table** holds sourced UK *minimum* intervals with
+  a `gov.uk`/`nhs.uk` reference and `checkedOn` date per row. No grace period
+  was invented; the published minimum is the limit.
+- **t036: the medication edit sheet** has `role="dialog"`, focus-on-open and
+  Escape, matching the other sheets. A guard pins all seven sheets.
+- **t038: the "Import backup" popup** is on the back-button chain. Back now
+  closes it instead of switching tabs underneath it.
+- **t040: the stored-date render guard** scans `src/calculations/` as well as
+  the module files, and encodes the triage rather than re-deriving it — a site
+  there must be a canonical formatter or carry a reviewed reason.
+- **t019: icon-only UI** is gated by a Babel AST scan, not a regex, and every
+  reviewed exception must carry a written reason.
+
+## What does not work, or cannot from here
+
+- **t039 is open and device-blocked.** Nothing about the vaccination calendar fix
+  has been observed happening. Code-verified and CI-green is not that claim.
+- **Five `visibilitychange` assertions in the smoke suite are not fixable from
+  the test side.** Measured, not guessed: dispatching the refresh produces
+  **zero DOM mutations**, because the app is idle and React does not re-render
+  when no state changed. The real fix is an app-side testability hook (a
+  last-poll counter written by the refresh handler). That is a product change
+  made for testing's sake, so it was not made unilaterally.
+- **Native Java cannot be compiled on this machine.** The APK build in CI is the
+  only confirmation that native changes compile.
+- **The docs gate fails any commit that changes `src/` without `docs/`.** That
+  is correct and it fired on B. Fix forward with a docs commit; do not weaken the
+  gate.
+- **`session-bridge` can lose a pool race.** Calling `pool done` several times
+  in a row hit "locked by another session" once; re-running worked. Remember this
+  before concluding a task failed to close.
+- **~120 fixed waits remain in the smoke suite** (t028), down from 144. Both
+  dangerous classes — waits before an assertion, waits before an `if (count())`
+  — are closed; the rest sit before a click, which Playwright's retry covers.
+
+## B's mistakes this round
+
+Recorded with equal weight to the findings, because that is the convention here.
+
+1. **A test that only worked on my own machine.** `toContain("15 Oct")` against a
+   function that formats with the *device's* locale. My UK box renders "15 Oct";
+   CI renders "Oct 15". The app was fine — 23 flows passed — only the assertion
+   was wrong. Matching the month name too was not a fix, just a narrower version
+   of the same mistake (it then fails on de-DE's "15. Okt."), so the assertion
+   now checks the **day number**, and was verified to still reject the 14th and
+   16th. Second such assertion in that one file, and the first the development
+   machine could not have caught alone.
+2. **A source commit with no doc line**, which the docs gate rejected. The fix
+   was the missing context, not a weaker gate.
+3. **My own guard was pointed at the wrong place.** `storedDateRenderGuard`
+   scanned eight hardcoded module files, so it could not have caught the
+   `dateGrouping.js` timezone bug fixed the same day. The guard was working
+   perfectly; it was looking somewhere the bug was not.
+4. **A mutation harness that deadlocked its own test run** by invoking Vitest
+   from inside a Vitest worker. My tooling bug, not the repo's — but it cost a
+   60-second timeout to notice.
+
+## Needs a human
+
+**One thing, about two minutes, on a real phone** — `t039`:
+
+> Add a vaccination → confirm it appears in the phone calendar → change the
+> calendar entry's date → change the vaccination's date in the app → confirm the
+> calendar entry moved with it.
+
+Checklist and the rest of the device-only items: `docs/DEVICE-TESTING.md`
+(short — 3 genuinely untestable from here, 6 proved in code but never watched
+happening) and `docs/DEVICE-TEST-CHECKLIST.md` (the long form).
+
+## Environment notes worth carrying
+
+- Windows, PowerShell 5.1 — never use `Get-Content`/`Set-Content` on source
+  files. It has corrupted this codebase five times.
+- `npm run verify` takes an **exclusive lock** for its whole run. If it is
+  queued behind A, do something else; do not cancel or force it.
+- This machine has produced repeated *false* smoke failures from memory
+  pressure. Check free RAM before believing a red run — but a flow that fails the
+  same way every time is a broken flow, not the machine.
+- `npm run typecheck` reports ~450 findings and is **not** a gate. Do not suggest
+  TypeScript as a small next fix.
+
+## Nothing is queued
+
+The pool is empty apart from t039. If you want more work, the honest options are
+(a) run the t039 device check, or (b) commission a fresh audit — noting that A
+and B independently auditing the same areas this week produced overlapping
+findings, and last week's standing argument was that a second pair of eyes earns
+its keep auditing *unreviewed* areas rather than re-reading recent work.
+
+---
+
+# Handover — new session (SUPERSEDED by the one above, kept for the record)
 
 Written 29 Sep 2026 by session **A** for **session B**, which starts with no
 context at all. Every figure below was measured, not copied. Where a number is
