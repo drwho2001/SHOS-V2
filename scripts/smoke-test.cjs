@@ -329,7 +329,10 @@ async function testMedicationReasonSideEffects(page) {
   await page.locator("text=Routine").click({ timeout: 3000 });
   await page.locator("text=Nausea").click({ timeout: 3000 });
   await page.locator("text=Save correction").click({ timeout: 3000 });
-  await page.waitForTimeout(600);
+  // CHANGED 30 Sep 2026 (t028) - was waitForTimeout(600) directly in front of an
+  // assertion reading rendered text. The save writes to an async repository, so
+  // the summary reappears whenever it resolves rather than after a guess.
+  await waitForText(page, "Routine · Nausea");
   assert((await page.evaluate(() => document.body.innerText)).includes("Routine · Nausea"), "Log tab shows the saved reason/side-effect summary");
 }
 
@@ -360,7 +363,9 @@ async function testSymptomTestTwoWayLink(page) {
     // comment).
     const chipLabel = (await chip.first().textContent()).replace(/^\+\s*/, "");
     await chip.click({ timeout: 5000 });
-    await page.waitForTimeout(400);
+    // CHANGED 30 Sep 2026 (t028) - was waitForTimeout(400) before an assertion
+    // reading the linked list, which is populated by an async repository read.
+    await waitForText(page, chipLabel);
     assert((await page.evaluate(() => document.body.innerText)).includes(chipLabel), "linked chip moves into the linked-entries list");
   } else {
     console.log("  skip — already linked from a previous run (idempotent state, not a failure)");
@@ -458,7 +463,9 @@ async function testEncountersAnonymiseMasking(page) {
   await page.getByText("Privacy", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
   await page.locator("text=Turn on Anonymise mode").first().click({ timeout: 5000 });
-  await page.waitForTimeout(500);
+  // CHANGED 30 Sep 2026 (t028) - was waitForTimeout(500) before an assertion
+  // reading the mode's own state, which is persisted to an async repository.
+  await waitForText(page, "Anonymise mode is ON");
   assert((await page.evaluate(() => document.body.innerText)).includes("Anonymise mode is ON"), "Anonymise mode turns on");
 
   await page.reload({ waitUntil: "networkidle" });
@@ -477,7 +484,18 @@ async function testEncountersAnonymiseMasking(page) {
   await page.getByText("Privacy", { exact: true }).first().click({ timeout: 5000 });
   await page.waitForTimeout(500);
   await page.locator('button:has-text("Turn off Anonymise mode")').click({ timeout: 5000 });
-  await page.waitForTimeout(500);
+  // CHANGED 30 Sep 2026 (t028) - was waitForTimeout(500) before a NEGATIVE
+  // assertion, which is the worst combination: it can pass without the app
+  // having re-rendered at all. Waiting for the OFF state to be visible is
+  // bounded AND proves the change took effect, so the absence that follows is
+  // meaningful rather than vacuous.
+  //
+  // The anchor is the app's REAL off-state text, read from PrivacyScreen.jsx:
+  // it renders "Anonymise mode is ON" when on and the "Turn on Anonymise mode"
+  // button when off. There is no "is OFF" string - an earlier draft of this
+  // comment invented one, and it would have timed out rather than passing
+  // quietly, which is the good way for that mistake to surface.
+  await waitForText(page, "Turn on Anonymise mode");
   assert(!(await page.evaluate(() => document.body.innerText)).includes("Anonymise mode is ON"), "Anonymise mode turns back off cleanly, leaving the suite in a clean state");
   await page.reload({ waitUntil: "networkidle" });
   await dismissTransientBanners(page);
@@ -2180,7 +2198,13 @@ async function testSampleDataClearInDeveloperTools(browser) {
     await page.getByLabel("Full name", { exact: false }).first().fill("ZZZ DevTools Real Contact");
     await page.waitForTimeout(250);
     await page.getByRole("button", { name: /^add contact$/i }).last().click({ timeout: 5000 });
-    await page.waitForTimeout(1500);
+    // CHANGED 30 Sep 2026 (t028) - was waitForTimeout(1500). The SAME shape as
+    // the flake already fixed in this file twice, and this is the third
+    // instance: the same flow adds a contact here AND after the clear, and the
+    // earlier fix only covered the second one. Saving writes to an async
+    // repository and the list re-reads it asynchronously, so a fixed wait in
+    // front of an assertion is a guess about machine speed.
+    await waitForText(page, "ZZZ DevTools Real Contact");
     assert((await page.evaluate(() => document.body.innerText)).includes("ZZZ DevTools Real Contact"),
       "a real contact was added before clearing from Developer Tools");
 
