@@ -712,6 +712,69 @@ Verified: 5 tests green, lint clean, encoding guard clean. Local `verify:fast`
 is red on `src/components/escapeCoverage.test.js`, which is the other session's
 untracked in-flight file and is not in this commit.
 
+### t033 — the app could show yesterday's date all day
+
+"Today" on a medication card, the cycle ring's day count, the 90-day faded state
+on an old test, "inactive for 12 days" on a contact — all computed from
+`new Date()` while a screen renders, and none of them stored. So they are only
+as fresh as the **last render**, and nothing guaranteed a render on the day
+boundary. Two ordinary situations both broke it: leaving the app open past
+midnight, and the device sleeping (Android suspends background WebView timers,
+so the app can resume hours later). On resume `visibilitychange` fires and
+`App.jsx`'s own poll runs — but that poll only sets banner state, and if that
+state is unchanged React skips the re-render, leaving yesterday's numbers on
+screen.
+
+**One hook, not a per-module sweep.** The tempting fix is a timer in every
+module, which is how this repo grows six quiet copies of one behaviour. Checked
+rather than assumed first: **nothing in the app is wrapped in `React.memo`**, and
+the active module is rendered as `<ActiveModule />` from `App.jsx`, so a single
+re-render of App re-renders whichever module is mounted and every
+`new Date()`-derived value in its body is recomputed. `useLocalDayChange()` is
+called once at the top of App and no module needs to know it exists. That single
+fact is what the whole design rests on, so it is asserted by a test — if someone
+later memoises the modules, this quietly stops working.
+
+**The timer targets local midnight, it does not poll.** One `setTimeout` aimed
+at the next local midnight plus a second, rescheduling itself. A 60-second poll
+would be both wasteful and imprecise — one at 00:00:30 still shows yesterday for
+another 30 seconds. `visibilitychange` covers resume, and also the case where
+the user changes timezone, which moves the local day without ever reaching
+midnight on the original clock.
+
+**Two of my own claims were false, and mutation testing is what found them.**
+
+- The header said the functional-update form was what stopped a re-render per
+  minute. It is not — React skips a re-render whenever the state value is
+  unchanged, so the plain form settles to the same no-op. Deleting it changed
+  nothing observable. Comment corrected rather than the claim kept; the form
+  stays because it reads the previous value instead of closing over anything.
+- I had written `Math.max(1000, …)` "in case the clock is moved backwards",
+  reasoning that a negative delay would fire instantly and spin. **The guard was
+  unreachable**: "midnight tomorrow" is derived from the current clock by adding
+  a day, so the delay is always between 1s and 24h. Deleting it changed nothing.
+  Removed rather than kept — a clamp guarding an impossible state is a comment
+  someone eventually believes without being able to work out which case it was
+  for. What replaced it asserts the real invariant (every scheduled delay is
+  positive) across leap-day, year-end and UK clock-change mornings.
+
+**Three of my tests were wrong, and the hook was right each time.** The
+multi-day rollover test reported 1 render instead of 11 because
+`vi.setSystemTime` moves the clock but does not fire pending timers, and the
+timer sat 24h away; fixing that by advancing 24h *and* setting the clock
+double-counted, so each iteration crossed two midnights and it overshot to the
+11th. And the backwards-clock test asserted the day should not change when the
+clock is rewound — which would mean the hook should ignore the device's clock.
+If the device says the 20th, the local day *is* the 20th.
+
+**A unit test cannot prove `App.jsx` calls the hook at all**, so that is
+asserted at the source level — the third time this repo has been bitten by it,
+after a full Escape feature whose hook passed every test while a sweep failed to
+attach it, and a disclosure resolver wired to nothing.
+
+Verified: 14 tests, 7 of 8 mutations red, the survivor documented as equivalent
+rather than counted as a pass. Lint and encoding clean.
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second

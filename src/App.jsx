@@ -76,6 +76,7 @@ import {
 } from "./calculations/reminderSuppression";
 import { ModuleColorRepository } from "./repositories/moduleColorRepository";
 import { useIsDesktopWidth } from "./calculations/responsive";
+import { useLocalDayChange } from "./calculations/useLocalDayChange";
 // ADDED — real ask: Home's title should read "[Name]'s dashboard".
 import { HouseIcon as Home, UsersIcon as Users, PulseIcon as Activity, PillIcon as Pill, HospitalIcon as Hospital, WarningIcon as AlertTriangle, EyeIcon as Eye, TestTubeIcon as TestTube, SyringeIcon as Syringe, FingerprintIcon as Fingerprint, LockIcon as Lock, XIcon as X, CaretLeftIcon as ChevronLeft, ClockIcon as Clock } from "@phosphor-icons/react";
 // CHANGED — real Tier 1 decision: Phosphor, replacing lucide-react.
@@ -1421,6 +1422,24 @@ export default function App() {
     // has ever made was spent - wiping them silently on the next app open.
     setDueStateReady(true);
   };
+
+  // Re-render this whole tree when the local calendar day rolls over, and on
+  // resume after the device has slept. Called for its side effect only.
+  //
+  // This is the single place the app handles it, deliberately. "Today" /
+  // "Yesterday" on a medication card, the cycle ring's day count, the 90-day
+  // faded state on an old test - all of those are computed from `new Date()`
+  // while a screen renders and none of them is stored, so they are only as
+  // fresh as the last render. Nothing guaranteed that a render happened on the
+  // day boundary: the poll above sets banner state only, and if that state is
+  // unchanged React skips the re-render, leaving yesterday's numbers on screen.
+  //
+  // One hook covers every module because nothing here is wrapped in React.memo
+  // and the active module is rendered as <ActiveModule /> from this file, so a
+  // re-render of App re-renders whichever module is mounted. See the hook's own
+  // header for why it costs nothing (it bails out unless the day really
+  // changed) and why its timer targets local midnight rather than polling.
+  useLocalDayChange();
 
   useEffect(() => {
     checkDueMeds();
