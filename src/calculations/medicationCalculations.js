@@ -160,13 +160,27 @@ function windowStats(doseDays, days, today, expectedDaysOverride) {
   // reporting 0% is the honest answer: the medication has not been started.
   // `hasHistory` is the caller's own knowledge (does any dose log exist at
   // all), threaded in rather than re-derived here.
-  const hasHistory = doseDays.size > 0;
-  return {
-    hit,
-    expected,
-    pct: expected > 0 ? Math.round((hit / expected) * 100) : (hasHistory ? 100 : 0),
-  };
-}
+const hasHistory = doseDays.size > 0;
+    return {
+      hit,
+      expected,
+      pct: expected > 0 ? Math.round((hit / expected) * 100) : (hasHistory ? 100 : 0),
+      // ADDED 30 Sep 2026 - a DISPLAY signal, deliberately separate from `pct`.
+      //
+      // `pct` stays a number because the aggregate reads it arithmetically:
+      // getOverallAdherence filters `typeof pct === "number"` and averages.
+      // Returning null here to mean "no data" would silently drop the
+      // medication from that average and bring straight back the 90%-instead-
+      // of-80% inflation the `hasHistory` guard exists to prevent.
+      //
+      // So the number and the display concern are split rather than conflated:
+      // the number answers "what does this contribute to a set", the flag
+      // answers "is there anything here to show a human". A never-started
+      // medication is 0% by arithmetic and "No doses logged yet" by
+      // presentation, and both are true without contradicting each other.
+      hasData: hasHistory || expected > 0,
+    };
+  }
 
 // ADDED 19 Aug 2026 — real feedback batch: custom "every N days"
 // scheduling, the user's explicit scope call ("every n days for later meds

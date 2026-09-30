@@ -1205,6 +1205,80 @@ pushing. Third time today that a green local result meant my assertion was
 wrong rather than the code being right, and the third was the only one the
 development machine could not have caught on its own.
 
+### t053 finding 1 — the medication card disagreed with itself, and with the rest of the app
+
+The audit's first finding is the purest instance of the class it was commissioned
+to find. `windowStats()` owns the adherence percentage and was corrected on 27
+Sep to report **0%** for a medication with no doses ever logged — 100% had been
+inflating a mixed set to 90% when the only real medication was at 80%.
+
+**Nothing on the medication's own card ever read that value.** `AdherencePill`
+was handed `hit` and `expected` and divided them itself, with the pre-fix
+`else 100`. So for the same medication, at the same moment:
+
+| Surface | Answer |
+|---|---|
+| Home's adherence ring | 0% (reads the owner) |
+| Stats | 0% (reads the owner) |
+| **its own card** | **100%** (recomputed) |
+
+The line it replaced carried a comment describing this precise bug and stating
+the correct intent — *"this component just recomputed the percentage itself
+without the same guard instead of using that already-correct value"* — and then
+did the recomputing anyway. Two days later the rule it quoted was itself
+changed, and nothing here found out.
+
+**The 27 Sep fix looked like it worked because it did.** It is in the right
+place, and `medicationEdgeCases.test.js` pins `sevenDay.pct === 0` and passes. It
+simply is not the place anything on that screen reads from. A fix applied only
+to the owner is a fix that depends on every consumer choosing to call it.
+
+**The tempting fix was rejected.** Hand-editing the pill's fallback to match the
+owner's rule would make the two agree by coincidence and leave the duplication
+that caused the divergence. `pct` is now passed in and the arithmetic deleted.
+
+**The empty case is the owner's call, and it produced a better answer than mine.**
+Challenged on whether 0% is even right for an empty window, the answer was that
+neither number is: 0% claims the user failed, 100% claims they were perfect, and
+with no dose ever logged the data supports neither. It now renders **"No doses
+logged yet"**.
+
+The trap there was the *nearby* wrong fix. Making `pct` return `null` for the
+empty case looks like the obvious way to signal "no data" — and it would have
+been a silent regression, because `getOverallAdherence` filters
+`typeof pct === "number"`. `null` would drop the medication from the average and
+reinstate the exact 90%-instead-of-80% inflation the guard exists to prevent. So
+the number and the display concern are split: `pct` stays numeric and answers
+"what does this contribute to a set"; a new `hasData` flag answers "is there
+anything to show a human". Both are true, and neither contradicts the other.
+
+This matches a rule this repo had **already written down** for HIV status — a
+confident default is only acceptable where the wrong answer is not a medical
+claim — and which an outside model independently arrived at from first
+principles. Two sources is how you know it is a rule rather than a preference.
+
+**Five mutations, all red, none failed to apply**, including the one that
+reintroduces the original bug and the one that turns `pct` into `null`. The
+harness's own restore-*verification* line crashed on its first run — it called a
+Buffer method on a string — *after* the restore had already succeeded, so the
+files were fine while the check meant to prove it threw. Fixed rather than
+deleted: a restoration check that cannot run is not a check. Restoration then
+confirmed independently via `git status`, not by trusting the harness's word.
+
+### t053 finding 0 — the date class is closed, and the comments now say so
+
+Before finding anything new, the class behind seven of the day's bugs was swept
+and came back clean. 11 `toLocale*` sites and 9 inline date-arithmetic sites in
+the module files: all 11 either format a **real instant** (`updatedAt`,
+`Date.now()`, `realTimestampFromStored()`) or are comments the pattern caught,
+and 3 of the 9 are also comments. All four arithmetic candidates are correct
+within their own frame.
+
+That is a genuine result and it is partly *because* this week's fixes each left a
+comment explaining the reasoning — which is why a future audit does not re-flag
+them. The earlier "~40 sites" estimate that deferred this work was a much looser
+pattern; 11 is the real number.
+
 ### t023 — the vaccine reminder that would not stop
 
 Real report from the owner: the reminder kept firing after they logged a second

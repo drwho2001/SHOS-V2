@@ -241,20 +241,50 @@ function StatTile({ label, value, tint, subtitle, onClick, T }) {
 
 // Redesigned for more contrast per the user's ask: tinted background/border, fraction shown as the
 // primary value with the percentage as a secondary line, per the user's "give absolute value" request.
-function AdherencePill({ label, hit, expected, T, info }) {
-  // FIXED 10 Sep 2026 — real bug found live: with expected === 0 (a
-  // real case — a custom-schedule medication with no dose logged yet
-  // has no "expected" days in its window at all), this divided 0/0 and
-  // showed "NaN%". medicationCalculations.js's own windowStats() already
-  // guards this exact case (100% — nothing was due, nothing was missed),
-  // this component just recomputed the percentage itself without the
-  // same guard instead of using that already-correct value.
-  const pct = expected > 0 ? Math.round((hit / expected) * 100) : 100;
-  // ADDED 15 Sep 2026 — real ask: "7 day adherence - add info dot -
+function AdherencePill({ label, hit, expected, pct, hasData, T, info }) {
+  // FIXED 30 Sep 2026 - this component recomputed the percentage instead of
+  // reading the one that owns it, so the two drifted apart and the card began
+  // DISAGREEING WITH ITSELF. medicationCalculations' windowStats() was
+  // corrected on 27 Sep to report 0% for a medication with no doses ever
+  // logged (100% had been inflating a mixed set to 90% when the only real
+  // medication was at 80%), and Stats and Home both read that corrected value.
+  // This component was passed `hit` and `expected` and did its own division
+  // with the pre-fix `else 100`, so a never-started medication showed 100% on
+  // its own card while Home's ring and Stats showed 0% for the same record.
+  //
+  // The line it replaced carried a comment describing this exact bug and
+  // stating the right intent - "this component just recomputed the percentage
+  // itself without the same guard instead of using that already-correct
+  // value" - and then did the recomputing anyway. Two days later the rule it
+  // was quoting was itself changed, and nothing here found out.
+  //
+  // `pct` is now received, never derived. If a future change makes this
+  // arithmetic reappear, it is a second owner again.
+  //
+  // FIXED 30 Sep 2026, same commit - the empty case. `hasData` comes from the
+  // owner too, and when there is genuinely nothing to report this renders an
+  // empty state rather than a number. "0/0 - 100%" claimed the user had been
+  // perfect; "0/0 - 0%" claims they failed. Neither is something the data can
+  // support when no dose has ever been logged, and this is a medical claim on
+  // a health screen - the repo's own recorded rule is that a benign default is
+  // only benign where the wrong answer is not a claim like this. It matches the
+  // `null`-sentinel convention already applied to HIV status for the same
+  // reason.
+  //
+  // ADDED 15 Sep 2026 - real ask: "7 day adherence - add info dot -
   // explain what it is." Same tap-to-reveal-caption pattern already
-  // established for Contacts' active-status dot — an info icon, not a
+  // established for Contacts' active-status dot - an info icon, not a
   // hover-only tooltip, since this app targets touchscreens.
   const [showInfo, setShowInfo] = useState(false);
+  if (!hasData) {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: T.textDisabled, lineHeight: 1.25, maxWidth: 110, margin: "0 auto" }}>
+          No doses logged yet
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ textAlign: "center" }}>
       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: T.medsBlue }}>{hit}/{expected}</div>
@@ -513,7 +543,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
                 <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 700, color: T.medsBlue, display: "flex", alignItems: "center", gap: 3, justifyContent: "center" }}><Flame size={13} color={T.actionRed} />{adherence.streak}d</div>
                 <div style={{ fontSize: 10, color: T.textSecondary, fontWeight: 600, marginTop: 1 }}>streak</div>
               </div>
-              <AdherencePill T={T} label="7-day" hit={adherence.sevenDay.hit} expected={adherence.sevenDay.expected} info="Based on your actual dose log from the last 7 days — hit vs. days a dose was actually due." />
+              <AdherencePill T={T} label="7-day" hit={adherence.sevenDay.hit} expected={adherence.sevenDay.expected} pct={adherence.sevenDay.pct} hasData={adherence.sevenDay.hasData} info="Based on your actual dose log from the last 7 days — hit vs. days a dose was actually due." />
               {/* Labelled "this container", not "this refill", because that is what
                   the maths measures: the window is anchored on your last logged
                   refill but CAPPED AND WRAPPED at daysPerContainer - one
@@ -528,7 +558,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
                   twice under two different labels - which reads as two
                   independent pieces of evidence and is neither. */}
               {adherence.sinceRefillAnchored && (
-                <AdherencePill T={T} label="this container" hit={adherence.sinceRefill.hit} expected={adherence.sinceRefill.expected} info="From your last logged refill, capped at one container's worth of doses — so a long supply doesn't dilute the rate. If you reorder, this starts again with the new container." />
+                <AdherencePill T={T} label="this container" hit={adherence.sinceRefill.hit} expected={adherence.sinceRefill.expected} pct={adherence.sinceRefill.pct} hasData={adherence.sinceRefill.hasData} info="From your last logged refill, capped at one container's worth of doses — so a long supply doesn't dilute the rate. If you reorder, this starts again with the new container." />
               )}
             </div>
               );
