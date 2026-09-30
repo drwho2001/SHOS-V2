@@ -38,11 +38,6 @@ on:
         description: "Android API level to test (app supports 24-36)"
         required: false
         default: "34"
-      diagnostic_only:
-        description: "Only collect diagnostics, never fail the run"
-        type: boolean
-        required: false
-        default: true
   schedule:
     # 03:00 UTC nightly. Catches anything that broke while nobody was looking,
     # which is the whole point given how many real defects were found by reading
@@ -115,13 +110,48 @@ jobs:
           ./gradlew assembleDebug --no-daemon
 
       # ---------------------------------------------------------------------
+      # KVM. The first attempt at this workflow FAILED here, and the reason is
+      # worth recording because it is invisible until it fails: the emulator
+      # action reported "hardware acceleration is not available" and fell back
+      # to software mode, which cannot boot an Android image in any sensible
+      # time. GitHub's runners DO ship KVM, but it is not accessible by default
+      # - their own changelog says users must add the runner account to the
+      # `kvm` group. Both the group membership and a udev rule are applied here,
+      # and the probe script then reports /dev/kvm so the next run has evidence
+      # rather than a guess.
+      # ---------------------------------------------------------------------
+      - name: Enable KVM access
+        run: |
+          set -x
+          if [ -e /dev/kvm ]; then
+            sudo usermod -aG kvm "$(id -un)" || true
+            echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+              | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+            sudo udevadm control --reload-rules || true
+            sudo udevadm trigger --name-match=kvm || true
+            sudo chown root:kvm /dev/kvm 2>/dev/null || true
+            ls -l /dev/kvm
+          else
+            echo "NO /dev/kvm ON THIS RUNNER - the emulator will fall back to"
+            echo "software mode. That is a runner-level limit, not something this"
+            echo "workflow can fix, and it is why the probe script reports it."
+          fi
+
+      # ---------------------------------------------------------------------
       # The emulator. Action pinned to an immutable commit SHA rather than the
       # `v2` tag, for the same reason opencode.yml was pinned earlier today:
       # a mutable tag can be repointed at new code by its owner with no change
       # and no review here. SHA resolved from the live GitHub API on
       # 30 Sep 2026 (v2 tag, dated 2026-07-05), not written from memory.
+      #
+      # `script` is a REQUIRED input on this action - its design is "boot the
+      # emulator, then run this inside it". The first attempt omitted it and
+      # failed immediately with "Input required and not supplied: script", which
+      # is the action being explicit rather than the workflow being subtly
+      # wrong. The probe lives in a version-controlled script rather than inline
+      # YAML so that what runs on a device is reviewable in a diff.
       # ---------------------------------------------------------------------
-      - name: Start Android emulator
+      - name: Start Android emulator and run the probe
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2 as of 2026-07-05
         with:
           api-level: ${{ matrix.api-level }}
@@ -137,68 +167,24 @@ jobs:
           emulator-boot-timeout: 600
           disable-animations: true
           enable-hw-keyboard: true
+          script: bash scripts/android-probe.sh android/app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Install the app
-        run: |
-          adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-
-      # Round 1's core assertion, and the one that matters most: does the
-      # NATIVE app launch at all? Every existing test in this project runs in a
-      # browser. Nothing has ever verified that the Android build even starts,
-      # which means a crash on boot would currently be invisible until a human
-      # installs the APK.
-      - name: Launch the app and confirm it did not crash
-        run: |
-          set -euo pipefail
-          adb logcat -c
-          adb shell am start -n com.shos.app/.MainActivity
-          sleep 12
-          echo "=== focused window ==="
-          adb shell dumpsys window | grep -iE 'mCurrentFocus|mFocusedApp' || true
-          echo "=== is our activity resumed? ==="
-          adb shell dumpsys activity activities | grep -i 'shos' | head -20 || true
-          echo "=== crash buffer ==="
-          adb logcat -d -b crash -v brief || true
-          echo "=== errors mentioning our package ==="
-          adb logcat -d -v brief | grep -iE 'shos|FATAL|AndroidRuntime' | tail -40 || true
-
-      - name: Capture FLAG_SECURE state
-        run: |
-          # FLAG_SECURE is set unconditionally in MainActivity.onCreate. Nothing
-          # in this project has ever verified it takes effect on a real Android
-          # window manager - it is pure OS behaviour and is unobservable in a
-          # browser. This is the cheapest way to confirm the flag is really set.
-          echo "=== windows ==="
-          adb shell dumpsys window windows | grep -iE 'shos|SECURE' | head -30 || true
-          echo "=== window policy flags (raw) ==="
-          adb shell dumpsys window | grep -i 'FLAG_SECURE' || echo "FLAG_SECURE not present in dumpsys output"
-
-      - name: Capture registered widget providers
-        run: |
-          # All ten are registered in AndroidManifest, but registration in a
-          # manifest and being present in the system AppWidgetService registry
-          # are different facts. Round 1 measures the second; round 2 asserts it.
-          echo "=== appwidget providers ==="
-          adb shell dumpsys appwidget | grep -iE 'shos|Provider' | head -60 || true
-
-      - name: Capture device and app info
-        run: |
-          echo "=== device ==="
-          adb shell getprop ro.build.version.release
-          adb shell getprop ro.build.version.sdk
-          echo "=== installed package ==="
-          adb shell dumpsys package com.shos.app | grep -iE 'versionName|versionCode|targetSdk|minSdk' | head -10 || true
-          echo "=== granted permissions ==="
-          adb shell dumpsys package com.shos.app | grep -A2 'runtime permissions' | head -20 || true
 
       # Diagnostics are uploaded unconditionally, because a red run with no
       # output is the exact "measures nothing and looks green" failure this
       # project has now recorded eight times.
-      - name: Upload round-1 diagnostics
+      # Uploaded UNCONDITIONALLY, and the screenshots are in the path on purpose.
+      # A red run with no output is the exact "measures nothing and looks green"
+      # failure this project has now recorded eight times, so the evidence has to
+      # survive the failure. The PNGs are what let a HUMAN judge whether the app
+      # looks right - which is the one thing round 1 explicitly cannot decide.
+      - name: Upload round-1 diagnostics and screenshots
         if: always()
         uses: actions/upload-artifact@v5
         with:
           name: android-diagnostics-api${{ matrix.api-level }}-${{ github.run_number }}
           path: |
             android/app/build/outputs/apk/debug/app-debug.apk
+            android-probe-artifacts/
+          if-no-files-found: warn
           retention-days: 7
