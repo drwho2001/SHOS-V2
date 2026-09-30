@@ -3142,6 +3142,28 @@ literally "This request URL is not valid", which reads *exactly* like an
 auth/permissions fault. That sent a previous session across two different
 integration tokens chasing permissions that were never the issue.
 
+**CORRECTED 30 Sep 2026: the version/shape recorded here no longer works, and
+fails in a way that points away from itself.** `PATCH` is still correct, but with
+`Notion-Version: 2022-06-28` and the old block object the request now returns
+HTTP 400 with a message that enumerates every block type —
+*"body.children[0].embed should be defined… bookmark… image…"* — which reads like
+a malformed body rather than an API-version problem. Probing three variants side
+by side settles it: `2022-06-28` + old shape = **400**; no version header =
+**400**; **`2025-09-03` + `{ object: "block", type: "paragraph", paragraph: {...} }`
+= 200**. Two further traps, both hit for real this round:
+- `rich_text[].text.content` is capped at **2000 characters per item**. One
+  ~7,000-character paragraph returns a bare 400 with no message at all.
+- **Verifying the write requires pagination.** `page_size=100` returns only the
+  FIRST page; the Development Log is now 1,176 blocks over 12 pages, so a
+  single-page check finds nothing and reads as "the write failed" when the new
+  blocks are simply past its end. That nearly caused the whole entry to be sent
+  twice.
+
+And the MCP tool itself returned 401 for the whole session while the
+underlying token was perfectly valid — a direct `GET /v1/users/me` with the same
+token returned **200**. So a 401 from the MCP is not evidence about the
+credential; probe the API directly before concluding anything.
+
 Two facts worth keeping, both measured rather than assumed:
 - The page ID was right all along: `3b013572-4f67-80ab-b1a0-c665a828e241`
   is "Development Log" (1,019 blocks before this round's append, 1,032
