@@ -79,6 +79,27 @@ shape-tolerant render to the old `{opt}` turns the suite **red** with
 returns it to green. Flow 25 asserts 12 real `select` elements, so a sheet that
 opened but rendered no pickers cannot pass.
 
+**CI caught a real defect in the suite on the first push — in `nav()`, not in
+the new flows.** The first run of these two flows went red with
+`<span>Broken references</span> ... intercepts pointer events`. Two things worth
+recording:
+
+- It was **not** a flake. RAM at the start of that run was **14,440 MB**, and the
+  previous commit's smoke run was green, so the red was caused by this change.
+- The cause is a **pre-existing gap in `nav()`**, which has always clicked the
+  bottom-nav tab directly and never checked whether something was covering it.
+  Any flow that runs after an overlay-leaving flow has been exposed to this; the
+  new flows were simply the first to *navigate* afterwards. Fixing it inside the
+  two new flows would have left the next flow to trip over the same thing.
+
+`nav()` now calls a bounded `dismissOpenOverlays()` first. Escape is the right
+dismissal rather than a coordinate click because flow 23 already proves every
+overlay closes on it, and `useEscapeToClose` deliberately maps Escape to
+**cancel** on the destructive confirmations — so this can never confirm a delete.
+It loops rather than pressing once, because Escape in Settings steps back *one
+level at a time* and a nested sub-screen needs several presses; it throws with
+the dialog's own label if it cannot dismiss, rather than continuing silently.
+
 **A real bug this surfaced immediately, in session A's uncommitted work.**
 `clearSampleData.js` `referencedSeedIds()` threw `collections is not iterable`
 on every boot that touches Home — `L167` takes the whole `{ collections,

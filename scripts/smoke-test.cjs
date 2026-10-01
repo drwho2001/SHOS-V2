@@ -228,6 +228,7 @@ async function waitForAriaChecked(page, label, expected, timeoutMs = 10000) {
 // actually change the current screen. A helper that can quietly do nothing is
 // worse than no helper: it converts a broken locator into a green run.
 async function nav(page, label) {
+  await dismissOpenOverlays(page);
   const bar = page.getByRole("navigation", { name: "Main navigation" });
   const tab = bar.getByRole("button", { name: label, exact: true }).first();
   const found = await tab.count();
@@ -275,6 +276,49 @@ async function nav(page, label) {
 // when used to decide a flow should carry on.
 async function navHome(page) {
   await nav(page, "Home");
+}
+
+// ADDED 1 Oct 2026 - a dialog left open by an earlier flow silently eats every
+// later click.
+//
+// WHAT IT COST, precisely: the two new form-render flows (24, 25) were the first
+// flows to run after a flow that ends with the Settings overlay still up. Their
+// nav() call clicked the bottom-nav tab, and Playwright refused because
+// "<span>Broken references</span> ... intercepts pointer events". The suite went
+// red on a change whose only real content was two new tests.
+//
+// The gap is not in the new flows: it is in nav(), which has always clicked the
+// tab directly and never checked whether something was covering it. Every flow
+// that runs after an overlay-leaving flow has been exposed to this; mine were
+// simply the first to navigate. Fixing it inside the two new flows would have
+// left the next flow to trip over the same thing.
+//
+// Escape is the right dismissal here rather than a coordinate click: flow 23
+// already proves every overlay in the app closes on it, and
+// useEscapeToClose deliberately maps Escape to CANCEL on the destructive
+// confirmations, so this can never accidentally confirm a delete.
+//
+// LOOP, not a single press: Escape in Settings steps back ONE level at a time,
+// so a nested sub-screen needs several presses to fully close. A bounded loop
+// with a real error rather than a silent give-up - a helper that cannot dismiss
+// what it was asked to dismiss is the failure mode this file keeps recording.
+async function dismissOpenOverlays(page) {
+  for (let i = 0; i < 6; i++) {
+    if ((await page.locator('[role="dialog"]').count()) === 0) return;
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(200);
+  }
+  const stillOpen = await page.locator('[role="dialog"]').count();
+  if (stillOpen > 0) {
+    const labels = await page
+      .locator('[role="dialog"]')
+      .evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") || "(unlabelled)").join(" | "));
+    throw new Error(
+      `a dialog was still open after 6 Escape presses: ${labels}. Escape steps back one level at a time in ` +
+      "Settings, so a nested sub-screen needs several. Some earlier flow left it open, and every later click is " +
+      "intercepted by it."
+    );
+  }
 }
 
 async function dismissTransientBanners(page) {
