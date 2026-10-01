@@ -70,6 +70,7 @@ import {
 // drift does not match. A guard that misses its own target is worse than none.
 import { useAnonymiseMode, contactName, ANONYMISED } from "../calculations/anonymiseDisplay";
 import { deriveHivStatus, resolveHivStatus, describeHivStatus, HIV_STATUS_OPTIONS } from "../calculations/hivStatusCalculations";
+import { mostRecentTestDate } from "../calculations/mostRecentTest";
 import { KinkRegistry, KINK_ROLE_OPTIONS, resolveKinkSynonym, analyzeKinkEntry, getKinkRoleOptions } from "../registries/kinkRegistry";
 // ADDED — real fix: same normalizeTag Contacts/Encounters use.
 import { normalizeTag, hasPhysicalDetail, mergeCummerRow } from "../calculations/contactCalculations";
@@ -183,11 +184,14 @@ function PhotoPicker({ value, onChange, T }) {
 // uses (a scheduled-but-not-yet-happened test shouldn't count).
 // "Store facts, derive state" — this was a fact stored in the wrong
 // place; the real fact already lives in Testing's own records.
-async function getAutoLastTestedDate() {
-  const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
-  const sorted = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date));
-  return sorted[0]?.date || null;
-}
+// REMOVED 1 Oct 2026 - getAutoLastTestedDate() returned the most recent test
+// of ANY kind, and it was duplicated byte-identically in profileShareService.js.
+// In the section it renders in - PrEP/DoxyPEP, immediately above HIV status -
+// "last tested date" is read as "last HIV test". A chlamydia swab could satisfy
+// it, which is a false assurance about your own HIV status. Both copies now call
+// the single owner, src/calculations/mostRecentTest.js, narrowed to HIV. The
+// general "most recent test of anything" figure is not lost: Home's dashboard
+// already shows its own "Last test".
 
 function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
   return (
@@ -930,7 +934,15 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
   // CHANGED — Phase 2 encryption groundwork: TestingRepository went
   // async — getAutoLastTestedDate() was called straight in the render
   // body below.
-  const lastTestedDate = useLoadedMemo(() => getAutoLastTestedDate(), [], null);
+  // FIXED 1 Oct 2026 - narrowed to HIV. This row lives in the PrEP/HIV section,
+  // so "last tested" is read as "last HIV test", and the old version was
+  // satisfied by a chlamydia swab. See mostRecentTest.js for why that is a false
+  // assurance rather than a labelling slip.
+  const lastTestedDate = useLoadedMemo(
+    () => TestingRepository.getAll().then((tests) => mostRecentTestDate(tests, { infection: "HIV" })),
+    [],
+    null,
+  );
   // ADDED 29 Sep 2026 (t025) — the data the HIV status row derives from.
   // Kept as its own reads rather than folded into the ones above, so the
   // derivation is fed the same shape a pure test can pass by hand.
@@ -1169,9 +1181,9 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
               actual Test records, not typed in manually — no longer
               editable here. */}
           <div style={{ padding: "8px 0" }}>
-            <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Last tested date</div>
-            <div style={{ fontSize: 14, color: T.textPrimary }}>
-              {lastTestedDate ? formatStoredDate(lastTestedDate) : "No tests logged yet"}
+<div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Last HIV test</div>
+      <div style={{ fontSize: 14, color: T.textPrimary }}>
+        {lastTestedDate ? formatStoredDate(lastTestedDate) : "No HIV test logged yet"}
             </div>
           </div>
 
@@ -1281,7 +1293,14 @@ function ProfileDataView({ profile, T }) {
   // CHANGED — Phase 2 encryption groundwork: TestingRepository went
   // async — getAutoLastTestedDate() was called straight in the render
   // body below.
-  const lastTestedDate = useLoadedMemo(() => getAutoLastTestedDate(), [], null);
+  // FIXED 1 Oct 2026 - narrowed to HIV, same reason and same owner as the edit
+  // screen above. Two copies of the old helper existed and both were wrong in the
+  // same way, which is how it survived.
+  const lastTestedDate = useLoadedMemo(
+    () => TestingRepository.getAll().then((tests) => mostRecentTestDate(tests, { infection: "HIV" })),
+    [],
+    null,
+  );
   // CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry
   // are now async — resolved via useLoadedMemo instead of a plain
   // render-body call.
@@ -1393,7 +1412,7 @@ function ProfileDataView({ profile, T }) {
             Not currently on PrEP or DoxyPEP
           </div>
         )}
-        <ReadRow label="Last tested date" value={lastTestedDate ? formatStoredDate(lastTestedDate) : ""} T={T} />
+        <ReadRow label="Last HIV test" value={lastTestedDate ? formatStoredDate(lastTestedDate) : ""} T={T} />
       </SectionCard>
       <SectionCard title="About me" T={T}>
         <ReadRow label="Note" value={profile.aboutMeNotes} T={T} />

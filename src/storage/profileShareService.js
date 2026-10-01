@@ -27,20 +27,23 @@
 import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileRepository.js";
 import { ContactRepository } from "../repositories/contactRepository.js";
 import { TestingRepository } from "../repositories/testingRepository.js";
+import { mostRecentTestDate } from "../calculations/mostRecentTest.js";
 import { exportTextFile } from "./fileExportHelper.js";
 
 const SCHEMA_VERSION = 1;
 const SHARE_TYPE = "shos_profile_share";
 
-// ADDED 26 Aug 2026 — real ask: last tested date is now auto-
-// calculated from actual Test records, not a manually-typed profile
-// field. Same logic as SHOS_MyProfile_Prototype.jsx's own version
-// (duplicated per this app's self-contained-module convention, not
-// imported cross-module).
-async function getAutoLastTestedDate() {
-  const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
-  const sorted = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date));
-  return sorted[0]?.date || null;
+// FIXED 1 Oct 2026 - this was duplicated byte-identically from
+// SHOS_MyProfile_Prototype.jsx and shared the same defect: it returned the most
+// recent test of ANY kind. Exported to a person you are disclosing to, a
+// chlamydia swab could therefore stand in as the date of your HIV test, which
+// is a false assurance about your own health rather than a labelling slip.
+// Both copies now call the single owner, src/calculations/mostRecentTest.js.
+//
+// Renamed rather than silently kept, because "last tested" meant two different
+// things to two different people and the ambiguity is the bug.
+async function getAutoLastHivTestedDate() {
+  return mostRecentTestDate(await TestingRepository.getAll(), { infection: "HIV" });
 }
 
 // Pure data assembly — no browser APIs, fully testable in Node.
@@ -102,7 +105,7 @@ export async function buildProfileShare(options = {}) {
     // maintained. Still just a raw date string here, same as before —
     // the underlying Test record itself is never referenced or
     // shared, only its date value.
-    ...(includeLastTestedDate ? { lastTestedDate: await getAutoLastTestedDate() } : {}),
+    ...(includeLastTestedDate ? { lastTestedDate: await getAutoLastHivTestedDate() } : {}),
     profilePicture: profile.profilePicture,
     // Deliberately NOT included, ever — no toggle, no option, not
     // just "excluded by default": aboutMeNotes, allergies,

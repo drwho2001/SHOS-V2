@@ -20,9 +20,21 @@ import { resolve } from "node:path";
 const files = [
   "src/modules/SHOS_ClinicCard_Prototype.jsx",
   "src/modules/SHOS_Home_Prototype.jsx",
-  "src/modules/SHOS_MyProfile_Prototype.jsx",
   "src/modules/SHOS_Encounters_Prototype.jsx",
-];
+  // ADDED 1 Oct 2026, and REMOVED My Profile in the same change.
+  //
+  // This guard fired on its own: after My Profile's duplicated
+  // getAutoLastTestedDate() was replaced by a call to the shared owner, that file
+  // no longer contained a filtered load and the sweep correctly reported it as
+  // vacuous. The rule's INTENT - no consumer of "most recent test" may admit a
+  // future-dated one - is unchanged; what changed is that the rule now lives in
+  // ONE place instead of four, so it is asserted there (below) rather than
+  // re-implemented at every call site.
+  //
+  // Removing a file from a sweep is exactly the kind of edit that can quietly
+  // weaken a guard, so the count is still pinned below, and a new test asserts
+  // the central helper itself excludes future-dated tests.
+  ];
 
 const read = (p) => readFileSync(resolve(process.cwd(), p), "utf8");
 
@@ -85,10 +97,29 @@ describe("the most recent test: one definition of 'recent'", () => {
         checked++;
       }
     }
-    // Pins that the sweep saw what it thinks it saw, and that My Profile's
-    // UNFILTERED load (feeding deriveHivStatus - a different fact) is not swept
-    // in by accident.
-    expect(checked).toBe(4);
+// Pins that the sweep saw what it thinks it saw, and that My Profile's
+    // UNFILTERED load (feeding deriveHivStatus - a different derived fact) is not swept
+    // in by accident. Was 4; My Profile moved its rule into the shared owner on
+    // 1 Oct 2026, so three call sites remain and the fourth is asserted below.
+    expect(checked).toBe(3);
+  });
+
+  it("the shared owner excludes future-dated tests, since it is where the rule now lives", async () => {
+    // The counterpart to the sweep above. Four call sites each re-implemented this
+    // rule and one of them got it wrong in a different way (returning a chlamydia
+    // swab as an HIV test date), which is why the logic moved here.
+    const { mostRecentTestDate } = await import("./mostRecentTest.js");
+    const future = "2099-01-01T09:00:00.000Z";
+    const past = "2026-01-01T09:00:00.000Z";
+    const tests = [
+      { id: "t1", date: future, testingFor: ["HIV"] },
+      { id: "t2", date: past, testingFor: ["HIV"] },
+    ];
+    expect(mostRecentTestDate(tests, { infection: "HIV" })).toBe(past);
+
+    // And the rule still holds when a future test is the ONLY one, which is the
+    // case that matters: a scheduled test must not become "last tested".
+    expect(mostRecentTestDate([tests[0]], { infection: "HIV" })).toBeNull();
   });
 
   it("the Clinic Card filter that caused the collapse is the fixed one", () => {
