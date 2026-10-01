@@ -25,6 +25,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE,
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
+import { isEpisodeOpen, compareEpisodesOpenFirst, episodeStatusLabel, episodeGroupKey } from "../calculations/episodeCalculations";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { formatStoredDate } from "../calculations/dateInputHelpers";
 import { useEscapeToClose } from "../components/useEscapeToClose";
@@ -499,7 +500,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
   const organismNameById = useLoadedMemo(async () => new Map((await OrganismRegistry.getAll()).map((o) => [o.id, o.name])), [], new Map());
   if (!episode) return null;
 
-  const isOpen = !episode.resolvedDate;
+  const isOpen = isEpisodeOpen(episode);
 
   const hasPositive = linkedTests.some((t) => testIsPositive(t, resultNameById));
   // ADDED 2 Sep 2026 — real ask: partner-notification message helper.
@@ -577,7 +578,7 @@ function EpisodeDetail({ episodeId, onBack, onDeleted, onDelete, T }) {
           <h1 style={{ ...TYPE.recordTitle, margin: 0, color: T.textPrimary }}>{episode.title}</h1>
         </div>
         <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>
-          {isOpen ? (hasPositive ? "Open · positive result found" : "Open") : `Resolved ${formatDate(episode.resolvedDate)} — ${episode.resolution}`}
+          {episodeStatusLabel(episode, hasPositive, formatDate, { showResolution: true })}
         </div>
 
         <SectionCard title="Start" T={T}>
@@ -718,7 +719,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
   // EncounterRepository.getById() per episode, now needs useLoadedMemo.
   const sorted = useLoadedMemo(async () => {
     const withDate = await Promise.all(episodes.map(async (e) => ({ ...e, _date: (await EncounterRepository.getById(e.startEncounterId))?.date || e.createdAt })));
-    return withDate.sort((a, b) => (a.resolvedDate ? 1 : 0) - (b.resolvedDate ? 1 : 0) || new Date(b._date) - new Date(a._date));
+    return withDate.sort(compareEpisodesOpenFirst);
   }, [episodes], []);
   // ADDED — same reason: each row below used to call
   // TestingRepository.getById() straight in a synchronous render-body
@@ -746,7 +747,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
   // episodes (sorted first, see `sorted`'s own comparator above) stay
   // their own single group rather than being scattered by date, since
   // that priority ordering is deliberate, not chronological.
-  const episodeGroups = isDesktopWidth ? groupConsecutive(sorted, (e) => (e.resolvedDate ? monthLabel(e._date) : "Open")) : null;
+  const episodeGroups = isDesktopWidth ? groupConsecutive(sorted, (e) => episodeGroupKey(e, (k) => monthLabel(k))) : null;
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -798,7 +799,7 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
 }
 
 function EpisodeCard({ e, onOpen, hasPositive, T, radius, formatDate }) {
-  const isOpen = !e.resolvedDate;
+  const isOpen = isEpisodeOpen(e);
   // CHANGED — real audit finding (icon-only-UI affordance sweep): this
   // dot's color alone conveyed a positive-linked-test signal (red vs.
   // blue for "Open") with no adjacent text at all — a bigger,
@@ -815,7 +816,7 @@ function EpisodeCard({ e, onOpen, hasPositive, T, radius, formatDate }) {
         <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{e.title}</span>
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
-        {e.triggerReason || "—"} · {isOpen ? (hasPositive ? "Open · positive result found" : "Open") : `Resolved ${formatDate(e.resolvedDate)}`}
+        {e.triggerReason || "—"} · {episodeStatusLabel(e, hasPositive, formatDate)}
       </div>
     </div>
   );

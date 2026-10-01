@@ -16,6 +16,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, XIcon as X, GearIcon as Gear, FolderIcon as Folder } from "@phosphor-icons/react";
 import { MeasurementRepository, DEFAULT_MEASUREMENT, BLOOD_PRESSURE_TYPE, BLOOD_PRESSURE_UNIT, getAvailableUnits, getDefaultUnit, hasUnitConversion, convertFromCanonical, KIND_UNITS, KIND_LABELS } from "../repositories/measurementRepository";
+import { classifyMeasurement } from "../calculations/measurementCalculations";
 import { MeasurementPreferencesRepository, DEFAULT_MEASUREMENT_PREFERENCES } from "../repositories/measurementPreferencesRepository";
 import { CustomGroupsRepository } from "../repositories/customGroupsRepository";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
@@ -597,15 +598,14 @@ function displayReading(m, prefs) {
 // stored in that same canonical unit, so this needs no unit conversion
 // of its own. Blood Pressure is out of scope for this pass — its own
 // two-value (systolic/diastolic) reading doesn't reduce to one
-// low/high comparison the way every other measurement type here does.
-function classifyMeasurement(m, prefs) {
-  if (m.type === BLOOD_PRESSURE_TYPE || m.value == null) return null;
-  const range = prefs.normalRangeByType?.[m.type];
-  if (!range || range.low == null || range.high == null) return null;
-  if (m.value < range.low) return "low";
-  if (m.value > range.high) return "high";
-  return "normal";
-}
+// MOVED 30 Sep 2026 (t053) to src/calculations/measurementCalculations.js, per
+  // this project's repository / calculation / sync split - pure business logic
+  // does not belong inside a component. Severity was LOW: one consumer, so
+  // nothing could drift yet. The blood-pressure type now arrives as an argument
+  // rather than the calculation importing it across a layer boundary.
+  //
+  // The rule itself, unchanged: this classifies against the user's own set range
+  // only, never a clinical threshold, and returns null when no range is set.
 
 function RangeBadge({ status, T }) {
   if (!status) return null;
@@ -712,7 +712,7 @@ function MeasurementDetail({ measurementId, onBack, onEdit, T, triggerDelete, re
                 <span style={{ fontSize: 12, color: T.textSecondary, flexShrink: 0 }}>Value</span>
                 <span style={{ display: "flex", alignItems: "center" }}>
                   <span style={{ fontSize: 13, color: T.textPrimary, fontWeight: 500, textAlign: "right" }}>{displayReading(m, prefs)}</span>
-                  <RangeBadge status={classifyMeasurement(m, prefs)} T={T} />
+                  <RangeBadge status={classifyMeasurement(m, prefs, BLOOD_PRESSURE_TYPE)} T={T} />
                 </span>
               </div>
               {showsConversion && <ReadRow label="As entered" value={`${m.enteredValue} ${m.enteredUnit}`} T={T} />}

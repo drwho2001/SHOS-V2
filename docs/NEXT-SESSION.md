@@ -1393,6 +1393,71 @@ accepts the three valid forms and **deliberately rejects `>=`**, since that
 would admit a future test and it sits close enough to `<=` to be smuggled in by
 a careless edit.
 
+### t053 batch — the remaining derived facts, and four tidies
+
+Batched on request rather than one fix per turn. Eleven derived facts examined.
+**The most useful result is a counter-example:** `computeStock` has a real owner,
+six consumers, every one of them reading it, and `refillReminderSync` carries a
+comment showing the ownership was deliberate. That is what healthy looks like,
+and it is what proves the other findings are real defects rather than this
+codebase's natural shape.
+
+`takeHomeQuantity.js` was flagged in the batch as possibly-unsafe, on the grounds
+that it takes `intervalHours` as a **parameter** while `computeStock` gets it from
+the owner. **It clears completely.** It calls `effectiveDoseIntervalHours(med)`
+itself, and its header documents that the first version branched on `usagePattern`
+directly — a real break of the one-owner rule that was corrected. My concern came
+from misreading the signature. Second counter-example, and the best-written file
+in the repo for this concern.
+
+Four tidies shipped, all low severity, all recorded as such:
+
+- **Episode open/resolved now has an owner** (`calculations/episodeCalculations.js`).
+  Four truthiness spellings collapsed; they all agreed, so this is a *latent*
+  split-brain and is not described as a bug. The genuine finding is narrower:
+  every old spelling was a truthiness test, so any non-empty string counted as
+  resolved — `"not-a-date"` would have sorted an episode into the resolved group
+  under a date that renders as "Invalid Date". `isEpisodeOpen` now requires a
+  parseable date. That is a real tightening and the only behaviour change.
+- **Contact status explanation deduplicated.** The dot's `title` tooltip and its
+  tap-to-reveal caption were separate strings; the active wording was already
+  duplicated verbatim and the inactive wording differed. Since this app has no
+  hover on a touchscreen, the visible caption is the one users actually read.
+- **`classifyMeasurement` moved out of a component** into
+  `calculations/measurementCalculations.js`, per the repository/calculation/sync
+  split. One consumer, so nothing could drift — placement only. The blood-pressure
+  type arrives as a parameter because calculations here do not import
+  repositories (`statsCalculations` takes resolver callbacks for the same reason).
+- **Symptom severity's raw `#F59E0B` is now `T.actionAmber`.** The root cause was
+  not laziness: the module's theme exposed `actionRed` and `actionGreen` but never
+  `actionAmber`, so there was nothing to read. Exposed now, following the same
+  `resolveDarkAccent` pattern — which also makes the Moderate dot dark-mode aware,
+  where before it used the light-mode value on a near-black surface. Three
+  `#F59E0B` uses in Medication Dashboard are alpha-suffixed (`streakGlow`) and
+  deliberately left alone.
+
+**A user-visible character change I introduced and caught.** `episodeStatusLabel`
+first used a plain hyphen where the replaced string used an **em dash** (U+2014).
+It would have shipped on a fully green suite. Caught only because the test asserts
+the exact old literal, character for character — not by reading the diff. The test
+then failed on `"0"` being unparseable, which it is not: JavaScript parses `"0"` as
+1 Jan 2000. Corrected after measuring; a test edited until it passes is how a wrong
+belief becomes a shipped one.
+
+Two things were **not** treated as bugs, and the first is the more valuable:
+
+- **Clinic Card's "Recent contacts"** looks like a split-brain — it does not use
+  `lastInteraction`. It is built from the user's *selected timeframe*, answering a
+  different question. Recorded as a false positive, because a scan that over-flags
+  is worse than no scan.
+- **Clinic-visit follow-up dates** had no reminder consumer. The owner's answer
+  makes this a **feature**, not a defect: it is filed as `t054` with five
+  questions that need their call (precedence, what counts as "booked", past-dated
+  follow-ups, what "the dashboard" means, and whether the warning extends the two
+  existing appointment reminders or adds a third).
+
+941 tests across 79 files, all gates green.
+
 ### t053 finding 0 — the date class is closed, and the comments now say so
 
 Before finding anything new, the class behind seven of the day's bugs was swept

@@ -1441,6 +1441,26 @@ function getTransportLabel(contact) {
   return tier ? tier.label : null;
 }
 
+// ADDED 30 Sep 2026 (t053) - the contact status dot's EXPLANATION existed in two
+// places: a `title` tooltip and the tap-to-reveal caption below the card. The
+// active wording was already duplicated verbatim; the inactive wording differed
+// ("No encounter in over N days" vs "Inactive - no encounter in over N days").
+// Two spellings of one explanation, which is how the tap-to-reveal caption and
+// the hover tooltip drift apart - and this app has no hover on a touchscreen, so
+// the visible one is the one users actually read.
+//
+// `title` and `detail` are returned separately rather than one string, because
+// the two surfaces genuinely want different lengths: a tooltip should be a
+// fragment, the caption a full sentence.
+function contactStatusCopy(isInactive, inactiveThresholdDays) {
+  return isInactive
+    ? {
+        title: `No encounter in over ${inactiveThresholdDays} days`,
+        detail: `Inactive - no encounter in over ${inactiveThresholdDays} days`,
+      }
+    : { title: "Active - a recent encounter is logged", detail: "Active - a recent encounter is logged" };
+}
+
 function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, anonymise = false, inactiveThresholdDays = 90, showRoleOnCards = false, activeFilters = null, selectMode = false, selected = false, onToggleSelected, onLongPress, onToggleFavourite }) {
   // ADDED 26 Aug 2026 — real ask: "show on card which field is being
   // filtered/why result is coming up... especially needed for if
@@ -1494,6 +1514,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
   // never recur — excludeFromActiveTracking skips the flag entirely
   // regardless of how long it's actually been.
   const isInactive = !contact.excludeFromActiveTracking && daysSinceLastInteraction !== null && daysSinceLastInteraction > inactiveThresholdDays;
+  const statusCopy = contactStatusCopy(isInactive, inactiveThresholdDays);
   // ADDED 10 Sep 2026 — real audit finding: the dot's own explanation
   // only ever showed via a `title` hover tooltip, invisible on a real
   // touchscreen (no hover state) — so the colour meant nothing to
@@ -1611,7 +1632,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
       <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
-          title={isInactive ? `No encounter in over ${inactiveThresholdDays} days` : "Active — a recent encounter is logged"}
+          title={statusCopy.title}
           aria-label={isInactive ? "Inactive contact, tap for details" : "Active contact, tap for details"}
           style={{ width: 8, height: 8, borderRadius: radius.full, background: isInactive ? T.actionRed : T.actionGreen, display: "inline-block", cursor: "pointer", boxShadow: showStatusInfo ? `0 0 0 4px ${isInactive ? T.actionRed : T.actionGreen}33` : "none" }} />
         <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, color: T.textPrimary }}>{anonymise ? MASKED : displayName(contact)}</span>
@@ -1688,7 +1709,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
       </div>
       {showStatusInfo && (() => {
         const transportLabel = getTransportLabel(contact);
-        const lines = [isInactive ? `Inactive — no encounter in over ${inactiveThresholdDays} days` : "Active — a recent encounter is logged"];
+        const lines = [statusCopy.detail];
         if (transportLabel) lines.push(transportLabel);
         if (contact.hosts === "Yes") lines.push("Hosts meetups");
         else if (contact.travels === "Yes") lines.push("Will travel to you");

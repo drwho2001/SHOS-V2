@@ -42,7 +42,7 @@ import { useEscapeToClose } from "../components/useEscapeToClose";
 function buildLight() {
   return {
     ...NEUTRAL,
-    healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green,
+    healthcareBlue: ACCENTS.healthcare, actionRed: ACTION.red, actionGreen: ACTION.green, actionAmber: ACTION.amber,
   };
 }
 // Dark mode, on Medication's DARK basis — see Contacts' own comment
@@ -53,7 +53,7 @@ function buildLight() {
 function buildDark() {
   return {
     ...NEUTRAL_DARK,
-    healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"),
+    healthcareBlue: resolveDarkAccent("healthcare", ACCENTS.healthcare, "#0E8144"), actionRed: resolveDarkAccent("actionRed", ACTION.red, "#FF7A7E"), actionGreen: resolveDarkAccent("actionGreen", ACTION.green, "#5FD9A4"), actionAmber: resolveDarkAccent("actionAmber", ACTION.amber, "#F0B429"),
   };
 }
 const radius = RADIUS;
@@ -75,10 +75,17 @@ function formatDate(iso) {
 }
 
 function severityColor(severity, T) {
-  if (severity === "Severe") return T.actionRed;
-  if (severity === "Moderate") return "#F59E0B";
-  return T.textSecondary;
-}
+    // FIXED 30 Sep 2026 (t053) - the Moderate branch returned a raw "#F59E0B",
+    // which IS ACTION.amber, while the Severe branch beside it read a token.
+    // The reason was not laziness: this module's theme exposed actionRed and
+    // actionGreen but never actionAmber, so there was nothing to read. The token
+    // is exposed now, following the same resolveDarkAccent pattern as its two
+    // siblings - which also means the Moderate dot is now dark-mode aware, where
+    // before it used the light-mode value on a near-black surface.
+    if (severity === "Severe") return T.actionRed;
+    if (severity === "Moderate") return T.actionAmber;
+    return T.textSecondary;
+  }
 
 function SectionCard({ title, T, children }) {
   return (
