@@ -1,4 +1,4 @@
-import { isDayKeyDue, formatDayKey } from "./dateInputHelpers";
+import { isDayKeyDue, formatDayKey, formatStoredDate } from "./dateInputHelpers";
 // testingReminderSync.js
 //
 // PLAIN-LANGUAGE PURPOSE
@@ -162,7 +162,15 @@ async function updateTestWidget() {
         const mostRecent = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
         const resultNameById = new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name]));
         const suggested = suggestedRoutineRetestDate(mostRecent, resultNameById);
-        const lastTest = mostRecent.date;
+        // FIXED 1 Oct 2026 (t063, found on a real device) - this used to pass
+        // `mostRecent.date` STRAIGHT THROUGH to the native widget, so the TextView
+        // rendered the raw fake-UTC storage value, e.g.
+        // "2026-09-14T10:00:00.000Z". It is a stored wall-clock string with a
+        // deliberate lie in the trailing Z, not something a person should ever
+        // read. formatStoredDate reads it in the UTC frame, which is the frame
+        // these values are stored in, so it prints the day the user actually
+        // logged rather than shifting it either side of UTC.
+        const lastTest = formatStoredDate(mostRecent.date);
         const retestDue = suggested
           // FIXED 30 Sep 2026 (t037) - formatted in the UTC frame because
           // `suggested` is a DAY KEY, which is a UTC-anchored calendar day by
