@@ -2148,6 +2148,25 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
             options={[...HIV_STATUS_OPTIONS, "Not known / not recorded"]}
             helper="Only what you actually know."
           />
+          {/* ADDED 1 Oct 2026 - a contact's status is STATED, not derived, so
+              there is no test record here to date it from. Rather than force a
+              test date the user does not have, or record a status that reads as
+              if it were verified, the two are kept apart: this is when the user
+              was TOLD, and the standing disclaimer says plainly that it is not
+              the date of a test and may be out of date. An alternative review
+              argued a status without a date is worse than no status at all -
+              true for what is EXPORTED to someone else, which never sends a bare
+              undated claim - but refusing to record it here would lose the fact
+              entirely, and a fact that was never written down cannot be
+              qualified by any disclaimer. */}
+          <TextField
+            T={T}
+            label="Date informed"
+            type="date"
+            value={form.hivStatusInformedDate || ""}
+            onChange={set("hivStatusInformedDate")}
+            helper="When they told you - not when they were tested. This information may be out of date."
+          />
         </SectionCard>
 
         <SectionCard T={T} title="Kink">
@@ -2623,6 +2642,33 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
                   : "Not recorded"
             }
           />
+          {/* ADDED 1 Oct 2026 - a STATED status has no test record behind it, so
+              its date is "when you were told", not "when they were tested". Kept
+              as its own row rather than folded into the status line above,
+              because describeHivStatus renders a date as "as of <date>", which
+              would turn a recollection into an apparent test result. The
+              disclaimer is not decoration: without it the date reads as a
+              freshness claim, which is the false assurance this whole change
+              exists to remove. */}
+          {contact.hivStatusInformedDate && !(hideFurther || anonymise) && (
+            <>
+              <ReadRow
+                T={T}
+                label="Date informed"
+                value={formatStoredDate(contact.hivStatusInformedDate)}
+              />
+              <div
+                style={{
+                  fontSize: 11,
+                  color: T.textDisabled,
+                  fontStyle: "italic",
+                  padding: "0 0 8px",
+                }}
+              >
+                Not a record of when the test was done. This information may be out of date.
+              </div>
+            </>
+          )}
         </SectionCard>
 
         <SectionCard T={T} title="Kink">

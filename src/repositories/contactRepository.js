@@ -187,6 +187,25 @@ export const DEFAULT_CONTACT = {
     // the derivation and for why the suppressed/unsuppressed split cannot come
     // from a test result at all.
     hivStatus: null,
+  // ADDED 1 Oct 2026 - `hivStatusInformedDate` is when the OWNER WAS TOLD this
+  // contact's status. It is deliberately NOT a test date, and it is never
+  // presented as one.
+  //
+  // WHY IT EXISTS: a contact's status is stated, not derived, so there is no
+  // test record to date it from - and the common case is someone telling you
+  // their status without remembering when they were last tested. The
+  // alternative considered was refusing to record a status without a test date,
+  // which Gemini's review of this exact problem recommended on the grounds that
+  // "a status without a date is worse than no status at all". That is right
+  // about EXPORT and wrong about ENTRY: refusing to record it would lose the
+  // fact entirely, and a lost fact cannot be qualified by a disclaimer.
+  //
+  // So the two are separated rather than conflated. A stated status carries
+  // "date informed", carries a standing disclaimer, and is never exported as a
+  // bare dated claim. A derived status (the owner's own) carries the real test
+  // date from Testing. See mostRecentTest.js for the separate bug this keeps
+  // from recurring.
+  hivStatusInformedDate: "",
     age: null, ageIsApprox: false,
   // ADDED 19 Aug 2026 — real gap from the Notion-vs-app audit. Stored
   // as a data URL (base64-encoded image), not a file path or upload
