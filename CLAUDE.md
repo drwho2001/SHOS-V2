@@ -851,6 +851,74 @@ ever *opened a form-render path*, and both bugs live in code that unit-tests
 happily import without rendering. A smoke flow that opens My Profile -> Edit is
 the actual fix, not a nice extra.
 
+## Recently shipped (1 Oct 2026, later still — "clear sample data" deleted six weeks of the owner's own medication history)
+
+**The worst data-loss bug this project has ever shipped, found by the owner
+opening the app and finding his meds gone.** He had renamed the seeded
+"PrEP (Descovy)" / "DoxyPEP (Doxycycline)" / "Vitamin D3" records to his own
+names and logged **66 of his own dose entries** against them, then used Clear
+sample data. All three were deleted; their **69 non-seed dose logs survived,
+orphaned**, pointing at medications that no longer existed. Recovered only
+because a backup had been written the day before.
+
+**The cause was one line, and the file's own comment insisted it was safe.**
+`all.filter((r) => !seedIds.has(r.id))` — id alone. A seed record stays a seed
+record by id no matter what the user has done with it, so "renamed it and logged
+six weeks of doses against it" was invisible to it. The header comment claimed
+*"there is no way to tell them apart except by id, which is exactly what this
+file uses… clear sample data is safe at any time and always preserves real
+records."* **Both claims were false.** Corrected in place, because that comment
+is the kind that actively teaches the next session it is safe.
+
+**The fix: a seed record that real records depend on is not sample data.**
+`referencedSeedIds` walks the loaded collections for any seed id pointed at by a
+**non-sample** record through a field ending `Id`/`Ids`. Referenced → kept, with
+its history. `countSampleData` gets the same exemption, or the first-run banner
+never clears and the export screen keeps warning about the user's own data.
+
+**Rejected the obvious alternative, and the rejection is the interesting part.**
+The natural approach is a field-diff "has the user edited this?" heuristic.
+Gemini was consulted and refused it: inferring intent by comparing fields
+against the seed definition is a *guess about what the user meant*, it fights
+`updatedAt` (every save rewrites it), and a wrong answer is silent loss in either
+direction. Referential integrity is not a guess — a dose log pointing at
+`med_001` is a **fact**. Gemini's further recommendation, keeping seed data out
+of the user database behind a projection layer, is the textbook architecture and
+disproportionate for a single-user app. Exchange in
+`tasks/sample-data-loss/90-gemini-consult.md`.
+
+**A test suite that was green because it could not fail.** Seven new tests. Four
+mutations, three red as intended — but dropping the plural `*Ids` branch was
+**green**, because every fixture used a singular `...Id`. The plural half of the
+check would have shipped broken, and the shape a real encounter actually uses is
+`attendeeIds`. That test is now in the suite.
+
+**Two mistakes of my own, both caught by tooling rather than by reading.** The
+fixtures called `LogRepository.add`, which does not exist (it is `create`). And
+my first mutation harness reported **all four mutations as green** — the ANSI
+escapes sit between "Tests" and the count, so the detection regex never matched
+anything. A harness that reports green without checking is worse than no harness,
+and it nearly had me discard four sound tests.
+
+**Also caught a regression I introduced myself:** hoisting the repository load
+into a helper swallowed the error the existing "never throws, reports it instead"
+test depends on — which would have told the user their clear succeeded without
+ever inspecting that collection.
+
+**Verified on the device afterwards:** the restored medications render with their
+real schedules and dose history (PrEP 33 entries including the `200mg/245mg`
+combination), contacts and encounters untouched, **0 orphaned logs**, and
+**0** vault/decrypt errors in logcat.
+
+**Stock is safe to export, and the mechanism is the good one.** Asked whether
+manual stock corrections survive a round trip. `computeStock` is a pure sum of
+log deltas with no correction field at all, and "Correct stock" writes a
+**synthetic log entry** (`notes: "Manual stock correction"`). So corrections are
+stored, exported and re-derived — render, export and import cannot disagree.
+Consulted Gemini on the three candidate models; it rated this one (a synthetic
+log) the cleanest and its own advice was to check the code rather than trust the
+user's assumption. Recorded in `tasks/stock-baseline/90-gemini-consult.md`.
+
 ## Recently shipped (1 Oct 2026 - the widgets had never once worked, found only by testing on a real phone)
 
 **The bug was invisible to every automated check in this repo, and it had been shipped for a week.** All six copies of `getWidgetBridge()` returned Capacitor's plugin proxy *bare* from an `async` function. A Capacitor plugin proxy is a catch-all `Proxy` where any property access returns a function, so `proxy.then` is a function, which makes the proxy look **thenable** - and returning a thenable from an async function makes the engine unwrap it by invoking `.then()` on it. Capacitor reports that as a call to a plugin method literally named `then`, which does not exist natively. It therefore threw **before** the intended method was reached.
