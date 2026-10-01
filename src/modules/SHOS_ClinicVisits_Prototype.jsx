@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, CalendarIcon as Calendar, ArrowsClockwiseIcon as RefreshCcw, XIcon as X, CrosshairIcon as Crosshair } from "@phosphor-icons/react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 // ADDED — real ask: "use current location" on Clinic Visits, the last
@@ -48,6 +48,10 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { suggestedQuantity, round2 } from "../calculations/takeHomeQuantity";
+// ADDED 1 Oct 2026 - the "why did you come today?" guidance. `reasonForVisit`
+// already existed but was inert: selecting it changed nothing else on the form.
+// See clinicVisitShape.js for why an UNRECOGNISED reason must hide nothing.
+import { fieldGroupsForReasons, shouldGuideForm } from "../calculations/clinicVisitShape";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // Same Healthcare blue + font conventions as Testing — applied from
@@ -888,6 +892,20 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
   // sheet sat on the Escape stack and could swallow or misdirect the key.
   useEscapeToClose(onClose, isOpen);
   const isNew = !visitId;
+  // ADDED 1 Oct 2026 - the "why did you come today?" guidance. `shouldGuideForm`
+  // is FALSE whenever no recognised reason is selected, which is what makes this
+  // safe: an existing visit with no reasons, or with a reason the owner added
+  // themselves from inside the app, reveals EVERY section exactly as it did
+  // before. Only a recognised reason turns the gating on.
+  //
+  // Derived, never stored - see clinicVisitShape.js. Deliberately NOT persisted
+  // as "which sections were shown", because that would be a second owner for a
+  // fact already derivable from `reasonForVisit`.
+  const guideForm = shouldGuideForm(form.reasonForVisit);
+  const showTesting = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("testing");
+  const showVaccination = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("vaccination");
+  const showMedication = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("medication");
+  const showSymptoms = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("symptoms");
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
   // ADDED 19 Aug 2026 — real in-app editable option lists.
@@ -1048,6 +1066,16 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
               for visit. Type to filter existing options, Enter to select
               or create new (same pattern as ClinicianField). */}
           <ReasonForVisitField value={form.reasonForVisit} onChange={set("reasonForVisit")} options={reasonForVisitOptions} listName="reasonForVisit" T={T} />
+          {/* ADDED 1 Oct 2026 - says WHY sections below are showing, because a
+              form that silently hides half its own fields is indistinguishable
+              from a broken one. Only rendered while the gating is actually on,
+              so a plain visit is unchanged. */}
+          {guideForm && (
+            <div style={{ fontSize: 11, color: T.textDisabled, marginTop: -2, marginBottom: 6, lineHeight: 1.35 }}>
+              This visit form is showing only the sections your reason applies. Add or
+              remove reasons above to change what appears.
+            </div>
+          )}
           {/* MOVED 26 Sep 2026 - was in the Notes card. See that card's
               note for why. A short, scannable working impression/diagnosis,
               distinct from the longer narrative (see
@@ -1133,10 +1161,21 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
             single level, with each concept in a card titled for what it
             actually is. No field, handler or stored value changed. */}
         <SectionCard title="Linked records" T={T}>
+          {showTesting && (
+          <>
           <RelationPicker label="Linked tests" value={form.linkedTestIds} onChange={set("linkedTestIds")} items={allTests} T={T} placeholder="No tests logged yet" />
           {/* ADDED 19 Aug 2026 — real feedback batch: start a test
               here with just a name, continue the rest in Testing. */}
           <StartTestInline visitDate={form.date} onCreated={(testId) => { set("linkedTestIds")([...form.linkedTestIds, testId]); setRefreshKey((k) => k + 1); }} T={T} />
+          </>
+          )}
+          {/* The RESULTS of already-linked tests are deliberately NOT gated,
+              even though the pickers above are. Gating an input is safe;
+              gating a display of data the user already entered would hide it,
+              and the reason that would hide it (a reason change that drops
+              "testing") is exactly the case the clearing confirmation has to
+              handle. So the entry points move and the record of what was
+              already done stays visible. */}
           {/* CHANGED 19 Aug 2026 — real feedback batch: each linked
               test's own real result now shows inline, read-only —
               this REPLACES the old standalone Results field (see
@@ -1160,7 +1199,9 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
             </div>
           )}
 
-          <RelationPicker label="Vaccinations given" value={form.vaccinationsGivenIds} onChange={set("vaccinationsGivenIds")} items={allVaccinations} T={T} placeholder="No vaccinations logged yet" />
+          {showVaccination && (
+            <>
+            <RelationPicker label="Vaccinations given" value={form.vaccinationsGivenIds} onChange={set("vaccinationsGivenIds")} items={allVaccinations} T={T} placeholder="No vaccinations logged yet" />
           {/* ADDED 26 Sep 2026 — see RecordVaccinationInline's own note.
               Records and links in one action, so the user is never asked
               to remember a second step. */}
@@ -1169,12 +1210,19 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
             location={form.location}
             onCreated={(vaccinationId) => { set("vaccinationsGivenIds")([...form.vaccinationsGivenIds, vaccinationId]); setRefreshKey((k) => k + 1); }}
             T={T} />
+          </>
+          )}
+          {/* The Linked-records card is always rendered even when both of its
+              fields are hidden, so its title never appears as an empty shell.
+              ShouldGuideForm() is false whenever no reason applies, so an
+              unrecognised or absent reason reveals BOTH - see clinicVisitShape.js. */}
         </SectionCard>
 
         {/* RESTRUCTURED 26 Sep 2026 — its own card because it carries a
             sub-question of its own ("which one is why you're here?")
             that is a genuinely different interaction from the plain
             relation pickers, rather than being buried mid-card. */}
+        {showSymptoms && (
         <SectionCard title="Symptoms discussed" T={T}>
           <RelationPicker label="Symptom types discussed" value={form.symptomTypeIds} onChange={set("symptomTypeIds")} items={allSymptoms} T={T} placeholder="No symptoms in registry" />
           {/* ADDED 19 Aug 2026 — real feedback batch: pull from recent
@@ -1208,7 +1256,9 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
             </div>
           )}
         </SectionCard>
+        )}
 
+        {showMedication && (
         <SectionCard title="Medications — Administered in clinic" T={T}>
           <div style={{ marginBottom: 8 }}>
             <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4, fontWeight: 600 }}>From your Medication tracker</div>
@@ -1219,15 +1269,18 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
             <AdHocMedicationsManager value={form.adHocMedicationsGiven} onChange={set("adHocMedicationsGiven")} T={T} />
           </div>
         </SectionCard>
+        )}
 
         {/* CHANGED 26 Sep 2026 — one card, not two. "Prescribed to take
             home" and "Medications to restock" were separate id arrays
             asking the same question, and neither ever changed any
             behaviour. Merged, and the entry now carries a containers
             quantity, which is what the owner actually wanted from it. */}
+        {showMedication && (
         <SectionCard title="Medications to take home" T={T}>
           <TakeHomeMedicationsField value={form.takeHomeMedications} onChange={set("takeHomeMedications")} meds={allMeds} T={T} />
         </SectionCard>
+        )}
 
         {/* CHANGED 26 Sep 2026 — Clinical impression moved up to the
             Overview card, so this is now just the free-text narrative. */}
@@ -1450,8 +1503,8 @@ function VisitDetail({ visitId, onBack, onEdit, onOpenTest, T, triggerDelete, re
         </SectionCard>
 
         {/* RESTRUCTURED 26 Sep 2026 — see the edit sheet's own note. */}
-        <SectionCard title="Symptoms discussed" T={T}>
-          <ReadRow label="Symptom types discussed" value={symptomNames} T={T} />
+<SectionCard title="Symptoms discussed" T={T}>
+            <ReadRow label="Symptom types discussed" value={symptomNames} T={T} />
           {symptomLogEntries.length > 0 && (
             <div style={{ padding: "7px 0" }}>
               <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Specific symptom entries</div>
