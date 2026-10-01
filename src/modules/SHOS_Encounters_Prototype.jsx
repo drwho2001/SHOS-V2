@@ -21,6 +21,7 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, UsersIcon as Users, MapPinIcon as MapPin, HeartIcon as Heart, CheckIcon as Check, ArrowsClockwiseIcon as RefreshCcw, TrashIcon as Trash2, CrosshairIcon as Crosshair, FireIcon as FlameSmall, CoffeeIcon as Coffee, DropIcon as SaunaDrop, ConfettiIcon as Confetti } from "@phosphor-icons/react";
 import { getCurrentLocationPlace, summarizePlaceName } from "../storage/locationService";
 import { useEditUndo } from "../calculations/editUndoHelpers";
+import { optionValue, optionLabel } from "../calculations/optionShape";
 import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { nowAsDateTimeLocalString, formatStoredDate, formatStoredDateTime, inDaysAsStoredDate } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes } from "../calculations/fuzzyMatch";
@@ -197,28 +198,37 @@ function SelectField({ label, value, onChange, options, T }) {
       <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
-        {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+        {options.map((opt) => (<option key={optionValue(opt)} value={optionValue(opt)}>{optionLabel(opt)}</option>))}
       </select>
     </div>
   );
 }
 
 function MultiSelectChips({ label, value, onChange, options, T }) {
+  // optionValue/optLabel on EVERY use of `opt`, not only on the render.
+  //
+  // Rendering an object as a React child throws React error #31, which is at
+  // least loud. The quieter failure is the one this guards: `value.includes(opt)`
+  // is false forever, so the chip never lights up, and onChange([...value, opt])
+  // STORES THE OBJECT into a field every other reader expects to hold strings.
+  // Normalising at the boundary means an object-valued option can never reach
+  // the stored array at all.
   const toggle = (opt) => {
-    const has = value.includes(opt);
-    onChange(has ? value.filter((v) => v !== opt) : [...value, opt]);
+    const v = optionValue(opt);
+    const has = value.includes(v);
+    onChange(has ? value.filter((x) => x !== v) : [...value, v]);
   };
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{label}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {options.map((opt) => {
-          const active = value.includes(opt);
+          const active = value.includes(optionValue(opt));
           return (
-            <div key={opt} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
+            <div key={optionValue(opt)} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt); } }}
-              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.encountersPink : T.border}`, color: active ? T.encountersPink : T.textSecondary, background: active ? `${T.encountersPink}15` : "transparent" }}>
-              {opt}
+              style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.encountersAmber : T.border}`, color: active ? T.encountersAmber : T.textSecondary, background: active ? `${T.encountersAmber}15` : "transparent" }}>
+              {optionLabel(opt)}
             </div>
           );
         })}

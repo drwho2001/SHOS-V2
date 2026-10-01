@@ -141,6 +141,79 @@ their file.
 a form-render path", and there are more forms than these. Worth one systematic
 pass over every Add/Edit sheet.
 
+## One owner for option shape, and a guard that found three bugs in itself (session B, 1 Oct 2026)
+
+New `src/calculations/optionShape.js` — `optionValue()` and `optionLabel()`.
+Nine of the thirteen option pickers now use it.
+
+**The scope is wider than the crash, and that is the finding.** The eight
+`SelectField` copies all render their option as a React child, so an object threw
+React error #31 — the loud failure. But `MultiSelectChips` also does
+`value.includes(opt)` and `onChange([...value, opt])`. Given an object:
+
+- `{opt}` as a child **throws** — visible.
+- `value.includes(opt)` is **false forever**, so the chip never lights up.
+- `onChange([...value, opt])` **stores the object**.
+
+So a single object-valued option in a `MultiSelectChips` field would not crash.
+It would quietly write `{value, label}` objects into a field every other reader
+expects to hold strings — `travelMode`, `statedKinks`, `bdsmRole`. **Silent data
+corruption is worse than a crash**, and it is why normalisation is applied to the
+*stored* value in every use, not only to the render.
+
+**One owner rather than nine copies of A's ternary.** A fixed My Profile's
+`SelectField` with an inline `typeof opt === "string" ? … : …`. Pasting that into
+nine more files would have been the same duplication this file is trying to
+remove, so the ternary became a helper instead.
+
+**`optionLabel()` deliberately does NOT fall back to `optionValue()`.** Falling
+back would put `positive-suppressed` in front of a user — exactly the defect the
+label half exists to prevent. An empty chip is visibly wrong and therefore gets
+fixed; a chip reading `positive-suppressed` looks like data.
+
+### The guard, and the three bugs it found in itself
+
+`src/calculations/optionShapeGuard.test.js` parses every module with
+`@babel/parser` and asserts no picker renders its map parameter raw. It is a
+static check rather than a rendering test because **all thirteen components are
+module-local functions in eight large module files, none exported** — rendering
+one means changing files two sessions are editing. The invariant is on the render
+*contract*, accepting either the helper or an inline `typeof` discriminator, so
+it does not go red on A's already-correct My Profile.
+
+**Its non-vacuity fixture caught three real bugs in the guard itself, in three
+successive runs — which is precisely why it exists:**
+
+1. It read the option variable from the *component's* params, but it is the
+   **`.map()` callback's** parameter. It matched nothing, and reported all
+   thirteen pickers clean.
+2. It treated any `BinaryExpression`/`ConditionalExpression` as "already
+   discriminating" — and `value.filter((v) => v !== opt)` is present in every
+   `MultiSelectChips`, so its whole subtree was marked safe.
+3. `names` was a local rather than a recursion parameter, so it was reset before
+   the walk reached the callback body — the same blindness as (1).
+
+And a fourth, in the **fixture**: it put an `import` inside a function body,
+which is a syntax error, so the "tolerant" case never parsed. Then fixing that
+put the import at index 0, so reading `.declaration` off `body[0]` returned
+undefined. It now finds the default export by search.
+
+**Mutation-verified in both halves.** Reverting `Testing`'s `SelectField` to raw
+`{opt}` turns it red naming `SHOS_Testing_Prototype.jsx:228 … children {opt},
+value={opt}`. Reverting `MultiSelectChips` turns it red naming line 246. Both
+name the file, the line and the offending properties.
+
+**Two named exceptions remain, both inside session A's declared file boundary**
+(`MultiSelectChips` in Contacts and MyProfile). They are named individually and
+printed on every run rather than waved through by a blanket filter — an
+allowlist that is not specific is indistinguishable from tolerating the bug
+everywhere. A third picker appearing in the findings fails the suite at once.
+Each is a four-line change once A's boundary lifts.
+
+**A third test counts the picker definitions it located (13)** and fails if that
+drops to zero, so a parser change or a rename cannot silently turn this guard
+into one that matches nothing — the exact failure it has already produced twice.
+
 ## What works — checked, not inferred
 
 - **Every gate, locally and in CI.** `npm run verify:fast` is the working loop;

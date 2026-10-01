@@ -10,6 +10,7 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { ContactRepository } from "../repositories/contactRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
+import { optionValue, optionLabel } from "../calculations/optionShape";
 import { nowAsDateString, formatStoredDate, formatInstantDate } from "../calculations/dateInputHelpers";
 import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
@@ -119,7 +120,7 @@ function SelectField({ label, value, onChange, options, T }) {
       <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
-        {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+        {options.map((opt) => (<option key={optionValue(opt)} value={optionValue(opt)}>{optionLabel(opt)}</option>))}
       </select>
     </div>
   );

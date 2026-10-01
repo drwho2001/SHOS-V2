@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PlusIcon as Plus, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, XIcon as X, CheckIcon as Check, PaperclipIcon as Paperclip, UploadSimpleIcon as Upload, TrashIcon as Trash2, ArrowsClockwiseIcon as RefreshCcw } from "@phosphor-icons/react";
 import { useEditUndo } from "../calculations/editUndoHelpers";
+import { optionValue, optionLabel } from "../calculations/optionShape";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 // FIXED 10 Sep 2026 — real bug found by adding ESLint to the project:
@@ -231,7 +232,7 @@ function SelectField({ label, value, onChange, options, T }) {
       <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
-        {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+        {options.map((opt) => (<option key={optionValue(opt)} value={optionValue(opt)}>{optionLabel(opt)}</option>))}
       </select>
     </div>
   );
@@ -243,18 +244,29 @@ function SelectField({ label, value, onChange, options, T }) {
 // comment), so real selections count toward getRanked()'s frequency
 // ranking (real ask, 3 Sep 2026).
 function MultiSelectChips({ label, value, onChange, options, T, listName }) {
-  const toggle = (opt) => { const has = value.includes(opt); onChange(has ? value.filter((v) => v !== opt) : [...value, opt]); if (!has && listName) CustomOptionListsRepository.recordUsage(listName, opt); };
+  // See SHOS_Encounters_Prototype.jsx's copy for why optionValue/optLabel are
+  // applied to the STORED value as well as the render: an object passed to
+  // value.includes() is false forever and onChange would store the object into a
+  // string-array field. Normalising at the boundary makes that unreachable.
+  const toggle = (opt) => {
+    const v = optionValue(opt);
+    const has = value.includes(v);
+    onChange(has ? value.filter((x) => x !== v) : [...value, v]);
+    // Records the VALUE, not the option object, so the usage log stores the same
+    // string the field does rather than an object that no reader expects.
+    if (!has && listName) CustomOptionListsRepository.recordUsage(listName, v);
+  };
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{label}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {options.map((opt) => {
-          const active = value.includes(opt);
+          const active = value.includes(optionValue(opt));
           return (
-            <div key={opt} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
+            <div key={optionValue(opt)} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt); } }}
               style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.healthcareBlue : T.border}`, color: active ? T.healthcareBlue : T.textSecondary, background: active ? `${T.healthcareBlue}15` : "transparent" }}>
-              {opt}
+              {optionLabel(opt)}
             </div>
           );
         })}

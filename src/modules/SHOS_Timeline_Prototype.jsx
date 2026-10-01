@@ -23,6 +23,7 @@ import { getEncounterCoverage } from "../calculations/exposureWindows";
 // module's "same" color/radius. See designTokens.js.
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { optionValue, optionLabel } from "../calculations/optionShape";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { isEpisodeOpen, compareEpisodesOpenFirst, episodeStatusLabel, episodeGroupKey } from "../calculations/episodeCalculations";
@@ -225,7 +226,7 @@ function SelectField({ label, value, onChange, options, T, listName }) {
       <select value={value ?? ""} onChange={(e) => { onChange(e.target.value); if (listName && e.target.value) CustomOptionListsRepository.recordUsage(listName, e.target.value); }} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
-        {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+        {options.map((opt) => (<option key={optionValue(opt)} value={optionValue(opt)}>{optionLabel(opt)}</option>))}
       </select>
     </div>
   );

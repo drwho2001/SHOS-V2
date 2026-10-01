@@ -13,6 +13,7 @@ import { SymptomsRegistry } from "../registries/symptomsRegistry";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
+import { optionValue, optionLabel } from "../calculations/optionShape";
 import { nowAsDateString, formatStoredDate, formatInstantDate } from "../calculations/dateInputHelpers";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { getHepatitisBGuidance, isHepatitisB } from "../calculations/hepBGuidance";
@@ -113,18 +114,27 @@ function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
 // fields pass it, so real selections there count toward getRanked()'s
 // frequency ranking (real ask, 3 Sep 2026).
 function MultiSelectChips({ label, value, onChange, options, T, listName }) {
-  const toggle = (opt) => { const has = value.includes(opt); onChange(has ? value.filter((v) => v !== opt) : [...value, opt]); if (!has && listName) CustomOptionListsRepository.recordUsage(listName, opt); };
+  // See SHOS_Encounters_Prototype.jsx's copy for why optionValue/optLabel are
+  // applied to the STORED value as well as the render: an object passed to
+  // value.includes() is false forever and onChange would store the object into a
+  // string-array field. Normalising at the boundary makes that unreachable.
+  const toggle = (opt) => {
+    const v = optionValue(opt);
+    const has = value.includes(v);
+    onChange(has ? value.filter((x) => x !== v) : [...value, v]);
+    if (!has && listName) CustomOptionListsRepository.recordUsage(listName, v);
+  };
   return (
     <div style={{ padding: "8px 0" }}>
       <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 6 }}>{label}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {options.map((opt) => {
-          const active = value.includes(opt);
+          const active = value.includes(optionValue(opt));
           return (
-            <div key={opt} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
+            <div key={optionValue(opt)} onClick={() => toggle(opt)} role="button" tabIndex={0} aria-pressed={active}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(opt); } }}
               style={{ padding: "5px 10px", borderRadius: radius.full, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? T.healthcareBlue : T.border}`, color: active ? T.healthcareBlue : T.textSecondary, background: active ? `${T.healthcareBlue}15` : "transparent" }}>
-              {opt}
+              {optionLabel(opt)}
             </div>
           );
         })}
