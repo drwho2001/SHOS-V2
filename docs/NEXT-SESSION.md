@@ -1393,6 +1393,56 @@ accepts the three valid forms and **deliberately rejects `>=`**, since that
 would admit a future test and it sits close enough to `<=` to be smuggled in by
 a careless edit.
 
+### Clear-with-confirmation: the pilot's second half
+
+The gating shipped above would **hide** a section whose fields still held data —
+the stale-value-behind-a-hidden-field case this whole audit exists to find. So
+changing the reason now clears what the new reason no longer covers, after naming
+what will go.
+
+**One table now drives both gating and clearing.** `clinicVisitShape.js`'s
+`GROUP_FIELDS` maps each group to the fields it owns, so the JSX gates and the
+clearing pass cannot drift into each other. Two lists would drift silently and
+destructively: a field rendered inside a gate that the clearing pass doesn't know
+about would be *hidden while keeping its value*. Two tests pin that the table and
+the record schema agree, and that no field belongs to two groups.
+
+**Only filled fields are announced.** Confirming a clear that would delete nothing
+is noise, and it would make every reason change feel risky — teaching the user to
+click through it. The owner's rule was *confirm before destroying something*, not
+*make every change feel destructive*.
+
+**The asymmetry is the safety property: adding a reason can never drop a group.**
+Revealing is free; only deselecting can cost anything. Tested across a matrix of
+before/after pairs rather than a single case.
+
+**The load-bearing safety test:** an **unrecognised reason can never trigger a
+clear**. `reasonForVisit` is a user-extensible option list, so the owner can add a
+reason that maps to nothing — and adding one must drop no group, since every
+existing reason is still selected. Verified by mutation: making an unmapped reason
+imply every group turns three tests red. This is the test that would catch a
+future change quietly turning a user-added reason into a data-loss path.
+
+**Three of my own test expectations were wrong before the implementation was.** I
+forgot which fixture fields were populated (so expected one cleared field where two
+were correct), omitted `vaccination` from a canonical-order assertion, and — worst
+— **replaced** the reason list instead of adding to it, which tested an entirely
+different scenario. All three failed for the right reason. A test edited until it
+passes is how a wrong belief ships, so each was corrected after working out what the
+code should actually do.
+
+**The draft concern I raised turned out to be already handled.** I worried that
+clearing React state without touching the draft would let `sessionStorage`
+resurrect the values on reopen. It doesn't: the autosave effect keys on `form`, so
+the single `setForm` in the confirm handler propagates to the draft automatically.
+Worth having checked rather than built.
+
+**Used the shared `ConfirmDeleteCard`, after first getting it wrong.** My initial
+version was a hand-rolled `alertdialog` div — and this file already imports the
+shared component two imports up, carrying the `role`, focus-moved-to-the-safe-option
+and Escape-to-cancel work this app has invested in. Replacing it was a
+straightforward avoidance of an accessibility regression.
+
 ### The clinic visit form now answers "why did you come today?"
 
 `reasonForVisit` has existed on the clinic visit record since the start — a

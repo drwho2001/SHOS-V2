@@ -51,7 +51,7 @@ import { suggestedQuantity, round2 } from "../calculations/takeHomeQuantity";
 // ADDED 1 Oct 2026 - the "why did you come today?" guidance. `reasonForVisit`
 // already existed but was inert: selecting it changed nothing else on the form.
 // See clinicVisitShape.js for why an UNRECOGNISED reason must hide nothing.
-import { fieldGroupsForReasons, shouldGuideForm } from "../calculations/clinicVisitShape";
+import { fieldGroupsForReasons, shouldGuideForm, clearPlan, applyFieldClear } from "../calculations/clinicVisitShape";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // Same Healthcare blue + font conventions as Testing — applied from
@@ -906,6 +906,34 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
   const showVaccination = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("vaccination");
   const showMedication = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("medication");
   const showSymptoms = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("symptoms");
+  // ADDED 1 Oct 2026 - clear-with-confirmation. The owner's rule: changing the
+  // reason clears what the new reason no longer covers, but only after saying
+  // what will go. Without this, the gating above would HIDE a section that still
+  // held data - the stale-value-behind-a-hidden-field case, invisible until
+  // someone came looking for it later.
+  //
+  // Held as a pending change rather than applied immediately, because the reason
+  // itself must not change until the user has agreed to the consequence. Declining
+  // leaves the reasons exactly as they were, which is the whole point.
+  const [pendingReasonChange, setPendingReasonChange] = useState(null);
+  const requestReasonChange = (nextReasons) => {
+    const plan = clearPlan(form.reasonForVisit, nextReasons, form);
+    if (plan.fields.length === 0) {
+      set("reasonForVisit")(nextReasons);
+      return;
+    }
+    setPendingReasonChange({ nextReasons, fields: plan.fields, groups: plan.groups });
+  };
+  const confirmReasonChange = () => {
+    if (!pendingReasonChange) return;
+    // One setForm, not one per field: the draft autosave effect keys on `form`,
+    // so this single write also propagates to the draft. Clearing in memory
+    // alone would let sessionStorage resurrect the values on reopen.
+    isDirty.current = true;
+    setForm((f) => ({ ...applyFieldClear(f, pendingReasonChange.fields), reasonForVisit: pendingReasonChange.nextReasons }));
+    setPendingReasonChange(null);
+  };
+  const cancelReasonChange = () => setPendingReasonChange(null);
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
   // ADDED 19 Aug 2026 — real in-app editable option lists.
@@ -1065,7 +1093,29 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
           {/* ADDED 24 Sep 2026 - real ask: free-text automap for Reason
               for visit. Type to filter existing options, Enter to select
               or create new (same pattern as ClinicianField). */}
-          <ReasonForVisitField value={form.reasonForVisit} onChange={set("reasonForVisit")} options={reasonForVisitOptions} listName="reasonForVisit" T={T} />
+          <ReasonForVisitField value={form.reasonForVisit} onChange={requestReasonChange} options={reasonForVisitOptions} listName="reasonForVisit" T={T} />
+          {/* ADDED 1 Oct 2026 - the shared ConfirmDeleteCard rather than a
+              hand-rolled alertdialog, because this file already imports it and
+              it carries the accessibility work this app has done: role, focus
+              moved to the safe option on open, and Escape-to-cancel. My first
+              version was a plain div with none of that, which would have been a
+              regression against the component sitting two imports away.
+
+              The field names go in the MESSAGE rather than as children: the
+              component takes a string, and the cost has to be legible before it
+              is paid - a generic "are you sure?" makes every reason change feel
+              risky and teaches the user to click through it. */}
+          {pendingReasonChange && (
+            <ConfirmDeleteCard
+              T={T}
+              onCancel={cancelReasonChange}
+              onConfirm={confirmReasonChange}
+              confirmLabel="Clear and change reason"
+              message={`Your new reason doesn't cover everything you've entered. This will remove: ${pendingReasonChange.fields
+                .map((f) => f.label)
+                .join(", ")}.`}
+            />
+          )}
           {/* ADDED 1 Oct 2026 - says WHY sections below are showing, because a
               form that silently hides half its own fields is indistinguishable
               from a broken one. Only rendered while the gating is actually on,

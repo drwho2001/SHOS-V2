@@ -135,3 +135,111 @@ export function isGroupApplies(group, reasons) {
 export function shouldGuideForm(reasons) {
   return fieldGroupsForReasons(reasons).length > 0;
 }
+
+/**
+ * The fields each group OWNS - one table, shared by gating and by clearing.
+ *
+ * This is deliberately the single source of truth for both. The form's JSX gates
+ * render these fields; `clearPlan` clears these fields. If they were two lists
+ * they could drift, and the failure would be silent and destructive: a field
+ * rendered inside a gate that the clearing pass does not know about would be
+ * HIDDEN while keeping its value - the exact stale-data-behind-a-hidden-field
+ * case this whole audit exists to find.
+ *
+ * `empty` is the value that field takes when cleared, which differs by type:
+ * arrays to `[]`, the single string id to `""`.
+ */
+const GROUP_FIELDS = {
+  testing: [{ key: "linkedTestIds", label: "Linked tests", empty: [] }],
+  vaccination: [{ key: "vaccinationsGivenIds", label: "Vaccinations given", empty: [] }],
+  medication: [
+    { key: "medicationsGivenIds", label: "Medications given in clinic", empty: [] },
+    { key: "adHocMedicationsGiven", label: "One-off medications given", empty: [] },
+    { key: "takeHomeMedications", label: "Medications to take home", empty: [] },
+  ],
+  symptoms: [
+    { key: "symptomTypeIds", label: "Symptom types discussed", empty: [] },
+    { key: "symptomsDiscussedIds", label: "Symptom entries discussed", empty: [] },
+    { key: "primaryReasonSymptomLogId", label: "Primary reason symptom", empty: "" },
+  ],
+};
+
+/** The field descriptors a group owns. Exported so a guard can assert on them. */
+export function fieldsForGroup(group) {
+  return GROUP_FIELDS[group] || [];
+}
+
+/** True when a stored value counts as "the user filled this in". */
+function hasContent(value) {
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "string") return value.trim() !== "";
+  if (value && typeof value === "object") return Object.keys(value).length > 0;
+  return false;
+}
+
+/**
+ * Groups that applied under the old reasons but not under the new ones.
+ *
+ * Only ever a SHRINKING set: adding a reason reveals more, so it can never drop
+ * a group. That is what makes the rule safe - selecting is free, deselecting is
+ * the only thing that can cost the user something.
+ *
+ * @param {string[]} oldReasons
+ * @param {string[]} newReasons
+ * @returns {string[]}
+ */
+export function droppedGroups(oldReasons, newReasons) {
+  const before = new Set(fieldGroupsForReasons(oldReasons));
+  const after = new Set(fieldGroupsForReasons(newReasons));
+  const dropped = CLINIC_VISIT_GROUPS.filter((g) => before.has(g) && !after.has(g));
+  return dropped;
+}
+
+/**
+ * What removing these reasons would clear - and only the parts actually filled.
+ *
+ * An empty field is never listed: confirming a clear that would do nothing is
+ * noise, and the owner's rule was to confirm before destroying something, not to
+ * make every reason change feel risky.
+ *
+ * @param {string[]} oldReasons
+ * @param {string[]} newReasons
+ * @param {object} form the current form values
+ * @returns {{ groups: string[], fields: Array<{key: string, label: string}> }}
+ */
+export function clearPlan(oldReasons, newReasons, form) {
+  const groups = droppedGroups(oldReasons, newReasons);
+  const fields = [];
+  const seen = new Set();
+  for (const group of groups) {
+    for (const field of GROUP_FIELDS[group] || []) {
+      if (seen.has(field.key)) continue;
+      seen.add(field.key);
+      if (hasContent(form ? form[field.key] : undefined)) {
+        fields.push({ key: field.key, label: field.label });
+      }
+    }
+  }
+  return { groups, fields };
+}
+
+/**
+ * Apply a clear plan, returning a NEW form object.
+ *
+ * Never mutates: the caller decides whether to commit, because the whole point
+ * is that the user gets to decline first.
+ *
+ * @param {object} form
+ * @param {Array<{key: string}>} fields
+ * @returns {object}
+ */
+export function applyFieldClear(form, fields) {
+  if (!form || !Array.isArray(fields) || fields.length === 0) return form;
+  const next = { ...form };
+  for (const group of CLINIC_VISIT_GROUPS) {
+    for (const field of GROUP_FIELDS[group] || []) {
+      if (fields.some((f) => f.key === field.key)) next[field.key] = field.empty;
+    }
+  }
+  return next;
+}
