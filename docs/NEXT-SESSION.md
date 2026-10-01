@@ -79,26 +79,56 @@ shape-tolerant render to the old `{opt}` turns the suite **red** with
 returns it to green. Flow 25 asserts 12 real `select` elements, so a sheet that
 opened but rendered no pickers cannot pass.
 
-**CI caught a real defect in the suite on the first push — in `nav()`, not in
-the new flows.** The first run of these two flows went red with
-`<span>Broken references</span> ... intercepts pointer events`. Two things worth
-recording:
+**CI caught a real defect — twice — and both were in the suite, not the app.**
+Worth reading as a pair, because the first red was misdiagnosed and the second
+red is what actually explained it.
 
-- It was **not** a flake. RAM at the start of that run was **14,440 MB**, and the
-  previous commit's smoke run was green, so the red was caused by this change.
-- The cause is a **pre-existing gap in `nav()`**, which has always clicked the
-  bottom-nav tab directly and never checked whether something was covering it.
-  Any flow that runs after an overlay-leaving flow has been exposed to this; the
-  new flows were simply the first to *navigate* afterwards. Fixing it inside the
-  two new flows would have left the next flow to trip over the same thing.
+**Red run 1: `nav()` had no overlay handling.** The failure was
+`<span>Broken references</span> … intercepts pointer events`. Not a flake — RAM at
+the start of that run was **14,440 MB** and the previous commit's smoke was
+green. `nav()` has always clicked the bottom-nav tab directly and never checked
+whether something was covering it, so any flow running after an
+overlay-leaving flow has been exposed. It now calls a bounded
+`dismissOpenOverlays()` first. Escape is right because flow 23 proves every
+overlay closes on it, and `useEscapeToClose` maps Escape to **cancel** on the
+destructive confirmations, so it can never confirm a delete. It loops, because
+Escape in Settings steps back *one level at a time*.
 
-`nav()` now calls a bounded `dismissOpenOverlays()` first. Escape is the right
-dismissal rather than a coordinate click because flow 23 already proves every
-overlay closes on it, and `useEscapeToClose` deliberately maps Escape to
-**cancel** on the destructive confirmations — so this can never confirm a delete.
-It loops rather than pressing once, because Escape in Settings steps back *one
-level at a time* and a nested sub-screen needs several presses; it throws with
-the dialog's own label if it cannot dismiss, rather than continuing silently.
+**Red run 2: the real cause, which run 1 had hidden.** With overlays dismissed,
+the interceptor came back — `<span>Last tested date</span>`, which is My
+Profile's *read* view, not a dialog. So **flow 24 was leaving the My Profile
+overlay open**, and flow 25's `nav("Contacts")` clicked straight into it. Fixed
+in flow 24 rather than flow 25: making the *next* flow defensive would have left
+the defect in place for the one after it.
+
+**Why Escape does not close that overlay — verified, not assumed.** It registers
+`registerModuleBackHandler`, which serves the **Android hardware back button**;
+in a browser, Escape only reaches components wired to `useEscapeToClose`, and
+this overlay is not one. After pressing it, the overlay's own "Last tested date"
+row was still in the DOM. It also carries **no `role="dialog"`**, so
+`dismissOpenOverlays()` cannot see it either. The flow now clicks the visible
+chevron (`aria-label="Back"`), which is the only exit a browser user has.
+
+**That is a real accessibility gap, not just a flow detail.** The My Profile
+overlay is not keyboard-dismissible on the web build — precisely the class
+`useEscapeToClose` exists for, and `CLAUDE.md` records 20 files already wired to
+it. Reported to A rather than fixed: MyProfile is their file this round.
+
+**Two tests in this change were green while measuring nothing, and are worth
+naming because each passed for a different reason.** The flow 24 cleanup originally
+asserted Home's `[aria-label="My Profile"]` icon was visible again — but that
+icon stays laid out *behind* the overlay, so the assertion passed while the
+overlay was still open. It now waits for the chevron to **detach**. And the
+cleanup's positive anchor matters for the same reason a negative assertion would
+not: "the overlay is gone" passes trivially against a blank page.
+
+**The gate could not tell me which flow had failed, which is why this took two
+runs.** `verify-changes.mjs` reported only `lastLines(out, 18)`, and every blocked
+click makes Playwright emit ~10 "waiting for element to be visible, enabled and
+stable" lines — so the tail held the symptom and none of the context. The suite
+prints a `[N/M]` header per flow precisely so this is answerable. The smoke gate
+now reads the last header off the output and names the flow, rather than
+tracking state that could disagree with what the suite reported.
 
 **A real bug this surfaced immediately, in session A's uncommitted work.**
 `clearSampleData.js` `referencedSeedIds()` threw `collections is not iterable`

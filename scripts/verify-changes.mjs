@@ -445,7 +445,25 @@ function runSmokeSuite() {
       env: { ...process.env, SMOKE_TEST_URL: url },
     });
     const out = (r.stdout || "") + (r.stderr || "");
-    if (r.status !== 0) return { ok: false, note: lastLines(out, 18) };
+    if (r.status !== 0) {
+      // Name the failing FLOW, not just the last few lines.
+      //
+      // WHY: every blocked click makes Playwright emit ~10 "waiting for element
+      // to be visible, enabled and stable" lines plus the interception reason, so
+      // an 18-line tail routinely contains the symptom and none of the context.
+      // Two consecutive CI reds on the form-render flows were spent not knowing
+      // WHICH flow had failed - the suite prints a [N/M] header per flow precisely
+      // so this is answerable, and the tail was discarding it.
+      //
+      // Reads the header off the output rather than tracking flow state, so it
+      // cannot disagree with what the suite actually reported.
+      const headers = out.match(/^\[\d+\/\d+\].*$/gm) || [];
+      const last = headers.length ? headers[headers.length - 1] : null;
+      const where = last
+        ? `failed in flow ${last}\n  `
+        : "no [N/M] flow header in the output - the suite may have failed before or outside its first flow\n  ";
+      return { ok: false, note: where + lastLines(out, 18) };
+    }
     const flows = (out.match(/^\[\d+\/\d+\]/gm) || []).length;
     // ALSO count the per-assertion "ok —" lines.
     //

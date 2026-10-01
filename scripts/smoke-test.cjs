@@ -2755,18 +2755,41 @@ async function testVaccineDoseSeriesFlow(browser) {
 async function testMyProfileEditFormRenders(page) {
   console.log("\n[24/25] My Profile -> Edit renders, and its HIV dropdown shows labels not stored codes (added 1 Oct 2026)");
 
-  await navHome(page);
-  await dismissTransientBanners(page);
+  // Named steps. A bare Playwright timeout says "element intercepts pointer
+  // events" and nothing about WHICH of the four actions below it was, which is
+  // the same dead end flow 11 already had to fix once. Every action reports
+  // itself on failure.
+  const step = async (what, fn) => {
+    try {
+      return await fn();
+    } catch (e) {
+      throw new Error(
+        `My Profile -> Edit flow failed at the "${what}" step: ${e.message}\n` +
+          "Steps, in order: go Home -> dismiss banners -> open My Profile -> click Edit -> read the HIV dropdown."
+      );
+    }
+  };
 
-  // Home's own header icon, not the Settings row: one tap fewer, and it is the
-  // route the crash report actually described.
-  await page.locator('[aria-label="My Profile"]').first().click({ timeout: 10000 });
+  await step("go Home", () => navHome(page));
+  await step("dismiss banners", () => dismissTransientBanners(page));
+  await step("open My Profile", async () => {
+    // Scroll to the top first. Home's header icons sit at the very top of the
+    // viewport, which is exactly the band the fixed due-reminder banner stack
+    // occupies, so a page left scrolled by an earlier flow can put the icon
+    // under it. scrollTo is not the fix - removing the cover is - but without it
+    // the click lands somewhere else entirely and the error names the wrong
+    // element.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.locator('[aria-label="My Profile"]').first().click({ timeout: 10000 });
+  });
   const editBtn = page.getByRole("button", { name: "Edit", exact: true }).first();
-  await editBtn.waitFor({ state: "visible", timeout: 10000 });
-  await editBtn.click();
+  await step("wait for the Edit control", () => editBtn.waitFor({ state: "visible", timeout: 10000 }));
+  await step("click Edit", async () => {
+    await editBtn.click({ timeout: 10000 });
+    await page.getByRole("dialog", { name: "Edit My Profile" }).waitFor({ state: "visible", timeout: 10000 });
+  });
 
   const sheet = page.getByRole("dialog", { name: "Edit My Profile" });
-  await sheet.waitFor({ state: "visible", timeout: 10000 });
   console.log("  ok - the Edit My Profile sheet opened");
 
   // Assert on the ErrorBoundary's OWN copy, not merely on the absence of the
@@ -2793,6 +2816,53 @@ async function testMyProfileEditFormRenders(page) {
   assert(leaked.length === 0,
     `no stored value is shown to the user. Leaked: ${JSON.stringify(leaked)} - every option should be a readable label.`);
   console.log("  ok - every option is a readable label, no stored code reaches the UI");
+
+  // -------------------------------------------------------------------------
+  // LEAVE THE APP AS YOU FOUND IT - and prove it did.
+  //
+  // This is the second half of a bug that cost a red CI run. This flow leaves
+  // TWO overlays up: the Edit dialog, and the My Profile overlay beneath it.
+  // The dialog is role="dialog" so dismissOpenOverlays() clears it, but the
+  // My Profile overlay is not, and it renders inside <main> - so flow 25's
+  // nav("Contacts") clicked straight into its read view and was refused with
+  // "<span>Last tested date</span> intercepts pointer events".
+  //
+  // Two things worth recording about that. First, the interceptor being named
+  // from <main> rather than from a dialog is what pointed at the real cause; a
+  // fixed overlay would have produced a backdrop element instead. Second, the
+  // obvious "fix" - making flow 25 defensive about whatever it finds - would
+  // have left the actual defect in place for the next flow.
+  //
+  // The My Profile overlay closes through the module's own registered back
+  // handler (MyProfileModule calls onClose from it), so Escape is the real user
+  // gesture rather than a synthetic state poke.
+  //
+  // Asserted with a POSITIVE anchor: wait for Home's own My Profile icon to be
+  // back, rather than asserting the overlay's absence. A negative assertion
+  // passes trivially against a blank page, which is the failure mode this suite
+  // has already hit once.
+  await step("close the Edit sheet", async () => {
+    await page.keyboard.press("Escape");
+    await page.getByRole("dialog", { name: "Edit My Profile" })
+      .waitFor({ state: "detached", timeout: 8000 });
+  });
+  await step("close the My Profile overlay", async () => {
+    // NOT Escape, and this is worth being precise about because it cost two red
+    // CI runs to find. My Profile's overlay registers a MODULE BACK HANDLER,
+    // which serves the Android hardware back button. In a browser, Escape only
+    // reaches components wired to useEscapeToClose - and this overlay is not one,
+    // verified rather than assumed: after pressing it, the overlay's own "Last
+    // tested date" row was still in the DOM. It also carries no role="dialog", so
+    // dismissOpenOverlays() cannot see it either. The visible chevron is the only
+    // exit a browser user actually has.
+    //
+    // That makes this a real accessibility gap in the app as much as a flow
+    // detail: the overlay is not keyboard-dismissible on the web build. Reported
+    // rather than fixed - MyProfile is session A's file this round.
+    await page.locator('[aria-label="Back"]').first().click({ timeout: 10000 });
+    await page.locator('[aria-label="Back"]').first().waitFor({ state: "detached", timeout: 8000 });
+  });
+  console.log("  ok - closed the sheet and the My Profile overlay, so the next flow starts clean");
 }
 
 // The Contacts edit sheet, for the same reason and with one extra claim to make:
