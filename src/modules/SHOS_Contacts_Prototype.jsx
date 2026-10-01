@@ -455,7 +455,18 @@ function SelectField({ label, value, onChange, options, T, helper }) {
         <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
-        {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+        {/* FIXED 1 Oct 2026 - identical to the My Profile copy of this component,
+            which had been throwing React error #31. Accepts both plain strings
+            and `{value, label}` objects so a caller can pass real labels; every
+            other caller here passes strings and is unaffected. */}
+        {options.map((opt) => (
+          <option
+            key={typeof opt === "string" ? opt : opt.value}
+            value={typeof opt === "string" ? opt : opt.value}
+          >
+            {typeof opt === "string" ? opt : opt.label}
+          </option>
+        ))}
       </select>
     </div>
   );
@@ -2117,13 +2128,24 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
               String options, matching this file's own SelectField (which
               renders `options.map(opt => <option value={opt}>)`) — the
               {value,label} shape used on My Profile is that file's own
-              separate component, not a shared contract. */}
+              separate component, not a shared contract.
+
+              CORRECTED 1 Oct 2026. That reasoning is what let the two
+              implementations drift into two different bugs. My Profile's copy
+              renders `{opt}` bare, so the one caller that passed {value,label}
+              objects threw React error #31 on every open of My Profile -> Edit
+              for three days. This file avoided that only by accident: it passed
+              raw `o.value` CODES as strings, which render fine but showed the
+              user `positive-suppressed` instead of "Positive - undetectable".
+              Both copies now accept either shape, so this passes real labels —
+              what is STORED is still the code, because onChange at the call
+              site below matches on `o.value`, so no record changes shape. */}
           <SelectField
             T={T}
             label="HIV status (if known)"
             value={form.hivStatus || ""}
             onChange={(v) => set("hivStatus")(HIV_STATUS_OPTIONS.find((o) => o.value === v) ? v : null)}
-            options={[...HIV_STATUS_OPTIONS.map((o) => o.value), "Not known / not recorded"]}
+            options={[...HIV_STATUS_OPTIONS, "Not known / not recorded"]}
             helper="Only what you actually know."
           />
         </SectionCard>

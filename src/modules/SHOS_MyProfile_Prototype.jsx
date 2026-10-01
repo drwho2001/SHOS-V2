@@ -392,7 +392,25 @@ function SelectField({ label, value, onChange, options, T }) {
       <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={label}
         style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box" }}>
         <option value="">—</option>
-        {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+        {/* FIXED 1 Oct 2026 (t069 follow-up) - this rendered `{opt}` as the
+            option's children, key and value. That is only legal while every
+            caller passes plain strings. The "HIV status" override added 29 Sep
+            (851dece) passes `{value, label}` objects, so opening My Profile ->
+            Edit threw React error #31 ("Objects are not valid as a React child")
+            on every build since - a crash, not a cosmetic bug, and one that
+            shipped because no test ever opened a form-render path.
+
+            Accepting both shapes rather than normalising at the call site means
+            the other 20 `options=` props in this file, which all pass plain
+            string arrays (HOSTS_OPTIONS, FORESKIN_OPTIONS, ...), are untouched. */}
+        {options.map((opt) => (
+          <option
+            key={typeof opt === "string" ? opt : opt.value}
+            value={typeof opt === "string" ? opt : opt.value}
+          >
+            {typeof opt === "string" ? opt : opt.label}
+          </option>
+        ))}
       </select>
     </div>
   );
