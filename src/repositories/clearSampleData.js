@@ -80,6 +80,78 @@ const SAMPLE_REPOSITORIES = [
   ["Medications", MedicationRepository, SEED_MEDICATION_IDS],
 ];
 
+// FIXED 1 Oct 2026 - a real data-loss bug, found by losing the owner's own
+// medication history. Everything above this block claimed the opposite: "there
+// is no way to tell them apart except by id... clear sample data is safe at any
+// time and always preserves real records". Both claims were false.
+//
+// WHAT HAPPENED: the owner renamed the seeded "PrEP (Descovy)" / "DoxyPEP
+// (Doxycycline)" / "Vitamin D3" records to their own names and logged 66 of
+// their own dose entries against them (non-seed ids log_015..log_131). The
+// records were still seed records by id, so "clear sample data" deleted all
+// three - along with their names, schedules and doses-per-day - while their own
+// dose logs SURVIVED, because those carry non-seed ids. The result was 69
+// orphaned dose logs pointing at three medications that no longer existed, and
+// a user who reasonably believed six weeks of PrEP, DoxyPEP and Vitamin D
+// history had been destroyed.
+//
+// THE FIX: a seed record that REAL records depend on is not sample data any
+// more. It is kept, with its history, exactly as before.
+//
+// Deliberately NOT a field-diff heuristic that asks "has the user edited this?".
+// Gemini was consulted on that alternative and rejected it: inferring intent by
+// comparing fields against the seed definition is a guess about what the user
+// meant, it fights `updatedAt` (every save rewrites it), and a wrong answer is
+// silent data loss in either direction. Referential integrity is not a guess -
+// a dose log pointing at med_001 is a FACT, and one fact is enough to make the
+// medication real. A second pass at the source agrees, in
+// tasks/sample-data-loss/90-gemini-consult.md.
+//
+// SCOPE LIMIT, stated rather than implied: only fields whose NAME ends in "Id"
+// or "Ids" are followed, and only from records that are not themselves sample
+// data. So a seed contact referenced from an unseeded collection outside the
+// list above would not be detected. Same kind of documented limit
+// orphanReferenceCheck.js already carries, for the same reason - a hand-kept
+// relation map is a second thing to forget to update.
+function referencedSeedIds(collections) {
+  const allSeedIds = new Set();
+  for (const [, , seedIds] of SAMPLE_REPOSITORIES) {
+    for (const id of seedIds) allSeedIds.add(id);
+  }
+  const referenced = new Set();
+  for (const { name, records, seedIds } of collections) {
+    for (const record of records) {
+      if (seedIds.has(record.id)) continue; // sample data cannot vouch for itself
+      for (const [key, value] of Object.entries(record)) {
+        if (!key.endsWith("Id") && !key.endsWith("Ids")) continue;
+        for (const v of Array.isArray(value) ? value : [value]) {
+          if (typeof v === "string" && allSeedIds.has(v)) referenced.add(v);
+        }
+      }
+    }
+  }
+  return referenced;
+}
+
+// FIXED 1 Oct 2026 - this used to swallow the error and let the loop below carry
+// on as though the repository were empty. That is actively dangerous here: a
+// transient storage failure would look like "no records", so the repository
+// would simply be skipped and the caller would be told the clear succeeded
+// without ever having looked at it. The failure is captured and reported
+// instead, which is what the "never throws, reports it instead" test asserts.
+async function loadSampleCollections() {
+  const collections = [];
+  const failures = [];
+  for (const [name, repo, seedIds] of SAMPLE_REPOSITORIES) {
+    try {
+      collections.push({ name, repo, seedIds, records: await repo.getAll() });
+    } catch (e) {
+      failures.push({ name, error: e?.message || String(e) });
+    }
+  }
+  return { collections, failures };
+}
+
 /**
  * Counts the sample records still present, without changing anything.
  *
@@ -92,17 +164,15 @@ const SAMPLE_REPOSITORIES = [
 export async function countSampleData() {
   const byCollection = [];
   let total = 0;
-  for (const [name, repo, seedIds] of SAMPLE_REPOSITORIES) {
-    try {
-      const all = await repo.getAll();
-      const count = all.filter((r) => seedIds.has(r.id)).length;
-      if (count > 0) byCollection.push({ name, count });
-      total += count;
-    } catch {
-      // A repository that cannot be read right now simply contributes nothing
-      // to a count used for showing an advisory banner. It must never throw,
-      // or a storage hiccup could block the app on boot.
-    }
+  const { collections } = await loadSampleCollections();
+  // FIXED 1 Oct 2026 - a seed record the user has real history against is not
+  // sample data, so counting it would keep the first-run banner up forever and
+  // keep the export screen warning about data that is actually the user's.
+  const referenced = referencedSeedIds(collections);
+  for (const { name, records, seedIds } of collections) {
+    const count = records.filter((r) => seedIds.has(r.id) && !referenced.has(r.id)).length;
+    if (count > 0) byCollection.push({ name, count });
+    total += count;
   }
   return { total, byCollection };
 }
@@ -152,13 +222,21 @@ export async function clearSampleData() {
   let removed = 0;
   let kept = 0;
   const failed = [];
+  const { collections, failures } = await loadSampleCollections();
+  const referenced = referencedSeedIds(collections);
+  // A repository that could not even be read never reaches the loop below, so
+  // its failure is reported here. Without this the caller would be told the
+  // clear succeeded while that collection was never inspected.
+  failed.push(...failures);
 
-  for (const [name, repo, seedIds] of SAMPLE_REPOSITORIES) {
+  for (const { name, repo, records, seedIds } of collections) {
     try {
-      const all = await repo.getAll();
-      const real = all.filter((r) => !seedIds.has(r.id));
-      const dropped = all.length - real.length;
-      if (dropped === 0) { kept += all.length; continue; }
+      // THE FIX: a seed record something real points at is kept, with its
+      // history. See the long note above for the incident and for why this is
+      // a referential check rather than a "has the user edited it" guess.
+      const real = records.filter((r) => !seedIds.has(r.id) || referenced.has(r.id));
+      const dropped = records.length - real.length;
+      if (dropped === 0) { kept += records.length; continue; }
       // replaceAll() is the same call resetAllData.js uses: it replaces the
       // repository's in-memory cache AND persists, which is what makes the
       // sample data stay gone across a reload.

@@ -133,6 +133,148 @@ describe("countSampleData reports what a new user would be looking at", () => {
   });
 });
 
+describe("a seed record the user has real history against is NOT sample data", () => {
+  // THE regression test for the 1 Oct 2026 incident. The owner renamed the
+  // seeded PrEP / DoxyPEP / Vitamin D records and logged 66 of their own doses
+  // against them; "clear sample data" deleted all three anyway because it
+  // filtered on id alone, leaving 69 orphaned dose logs and a user who believed
+  // six weeks of history had been destroyed.
+  //
+  // Every test below fails on the old implementation. The first is the headline;
+  // the rest exist so the fix cannot rot into a no-op, and so the direction of
+  // each guarantee is pinned rather than assumed.
+  it("keeps a SEED medication that the user has logged their own doses against", async () => {
+    const { meds, logs, clear } = await freshApp();
+    const [prEp] = meds.SEED_MEDICATION_IDS;
+    expect(prEp, "the fixture needs a seeded medication to work with").toBeTruthy();
+
+    // A dose log with a NON-seed id, pointing at the seeded medication. This
+    // single fact is what makes the medication real.
+    await logs.LogRepository.create({
+      medicationId: prEp,
+      type: "dose",
+      delta: -1,
+      date: "2026-09-01T08:00:00.000Z",
+    });
+
+    await clear.clearSampleData();
+
+    const surviving = await meds.MedicationRepository.getAll();
+    expect(
+      surviving.some((m) => m.id === prEp),
+      "a seeded medication with real dose history must survive 'clear sample data'",
+    ).toBe(true);
+  });
+
+  it("keeps that medication's own dose logs with it, so nothing is orphaned", async () => {
+    const { meds, logs, clear } = await freshApp();
+    const [prEp] = meds.SEED_MEDICATION_IDS;
+    const mine = await logs.LogRepository.create({
+      medicationId: prEp,
+      type: "dose",
+      delta: -1,
+      date: "2026-09-01T08:00:00.000Z",
+    });
+
+    await clear.clearSampleData();
+
+    const medsLeft = await meds.MedicationRepository.getAll();
+    const medIds = new Set(medsLeft.map((m) => m.id));
+    const logsLeft = await logs.LogRepository.getAll();
+    // The precise failure that happened: the user's own log survived while its
+    // medication did not. Assert the pairing, not just that both exist.
+    expect(medIds.has(prEp), "the medication must survive for its own log to resolve").toBe(true);
+    const orphan = logsLeft.filter((l) => !medIds.has(l.medicationId) && !logs.SEED_MEDICATION_LOG_IDS.has(l.id));
+    expect(orphan, "a clear must never leave a real log pointing at a deleted record").toEqual([]);
+    expect(logsLeft.some((l) => l.id === mine.id), "the user's own dose entry must survive").toBe(true);
+  });
+
+  it("still removes a seeded medication nobody has ever touched", async () => {
+    // The converse, and the reason this is not simply "never remove seed meds".
+    // Without this the fix would be a no-op that preserves all demo data.
+    const { meds, clear } = await freshApp();
+    await clear.clearSampleData();
+    const surviving = await meds.MedicationRepository.getAll();
+    expect(surviving.length, "untouched sample medications must still be removed").toBe(0);
+  });
+
+  it("still removes a seeded medication that only SAMPLE logs point at", async () => {
+    // Sample data cannot vouch for itself. The seeded dose logs reference the
+    // seeded medications, so if they counted as "real usage" nothing would ever
+    // be cleared and the count could never reach zero.
+    const { meds, clear } = await freshApp();
+    const before = await meds.MedicationRepository.getAll();
+    const seedLogs = await (await import("./logRepository")).LogRepository.getAll();
+    expect(seedLogs.length, "the fixture needs seeded logs to be meaningful").toBeGreaterThan(0);
+
+    await clear.clearSampleData();
+    const surviving = await meds.MedicationRepository.getAll();
+    expect(surviving.length).toBe(0);
+    expect(before.length).toBeGreaterThan(0);
+  });
+
+  it("stops counting a promoted medication as sample data, so the banner clears", async () => {
+    const { meds, logs, clear } = await freshApp();
+    const [prEp] = meds.SEED_MEDICATION_IDS;
+    await logs.LogRepository.create({
+      medicationId: prEp,
+      type: "dose",
+      delta: -1,
+      date: "2026-09-01T08:00:00.000Z",
+    });
+
+    const { total, byCollection } = await clear.countSampleData();
+    const medsRow = byCollection.find((c) => c.name === "Medications");
+    // One fewer than the seed count: the one with real history behind it.
+    expect(medsRow?.count ?? 0).toBe(meds.SEED_MEDICATION_IDS.size - 1);
+    expect(total).toBeGreaterThan(0);
+  });
+
+  it("keeps a SEED contact that a real encounter lists as an attendee", async () => {
+    // The plural-field case, and it is a different code path: the reference here
+    // lives in `attendeeIds`, not a singular `...Id`. A test suite that only ever
+    // exercises a singular field would pass while the plural half of the check
+    // was quietly broken - which is exactly what mutation M4 demonstrated
+    // (deleting the `*Ids` branch turned the suite green).
+    const { contacts, encounters, clear } = await freshApp();
+    const [seedContact] = contacts.SEED_CONTACT_IDS;
+    expect(seedContact, "the fixture needs a seeded contact").toBeTruthy();
+
+    await encounters.EncounterRepository.create({
+      title: "A real encounter with someone I know",
+      attendeeIds: [seedContact],
+    });
+
+    await clear.clearSampleData();
+
+    const surviving = await contacts.ContactRepository.getAll();
+    expect(
+      surviving.some((c) => c.id === seedContact),
+      "a seeded contact a real encounter points at must survive",
+    ).toBe(true);
+  });
+
+  it("is repeatable: a second clear does not remove the promoted medication", async () => {
+    // Without this, the first clear would look fine and the second would take
+    // the user's medication with it - the worst possible shape for a bug in a
+    // destructive action.
+    const { meds, logs, clear } = await freshApp();
+    const [prEp] = meds.SEED_MEDICATION_IDS;
+    await logs.LogRepository.create({
+      medicationId: prEp,
+      type: "dose",
+      delta: -1,
+      date: "2026-09-01T08:00:00.000Z",
+    });
+
+    await clear.clearSampleData();
+    await clear.clearSampleData();
+
+    const surviving = await meds.MedicationRepository.getAll();
+    expect(surviving.some((m) => m.id === prEp)).toBe(true);
+  });
+});
+
 describe("clearSampleData removes sample records and keeps real ones", () => {
   it("keeps a contact the user created, mixed in with the sample data", async () => {
     // THE scenario that makes "clear sample data" different from "delete
