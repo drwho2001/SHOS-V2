@@ -913,6 +913,25 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
   // async — getAutoLastTestedDate() was called straight in the render
   // body below.
   const lastTestedDate = useLoadedMemo(() => getAutoLastTestedDate(), [], null);
+  // ADDED 29 Sep 2026 (t025) — the data the HIV status row derives from.
+  // Kept as its own reads rather than folded into the ones above, so the
+  // derivation is fed the same shape a pure test can pass by hand.
+  //
+  // MOVED UP 1 Oct 2026 (t069) — these were declared ~40 lines BELOW the
+  // `hivResolved` useLoadedMemo that reads them, which is a temporal dead zone
+  // crash: "Cannot access 'D' before initialization" on a real phone, where
+  // minification renames the `const` to a single letter. A dependency array is
+  // evaluated EAGERLY on every render, so the reference is live on the very
+  // first render, not merely deferred inside the callback. The whole Edit
+  // screen was unreachable. Third such bug in this codebase, hence the guard
+  // at src/components/useBeforeDeclareGuard.test.js.
+  const profileTests = useLoadedMemo(() => TestingRepository.getAll(), [], []);
+  const hivResultNames = useLoadedMemo(
+    () => ResultsRegistry.getAll().then((rs) => new Map(rs.map((r) => [r.id, r.name]))),
+    [],
+    new Map()
+  );
+  const profileMeasurements = useLoadedMemo(() => MeasurementRepository.getAll(), [], []);
   // ADDED 29 Sep 2026 (t025) — the derived half of HIV status. Resolved with
   // the user's stated value on top, because a stated status always wins.
   //
@@ -960,16 +979,6 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
   // searchable by real name — the same index-level defect Global Search had.
   // The id is deliberately preserved so the stored value still works.
   const anonymise = useAnonymiseMode();
-  // ADDED 29 Sep 2026 (t025) — the data the HIV status row derives from.
-  // Kept as its own reads rather than folded into the ones above, so the
-  // derivation is fed the same shape a pure test can pass by hand.
-  const profileTests = useLoadedMemo(() => TestingRepository.getAll(), [], []);
-  const hivResultNames = useLoadedMemo(
-    () => ResultsRegistry.getAll().then((rs) => new Map(rs.map((r) => [r.id, r.name]))),
-    [],
-    new Map()
-  );
-  const profileMeasurements = useLoadedMemo(() => MeasurementRepository.getAll(), [], []);
   const anonymisedContactItems = useMemo(
     () => (allContacts || []).map((c) => ({ ...c, name: contactName(c, anonymise) })),
     [allContacts, anonymise]
@@ -1332,7 +1341,15 @@ function ProfileDataView({ profile, T }) {
         <ReadRow label="Length (penis)" value={profile.length} T={T} />
         <ReadRow label="Girth (penis)" value={profile.thickness} T={T} />
         <ReadRow label="Foreskin" value={profile.foreskin} T={T} />
-        <ReadRow label="Foreskin fit" value={profile.foreskinDetail} T={T} />
+        {/* FIXED 1 Oct 2026 (t053) - same bug as the Contacts read view, found
+            by checking whether the first fix generalised rather than assuming it
+            did: the EDIT form only offers "Foreskin fit" when foreskin is
+            "Uncircumcised", nothing clears it when that flips, and this row
+            rendered it unconditionally - so a profile set to "Tight" then
+            changed to "Circumcised" kept claiming a fit that no longer applied. */}
+        {profile.foreskin === "Uncircumcised" && (
+          <ReadRow label="Foreskin fit" value={profile.foreskinDetail} T={T} />
+        )}
         <ReadRow label="Chastity status" value={profile.chastityStatus} T={T} />
         <ReadRow label="Ejaculation" value={profile.cummer} T={T} />
         </SectionCard>

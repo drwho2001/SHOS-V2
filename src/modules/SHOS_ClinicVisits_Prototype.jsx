@@ -901,11 +901,6 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
   // Derived, never stored - see clinicVisitShape.js. Deliberately NOT persisted
   // as "which sections were shown", because that would be a second owner for a
   // fact already derivable from `reasonForVisit`.
-  const guideForm = shouldGuideForm(form.reasonForVisit);
-  const showTesting = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("testing");
-  const showVaccination = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("vaccination");
-  const showMedication = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("medication");
-  const showSymptoms = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("symptoms");
   // ADDED 1 Oct 2026 - clear-with-confirmation. The owner's rule: changing the
   // reason clears what the new reason no longer covers, but only after saying
   // what will go. Without this, the gating above would HIDE a section that still
@@ -951,6 +946,16 @@ function VisitEditSheet({ visitId, prefillData, isOpen, onClose, onSaved, onBefo
     // given" shortcuts — a real new record starting with real values.
     return { ...DEFAULT_CLINIC_VISIT, ...prefillData };
   });
+  // MOVED 1 Oct 2026 (t069, found by session A) - these five lines read
+  // `form` and sat ~43 lines ABOVE the declaration below, which is a
+  // temporal dead zone crash: opening any clinic visit edit sheet threw
+  // "Cannot access 'X' before initialization" on a bundled build. Nothing
+  // in the smoke suite opens that screen, so CI stayed green through it.
+  const guideForm = shouldGuideForm(form.reasonForVisit);
+  const showTesting = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("testing");
+  const showVaccination = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("vaccination");
+  const showMedication = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("medication");
+  const showSymptoms = !guideForm || fieldGroupsForReasons(form.reasonForVisit).includes("symptoms");
   const [draftRestored] = useState(() => !!loadDraft(draftKey));
   const [refreshKey, setRefreshKey] = useState(0);
   // CHANGED — Phase 2 encryption groundwork: ClinicVisitsRepository
