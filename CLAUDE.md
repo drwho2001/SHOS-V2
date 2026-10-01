@@ -851,6 +851,55 @@ ever *opened a form-render path*, and both bugs live in code that unit-tests
 happily import without rendering. A smoke flow that opens My Profile -> Edit is
 the actual fix, not a nice extra.
 
+## Recently shipped (1 Oct 2026, later still still still — U=U had to be a standing note, not a badge)
+
+**The owner asked for the "undetectable = untransmittable" fact to be visible.
+Where it must *not* go was the interesting part.** An earlier design showed it
+only on records whose status was positive-undetectable. Gemini's review called
+that **disqualifying: conditional UI reveals state.** If the note appears on some
+records and not others, its **presence** tells anyone glancing at the screen which
+of your contacts are HIV-positive — the same failure the anonymise mode exists to
+prevent, arrived at from the opposite direction. **Uniformity is the mechanism,
+not a side effect.** The same review found the pattern already standard: *"past
+performance is no guarantee" appears on every stock precisely so its presence
+cannot flag one*, and EHR patient-education popovers attach to lab jargon whatever
+the value.
+
+So one exported `U_U_SHORT`, shown on **every** record, and the shared component
+deliberately has **no `status` prop** — a caller cannot condition it even by
+accident. The rule is structural rather than a convention each screen has to
+remember.
+
+**Two rules are baked into the component, because both were layout decisions and
+layouts are what every screen gets differently.** It attaches to the HIV Status
+**label**, never floats under the value (under "Status: Unknown", *"this person's
+undetectable viral load…"* is nonsense and implies the person **is**
+undetectable); and the wording is a **conditional scientific definition**, never
+a claim about a person — asserted by test.
+
+**Sourced.** BHIVA monitoring guidelines: suppression is below 50 copies/mL, and
+assay detection limits differ between manufacturers (~20–75), which is exactly
+why *"undetectable" describes a test result rather than a fixed state of a
+person*. The Glossary entry leads with plain language, then the evidence, and
+notes the word that matters is **"stays"** — one undetectable result is a
+measurement; U=U rests on sustained suppression.
+
+On Contacts it is suppressed by anonymise alongside the status it sits beside.
+Deliberate asymmetry: the note is a neutral fact so leaving it up would disclose
+nothing, but consistency with the masked row matters more. Pinned so it is a
+decision rather than an accident.
+
+**The Clinic Card is deliberately NOT included**, and needs its own decision: it
+shows no HIV status at all, so a U=U tag has nothing to attach to, and putting
+HIV status inside the existing *"Recent STI testing"* toggle would disclose it to
+anyone who enabled that without realising.
+
+9 guard tests, **AST-based** — a first attempt used a regex and produced two
+false failures, matching the prop *label text* and the file's own explanatory
+comment, which is the regex-over-JSX trap this repo has now hit repeatedly. 4
+mutations all red, including **gating the note on the status** — the actual
+disclosure. 1010 tests pass.
+
 ## Recently shipped (1 Oct 2026, later still still — a chlamydia swab was being reported as the date of your HIV test)
 
 **A false assurance about your own health, live since 26 Aug, and invisible
