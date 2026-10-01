@@ -12,6 +12,60 @@ discovering new ones.
 
 Ordering is by expected value, not by topic. Do the top block first.
 
+## Status as of 1 Oct 2026 — first real-device round (session A)
+
+Device: Redmi Note 13, model 23124RA7EO, Android 15 / API 35, MIUI V816,
+arm64-v8a, 1080x2400 @ 440dpi, build 576f994 then 82ee6f5 then 31f0f9e.
+
+**DONE and verified (the three items below were previously unverified):**
+
+- **§3.3 — FLAG_SECURE immediacy.** PASS. Measured behaviourally with a real
+  screencap, not from `dumpsys`: toggle OFF gives mean luminance 2 (black apart
+  from the system status/nav bars, which FLAG_SECURE deliberately leaves
+  rendering), toggle ON gives 30. No activity recreation needed, so the plugin's
+  "immediately, on the very next thumbnail" claim is TRUE.
+  **Two measurement traps found doing this, both worth remembering:**
+  `dumpsys window` does NOT print `FLAG_SECURE` on Android 15 even when it is
+  set (count was 0 in both states), and a correctly-blocked capture has pixel
+  *range* 255 — judge the MEAN, never the range, or a working privacy feature
+  reads as broken.
+- **§6.4 (part) — widget providers registered.** All ten are registered with the
+  OS, confirmed independently on the CI emulator and on the phone. A real
+  WidgetBridge bug was found and fixed here (see below). **Still outstanding:**
+  no widget has been placed on a home screen, so "the widgets now populate"
+  is confirmed at code/behaviour level only.
+- **A real bug, found and fixed.** All 50 entries in the app's own error log
+  were `WidgetBridge.then() is not implemented on android`. Root cause: a
+  Capacitor plugin proxy is a catch-all, so `proxy.then` exists, making it look
+  *thenable*; returning it bare from an `async` function makes the engine unwrap
+  it by calling `.then()`. It threw before reaching the plugin method, so **the
+  home-screen widgets had never once displayed anything.** Fixed in all six
+  copies (`82ee6f5`); verified silent on-device afterwards.
+
+**Verified with no code change needed:** all 41 storage keys encrypted except
+`shos_vault_key_slots` (plaintext BY DESIGN — bootstrap circularity); `adb_enabled`
+and `adb_wifi_enabled` both 1; 25 alarms correctly scheduled; all six
+`ACTION_TYPE_STORE*` action types registered.
+
+**Environment notes, so a future session does not re-derive them:**
+
+- Wireless adb **drops to offline whenever the phone locks**, and a WiFi change
+  additionally invalidates the pairing. Re-pair with the "Pair device with
+  pairing code" dialog — the *pairing* port goes to `adb pair`, the *separate*
+  main port goes to `adb connect`. Using one port for both is what produces
+  "protocol fault". Feed the 6-digit code on `adb pair`'s **stdin**; passing it
+  as an argument does not work.
+- USB is unusable on this machine: Windows reports `Unknown USB Device (Device
+  Descriptor Request Failed)`, error code **43** — the phone never answers the
+  USB handshake. That is a cable/port/phone-mode fault, **not** an authorisation
+  problem (an unapproved RSA prompt shows as `unauthorized` in adb instead).
+- Raise `screen_off_timeout` immediately after connecting, or the session dies
+  within a minute or two.
+- A WebView accessibility tree dumped with `uiautomator` and **no screen reader
+  running** reports toggles as `checkable="false"` regardless of their real
+  state. This is an artefact, not an app bug — over CDP the real DOM has
+  `role="switch"` with a live `aria-checked`. See §3 warning below.
+
 ---
 
 ## DO THESE FIRST (≈20 minutes, highest value)
@@ -231,6 +285,18 @@ The APK path goes through `plugin.schedule()` and the OS holds the alarm.
 ## 3. FLAG_SECURE / screenshots
 
 **Why untestable off-device:** enforced entirely by the Android window manager.
+
+**§3.3 is DONE and verified — see the status block at the top. Do not redo it.**
+What remains is only the recents-thumbnail rendering (§3.1), the
+Power+Volume-Down attempt (§3.2), and recording/casting (§3.4), none of which
+can be driven over adb.
+
+**Measurement warning, learned the hard way.** Do NOT verify FLAG_SECURE from
+`dumpsys window` — on Android 15 it does not print the flag at all, so a
+grep-based check reports a working feature permanently broken. And a
+correctly-blocked screencap is NOT uniform black: FLAG_SECURE blanks the app
+window while the system status and navigation bars still render, giving a pixel
+range of 255. Judge the MEAN luminance (measured 2 blocked vs 30 visible).
 
 ### 3.1 Toggle OFF (default) — task switcher thumbnail
 - **Do:** Confirm Settings → Privacy → **Allow screenshots** is OFF. Open a screen
