@@ -700,7 +700,36 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
     // styling — was ever inside any landmark at all. One role="region"
     // here covers the whole tree; confirmed live via axe-core before
     // and after, not assumed from the DOM shape alone.
-    <div ref={dialogRef} role="dialog" aria-label="Settings" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(120px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+    // FIXED 1 Oct 2026 (t060) - `display: flex` REMOVED from this scroll
+    // container, and the reason is a real device bug, not a style preference.
+    //
+    // The last row of the Settings list ("About") sat at y=826-872 while the
+    // system gesture bar starts at y=824, so the row was 100% underneath it and
+    // could not be tapped. Verified unreachable three independent ways: scrollTop
+    // pinned at its maximum did not move it, scrollIntoView({block:"end"}) left
+    // it at the viewport bottom, and injecting a real spacer element raised
+    // scrollHeight without moving the row at all.
+    //
+    // CAUSE: `display: flex` on a SCROLLING container. A flex container's
+    // content box is clientHeight minus padding, and its single child is sized
+    // to that box, so content taller than the box OVERFLOWS it (overflow is
+    // visible) instead of extending the scrollable range. The column measured
+    // clientHeight 238 against scrollHeight 1092, and that missing 854px is
+    // exactly the content that could never be scrolled to.
+    //
+    // Changing display to "block" on this element - verified live on the device
+    // before editing - lets the column size to its content: scrollHeight went
+    // 1127 -> 1267 and the row cleared the gesture bar.
+    //
+    // `justifyContent: "center"` was doing nothing anyway: the only child is
+    // `width: 100%`, so a row-flex has nothing to centre. Do not add flex back
+    // for desktop centring - put the maxWidth/margin on the inner wrapper.
+    //
+    // Note for the next person: the 120px + env() padding was never the
+    // problem. env() was measured on the device at 48px bottom / 35px top,
+    // matching the OS 130/94 physical px at dpr 2.75, so the inset resolves
+    // correctly inside this WebView.
+    <div ref={dialogRef} role="dialog" aria-label="Settings" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(120px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
