@@ -1786,7 +1786,7 @@ function MedicationSettingsScreen({ onClose, onOpenGeneralSettings, T }) {
 // Hoisted to module scope (a pure literal, no dependency on props/state).
 const PATTERN_ORDER = { daily: 0, custom: 1, prn: 2 };
 
-export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, registerModuleBackHandler } = {}) {
+export default function MedicationDashboard({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onOpenSettings, registerModuleBackHandler, quickAddTarget } = {}) {
   const [meds, setMeds] = useLoadedState(() => loadMedications(), [], []);
   // Declared before useEditUndo below so that call can pass a stable
   // indirection to refreshMeds without a temporal-dead-zone reference.
@@ -1933,7 +1933,17 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
   // for" (neutral blue) — conflating the two would make a perfectly
   // fine medication look like it urgently needs action.
   const [searchHighlightedId, setSearchHighlightedId] = useState(null);
-  const [tab, setTab] = useState("Registry");
+  // ADDED 1 Oct 2026 (t061) - the Refills Due widget deep-links here and the
+  // owner's correction was that it belongs on INVENTORY, not the dashboard: a
+  // "refills due" widget that opens the registry sends the user to the one
+  // screen with no stock, no running total and nothing about what is running out.
+  //
+  // The same prop-threading Healthcare already uses for its own sub-tabs
+  // (App.jsx passes quickAddTarget to ActiveModule, and navigateTo sets
+  // quickAdd to false at the same time, so this cannot double as "open the Add
+  // medication sheet"). Anything else - including a missing prop, which is the
+  // normal case when a user taps the bottom nav - still opens on Registry.
+  const [tab, setTab] = useState(quickAddTarget === "inventory" ? "Inventory" : "Registry");
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
   const T = darkMode ? buildDark() : buildLight();

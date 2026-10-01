@@ -214,6 +214,52 @@ Each is a four-line change once A's boundary lifts.
 drops to zero, so a parser change or a rename cannot silently turn this guard
 into one that matches nothing — the exact failure it has already produced twice.
 
+## The Refills Due widget opens Inventory, not the dashboard (t061)
+
+Owner's explicit correction, and **not the one-string change the task title
+suggests**. The route table had no way to reach Inventory at all:
+`/log` and `/dashboard` both returned the identical
+`{ type: "navigate", tab: "medication" }`, and `MedicationDashboard` did not even
+accept a `quickAddTarget` prop — only `HealthcareScreen` did. So the URI string
+was the smallest part of it.
+
+**Three layers, each of which can be right while the feature is dead:**
+
+| Layer | Change |
+|---|---|
+| `RefillWidgetProvider.java` | URI → `com.shos.app://medication/inventory` |
+| `deepLinkRoutes.js` | new `/inventory` → `{navigate, medication, subTab:"inventory"}` |
+| `MedicationDashboard` | accepts `quickAddTarget`, initial `tab` becomes `Inventory` |
+
+**`/dashboard` is deliberately untouched.** The DoxyPEP status widget targets it
+and genuinely belongs there — it shows an adherence figure that only the
+dashboard renders. Redefining `/dashboard` instead of adding a sibling path would
+have quietly broken it, so a test asserts DoxyPEP still fires `/dashboard`.
+
+**Why `navigate` and not `quickAdd` is load-bearing.** `navigateTo` sets
+`setQuickAdd(false)` explicitly, so a sub-tab route cannot double as a request to
+open the Add-medication sheet. Using `quickAdd` would have opened a blank
+"Add medication" form — which is for *new* meds — on top of Inventory.
+
+**New `widgetDeepLinkWiring.test.js` asserts all four links against the real
+files**, and it reads the URI string *out of the Java provider* rather than
+retyping it, so the two sides cannot drift apart while both still pass. Each of
+the other three layers has been wrong independently in this repo's history — the
+Testing due-banner fingerprint, and the DoxyPEP reminder importing a function
+from a module that did not export it — and in both cases every individual file
+was correct.
+
+Mutation-verified: reverting the Java URI turns it red on two tests; making the
+module ignore `quickAddTarget` again turns it red on one. Both restored.
+
+**Two mistakes of mine here, recorded because both would have shipped.** My first
+edit to `deepLinkRoutes.js` left a duplicated `return`/`}` pair, putting a
+`return` outside any block — *"Illegal return statement"*, which failed both test
+files at import time rather than the one I was editing. And the first full local
+suite run reported 2 failures that did not reproduce on an immediate re-run, at
+520 MB free RAM; this repo has a long history of exactly that, and the honest
+reading is memory pressure rather than a real flake. CI is the confirmation.
+
 ## What works — checked, not inferred
 
 - **Every gate, locally and in CI.** `npm run verify:fast` is the working loop;

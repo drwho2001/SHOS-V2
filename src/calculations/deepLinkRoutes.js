@@ -33,18 +33,33 @@
    }
    const host = (url.hostname || "").toLowerCase();
    const path = url.pathname || "";
-   if (host === "medication") {
-     // Bare com.shos.app://medication (the long-press "Log dose" shortcut):
-     // established behavior opens the add sheet — kept, not changed here.
-     if (path === "/log" || path === "/dashboard") {
-       // Widget taps ("Log Medication" label, DoxyPEP/Refill status widgets):
-       // land on the dashboard where the per-medication Log-dose buttons
-       // live, not a blank Add-medication form (which is for NEW meds).
-       return { type: "navigate", tab: "medication" };
+if (host === "medication") {
+       // Bare com.shos.app://medication (the long-press "Log dose" shortcut):
+       // established behavior opens the add sheet - kept, not changed here.
+       if (path === "/log" || path === "/dashboard") {
+         // Widget taps ("Log Medication" label, DoxyPEP/Refill status widgets):
+         // land on the dashboard where the per-medication Log-dose buttons
+         // live, not a blank Add-medication form (which is for NEW meds).
+         return { type: "navigate", tab: "medication" };
+       }
+       // The Refills Due widget wants INVENTORY, not the dashboard. Owner's
+       // explicit correction: a "refills due" widget that opens the registry
+       // sends the user to the one screen with no stock, no running total and
+       // nothing about what is running out.
+       //
+       // Separate from /dashboard rather than changing it, because /dashboard is
+       // also the DoxyPEP status widget's target and that one genuinely belongs
+       // on the dashboard - it shows an adherence figure that lives there.
+       //
+       // `navigate` rather than `quickAdd` is what keeps the Add-medication
+       // sheet closed: App.jsx's navigateTo sets quickAdd to false explicitly,
+       // so a sub-tab cannot double as a request to open a form.
+       if (path === "/inventory") {
+         return { type: "navigate", tab: "medication", subTab: "inventory" };
+       }
+return { type: "quickAdd", tab: "medication" };
      }
-     return { type: "quickAdd", tab: "medication" };
-   }
-   if (host === "encounter") return { type: "quickAdd", tab: "activity" };
+     if (host === "encounter") return { type: "quickAdd", tab: "activity" };
    if (host === "contact") {
      if (path === "/add") return { type: "quickAdd", tab: "contacts" };
      return null;

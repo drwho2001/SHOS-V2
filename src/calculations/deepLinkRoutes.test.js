@@ -18,6 +18,19 @@ describe("resolveDeepLinkRoute", () => {
     expect(resolveDeepLinkRoute("com.shos.app://contact/add")).toEqual({ type: "quickAdd", tab: "contacts" });
     expect(resolveDeepLinkRoute("com.shos.app://medication/log")).toEqual({ type: "navigate", tab: "medication" });
     expect(resolveDeepLinkRoute("com.shos.app://medication/dashboard")).toEqual({ type: "navigate", tab: "medication" });
+    // t061 - the Refills Due widget. Owner's correction: Inventory, not the
+    // dashboard, because a refills widget must not open the screen with no stock
+    // and no running total. `navigate` and not `quickAdd` is the load-bearing
+    // part: App.jsx's navigateTo sets quickAdd false, so this cannot double as a
+    // request to open the Add-medication sheet.
+    expect(resolveDeepLinkRoute("com.shos.app://medication/inventory")).toEqual({
+      type: "navigate",
+      tab: "medication",
+      subTab: "inventory",
+    });
+    // /dashboard must NOT quietly start selecting inventory too - the DoxyPEP
+    // status widget targets it and belongs on the dashboard.
+    expect(resolveDeepLinkRoute("com.shos.app://medication/dashboard").subTab).toBeUndefined();
     expect(resolveDeepLinkRoute("com.shos.app://clinic-visits")).toEqual({ type: "navigate", tab: "healthcare", subTab: "clinicVisits" });
     expect(resolveDeepLinkRoute("com.shos.app://healthcare?subTab=testing")).toEqual({ type: "navigate", tab: "healthcare", subTab: "testing" });
     expect(resolveDeepLinkRoute("com.shos.app://healthcare?subTab=menstrual")).toEqual({ type: "navigate", tab: "healthcare", subTab: "menstrualHealth" });

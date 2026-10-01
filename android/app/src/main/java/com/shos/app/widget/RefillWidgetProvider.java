@@ -39,9 +39,16 @@ public class RefillWidgetProvider extends AppWidgetProvider {
             views.setTextViewText(R.id.widget_next_refill, "");
         }
 
-        // Click opens Medication tab
+        // CHANGED 1 Oct 2026 (t061) - opens INVENTORY, not the dashboard.
+        // Owner's explicit correction: a widget called "Refills Due" that lands
+        // on the registry sends the user to the one screen with no stock, no
+        // running total and nothing about what is running out.
+        //
+        // /inventory rather than /dashboard, and /dashboard is untouched, because
+        // the DoxyPEP status widget also targets it and that one genuinely belongs
+        // there - it shows an adherence figure that only the dashboard renders.
         Intent intent = new Intent(context, com.shos.app.MainActivity.class);
-        intent.setData(Uri.parse("com.shos.app://medication/dashboard"));
+        intent.setData(Uri.parse("com.shos.app://medication/inventory"));
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
             context, 0, intent, android.app.PendingIntent.FLAG_IMMUTABLE);
