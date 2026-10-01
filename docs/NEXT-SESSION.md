@@ -40,6 +40,56 @@ refactor), `266dfaa` (APK workflow race), `4069365` (`monthLabel` timezone),
 `8fd7a6d` (t034 vaccination calendar), `da43dd4` (t028 counts measured).
 A's own work that day: `54ba397`, `a6d251c`.
 
+## Two smoke flows for form-render paths (session B, 1 Oct 2026)
+
+My Profile → Edit and a contact's Edit sheet are now flows 24 and 25 of 25.
+
+**Why they exist.** Two crashes reached published APKs in consecutive days by
+unrelated routes, sharing one cause: **no test had ever opened a form-render
+path.**
+
+1. 28/29 Sep — `Cannot access 'D' before initialization` opening My Profile →
+   Edit, and the same on a Clinic Visit edit sheet.
+2. 1 Oct — React error #31, an object rendered as a React child, opening My
+   Profile → Edit. Three published APKs.
+
+Every unit test was green for both. The build was green. The whole suite was
+green. Neither crash was visible, because nothing in CI ever navigated *into*
+one of those forms — so the code inside them was never executed by a test at
+all, however many tests covered the calculations those forms call.
+
+**Why these two, and why dull on purpose.** They assert the form *renders*, not
+that it looks right. My Profile is the screen that actually crashed. The contact
+sheet is the single most shape-sensitive form in the app — 9 `SelectField` and
+9 `MultiSelectChips` render sites — so it is where the next object-options
+caller would land.
+
+**The HIV dropdown is asserted specifically, not just "the form opened".** It is
+the exact field that crashed, and it carried a second defect no crash would
+reveal: the stored value `positive-unsuppressed` was shown to the user instead
+of `Positive - undetectable`. A generic "no crash" assertion passes happily
+while the user reads a machine code. The leak check is a **pattern**
+(`/^[a-z]+(-[a-z]+)*$/`), not a list of the four known codes, so a future status
+cannot reintroduce it unnoticed.
+
+**Verified, not assumed.** Flow 24 was mutation-tested: reverting the
+shape-tolerant render to the old `{opt}` turns the suite **red** with
+`Objects are not valid as a React child (found: object with keys {value, label})`
+— which is also the exact proof that the two-key diagnosis was right. Restoring
+returns it to green. Flow 25 asserts 12 real `select` elements, so a sheet that
+opened but rendered no pickers cannot pass.
+
+**A real bug this surfaced immediately, in session A's uncommitted work.**
+`clearSampleData.js` `referencedSeedIds()` threw `collections is not iterable`
+on every boot that touches Home — `L167` takes the whole `{ collections,
+failures }` return and hands it to a `for...of`, while `L225-226` in the same
+file already destructures correctly. Reported to A rather than fixed: it is
+their file.
+
+**Still the deeper gap.** These two cover two forms. The class is "no test opens
+a form-render path", and there are more forms than these. Worth one systematic
+pass over every Add/Edit sheet.
+
 ## What works — checked, not inferred
 
 - **Every gate, locally and in CI.** `npm run verify:fast` is the working loop;

@@ -380,7 +380,7 @@ async function goHomeThenOpenSettings(page) {
 }
 
 async function testMedicationReasonSideEffects(page) {
-  console.log("\n[3/23] Medication log — Reason/Side effects (added 1 Sep 2026)");
+  console.log("\n[3/25] Medication log — Reason/Side effects (added 1 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Log").first().click({ timeout: 5000 });
@@ -400,7 +400,7 @@ async function testMedicationReasonSideEffects(page) {
 }
 
 async function testSymptomTestTwoWayLink(page) {
-  console.log("\n[4/23] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
+  console.log("\n[4/25] Testing <-> Symptom Log two-way link (added 2 Sep 2026)");
   await page.locator("text=Healthcare").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   await page.locator("text=Test of cure — Gonorrhoea").click({ timeout: 5000 });
@@ -452,7 +452,7 @@ async function testSymptomTestTwoWayLink(page) {
 }
 
 async function testLocationsExtraFields(page) {
-  console.log("\n[5/23] Locations registry — extra fields (added 2 Sep 2026)");
+  console.log("\n[5/25] Locations registry — extra fields (added 2 Sep 2026)");
   // the Settings gear only lives on the Home dashboard header — get back
   // there first, since the previous check left us on Healthcare/Symptoms.
   // The Home tab is icon-only (no text label — see App.jsx's bottom nav,
@@ -477,7 +477,7 @@ async function testLocationsExtraFields(page) {
 // building it (the Refuge entry, a real https:// URL from the seeded
 // list), never given permanent coverage until now.
 async function testResourceLinkClickable(page) {
-  console.log("\n[6/23] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
+  console.log("\n[6/25] Resources screen — links render as real clickable anchors (added 9 Sep 2026)");
   // Reload first — the previous test (Locations registry) leaves the
   // Manage Lists > Locations sub-screen open, a stacked Settings
   // overlay that would otherwise sit on top of (and intercept clicks
@@ -518,7 +518,7 @@ async function testResourceLinkClickable(page) {
 // (anonymisePin) is still unset at this point — deactivating needs no
 // PIN then (see privacySettingsRepository.js's own deactivate()).
 async function testEncountersAnonymiseMasking(page) {
-  console.log("\n[7/23] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
+  console.log("\n[7/25] Encounters — Anonymise mode masks attendee names (added 9 Sep 2026)");
   await page.locator("text=Encounter").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
     await page.locator("text=Sauna trip").first().click({ timeout: 5000 });
@@ -596,7 +596,7 @@ async function testEncountersAnonymiseMasking(page) {
 // logged at the real current time, which always has a real future
 // lockoutEndsAt() to check.
 async function testMedicationReminderClock(page) {
-  console.log("\n[8/23] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
+  console.log("\n[8/25] Medication Dashboard — next-reminder clock time (added 9 Sep 2026)");
   await page.locator("text=Medication").last().click({ timeout: 5000 });
   await page.waitForTimeout(600);
   // Scoped on "Last dose" rather than the "Log dose" button's own text
@@ -649,7 +649,7 @@ async function testMedicationReminderClock(page) {
 // existing install's first Phase 4 boot" from a genuinely fresh
 // profile (see that function's own comment).
 async function testEncryptionMigratesLegacyData(browser) {
-  console.log("\n[9/23] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
+  console.log("\n[9/25] Encryption at rest — an existing install's real legacy data migrates on first boot (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
     localStorage.setItem("shos_app_preferences", JSON.stringify({
@@ -705,7 +705,7 @@ async function testEncryptionMigratesLegacyData(browser) {
 // check broad, real coverage rather than just the vault metadata key
 // and whatever the fresh boot itself wrote.
 async function testEncryptionPositiveCheck(page) {
-  console.log("\n[10/23] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
+  console.log("\n[10/25] Encryption at rest — raw localStorage is genuinely ciphertext (added 9 Sep 2026)");
   const rawShapes = await page.evaluate(() => {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -820,7 +820,7 @@ await waitWithPageState(
 // silently regress back to "just a UI door" without a test noticing,
 // since the lock screen would look identical either way.
 async function testEncryptionAppLockGatesVault(page) {
-  console.log("\n[11/23] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
+  console.log("\n[11/25] Encryption at rest — App Lock's PIN really gates the vault (added 9 Sep 2026)");
   await openSettingsPrivacyScreen(page);
 
   await page.locator('button:has-text("Set a PIN")').click({ timeout: 5000 });
@@ -896,7 +896,7 @@ async function testEncryptionAppLockGatesVault(page) {
 // stored preference, the same class of gap this whole suite exists to
 // close.
 async function testTabReorder(page) {
-  console.log("\n[12/23] Settings — bottom nav tab order (added 9 Sep 2026)");
+  console.log("\n[12/25] Settings — bottom nav tab order (added 9 Sep 2026)");
   await page.reload({ waitUntil: "networkidle" });
   await dismissTransientBanners(page);
   await goHomeThenOpenSettings(page);
@@ -965,7 +965,7 @@ async function testTabReorder(page) {
 // it, and an early version auto-offered the tour even after an explicit
 // Skip tap, which directly contradicted the user's own "not now" signal.
 async function testInteractiveTour(browser) {
-  console.log("\n[13/23] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
+  console.log("\n[13/25] Interactive tour — spotlight overlay walkthrough (added 9 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const tourPageErrors = [];
@@ -1069,7 +1069,7 @@ async function testInteractiveTour(browser) {
 // the exact portability trap the interactive-tour flow above already
 // hit and fixed once this same day).
 async function testBackupMigratesOldFieldShape(page) {
-  console.log("\n[14/23] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
+  console.log("\n[14/25] Backup import — an old field shape auto-migrates on restore (added 9 Sep 2026)");
   const oldShapedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -1145,7 +1145,7 @@ async function testBackupMigratesOldFieldShape(page) {
 // error, and exactly the one valid contact lands (not zero, not a
 // partial/corrupted count).
 async function testBackupImportDropsGarbageRecords(page) {
-  console.log("\n[17/23] Backup import — malformed array elements are dropped, not a crash (added 10 Sep 2026)");
+  console.log("\n[17/25] Backup import — malformed array elements are dropped, not a crash (added 10 Sep 2026)");
   const malformedBackup = {
     schemaVersion: 1,
     appVersion: "0.1.0-prototype",
@@ -1212,7 +1212,7 @@ async function testBackupImportDropsGarbageRecords(page) {
 // directly exercise that exact path, so a regression here would fail
 // loudly, not silently.
 async function testPinRecoveryFlow(page) {
-  console.log("\n[15/23] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
+  console.log("\n[15/25] PIN-recovery — the recovery string genuinely unlocks and resets the PIN (added 9 Sep 2026)");
   // The App Lock setup prompt can be pending again here — test 12's
   // own Replace All import doesn't touch privacySettings at all (its
   // synthetic backup has no privacySettings key), but a plain reload
@@ -1341,7 +1341,7 @@ async function testPinRecoveryFlow(page) {
 // Runs in its own fresh browser context (real SW registration/
 // lifecycle state, not shared with the rest of the suite).
 async function testServiceWorkerAutoUpdate(browser) {
-  console.log("\n[16/23] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
+  console.log("\n[16/25] PWA auto-update — a new version shows a dismissible prompt, not a forced reload (added 10 Sep 2026)");
 
   // Real preview-build-only test: `vite preview` (what CI and this
   // suite's own recommended local flow both use) serves dist/sw.js
@@ -1517,7 +1517,7 @@ async function testServiceWorkerAutoUpdate(browser) {
 const TZ_PROBE_TIME = "2026-03-14T00:30";
 
 async function testTimezoneWallClockRoundTrip(browser) {
-  console.log("\n[20/23] Timezone — a typed wall-clock time is stored and shown back unchanged (added 28 Sep 2026)");
+  console.log("\n[20/25] Timezone — a typed wall-clock time is stored and shown back unchanged (added 28 Sep 2026)");
 
   // London is the home case (and carries a real DST edge), New York is the
   // largest negative offset and Sydney the largest positive one — the two
@@ -1687,7 +1687,7 @@ const run = async (name, fn) => {
 // ---------------------------------------------------------------------------
 
 async function testBannerAcknowledgementPersists(browser) {
-  console.log("\n[21/23] Reminder acknowledgement - persists across a reload and leaves a quiet mark (added 29 Sep 2026)");
+  console.log("\n[21/25] Reminder acknowledgement - persists across a reload and leaves a quiet mark (added 29 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const flowErrors = [];
@@ -1865,6 +1865,11 @@ async function testBannerAcknowledgementPersists(browser) {
     // to today, so re-running it tomorrow still exercises a genuinely-early
     // dose rather than a fixed date that quietly drifts into the past.
     await run("vaccine-doses", () => testVaccineDoseSeriesFlow(browser));
+    // ADDED 1 Oct 2026 (B) - the FORM-RENDER gap. On the shared page because
+    // neither flow mutates a record: they open a form and read it. Placed after
+    // the own-context flows for the cached-app-shell reason documented above.
+    await run("myprofile-edit", () => testMyProfileEditFormRenders(page));
+    await run("contact-edit", () => testContactEditFormRenders(page));
   } catch (err) {
     failed = true;
     console.error("\n" + err.message);
@@ -1910,7 +1915,7 @@ async function testBannerAcknowledgementPersists(browser) {
 // the PWA auto-update flow leaves a service worker in the browser profile, and
 // any flow after it is served a stale cached shell.
 async function testSampleDataDisclosureAndClear(browser) {
-  console.log("\n[1/23] Sample data is disclosed on first run, and clearing keeps real records (added 27 Sep 2026)");
+  console.log("\n[1/25] Sample data is disclosed on first run, and clearing keeps real records (added 27 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const flowErrors = [];
@@ -2030,7 +2035,7 @@ async function testSampleDataDisclosureAndClear(browser) {
 // results" button pointing at a query for a screen they left ten minutes ago
 // is worse than no button at all.
 async function testSearchBackNavigation(page) {
-  console.log("\n[18/23] Search results - you can get back to them, and only while it makes sense (added 28 Sep 2026)");
+  console.log("\n[18/25] Search results - you can get back to them, and only while it makes sense (added 28 Sep 2026)");
   await navHome(page);
   await dismissTransientBanners(page);
 
@@ -2127,7 +2132,7 @@ async function testSearchBackNavigation(page) {
 // A fresh context is the only honest way to observe a first-run banner, and it
 // also isolates the flow from whatever the shared page's data has become.
 async function testBannerSuppression(browser) {
-  console.log("\n[19/23] Reminder banners - a dismissed one stays dismissed, and an acknowledged one leaves a quiet mark (added 28 Sep 2026)");
+  console.log("\n[19/25] Reminder banners - a dismissed one stays dismissed, and an acknowledged one leaves a quiet mark (added 28 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const flowErrors = [];
@@ -2221,7 +2226,7 @@ async function testBannerSuppression(browser) {
 // rest of the previous flow depended on. Its own context avoids all of that,
 // and this flow must run BEFORE the flow above for the same reason.
 async function testSampleDataClearInDeveloperTools(browser) {
-  console.log("\n[2/23] Developer Tools separates 'clear sample data' from 'reset all app data' (added 27 Sep 2026)");
+  console.log("\n[2/25] Developer Tools separates 'clear sample data' from 'reset all app data' (added 27 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const flowErrors = [];
@@ -2411,7 +2416,7 @@ async function testEscapeClosesOverlay(page) {
   // flow would not have moved the number either. Found by the new structural
   // guard in smokeSuiteSelfCheck.test.js, which compares registered flows
   // against declared titles.
-  console.log("\n[23/23] Escape closes an overlay - no overlay in the app is a keyboard trap (added 28 Sep 2026)");
+  console.log("\n[23/25] Escape closes an overlay - no overlay in the app is a keyboard trap (added 28 Sep 2026)");
   await nav(page, "Contacts");
   const addBtn = page.locator('[aria-label="Add contact"]').first();
   await addBtn.click({ timeout: 8000 });
@@ -2466,7 +2471,7 @@ async function testVaccineDoseSeriesFlow(browser) {
   // that executes but is invisible in the count is the "measured nothing and
   // looked like it measured something" failure wearing a different hat: had the
   // flow been deleted entirely, the number would not have moved either.
-  console.log("\n[22/23] Vaccine dose series - an early dose cancels the earlier reminder, and says so (added 29 Sep 2026)");
+  console.log("\n[22/25] Vaccine dose series - an early dose cancels the earlier reminder, and says so (added 29 Sep 2026)");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   await page.goto(APP_URL, { waitUntil: "networkidle" });
@@ -2670,4 +2675,120 @@ async function testVaccineDoseSeriesFlow(browser) {
   assert(!/OVERDUE/.test(doseCard),
     `the edited dose's own card carries no OVERDUE claim. Card: ${JSON.stringify((doseCard || "").slice(0, 140))}`);
   console.log(`  ok - dose ${editedDoseNumber} keeps its date, marked done, with no OVERDUE on its own card`);
+}
+
+// ---------------------------------------------------------------------------
+// ADDED 1 Oct 2026 (session B) - the FORM-RENDER gap.
+//
+// WHY THESE TWO FLOWS EXIST
+// -------------------------
+// Two crashes reached published builds in consecutive days, by unrelated routes,
+// and shared exactly one cause: NO TEST EVER OPENED A FORM-RENDER PATH.
+//
+//   1. 28/29 Sep - "Cannot access 'D' before initialization" opening My Profile
+//      -> Edit, and the same thing on a Clinic Visit edit sheet.
+//   2. 1 Oct - React error #31 (an object used as a React child) opening My
+//      Profile -> Edit. Lived in three published APKs.
+//
+// Every unit test in this repo was green for both. The build was green. The
+// whole 25-flow suite was green. Neither crash was visible, because nothing in
+// CI or the suite ever navigated INTO one of these forms - so the code inside
+// them was never executed by a test at all, however many tests covered the
+// calculations those forms call.
+//
+// That is the class, and it is not fixed by fixing either crash. These two
+// flows are deliberately dull: open the form, prove it renders, prove one
+// value/label distinction is right. They are the first coverage these
+// render paths have ever had, so they are deliberately about REACHING the
+// screen rather than about how it looks.
+//
+// WHY THE HIV DROPDOWN IS ASSERTED SPECIFICALLY, NOT JUST "the form opened":
+// it is the exact field that crashed, and it carries a second defect that no
+// crash would reveal - the stored value ("positive-unsuppressed") was being
+// shown to the user instead of the label ("Positive - undetectable"). The
+// generic assertion here would pass while the user reads a machine code. The
+// specific one cannot.
+async function testMyProfileEditFormRenders(page) {
+  console.log("\n[24/25] My Profile -> Edit renders, and its HIV dropdown shows labels not stored codes (added 1 Oct 2026)");
+
+  await navHome(page);
+  await dismissTransientBanners(page);
+
+  // Home's own header icon, not the Settings row: one tap fewer, and it is the
+  // route the crash report actually described.
+  await page.locator('[aria-label="My Profile"]').first().click({ timeout: 10000 });
+  const editBtn = page.getByRole("button", { name: "Edit", exact: true }).first();
+  await editBtn.waitFor({ state: "visible", timeout: 10000 });
+  await editBtn.click();
+
+  const sheet = page.getByRole("dialog", { name: "Edit My Profile" });
+  await sheet.waitFor({ state: "visible", timeout: 10000 });
+  console.log("  ok - the Edit My Profile sheet opened");
+
+  // Assert on the ErrorBoundary's OWN copy, not merely on the absence of the
+  // form: a crash that unmounts the form would satisfy "the form is gone" too,
+  // so the positive assertion has to be about the failure being visible.
+  const boundaryText = await page.getByText("Something went wrong").count();
+  assert(boundaryText === 0,
+    `My Profile -> Edit rendered without the ErrorBoundary. It found ${boundaryText} copy/copies of the boundary text; ` +
+    "React error #31 (an option object rendered as a React child) shipped in three APKs because no test opened this form.");
+
+  const hivSelect = page.getByLabel("Override if tested elsewhere");
+  await hivSelect.waitFor({ state: "visible", timeout: 10000 });
+  const optionTexts = (await hivSelect.locator("option").allTextContents()).map((t) => t.trim());
+  console.log(`  ok - HIV dropdown rendered with options: ${JSON.stringify(optionTexts)}`);
+
+  assert(optionTexts.includes("Positive - undetectable"),
+    `the HIV dropdown offers the readable label "Positive - undetectable". Got ${JSON.stringify(optionTexts)} - ` +
+    "the stored code was being shown instead, which reads as a bug to the user even though nothing crashes.");
+
+  // Any bare lower-case-hyphenated token here is a stored value leaking into the
+  // UI. Checked by PATTERN rather than against a hardcoded list of the four
+  // known codes, so a future status cannot reintroduce this unnoticed.
+  const leaked = optionTexts.filter((t) => t.length > 0 && /^[a-z]+(-[a-z]+)*$/.test(t));
+  assert(leaked.length === 0,
+    `no stored value is shown to the user. Leaked: ${JSON.stringify(leaked)} - every option should be a readable label.`);
+  console.log("  ok - every option is a readable label, no stored code reaches the UI");
+}
+
+// The Contacts edit sheet, for the same reason and with one extra claim to make:
+// it is the single most shape-sensitive form in the app, carrying 9 SelectField
+// and 9 MultiSelectChips render sites. If one of those ever starts receiving
+// objects, this is the flow that sees it.
+async function testContactEditFormRenders(page) {
+  console.log("\n[25/25] A contact's Edit sheet renders - the app's most shape-sensitive form (added 1 Oct 2026)");
+
+  await nav(page, "Contacts");
+  await dismissTransientBanners(page);
+
+  // The contact card's real accessible control is an invisible full-card button
+  // (the standard "invisible button behind the content" pattern used so the
+  // card's own inner controls - favourite star, status dot - stay clickable).
+  const firstCard = page.locator('button[type="button"][aria-label]').first();
+  await firstCard.waitFor({ state: "attached", timeout: 10000 });
+  await firstCard.click({ force: true });
+
+  const menuBtn = page.locator('[aria-label="More options"]').first();
+  await menuBtn.waitFor({ state: "visible", timeout: 10000 });
+  await menuBtn.click();
+
+  const editItem = page.getByRole("menuitem", { name: "Edit contact" }).first();
+  await editItem.waitFor({ state: "visible", timeout: 10000 });
+  await editItem.click();
+
+  const sheet = page.getByRole("dialog", { name: "Edit contact" });
+  await sheet.waitFor({ state: "visible", timeout: 10000 });
+  console.log("  ok - the Edit contact sheet opened");
+
+  const boundaryText = await page.getByText("Something went wrong").count();
+  assert(boundaryText === 0,
+    `a contact's Edit sheet rendered without the ErrorBoundary. It found ${boundaryText} copy/copies of the boundary text.`);
+
+  // At least one real option control must exist. Without this the flow would
+  // still pass on a sheet that rendered empty - which is the shape of the very
+  // bug it exists to catch.
+  const selects = await sheet.locator("select").count();
+  assert(selects > 0,
+    `the Edit contact sheet rendered its option controls (found ${selects} select elements). A sheet that opened but rendered no pickers would satisfy "no crash" on its own.`);
+  console.log(`  ok - sheet rendered ${selects} option controls`);
 }
