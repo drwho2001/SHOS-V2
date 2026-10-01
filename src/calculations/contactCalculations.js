@@ -237,3 +237,30 @@ export function mergeCummerRow(current, next, options) {
   const updated = (Array.isArray(next) ? next : []).filter((v) => options.includes(v));
   return [...others, ...updated];
 }
+
+// ADDED 1 Oct 2026 (t053 "one owner per derived fact" audit) - the ONE place
+// that answers "does this contact travel by car?".
+//
+// `drives` is a plain boolean that PREDATES `travelMode`. SHOS_Contacts'
+// TRANSPORT_TIERS comment states the intent plainly: drives is "folded in as an
+// alias for travelMode's own Car tier so a contact set up before travelMode
+// existed still shows correctly - not deprecated, just no longer the only source."
+//
+// That intent was honoured in exactly ONE of the four places that answer the
+// question. The card icon ORs the two; the card badge, the list filter and the
+// detail view all read `drives` alone. Two live consequences, both verified by
+// reading the call sites rather than inferred:
+//
+//   1. A contact whose travelMode includes "Car" but whose drives is false shows
+//      a car icon on the card - and the detail view then says "Drives: No". The
+//      same screen contradicts itself between the list and the detail.
+//   2. The "Drives" filter chip matches `drives === true` only, so a
+//      travelMode-Car contact cannot be found by transport at all - the one
+//      feature whose entire purpose is filtering by transport.
+//
+// Fixing this in the four call sites would make the duplication permanent, so the
+// rule moves here once and all four read it.
+export function travelsByCar(contact) {
+  if (!contact) return false;
+  return contact.drives === true || (Array.isArray(contact.travelMode) ? contact.travelMode : []).includes("Car");
+}

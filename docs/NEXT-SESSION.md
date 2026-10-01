@@ -1393,6 +1393,64 @@ accepts the three valid forms and **deliberately rejects `>=`**, since that
 would admit a future test and it sits close enough to `<=` to be smuggled in by
 a careless edit.
 
+### Phase 0 audit: two live bugs in conditional and legacy-overlap fields
+
+**1. `drives` and `travelMode` are one fact, resolved four different ways.**
+`drives` is a plain boolean that predates `travelMode`, and SHOS_Contacts' own
+`TRANSPORT_TIERS` comment states the intent exactly: it is *"folded in as an alias
+for travelMode's own Car tier… not deprecated, just no longer the only source."*
+
+That intent was honoured in exactly **one of the four** places answering the
+question. The card icon ORed the two; the card badge, the list filter and the
+detail view each read `drives` alone. Consequences, both verified by reading the
+call sites rather than inferred:
+
+- A contact with `travelMode: ["Car"]` and `drives: false` showed a **car icon**
+  on the card, and the detail view then said **"Drives: No"** — the same screen
+  contradicting itself between list and detail.
+- The **"Drives" filter chip** matched `drives === true` only, so that contact
+  could not be found by transport at all — the entire purpose of the chip.
+
+The rule now lives in `contactCalculations.travelsByCar()` and all four read it.
+Fixing it at the four call sites would have made the duplication permanent.
+
+**2. "Foreskin fit" claimed a fact that no longer applied.** The edit form only
+offers it when `foreskin` is `"Uncircumcised"`, nothing cleared it when that
+flipped, and the **read view rendered it unconditionally**. A contact set to
+"Tight" then changed to "Circumcised" kept displaying "Foreskin fit: Tight".
+
+Found in Contacts, then **checked whether it generalised** — and My Profile had
+the identical bug at its own read view. Two instances, and only the second was
+findable by checking. Assuming the first fix generalised would have left one.
+
+Gated rather than cleared, matching this module's documented policy for
+`carDetails`: *"still stored even if drives later gets toggled off, so nothing
+typed in gets silently lost."*
+
+**That leaves the app holding two opposite answers to the same question** —
+Contacts keeps, the clinic-visit form clears with confirmation. Both are locally
+justified and both are now deliberate. Flagged to the owner rather than silently
+standardising one over the other.
+
+### My own regression, found by session A and included here
+
+`SHOS_ClinicVisits_Prototype.jsx` carries a fix authored by **session A**,
+included deliberately because main was broken without it.
+
+**My `ce789f3` introduced a temporal dead zone crash.** I anchored
+`const guideForm = shouldGuideForm(form.reasonForVisit)` on
+`const isNew = !visitId`, which sits **43 lines above** `const [form, setForm]` —
+so opening any clinic visit edit sheet threw on a bundled build.
+
+**It passed CI.** The smoke suite never opens a clinic visit edit sheet, so
+nothing exercised the screen I had just changed. The coverage gap is the reason it
+got through, and it is worth closing on its own.
+
+Deliberately **not** in that commit: `SHOS_MyProfile_Prototype.jsx` (my foreskin
+gate plus A's unrelated `t069` work in the same file, so it cannot be staged
+cleanly) and `useBeforeDeclareGuard.test.js` (A's, untracked). A should land the
+guard — it is exactly what would have caught my regression.
+
 ### Clear-with-confirmation: the pilot's second half
 
 The gating shipped above would **hide** a section whose fields still held data —

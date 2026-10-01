@@ -59,7 +59,7 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 // contactRepository.js into the real in-app editable option list
 // system already used elsewhere (Vaccine, Reason for visit, etc.).
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
-import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomplete, getContactableVia, normalizeTag, extractKinkRoleFromText, hasPhysicalDetail, mergeCummerRow } from "../calculations/contactCalculations";
+import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomplete, getContactableVia, normalizeTag, extractKinkRoleFromText, hasPhysicalDetail, mergeCummerRow, travelsByCar } from "../calculations/contactCalculations";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 // ADDED 19 Aug 2026 — Anonymise mode. See privacySettingsRepository.js
 // for the full reasoning. Read-only from Contacts' side, same
@@ -1420,7 +1420,7 @@ function LinkedContactsField({ contactId, allContacts, T, refresh }) {
 // rank against the other four — still visible in the profile detail's
 // own full Travel mode list, just not promoted to a card icon.
 const TRANSPORT_TIERS = [
-  { test: (c) => c.drives === true || (c.travelMode || []).includes("Car"), Icon: Car, label: "Drives" },
+  { test: (c) => travelsByCar(c), Icon: Car, label: "Drives" },
   { test: (c) => (c.travelMode || []).includes("Cycle"), Icon: Bicycle, label: "Cycles" },
   { test: (c) => (c.travelMode || []).includes("Public transport"), Icon: Bus, label: "Uses public transport" },
   { test: (c) => (c.travelMode || []).includes("Walk"), Icon: Walk, label: "Walks" },
@@ -1472,7 +1472,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
     ...(contact.bdsmRole || []).filter((r) => activeFilters.roles.includes(r)),
     ...(contact.sexualPosition || []).filter((p) => activeFilters.positions.includes(p)),
     ...(activeFilters.hosts.includes(contact.hosts) ? [`Hosts: ${contact.hosts}`] : []),
-    ...(activeFilters.drives && contact.drives ? ["Drives"] : []),
+    ...(activeFilters.drives && travelsByCar(contact) ? ["Drives"] : []),
   ] : [];
   const flaggedDontMeetAgain = contact.meetAgain === "No";
   // CHANGED 18 Aug 2026 — real feedback: the card was showing an icon
@@ -2502,8 +2502,16 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <ReadRow T={T} label="Travel mode" value={contact.travelMode} />
           <ReadRow T={T} label="Address" value={anonymise ? MASKED : contact.address} />
           <ReadRow T={T} label="City" value={anonymise ? MASKED : contact.city} />
-          <ReadRow T={T} label="Drives" value={contact.drives} />
-          <ReadRow T={T} label="Car details" value={contact.carDetails} />
+<ReadRow T={T} label="Drives" value={travelsByCar(contact) ? "Yes" : "No"} />
+            {/* Car details stay VISIBLE even when Drives is off. That is the
+                module's own deliberate policy, recorded in contactRepository's
+                header: "Still stored even if drives later gets toggled off, so
+                nothing typed in gets silently lost" - and a car registration
+                stays true even if they no longer drive. Flagged to the owner
+                because the clinic-visit form now takes the OPPOSITE policy
+                (clear with confirmation), so the app holds two answers to the
+                same question until they pick one. */}
+            <ReadRow T={T} label="Car details" value={contact.carDetails} />
           <ReadRow T={T} label="Car registration" value={anonymise ? MASKED : contact.carRegistration} />
           <ReadRow T={T} label="Availability" value={contact.availability} />
           {contact.nonAvailabilityRules?.length > 0 && (
@@ -2535,8 +2543,23 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
           <>
           <ReadRow T={T} label="Length (penis)" value={hideFurther ? MASKED : contact.length} />
           <ReadRow T={T} label="Girth (penis)" value={hideFurther ? MASKED : contact.thickness} />
-          <ReadRow T={T} label="Foreskin" value={contact.foreskin} />
-          <ReadRow T={T} label="Foreskin fit" value={contact.foreskinDetail} />
+<ReadRow T={T} label="Foreskin" value={contact.foreskin} />
+            {/* FIXED 1 Oct 2026 (t053) - real bug. The EDIT form only offers
+                "Foreskin fit" when foreskin is "Uncircumcised", but nothing
+                cleared it when the condition flipped - and this detail row
+                rendered it UNCONDITIONALLY. So a contact set to "Tight" and then
+                changed to "Circumcised" kept showing "Foreskin fit: Tight" on
+                the read view, which is a claim about a branch that no longer
+                applies.
+
+                Gated rather than cleared, matching this module's documented
+                policy for carDetails: the value is kept so nothing typed in is
+                silently lost, and switching back to Uncircumcised restores it.
+                Clearing would also need a confirmation, which is what the owner
+                chose for the clinic-visit form - see the policy note above. */}
+            {contact.foreskin === "Uncircumcised" && (
+              <ReadRow T={T} label="Foreskin fit" value={contact.foreskinDetail} />
+            )}
           <ReadRow T={T} label="Chastity status" value={contact.chastityStatus} />
           <ReadRow T={T} label="Ejaculation" value={hideFurther ? MASKED : contact.cummer} />
           </>
@@ -2773,7 +2796,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       ? filteredByFilters.filter((c) => filterHosts.includes(c.hosts))
       : filteredByFilters;
     const drivesFiltered = filterDrives
-      ? hostsFiltered.filter((c) => c.drives === true)
+      ? hostsFiltered.filter((c) => travelsByCar(c))
       : hostsFiltered;
     const sorted = [...drivesFiltered].sort((a, b) => {
       // ADDED 26 Aug 2026 — real ask: favourited contacts always sort
