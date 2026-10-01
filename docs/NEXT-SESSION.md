@@ -1393,6 +1393,58 @@ accepts the three valid forms and **deliberately rejects `>=`**, since that
 would admit a future test and it sits close enough to `<=` to be smuggled in by
 a careless edit.
 
+### The clinic visit form now answers "why did you come today?"
+
+`reasonForVisit` has existed on the clinic visit record since the start — a
+multi-select from a user-extensible option list, seeded with real values like
+"Routine screening", "PrEP review", "Vaccination", "Treatment". It was **inert**:
+it appeared in the form, the read view and search, and selecting any combination
+changed nothing else on the form.
+
+New owner `calculations/clinicVisitShape.js`. The form asks once, up front, and
+reveals only the sections the answer implies.
+
+**Multi-select is correct, not a bug.** The owner's reason: *"multiple reasons may
+be true - ie testing & vaccination, or prep review & testing."* A single-select
+question cannot express that, so the groups are a **union** over the selected
+reasons. My own earlier draft of this plan proposed single-select — that was
+wrong, and the owner corrected it.
+
+**The overlap is the point.** Testing is implied by three separate reasons, which
+is exactly why the option lists overlap, so this is many-reasons-to-some-groups
+rather than a tree. Returned in a fixed visit-story order — what prompted it, what
+was done, what happens next — rather than Set insertion order, so sections never
+reshuffle based on click order.
+
+**An unrecognised reason must never hide anything.** `reasonForVisit` is a
+**custom option list** — the owner can add values from inside the app without a
+code change. So this mapping goes stale the moment an unmapped reason appears, and
+a stale mapping that *hides* a section would silently swallow whatever was typed
+into it. An unmapped reason contributes no groups, so every section stays visible.
+Verified by mutation: injecting a fallback that reveals testing and symptoms turns
+two tests red.
+
+**Existing visits render exactly as before.** `shouldGuideForm()` is false unless a
+recognised reason applies, so absent reasons, unrecognised ones, and visits saved
+before this all reveal everything. That is what makes it safe to ship.
+
+**Gating is per-input, not per-display.** The Linked-records card holds both tests
+and vaccinations, so its two fields gate separately. Already-linked test *results*
+stay visible even when the pickers hide: gating an input is safe, but gating a
+display of data already entered would hide it — and that is precisely the
+reason-change case the clearing confirmation has to handle.
+
+A line now says **why** sections are showing, because a form that silently hides
+half its own fields is indistinguishable from a broken one.
+
+**Deliberately not in this change:** the clear-with-confirmation on reason change.
+It needs the field-level diff and a write-through to the draft store, and half of
+it would be worse than none — the gating is inert until then, since hiding a
+section whose fields hold data is exactly what the confirmation protects against.
+Also not auto-creating implied linked records: the owner chose **prompt,
+never create**, because an auto-created record is a write with real consequences and
+a fabricated one if they change their mind.
+
 ### t053 batch — the remaining derived facts, and four tidies
 
 Batched on request rather than one fix per turn. Eleven derived facts examined.
