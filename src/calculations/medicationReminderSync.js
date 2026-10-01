@@ -34,7 +34,7 @@ import { nowAsStoredDateTime } from "./dateInputHelpers";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
-  if (WidgetBridge) return WidgetBridge;
+  if (WidgetBridge) return { plugin: WidgetBridge };
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) {
@@ -46,7 +46,14 @@ async function getWidgetBridge() {
   } catch (e) {
     WidgetBridge = false; // mark as unavailable
   }
-  return WidgetBridge || null;
+  // WRAPPED, NOT RETURNED BARE. A Capacitor plugin proxy is a catch-all Proxy:
+  // ANY property access returns a function, so `proxy.then` is a function and the
+  // proxy looks *thenable*. Returning one from an async function makes the engine
+  // unwrap it by invoking `.then()`, which Capacitor rejects as
+  // "WidgetBridge.then() is not implemented on android". That threw before the
+  // plugin method was ever reached, so no widget ever updated. Verified live on a
+  // real device; the same shape as the earlier ScreenSecurity fix.
+  return WidgetBridge ? { plugin: WidgetBridge } : null;
 }
 
 // ADDED 3 Sep 2026 — exported (was module-private) — real ask: "clear
@@ -189,7 +196,7 @@ async function updateRefillWidget() {
     //
     // The TypeError from (1) was thrown on line 181 and swallowed by the
     // catch at the bottom of this function — so everything AFTER it never ran,
-    // including `bridge.updateNextDose` a few lines below. That means the
+    // including `bridge.plugin.updateNextDose` a few lines below. That means the
     // next-dose widget, which CLAUDE.md records as "wired, masked by default",
     // has still never once displayed anything: the wiring shipped, the comment
     // described it as working, and the only proof was that the code existed.
@@ -209,9 +216,9 @@ async function updateRefillWidget() {
     const nextRefill = count > 0 ? refillDue[0].name : "No refills due";
 
     const bridge = await getWidgetBridge();
-    if (bridge && bridge.updateRefill) {
-      await bridge.updateRefill({ count, nextRefill });
-    }
+if (bridge && bridge.plugin.updateRefill) {
+        await bridge.plugin.updateRefill({ count, nextRefill });
+      }
 
     // The next-dose widget had a provider, a layout, a manifest receiver and a
     // bridge method, and no caller anywhere in src/ - so it has never once
@@ -225,10 +232,10 @@ async function updateRefillWidget() {
     // does nothing about that - it protects the file, not the screen. The
     // persisted disclosure-level control that should ultimately drive this is
     // separate work and belongs in PrivacyScreen, not here.
-    if (bridge && bridge.updateNextDose) {
+    if (bridge && bridge.plugin.updateNextDose) {
       const state = await getDailyMedsState();
       const nextUnlock = state.upcoming[0]?.unlockAt;
-      await bridge.updateNextDose({
+      await bridge.plugin.updateNextDose({
         medName: "",
         nextDoseTime: state.due.length
           ? "Dose due now"

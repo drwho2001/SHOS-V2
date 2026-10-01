@@ -32,7 +32,7 @@ import { buildTestingSignature, shouldSuppressDeviceNotification, normaliseAckno
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
-  if (WidgetBridge) return WidgetBridge;
+  if (WidgetBridge) return { plugin: WidgetBridge };
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) {
@@ -44,7 +44,12 @@ async function getWidgetBridge() {
   } catch (e) {
     WidgetBridge = false;
   }
-  return WidgetBridge || null;
+  // WRAPPED, NOT RETURNED BARE. A Capacitor plugin proxy is a catch-all Proxy, so
+  // `proxy.then` is a function and the proxy looks thenable; returning it from an
+  // async function makes the engine invoke `.then()` on it, which Capacitor
+  // rejects as "WidgetBridge.then() is not implemented on android". Verified live
+  // on a real device - it threw before the plugin method was ever reached.
+  return WidgetBridge ? { plugin: WidgetBridge } : null;
 }
 
 // Pure "is a retest due right now" read, shared by syncTestingReminder
@@ -147,7 +152,7 @@ export async function syncTestingReminder() {
 async function updateTestWidget() {
   try {
     const bridge = await getWidgetBridge();
-    if (bridge && bridge.updateTest) {
+    if (bridge && bridge.plugin.updateTest) {
       const { TestingRepository } = await import("../repositories/testingRepository");
       const { ResultsRegistry } = await import("../registries/resultsRegistry");
       const { suggestedRoutineRetestDate } = await import("./testingCalculations");
@@ -166,9 +171,9 @@ async function updateTestWidget() {
           ? formatDayKey(suggested, { weekday: true })
           : "—";
 
-        await bridge.updateTest({ lastTest, retestDue });
+        await bridge.plugin.updateTest({ lastTest, retestDue });
       } else {
-        await bridge.updateTest({ lastTest: "No tests logged", retestDue: "—" });
+        await bridge.plugin.updateTest({ lastTest: "No tests logged", retestDue: "—" });
       }
     }
   } catch (e) {

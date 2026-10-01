@@ -30,7 +30,7 @@ import { buildClinicVisitSignature, shouldSuppressDeviceNotification, normaliseA
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
-  if (WidgetBridge) return WidgetBridge;
+  if (WidgetBridge) return { plugin: WidgetBridge };
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) {
@@ -42,7 +42,12 @@ async function getWidgetBridge() {
   } catch (e) {
     WidgetBridge = false;
   }
-  return WidgetBridge || null;
+  // WRAPPED, NOT RETURNED BARE. A Capacitor plugin proxy is a catch-all Proxy, so
+  // `proxy.then` is a function and the proxy looks thenable; returning it from an
+  // async function makes the engine invoke `.then()` on it, which Capacitor
+  // rejects as "WidgetBridge.then() is not implemented on android". Verified live
+  // on a real device - it threw before the plugin method was ever reached.
+  return WidgetBridge ? { plugin: WidgetBridge } : null;
 }
 
 export async function getSoonestBookedVisit() {
@@ -135,8 +140,8 @@ async function updateAppointmentWidget(visit) {
       : "No appointments";
 
     const bridge = await getWidgetBridge();
-    if (bridge && bridge.updateAppointment) {
-      await bridge.updateAppointment({ count, nextAppt });
+if (bridge && bridge.plugin.updateAppointment) {
+        await bridge.plugin.updateAppointment({ count, nextAppt });
     }
   } catch (e) {
     // Widget bridge not available (web) — ignore
@@ -147,14 +152,14 @@ async function updateAppointmentWidget(visit) {
 async function updateClinicCardWidget(visit) {
   try {
     const bridge = await getWidgetBridge();
-    if (bridge && bridge.updateClinicCard) {
+    if (bridge && bridge.plugin.updateClinicCard) {
       const tests = visit.linkedTestIds?.length || 0;
       const testsStr = tests > 0 ? `${tests} test${tests > 1 ? "s" : ""}` : "None";
       const docType = visit.visitType || "";
       const clinicNum = visit.clinicNumber || "";
       const nhsNum = visit.nhsNumber || "";
 
-      await bridge.updateClinicCard({
+      await bridge.plugin.updateClinicCard({
         title: visit.title || "Appointment",
         date: visit.date ? new Date(realTimestampFromStored(visit.date)).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "",
         location: visit.location || "",

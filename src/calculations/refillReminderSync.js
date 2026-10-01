@@ -31,7 +31,7 @@ import { buildRefillSignature, shouldSuppressDeviceNotification, normaliseAcknow
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
-  if (WidgetBridge) return WidgetBridge;
+  if (WidgetBridge) return { plugin: WidgetBridge };
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) {
@@ -43,7 +43,12 @@ async function getWidgetBridge() {
   } catch (e) {
     WidgetBridge = false;
   }
-  return WidgetBridge || null;
+  // WRAPPED, NOT RETURNED BARE. A Capacitor plugin proxy is a catch-all Proxy, so
+  // `proxy.then` is a function and the proxy looks thenable; returning it from an
+  // async function makes the engine invoke `.then()` on it, which Capacitor
+  // rejects as "WidgetBridge.then() is not implemented on android". Verified live
+  // on a real device - it threw before the plugin method was ever reached.
+  return WidgetBridge ? { plugin: WidgetBridge } : null;
 }
 
 // Pure "what currently needs a refill" read, shared by syncRefillReminder
@@ -183,8 +188,8 @@ async function updateRefillWidget() {
     const nextRefill = count > 0 ? needsRefill[0].name : "No refills due";
 
     const bridge = await getWidgetBridge();
-    if (bridge && bridge.updateRefill) {
-      await bridge.updateRefill({ count, nextRefill });
+if (bridge && bridge.plugin.updateRefill) {
+        await bridge.plugin.updateRefill({ count, nextRefill });
     }
   } catch (e) {
     // Widget bridge not available (web) — ignore

@@ -52,7 +52,7 @@ import { useEscapeToClose } from "../components/useEscapeToClose";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
-  if (WidgetBridge) return WidgetBridge;
+  if (WidgetBridge) return { plugin: WidgetBridge };
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) {
@@ -64,13 +64,18 @@ async function getWidgetBridge() {
   } catch (e) {
     WidgetBridge = false;
   }
-  return WidgetBridge || null;
+  // WRAPPED, NOT RETURNED BARE. A Capacitor plugin proxy is a catch-all Proxy, so
+  // `proxy.then` is a function and the proxy looks thenable; returning it from an
+  // async function makes the engine invoke `.then()` on it, which Capacitor
+  // rejects as "WidgetBridge.then() is not implemented on android". Verified live
+  // on a real device - it threw before the plugin method was ever reached.
+  return WidgetBridge ? { plugin: WidgetBridge } : null;
 }
 
 async function updateCycleWidget() {
   try {
     const bridge = await getWidgetBridge();
-    if (bridge && bridge.updateCycle) {
+    if (bridge && bridge.plugin.updateCycle) {
       const { MenstrualCycleRepository } = await import("../repositories/menstrualCycleRepository");
       const cycles = await MenstrualCycleRepository.getAll();
       const activeCycles = cycles.filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
@@ -99,7 +104,7 @@ async function updateCycleWidget() {
         if (cycleDay === null) return;
         const phase = getCyclePhase(cycleDay);
         const nextPeriod = formatDayKeyForDisplay(getNextPeriodDayKey(latest.startDate, avgLength));
-        await bridge.updateCycle({ day: cycleDay, phase, nextPeriod: nextPeriod || null });
+        await bridge.plugin.updateCycle({ day: cycleDay, phase, nextPeriod: nextPeriod || null });
       }
     }
   } catch (e) {
