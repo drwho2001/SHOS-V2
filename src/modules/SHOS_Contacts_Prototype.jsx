@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import { HivStatusNote } from "../components/HivStatusNote";
 import {
   PlusIcon as Plus, MagnifyingGlassIcon as Search, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, GearSixIcon as Settings2, GearIcon as SettingsIcon,
   ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2,
@@ -2148,6 +2149,10 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
             options={[...HIV_STATUS_OPTIONS, "Not known / not recorded"]}
             helper="Only what you actually know."
           />
+          {/* ADDED 1 Oct 2026 - unconditional, same reason as the read view: a
+              note that appeared only for positive-undetectable contacts would
+              identify them. */}
+          <HivStatusNote T={T} label="HIV status" />
           {/* ADDED 1 Oct 2026 - a contact's status is STATED, not derived, so
               there is no test record here to date it from. Rather than force a
               test date the user does not have, or record a status that reads as
@@ -2642,6 +2647,12 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
                   : "Not recorded"
             }
           />
+          {/* ADDED 1 Oct 2026 - U=U, and deliberately UNCONDITIONAL. Showing it
+              only on contacts whose status is positive-undetectable would itself
+              disclose: the note's presence would tell anyone glancing at the
+              screen which of your contacts are HIV-positive. Uniformity is the
+              privacy mechanism. See HivStatusNote.jsx. */}
+          {!(hideFurther || anonymise) && <HivStatusNote T={T} label="HIV status" />}
           {/* ADDED 1 Oct 2026 - a STATED status has no test record behind it, so
               its date is "when you were told", not "when they were tested". Kept
               as its own row rather than folded into the status line above,

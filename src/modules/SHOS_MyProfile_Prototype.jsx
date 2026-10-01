@@ -71,6 +71,7 @@ import {
 import { useAnonymiseMode, contactName, ANONYMISED } from "../calculations/anonymiseDisplay";
 import { deriveHivStatus, resolveHivStatus, describeHivStatus, HIV_STATUS_OPTIONS } from "../calculations/hivStatusCalculations";
 import { mostRecentTestDate } from "../calculations/mostRecentTest";
+import { HivStatusNote } from "../components/HivStatusNote";
 import { KinkRegistry, KINK_ROLE_OPTIONS, resolveKinkSynonym, analyzeKinkEntry, getKinkRoleOptions } from "../registries/kinkRegistry";
 // ADDED — real fix: same normalizeTag Contacts/Encounters use.
 import { normalizeTag, hasPhysicalDetail, mergeCummerRow } from "../calculations/contactCalculations";
@@ -1182,10 +1183,15 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
               editable here. */}
           <div style={{ padding: "8px 0" }}>
 <div style={{ fontSize: 12, color: T.textSecondary, marginBottom: 4 }}>Last HIV test</div>
-      <div style={{ fontSize: 14, color: T.textPrimary }}>
-        {lastTestedDate ? formatStoredDate(lastTestedDate) : "No HIV test logged yet"}
+            <div style={{ fontSize: 14, color: T.textPrimary }}>
+              {lastTestedDate ? formatStoredDate(lastTestedDate) : "No HIV test logged yet"}
             </div>
           </div>
+          {/* ADDED 1 Oct 2026 - U=U, attached to the FIELD rather than floated
+              under the value, and shown unconditionally. See HivStatusNote.jsx:
+              showing it only where the status is positive-undetectable would
+              itself disclose, because its presence would flag who is HIV+. */}
+          <HivStatusNote T={T} label="HIV status" />
 
           {/* ADDED 29 Sep 2026 (t025) — HIV status, in the section that already
               holds sexual-health status rather than a new card of its own.
@@ -1413,6 +1419,11 @@ function ProfileDataView({ profile, T }) {
           </div>
         )}
         <ReadRow label="Last HIV test" value={lastTestedDate ? formatStoredDate(lastTestedDate) : ""} T={T} />
+        {/* ADDED 1 Oct 2026 - U=U on the read view too, and unconditionally. The
+            two screens are read in different moods: this is the one you glance at
+            to check your own status, so it is exactly where a note explaining
+            what "undetectable" means earns its place. */}
+        <HivStatusNote T={T} label="HIV status" />
       </SectionCard>
       <SectionCard title="About me" T={T}>
         <ReadRow label="Note" value={profile.aboutMeNotes} T={T} />

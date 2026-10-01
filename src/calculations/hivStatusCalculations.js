@@ -185,6 +185,41 @@ export function describeHivStatus(resolved) {
 }
 
 /**
+ * The U=U note. ONE owner, exported, so it cannot drift between screens.
+ *
+ * WHY IT IS ONE STANDING NOTE AND NOT A BADGE. An earlier design showed U=U only
+ * on records whose status was positive-undetectable. Gemini's review called that
+ * disqualifying: conditional UI reveals state. If the note appears on some
+ * records and not others, its PRESENCE flags who is HIV-positive - which is
+ * precisely the failure this app's anonymise and disclosure-level features exist
+ * to prevent, arrived at from the opposite direction. Uniformity is the
+ * mechanism, not a side effect of it. The same review found the pattern already
+ * standard: "past performance is no guarantee" appears on every stock precisely
+ * so its presence cannot flag one, and patient-education popovers in EHRs attach
+ * to lab jargon whatever the patient's value happens to be.
+ *
+ * WHY THE WORDING IS WHAT IT IS. It must read as a conditional scientific
+ * definition, never as a claim about the person it sits next to. Beside
+ * "Unknown", "This person's undetectable viral load means they cannot transmit
+ * HIV" is nonsense and implies the person IS undetectable. Hence the split into
+ * a short line and a longer explanation, and hence the rule that it attaches to
+ * the HIV Status LABEL rather than floating under the value - a banner under a
+ * value reads as a property of that value, which is the mistake that would
+ * reintroduce the whole problem.
+ *
+ * SOURCED. BHIVA, "Guidelines for the routine investigation and monitoring of
+ * adult HIV positive people": viral suppression is below 50 copies/mL, and assay
+ * lower limits of quantitation differ between manufacturers (range 20-75), which
+ * is exactly why "undetectable" describes a test result rather than a fixed state
+ * of a person's health.
+ */
+export const U_U_SHORT =
+  "An undetectable viral load (below 50 copies/mL) prevents sexual transmission of HIV.";
+
+export const U_U_EXPLANATION =
+  "Undetectable = Untransmittable, usually shortened to U=U. When someone is on HIV treatment and their viral load stays undetectable - below 50 copies per millilitre of blood, confirmed on repeated tests - they cannot pass HIV on sexually. It is the strongest evidence we have in HIV prevention, and it is why treatment is both treatment and prevention. The word that matters is 'stays': one undetectable result is a single measurement, whereas U=U rests on a viral load that has remained undetectable over time. Different laboratories can detect down to different levels, so 'undetectable' always describes a test result rather than a fixed state of someone's health.";
+
+/**
  * Whether anonymise mode should hide this.
  *
  * HIV status is arguably the most sensitive single fact this app holds, so it
