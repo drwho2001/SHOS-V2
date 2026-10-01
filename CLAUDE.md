@@ -851,6 +851,44 @@ ever *opened a form-render path*, and both bugs live in code that unit-tests
 happily import without rendering. A smoke flow that opens My Profile -> Edit is
 the actual fix, not a nice extra.
 
+## Recently shipped (1 Oct 2026, later still still — a chlamydia swab was being reported as the date of your HIV test)
+
+**A false assurance about your own health, live since 26 Aug, and invisible
+because the label was ambiguous rather than wrong.** `getAutoLastTestedDate()`
+returned the most recent test of **any** kind. In the section it renders in —
+PrEP/DoxyPEP, directly above HIV status — "last tested date" is read as "last
+HIV test". So a pharyngeal chlamydia swab or a Hep B screen could stand in for
+an HIV test that never happened.
+
+**The duplication is why it survived.** `profileShareService.js` described it as
+*"same logic as SHOS_MyProfile_Prototype.jsx's own version (duplicated per this
+app's self-contained-module convention)"*. Two copies, byte-identical, one bug,
+and no test that could fail. New `src/calculations/mostRecentTest.js` is the
+single owner, pure so it is testable; the row is now labelled **"Last HIV test"**
+so the meaning is not left to inference. The general sense is not lost — Home
+already shows its own "Last test".
+
+**Infection matching is by token, not string equality, and the owner supplied
+the cases that ruled equality out.** Hepatitis runs A through E, one test can read
+`"Hepatitis B & C"`, and HIV is written `HIV-1` / `HIV-2` in real records.
+Equality is too strict and misses a genuine HIV test; substring is too loose and
+lets a bare `"Hepatitis"` answer a question about Hepatitis B. So every
+non-alphanumeric run collapses to a space and the target's tokens must **all** be
+present. A bare `"Hepatitis"` **fails closed** for Hepatitis B — deliberately: a
+missed match costs convenience, a false match costs someone a false assurance.
+
+**An existing guard fired on this change, correctly, and was updated rather than
+loosened.** `mostRecentTestDefinition.test.js` sweeps for filtered test loads; My
+Profile no longer has one, so the sweep declared itself vacuous. The rule's intent
+is unchanged but the rule now lives in one place instead of four, so it is
+asserted at the owner and the count repinned 4 → 3. Recorded in the test because
+deleting a file from a sweep is exactly the edit that quietly weakens a guard.
+
+14 new tests, **5 mutations all red** — any-test-satisfies-any-infection,
+only-first-token-checked, admit future-dated, admit archived, and exact-set
+equality (which is what `HIV-1` and `"Hepatitis B & C"` exist to prevent). 996
+tests pass.
+
 ## Recently shipped (1 Oct 2026, later still — "clear sample data" deleted six weeks of the owner's own medication history)
 
 **The worst data-loss bug this project has ever shipped, found by the owner
