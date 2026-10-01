@@ -51,6 +51,69 @@ function assert(cond, msg) {
   console.log("  ok — " + msg);
 }
 
+// ADDED 30 Sep 2026 - capture WHAT WAS ACTUALLY ON SCREEN when a wait fails.
+//
+// Why this exists: flow 11 has failed intermittently with a bare
+// "page.waitForFunction: Timeout 20000ms exceeded" and nothing else. That error
+// names neither the state the app was in nor how long it had been trying, which
+// is why the same failure has been re-diagnosed from scratch repeatedly and why a
+// green re-run was the only available evidence - a re-run narrows a failure, it
+// does not explain one.
+//
+// The mechanism this was chasing: App.jsx's `AppBootScreen` renders a blank
+// dark full-screen div with a spinner and NO TEXT while `bootReady` resolves. So
+// a wait for "Enter PIN to unlock" OR the main navigation is FALSE BY
+// CONSTRUCTION during boot. If boot is slow on a loaded runner, a perfectly
+// healthy app fails the wait. The app's own comment says boot is
+// "well under a video frame" - so this may be the wrong diagnosis, and a taller
+// timeout would just hide a genuine hang. Distinguishing the two needs evidence,
+// which is what this function exists to produce.
+//
+// Deliberately does NOT retry, does NOT extend timeouts, and does NOT swallow the
+// error. A bare timeout widened until it passes is how a real bug gets to live
+// here, and the repo has that history on record more than once.
+async function describePageState(page, label) {
+  let state;
+  try {
+    state = await page.evaluate(() => ({
+      text: (document.body && document.body.innerText ? document.body.innerText : "")
+        .replace(/\s+/g, " ")
+        .slice(0, 300),
+      navs: document.querySelectorAll('[role="navigation"][aria-label="Main navigation"]').length,
+      dialogs: document.querySelectorAll('[role="dialog"]').length,
+      h1: Array.from(document.querySelectorAll("h1")).map((h) => h.innerText.trim()).slice(0, 4),
+      bodyHeight: document.body ? document.body.scrollHeight : 0,
+      // A blank page with zero height is the boot screen or a crash, and those
+      // are completely different problems - which is precisely the distinction
+      // the bare timeout could not express.
+      visibleTextNodes: Array.from(document.querySelectorAll("body *")).filter((el) => {
+        const txt = (el.childNodes.length === 1 && el.childNodes[0].nodeType === 3 ? el.textContent : "").trim();
+        return txt.length > 0;
+      }).length,
+    }));
+  } catch (e) {
+    return `\n  [page state unavailable: ${e.message}]`;
+  }
+  return [
+    `\n  --- page state at "${label}" ---`,
+    `  visible text nodes: ${state.visibleTextNodes}   body height: ${state.bodyHeight}`,
+    `  main navs: ${state.navs}   dialogs: ${state.dialogs}   h1: ${JSON.stringify(state.h1)}`,
+    `  body text: ${state.text || "(empty)"}`,
+    `  --- end page state ---`,
+  ].join("\n");
+}
+
+// Waits for `fn`, and on failure rethrows with the page state attached.
+// The wait itself is unchanged - this only makes the failure legible.
+async function waitWithPageState(page, label, fn, timeout) {
+  try {
+    await page.waitForFunction(fn, undefined, { timeout });
+    return;
+  } catch (err) {
+    throw new Error(`${err.message}${await describePageState(page, label)}`);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // ADDED 29 Sep 2026 (t028) - bounded waits, replacing fixed guesses.
 //
@@ -707,13 +770,14 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
   //
   // Both now wait for the state actually being relied on, which is the same
   // rule the rest of this suite was already fixed to follow.
-  await page.waitForFunction(
-    () =>
-      document.body.innerText.includes("Enter PIN to unlock") ||
-      !!document.querySelector('[role="navigation"][aria-label="Main navigation"]'),
-    undefined,
-    { timeout: 20000 }
-  );
+await waitWithPageState(
+      page,
+      "openSettingsPrivacyScreen: post-reload boot (lock screen OR main nav)",
+      () =>
+        document.body.innerText.includes("Enter PIN to unlock") ||
+        !!document.querySelector('[role="navigation"][aria-label="Main navigation"]'),
+      20000
+    );
   if (unlockPin) {
     const bodyText = await page.evaluate(() => document.body.innerText);
     if (bodyText.includes("Enter PIN to unlock")) {
@@ -721,11 +785,12 @@ async function openSettingsPrivacyScreen(page, unlockPin) {
       await page.locator('button:has-text("Unlock")').click({ timeout: 5000 });
       // Wait for the lock screen to actually be gone, rather than guessing how
       // long the vault re-wrap takes.
-      await page.waitForFunction(
-        () => !document.body.innerText.includes("Enter PIN to unlock"),
-        undefined,
-        { timeout: 20000 }
-      );
+await waitWithPageState(
+          page,
+          "openSettingsPrivacyScreen: waiting for the lock screen to clear after PIN",
+          () => !document.body.innerText.includes("Enter PIN to unlock"),
+          20000
+        );
     }
   }
     await dismissTransientBanners(page);
