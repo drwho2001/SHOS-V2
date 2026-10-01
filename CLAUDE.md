@@ -805,6 +805,52 @@ which is the same shape as every other time in this file where a check reported
 green on something that had not actually been exercised. The guard now rejects a
 `#` inside any `if:` block.
 
+## Recently shipped (1 Oct 2026, later - a crash that shipped for three days, found by looking at the phone instead of the code)
+
+**My Profile -> Edit threw React error #31 on every open, in three published
+APKs, and no test noticed.** Both `SelectField` copies rendered the option bare,
+as children, key and value alike:
+
+    {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+
+That is only legal while every caller passes plain strings. The "HIV status"
+override (851dece, 29 Sep) passes `{value, label}` objects, and **an object as a
+React child cannot fail to throw** — which is why it was deterministic rather
+than intermittent, and why the class of bug is worth recognising instantly if
+error #31 ever appears again. Both copies now accept either shape, so the 20
+other `options=` props in My Profile (plain string arrays like `HOSTS_OPTIONS`)
+are untouched.
+
+**The instructive half is the sibling bug, which did *not* crash.** Contacts has
+a byte-identical `SelectField` and escaped only by accident: it passed the raw
+`o.value` codes as strings, so it rendered — while showing the user
+`positive-suppressed` instead of "Positive - undetectable". Two copies of one
+component, one crash and one silently wrong label, both traceable to the same
+unstated contract. A comment at that call site actively asserted the two shapes
+were "not a shared contract", which is what let them drift; it is corrected in
+place. **Deliberately unchanged: what is *stored*.** `onChange` still matches on
+`o.value`, so records keep holding codes and no saved data changes shape — only
+the text shown. Confirmed with the owner first, since it is a visible change to
+a screen in active use.
+
+**How it was found, and the dead end worth recording.** Session B identified the
+mechanism statically and asked for a 30-second on-device confirmation before
+writing any code — explicitly refusing to "fix" a component that might not be
+broken. That caution was well placed, and my own first two attempts at *proving*
+it were both worthless: a CDP console listener recorded **0 events** (React's
+ErrorBoundary catches render errors before they reach `console`), and the
+production bundle reports the offending object as `{o}` because keys are
+minified, so the artifact names nothing. The crash is loud and immediate on the
+device; that was the only cheap evidence, and it took one tap sequence. **Lesson:
+for "the red screen", reach for the device; for "what exactly is in the stack",
+the bundle has already thrown the answer away.**
+
+**Two forms-render paths have now escaped CI the same way** — ClinicVisits'
+TDZ (previous round) and this one. Neither is surprising in hindsight: no test
+ever *opened a form-render path*, and both bugs live in code that unit-tests
+happily import without rendering. A smoke flow that opens My Profile -> Edit is
+the actual fix, not a nice extra.
+
 ## Recently shipped (1 Oct 2026 - the widgets had never once worked, found only by testing on a real phone)
 
 **The bug was invisible to every automated check in this repo, and it had been shipped for a week.** All six copies of `getWidgetBridge()` returned Capacitor's plugin proxy *bare* from an `async` function. A Capacitor plugin proxy is a catch-all `Proxy` where any property access returns a function, so `proxy.then` is a function, which makes the proxy look **thenable** - and returning a thenable from an async function makes the engine unwrap it by invoking `.then()` on it. Capacitor reports that as a call to a plugin method literally named `then`, which does not exist natively. It therefore threw **before** the intended method was reached.
