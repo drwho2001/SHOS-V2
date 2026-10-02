@@ -851,6 +851,56 @@ ever *opened a form-render path*, and both bugs live in code that unit-tests
 happily import without rendering. A smoke flow that opens My Profile -> Edit is
 the actual fix, not a nice extra.
 
+## Recently shipped (2 Oct 2026 — three device-reported bugs, one cause, and the wrong diagnosis I tried first)
+
+**The owner hit three symptoms by hand on the phone; all three were ONE defect.**
+"My Profile can't be scrolled to the end", "Share does nothing", and "the
+scrollbar moves unrelated to its position on My Profile". My Profile's root
+element was `display:flex` **as well as** `overflowY: auto` — which is exactly
+the **t060** defect `src/components/scrollingFlexGuard.test.js` exists for. A
+flex container's content box is `clientHeight` minus padding, so content taller
+than that box **overflows** (overflow is visible) rather than extending the
+scrollable range. Measured on the device: `window.scrollY` 695 while My
+Profile's own `scrollTop` sat at **0**. Desktop centring moved to
+`margin: "0 auto"` on a *non-scrolling* inner wrapper — **move the centring, do
+not drop it** — so the two properties can never meet on one element again.
+Guard inventory 7 → 6.
+
+**"Share does nothing" looked like an event-handling bug and was a layout bug.**
+Worth recording, because the tap landed on content that had been scrolled out of
+view. A non-responsive control is the classic symptom of a container that
+cannot scroll far enough, and this repo has now seen that shape twice.
+
+**I got the diagnosis wrong first, and the repo already had the answer.** My
+opening move was to add `overflowY` and 80px bottom padding to the two
+Home/Settings My Profile wrappers, reasoning that a bare fixed wrapper was the
+cause. It was not — `MyProfileModule`'s own root already had both. Those edits
+are **reverted**, and the reason is recorded at each site, because the wrong
+theory stayed plausible for several steps and would have shipped as a
+plausible-looking diff. The dashboard being still-mounted underneath is what
+makes the *document* scrollable; that is unchanged architecture, not the defect.
+
+**An unreadable HIV result was being reported as "Untested".** Found on the
+device, on a real card reading `Last HIV test: 23 Sept 2026` directly above
+`HIV status: Untested / unknown`. The derivation was **right** and the **label**
+was wrong: that test's result was `Pending`, and an unreadable result genuinely
+establishes nothing — but the person **has** been tested, so "Untested" is a
+different and misleading claim. Now reported as a state of the *record* rather
+than a clinical status, carrying the test date, leaving the four-state taxonomy
+untouched.
+
+**The owner's correction shaped the wording: "no news is good news."** For many
+clinic tests only abnormals are reported, so a **missing** result must never be
+called "pending" — that would invent a to-do which never resolves and leave
+someone permanently waiting for a letter that was never coming. Only a clinic
+that actually recorded `Pending` gets that word; `Inconclusive`/lost sample say
+so; `Not tested` correctly falls back to plain `Untested`; and the neutral
+default states the no-news-is-good-news reason outright.
+
+**Two of five mutations had to be redone** — multi-line patterns do not match
+these CRLF files. *A mutation that does not apply is not a test that cannot
+fail*, and the harness reports the difference rather than counting it.
+
 ## Recently shipped (1 Oct 2026, later still still still still — HIV status became shareable, and the argument for it was backwards)
 
 **The owner wanted HIV status shareable, reasoning that it is "a stable item,
