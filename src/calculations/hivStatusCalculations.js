@@ -81,11 +81,24 @@ export function deriveHivStatus(tests, resultNameById, measurements = []) {
   const names = (latest.resultIds || []).map((id) => resultNameById?.get(id)).filter(Boolean);
   const isPositive = names.some((n) => n.toLowerCase() === "positive");
   const isNegative = names.some((n) => n.toLowerCase() === "negative");
-  // An HIV test with a result this app doesn't recognise (Pending, Lost sample)
-  // establishes NOTHING. Reporting "untested" is honest; guessing either way
-  // from a result we could not read is not.
+  // An HIV test with a result this app doesn't recognise establishes NOTHING.
+  // Reporting a clinical status either way from a result we could not read would
+  // be guessing about someone's health - the single worst kind of wrong this app
+  // can be. But "untested" is ALSO wrong, and it was what this returned until a
+  // real device showed the two rows contradicting each other on one card:
+  // "Last HIV test: 23 Sept 2026" directly above "HIV status: Untested".
+  //
+  // So this is NOT a clinical status - the person HAS been tested - it is a state
+  // of the record. It is reported as its own thing, carrying the test date, and
+  // the four-state clinical taxonomy is left untouched.
   if (!isPositive && !isNegative) {
-    return { status: DEFAULT_HIV_STATUS, since: null, source: "unreadable-result" };
+    return {
+      status: DEFAULT_HIV_STATUS,
+      since: null,
+      source: "result-unavailable",
+      testedAt: latest.date,
+      resultState: classifyUnreadableResult(names),
+    };
   }
 
   const since = latest.date;
@@ -171,7 +184,54 @@ export function resolveHivStatus(stated, derived) {
  * Blank "since" is rendered as "date not recorded" rather than omitted, so the
  * reader can tell "we don't know how old this is" from "this is current".
  */
+/**
+ * What KIND of unreadable result this is, because "no result recorded" and
+ * "still pending" are not the same message and conflating them manufactures
+ * worry.
+ *
+ * The owner's point, which is the reason this is a function: for a great many
+ * clinic tests, NO NEWS IS GOOD NEWS. A clinic that only reports abnormals sends
+ * nothing at all when the result was fine. So a test with no result recorded is
+ * very often simply good news that nobody ever sent - and labelling that
+ * "pending" would invent a to-do that does not exist and never will, leaving the
+ * person permanently waiting for a letter that was never coming.
+ *
+ * So the default is the NEUTRAL wording, and "pending" is used only where the
+ * clinic actually said so by recording Pending as the result.
+ */
+function classifyUnreadableResult(names) {
+  const joined = names.join(" ").toLowerCase();
+  if (/pending|awaiting|in progress|not yet/.test(joined)) return "pending";
+  if (/inconclusive|indeterminate|equivocal|haemolys|hemolys|lost sample|invalid|failed/.test(joined)) {
+    return "inconclusive";
+  }
+  // "Not tested" means the sample was never actually tested, so the person has
+  // genuinely not been tested for HIV and the plain answer is the honest one.
+  if (/not tested/.test(joined)) return "not-tested";
+  return "none";
+}
+
 export function describeHivStatus(resolved) {
+  // ADDED 1 Oct 2026 - a test exists but its result could not be read. Handled
+  // BEFORE the `since` check because `since` is deliberately null here: this is
+  // not a dated clinical status, and treating it as one is what produced
+  // "Untested" on a card that also said "Last HIV test: 23 Sept 2026".
+  if (resolved?.source === "result-unavailable") {
+    const when = formatShortDate(resolved.testedAt);
+    if (resolved.resultState === "pending") {
+      return `Tested ${when} - result still pending`;
+    }
+    if (resolved.resultState === "inconclusive") {
+      return `Tested ${when} - inconclusive result, ask the clinic for this one`;
+    }
+    if (resolved.resultState === "not-tested") {
+      return "Untested / unknown";
+    }
+    // The neutral default, deliberately NOT "pending" - see the note on
+    // classifyUnreadableResult. Many clinics only report abnormals, so silence
+    // here is usually good news that simply was never sent.
+    return `Tested ${when} - no result recorded (many clinics only report abnormals, so silence here is usually good news)`;
+  }
   const s = normaliseHivStatus(resolved?.status);
   const label = HIV_STATUS_OPTIONS.find((o) => o.value === s)?.label || s;
   if (!resolved?.since) {
@@ -205,6 +265,13 @@ export function describeHivStatus(resolved) {
     ? "date not recorded"
     : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   return `${label} - as of ${when}`;
+}
+
+/** Short en-GB date, or a plain fallback if the value is unreadable. */
+function formatShortDate(stored) {
+  const d = new Date(realTimestampFromStored(stored));
+  if (Number.isNaN(d.getTime())) return "date not recorded";
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 /**

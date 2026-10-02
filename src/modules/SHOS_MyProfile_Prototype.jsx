@@ -1722,13 +1722,28 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
     // correct (`position: fixed, inset: 0, overflowY: auto`, entirely
     // self-contained) — applying the exact same pattern here instead
     // of depending on App.jsx's wrapper to provide it.
-    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", overflowY: "auto", fontFamily: "'Inter', sans-serif", background: T.bg, display: "flex", justifyContent: "center" }}>
+    <div tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", overflowY: "auto", fontFamily: "'Inter', sans-serif", background: T.bg }}>
+      {/* FIXED 2 Oct 2026 (real device) — `display:flex` was removed from the
+          root element above. Having it together with that element's own
+          `overflowY: auto` is the t060 defect that
+          components/scrollingFlexGuard.test.js exists for: a flex container's
+          content box is `clientHeight` minus padding, so content taller than
+          that box OVERFLOWS (overflow is visible) rather than extending the
+          scrollable range. Measured on a Redmi Note 13: the profile could not
+          be scrolled to its end at all, so the bottom of the screen sat under
+          the nav bar and unreachable, and the Share button did nothing because
+          the tap landed on content that was not visible.
+
+          Desktop centring is preserved by `margin: "0 auto"` on the wrapper
+          below, which is NOT the scroller — so the two properties can never
+          meet on one element again. That is the shape of the whole fix: move
+          the centring, do not drop it. */}
       {/* CHANGED 26 Aug 2026 — same fix already shipped in Medication:
           was a fixed 390px regardless of viewport; now fills the screen
           on mobile and caps at a real desktop-appropriate width on
           larger screens. Outer wrapper already centers via
           justifyContent: "center", so this is a like-for-like swap. */}
-      <div style={{ width: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ width: "100%", background: T.bg, margin: "0 auto", minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
         {/* CHANGED — real ask: "My Profile and back button should
             remain at top even when scrolling" — was not sticky at all
             before, unlike the Edit sheet's own header just below,

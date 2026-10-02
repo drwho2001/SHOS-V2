@@ -1279,6 +1279,24 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
       )}
 
       {showMyProfile && (
+        // REDIAGNOSED 2 Oct 2026 (real device). An earlier edit in this session
+        // added overflowY and bottom padding HERE, on the theory that this bare
+        // fixed wrapper was the cause. It was not, and that edit was reverted -
+        // recorded because the wrong theory looked right for several steps.
+        //
+        // What is actually true, measured on the device:
+        //  - MyProfileModule's OWN root is already position:fixed +
+        //    overflowY:auto + 80px bottom padding, so it scrolls itself and
+        //    already clears the nav bar. This wrapper only supplies zIndex.
+        //  - A swipe moved the wrong thing because the DASHBOARD is still
+        //    mounted underneath: window.scrollY was 695 while My Profile's own
+        //    scrollTop was 0. The document is taller than the viewport because
+        //    of the dashboard, so the page scrolls while the overlay does not.
+        //  - The genuine defect is inside SHOS_MyProfile_Prototype.jsx: its root
+        //    is a SCROLLING container that is also display:flex, which is the
+        //    t060 defect. Fixed there, where the cause is.
+        //
+        // Left exactly as found.
         <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 200 }}>
           <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} />
         </div>
@@ -1292,7 +1310,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         // bottom) taller than the viewport was simply unreachable, no
         // way to scroll to it at all. Matches every other module's
         // overlay wrapper elsewhere in this file.
-        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }}>
+        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", zIndex: 200, overflowY: "auto" }}>
           <div style={{ width: "100%" }}>
             <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>

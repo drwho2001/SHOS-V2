@@ -866,6 +866,10 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
       </div>
 
       {showMyProfile && (
+        // REDIAGNOSED 2 Oct 2026 (real device) - see the identical note on the copy
+        // in SHOS_Home_Prototype.jsx. This wrapper was briefly given overflowY
+        // and bottom padding on a wrong theory, then reverted. MyProfileModule's
+        // own root already provides both; the real defect is its display:flex.
         <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 210 }}>
           <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} />
         </div>

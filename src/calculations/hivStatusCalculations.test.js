@@ -23,6 +23,7 @@ const MAP = new Map([
   ["r_neg", "Negative"],
   ["r_pend", "Pending"],
   ["r_lost", "Lost sample"],
+  ["r_nottested", "Not tested"],
 ]);
 
 const hivTest = (over = {}) => ({
@@ -73,16 +74,56 @@ describe("only an HIV test may contribute", () => {
 });
 
 describe("a result this app cannot read establishes nothing", () => {
-  it("treats Pending as untested rather than guessing", () => {
+  it("does not guess a clinical status from it", () => {
     const out = deriveHivStatus([hivTest({ resultIds: ["r_pend"] })], MAP, []);
     expect(out.status).toBe(HIV_STATUS.UNTESTED);
+    // `since` stays null on purpose: this is NOT a dated clinical status, and
+    // giving it a date would let anything downstream treat it as one.
     expect(out.since).toBeNull();
-    expect(out.source).toBe("unreadable-result");
+    expect(out.source).toBe("result-unavailable");
   });
 
   it("treats a lost sample the same way", () => {
     const out = deriveHivStatus([hivTest({ resultIds: ["r_lost"] })], MAP, []);
     expect(out.status).toBe(HIV_STATUS.UNTESTED);
+  });
+
+  // The next three are the fix for a real device finding: the card showed
+  // "Last HIV test: 23 Sept 2026" directly above "HIV status: Untested".
+  it("remembers WHEN it was tested, so the screen can say so", () => {
+    const out = deriveHivStatus([hivTest({ resultIds: ["r_pend"] })], MAP, []);
+    expect(out.testedAt).toBeTruthy();
+  });
+
+  it("does NOT read as 'Untested' when a test exists - that is the bug", () => {
+    const out = deriveHivStatus([hivTest({ resultIds: ["r_pend"] })], MAP, []);
+    expect(describeHivStatus(out)).toMatch(/^Tested /);
+    expect(describeHivStatus(out)).not.toMatch(/Untested/);
+  });
+
+  it("says 'pending' only where the clinic recorded Pending", () => {
+    const pend = describeHivStatus(deriveHivStatus([hivTest({ resultIds: ["r_pend"] })], MAP, []));
+    expect(pend).toMatch(/pending/i);
+  });
+
+  it("does NOT call a missing result 'pending' - no news is good news", () => {
+    // The owner's point: many clinics only report abnormals, so silence means
+    // fine. Calling that "pending" invents a to-do that never resolves.
+    const none = describeHivStatus(deriveHivStatus([hivTest({ resultIds: [] })], MAP, []));
+    expect(none).toMatch(/no result recorded/i);
+    expect(none).not.toMatch(/pending/i);
+    // ...and it must reassure, because that is what the silence usually is.
+    expect(none).toMatch(/good news/i);
+  });
+
+  it("names an inconclusive result as inconclusive", () => {
+    const inc = describeHivStatus(deriveHivStatus([hivTest({ resultIds: ["r_lost"] })], MAP, []));
+    expect(inc).toMatch(/inconclusive/i);
+  });
+
+  it("a 'Not tested' result genuinely means untested", () => {
+    const nt = describeHivStatus(deriveHivStatus([hivTest({ resultIds: ["r_nottested"] })], MAP, []));
+    expect(nt).toBe("Untested / unknown");
   });
 });
 
