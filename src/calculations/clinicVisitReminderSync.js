@@ -27,6 +27,7 @@ import { ACCENTS } from "./designTokens";
 import { realTimestampFromStored } from "./dateInputHelpers";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { buildClinicVisitSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } from "./reminderSuppression";
+import { sendWidgetUpdate } from "./widgetBridgeUpdate";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -141,7 +142,13 @@ async function updateAppointmentWidget(visit) {
 
     const bridge = await getWidgetBridge();
 if (bridge && bridge.plugin.updateAppointment) {
-        await bridge.plugin.updateAppointment({ count, nextAppt });
+        // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate, so the Redacted
+        // and Off tiers in Settings now reach this widget at all.
+        await sendWidgetUpdate(bridge, "nextAppointment", "updateAppointment", {
+          count,
+          nextAppt,
+          category: "Appointments",
+        });
     }
   } catch (e) {
     // Widget bridge not available (web) — ignore
@@ -159,7 +166,13 @@ async function updateClinicCardWidget(visit) {
       const clinicNum = visit.clinicNumber || "";
       const nhsNum = visit.nhsNumber || "";
 
-      await bridge.plugin.updateClinicCard({
+      // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate. This widget
+      // discloses more than any other: a location, a test count and a date.
+      //
+      // nhsNum is still sent and is still discarded by the bridge, which is
+      // deliberate and load-bearing rather than an oversight - see
+      // widgetPlaintextSink.test.js, which fails if it is ever written.
+      await sendWidgetUpdate(bridge, "clinicCard", "updateClinicCard", {
         title: visit.title || "Appointment",
         date: visit.date ? new Date(realTimestampFromStored(visit.date)).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "",
         location: visit.location || "",
@@ -167,6 +180,11 @@ async function updateClinicCardWidget(visit) {
         docType,
         clinicNum,
         nhsNum,
+        // category/count are all that survive a Redacted tier. A test count is
+        // allowed deliberately: "3 tests" identifies nobody, and it is the one
+        // number worth having without handing over the rest.
+        category: "Clinic card",
+        count: tests,
       });
     }
   } catch (e) {

@@ -13,6 +13,7 @@ import com.shos.app.widget.DoxyPEPWidgetProvider;
 import com.shos.app.widget.NextDoseWidgetProvider;
 import com.shos.app.widget.RefillWidgetProvider;
 import com.shos.app.widget.TestWidgetProvider;
+import com.shos.app.widget.WidgetBootReceiver;
 
 /**
  * The missing half of the widget feature.
@@ -46,8 +47,35 @@ public class WidgetBridgePlugin extends Plugin {
 
     private static final String MISSING = "missing";
 
+    /**
+     * Whether the caller asked for this widget to be blanked.
+     *
+     * Reads the tier the JS side resolved (widgetPrivacy.js) rather than
+     * re-deciding it here, because that module is the single owner of the rule
+     * and a second copy of the table in Java is a second copy that will drift.
+     *
+     * FAILS CLOSED. Anything this code does not recognise as a positive tier
+     * blanks the widget, including a missing parameter. That direction is
+     * deliberate and it is the opposite of how the rest of this plugin works -
+     * every other method here defaults a missing value to an empty string and
+     * carries on. Here, a value we cannot read must never be read as permission
+     * to disclose: a caller that forgets to send a tier renders nothing rather
+     * than everything. The cost of that choice is a blank widget during
+     * development if the parameter is misspelled, which is visible immediately,
+     * against a lock screen showing a medication name.
+     */
+    private boolean isBlank(PluginCall call) {
+        String tier = call.getString("tier");
+        return tier == null || "off".equals(tier);
+    }
+
     @PluginMethod
     public void updateNextDose(PluginCall call) {
+        if (isBlank(call)) {
+            WidgetBootReceiver.blankWidget(getContext(), NextDoseWidgetProvider.class, R.layout.next_dose_widget);
+            call.resolve();
+            return;
+        }
         NextDoseWidgetProvider.updateNextDose(
                 getContext(),
                 opt(call, "medName"),
@@ -58,6 +86,11 @@ public class WidgetBridgePlugin extends Plugin {
 
     @PluginMethod
     public void updateRefill(PluginCall call) {
+        if (isBlank(call)) {
+            WidgetBootReceiver.blankWidget(getContext(), RefillWidgetProvider.class, R.layout.refill_widget);
+            call.resolve();
+            return;
+        }
         RefillWidgetProvider.updateRefill(
                 getContext(),
                 call.getInt("count", 0),
@@ -68,6 +101,11 @@ public class WidgetBridgePlugin extends Plugin {
 
     @PluginMethod
     public void updateAppointment(PluginCall call) {
+        if (isBlank(call)) {
+            WidgetBootReceiver.blankWidget(getContext(), AppointmentWidgetProvider.class, R.layout.appointment_widget);
+            call.resolve();
+            return;
+        }
         AppointmentWidgetProvider.updateAppointment(
                 getContext(),
                 call.getInt("count", 0),
@@ -78,6 +116,11 @@ public class WidgetBridgePlugin extends Plugin {
 
     @PluginMethod
     public void updateTest(PluginCall call) {
+        if (isBlank(call)) {
+            WidgetBootReceiver.blankWidget(getContext(), TestWidgetProvider.class, R.layout.test_widget);
+            call.resolve();
+            return;
+        }
         TestWidgetProvider.updateTest(
                 getContext(),
                 opt(call, "lastTest"),
@@ -88,6 +131,11 @@ public class WidgetBridgePlugin extends Plugin {
 
     @PluginMethod
     public void updateDoxyPEP(PluginCall call) {
+        if (isBlank(call)) {
+            WidgetBootReceiver.blankWidget(getContext(), DoxyPEPWidgetProvider.class, R.layout.doxy_pep_widget);
+            call.resolve();
+            return;
+        }
         DoxyPEPWidgetProvider.updateDoxyPEP(
                 getContext(),
                 opt(call, "status"),
@@ -98,6 +146,11 @@ public class WidgetBridgePlugin extends Plugin {
 
     @PluginMethod
     public void updateCycle(PluginCall call) {
+        if (isBlank(call)) {
+            WidgetBootReceiver.blankWidget(getContext(), CycleWidgetProvider.class, R.layout.cycle_widget);
+            call.resolve();
+            return;
+        }
         CycleWidgetProvider.updateCycle(
                 getContext(),
                 call.getInt("day", 0),
@@ -117,6 +170,11 @@ public class WidgetBridgePlugin extends Plugin {
      */
     @PluginMethod
     public void updateClinicCard(PluginCall call) {
+        if (isBlank(call)) {
+            WidgetBootReceiver.blankWidget(getContext(), ClinicCardWidgetProvider.class, R.layout.clinic_card_widget);
+            call.resolve();
+            return;
+        }
         ClinicCardWidgetProvider.updateClinicCard(
                 getContext(),
                 opt(call, "title"),

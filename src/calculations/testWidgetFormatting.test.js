@@ -44,7 +44,30 @@ describe("Last Test widget does not render a raw stored value (t063)", () => {
     // The owner's report was that this state was missing. It is handled in JS
     // as well as by the Java default, and both must stay: removing either one
     // would put an empty string on a home-screen widget again.
-    expect(code).toMatch(/updateTest\(\{\s*lastTest:\s*"No tests logged"/);
+    //
+    // WIDENED 2 Oct 2026, by exactly the legitimate amount. This asserted the
+    // literal `updateTest({ lastTest:` i.e. that the payload was the FIRST
+    // argument of the bridge method. Routing the call through sendWidgetUpdate -
+    // so the stored widget tier actually applies - moved the payload behind two
+    // arguments, and the assertion failed while the property it protects was
+    // untouched: the no-tests case is still handled explicitly in JS.
+    //
+    // The rule it follows is the one CLAUDE.md records for guards that fire on a
+    // legitimate change: widen by the amount the change required, keep the
+    // assertion that matters, do not loosen it until it goes green. What
+    // matters here is that "No tests logged" is still passed on the no-tests
+    // path - so the pattern now tolerates the wrapper while still requiring the
+    // method name and the literal value to be adjacent.
+    expect(code).toMatch(/updateTest[\s\S]{0,60}lastTest:\s*"No tests logged"/);
+  });
+
+  it("routes through sendWidgetUpdate, so the tier cannot be bypassed", () => {
+    // Added alongside the widening above, and deliberately asserts something
+    // NEW rather than accepting the old form: the call is now filtered by the
+    // shared helper. Without this, a future edit could quietly restore a raw
+    // `bridge.plugin.updateTest(...)` and the widened pattern above would still
+    // pass - which is how a widened guard becomes a weaker one.
+    expect(code).toMatch(/sendWidgetUpdate\(\s*bridge,\s*"lastTest",\s*"updateTest"/);
   });
 
   it("the native default is still correct, so a cold-started widget is never blank", () => {

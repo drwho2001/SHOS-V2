@@ -28,6 +28,7 @@ import { AppPreferencesRepository } from "../repositories/appPreferencesReposito
 // import matches this file's style rather than medicationReminderSync's
 // dynamic one.
 import { buildRefillSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } from "./reminderSuppression";
+import { sendWidgetUpdate } from "./widgetBridgeUpdate";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -188,8 +189,13 @@ async function updateRefillWidget() {
     const nextRefill = count > 0 ? needsRefill[0].name : "No refills due";
 
     const bridge = await getWidgetBridge();
-if (bridge && bridge.plugin.updateRefill) {
-        await bridge.plugin.updateRefill({ count, nextRefill });
+    if (bridge && bridge.plugin.updateRefill) {
+      // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate. NOTE this
+      // function's twin in medicationReminderSync.js sends the same payload to
+      // the same bridge method; both are wired to the shared helper so neither
+      // can drift from the tier rule, but the duplication itself is still worth
+      // collapsing. Left as-is rather than refactored mid-change.
+      await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill, category: "Refills" });
     }
   } catch (e) {
     // Widget bridge not available (web) — ignore

@@ -29,6 +29,7 @@ import { NotificationPreferencesRepository, isTestingSnoozed } from "../reposito
 import { ACCENTS } from "./designTokens";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { buildTestingSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } from "./reminderSuppression";
+import { sendWidgetUpdate } from "./widgetBridgeUpdate";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -179,9 +180,22 @@ async function updateTestWidget() {
           ? formatDayKey(suggested, { weekday: true })
           : "—";
 
-        await bridge.plugin.updateTest({ lastTest, retestDue });
+        // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate. lastTest is a
+        // date and retestDue is a date, so both are dropped at a Redacted tier
+        // and the widget falls back to category + state.
+        await sendWidgetUpdate(bridge, "lastTest", "updateTest", {
+          lastTest,
+          retestDue,
+          category: "Testing",
+          state: lastTest ? "logged" : "none",
+        });
       } else {
-        await bridge.plugin.updateTest({ lastTest: "No tests logged", retestDue: "—" });
+        await sendWidgetUpdate(bridge, "lastTest", "updateTest", {
+          lastTest: "No tests logged",
+          retestDue: "-",
+          category: "Testing",
+          state: "none",
+        });
       }
     }
   } catch (e) {

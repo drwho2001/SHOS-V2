@@ -31,6 +31,7 @@ import { lockoutEndsAt, getNextNotificationTime, latestLogOfType } from "./medic
 import { scheduleNotification, cancelNotification, registerNotificationActionTypes, NOTIFICATION_IDS, MEDICATION_ACTION_TYPE_ID, moduleSmallIconName } from "../storage/notificationService";
 import { ACCENTS } from "./designTokens";
 import { nowAsStoredDateTime } from "./dateInputHelpers";
+import { sendWidgetUpdate } from "./widgetBridgeUpdate";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -215,35 +216,46 @@ async function updateRefillWidget() {
     const count = refillDue.length;
     const nextRefill = count > 0 ? refillDue[0].name : "No refills due";
 
-    const bridge = await getWidgetBridge();
-if (bridge && bridge.plugin.updateRefill) {
-        await bridge.plugin.updateRefill({ count, nextRefill });
-      }
+      const bridge = await getWidgetBridge();
+  if (bridge && bridge.plugin.updateRefill) {
+        // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate so the stored
+        // tier actually applies. Before this, the "Redacted" option in Settings
+        // changed nothing at all for this widget.
+        await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill });
+        }
 
     // The next-dose widget had a provider, a layout, a manifest receiver and a
     // bridge method, and no caller anywhere in src/ - so it has never once
     // displayed anything. Wired here because this function already runs on
     // every medication-state recompute.
     //
-    // Masked by default, which is the owner's explicit decision: the widget
-    // shows WHEN, never the medication name, and the name is one tap away in
-    // the app. A home-screen widget that names your medication is readable by
-    // anyone glancing at your unlocked phone, and encrypting the file at rest
-    // does nothing about that - it protects the file, not the screen. The
-    // persisted disclosure-level control that should ultimately drive this is
-    // separate work and belongs in PrivacyScreen, not here.
-    if (bridge && bridge.plugin.updateNextDose) {
-      const state = await getDailyMedsState();
-      const nextUnlock = state.upcoming[0]?.unlockAt;
-      await bridge.plugin.updateNextDose({
-        medName: "",
-        nextDoseTime: state.due.length
-          ? "Dose due now"
-          : nextUnlock
-            ? `Next at ${new Date(nextUnlock).toTimeString().slice(0, 5)}`
-            : "",
-      });
-    }
+      // Masked by default was the owner's explicit decision on 29 Sep, and it is
+      // now REVERSED - see widgetPrivacy.js for why the owner changed it. This
+      // comment is kept rather than deleted because "the setting that decides
+      // this lives in Settings, not here" is the part worth preserving: a
+      // hardcoded `medName: ""` in this file is exactly what made the tier
+      // inert, since no preference could ever reach it.
+      if (bridge && bridge.plugin.updateNextDose) {
+        const state = await getDailyMedsState();
+        const next = state.upcoming[0];
+        const nextUnlock = next?.unlockAt;
+        await sendWidgetUpdate(bridge, "nextDose", "updateNextDose", {
+          // CHANGED - was `medName: ""`, hardcoded, which is why no setting could
+          // ever reveal the name. The owner now wants it: this is the widget you
+          // look at to know whether to take something, and a blank label made it
+          // useless. It is still a tier decision, not a hardcoded one.
+          medName: next?.med?.name || "",
+          nextDoseTime: state.due.length
+            ? "Dose due now"
+            : nextUnlock
+              ? `Next at ${new Date(nextUnlock).toTimeString().slice(0, 5)}`
+              : "",
+          // category/state are what survive a Redacted tier, so the widget shows
+          // "Medication - due now" instead of going blank and looking broken.
+          category: "Medication",
+          state: state.due.length ? "due now" : "scheduled",
+        });
+      }
   } catch (e) {
     // CHANGED 30 Sep 2026 (audit) — this catch is the reason the bug above was
     // invisible for so long, and the reason is worth recording. Its comment

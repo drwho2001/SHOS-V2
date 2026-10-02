@@ -95,7 +95,28 @@ public class WidgetBootReceiver extends BroadcastReceiver {
         blank(manager, new ComponentName(context, ClinicCardWidgetProvider.class), R.layout.clinic_card_widget);
     }
 
-    private void blank(AppWidgetManager manager, ComponentName component, int layoutId) {
+    /**
+     * Blanks ONE data widget, leaving the other six untouched.
+     *
+     * Exists because "Off" is per widget, not global. The owner can reasonably
+     * want their medication countdown on the home screen and no clinic card at
+     * all, and blanking all seven because one is off would be a privacy control
+     * that destroys the settings around it.
+     *
+     * The widget tier is decided in JS by sendWidgetUpdate, which sends nothing
+     * but the tier when a widget is Off; this is the half JS cannot do, because
+     * an empty payload would still render the widget's own background, padding
+     * and title - which looks broken rather than deliberately blank. Hiding the
+     * root is what makes it look intentional.
+     */
+    public static void blankWidget(Context context, Class<?> provider, int layoutId) {
+        if (context == null) return;
+        AppWidgetManager manager = AppWidgetManager.getInstance(context);
+        if (manager == null) return;
+        blank(manager, new ComponentName(context, provider), layoutId);
+    }
+
+    private static void blank(AppWidgetManager manager, ComponentName component, int layoutId) {
         int[] ids = manager.getAppWidgetIds(component);
         if (ids == null || ids.length == 0) return;
         RemoteViews empty = new RemoteViews(component.getPackageName(), layoutId);

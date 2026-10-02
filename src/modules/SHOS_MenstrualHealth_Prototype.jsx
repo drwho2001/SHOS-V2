@@ -50,6 +50,7 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 import { getCycleDay, getCyclePhase, getNextPeriodDayKey, formatDayKeyForDisplay } from "../calculations/menstrualCalculations";
 import { daysForUnit, INTERVAL_UNITS, CONTRACEPTION_INTERVAL_UNITS } from "../calculations/contraceptionCalculations";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { sendWidgetUpdate } from "../calculations/widgetBridgeUpdate";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -105,7 +106,17 @@ async function updateCycleWidget() {
         if (cycleDay === null) return;
         const phase = getCyclePhase(cycleDay);
         const nextPeriod = formatDayKeyForDisplay(getNextPeriodDayKey(latest.startDate, avgLength));
-        await bridge.plugin.updateCycle({ day: cycleDay, phase, nextPeriod: nextPeriod || null });
+          // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate. cycleDay,
+          // phase and nextPeriod are all specific, so a Redacted tier keeps only
+          // category + state and the widget reads "Tracking - follicular" rather
+          // than going blank.
+          await sendWidgetUpdate(bridge, "cycle", "updateCycle", {
+            day: cycleDay,
+            phase,
+            nextPeriod: nextPeriod || null,
+            category: "Tracking",
+            state: phase,
+          });
       }
     }
   } catch (e) {

@@ -19,6 +19,7 @@ import { scheduleNotification, cancelNotification, registerNotificationActionTyp
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
 import { nowAsStoredDateTime } from "./dateInputHelpers";
+import { sendWidgetUpdate } from "./widgetBridgeUpdate";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -127,7 +128,15 @@ async function updateDoxyPEPWidget(status) {
     if (bridge && bridge.plugin.updateDoxyPEP) {
       const statusText = status.overdue ? "Overdue" : (status.active ? "Active" : "No active window");
       const expiryMs = status.deadline ? status.deadline.getTime() : 0;
-      await bridge.plugin.updateDoxyPEP({ status: statusText, expiryMs });
+      await sendWidgetUpdate(bridge, "doxyPepWindow", "updateDoxyPEP", {
+        status: statusText,
+        expiryMs,
+        // category/state are what survive a Redacted tier, so the widget reads
+        // "DoxyPEP - Active" rather than going blank. expiryMs is deliberately
+        // NOT on the redacted list: a countdown timestamp is a time.
+        category: "DoxyPEP",
+        state: statusText,
+      });
     }
   } catch (e) {
     console.debug("DoxyPEP widget update skipped:", e);
