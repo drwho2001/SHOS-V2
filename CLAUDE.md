@@ -956,6 +956,38 @@ ever *opened a form-render path*, and both bugs live in code that unit-tests
 happily import without rendering. A smoke flow that opens My Profile -> Edit is
 the actual fix, not a nice extra.
 
+## Recently shipped (2 Oct 2026, later still still — I rendered my own source code onto the Clinic Card, in a published APK)
+
+**The Clinic Card's title was pushed down the screen by a paragraph of my own
+comment, and it was in the GitHub Release.** Found by looking at the phone after
+installing the build — not by any test, lint, or measurement.
+
+**The cause:** while fixing the Clinic Card's nav-bar underlap I left the
+explanatory note between two JSX elements using `//`. In a JSX **children**
+position `//` carries no special meaning — it is *text*. It rendered as a
+paragraph of source code above the card's title. The neighbouring real comment in
+that file is `{/* ... */}`, which is why one was right and the other wrong in the
+same edit.
+
+**Why every automated check passed, which is the useful half.** eslint passed,
+because a JSXText node is perfectly valid. The unit suite passed, because the text
+is inert as far as any logic is concerned. And *my own device measurements passed*:
+the scroll container genuinely did get taller, so the nav-clearance fix genuinely
+did work — the measurement was not wrong, it was simply blind to a defect that
+changes nothing measurable. Only the phone showed it.
+
+So `jsxCommentGuard.test.js` parses every `.jsx` with `@babel/parser` and asserts
+no `JSXText` node starts with `//`, with two fixtures proving the detector
+discriminates — and one of those fixtures asserts that a `//` comment in ordinary
+JS position is **not** flagged, so the guard cannot push the codebase towards
+awkward workarounds where `//` is correct. Reintroducing the exact shipped comment
+goes red.
+
+**The transferable lesson, recorded because I keep making the adjacent mistake:**
+*a measurement that only asks the question you already have an answer to will
+confirm the fix you just made.* Every number I took on that screen was true and
+every one of them was about scrolling, and the defect was about a title.
+
 ## Recently shipped (2 Oct 2026, later still — a 4px gap under the Healthcare banner, and the Clinic Card's last section was unreachable)
 
 **A device sweep of the six remaining same-class scrolling-flex containers found
