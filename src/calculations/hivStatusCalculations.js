@@ -175,7 +175,30 @@ export function describeHivStatus(resolved) {
   const s = normaliseHivStatus(resolved?.status);
   const label = HIV_STATUS_OPTIONS.find((o) => o.value === s)?.label || s;
   if (!resolved?.since) {
-    return s === HIV_STATUS.UNTESTED ? "Untested / unknown" : `${label} (date not recorded)`;
+    if (s === HIV_STATUS.UNTESTED) return "Untested / unknown";
+    // ADDED 1 Oct 2026 - undated is NOT one case, it is three, and the
+    // difference is whether the missing date makes the claim weaker.
+    //
+    // A NEGATIVE is a time-bounded claim. It is only true as of the test, and a
+    // 4th-generation test has a window period after which it says nothing. With
+    // no date, "HIV negative" is unquantifiable reassurance - the one direction
+    // of error this app can least afford, since it reads as "you are clear". So
+    // the caveat leads and the word "Negative" is demoted off the front.
+    //
+    // UNDETECTABLE is also a test result, not a fixed state, and U=U rests on
+    // suppression being SUSTAINED - which a date-less entry cannot show. It
+    // needs the same warning even though it is the good-news state.
+    //
+    // A POSITIVE is durable: diagnosed in 2012, it is true today regardless, and
+    // forcing a user to invent a date would pollute the record with fiction.
+    // Deliberately the mildest of the three.
+    if (s === HIV_STATUS.NEGATIVE) {
+      return "Last known negative, but no date recorded - unverified, and it may be out of date";
+    }
+    if (s === HIV_STATUS.POSITIVE_SUPPRESSED) {
+      return `${label} (no date recorded) - undetectable is a test result, and U=U depends on it staying that way`;
+    }
+    return `${label} (date not recorded)`;
   }
   const d = new Date(realTimestampFromStored(resolved.since));
   const when = Number.isNaN(d.getTime())
@@ -230,4 +253,33 @@ export const U_U_EXPLANATION =
  */
 export function shouldMaskHivStatus(anonymiseModeActive) {
   return !!anonymiseModeActive;
+}
+
+/**
+ * The share payload for an HIV status: the status itself, and the date that
+ * makes it mean something. Both travel together, always.
+ *
+ * Returns null when there is no status worth sharing, which the caller spreads
+ * as NOTHING. That is the whole redaction mechanism, and it is worth stating
+ * why it is omission rather than a value:
+ *
+ * A `"not-disclosed"` sentinel would be a new status string, so it would need
+ * its own rendering on the receiving side, its own option in every picker, and
+ * its own handling in every comparison - and it would be one more string that
+ * could be confused with a real status, in a field where a wrong answer is a
+ * false reassurance about someone's health. Omitting the key instead means the
+ * recipient's Contact simply holds `null`, which this app already renders as
+ * "Not recorded" and already treats as "not stated" everywhere else. Redaction
+ * and "never told them" then share one code path, so they cannot disagree.
+ *
+ * The date is the informed date for a stated status, and the test date for a
+ * derived one - i.e. whichever date the owner can actually see next to the
+ * status on their own screen. Sharing a different pairing than the one on
+ * screen would mean the recipient reads a status the sharer never read.
+ */
+export function hivStatusSharePayload(resolved, statedInformedDate) {
+  if (!resolved || !isValidHivStatus(resolved.status)) return null;
+  const since =
+    resolved.source === "stated" ? statedInformedDate || null : resolved.since || null;
+  return { hivStatus: resolved.status, hivStatusDate: since };
 }

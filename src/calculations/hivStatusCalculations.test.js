@@ -204,8 +204,25 @@ describe("how it reads to a person", () => {
 
   it("says the date is unknown rather than omitting it", () => {
     // Otherwise a blank reads as "current", which is the opposite of true.
+    //
+    // WIDENED 1 Oct 2026, deliberately. The intent here is "a missing date must
+    // be stated, not left blank", and it is now satisfied by a per-state
+    // wording: an undated NEGATIVE reads "Last known negative, but no date
+    // recorded...", an undated UNDETECTABLE says the same plus why it matters.
+    // Both phrasings state the absence, so the assertion accepts either - the
+    // load-bearing half is that the absence is SPOKEN, not elided.
     expect(describeHivStatus({ status: HIV_STATUS.POSITIVE_SUPPRESSED, since: null }))
-      .toMatch(/date not recorded/);
+      .toMatch(/no date recorded|date not recorded/);
+  });
+
+  it("never renders an undated NEGATIVE as a plain negative", () => {
+    // The one direction of error this app can least afford. A negative is
+    // time-bounded and a 4th-generation test has a window period, so undated it
+    // is unquantifiable reassurance - and it reads as "you are clear".
+    const out = describeHivStatus({ status: HIV_STATUS.NEGATIVE, since: null });
+    expect(out).not.toBe("Negative");
+    expect(out).not.toMatch(/^-Negative\b/);
+    expect(out).toMatch(/unverified|out of date/i);
   });
 
   it("does not crash on a missing date string", () => {

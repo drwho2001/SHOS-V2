@@ -28,6 +28,7 @@ import { MyProfileRepository, DEFAULT_PROFILE } from "../repositories/myProfileR
 import { ContactRepository } from "../repositories/contactRepository.js";
 import { TestingRepository } from "../repositories/testingRepository.js";
 import { mostRecentTestDate } from "../calculations/mostRecentTest.js";
+import { hivStatusSharePayload, isValidHivStatus } from "../calculations/hivStatusCalculations.js";
 import { exportTextFile } from "./fileExportHelper.js";
 
 const SCHEMA_VERSION = 1;
@@ -60,7 +61,12 @@ async function getAutoLastHivTestedDate() {
 // matching exactly what mapShareToContactData expects to receive —
 // the sensitive fields never leave the device in the first place.
 export async function buildProfileShare(options = {}) {
-  const { includeLastTestedDate = false } = options;
+  const {
+    includeLastTestedDate = false,
+    includeHivStatus = false,
+    resolvedHivStatus = null,
+    hivStatusInformedDate = "",
+  } = options;
   const profile = await MyProfileRepository.getProfile();
   const shareableData = {
     displayName: profile.displayName,
@@ -106,6 +112,19 @@ export async function buildProfileShare(options = {}) {
     // the underlying Test record itself is never referenced or
     // shared, only its date value.
     ...(includeLastTestedDate ? { lastTestedDate: await getAutoLastHivTestedDate() } : {}),
+    // ADDED 1 Oct 2026 - HIV status becomes shareable, but ONLY when the user
+    // ticks the box, and the default is the existing behaviour of not
+    // including it. That matters more here than for any other field: it is
+    // arguably the most sensitive single fact this app holds about the owner.
+    //
+    // Resolved by the CALLER and passed in, deliberately: re-deriving it here
+    // would be a second implementation of "stated over derived" in a
+    // different file, which is precisely the drift this app keeps paying for
+    // (the Testing banner shipped dead for a whole release because a
+    // fingerprint was computed in one file with no copy where the consumer
+    // could see it). The shape of the payload is still owned in one place, by
+    // hivStatusSharePayload.
+    ...(includeHivStatus ? hivStatusSharePayload(resolvedHivStatus, hivStatusInformedDate) || {} : {}),
     profilePicture: profile.profilePicture,
     // Deliberately NOT included, ever — no toggle, no option, not
     // just "excluded by default": aboutMeNotes, allergies,
@@ -197,6 +216,14 @@ export function mapShareToContactData(parsedShare) {
     cummer: d.cummer,
     knownPrepDoxy: d.knownPrepDoxy,
     lastTestedDate: d.lastTestedDate,
+    // ADDED 1 Oct 2026 - HIV status from a shared profile, when the sharer
+    // chose to include it. `hivStatus` is `null` when the key was absent,
+    // which is the redacted case, and null is already exactly what "not stated"
+    // means everywhere else in this app - so "they didn't share it" and "they
+    // have never told me" render identically and take one code path, by design
+    // rather than by coincidence. The date rides with it for the same reason.
+    hivStatus: isValidHivStatus(d.hivStatus) ? d.hivStatus : null,
+    hivStatusInformedDate: d.hivStatusDate || "",
     // CHANGED 26 Aug 2026 — real correction: was mapping the profile's
     // "about me" note straight into the shared Contact's Notes field.
     // The user's own clarification: profile notes are personal (clinic

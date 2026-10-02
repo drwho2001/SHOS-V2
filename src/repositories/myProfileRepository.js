@@ -184,6 +184,17 @@ export const DEFAULT_PROFILE = {
   // calculations/hivStatusCalculations.js.
   hivStatus: null,
 
+  // ADDED 1 Oct 2026 - `hivStatusInformedDate` is when the OWNER WAS TOLD
+  // their status, which is a different fact from the date a test happened and
+  // the only date that makes sense for a status entered by hand (someone
+  // tested elsewhere). Contacts got this field in the same round; My Profile
+  // did not, which would have meant a shared profile carried a status with no
+  // date at all while a hand-entered Contact had one.
+  //
+  // Optional to enter, always correct to show: an owner who has never tested
+  // has no informed date, and inventing one would be worse than its absence.
+  hivStatusInformedDate: "",
+
   updatedAt: null,
 };
 

@@ -61,14 +61,46 @@ describe("My Profile displays a resolved HIV status", () => {
   });
 
   it("passes the user's stated value INTO the resolution, so it can win", () => {
-    expect(profile).toMatch(/resolveHivStatus\(\s*form\.hivStatus/);
+    // CHANGED 1 Oct 2026. This used to assert one literal,
+    // `resolveHivStatus(form.hivStatus`, which is now inside a shared
+    // `useResolvedHivStatus(stated)` hook because the READ view had to show the
+    // status too, and it could not be copy-pasted without creating a second
+    // implementation of "stated over derived" in a second component.
+    //
+    // The rule is now SPLIT, and asserting both halves is strictly stronger than
+    // the single literal was: the hook must forward its own parameter (rather
+    // than hardcoding anything), AND a caller must actually pass the profile's
+    // stated value in. Either half alone would let the stated value be silently
+    // dropped - which would make a user's own recorded status invisible
+    // whenever the derived value disagreed with it.
+    const hook = profile.match(/function useResolvedHivStatus\(stated\)\s*{[\s\S]*?\n}/);
+    expect(hook, "shared useResolvedHivStatus(stated) hook not found").not.toBeNull();
+    expect(hook[0]).toMatch(/resolveHivStatus\(\s*stated\b/);
+    // Every call SITE must pass the stored value, not the derived one. The
+    // negative lookbehind excludes the hook's own declaration, which also
+    // matches `useResolvedHivStatus(` but is a definition rather than a call.
+    const callers = profile.match(/(?<!function )useResolvedHivStatus\([^)]*\)/g) || [];
+    expect(callers.length, "no caller of the hook found - guard is vacuous").toBeGreaterThan(0);
+    for (const c of callers) {
+      expect(c, `caller does not pass the stated value: ${c}`).toMatch(
+        /form\.hivStatus|profile(\?)?\.hivStatus/,
+      );
+    }
   });
 
   it("does NOT fall back to 'untested' before the records load", () => {
     // A default status as the useLoadedMemo fallback renders a confident
     // "Untested / unknown" for the moment before the real records arrive,
     // which reads as "you're clear". The sentinel must be null.
-    const memo = profile.match(/const hivResolved = useLoadedMemo\([\s\S]*?\n\s*\);/);
+    //
+    // The fallback now lives inside the shared hook rather than at each call
+    // site, which is an improvement: there is exactly one place left to get
+    // wrong instead of two. Anchored on `return useLoadedMemo` deliberately -
+    // an unanchored match grabs the hook's FIRST useLoadedMemo, which is the
+    // test-records loader, not the resolution memo.
+    const hook = profile.match(/function useResolvedHivStatus\(stated\)\s*{[\s\S]*?\n}/);
+    expect(hook, "shared hook not found - guard is vacuous").not.toBeNull();
+    const memo = hook[0].match(/return useLoadedMemo\([\s\S]*?\n\s*\);/);
     expect(memo).not.toBeNull();
     expect(memo[0]).toMatch(/,\s*null\s*\);/);
     expect(memo[0]).not.toMatch(/untested/);

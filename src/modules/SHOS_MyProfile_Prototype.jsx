@@ -908,7 +908,41 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
 }
 
 // ── Edit screen ──
-  function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
+  /**
+ * ADDED 1 Oct 2026 — the ONE owner of "what is this profile's HIV status".
+ *
+ * This exists because the read view did not show the status at all, and adding
+ * it there could not simply be copy-pasted: `ProfileDataView` had none of the
+ * derivation inputs, so the naive fix was a second `deriveHivStatus` call in a
+ * second component. That is the drift this repo keeps paying for — the Testing
+ * reminder banner shipped dead for an entire release because a fingerprint was
+ * computed in one file with no copy where the consumer could see it — and a
+ * status that reads differently on two screens of the same page is exactly that
+ * bug with a worse symptom, because the user cannot tell which is right.
+ *
+ * Both screens call this. The repository `getAll()` calls underneath are
+ * memoised, so a second caller costs a map lookup rather than a re-read.
+ */
+function useResolvedHivStatus(stated) {
+  const tests = useLoadedMemo(() => TestingRepository.getAll(), [], []);
+  const resultNames = useLoadedMemo(
+    () => ResultsRegistry.getAll().then((rs) => new Map(rs.map((r) => [r.id, r.name]))),
+    [],
+    new Map()
+  );
+  const measurements = useLoadedMemo(() => MeasurementRepository.getAll(), [], []);
+  // `null` as the not-yet-loaded sentinel, NOT a default status — see the note
+  // on the original useLoadedMemo this replaces. A fallback of "untested" would
+  // briefly render a confident "Untested / unknown", which on this particular
+  // fact reads as "you are clear", the most misleading thing the app could say.
+  return useLoadedMemo(
+    () => resolveHivStatus(stated, deriveHivStatus(tests, resultNames, measurements)),
+    [stated, tests, resultNames, measurements],
+    null
+  );
+}
+
+function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
     const [form, setForm] = useState(profile);
     const editSheetRef = useRef(null);
     useEffect(() => { editSheetRef.current?.focus(); }, []);
@@ -963,19 +997,11 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
     new Map()
   );
   const profileMeasurements = useLoadedMemo(() => MeasurementRepository.getAll(), [], []);
-  // ADDED 29 Sep 2026 (t025) — the derived half of HIV status. Resolved with
-  // the user's stated value on top, because a stated status always wins.
-  //
-  // `null` as the not-yet-loaded sentinel, NOT a default status. A fallback of
-  // "untested" would render a confident "Untested / unknown" for the moment
-  // before the records arrive, and on this particular fact that is the most
-  // misleading thing the app could briefly say — it reads as "you're clear".
-  // The same fix Global Search needed for "no matches" before it had searched.
-  const hivResolved = useLoadedMemo(
-    () => resolveHivStatus(form.hivStatus, deriveHivStatus(profileTests, hivResultNames, profileMeasurements)),
-    [form.hivStatus, profileTests, hivResultNames, profileMeasurements],
-    null
-  );
+  // CHANGED 1 Oct 2026 — now the shared useResolvedHivStatus hook above, so the
+  // Edit screen and the read view cannot compute this differently. The three
+  // `useLoadedMemo` reads above are kept because `lastTestedDate` still needs
+  // `profileTests`; only the derivation itself moved.
+  const hivResolved = useResolvedHivStatus(form.hivStatus);
   const set = (field) => (value) => setForm((f) => ({ ...f, [field]: value }));
   // FIXED — real ask: "think my profile kinks and limits haven't
   // actually saved/disappear after a while." Root cause: RegistryTagPicker's
@@ -1227,6 +1253,22 @@ function AvailabilityRuleBuilder({ rules, onChange, T }) {
               options={[{ value: "", label: "Use my test records" }, ...HIV_STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))]}
               T={T}
             />
+            {/* ADDED 1 Oct 2026 - Contacts got this in the same round, and My
+                Profile did not, which would have meant a shared profile carried
+                a status with no date while a hand-entered Contact had one. Shown
+                ONLY when an override is actually set, because otherwise it asks
+                "when were you told?" about a status derived from tests this app
+                already dates - a question with no meaning. */}
+            {form.hivStatus && (
+              <TextField
+                T={T}
+                label="Date informed"
+                type="date"
+                value={form.hivStatusInformedDate || ""}
+                onChange={set("hivStatusInformedDate")}
+                helper="When you were told - not when you were tested. This information may be out of date."
+              />
+            )}
           </div>
         </SectionCard>
 
@@ -1307,6 +1349,12 @@ function ProfileDataView({ profile, T }) {
     [],
     null,
   );
+  // ADDED 1 Oct 2026 — the same shared owner the Edit screen uses, so the
+  // status cannot read one way on the form and another on the read view. This
+  // view had no `anonymise` in scope at all, which is why the status could not
+  // simply be added here before.
+  const anonymise = useAnonymiseMode();
+  const hivResolved = useResolvedHivStatus(profile.hivStatus);
   // CHANGED — Phase 2 encryption groundwork: KinkRegistry/ChemsRegistry
   // are now async — resolved via useLoadedMemo instead of a plain
   // render-body call.
@@ -1419,6 +1467,24 @@ function ProfileDataView({ profile, T }) {
           </div>
         )}
         <ReadRow label="Last HIV test" value={lastTestedDate ? formatStoredDate(lastTestedDate) : ""} T={T} />
+      {/* ADDED 1 Oct 2026 — THE STATUS ITSELF, which this view never displayed
+          at all. It showed PrEP, "Last HIV test" and (from the previous commit)
+          the U=U note, but not the value the note was explaining — so the note
+          hung under a label with nothing beneath it, and the screen described as
+          "the one you glance at to check your own status" could not be used for
+          that. Found while adding this row, not by looking for it.
+          Masked under anonymise on the same rule as the Edit screen: a hand-held
+          phone shows the status, a phone handed over does not. */}
+      <ReadRow
+        label="HIV status"
+        value={anonymise ? ANONYMISED : hivResolved ? describeHivStatus(hivResolved) : "Loading…"}
+        T={T}
+      />
+      {/* The date a STATED status was told to you, which is a different fact
+          from the test date above and is deliberately not merged into it. */}
+      {!anonymise && profile.hivStatus && profile.hivStatusInformedDate && (
+        <ReadRow label="Date informed" value={formatStoredDate(profile.hivStatusInformedDate)} T={T} />
+      )}
         {/* ADDED 1 Oct 2026 - U=U on the read view too, and unconditionally. The
             two screens are read in different moods: this is the one you glance at
             to check your own status, so it is exactly where a note explaining
@@ -1465,16 +1531,26 @@ function ProfileDataView({ profile, T }) {
 // wanted — but this remains the user's own placement call to make after
 // a real click-through, not something to move unilaterally.
 // risk, not where the buttons live.
-function ShareProfilePanel({ T }) {
+function ShareProfilePanel({ T, resolvedHivStatus, hivStatusInformedDate }) {
   const [status, setStatus] = useState(null);
   const [confirming, setConfirming] = useState(null); // "file" | "text" | null
-  // ADDED 26 Aug 2026 — real ask: last tested date should be
+  // ADDED 26 Aug 2026 �?" real ask: last tested date should be
   // optionally shared, off by default, not automatic.
   const [includeLastTestedDate, setIncludeLastTestedDate] = useState(false);
+  // ADDED 1 Oct 2026 - off by default, and the default is what the app already
+  // did (not shared at all), so nobody's existing exports change shape.
+  const [includeHivStatus, setIncludeHivStatus] = useState(false);
+
+  const shareOptions = {
+    includeLastTestedDate,
+    includeHivStatus,
+    resolvedHivStatus,
+    hivStatusInformedDate,
+  };
 
   const doExportFile = async () => {
     try {
-      await exportProfileShare({ includeLastTestedDate });
+      await exportProfileShare(shareOptions);
       setStatus({ ok: true, msg: "Profile file saved — check the share sheet or your Files/Documents folder." });
     } catch {
       setStatus({ ok: false, msg: "Couldn't save the file — try Copy as text instead." });
@@ -1483,7 +1559,7 @@ function ShareProfilePanel({ T }) {
   };
 
   const doCopyText = async () => {
-    const json = JSON.stringify(await buildProfileShare({ includeLastTestedDate }), null, 2);
+    const json = JSON.stringify(await buildProfileShare(shareOptions), null, 2);
     try {
       await navigator.clipboard.writeText(json);
       setStatus({ ok: true, msg: "Copied — paste it into a message to share." });
@@ -1522,6 +1598,28 @@ function ShareProfilePanel({ T }) {
         <div>
           <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>Include last tested date</div>
           <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 1 }}>Just the date itself (±time) — never linked to the actual test record.</div>
+        </div>
+      </div>
+      {/* ADDED 1 Oct 2026 — HIV status is shareable, opt-in, off by default.
+          The copy names the disclosure instead of describing the field: a
+          toggle that just said "include HIV status" reads like one more
+          preference, and the person ticking it should know it lands in a file
+          that leaves the device. It also says what NOT sharing looks like on
+          the other end, because "not disclosed" and "never told me" are
+          deliberately indistinguishable there — a person sharing should not
+          have to reason about that on their own. */}
+      <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => setIncludeHivStatus((v) => !v)}
+        style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, cursor: "pointer", marginBottom: 10 }}>
+        <div style={{ width: 20, height: 20, borderRadius: radius.sm, border: `2px solid ${includeHivStatus ? T.contactsTeal : T.border}`, background: includeHivStatus ? T.contactsTeal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          {includeHivStatus && <Check size={12} color="#FFFFFF" />}
+        </div>
+        <div>
+          <div style={{ fontSize: 13, color: T.textPrimary, fontWeight: 600 }}>Include my HIV status</div>
+          <div style={{ fontSize: 11, color: T.textDisabled, marginTop: 1 }}>
+            {includeHivStatus
+              ? "Your status and the date it applies to will be written into this file. It stays off unless you tick it."
+              : "Off — this is the most sensitive thing SHOS holds about you, so it is never added unless you ask. Whoever imports this will simply see “Not recorded”, the same as if you had never said."}
+          </div>
         </div>
       </div>
       <div style={{ fontSize: 11, color: T.textDisabled, textAlign: "center", marginBottom: 8 }}>
@@ -1585,6 +1683,12 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
   const [showShare, setShowShare] = useState(false);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
+  // ADDED 1 Oct 2026 — the Share panel is handed the RESOLVED status, so what
+  // you choose to share is the same value you can see on screen. Deriving it a
+  // third time here would be the exact drift the shared hook exists to prevent,
+  // and the share is the one path where a stale or differing answer would leave
+  // the device in a file.
+  const shareHivResolved = useResolvedHivStatus(profile?.hivStatus);
 
   // ADDED — real ask: back should close the Share panel or exit editing
   // before closing My Profile itself, matching the pattern every other
@@ -1643,7 +1747,7 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
 
         <ProfileSummary profile={profile} T={T} onEdit={() => setEditing(true)} />
         <ProfileDataView profile={profile} T={T} />
-        {showShare && <ShareProfilePanel T={T} />}
+        {showShare && <ShareProfilePanel T={T} resolvedHivStatus={shareHivResolved} hivStatusInformedDate={profile?.hivStatusInformedDate || ""} />}
 
         {editing && (
           <MyProfileEditScreen profile={profile} onSave={saveEdit} onCancel={() => setEditing(false)} T={T} />
