@@ -805,6 +805,111 @@ which is the same shape as every other time in this file where a check reported
 green on something that had not actually been exercised. The guard now rejects a
 `#` inside any `if:` block.
 
+## Recently shipped (2 Oct 2026, latest - widgets had no privacy tier at all, and reboot protection could not have worked)
+
+**`widgetPrivacy` was a setting that did nothing, and it was aimed at the wrong
+widgets.** It shipped with keys for seven widgets, and no code read them - set a
+tier, and all seven behaved identically. Worse, four of the seven data-bearing
+widgets had a row, and the three with rows to spare were the QuickAdd widgets,
+which render a launch icon and display no data. The three that disclose most
+had no row at all: **Test, Cycle, Clinic Card**. The setting was therefore
+simultaneously inert and pointed at the widgets with nothing to hide.
+
+New `src/calculations/widgetPrivacy.js` is the single owner: per-widget
+`full` / `redacted` / `off`, with `fieldAllowed()` as the one enforcement point.
+
+**The uniform Redacted rule.** Per-widget meanings ("a test is logged" for
+Test, "Tracking" for Cycle, a bare count for Refills) were rejected as
+incoherent - with seven different meanings the user has no predictable model of
+what Redacted will show them. One rule now applies everywhere: **redacted =
+category presence without specifics.** Allowed: a category, plus a count or
+coarse on/off state. Forbidden: names, dates, times, locations, test types, any
+per-record detail that identifies. Counts are allowed deliberately ("2 refills
+due" identifies nobody), with the rule stating when a count would stop being
+allowed rather than re-deciding per widget.
+
+**Fails closed on an unreadable stored value, defaults on a missing one.**
+`normaliseDisclosureLevel` maps a bad notification level to the most
+restrictive, so a value this code cannot read must never be read as permission to
+disclose - that resolves to `off`. A *missing* value resolves to the per-widget
+default instead, because on upgrade nobody has ever set a tier and blanking
+every widget on a phone would be a hostile surprise. "Never configured" and
+"configured to something unreadable" are different states; both are tested.
+
+Defaults: `nextDose` and `doxyPep` full (the owner chose to see the medication
+name, reversing an earlier decision that it should never be shown), the other
+five redacted.
+
+**Owner decisions taken 2 Oct, after a Gemini review:** DoxyPEP is labelled by a
+user-set name defaulting to "Antibiotics", because the acronym itself discloses
+recent condomless sex to anyone who knows it. Static widgets keep Redacted but
+render as one compact line. The Status widget will use text plus colour, never
+colour alone. Clinic Card Full is administrative by default, with the clinical
+reason opt-in.
+
+## Recently shipped (2 Oct 2026 - the reboot protection could not have worked, and it is the kind of bug a green CI cannot see)
+
+**The boot receiver shipped listening for `ACTION_BOOT_COMPLETED`, which fires
+only *after* the user has unlocked the device.** Android's Direct Boot guide is
+explicit about this. What makes it matter is that `system_server` re-paints a
+widget's last cached `RemoteViews` straight back onto the display after a reboot
+**without running the app** - so the receiver could not fire until someone typed
+a PIN, i.e. strictly after the disclosure it existed to prevent. A phone rebooted
+and then taken by someone else would sit on the lock screen showing the
+medication name and the DoxyPEP countdown, with the protection not yet active.
+
+The fix is `ACTION_LOCKED_BOOT_COMPLETED`, which fires while the user is still
+locked, and which only reaches a receiver marked
+`android:directBootAware="true"`. Both halves are required and neither is
+sufficient alone.
+
+**Why blanking works pre-unlock at all, which looked impossible:** credential-
+encrypted storage genuinely is unavailable until first unlock, so the receiver
+cannot *read* anything - and does not need to. Hiding a widget is an
+`AppWidgetManager` update with an empty `RemoteViews`, touching no vault key.
+The restriction stops us being read, not from hiding.
+
+Found by asking Gemini to review the design, then **verified against Google's
+documentation rather than taken on trust** - it is a claim about platform
+behaviour, and this repo's rule is that a sub-model's report is not evidence.
+Gemini had no memory of the codebase and no knowledge of the previous commit;
+given the state, it found a bug in code shipped 20 minutes earlier.
+
+## Recently shipped (2 Oct 2026 - widget storage could silently fall back to plaintext, and widgets survived a reboot)
+
+**`WidgetPrefs.get()` ended in `context.getSharedPreferences(...)`**, on the
+reasoning that "the content is masked by default regardless." **Both halves were
+false** - the content is *not* masked (the next-dose widget renders the medication
+name), and the trade is not symmetric: a stale widget is visible and fixable, a
+plaintext file of sexual-health data on disk is neither. It now returns `null`
+with all 14 call sites across 7 providers guarded, so nothing is written in
+plaintext under any failure. The stored sink was fail-open; the app's own vault
+path was already fail-closed, and the split is now deliberate rather than
+accidental.
+
+**The sink guard had excluded its own target.** `widgetPlaintextSink.test.js`
+filtered out `WidgetPrefs.java`, arguing "the separate assertion requires the
+encrypted path to exist, so excluding the helper cannot make this vacuous." That
+reasoning is wrong: requiring `EncryptedSharedPreferences.create` to exist says
+nothing about whether a plaintext fallback *also* exists. The guard was green the
+entire time the fallback shipped. Exclusion removed, helper now inside the scan,
+mutation-verified red.
+
+**Widgets are re-displayed after a reboot without the app running**, from
+`RemoteViews` the OS caches - so `EncryptedSharedPreferences` protecting the
+stored value does nothing about pixels already drawn. `WidgetBootReceiver` now
+blanks all seven data widgets on boot, without clearing the encrypted store, so a
+reboot costs the user nothing once they open the app.
+
+Two CI reds on that one file, both mine, both invisible locally because Java
+cannot be compiled on this machine: a missing `import com.shos.app.R` (the trap
+this file documents elsewhere, which I read and walked into anyway), and
+`setEmptyView(int)` - which does not exist, and whose real two-argument overload
+sets a *fallback* view rather than blanking anything, so it would not have worked
+even had it compiled. Replaced with `setViewVisibility(root, View.GONE)`, which
+`ClinicCardWidgetProvider` already uses in four places. Recorded as L-045/L-046:
+find a real usage in `android/` before using an API, and let CI confirm.
+
 ## Recently shipped (1 Oct 2026, later - a crash that shipped for three days, found by looking at the phone instead of the code)
 
 **My Profile -> Edit threw React error #31 on every open, in three published
