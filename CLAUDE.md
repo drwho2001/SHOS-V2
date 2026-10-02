@@ -1085,6 +1085,28 @@ provider rather than on zero `setViewVisibility` calls — the first version of 
 claimed the latter and failed on NextDose's legitimate Chronometer show/hide,
 which is the provider's own business and nothing to do with redaction.
 
+**A test that passed by luck, which is worse than one that failed.** The DoxyPEP
+redacted-line test built its fixture as `deadline: Date.now() + 5h`, and the
+function it called then called `Date.now()` *again*. On a fast machine both land
+in the same millisecond and the assertion passes; on a slow one they straddle a
+tick, `Math.floor` returns 4, and it fails. **CI reported 1116 tests passing while
+the same test failed locally** — so it was not failing reliably, it was a coin
+flip decided by machine speed, which is the same defect as the medication
+reminder clock tests and the DST ones already recorded here.
+
+Fixed by pinning the clock with `vi.useFakeTimers({ toFake: ["Date"] })` rather
+than by adding a margin or loosening the assertion to `/in 5h/`. A margin would
+have made a test pass that could still fail for the wrong reason, and `toFake` is
+restricted to `Date` deliberately, since faking `setTimeout` too could stall the
+promise-based tests sharing that file. The assertions are now exact `toBe`
+strings. **A test that cannot fail is worse than no test, and a test that fails
+only when the machine is busy is nearly the same thing.**
+
+**Also worth recording: the docs gate has no test-file exemption.**
+`classifyDocsGate` treats any path starting with `src/` as a source change, so a
+one-line fix to a `.test.js` file still fails CI until `CLAUDE.md` or `docs/` is
+touched. Worth knowing before spending a build cycle discovering it.
+
 ## Recently shipped (1 Oct 2026, later - a crash that shipped for three days, found by looking at the phone instead of the code)
 
 **My Profile -> Edit threw React error #31 on every open, in three published

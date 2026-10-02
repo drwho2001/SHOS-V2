@@ -141,10 +141,30 @@ describe("the pre-formatted redacted line", () => {
 });
 
 describe("the DoxyPEP redacted line", () => {
+  // CHANGED 2 Oct 2026. This suite originally FAILED, and the reason is the
+  // clock bug this repo has now recorded several times: the fixture built its
+  // deadline as `Date.now() + 5h` and the function then called `Date.now()` again.
+  // The milliseconds in between make the remaining time 4h 59m 59.999s, whose
+  // Math.floor is 4 - so the assertion expected "in 5h" and got "in 4h 59m",
+  // intermittently, depending on how fast the machine ran.
+  //
+  // Fixed by pinning the clock rather than by loosening the assertion or adding
+  // a margin, for the reason the other clock tests here already use one: a
+  // margin makes a test pass that would fail for the wrong reason, and a
+  // pinned clock makes the answer the same at 04:48 as at 11:15.
+  //
+  // toFake is restricted to Date deliberately. Faking setTimeout as well could
+  // stall the promise-based tests in this file that share the describe.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-02T12:00:00.000Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
   it("never says there is no window when there is one", async () => {
     const { doxyPepRedactedLine } = await import("./doxyPepSync.js");
     const active = { overdue: false, active: true, deadline: new Date(Date.now() + 5 * 3600000) };
-    expect(doxyPepRedactedLine(active)).toMatch(/DoxyPEP - in 5h/);
+    expect(doxyPepRedactedLine(active)).toBe("DoxyPEP - in 5h 0m");
     // The specific regression: the old behaviour rendered the provider's
     // placeholder, which reads "No active window".
     expect(doxyPepRedactedLine(active)).not.toMatch(/no active window/i);
@@ -161,7 +181,7 @@ describe("the DoxyPEP redacted line", () => {
   it("uses minutes alone under an hour, not '0h'", async () => {
     const { doxyPepRedactedLine } = await import("./doxyPepSync.js");
     const soon = { overdue: false, active: true, deadline: new Date(Date.now() + 7 * 60000) };
-    expect(doxyPepRedactedLine(soon)).toMatch(/in 7m$/);
+    expect(doxyPepRedactedLine(soon)).toBe("DoxyPEP - in 7m");
     expect(doxyPepRedactedLine(soon)).not.toMatch(/0h/);
   });
 });
