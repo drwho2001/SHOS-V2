@@ -566,7 +566,7 @@ const draftKey = `vaccination_${vaccination?.id || "new"}`;
   };
 
   return (
-    <div role="dialog" aria-label={isNew ? "Log vaccination" : "Edit vaccination"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
+    <div role="dialog" aria-label={isNew ? "Log vaccination" : "Edit vaccination"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 210 }} onClick={onClose}>
       <div style={{ background: T.bg, width: "100%", maxHeight: "88vh", display: "flex", flexDirection: "column", borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg }} onClick={(e) => e.stopPropagation()}>
         {/* CHANGED 26 Aug 2026 — real ask: forms should also have the
             module banner title. Also added a real close button — this

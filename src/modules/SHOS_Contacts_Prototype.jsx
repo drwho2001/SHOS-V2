@@ -1920,7 +1920,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
   const howMetOptions = useMemo(() => getKnownValues(contacts, "howDidWeMeet"), [contacts]);
 
   return (
-    <div role="dialog" aria-label={isNew ? "Add contact" : "Edit contact"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
+    <div role="dialog" aria-label={isNew ? "Add contact" : "Edit contact"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={onClose}>
       {/* CHANGED 19 Aug 2026 — real fix, the user's ask: Save was buried at
           the end of the scrollable content, so on a real device you had
           to scroll all the way down to find it — hence "can't see save
@@ -2979,7 +2979,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
       </div>
 
       {showDuplicates && (
-        <div onClick={() => setShowDuplicates(false)} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 39 }}>
+        <div onClick={() => setShowDuplicates(false)} style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 39 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg, width: "100%", maxHeight: "80vh", display: "flex", flexDirection: "column", borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 14px", background: T.contactsTeal, borderTopLeftRadius: 16, borderTopRightRadius: 16 }}>
               <span style={{ ...TYPE.sheetTitle, color: "#FFFFFF" }}>Possible duplicates</span>

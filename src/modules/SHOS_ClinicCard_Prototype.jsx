@@ -760,7 +760,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       {/* ADDED — real ask: confirmation step for record-level taps
           (title taps navigate immediately, above). */}
       {pendingNav && (
-        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 300 }} onClick={() => setPendingNav(null)}>
+        <div style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", zIndex: 300 }} onClick={() => setPendingNav(null)}>
           <div style={{ background: T.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: 15, fontWeight: 700, color: T.textPrimary, marginBottom: 4 }}>Open in {pendingNav.moduleLabel}?</div>
             <div style={{ fontSize: 13, color: T.textSecondary, marginBottom: 16 }}>{pendingNav.label}</div>

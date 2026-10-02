@@ -616,7 +616,7 @@ function AppLockPrompt({ onDismiss, onDismissForever, onOpenSettings }) {
     // content was never inside any landmark. A dialog role is more
     // accurate here than "region" — this is a transient, dismissible
     // prompt, not a distinct section of app content.
-    <div role="dialog" aria-label="Want to lock the app with a PIN?" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={onDismiss}>
+    <div role="dialog" aria-label="Want to lock the app with a PIN?" style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={onDismiss}>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <Eye size={20} color={ACCENTS.home} />
@@ -829,7 +829,7 @@ function AcknowledgeSheet({ darkMode, pending, scopeDefault, onConfirm, onClose 
 
   return (
     <div role="dialog" aria-label="Stop reminding me about this" onClick={handleClose}
-      style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }}>
+      style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }}>
       <div ref={dialogRef} tabIndex={0} aria-describedby="acknowledge-scope-help"
         // ADDED 29 Sep 2026 — the sheet was a fixed overlay with
         // alignItems: flex-end, no maxHeight and no overflow, so on a short
@@ -3076,7 +3076,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         />
       )}
       {showImportModeDialog && (
-        <div role="dialog" aria-label="Import backup" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => setShowImportModeDialog(false)}>
+        <div role="dialog" aria-label="Import backup" style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => setShowImportModeDialog(false)}>
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
               Import backup
@@ -3101,7 +3101,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           determined the picked file is genuinely encrypted — a plain
           backup never reaches this, it restores immediately instead. */}
       {pendingEncryptedEnvelope && (
-        <div role="dialog" aria-label="This backup is encrypted" style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => { setPendingEncryptedEnvelope(null); setDecryptPassword(""); setDecryptError(""); }}>
+        <div role="dialog" aria-label="This backup is encrypted" style={{ position: "fixed", inset: 0, paddingBottom: "env(safe-area-inset-bottom)", paddingTop: "env(safe-area-inset-top)", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", zIndex: 998 }} onClick={() => { setPendingEncryptedEnvelope(null); setDecryptPassword(""); setDecryptError(""); }}>
           <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, fontFamily: "'Inter', sans-serif" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: 15, fontWeight: 700, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 8 }}>
               This backup is encrypted

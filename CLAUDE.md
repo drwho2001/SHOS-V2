@@ -805,6 +805,78 @@ which is the same shape as every other time in this file where a check reported
 green on something that had not actually been exercised. The guard now rejects a
 `#` inside any `if:` block.
 
+## Recently shipped (2 Oct 2026, later still — every bottom sheet in the app put its Save button under the Android navigation bar)
+
+**Found by hand on the device, and it was 24 sites, not one.** The Contacts edit
+sheet's "Save changes" button rendered underneath the system navigation bar.
+Measured over CDP on a Redmi Note 13: the button spanned CSS y **807–859**, the
+viewport was 872 tall, and the OS nav bar occupied ~790–872 — so the whole
+control sat inside the nav bar with the back/home/recents keys painted over it,
+not merely clipped at an edge. That is the most consequential shape this class of
+layout bug can take, because it makes the primary action of a form untappable.
+
+**The cause is structural and it had been there for every sheet since they were
+written.** These sheets are `position: fixed; inset: 0` with `display: flex;
+`alignItems: "flex-end"`, which bottom-aligns the sheet flush against the
+viewport bottom. Every one of them already carried
+`paddingTop: "env(safe-area-inset-top)"` for the status bar — and **none**
+carried a `paddingBottom`. So the sticky footer, which is exactly where
+Save / Confirm / Cancel live, landed in the navigation bar's space.
+
+**The count, and the two rounds it took to get it right.** A line-based scan of
+`src/modules` found **20** roots, all 20 missing it: Contacts ×2, Measurements
+×2, Medication ×6, Settings ×3, and one each in Calendar, ClinicCard,
+MenstrualHealth, RegistryManagement, SymptomLog, Timeline and Vaccinations. The
+**AST-based guard immediately found four more the scan had missed**, all in
+`src/App.jsx`: the PIN-lock prompt, the acknowledge sheet, Import backup, and the
+encrypted-backup prompt. That is the same lesson as "the widget guard only
+looked where I happened to look" — **a scan scoped to the directory you opened
+first is not a survey.** 24 total, all 24 now carrying
+`paddingBottom: "env(safe-area-inset-bottom)"`.
+
+**Why this needed the device and could not be verified locally.**
+`env(safe-area-inset-bottom)` measures **48px** on this handset — non-zero, so
+the conventional fix is real rather than a no-op. That had to be *measured*
+before touching 24 files: this repo has been burned repeatedly by `env()`
+resolving to `0px` in a sandbox, which turns a fix into an unverifiable edit. The
+first instinct to reach for was
+`max(env(safe-area-inset-bottom, 0px), 48px)` so it works either way — rejected,
+because a hardcoded 48px is precisely the unsourced-constant pattern this project
+has shipped and then had to unpick twice. Measure first, then edit.
+
+**New guard: `src/components/bottomSheetSafeAreaGuard.test.js`.** Parsed with
+`@babel/parser`, matching the convention settled on after several regex scans
+produced false results. It asserts every root that is
+`position:fixed + inset:0 + alignItems:flex-end` declares a `paddingBottom` that
+**consults `env()`** — a hardcoded pixel value counts as an *offender*, not a
+pass, because it would work on exactly one device. It cannot assert that 48px is
+the right number: that is a property of the device, not of the source, and it is
+stated in the file rather than pretended otherwise.
+
+**Mutation-verified in the honest direction:** restoring the original defect at
+`SHOS_Contacts_Prototype.jsx:1923` — the exact line the user reported — turns the
+suite red naming that file and line; restoring the fix returns it to green. The
+detector's non-vacuity is proved against a throw-away fixture rather than by
+asserting "at least one offender exists", which would break the moment the last
+one is fixed and would train the next reader to delete the test.
+
+**My own tooling failed twice on the fix itself, and the guard caught the second
+one where my own check did not.** The first script hardcoded 20 line numbers taken
+from a .NET scan and then edited them with `split("\r\n")`, which silently
+mis-indexed **18 of 20** because `SHOS_Medication_Dashboard_Prototype.jsx` has 7
+bare LFs among its 2555 CRLFs. It failed loudly on all 18 rather than corrupting
+anything — the re-verification of each line's premise is the only reason that was
+safe. The rewrite discovers its sites instead of trusting indices. Separately my
+own verification pass reported "20 unexpected edits" because I got the
+expectation string's spacing wrong, while the actual diff had a **double space**
+(`inset: 0,paddingBottom: …,  paddingTop`) that was valid JS and wrong for this
+codebase; the guard was green throughout and the sloppy spacing passed it, which
+is the limit of what a shape-based guard can see.
+
+Verified: `verify:fast` green — build, lint, **1093 tests across 96 files**,
+encoding guard clean over 340 tracked files. Full suite and the APK are CI's to
+confirm.
+
 ## Recently shipped (2 Oct 2026, latest - widgets had no privacy tier at all, and reboot protection could not have worked)
 
 **`widgetPrivacy` was a setting that did nothing, and it was aimed at the wrong
