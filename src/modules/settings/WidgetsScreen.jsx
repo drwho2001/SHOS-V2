@@ -6,6 +6,11 @@ import { CaretLeftIcon as ChevronLeft } from "@phosphor-icons/react";
 import { NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
+// CHANGED - the default tier used to be a `defaultTier` literal on every row,
+// so DEFAULT_TIERS and this list were two owners of one fact that happened to
+// agree. Reading it from the owner also means the settings screen shows the same
+// answer the widgets will act on.
+import { tierFor, isDataWidget } from "../../calculations/widgetPrivacy";
 
 export function WidgetsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
@@ -23,43 +28,67 @@ export function WidgetsScreen({ onClose }) {
       key: "nextDose",
       label: "Next Medication Dose",
       description: "Shows medication name + next dose time",
-      defaultTier: "full",
+
     },
     {
       key: "refillDue",
       label: "Refills Due",
       description: "Shows count + next medication needing refill",
-      defaultTier: "redacted",
+
     },
     {
       key: "nextAppointment",
       label: "Next Appointment",
       description: "Shows appointment count + next clinic visit",
-      defaultTier: "redacted",
+
     },
     {
       key: "doxyPepWindow",
       label: "DoxyPEP Window",
       description: "Shows 72h post-exposure countdown",
-      defaultTier: "full",
+
+    },
+    // ADDED 1 Oct 2026 - these three were MISSING ENTIRELY, and they are the
+    // three that disclose the most. A user could set a tier on seven rows and
+    // still not have configured Last Test, Cycle or Clinic Card, because no row
+    // existed for them. The setting was therefore not only inert (nothing read
+    // it) but aimed at the wrong widgets - it had rows for the three QuickAdd
+    // widgets, which render a launch icon and no data at all.
+    {
+      key: "lastTest",
+      label: "Last Test",
+      description: "Shows last STI test date + when a retest is due",
+
+    },
+    {
+      key: "cycle",
+      label: "Menstrual Cycle",
+      description: "Shows cycle day, phase and next period",
+
+    },
+    {
+      key: "clinicCard",
+      label: "Clinic Card",
+      description: "Shows the next appointment, its location and test count",
+
     },
     {
       key: "quickAddEncounter",
       label: "Quick Add: Encounter",
       description: "Tap to open Add Encounter form",
-      defaultTier: "full",
+
     },
     {
       key: "quickAddContact",
       label: "Quick Add: Contact",
       description: "Tap to open Add Contact form",
-      defaultTier: "full",
+
     },
     {
       key: "quickAddMedication",
       label: "Quick Add: Medication",
       description: "Tap to open Log Medication form",
-      defaultTier: "full",
+
     },
   ];
 
@@ -88,10 +117,10 @@ export function WidgetsScreen({ onClose }) {
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ fontSize: 12, color: T.textDisabled, marginBottom: 16, lineHeight: 1.5 }}>
-          Widgets appear on your home screen and lock screen. <strong>Redacted</strong> shows counts only (e.g. "1 refill due"). <strong>Full</strong> shows names and times. <strong>Off</strong> disables the widget.
+          Widgets appear on your home screen and lock screen. <strong>Redacted</strong> shows only that there is something there — the category and a count, e.g. "Refills · 2 due" — never a name, date, time or location. <strong>Full</strong> shows the details. <strong>Off</strong> shows nothing at all.
         </div>
         {widgetConfigs.map((w) => {
-          const currentTier = widgetPrefs.widgetPrivacy?.[w.key] ?? w.defaultTier;
+          const currentTier = tierFor(w.key, widgetPrefs.widgetPrivacy);
           return (
             <div key={w.key} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, marginBottom: 12, overflow: "hidden" }}>
               <div style={{ padding: "14px 16px" }}>
@@ -100,9 +129,15 @@ export function WidgetsScreen({ onClose }) {
                     <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 600 }}>{w.label}</div>
                     <div style={{ fontSize: 12, color: T.textDisabled, marginTop: 2 }}>{w.description}</div>
                   </div>
-                  <select
-                    value={currentTier}
-                    onChange={(e) => handlePrivacyChange(w.key, e.target.value)}
+                  {/* CHANGED - the three QuickAdd widgets render a launch icon and
+                      no data, so they get no tier picker. Every row here used to
+                      draw one, which offered a meaningful-looking choice
+                      (Full / Redacted / Off) for a widget that displays nothing
+                      and ignores all three. */}
+                  {isDataWidget(w.key) ? (
+                    <select
+                      value={currentTier}
+                      onChange={(e) => handlePrivacyChange(w.key, e.target.value)}
                     style={{
                       padding: "8px 12px",
                       borderRadius: 8,
@@ -118,7 +153,12 @@ export function WidgetsScreen({ onClose }) {
                     {privacyOptions.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
                     ))}
-                  </select>
+                    </select>
+                  ) : (
+                    <span style={{ fontSize: 12, color: T.textDisabled, textAlign: "right", maxWidth: 160, lineHeight: 1.5 }}>
+                      Shortcut only — no data to hide
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
