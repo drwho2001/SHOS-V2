@@ -851,6 +851,43 @@ ever *opened a form-render path*, and both bugs live in code that unit-tests
 happily import without rendering. A smoke flow that opens My Profile -> Edit is
 the actual fix, not a nice extra.
 
+## Recently shipped (2 Oct 2026, later — a daily PrEP dose was silently SKIPPED, found by hand on the phone)
+
+**A once-daily medication's dose for the day was skipped entirely, and the app
+reported every medication as logged.** The owner's device showed: scheduled
+04:00, reminder 04:00, last dose logged the previous day 05:07, clock at 04:48 —
+and the app said the next dose was **~23h** away, the dose button was **greyed out
+as already-logged**, and nothing prompted for today's dose. For a PrEP or
+DoxyPEP course that is not a display bug. **It is a dose the user does not take.**
+
+**The cause was one character.** `fixedModeDueSlot` stepped forward with
+`Math.ceil((now - anchor) / interval)`, which **always** lands strictly in the
+future — so the instant a scheduled time passed, that day's slot was skipped and
+the next candidate was a full interval away. The old comment said this was
+deliberate (*"skip forward past any slot that has already gone, so a missed dose
+is never still being offered as due"*), and for a generic interval that reads
+sensibly. **For a daily medication it is precisely wrong, because missed doses
+then compound**: skipping one put the anchor a whole day further out for the next
+call, so the following day was skipped too.
+
+**Now it takes the MOST RECENT slot at or before now**, and only steps forward
+when that slot is genuinely already in the log. Today's dose is therefore offered
+from its scheduled time onward, however late you notice it — while a dose taken
+exactly *on* the slot still correctly advances to tomorrow.
+
+**Eight tests, clock pinned throughout**, because these functions read
+`Date.now()` and an unpinned suite answers differently depending on what time of
+day it runs — which is exactly how a 04:48-shaped bug passes on a machine that
+happens not to be at 04:48. The first version asserted in UTC and failed by the
+machine's offset; the calculation is genuinely **local** (`scheduleAnchorMs` builds
+the anchor with a local `new Date(y, m, d, h, m)`), so the assertions are local,
+which is also locale-independent in a way `toLocaleDateString` is not.
+
+Both mutations red: **restoring the shipped `Math.ceil` fails 3**, and never
+stepping past a logged dose fails 3. Two of the mutation attempts were **NOT
+APPLIED** first — multi-line patterns do not match these CRLF files — and are
+reported as such rather than counted as passes.
+
 ## Recently shipped (2 Oct 2026 — three device-reported bugs, one cause, and the wrong diagnosis I tried first)
 
 **The owner hit three symptoms by hand on the phone; all three were ONE defect.**

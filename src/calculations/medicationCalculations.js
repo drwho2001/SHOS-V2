@@ -626,12 +626,29 @@ function fixedModeDueSlot(med, intervalHours, lastDoseDate) {
   const intervalMs = intervalHours * 3600000;
   const now = Date.now();
   if (anchorMs > now) return anchorMs;
-  const stepsForward = Math.ceil((now - anchorMs) / intervalMs) || 1;
-  let dueMs = anchorMs + stepsForward * intervalMs;
+  // FIXED 2 Oct 2026 (real device) — this used to be
+  //   Math.ceil((now - anchorMs) / intervalMs)
+  // which ALWAYS returns a slot strictly in the future, so a daily dose whose
+  // scheduled time had already passed today was silently skipped. Reported on a
+  // real phone as: dose scheduled 04:00 and reminder 04:00, 04:48 in the
+  // afternoon-ish, and the app claimed the next dose was ~23h away, the button
+  // was greyed out as already-logged, and the banner said every daily medication
+  // was logged — a PrEP dose the app would never ask for. For a once-daily
+  // medication that is not a display bug, it is a missed dose.
+  //
+  // The intent of the old line was sound — "a dose missed days ago should not
+  // still be offered" — but Math.ceil achieves it by skipping the CURRENT slot
+  // too, and for a daily medication missed doses then compound: skip one and
+  // the app silently skips the next one as well.
+  //
+  // So: take the MOST RECENT slot at or before now, and only step forward when
+  // that one has genuinely already been logged. The result is that the dose for
+  // today is offered from its scheduled time onward, however late you notice it.
+  const stepsBack = Math.floor((now - anchorMs) / intervalMs);
+  let dueMs = anchorMs + stepsBack * intervalMs;
   if (lastDoseDate) {
     const lastDoseMs = realTimestampFromStored(lastDoseDate);
-    // Skip forward past any slot that has already gone, so a missed dose is
-    // never still being offered as due.
+    // Only skip a slot if the dose for it is already in the log.
     while (dueMs <= lastDoseMs) dueMs += intervalMs;
   }
   // The half-interval floor applies here as well as in lockoutEndsAt(). Without
