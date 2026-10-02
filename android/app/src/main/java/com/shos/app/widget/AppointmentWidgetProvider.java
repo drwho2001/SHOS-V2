@@ -14,7 +14,9 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_APPT_COUNT = "appt_count";
     private static final String KEY_NEXT_APPT = "next_appt";
-    private static final String KEY_REDACTED_TEXT = "redacted_text_appointment";pWidgetManager appWidgetManager, int[] appWidgetIds) {
+
+    @Override
+    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId);
         }
@@ -33,25 +35,6 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
         String nextAppt = prefs.getString(KEY_NEXT_APPT, "No appointments");
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.appointment_widget);
-
-
-        // CHANGED 2 Oct 2026 - honour a Redacted tier. The line is built in JS by the
-
-        // caller, which is the only place that knows what this widget means; this
-
-        // provider never learns what a tier is. Returns immediately, because the
-
-        // full rendering below would otherwise overwrite what was just set.
-
-        if (WidgetRedacted.apply(views, R.id.widget_appt_title, prefs.getString(KEY_REDACTED_TEXT, ""),
-
-                R.id.widget_appt_count, R.id.widget_next_appt)) {
-
-            appWidgetManager.updateAppWidget(appWidgetId, views);
-
-            return;
-
-        }
 
         if (apptCount > 0) {
             views.setTextViewText(R.id.widget_appt_title, "Appointments");
@@ -74,7 +57,7 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
-    public static void updateAppointment(Context context, int count, String nextAppt, String redactedText) {
+    public static void updateAppointment(Context context, int count, String nextAppt) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -86,7 +69,6 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
         prefs.edit()
             .putInt(KEY_APPT_COUNT, count)
             .putString(KEY_NEXT_APPT, nextAppt)
-            .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .apply();
 
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

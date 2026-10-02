@@ -15,7 +15,9 @@ public class CycleWidgetProvider extends AppWidgetProvider {
     private static final String KEY_CYCLE_DAY = "cycle_day";
     private static final String KEY_CYCLE_PHASE = "cycle_phase";
     private static final String KEY_NEXT_PERIOD = "next_period";
-    private static final String KEY_REDACTED_TEXT = "redacted_text_cycle";getManager appWidgetManager, int[] appWidgetIds) {
+
+    @Override
+    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId);
         }
@@ -35,25 +37,6 @@ public class CycleWidgetProvider extends AppWidgetProvider {
         String nextPeriod = prefs.getString(KEY_NEXT_PERIOD, "—");
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.cycle_widget);
-
-
-        // CHANGED 2 Oct 2026 - honour a Redacted tier. The line is built in JS by the
-
-        // caller, which is the only place that knows what this widget means; this
-
-        // provider never learns what a tier is. Returns immediately, because the
-
-        // full rendering below would otherwise overwrite what was just set.
-
-        if (WidgetRedacted.apply(views, R.id.widget_cycle_title, prefs.getString(KEY_REDACTED_TEXT, ""),
-
-                R.id.widget_cycle_phase, R.id.widget_next_period)) {
-
-            appWidgetManager.updateAppWidget(appWidgetId, views);
-
-            return;
-
-        }
 
         if (cycleDay > 0) {
             views.setTextViewText(R.id.widget_cycle_title, "Cycle Day " + cycleDay);
@@ -76,7 +59,7 @@ public class CycleWidgetProvider extends AppWidgetProvider {
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
-    public static void updateCycle(Context context, int day, String phase, String nextPeriod, String redactedText) {
+    public static void updateCycle(Context context, int day, String phase, String nextPeriod) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -89,7 +72,6 @@ public class CycleWidgetProvider extends AppWidgetProvider {
             .putInt(KEY_CYCLE_DAY, day)
             .putString(KEY_CYCLE_PHASE, phase)
             .putString(KEY_NEXT_PERIOD, nextPeriod)
-            .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .apply();
 
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

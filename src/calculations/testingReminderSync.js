@@ -187,21 +187,15 @@ async function updateTestWidget() {
           lastTest,
           retestDue,
           category: "Testing",
-            state: lastTest ? "logged" : "none",
-          },
-          // No date at Redacted: WHEN you were last tested is a specific fact.
-          // Only the presence of a test survives, which is all this tier promises.
-          lastTest ? "Testing: logged" : "Testing: none logged"
-        );
+          state: lastTest ? "logged" : "none",
+        });
       } else {
         await sendWidgetUpdate(bridge, "lastTest", "updateTest", {
           lastTest: "No tests logged",
           retestDue: "-",
           category: "Testing",
           state: "none",
-        },
-        "Testing: none logged"
-      );
+        });
       }
     }
   } catch (e) {

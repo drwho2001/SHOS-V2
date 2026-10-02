@@ -84,14 +84,7 @@ public class WidgetBridgePlugin extends Plugin {
                 // Deliberately not defaulted to "now": that would render a
                 // Chronometer counting up from zero, which looks like a live
                 // reading rather than the absence of one.
-                call.getLong("countdownAt", 0L),
-                // The pre-formatted Redacted line, or "" when the tier is not
-                // Redacted.
-                opt(call, "redactedText"),
-                // The pre-formatted Redacted line, or "" when the tier is not
-                // Redacted. Empty rather than absent so the provider needs no
-                // null case and a stale value cannot survive a tier change.
-                opt(call, "redactedText")
+                call.getLong("countdownAt", 0L)
         );
         call.resolve();
     }
@@ -106,11 +99,7 @@ public class WidgetBridgePlugin extends Plugin {
         RefillWidgetProvider.updateRefill(
                 getContext(),
                 call.getInt("count", 0),
-                opt(call, "nextRefill"),
-                // The pre-formatted Redacted line, or "" when the tier is not
-                // Redacted. Empty rather than absent so the provider needs no
-                // null case and a stale value cannot survive a tier change.
-                opt(call, "redactedText")
+                opt(call, "nextRefill")
         );
         call.resolve();
     }
@@ -125,11 +114,7 @@ public class WidgetBridgePlugin extends Plugin {
         AppointmentWidgetProvider.updateAppointment(
                 getContext(),
                 call.getInt("count", 0),
-                opt(call, "nextAppt"),
-                // The pre-formatted Redacted line, or "" when the tier is not
-                // Redacted. Empty rather than absent so the provider needs no
-                // null case and a stale value cannot survive a tier change.
-                opt(call, "redactedText")
+                opt(call, "nextAppt")
         );
         call.resolve();
     }
@@ -144,11 +129,7 @@ public class WidgetBridgePlugin extends Plugin {
         TestWidgetProvider.updateTest(
                 getContext(),
                 opt(call, "lastTest"),
-                opt(call, "retestDue"),
-                // The pre-formatted Redacted line, or "" when the tier is not
-                // Redacted. Empty rather than absent so the provider needs no
-                // null case and a stale value cannot survive a tier change.
-                opt(call, "redactedText")
+                opt(call, "retestDue")
         );
         call.resolve();
     }
@@ -185,11 +166,7 @@ public class WidgetBridgePlugin extends Plugin {
                 getContext(),
                 call.getInt("day", 0),
                 opt(call, "phase"),
-                opt(call, "nextPeriod"),
-                // The pre-formatted Redacted line, or "" when the tier is not
-                // Redacted. Empty rather than absent so the provider needs no
-                // null case and a stale value cannot survive a tier change.
-                opt(call, "redactedText")
+                opt(call, "nextPeriod")
         );
         call.resolve();
     }
@@ -216,11 +193,7 @@ public class WidgetBridgePlugin extends Plugin {
                 opt(call, "location"),
                 opt(call, "tests"),
                 opt(call, "docType"),
-                opt(call, "clinicNum"),
-                // The pre-formatted Redacted line, or "" when the tier is not
-                // Redacted. Empty rather than absent so the provider needs no
-                // null case and a stale value cannot survive a tier change.
-                opt(call, "redactedText")
+                opt(call, "clinicNum")
         );
         call.resolve();
     }

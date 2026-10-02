@@ -50,8 +50,11 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
         // understand what a tier is. It hides only the two views it already
         // names a few lines below - RemoteViews cannot iterate a view tree, but
         // it does not need to, because these ids are already hardcoded here.
-        if (WidgetRedacted.apply(views, R.id.widget_doxy_title, prefs.getString(KEY_REDACTED_TEXT, ""),
-                R.id.widget_doxy_status, R.id.widget_doxy_countdown)) {
+        String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+        if (redactedText != null && !redactedText.isEmpty()) {
+            views.setTextViewText(R.id.widget_doxy_title, redactedText);
+            views.setViewVisibility(R.id.widget_doxy_status, View.GONE);
+            views.setViewVisibility(R.id.widget_doxy_countdown, View.GONE);
             appWidgetManager.updateAppWidget(appWidgetId, views);
             return;
         }

@@ -195,11 +195,7 @@ async function updateRefillWidget() {
       // the same bridge method; both are wired to the shared helper so neither
       // can drift from the tier rule, but the duplication itself is still worth
       // collapsing. Left as-is rather than refactored mid-change.
-      await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill, category: "Refills" },
-        // Redacted wording: a count identifies nobody. The medication NAME does,
-        // so it is not here - that is the whole point of this tier.
-        count > 0 ? `Refills: ${count} due` : "Refills: none due"
-      );
+      await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill, category: "Refills" });
     }
   } catch (e) {
     // Widget bridge not available (web) — ignore

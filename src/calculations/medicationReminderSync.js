@@ -221,13 +221,7 @@ async function updateRefillWidget() {
         // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate so the stored
         // tier actually applies. Before this, the "Redacted" option in Settings
         // changed nothing at all for this widget.
-        await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill, category: "Refills" },
-          // Same wording as the twin in refillReminderSync.js. Duplication of the
-          // CALL is a known, recorded cleanup; duplicating the WORDING is not,
-          // because two different redacted lines for one widget is exactly the
-          // drift this repo keeps having to undo.
-          count > 0 ? `Refills: ${count} due` : "Refills: none due"
-        );
+        await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill });
         }
 
     // The next-dose widget had a provider, a layout, a manifest receiver and a
@@ -264,14 +258,7 @@ async function updateRefillWidget() {
           // owner's decision. It discloses LESS than nextDoseTime: "in 4h" is
           // true only right now and reveals no routine, where "20:00" does.
           countdownAt: nextUnlock || null,
-        },
-        // Redacted wording. Built HERE because this is the only place that knows
-        // what a medication widget means. A count and a coarse state identify
-        // nobody, which is exactly what the Redacted rule allows.
-        next?.med?.name
-          ? `Medication due in ${describeUntil(nextUnlock)}`
-          : "Medication scheduled"
-      );
+        });
       }
   } catch (e) {
     // CHANGED 30 Sep 2026 (audit) — this catch is the reason the bug above was
@@ -352,19 +339,4 @@ export async function handleSnooze() {
       iconColor: ACCENTS.medication,
   });
   return { minutes: prefs.snoozeMinutes };
-}
-
-/**
- * "in 4h 12m" for a future instant, or "soon" when there is not one.
- *
- * Elapsed time, not an absolute one: it is true only right now and reveals no
- * routine, which is why it survives a Redacted tier where "20:00" does not.
- */
-export function describeUntil(iso) {
-  if (!iso) return "soon";
-  const ms = new Date(iso).getTime() - Date.now();
-  if (!Number.isFinite(ms) || ms <= 0) return "soon";
-  const hours = Math.floor(ms / 3600000);
-  const minutes = Math.floor((ms % 3600000) / 60000);
-  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }

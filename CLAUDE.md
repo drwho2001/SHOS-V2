@@ -805,6 +805,51 @@ which is the same shape as every other time in this file where a check reported
 green on something that had not actually been exercised. The guard now rejects a
 `#` inside any `if:` block.
 
+## Recently shipped (2 Oct 2026, later still still — "high viral load" became "detectable", and the U=U note now hands over its evidence)
+
+**"Positive - high viral load" is now "Positive - detectable", and the old wording was making a claim the app cannot support.** The app knows whether a
+viral-load result was undetectable or not. It knows nothing about how far above the
+assay threshold it sat, so "high" was a magnitude this app never measured. And
+"detectable" is the true counterpart to "Undetectable" directly above it, so the
+pair now reads as one scale rather than two differently-framed statements. **Label
+only** — the stored value `positive-unsuppressed` is untouched, so no saved record
+moves and there is no migration. Three new tests, including one that rejects any
+label claiming a magnitude or severity (high/low/elevated/copies/CD4/threshold), so
+the class cannot come back rather than the one string. Mutation-verified: restoring
+the old label fails 3.
+
+**"Anywhere it COULD show should have U=U" — which the app already enforced, and the
+reason it had to be structural rather than remembered.** A note appearing only on
+undetectable records would disclose by its own presence: you could tell who was
+positive from which cards carried the explanation. So `HivStatusNote` has
+deliberately **no `status` prop** — a caller cannot gate it even by accident — and a
+guard asserts no call site conditions it. All four user-facing surfaces carry it:
+Contacts edit + read, My Profile edit + read. Imported profiles render through the
+normal Contacts read view, so they inherit it. Clinic Card is the one surface still
+to come, and must include it.
+
+**The note is now tappable and opens the evidence, which was the actual gap.** The
+`onOpen` prop for "go to the fuller explanation" was built on day one and **never
+passed by a single call site** — reaching the Glossary from inside a Contacts sheet
+needs navigation threaded through two modules. Rather than ship a fourth rule each
+new screen has to remember, the component is now self-sufficient: tapping expands it
+in place to the full explanation plus four real citations. It still honours `onOpen`
+for any caller that can navigate somewhere better.
+
+**Sourced, and one source deliberately left out.** The owner's guess was that BHIVA
+and FRSH would both have appropriate citations. BHIVA does — including a
+plain-English non-technical summary that states U=U directly, which is the
+"hand it to someone who doubts you" case rather than the "evidence for a
+clinician" one. **FRSH is deliberately absent**: no U=U-specific FRSH document
+surfaced, and citing one nobody has read is exactly the unsourced-constant trap this
+project has been bitten by repeatedly. Every entry carries a `checkedOn` date, and a
+new guard requires it, so a stale citation is findable rather than permanent.
+
+5 new tests, mutation-verified both directions (removing a `checkedOn` fails;
+restoring it passes). Links carry `rel="noopener noreferrer"` — without it the
+opened page gets a `window.opener` handle back into the app — and the guard asserts
+that rather than trusting the markup.
+
 ## Recently shipped (2 Oct 2026, later still — every bottom sheet in the app put its Save button under the Android navigation bar)
 
 **Found by hand on the device, and it was 24 sites, not one.** The Contacts edit

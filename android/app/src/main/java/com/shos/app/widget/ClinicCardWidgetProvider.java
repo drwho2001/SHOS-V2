@@ -50,7 +50,9 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
     private static final String KEY_APPT_NHS_NUM = "clinic_appt_nhs_num";
 
     private static final String KEY_APPT_REVEALED = "clinic_appt_revealed";
-    private static final String KEY_REDACTED_TEXT = "redacted_text_clinic_card";ppWidgetManager, int[] appWidgetIds) {
+
+    @Override
+    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId);
         }
@@ -77,25 +79,6 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
         boolean revealed = prefs.getBoolean(KEY_APPT_REVEALED, false);
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.clinic_card_widget);
-
-
-        // CHANGED 2 Oct 2026 - honour a Redacted tier. The line is built in JS by the
-
-        // caller, which is the only place that knows what this widget means; this
-
-        // provider never learns what a tier is. Returns immediately, because the
-
-        // full rendering below would otherwise overwrite what was just set.
-
-        if (WidgetRedacted.apply(views, R.id.widget_clinic_title, prefs.getString(KEY_REDACTED_TEXT, ""),
-
-                R.id.widget_clinic_date, R.id.widget_clinic_location, R.id.widget_clinic_tests, R.id.widget_clinic_doctype, R.id.widget_clinic_clinic_num, R.id.widget_clinic_nhs_num, R.id.widget_clinic_sensitive_row)) {
-
-            appWidgetManager.updateAppWidget(appWidgetId, views);
-
-            return;
-
-        }
 
         if (!title.isEmpty() && !title.equals("No upcoming appointment")) {
             views.setTextViewText(R.id.widget_clinic_title, title);
@@ -180,7 +163,6 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
             .putString(KEY_APPT_TESTS, tests)
             .putString(KEY_APPT_DOCTYPE, docType)
             .putString(KEY_APPT_CLINIC_NUM, clinicNum)
-            .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .putBoolean(KEY_APPT_REVEALED, false)
             .apply();
 
