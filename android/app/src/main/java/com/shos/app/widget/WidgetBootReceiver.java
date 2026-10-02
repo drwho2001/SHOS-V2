@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 import android.widget.RemoteViews;
+import com.shos.app.R;
 
 /**
  * Blanks every widget immediately after a reboot.
