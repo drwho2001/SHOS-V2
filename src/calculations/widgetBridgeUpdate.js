@@ -57,9 +57,18 @@ async function loadStoredPrivacy() {
  * @param widgetKey one of DATA_WIDGETS - decides the tier
  * @param method   the bridge method to call, e.g. "updateNextDose"
  * @param payload  the full field set the widget COULD show, unfiltered
+ * @param redactedText one pre-formatted line to show instead, when the tier is
+ *   Redacted. Computed by the CALLER rather than here, because only the caller
+ *   knows what its widget means - this module deliberately knows nothing about
+ *   what any widget displays.
+ *
+ *   Added rather than reusing an existing text field because that field means
+ *   something specific at Full ("Active", "Testosterone"), and overwriting it
+ *   would mean the provider could no longer tell which tier rendered it.
+ *
  * @returns true if the update was sent, false if there was no bridge
  */
-export async function sendWidgetUpdate(bridge, widgetKey, method, payload) {
+export async function sendWidgetUpdate(bridge, widgetKey, method, payload, redactedText) {
   if (!bridge || typeof bridge[method] !== "function") return false;
 
   if (!isDataWidget(widgetKey)) {
@@ -93,6 +102,24 @@ export async function sendWidgetUpdate(bridge, widgetKey, method, payload) {
     console.warn(
       `[widgetPrivacy] ${widgetKey} is redacted; not sending: ${dropped.join(", ")}`
     );
+  }
+
+  // ADDED after the provider layer was found not to read the filtered payload.
+  //
+  // Filtering alone was NOT enough, and the reason is the useful part. With only
+  // a filtered payload, every provider fell back to its own default placeholder
+  // string - so a Redacted DoxyPEP widget said "No active window" when a window
+  // was active. Safe, but a false statement about the user's own health on a
+  // home screen, which is worse than useless.
+  //
+  // The fix is for the CALLER - which understands what its widget means - to
+  // supply the redacted wording, so no provider has to understand the tier at
+  // all. Java stays dumb; the privacy decision stays in JS where it is testable.
+  //
+  // Sent ONLY at redacted. At full the real fields are used; at off nothing is
+  // sent at all, so an empty string here would still be a value in storage.
+  if (tier === "redacted" && redactedText) {
+    allowed.redactedText = redactedText;
   }
 
   await bridge[method]({ ...allowed, tier });

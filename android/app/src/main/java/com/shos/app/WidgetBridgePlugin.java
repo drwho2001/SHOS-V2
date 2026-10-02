@@ -144,7 +144,13 @@ public class WidgetBridgePlugin extends Plugin {
         DoxyPEPWidgetProvider.updateDoxyPEP(
                 getContext(),
                 opt(call, "status"),
-                call.getLong("expiryMs", 0L)
+                call.getLong("expiryMs", 0L),
+                // The pre-formatted Redacted line, or "" when the tier is not
+                // Redacted. Empty is the right default rather than the field's
+                // absence, so the provider's "is there a redacted line?" check
+                // needs no null case and a stale value from a previous update
+                // cannot survive.
+                opt(call, "redactedText")
         );
         call.resolve();
     }

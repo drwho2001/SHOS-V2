@@ -112,3 +112,56 @@ describe("the tier is applied at the write boundary", () => {
     expect(await sendWidgetUpdate({}, "nextDose", "updateNextDose", FULL)).toBe(false);
   });
 });
+
+describe("the pre-formatted redacted line", () => {
+  // This is the fix for the bug where a Redacted widget fell back to the
+  // provider's placeholder and said "No active window" when a window was active.
+  // The wording IS the privacy behaviour here, so it is tested directly rather
+  // than only through the payload.
+  it("is sent at redacted, and not at full or off", async () => {
+    AppPreferencesRepository.getPreferences.mockResolvedValue({ widgetPrivacy: { nextDose: "redacted" } });
+    const redacted = fakeBridge("updateNextDose");
+    await sendWidgetUpdate(redacted, "nextDose", "updateNextDose", FULL, "Medication - due now");
+    expect(redacted.calls[0].redactedText).toBe("Medication - due now");
+
+    AppPreferencesRepository.getPreferences.mockResolvedValue({ widgetPrivacy: { nextDose: "full" } });
+    const full = fakeBridge("updateNextDose");
+    await sendWidgetUpdate(full, "nextDose", "updateNextDose", FULL, "Medication - due now");
+    // At full the real fields are used; sending the line too would leave a
+    // provider unable to tell which tier rendered it.
+    expect(full.calls[0].redactedText).toBeUndefined();
+
+    AppPreferencesRepository.getPreferences.mockResolvedValue({ widgetPrivacy: { nextDose: "off" } });
+    const off = fakeBridge("updateNextDose");
+    await sendWidgetUpdate(off, "nextDose", "updateNextDose", FULL, "Medication - due now");
+    // Off sends nothing but the tier. An empty string here would still be a
+    // value in widget storage.
+    expect(off.calls[0]).toEqual({ tier: "off" });
+  });
+});
+
+describe("the DoxyPEP redacted line", () => {
+  it("never says there is no window when there is one", async () => {
+    const { doxyPepRedactedLine } = await import("./doxyPepSync.js");
+    const active = { overdue: false, active: true, deadline: new Date(Date.now() + 5 * 3600000) };
+    expect(doxyPepRedactedLine(active)).toMatch(/DoxyPEP - in 5h/);
+    // The specific regression: the old behaviour rendered the provider's
+    // placeholder, which reads "No active window".
+    expect(doxyPepRedactedLine(active)).not.toMatch(/no active window/i);
+  });
+
+  it("reports the genuinely-inactive and overdue cases honestly", async () => {
+    const { doxyPepRedactedLine } = await import("./doxyPepSync.js");
+    expect(doxyPepRedactedLine({ overdue: true, active: false })).toBe("DoxyPEP - overdue");
+    expect(doxyPepRedactedLine({ overdue: false, active: false })).toBe("DoxyPEP - none active");
+    // Active but with no deadline must not claim a countdown it does not have.
+    expect(doxyPepRedactedLine({ overdue: false, active: true })).toBe("DoxyPEP - active");
+  });
+
+  it("uses minutes alone under an hour, not '0h'", async () => {
+    const { doxyPepRedactedLine } = await import("./doxyPepSync.js");
+    const soon = { overdue: false, active: true, deadline: new Date(Date.now() + 7 * 60000) };
+    expect(doxyPepRedactedLine(soon)).toMatch(/in 7m$/);
+    expect(doxyPepRedactedLine(soon)).not.toMatch(/0h/);
+  });
+});

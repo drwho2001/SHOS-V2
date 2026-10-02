@@ -138,10 +138,25 @@ async function updateDoxyPEPWidget(status) {
         // The field is RENAMED rather than reused because "expiryMs" reads like
         // an absolute deadline in any code review, and the whole point is that
         // the two are not the same disclosure.
-        category: "DoxyPEP",
-        state: statusText,
-        countdownAt: status.deadline ? status.deadline.getTime() : null,
-      });
+          category: "DoxyPEP",
+          state: statusText,
+          countdownAt: status.deadline ? status.deadline.getTime() : null,
+        },
+        // The fifth argument is the pre-formatted Redacted line.
+        //
+        // Supplied HERE rather than inside the payload because this file is the
+        // only place that knows what a DoxyPEP widget means - widgetBridgeUpdate
+        // deliberately knows nothing about what any widget displays.
+        //
+        // It exists at all because filtering alone was not enough: with only a
+        // filtered payload the provider fell back to its own placeholder and the
+        // widget said "No active window" even when a window was active. Safe,
+        // but a false statement about the user's own health on a home screen.
+        //
+        // Active/Overdue are coarse states that identify nobody, and the hours
+        // remaining are elapsed time, so both survive Redacted.
+        doxyPepRedactedLine(status)
+        );
     }
   } catch (e) {
     console.debug("DoxyPEP widget update skipped:", e);
@@ -190,4 +205,23 @@ export function handleSnoozeDoxy() {
     iconColor: ACCENTS.medication,
   });
   return { minutes: 30 };
+}
+
+/**
+ * The one line a Redacted DoxyPEP widget shows.
+ *
+ * Pure and exported so it can be tested directly, which matters because the
+ * wording IS the privacy behaviour: a wrong branch here is what makes the widget
+ * either leak or lie. formatRemaining() is not used because it takes DAYS and
+ * this is a 72-hour window, where "0d remaining" would be both useless and
+ * wrong.
+ */
+export function doxyPepRedactedLine(status) {
+  if (status.overdue) return "DoxyPEP - overdue";
+  if (!status.active) return "DoxyPEP - none active";
+  if (!status.deadline) return "DoxyPEP - active";
+  const remainingMs = status.deadline.getTime() - Date.now();
+  const hours = Math.floor(remainingMs / 3600000);
+  const minutes = Math.floor((remainingMs % 3600000) / 60000);
+  return hours > 0 ? `DoxyPEP - in ${hours}h ${minutes}m` : `DoxyPEP - in ${minutes}m`;
 }

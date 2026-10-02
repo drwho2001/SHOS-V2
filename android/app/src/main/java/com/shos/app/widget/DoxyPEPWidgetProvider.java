@@ -2,6 +2,7 @@ package com.shos.app.widget;
 
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.view.View;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -14,6 +15,8 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_DOXY_STATUS = "doxy_status";
     private static final String KEY_DOXY_EXPIRY = "doxy_expiry";
+    // The pre-formatted one-line wording for a Redacted widget, decided in JS.
+    private static final String KEY_REDACTED_TEXT = "redacted_text";
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
@@ -35,6 +38,26 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
         long expiry = prefs.getLong(KEY_DOXY_EXPIRY, 0);
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.doxy_pep_widget);
+
+        // CHANGED 2 Oct 2026 - honour the Redacted tier.
+        //
+        // Without this the filtered payload left status empty, the provider fell
+        // back to its own placeholder, and a widget could say "No active window"
+        // while a window was active: safe, but a false statement about the user's
+        // own health on a home screen.
+        //
+        // The wording is built in JS, not here, so this provider never has to
+        // understand what a tier is. It hides only the two views it already
+        // names a few lines below - RemoteViews cannot iterate a view tree, but
+        // it does not need to, because these ids are already hardcoded here.
+        String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+        if (redactedText != null && !redactedText.isEmpty()) {
+            views.setTextViewText(R.id.widget_doxy_title, redactedText);
+            views.setViewVisibility(R.id.widget_doxy_status, View.GONE);
+            views.setViewVisibility(R.id.widget_doxy_countdown, View.GONE);
+            appWidgetManager.updateAppWidget(appWidgetId, views);
+            return;
+        }
 
         if (expiry > 0) {
             long remaining = expiry - System.currentTimeMillis();
@@ -66,7 +89,7 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
-    public static void updateDoxyPEP(Context context, String status, long expiryMs) {
+    public static void updateDoxyPEP(Context context, String status, long expiryMs, String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -78,6 +101,7 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
         prefs.edit()
             .putString(KEY_DOXY_STATUS, status)
             .putLong(KEY_DOXY_EXPIRY, expiryMs)
+            .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .apply();
 
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
