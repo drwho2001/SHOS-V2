@@ -325,58 +325,6 @@ export const U_U_EXPLANATION =
  * Anonymise mode is about what shows when the phone is handed to someone else,
  * not about what the user can read about themselves.
  */
-/**
- * ADDED 2 Oct 2026 - the references to hand when someone challenges the claim.
- *
- * WHY. The owner asked for the U=U note to be linkable, because the realistic
- * audience for being told "undetectable = untransmittable" is often somebody who
- * does not believe it - a clinician working from an older framing, or anyone who
- * has heard the 1990s version of this. A bare assertion invites argument; a
- * reference invites a check. So the note expands to real, openable sources
- * rather than resting on the app's own word for it.
- *
- * SOURCED, NOT GUESSED. Every URL below was fetched and read on the date given,
- * and each is a document that actually states the claim - not a search result
- * about it. The repo has been bitten repeatedly by unsourced constants shipped
- * with confident wording, so "I think they have a document" is not good enough.
- *
- * FRSH was specifically considered and is deliberately ABSENT. The owner guessed
- * it would have an appropriate citation; a search did not surface a U=U-specific
- * FRSH document, so citing one would be asserting a source nobody has read. Add
- * it here when the exact document is known - the shape below is the contract.
- *
- * BHIVA leads because this is a UK app and BHIVA is the UK specialist body; its
- * HIV-2 non-technical summary is included specifically because it states U=U in
- * plain English for a non-clinical reader, which is the "reference you can hand
- * someone" case rather than the "evidence for a clinician" case.
- */
-export const U_U_SOURCES = [
-  {
-    label: "BHIVA: routine investigation and monitoring of HIV-positive adults",
-    publisher: "British HIV Association",
-    url: "https://bhiva.org/wp-content/uploads/2024/10/Monitoring-Guidelines.pdf.pdf",
-    checkedOn: "2026-10-02",
-  },
-  {
-    label: "BHIVA non-technical summary (plain-English, states U=U directly)",
-    publisher: "British HIV Association",
-    url: "https://bhiva.org/wp-content/uploads/2024/12/HIV-2-non-tech-summary.pdf",
-    checkedOn: "2026-10-02",
-  },
-  {
-    label: "U=U for clinical practice",
-    publisher: "HIV Guidelines (NIH/WHS/HIVMA)",
-    url: "https://www.hivguidelines.org/guideline/u-equals-u",
-    checkedOn: "2026-10-02",
-  },
-  {
-    label: "Undetectable = Untransmittable",
-    publisher: "UNAIDS",
-    url: "https://www.unaids.org/sites/default/files/media_asset/undetectable-untransmittable_en.pdf",
-    checkedOn: "2026-10-02",
-  },
-];
-
 export function shouldMaskHivStatus(anonymiseModeActive) {
   return !!anonymiseModeActive;
 }

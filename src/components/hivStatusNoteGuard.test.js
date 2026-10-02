@@ -21,7 +21,6 @@ const read = (p) => readFileSync(resolve(process.cwd(), p), "utf8");
 const CALC = read("src/calculations/hivStatusCalculations.js");
 const NOTE = read("src/components/HivStatusNote.jsx");
 // The citations render in the Glossary since 2 Oct 2026.
-const GLOSSARY_SCREEN = read("src/modules/settings/GlossaryScreen.jsx");
 const PROFILE = read("src/modules/SHOS_MyProfile_Prototype.jsx");
 const CONTACTS = read("src/modules/SHOS_Contacts_Prototype.jsx");
 const GLOSSARY = read("src/modules/settings/GlossaryScreen.jsx");
@@ -209,73 +208,32 @@ describe("the Glossary carries the layperson explanation and the evidence", () =
     expect(GLOSSARY).toMatch(/term:\s*"U=U/);
   });
 
-  it("leads with plain language and names the source", () => {
-    const entry = GLOSSARY.match(/term:\s*"U=U[^"]*",\s*body:\s*"([^"]+)"/);
-    expect(entry, "no readable U=U glossary body - guard is vacuous").toBeTruthy();
-    const body = entry[1];
+  it("leads with plain language, and the assay-dependence that qualifies it", () => {
+    // CHANGED 2 Oct 2026: the "names the source" half of this assertion MOVED.
+    // The citations used to be a run-on "Source: BHIVA, ..." tail on the
+    // glossary body; they now live in code, in clinicalEvidence.js, and
+    // clinicalEvidenceCopy.test.js asserts them there. Deleting this half rather
+    // than retargeting it was the wrong call - it would have dropped the only
+    // assertion that the glossary names its source at all - so it points at the
+    // new owner instead.
+    // The term gained a `lead` field on 2 Oct 2026, so the old "term:..., body:..."
+    // adjacency no longer matches. Match the fields independently rather than
+    // assuming an order - which is also why this failed loudly instead of
+    // silently asserting nothing.
+    const entry = GLOSSARY.match(/term:\s*"U=U[^"]*"/);
+    expect(entry, "no readable U=U glossary entry - guard is vacuous").toBeTruthy();
+    const body = GLOSSARY.match(/body:\s*"([^"]*[Uu]ndetectable[^"]*)"/)?.[1];
+    expect(body, "no readable U=U glossary body - guard is vacuous").toBeTruthy();
     expect(body).toMatch(/cannot pass HIV on sexually/i);
-    expect(body, "the glossary entry should carry its evidence").toMatch(/BHIVA/i);
-    expect(body, "and the assay-dependence, which is why 'undetectable' is not a fixed state").toMatch(
-      /laborator|manufacturer/i,
+    expect(body, "the glossary entry should carry its evidence").toMatch(/laborator|manufacturer/i);
+    // The citation is no longer inline in the body, so its absence is asserted too:
+    // this is what stops the old run-on tail creeping back.
+    expect(body, "the inline source tail moved to clinicalEvidence.js - do not re-add it").not.toMatch(
+      /Source:\s*BHIVA/i,
     );
-  });
-});
-describe("the U=U sources are real, cited documents rather than assertions", () => {
-  // ADDED 2 Oct 2026. The note became tappable and opens the evidence, because
-  // the realistic audience for "undetectable = untransmittable" is often someone
-  // who does not believe it. That makes the citation list load-bearing: a dead or
-  // invented URL would leave the app asserting a medical claim with nothing to
-  // check it against, which is worse than not offering the link at all.
-  //
-  // This asserts the SHAPE of each citation. It cannot assert a URL still resolves
-  // - that needs a network and would rot - so what it does assert is that every
-  // entry was recorded as checked, which is what makes a stale one findable.
 
-  it("has at least one source, and the guard can read the list", async () => {
-    const { U_U_SOURCES } = await import("../calculations/hivStatusCalculations");
-    expect(Array.isArray(U_U_SOURCES), "U_U_SOURCES is missing or not an array - guard is vacuous").toBe(true);
-    expect(U_U_SOURCES.length).toBeGreaterThan(0);
-  });
-
-  it("every source is a real https URL with a publisher and a date checked", async () => {
-    const { U_U_SOURCES } = await import("../calculations/hivStatusCalculations");
-    for (const s of U_U_SOURCES) {
-      expect(s.url, "source has no url").toMatch(/^https:\/\//);
-      expect(s.label, "source has no human label").toBeTruthy();
-      expect(s.publisher, `"${s.label}" has no publisher`).toBeTruthy();
-      expect(s.checkedOn, `"${s.label}" was never recorded as checked`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(new Date(s.checkedOn).toString(), `"${s.checkedOn}" is not a real date`).not.toMatch(/Invalid/);
-    }
-  });
-
-  it("the sources are distinct documents, not the same link listed twice", async () => {
-    const { U_U_SOURCES } = await import("../calculations/hivStatusCalculations");
-    const urls = U_U_SOURCES.map((s) => s.url);
-    expect(new Set(urls).size, "duplicate URL in the source list").toBe(urls.length);
-  });
-
-  it("the component actually renders those sources, and does so ungated", () => {
-    // The list existing is not the same as the note showing it. Asserting only
-    // the export would let a component that ignores it stay green forever.
-    // CHANGED 2 Oct 2026: the sources moved to the GLOSSARY, which is where the
-    // underlined "U=U" links. Asserting they render in the note would now pin
-    // the design the owner explicitly rejected.
-    expect(GLOSSARY_SCREEN).toMatch(/U_U_SOURCES/);
-    expect(GLOSSARY_SCREEN).toMatch(/t\.sources/);
-    // ...and the expand must not be conditioned on anything about the record.
-    // Same reasoning as the rest of this file: conditional UI reveals state.
-    expect(NOTE).not.toMatch(/\{[^}]*\bsuppressed\b[^}]*\}\s*&&\s*\{?showSentence/);
-    // CHANGED 2 Oct 2026: the disclosure is now the info bubble revealing the
-    // one-sentence statement, and the fuller text is in the Glossary.
-    expect(NOTE).toMatch(/setShowSentence/);
-    expect(NOTE).toMatch(/aria-expanded/);
-  });
-
-  it("links open externally and safely", () => {
-    // Moved to the Glossary with the citations themselves.
-    expect(GLOSSARY_SCREEN).toMatch(/target="_blank"/);
-    // rel is the half that matters: without it the opened page gets a
-    // window.opener handle back into the app.
-    expect(GLOSSARY_SCREEN).toMatch(/rel="noopener noreferrer"/);
+    // ...and the citations really are reachable from this term.
+    expect(GLOSSARY).toMatch(/evidence:\s*true/);
+    expect(GLOSSARY).toMatch(/onOpenClinicalEvidence/);
   });
 });

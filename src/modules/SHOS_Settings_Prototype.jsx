@@ -39,6 +39,10 @@ const BackupExportScreen = lazy(() => import("./settings/BackupExportScreen"));
 const DataNetworkScreen = lazy(() => import("./settings/DataNetworkScreen"));
 const WidgetsScreen = lazy(() => import("./settings/WidgetsScreen"));
 const GlossaryScreen = lazy(() => import("./settings/GlossaryScreen"));
+// ADDED 2 Oct 2026 - the immutable home for the clinical citations behind the
+// U=U note. Own screen, not Resources: that list is user-editable, so evidence
+// for a public-health claim would be deletable by accident.
+const ClinicalEvidenceScreen = lazy(() => import("./settings/ClinicalEvidenceScreen"));
 const GuideScreen = lazy(() => import("./settings/GuideScreen"));
 const DesignScreen = lazy(() => import("./settings/DesignScreen"));
 const StatsScreen = lazy(() => import("./settings/StatsScreen"));
@@ -541,6 +545,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // clinical evidence inside a component instead of in the one place a reader
   // actually looks it up.
   const [showGlossary, setShowGlossary] = useState(initialScreen === "glossary");
+  const [showClinicalEvidence, setShowClinicalEvidence] = useState(initialScreen === "clinicalEvidence");
   const [showGuide, setShowGuide] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(initialScreen === "privacy");
   // ADDED — real ask: audited settings grouping — a real home for
@@ -629,6 +634,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
     if (showNotifications) { setShowNotifications(false); return true; }
     if (showDataNetwork) { setShowDataNetwork(false); return true; }
     if (showResources) { setShowResources(false); return true; }
+    if (showClinicalEvidence) { setShowClinicalEvidence(false); return true; }
     if (showGlossary) { setShowGlossary(false); return true; }
     if (showGuide) { setShowGuide(false); return true; }
     if (showAutoBackupSettings) { setShowAutoBackupSettings(false); return true; }
@@ -644,7 +650,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
     if (showBackupExport) { setShowBackupExport(false); return true; }
     if (showMyProfile) { setShowMyProfile(false); return true; }
     return false; // nothing open on top — let App.jsx's own fallback close all of Settings
-  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showBackupExport, showResources, showGlossary, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, showWidgets]);
+  }, [showCalendar, showAbout, showTrash, showStats, showDesign, showPreferences, showPrivacy, showNotifications, showDataNetwork, showManageLists, showAutoBackupSettings, showBackupExport, showResources, showGlossary, showClinicalEvidence, showGuide, showDevTools, showSelectiveExport, showCSVExport, showEncryptedExport, showMyProfile, showWidgets]);
 
   // Escape mirrors the back button exactly, including the fall-through: if a
   // sub-screen is open it steps back one level, and only if nothing is open on
@@ -938,7 +944,14 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         <ResourcesScreen onClose={() => setShowResources(false)} />
       )}
       {showGlossary && (
-        <GlossaryScreen onClose={() => setShowGlossary(false)} />
+        <GlossaryScreen onClose={() => setShowGlossary(false)} onOpenClinicalEvidence={() => setShowClinicalEvidence(true)} />
+      )}
+      {/* ADDED 2 Oct 2026 — renders after the glossary so it stacks ABOVE it,
+          which is what makes the back button return to the term the reader came
+          from rather than dropping them out of the glossary entirely. Order here
+          is the whole mechanism; there is no zIndex to get wrong. */}
+      {showClinicalEvidence && (
+        <ClinicalEvidenceScreen onClose={() => setShowClinicalEvidence(false)} />
       )}
       {showGuide && (
         <GuideScreen onClose={() => setShowGuide(false)} onStartTour={onStartTour} />

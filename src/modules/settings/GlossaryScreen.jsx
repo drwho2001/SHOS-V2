@@ -6,14 +6,10 @@ import { CaretLeftIcon as ChevronLeft, BookOpenTextIcon as BookOpen } from "@pho
 import { NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../../calculations/responsive";
-// ADDED 2 Oct 2026 - the U=U note on any record now LINKS here (its underlined
-// "U=U"), so this entry carries the sourced citations rather than the note
-// expanding a panel of its own. Imported rather than re-typed so there is one
-// owner of the citation list and it cannot drift from the one the note tested.
-import { U_U_SOURCES } from "../../calculations/hivStatusCalculations";
+
 
 const GLOSSARY_TERMS = [
-  { term: "U=U (Undetectable = Untransmittable)", body: "If you are on HIV treatment and your viral load stays undetectable - below 50 copies per millilitre of blood, confirmed on repeated tests - you cannot pass HIV on sexually. It is the strongest evidence we have in HIV prevention, and it is why treatment is both treatment and prevention. The word that matters is 'stays': one undetectable result is a single measurement, whereas U=U rests on a viral load that has remained undetectable over time. Different laboratories can detect down to different levels, so 'undetectable' always describes a test result rather than a fixed state of your health. Source: BHIVA, Guidelines for the routine investigation and monitoring of adult HIV positive people - viral suppression is below 50 copies/mL, and assay detection limits differ between manufacturers (roughly 20-75)." , sources: U_U_SOURCES },
+  { term: "U=U (Undetectable = Untransmittable)", lead: "If the level of virus in your blood is so low that a blood test cannot detect it, then it cannot be passed on.", body: "Undetectable = Untransmittable, usually shortened to U=U. When someone is on HIV treatment and their viral load stays undetectable - below 50 copies per millilitre of blood, confirmed on repeated tests - they cannot pass HIV on sexually. It is the strongest evidence we have in HIV prevention, and it is why treatment is both treatment and prevention. The word that matters is 'stays': one undetectable result is a single measurement, whereas U=U rests on a viral load that has remained undetectable over time. Different laboratories can detect down to different levels, so 'undetectable' always describes a test result rather than a fixed state of someone's health.", evidence: true },
   { term: "PrEP", body: "Pre-exposure prophylaxis — medication taken regularly (daily, or event-based around sex) before an exposure, to reduce the chance of getting HIV." },
   { term: "PEP", body: "Post-exposure prophylaxis — a course of HIV medication started within 72 hours after a potential HIV exposure, to reduce the chance of infection taking hold." },
   { term: "DoxyPEP", body: "Doxycycline post-exposure prophylaxis. A single dose of the antibiotic doxycycline, taken within 72 hours after condomless oral, vaginal, or anal sex. Shown to reduce the chance of some bacterial STIs (see Resources → Sexual health for the full guidance)." },
@@ -50,7 +46,7 @@ const GLOSSARY_TERMS = [
 // Measurements' own settings — see that reorg's own commit), and this
 // screen still said it did.
 
-export function GlossaryScreen({ onClose }) {
+export function GlossaryScreen({ onClose, onOpenClinicalEvidence }) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? DARK : NEUTRAL;
   const [query, setQuery] = useState("");
@@ -102,28 +98,51 @@ export function GlossaryScreen({ onClose }) {
             {filtered.map((t) => (
               <div key={t.term} style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}`, breakInside: "avoid" }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary, marginBottom: 3 }}>{t.term}</div>
+                {/* CHANGED 2 Oct 2026 — a bold LEAD line for the terms that have
+                    one, as its own block rather than an inline bold phrase inside
+                    the paragraph. Gemini's review pushed back on inline bolding
+                    specifically: one bold clause in dense body copy reads clunky
+                    and fights the text around it. As a lead it gives the reader
+                    the actual claim first, with the detail demoted beneath.
+
+                    Person-neutral by design and asserted in
+                    clinicalEvidenceCopy.test.js: it states what the science is,
+                    not what it means for the reader, so it stays true whatever
+                    someone's status happens to be. */}
+                {t.lead && (
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary, lineHeight: 1.4, marginBottom: 6 }}>
+                    {t.lead}
+                  </div>
+                )}
                 <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.4 }}>{t.body}</div>
-                {/* ADDED 2 Oct 2026 — the sourced citations, for the terms that
-                    have them. This is where the U=U note's underlined "U=U"
-                    lands, so it is also where someone being handed a phone, or
-                    arguing with this app about a medical claim, finds something
-                    to check. Rendered from the imported list, never re-typed. */}
-                {t.sources && t.sources.length > 0 && (
-                  <ul style={{ margin: "6px 0 0", paddingLeft: 16 }}>
-                    {t.sources.map((s) => (
-                      <li key={s.url} style={{ marginBottom: 3 }}>
-                        <a
-                          href={s.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: T.textSecondary, textDecoration: "underline", textUnderlineOffset: 2 }}
-                        >
-                          {s.label}
-                        </a>{" "}
-                        <span style={{ color: T.textDisabled }}>({s.publisher})</span>
-                      </li>
-                    ))}
-                  </ul>
+                {/* CHANGED 2 Oct 2026 — the citations MOVED to their own Clinical
+                    evidence screen. They briefly lived here, and both the owner
+                    and Gemini's review were right that this is the wrong home: a
+                    general shorthand glossary is browsed for definitions, and four
+                    PDF links hanging off one term made it read as a citation list.
+                    The obvious alternative — Resources — was worse, because that
+                    list is user-editable, so the evidence for a public-health
+                    claim would be deletable by accident.
+
+                    So this stays a signpost. The term keeps the explanation,
+                    because that is what the underlined "U=U" on any record is
+                    for; the evidence sits in code, in clinicalEvidence.js. */}
+                {t.evidence && onOpenClinicalEvidence && (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={onOpenClinicalEvidence}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+                      }
+                    }}
+                    aria-label="View clinical evidence and sources"
+                    style={{ fontSize: 11, color: T.textSecondary, textDecoration: "underline", textUnderlineOffset: 2, cursor: "pointer", marginTop: 6 }}
+                  >
+                    View clinical evidence and sources
+                  </div>
                 )}
               </div>
             ))}
