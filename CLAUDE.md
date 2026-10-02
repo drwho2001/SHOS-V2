@@ -847,6 +847,30 @@ render as one compact line. The Status widget will use text plus colour, never
 colour alone. Clinic Card Full is administrative by default, with the clinical
 reason opt-in.
 
+**The countdown survives a Redacted tier, and that is more consistent with the
+rule than what it replaced.** The first version excluded it on the grounds that
+"a countdown timestamp is a time" - correct about an absolute time, wrong about
+a countdown. `in 4h 12m` discloses strictly *less* than `20:00`, because elapsed
+time is true only at the moment it is read and reveals no routine, whereas a
+wall-clock time reveals the user's daily routine. The rule now draws that line
+explicitly: **absolute time is forbidden, elapsed time is allowed.** DoxyPEP's
+`expiryMs` was renamed `countdownAt` rather than reused - same value, but the
+old name reads like an absolute deadline in any code review.
+
+The countdown is a real `Chronometer`, not a JS interval: the widget has
+`updatePeriodMillis="0"`, so a JS-driven one would tick once and then lie for an
+hour, and `Chronometer` is ticked by the system UI, needing no alarm, no wake
+lock and no app process.
+
+**Two Android API signatures guessed from memory, both wrong, neither caught by
+the compiler** - the third native change in a row where L-046 paid.
+`setChronometerCountDown` takes a `boolean`, not a timestamp; the deadline goes
+in as `setChronometer`'s `base`. Worse, `base` is in the
+`SystemClock.elapsedRealtime()` timebase, so passing wall-clock compiles, runs,
+and displays a nonsense countdown - the worst failure mode, because it looks
+like it is working. Verified against the `RemoteViews` reference rather than
+trusted. Recorded as L-050.
+
 ## Recently shipped (2 Oct 2026 - the reboot protection could not have worked, and it is the kind of bug a green CI cannot see)
 
 **The boot receiver shipped listening for `ACTION_BOOT_COMPLETED`, which fires
