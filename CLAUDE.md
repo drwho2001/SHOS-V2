@@ -851,6 +851,82 @@ ever *opened a form-render path*, and both bugs live in code that unit-tests
 happily import without rendering. A smoke flow that opens My Profile -> Edit is
 the actual fix, not a nice extra.
 
+## Recently shipped (1 Oct 2026, later still still still still — HIV status became shareable, and the argument for it was backwards)
+
+**The owner wanted HIV status shareable, reasoning that it is "a stable item,
+unlike chlamydia", so sharing keeps privacy concerns minimal. Gemini's review
+agreed with my objection rather than the reasoning, and the disagreement is the
+point.** A home address leaks stale and you move; an HIV status leaks
+**permanently true, globally identifying, irrevocable**. **"Stable attribute" is
+about record-maintenance burden, not disclosure risk — the argument confuses data
+velocity with data sensitivity.** UK GDPR Art. 9 treats health data as special
+category precisely on the axis of *irreversibility of stigma*. Gemini's concrete
+case: you AirDrop a profile to a hookup, you fall out in six months, they still
+hold a permanent fact about your blood. **The tickbox supplies voluntariness, not
+minimisation** — once written it is plaintext with no revocation.
+
+**The owner's own shorthand cost us the most important state.** Writing `+ / - /
+unknown` for a four-state model, they clarified undetectable is not to be
+collapsed. Gemini independently arrived at the same refusal: a shared payload of
+`"positive"` exports the 1990s framing to a sexual partner — a suppressed-for-five-
+years user would trigger demands for PEP or outright rejection on a fear that is
+**no longer medically true** — while this app's own Glossary explains U=U.
+**Collapsing it would have made the app contradict the note shipped one commit
+earlier.** Four states stay.
+
+**A negative and a positive need different dates, and the rule is not "the last
+test".** It is the last *relevant* test. A **negative is time-bounded** and a
+4th-gen test has a window period, so undated it is unquantifiable reassurance.
+A **positive is durable** — diagnosed in 2012 it is true today, and forcing a date
+invents one. So `describeHivStatus` now varies the undated wording per state:
+negative leads with "Last known negative, but no date recorded — **unverified**"
+(the word "Negative" is demoted off the front so it cannot be skimmed as
+reassurance), undetectable says the result needs a date *because U=U rests on
+sustained suppression*, and positive is the mildest.
+
+**Redaction is OMISSION, and Gemini independently derived the same fix unprompted.**
+A `"not-disclosed"` sentinel would be a new status string needing its own
+rendering, its own picker option and its own handling in every comparison — one
+more string mistakable for a real status, in a field where a wrong answer is a
+false reassurance. Instead the key is simply absent, so the recipient's Contact
+holds `null`, which this app **already** renders as "Not recorded" and already
+treats as "not stated". Redaction and "never told me" share one code path, so
+they cannot drift. Gemini named the leak: an empty HIV field beside PrEP,
+chlamydia and gonorrhoea dates is *itself* read as a covert positive in a
+sub-population where withholding is presumed positive. **Absence must carry zero
+differential metadata** — no `hiv_shared: false`.
+
+**The read view never displayed the HIV status at all, and Phase 4's U=U note
+was hanging under an empty label.** It showed PrEP, "Last HIV test" and the note
+— but not the value the note explained, on the screen this file has twice called
+"the one you glance at to check your own status". Found while adding the row, not
+by looking for it. It could not be copy-pasted: `ProfileDataView` had no
+`anonymise` and none of the derivation inputs, so the naive fix was a **second
+`deriveHivStatus` in a second component** — the drift rule this repo has paid for
+repeatedly. New `useResolvedHivStatus(stated)` hook is the single owner, called
+by the edit screen, the read view and the share panel.
+
+**Two of my own tests were vacuous, and the first was the most important
+property in the change.** "Omits the key when not opted in" passed no
+`resolvedHivStatus`, so it went green when **the entire opt-in gate was deleted**
+— with nothing to leak, nothing was spread. It proved the payload builder works,
+not that the gate exists. Both now pass a resolvable status, so the gate is the
+only thing standing between them and a leak. Second: nothing asserted the new
+`hivStatusInformedDate` default, so removing it was also green.
+
+**Two existing guards fired on the hook extraction, and both were widened by
+exactly the legitimate amount rather than deleted.** The "stated value reaches
+`resolveHivStatus`" guard asserted one literal that now lives in the hook, so it
+is split into two assertions that are **strictly stronger**: the hook must
+forward its own parameter, *and* every call site must pass the stored value
+(matched with a negative lookbehind, since the declaration also matches). The
+untested-fallback guard is now anchored on `return useLoadedMemo` — unanchored it
+grabbed the hook's test-records loader, and passed for the wrong reason.
+
+19 new share tests, **all six mutations red** including share-by-default, and
+**three guard mutations red** including passing the derived value in place of the
+stated one. 1030 tests pass.
+
 ## Recently shipped (1 Oct 2026, later still still still — U=U had to be a standing note, not a badge)
 
 **The owner asked for the "undetectable = untransmittable" fact to be visible.
