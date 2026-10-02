@@ -82,24 +82,39 @@ describe("the widget NHS-number sink is not reachable", () => {
     // The other half of the promise. EncryptedSharedPreferences uses a
     // Keystore-backed key - the only kind a widget can read from a cold-started
     // process, since the app's own vault key is non-extractable and in-memory
-    // only. See WidgetPrefs.java.
-    //
-    // WidgetPrefs itself is excluded: it is the helper, and its one plain call
-    // is the documented last-resort fallback for when the Keystore is
-    // unavailable (which would otherwise crash every widget update). The
-    // separate assertion below still requires the encrypted path to exist, so
-    // excluding the helper cannot make this vacuous.
-    const providers = ALL_JAVA.filter(
-      (f) => f.path.includes(`${path.sep}widget${path.sep}`) && !f.path.endsWith("WidgetPrefs.java")
-    );
-    const plain = providers.filter((f) =>
-      /getSharedPreferences\(\s*PREFS_NAME\s*,\s*Context\.MODE_PRIVATE\s*\)/.test(codeOnly(f.src))
-    );
-    expect(plain.map((f) => path.basename(f.path))).toEqual([]);
-    const helper = ALL_JAVA.find((f) => f.path.endsWith("WidgetPrefs.java"));
-    expect(helper, "WidgetPrefs.java should exist").toBeTruthy();
-    expect(helper.src).toMatch(/EncryptedSharedPreferences\.create/);
-  });
+// CHANGED 1 Oct 2026 (t046). WidgetPrefs.java used to be EXCLUDED from this
+      // scan, and the comment argued the exclusion could not make the assertion
+      // vacuous because a separate check requires EncryptedSharedPreferences
+      // to exist. That reasoning was wrong, and it is worth spelling out why
+      // rather than just deleting it: requiring the encrypted path to EXIST says
+      // nothing about whether a PLAINTEXT fallback also exists. The guard was
+      // green the entire time WidgetPrefs.get() ended in
+      // context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE) - a plaintext XML
+      // file holding medication names, cycle phases and clinic visits, readable
+      // by the launcher, by anything with storage access, and by any backup
+      // agent.
+      //
+      // So this is the repo's own recurring failure in its purest form: a guard
+      // that missed its own target while asserting, in a comment, that it had
+      // not. WidgetPrefs is now included, and the fallback is gone.
+      const providers = ALL_JAVA.filter((f) => f.path.includes(`${path.sep}widget${path.sep}`));
+      const plain = providers.filter((f) =>
+        /getSharedPreferences\(\s*PREFS_NAME\s*,\s*Context\.MODE_PRIVATE\s*\)/.test(codeOnly(f.src))
+      );
+      expect(plain.map((f) => path.basename(f.path))).toEqual([]);
+      const helper = ALL_JAVA.find((f) => f.path.endsWith("WidgetPrefs.java"));
+      expect(helper, "WidgetPrefs.java should exist").toBeTruthy();
+      expect(helper.src).toMatch(/EncryptedSharedPreferences\.create/);
+      // AND it must fail CLOSED. The assertion above proves no plaintext store is
+      // ever opened, which is necessary but not sufficient on its own - a future
+      // edit could satisfy it by returning null while still crashing every
+      // provider, so the callers' guards are asserted too.
+      expect(codeOnly(helper.src)).not.toMatch(/return\s+context\.getSharedPreferences/);
+      expect(
+        providers.filter((f) => f.path.endsWith("WidgetPrefs.java")).length,
+        "the helper must be inside the scan, or the exclusion this file just removed can return silently",
+      ).toBe(1);
+    });
 
   it("the bridge is registered with Capacitor, or the JS guard can never pass", () => {
     // The single line whose absence is why this feature did not work at all.

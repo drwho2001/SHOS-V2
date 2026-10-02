@@ -260,6 +260,73 @@ suite run reported 2 failures that did not reproduce on an immediate re-run, at
 520 MB free RAM; this repo has a long history of exactly that, and the honest
 reading is memory pressure rather than a real flake. CI is the confirmation.
 
+## Widget storage now fails closed, and widgets blank on reboot (t046 + boot leak)
+
+Two privacy holes in the widget layer, both found by a Gemini review that
+corrected the plan rather than rubber-stamping it.
+
+### 1. The plaintext fallback is gone — `WidgetPrefs` now returns `null`
+
+It ended in `context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)`, justified
+in its own comment by *"a widget that crashes on every update is worse than one
+that shows stale text — and the content is masked by default regardless."*
+
+**Both halves of that were wrong.** The content is *not* masked by default — the
+next-dose widget renders the medication name. And the trade is not symmetric: a
+stale widget is visible and fixable; a plaintext XML file of sexual-health data
+is neither. `RemoteViews` also cross a process boundary to the Launcher, so
+anything in a plaintext store here is readable by the launcher itself, by
+anything with storage access, and by any backup agent.
+
+It now returns `null` and every one of the **14 call sites** across 7 providers
+returns early. Nothing is written in plaintext, ever, under any failure.
+
+### 2. A guard had excluded its own target, and argued for it
+
+`widgetPlaintextSink.test.js` scanned the widget package for plaintext stores —
+and filtered `WidgetPrefs.java` out, with this comment:
+
+> *"WidgetPrefs itself is excluded… its one plain call is the documented
+> last-resort fallback… The separate assertion below still requires the encrypted
+> path to exist, so excluding the helper cannot make this vacuous."*
+
+**That reasoning is wrong, and it is worth keeping why.** Requiring
+`EncryptedSharedPreferences.create` to exist says nothing about whether a
+plaintext fallback *also* exists. The guard was green the whole time the
+fallback shipped. This is the repo's recurring failure in its purest form — a
+guard that missed its own target while asserting in a comment that it had not.
+
+The exclusion is removed, `WidgetPrefs.java` is inside the scan, and it is
+mutation-verified: restoring the fallback turns the suite red.
+
+### 3. Widgets now blank on reboot — a leak nothing here could close
+
+Android persists the last rendered `RemoteViews` and the Launcher re-displays
+them **without the app running and without the vault unlocked**. So a reboot
+showed the last medication name, cycle phase, test date and clinic visit before
+anyone entered a PIN. `EncryptedSharedPreferences` protects the stored value; it
+does nothing about pixels already drawn — the same file-versus-screen gap
+`widgetPrivacy` exists to close.
+
+New `WidgetBootReceiver` pushes `setEmptyView` for all seven data widgets on
+`BOOT_COMPLETED`. It deliberately does **not** clear the encrypted store, so the
+next widget update repopulates normally and a reboot costs the user nothing once
+they open the app. Only the rendered pixels are cleared.
+
+`next_dose_widget.xml` was the one layout with no root id, so it gained
+`widget_root` — verified, along with all seven layout names, before registering
+the receiver, since a wrong resource name is a Java compile error that cannot be
+caught locally.
+
+### Gemini also overturned two design decisions
+
+- **"Redacted = counts only" is incoherent across heterogeneous widgets.** I had
+  invented per-widget meanings. It is now one uniform rule: category presence
+  without specifics. Recorded as L-044.
+- **A Status widget orchestrating five live domain queries is a trap** — any one
+  throwing kills the widget, and widgets run in constrained lifecycle windows.
+  It must read a single pre-aggregated flat payload instead.
+
 ## What works — checked, not inferred
 
 - **Every gate, locally and in CI.** `npm run verify:fast` is the working loop;

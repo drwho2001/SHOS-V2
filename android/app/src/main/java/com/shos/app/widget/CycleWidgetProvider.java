@@ -25,6 +25,13 @@ public class CycleWidgetProvider extends AppWidgetProvider {
 
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = WidgetPrefs.get(context);
+        // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
+        // rather than falling back to a plaintext store; see its own comment for
+        // why that fallback was wrong. Returning here leaves the widget showing
+        // whatever Android last rendered and writes nothing new, which is the
+        // correct trade: a stale widget is visible and fixable, a plaintext file
+        // of sexual-health data is neither.
+        if (prefs == null) return;
         int cycleDay = prefs.getInt(KEY_CYCLE_DAY, 0);
         String phase = prefs.getString(KEY_CYCLE_PHASE, "No cycle data");
         String nextPeriod = prefs.getString(KEY_NEXT_PERIOD, "—");
@@ -54,6 +61,13 @@ public class CycleWidgetProvider extends AppWidgetProvider {
 
     public static void updateCycle(Context context, int day, String phase, String nextPeriod) {
         SharedPreferences prefs = WidgetPrefs.get(context);
+        // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
+        // rather than falling back to a plaintext store; see its own comment for
+        // why that fallback was wrong. Returning here leaves the widget showing
+        // whatever Android last rendered and writes nothing new, which is the
+        // correct trade: a stale widget is visible and fixable, a plaintext file
+        // of sexual-health data is neither.
+        if (prefs == null) return;
         prefs.edit()
             .putInt(KEY_CYCLE_DAY, day)
             .putString(KEY_CYCLE_PHASE, phase)

@@ -42,22 +42,41 @@ final class WidgetPrefs {
     private WidgetPrefs() {
     }
 
+    /**
+     * The encrypted store, or {@code null} if it cannot be opened.
+     *
+     * CHANGED 1 Oct 2026 (t046). The last resort used to be
+     * {@code context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)} - a plaintext
+     * XML file - justified by "a widget that crashes on every update is worse
+     * than one that shows stale text". That reasoning is wrong for this app, and
+     * the comment made it worse by asserting the content was masked by default
+     * regardless. It was not: the next-dose widget renders the medication name,
+     * and {@code RemoteViews} cross a process boundary to the Launcher, so
+     * anything in a plaintext store here is readable by the launcher itself, by
+     * anything with storage access, and by any backup agent.
+     *
+     * A blank widget is a cosmetic defect that the user can see and fix. A
+     * plaintext file of sexual-health data is a silent one that they cannot. So
+     * this now FAILS CLOSED: null, and every caller renders an empty widget.
+     * Nothing is written in plaintext, ever, under any failure.
+     *
+     * @return the encrypted store, or null when encryption is unavailable.
+     */
     static SharedPreferences get(Context context) {
         try {
             return create(context);
         } catch (Exception first) {
-            // Almost certainly a leftover plaintext file from a build that
-            // wrote to this name before encryption existed. Delete and retry
-            // once; if it still fails, fall back to a private (unencrypted)
-            // store rather than taking the widget down entirely, because a
-            // widget that crashes on every update is worse than one that shows
-            // stale text - and the content is masked by default regardless.
+            // A leftover plaintext file from a build that predates encryption
+            // makes create() throw, because it cannot parse a file that is not
+            // in its own format. Delete it once and retry. Nothing is lost: the
+            // file could only ever have held widget data, and the bridge
+            // re-populates it on the next change.
             try {
                 context.deleteSharedPreferences(PREFS_NAME);
                 return create(context);
             } catch (Exception second) {
-                android.util.Log.w("WidgetPrefs", "encrypted store unavailable", second);
-                return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                android.util.Log.w("WidgetPrefs", "encrypted store unavailable; widgets will render empty", second);
+                return null;
             }
         }
     }

@@ -48,6 +48,21 @@
         </activity>
 
         <!-- ADDED 21 Sep 2026 — Android home-screen widget for next medication dose -->
+        <!-- ADDED 1 Oct 2026 - blank every widget after a reboot.
+             Android re-displays the last rendered RemoteViews on the home screen
+             without the app running and without the vault unlocked, so a restart
+             would otherwise show the last medication name, cycle phase and clinic
+             visit before the user has entered a PIN. EncryptedSharedPreferences
+             protects the stored value; it does nothing about pixels already drawn.
+             RECEIVE_BOOT_COMPLETED is already declared above. -->
+        <receiver
+            android:name=".widget.WidgetBootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".widget.NextDoseWidgetProvider"
             android:exported="true">

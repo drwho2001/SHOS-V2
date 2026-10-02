@@ -60,6 +60,13 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
 
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = WidgetPrefs.get(context);
+        // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
+        // rather than falling back to a plaintext store; see its own comment for
+        // why that fallback was wrong. Returning here leaves the widget showing
+        // whatever Android last rendered and writes nothing new, which is the
+        // correct trade: a stale widget is visible and fixable, a plaintext file
+        // of sexual-health data is neither.
+        if (prefs == null) return;
         String title = prefs.getString(KEY_APPT_TITLE, "No upcoming appointment");
         String date = prefs.getString(KEY_APPT_DATE, "");
         String location = prefs.getString(KEY_APPT_LOCATION, "");
@@ -142,6 +149,13 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
     public static void updateClinicCard(Context context, String title, String date, String location,
                                         String tests, String docType, String clinicNum) {
         SharedPreferences prefs = WidgetPrefs.get(context);
+        // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
+        // rather than falling back to a plaintext store; see its own comment for
+        // why that fallback was wrong. Returning here leaves the widget showing
+        // whatever Android last rendered and writes nothing new, which is the
+        // correct trade: a stale widget is visible and fixable, a plaintext file
+        // of sexual-health data is neither.
+        if (prefs == null) return;
         prefs.edit()
             .putString(KEY_APPT_TITLE, title)
             .putString(KEY_APPT_DATE, date)

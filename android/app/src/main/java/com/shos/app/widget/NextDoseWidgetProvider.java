@@ -22,6 +22,13 @@ public class NextDoseWidgetProvider extends AppWidgetProvider {
 
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = WidgetPrefs.get(context);
+        // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
+        // rather than falling back to a plaintext store; see its own comment for
+        // why that fallback was wrong. Returning here leaves the widget showing
+        // whatever Android last rendered and writes nothing new, which is the
+        // correct trade: a stale widget is visible and fixable, a plaintext file
+        // of sexual-health data is neither.
+        if (prefs == null) return;
         String nextDoseTime = prefs.getString(KEY_NEXT_DOSE_TIME, "--:--");
         String medName = prefs.getString(KEY_MED_NAME, "Medication");
 
@@ -34,6 +41,13 @@ public class NextDoseWidgetProvider extends AppWidgetProvider {
 
     public static void updateNextDose(Context context, String medName, String nextDoseTime) {
         SharedPreferences prefs = WidgetPrefs.get(context);
+        // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
+        // rather than falling back to a plaintext store; see its own comment for
+        // why that fallback was wrong. Returning here leaves the widget showing
+        // whatever Android last rendered and writes nothing new, which is the
+        // correct trade: a stale widget is visible and fixable, a plaintext file
+        // of sexual-health data is neither.
+        if (prefs == null) return;
         prefs.edit()
             .putString(KEY_MED_NAME, medName)
             .putString(KEY_NEXT_DOSE_TIME, nextDoseTime)

@@ -24,6 +24,13 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
 
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = WidgetPrefs.get(context);
+        // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
+        // rather than falling back to a plaintext store; see its own comment for
+        // why that fallback was wrong. Returning here leaves the widget showing
+        // whatever Android last rendered and writes nothing new, which is the
+        // correct trade: a stale widget is visible and fixable, a plaintext file
+        // of sexual-health data is neither.
+        if (prefs == null) return;
         int apptCount = prefs.getInt(KEY_APPT_COUNT, 0);
         String nextAppt = prefs.getString(KEY_NEXT_APPT, "No appointments");
 
@@ -52,6 +59,13 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
 
     public static void updateAppointment(Context context, int count, String nextAppt) {
         SharedPreferences prefs = WidgetPrefs.get(context);
+        // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
+        // rather than falling back to a plaintext store; see its own comment for
+        // why that fallback was wrong. Returning here leaves the widget showing
+        // whatever Android last rendered and writes nothing new, which is the
+        // correct trade: a stale widget is visible and fixable, a plaintext file
+        // of sexual-health data is neither.
+        if (prefs == null) return;
         prefs.edit()
             .putInt(KEY_APPT_COUNT, count)
             .putString(KEY_NEXT_APPT, nextAppt)

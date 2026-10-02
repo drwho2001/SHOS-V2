@@ -24,6 +24,13 @@ public class TestWidgetProvider extends AppWidgetProvider {
 
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = WidgetPrefs.get(context);
+        // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
+        // rather than falling back to a plaintext store; see its own comment for
+        // why that fallback was wrong. Returning here leaves the widget showing
+        // whatever Android last rendered and writes nothing new, which is the
+        // correct trade: a stale widget is visible and fixable, a plaintext file
+        // of sexual-health data is neither.
+        if (prefs == null) return;
         String lastTest = prefs.getString(KEY_LAST_TEST, "No tests logged");
         String retestDue = prefs.getString(KEY_RETEST_DUE, "-");
 
@@ -46,6 +53,13 @@ public class TestWidgetProvider extends AppWidgetProvider {
 
     public static void updateTest(Context context, String lastTest, String retestDue) {
         SharedPreferences prefs = WidgetPrefs.get(context);
+        // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
+        // rather than falling back to a plaintext store; see its own comment for
+        // why that fallback was wrong. Returning here leaves the widget showing
+        // whatever Android last rendered and writes nothing new, which is the
+        // correct trade: a stale widget is visible and fixable, a plaintext file
+        // of sexual-health data is neither.
+        if (prefs == null) return;
         prefs.edit()
             .putString(KEY_LAST_TEST, lastTest)
             .putString(KEY_RETEST_DUE, retestDue)
