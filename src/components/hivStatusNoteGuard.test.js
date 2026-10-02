@@ -218,3 +218,54 @@ describe("the Glossary carries the layperson explanation and the evidence", () =
     );
   });
 });
+describe("the U=U sources are real, cited documents rather than assertions", () => {
+  // ADDED 2 Oct 2026. The note became tappable and opens the evidence, because
+  // the realistic audience for "undetectable = untransmittable" is often someone
+  // who does not believe it. That makes the citation list load-bearing: a dead or
+  // invented URL would leave the app asserting a medical claim with nothing to
+  // check it against, which is worse than not offering the link at all.
+  //
+  // This asserts the SHAPE of each citation. It cannot assert a URL still resolves
+  // - that needs a network and would rot - so what it does assert is that every
+  // entry was recorded as checked, which is what makes a stale one findable.
+
+  it("has at least one source, and the guard can read the list", async () => {
+    const { U_U_SOURCES } = await import("../calculations/hivStatusCalculations");
+    expect(Array.isArray(U_U_SOURCES), "U_U_SOURCES is missing or not an array - guard is vacuous").toBe(true);
+    expect(U_U_SOURCES.length).toBeGreaterThan(0);
+  });
+
+  it("every source is a real https URL with a publisher and a date checked", async () => {
+    const { U_U_SOURCES } = await import("../calculations/hivStatusCalculations");
+    for (const s of U_U_SOURCES) {
+      expect(s.url, "source has no url").toMatch(/^https:\/\//);
+      expect(s.label, "source has no human label").toBeTruthy();
+      expect(s.publisher, `"${s.label}" has no publisher`).toBeTruthy();
+      expect(s.checkedOn, `"${s.label}" was never recorded as checked`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(new Date(s.checkedOn).toString(), `"${s.checkedOn}" is not a real date`).not.toMatch(/Invalid/);
+    }
+  });
+
+  it("the sources are distinct documents, not the same link listed twice", async () => {
+    const { U_U_SOURCES } = await import("../calculations/hivStatusCalculations");
+    const urls = U_U_SOURCES.map((s) => s.url);
+    expect(new Set(urls).size, "duplicate URL in the source list").toBe(urls.length);
+  });
+
+  it("the component actually renders those sources, and does so ungated", () => {
+    // The list existing is not the same as the note showing it. Asserting only
+    // the export would let a component that ignores it stay green forever.
+    expect(NOTE).toMatch(/U_U_SOURCES/);
+    // ...and the expand must not be conditioned on anything about the record.
+    // Same reasoning as the rest of this file: conditional UI reveals state.
+    expect(NOTE).not.toMatch(/\{[^}]*\bsuppressed\b[^}]*\}\s*&&\s*\{?open/);
+    expect(NOTE).toMatch(/setOpen/);
+  });
+
+  it("links open externally and safely", () => {
+    expect(NOTE).toMatch(/target="_blank"/);
+    // rel is the half that matters: without it the opened page gets a
+    // window.opener handle back into the app.
+    expect(NOTE).toMatch(/rel="noopener noreferrer"/);
+  });
+});
