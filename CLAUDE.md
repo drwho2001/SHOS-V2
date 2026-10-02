@@ -956,6 +956,46 @@ ever *opened a form-render path*, and both bugs live in code that unit-tests
 happily import without rendering. A smoke flow that opens My Profile -> Edit is
 the actual fix, not a nice extra.
 
+## Recently shipped (2 Oct 2026, later still — a 4px gap under the Healthcare banner, and the Clinic Card's last section was unreachable)
+
+**A device sweep of the six remaining same-class scrolling-flex containers found
+one real bug and cleared the other five.** Encounter, Healthcare, Episodes,
+Attachments and the Healthcare sub-tabs all scroll to their end and clear the
+nav bar. **Clinic Card did not**: its last section finished at **y=835** against
+a nav bar starting at **y=759**, so 76px of the Emergency notes sat underneath it
+*even when the scroller was at maximum*. Same t060 cause as My Profile — its
+scroller was also `display:flex`, so the flex child's height is the container's
+**content box** (`clientHeight` minus padding), and the 80px bottom padding was
+simply not honoured. Fixed the same way: `display:flex` off the scroller,
+`margin:"0 auto"` onto the wrapper below it. Inventory 6 → 5.
+
+**The sticky sub-heading gap the owner reported is 4px, and the cause is drift
+rather than one wrong number.** Measured on the device: the Healthcare banner
+sticks at `top:0` and is **93px** tall (35px of that the status-bar inset), so
+it ends at y=93; the Vaccinations sub-heading stuck at **y=97**, and scrolled
+content was plainly visible in between. The offset was `62px`, left over from
+before the 16 Sep 2026 banner redesign shortened the banner by 8px — the
+dependent offsets went 70 → 62 at the time, and not far enough.
+
+**The real fix is one constant, not a corrected number.** **Seven** sites each
+carried their own hardcoded stick position, so they had drifted apart silently
+and every future banner change needed hand-propagation. They now all use
+`STICKY_SUBHEADING_TOP` from `designTokens.js`, with
+`stickySubheadingGuard.test.js` failing if any site reintroduces a literal — plus
+a check that every user of the constant imports it, because a missing import is a
+render-time `ReferenceError` in exactly the class of code unit tests import
+without rendering. 58 is the banner's height *excluding* the inset, so the guard
+also pins the value and says out loud that changing the banner means changing
+it. Both mutations red, including the reintroduced literal and the dropped import.
+
+**Also: my first device measurement was wrong and every screen looked broken.**
+The scan for "lowest visible content" found the **nav bar's own labels** —
+`"Contacts"`, `"Home"` — and reported all five screens as underlapping. The
+number was real and the question was not: the scan had to exclude the fixed nav
+subtree before it meant anything. Recorded because a measurement that cannot
+distinguish the thing it is measuring from the thing it is measuring against is
+worse than no measurement.
+
 ## Recently shipped (2 Oct 2026, later — a daily PrEP dose was silently SKIPPED, found by hand on the phone)
 
 **A once-daily medication's dose for the day was skipped entirely, and the app

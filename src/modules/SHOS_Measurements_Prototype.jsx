@@ -29,7 +29,7 @@ import { TestingRepository } from "../repositories/testingRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { nowAsDateString, formatStoredDate, formatInstantDate } from "../calculations/dateInputHelpers";
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
@@ -837,7 +837,7 @@ function MeasurementsLanding({ onOpen, onAdd, onAddType, onOpenPreferences, T, m
       {/* CHANGED — real edge-to-edge redesign: Healthcare's banner
           moved its safe-area inset from `top` into its own top
           padding, shrinking its net height by 8px, so 70 became 62. */}
-      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 62px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Measurements</span>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {/* ADDED — real ask: default unit preferences + manage

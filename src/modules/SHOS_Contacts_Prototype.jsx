@@ -105,7 +105,7 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACCENT_TEXT_SAFE, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -3053,7 +3053,7 @@ function ContactsList({ contacts, onOpen, onAdd, T, sortBy, setSortBy, query, se
         // CHANGED — real edge-to-edge redesign: Contacts' own banner
         // moved its safe-area inset from `top` into its own top
         // padding, shrinking its net height by 8px, so 70 became 62.
-        <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 62px)", zIndex: 6, background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 6, background: "#1B1B1F", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13, color: "#FFFFFF", fontWeight: 600 }}>{selectedIds.length} selected</span>
           <div style={{ display: "flex", gap: 16 }}>
             {/* ADDED 1 Sep 2026 — real ask: "option to select all... rather

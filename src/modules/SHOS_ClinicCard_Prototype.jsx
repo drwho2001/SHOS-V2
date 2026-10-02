@@ -438,11 +438,22 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   }, [contactsRaw, encounters, cutoffDate, anonymise]);
 
   return (
-    <div role="dialog" aria-label="Clinic Card" ref={dialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+    <div role="dialog" aria-label="Clinic Card" ref={dialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
           Dashboard, rolled out here for consistency. */}
-      <div style={{ width: "100%" }}>
+      // FIXED 2 Oct 2026 (real device) — the scroll container above was ALSO
+      // `display:flex`, the same t060 shape as MyProfileModule's root, and it
+      // underlapped the nav bar by 76px even scrolled to its maximum: the flex
+      // child's height is the container's CONTENT box (clientHeight minus
+      // padding), so the bottom padding was not honoured and the last section
+      // finished underneath the fixed nav. Measured on a Redmi Note 13 — the
+      // Emergency notes row sat at y=835 against a nav bar starting at y=759.
+      //
+      // Desktop centring moves to `margin: "0 auto"` on the wrapper below,
+      // which is not the scroller, so the two properties never meet on one
+      // element again.
+      <div style={{ width: "100%", margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary, flex: 1 }}>{profile.nickname ? `${profile.nickname}'s clinic card` : "Clinic Card"}</h1>

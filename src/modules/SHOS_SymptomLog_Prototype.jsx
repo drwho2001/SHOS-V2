@@ -21,7 +21,7 @@ import { useAnonymiseMode } from "../calculations/anonymiseDisplay";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
@@ -655,7 +655,7 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
       {/* CHANGED — real edge-to-edge redesign: Healthcare's banner
           moved its safe-area inset from `top` into its own top
           padding, shrinking its net height by 8px, so 70 became 62. */}
-      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 62px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Symptom Log</span>
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle. */}
         <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)} style={{ fontSize: 11, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer" }}>

@@ -53,7 +53,7 @@ import { MyProfileRepository } from "../repositories/myProfileRepository";
 // genuinely hand-tuned per-value for dark-surface contrast/design
 // intent, not derivable from LIGHT's tokens (fabBg/fabIcon are a
 // deliberate light-on-dark inversion, not an accent at all).
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACCENT_TEXT_SAFE, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACCENT_TEXT_SAFE, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 // `Info` is the shared tap-to-reveal affordance used across this app for
 // explaining a derived value (see CLAUDE.md's icon-only-UI rule). Aliased to
@@ -2390,7 +2390,7 @@ export default function MedicationDashboard({ openAddOnMount = false, onConsumed
             onClick={needsActionMeds.length > 0 ? scrollToProblem : undefined} />
         </div>
 
-        <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 70px)", zIndex: 5, background: T.bg, padding: "8px 16px 8px", borderBottom: `1px solid ${T.border}` }}>
+        <div style={{ position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 5, background: T.bg, padding: "8px 16px 8px", borderBottom: `1px solid ${T.border}` }}>
           <div style={{ display: "flex", gap: 20, padding: "0 16px", borderBottom: `1px solid ${T.border}`, marginBottom: 16 }}>
             {["Registry", "Log", "Inventory"].map((t) => (
               <div role="tab" tabIndex={0} aria-selected={tab === t} aria-label={t} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} key={t} onClick={() => setTab(t)} style={{ paddingBottom: 10, fontSize: 14, fontWeight: 600, color: tab === t ? T.medsBlue : T.textSecondary, borderBottom: tab === t ? `2px solid ${T.medsBlue}` : "2px solid transparent", cursor: "pointer" }}>{t}</div>

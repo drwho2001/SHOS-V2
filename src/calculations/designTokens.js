@@ -470,3 +470,27 @@ export const RADIUS = { sm: 8, md: 13, lg: 24, full: 999 };
 // from a parent.
 export const FONT_FAMILY = "'Inter', sans-serif";
 export const FONT_FAMILY_MONO = "'JetBrains Mono', monospace";
+
+/**
+ * FIXED 2 Oct 2026 (real device) — where a sub-module's own sticky sub-heading
+ * must stick, so it sits flush against the bottom of the screen-title banner
+ * above it.
+ *
+ * The 4px gap this fixes was measured on a Redmi Note 13: the Healthcare banner
+ * sticks at top 0 and is 93px tall (35px of which is the status-bar inset), so
+ * it ends at y=93. The Vaccinations sub-heading stuck at y=97 — four pixels
+ * further down — and content scrolled visibly through that band. The number was
+ * 62, left over from before the 16 Sep 2026 banner redesign shortened the banner
+ * by 8px; the dependent offsets went 70 → 62 at the time but not far enough.
+ *
+ * WHY IT IS ONE CONSTANT AND NOT SEVEN NUMBERS: the bug was never really that
+ * one offset was wrong, it was that seven sites each carried their own hardcoded
+ * stick position, so they drifted apart silently and each change to the banner
+ * had to be hand-propagated. 58 is the banner's height excluding the safe-area
+ * inset, which the banner itself derives from its own padding and TYPE tokens.
+ *
+ * If the screen-title banner's height changes, this number must change with it —
+ * `stickySubheadingGuard.test.js` exists so that a site reintroducing its own
+ * hardcoded offset fails a test rather than opening a gap.
+ */
+export const STICKY_SUBHEADING_TOP = "calc(env(safe-area-inset-top) + 58px)";

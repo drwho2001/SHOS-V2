@@ -57,7 +57,7 @@ import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
 // from the shared designTokens.js source of truth instead of being
 // retyped here, so this screen can't silently drift from every other
 // module's "same" color/radius. See designTokens.js.
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useIsDesktopWidth } from "../calculations/responsive";
@@ -1294,7 +1294,7 @@ function TestingLanding({ onOpen, onAdd, T, tests, refresh, deleteToast, undoDel
           edge, no neutral gap behind the status bar) — its net
           rendered height shrank by exactly the 8px this bar used to
           add on top of it, so 70 became 62 to keep sitting flush. */}
-      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 62px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Testing</span>
         {/* ADDED 26 Aug 2026 — real ask: explicit Select toggle,
             matching Medication's pattern — long-press stays as an

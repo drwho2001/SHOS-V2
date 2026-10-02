@@ -43,7 +43,7 @@ import { AppPreferencesRepository } from "../repositories/appPreferencesReposito
 import { useEditUndo } from "../calculations/editUndoHelpers";
 import { optionValue, optionLabel } from "../calculations/optionShape";
 import { nowAsDateString, formatStoredDate } from "../calculations/dateInputHelpers";
-import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
+import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent , STICKY_SUBHEADING_TOP } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
@@ -1114,7 +1114,7 @@ export default function MenstrualHealthModule({ openAddOnMount, quickAddTarget, 
       {/* CHANGED — real edge-to-edge redesign: Healthcare's banner
           moved its safe-area inset from `top` into its own top
           padding, shrinking its net height by 8px, so 70 became 62. */}
-      <div style={{ position: "sticky", top: "calc(env(safe-area-inset-top) + 62px)", zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}` }}>
+      <div style={{ position: "sticky", top: STICKY_SUBHEADING_TOP, zIndex: 6, background: T.bg, padding: "10px 16px 4px", borderBottom: `1px solid ${T.border}` }}>
         <span style={{ ...TYPE.sectionLabel, color: T.healthcareBlue }}>Menstrual & Contraception</span>
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
           {tabs.map((t) => (
