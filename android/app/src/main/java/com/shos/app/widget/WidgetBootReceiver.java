@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+import android.view.View;
 import android.widget.RemoteViews;
 import com.shos.app.R;
 
@@ -35,10 +36,12 @@ import com.shos.app.R;
  * reboot should cost the user nothing once they open the app. Only the RENDERED
  * pixels are cleared.
  *
- * WHY setEmptyView RATHER THAN SETTING TEXT. Setting text to "" still leaves the
- * widget's own layout, spacing and background on screen, which reads as "something
- * is here" and looks broken. setEmptyView collapses the layout, so the widget is
- * visibly blank and visibly the app's own doing.
+ * WHY HIDE THE ROOT RATHER THAN SETTING TEXT TO "". Setting every label to an
+ * empty string still leaves the widget's own background, padding and spacing on
+ * screen, so it reads as "something is here" and looks broken rather than
+ * deliberately blank. Hiding the root collapses the lot into an empty box.
+ * ClinicCardWidgetProvider already uses setViewVisibility with View.GONE the
+ * same way, so the signature is proven in this codebase rather than assumed.
  */
 public class WidgetBootReceiver extends BroadcastReceiver {
 
@@ -76,7 +79,17 @@ public class WidgetBootReceiver extends BroadcastReceiver {
         int[] ids = manager.getAppWidgetIds(component);
         if (ids == null || ids.length == 0) return;
         RemoteViews empty = new RemoteViews(component.getPackageName(), layoutId);
-        empty.setEmptyView(R.id.widget_root);
+        // CHANGED - the first version of this used setEmptyView(R.id.widget_root)
+        // and CI rejected it: "required: int,int / found: int". There is no
+        // single-argument setEmptyView. The two-argument overload sets a
+        // FALLBACK layout to use when a container is empty - it does not blank
+        // anything - so the method was never going to do what the comment claimed.
+        //
+        // Hiding the root is the honest equivalent: the widget renders as an
+        // empty box rather than showing a title with nothing under it, and the
+        // next successful update replaces the whole RemoteViews, so nothing here
+        // has to be undone.
+        empty.setViewVisibility(R.id.widget_root, View.GONE);
         manager.updateAppWidget(ids, empty);
     }
 }
