@@ -146,7 +146,21 @@ describe("the native side the JS depends on actually exists", () => {
       const s = stripComments(readFileSync(file, "utf8"));
       for (const m of s.matchAll(/bridge\.plugin\.(\w+)\s*\(/g)) called.add(m[1]);
     }
-    expect(called.size, "expected the JS to call several bridge methods").toBeGreaterThan(0);
+    // WIDENED 2 Oct 2026. The widget calls moved into sendWidgetUpdate, which
+  // dispatches dynamically (`bridge[method](...)`) so that every one of them is
+  // filtered by the same tier rule. A dynamic call cannot be enumerated by a
+  // regex looking for `bridge.plugin.name(`, so this non-vacuity check found
+  // zero methods and failed - correctly, because it is the thing standing
+  // between "the guard matched nothing" and "the guard proved something".
+  //
+  // The second pattern is the literal method name as passed to the helper.
+  // Kept deliberately narrow: it would match the string anywhere, so the
+  // "Java declares it" assertion below is what makes a false match harmless.
+  for (const file of FILES_WITH_BRIDGE) {
+    const s = stripComments(readFileSync(file, "utf8"));
+    for (const m of s.matchAll(/sendWidgetUpdate\([^,]+,[^,]+,\s*"(update\w+)"/g)) called.add(m[1]);
+  }
+  expect(called.size, "expected the JS to call several bridge methods").toBeGreaterThan(4);
     for (const method of called) {
       expect(
         java.includes(`public void ${method}(`),
