@@ -1006,6 +1006,40 @@ even had it compiled. Replaced with `setViewVisibility(root, View.GONE)`, which
 `ClinicCardWidgetProvider` already uses in four places. Recorded as L-045/L-046:
 find a real usage in `android/` before using an API, and let CI confirm.
 
+**The Redacted tier was shipped SAFE but WRONG, which is worse than not shipping
+it — and the reason is worth more than the fix.** `sendWidgetUpdate` filtered the
+payload correctly and its own unit tests passed. But `WidgetBridgePlugin` only
+forwarded the *named legacy fields* it already knew about, so `category`,
+`state` and `tier` were received and never stored. Every provider then fell back
+to its own default placeholder, and **DoxyPEP could read "No active window" while
+a window was active** — a false statement about the user's own health, produced
+by the feature whose entire job is to be careful. Filtering protects the payload;
+**only the provider decides what is rendered**, so only the provider can be
+asserted on. A payload-level test proves the filter, not the screen (L-051).
+
+**Gemini's review corrected the design, twice.** I had planned to restructure all
+seven layouts as `widget_root → [compact, detail_container]` so one call could
+hide the detail block — which solves a problem that does not exist: `RemoteViews`
+is an IPC serialization stub, not a live view tree, so it **cannot iterate
+children at all**. The saving grace is that each provider *already* hardcodes
+the two or three view ids it sets text on, so naming them costs nothing.
+
+**The fix keeps the privacy decision in JS and Java dumb**, which was Gemini's
+main point: the *caller* supplies a pre-formatted one-line string, because only
+the caller knows what its widget means. New `WidgetRedacted.java` holds the single
+implementation, so there are **not seven near-duplicate branches** — the outcome
+Gemini explicitly warned is where typos hide. DoxyPEP's inline branch was
+converted onto it rather than left as a seventh copy. Each provider's store key
+is distinct (`redacted_text_doxy`, `redacted_text_next_dose`, …) because all
+seven share **one** `SharedPreferences` file and a shared key would have
+overwritten itself.
+
+`src/storage/widgetRedactedRender.test.js` asserts all seven are wired, and the
+anti-duplication assertion is on *exactly one* `WidgetRedacted.apply` call per
+provider rather than on zero `setViewVisibility` calls — the first version of it
+claimed the latter and failed on NextDose's legitimate Chronometer show/hide,
+which is the provider's own business and nothing to do with redaction.
+
 ## Recently shipped (1 Oct 2026, later - a crash that shipped for three days, found by looking at the phone instead of the code)
 
 **My Profile -> Edit threw React error #31 on every open, in three published

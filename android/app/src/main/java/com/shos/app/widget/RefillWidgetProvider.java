@@ -14,9 +14,7 @@ public class RefillWidgetProvider extends AppWidgetProvider {
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_REFILL_COUNT = "refill_count";
     private static final String KEY_NEXT_REFILL = "next_refill_med";
-
-    @Override
-    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+    private static final String KEY_REDACTED_TEXT = "redacted_text_refill";anager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId);
         }
@@ -35,6 +33,25 @@ public class RefillWidgetProvider extends AppWidgetProvider {
         String nextRefill = prefs.getString(KEY_NEXT_REFILL, "No refills due");
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.refill_widget);
+
+
+        // CHANGED 2 Oct 2026 - honour a Redacted tier. The line is built in JS by the
+
+        // caller, which is the only place that knows what this widget means; this
+
+        // provider never learns what a tier is. Returns immediately, because the
+
+        // full rendering below would otherwise overwrite what was just set.
+
+        if (WidgetRedacted.apply(views, R.id.widget_refill_title, prefs.getString(KEY_REDACTED_TEXT, ""),
+
+                R.id.widget_refill_count, R.id.widget_next_refill)) {
+
+            appWidgetManager.updateAppWidget(appWidgetId, views);
+
+            return;
+
+        }
         
         if (refillCount > 0) {
             views.setTextViewText(R.id.widget_refill_title, "Refills Due");
@@ -64,7 +81,7 @@ public class RefillWidgetProvider extends AppWidgetProvider {
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
-    public static void updateRefill(Context context, int count, String nextRefillMed) {
+    public static void updateRefill(Context context, int count, String nextRefillMed, String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -76,6 +93,7 @@ public class RefillWidgetProvider extends AppWidgetProvider {
         prefs.edit()
             .putInt(KEY_REFILL_COUNT, count)
             .putString(KEY_NEXT_REFILL, nextRefillMed)
+            .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .apply();
 
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

@@ -14,9 +14,7 @@ public class TestWidgetProvider extends AppWidgetProvider {
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_LAST_TEST = "last_test";
     private static final String KEY_RETEST_DUE = "retest_due";
-
-    @Override
-    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+    private static final String KEY_REDACTED_TEXT = "redacted_text_test";idgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId);
         }
@@ -36,6 +34,25 @@ public class TestWidgetProvider extends AppWidgetProvider {
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.test_widget);
 
+
+        // CHANGED 2 Oct 2026 - honour a Redacted tier. The line is built in JS by the
+
+        // caller, which is the only place that knows what this widget means; this
+
+        // provider never learns what a tier is. Returns immediately, because the
+
+        // full rendering below would otherwise overwrite what was just set.
+
+        if (WidgetRedacted.apply(views, R.id.widget_test_title, prefs.getString(KEY_REDACTED_TEXT, ""),
+
+                R.id.widget_last_test, R.id.widget_retest_due)) {
+
+            appWidgetManager.updateAppWidget(appWidgetId, views);
+
+            return;
+
+        }
+
         views.setTextViewText(R.id.widget_test_title, "Last Test");
         views.setTextViewText(R.id.widget_last_test, lastTest);
         views.setTextViewText(R.id.widget_retest_due, "Retest due: " + retestDue);
@@ -51,7 +68,7 @@ public class TestWidgetProvider extends AppWidgetProvider {
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
-    public static void updateTest(Context context, String lastTest, String retestDue) {
+    public static void updateTest(Context context, String lastTest, String retestDue, String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -63,6 +80,7 @@ public class TestWidgetProvider extends AppWidgetProvider {
         prefs.edit()
             .putString(KEY_LAST_TEST, lastTest)
             .putString(KEY_RETEST_DUE, retestDue)
+            .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .apply();
 
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

@@ -16,9 +16,7 @@ public class NextDoseWidgetProvider extends AppWidgetProvider {
     private static final String KEY_MED_NAME = "med_name";
     // The countdown TARGET as epoch millis, null when there is no future dose.
     private static final String KEY_COUNTDOWN_AT = "countdown_at";
-
-    @Override
-    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+    private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";dgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId);
         }
@@ -37,6 +35,25 @@ public class NextDoseWidgetProvider extends AppWidgetProvider {
         String medName = prefs.getString(KEY_MED_NAME, "Medication");
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.next_dose_widget);
+
+
+        // CHANGED 2 Oct 2026 - honour a Redacted tier. The line is built in JS by the
+
+        // caller, which is the only place that knows what this widget means; this
+
+        // provider never learns what a tier is. Returns immediately, because the
+
+        // full rendering below would otherwise overwrite what was just set.
+
+        if (WidgetRedacted.apply(views, R.id.widget_med_name, prefs.getString(KEY_REDACTED_TEXT, ""),
+
+                R.id.widget_next_dose, R.id.widget_countdown)) {
+
+            appWidgetManager.updateAppWidget(appWidgetId, views);
+
+            return;
+
+        }
         views.setTextViewText(R.id.widget_med_name, medName);
         views.setTextViewText(R.id.widget_next_dose, "Next dose: " + nextDoseTime);
 
@@ -78,7 +95,7 @@ public class NextDoseWidgetProvider extends AppWidgetProvider {
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
-    public static void updateNextDose(Context context, String medName, String nextDoseTime, long countdownAt) {
+    public static void updateNextDose(Context context, String medName, String nextDoseTime, long countdownAt, String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -94,6 +111,7 @@ public class NextDoseWidgetProvider extends AppWidgetProvider {
             // read side checks the value against now, so a stale key left behind
             // by a previously-set countdown can never resurrect an old deadline.
             .putLong(KEY_COUNTDOWN_AT, countdownAt)
+            .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .apply();
 
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

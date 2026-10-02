@@ -148,7 +148,11 @@ if (bridge && bridge.plugin.updateAppointment) {
           count,
           nextAppt,
           category: "Appointments",
-        });
+        },
+        // A count identifies nobody. The DATE, the LOCATION and the reason for the
+        // visit do not, and the clinical reason is behind the owner's own opt-in.
+        count > 0 ? `Appointments: ${count} booked` : "Appointments: none booked"
+      );
     }
   } catch (e) {
     // Widget bridge not available (web) — ignore
@@ -183,9 +187,16 @@ async function updateClinicCardWidget(visit) {
         // category/count are all that survive a Redacted tier. A test count is
         // allowed deliberately: "3 tests" identifies nobody, and it is the one
         // number worth having without handing over the rest.
-        category: "Clinic card",
-        count: tests,
-      });
+          category: "Clinic card",
+          count: tests,
+        },
+        // A test count is allowed deliberately - "3 tests" identifies nobody and it
+        // is the one number worth having without handing over the rest. The
+        // location, the date and the clinic are not here.
+        tests > 0
+          ? `Clinic card: ${tests} test${tests > 1 ? "s" : ""} linked`
+          : "Clinic card: no tests linked"
+      );
     }
   } catch (e) {
     console.debug("ClinicCard widget update skipped:", e);

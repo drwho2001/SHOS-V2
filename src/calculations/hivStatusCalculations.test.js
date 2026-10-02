@@ -236,6 +236,41 @@ describe("defensive reads", () => {
   });
 });
 
+describe("the two positive labels describe DETECTABILITY, not magnitude", () => {
+  // CHANGED 2 Oct 2026 at the owner's request: "Positive - high viral load"
+  // became "Positive - detectable". The old wording claimed a magnitude this
+  // app never measures - it knows whether a viral load result was undetectable,
+  // and nothing about how far above the assay threshold it sat. And "detectable"
+  // is the true counterpart to "Undetectable", so the pair reads as one scale.
+  const labelOf = (v) => HIV_STATUS_OPTIONS.find((o) => o.value === v)?.label;
+
+  it("uses 'detectable' and 'undetectable' as the two positive labels", () => {
+    expect(labelOf(HIV_STATUS.POSITIVE_UNSUPPRESSED)).toBe("Positive - detectable");
+    expect(labelOf(HIV_STATUS.POSITIVE_SUPPRESSED)).toBe("Positive - undetectable");
+  });
+
+  it("no label claims a viral-load magnitude", () => {
+    // Guards the CLASS rather than the one string: any label asserting a level,
+    // a severity or a threshold is a claim this app has no measurement for.
+    for (const o of HIV_STATUS_OPTIONS) {
+      expect(o.label, `"${o.label}" claims a magnitude or severity`).not.toMatch(
+        /\b(high|low|elevated|severe|copies|cd4|threshold|above|below)\b/i
+      );
+    }
+  });
+
+  it("the stored value is unchanged, so no saved record has to move", () => {
+    // A label change is free; a value change would be a data migration on a
+    // field people have already recorded something meaningful about.
+    expect(HIV_STATUS.POSITIVE_UNSUPPRESSED).toBe("positive-unsuppressed");
+    expect(HIV_STATUS.POSITIVE_SUPPRESSED).toBe("positive-suppressed");
+    // ...and the readable line a user sees still carries the new wording.
+    expect(
+      describeHivStatus({ status: HIV_STATUS.POSITIVE_UNSUPPRESSED, since: "2026-09-01T09:00:00.000Z" })
+    ).toMatch(/detectable/);
+  });
+});
+
 describe("how it reads to a person", () => {
   it("includes the date the status was established", () => {
     const out = describeHivStatus({ status: HIV_STATUS.NEGATIVE, since: "2026-09-01T09:00:00.000Z" });

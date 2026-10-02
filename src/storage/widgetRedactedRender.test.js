@@ -41,8 +41,15 @@ const dataProviders = readdirSync(WIDGET_DIR)
   })
   .sort();
 
-/** Providers already honouring a redacted line. */
-const WIRED = dataProviders.filter((f) => /KEY_REDACTED_TEXT|redactedText/.test(read(path.join(WIDGET_DIR, f))));
+/**
+ * Providers that honour a redacted line.
+ *
+ * Matched on the SHARED HELPER rather than on the string "redactedText", because
+ * the seven near-duplicate inline branches are exactly what Gemini warned against:
+ * seven places for one typo. DoxyPEP originally had its own inline branch and was
+ * converted onto the helper, so this assertion is what keeps that from spreading.
+ */
+const WIRED = dataProviders.filter((f) => /WidgetRedacted\.apply\(/.test(read(path.join(WIDGET_DIR, f))));
 const NOT_WIRED = dataProviders.filter((f) => !WIRED.includes(f));
 
 describe("redacting the payload is not the same as redacting the screen", () => {
@@ -56,15 +63,45 @@ describe("redacting the payload is not the same as redacting the screen", () => 
     expect(WIRED).toContain("DoxyPEPWidgetProvider.java");
   });
 
-  it("DoxyPEP hides the views it already names, rather than enumerating a tree", () => {
-    // RemoteViews is an IPC serialization stub, not a live view tree - it cannot
-    // iterate children. Gemini made this point and it corrected my design. The
-    // saving grace is that each provider already hardcodes the 2-3 ids it sets
-    // text on, so hiding them needs no new machinery at all.
+  it("DoxyPEP names its own views to the shared helper", () => {
+    // CHANGED when DoxyPEP was converted off its inline branch onto
+    // WidgetRedacted.apply. The previous version asserted the provider itself
+    // called setViewVisibility twice, which is precisely the duplication the
+    // helper exists to remove - so the assertion had to move with the code, not
+    // be deleted: it still proves the provider supplies ITS OWN ids, which is
+    // the thing that can go wrong silently.
+    //
+    // RemoteViews is an IPC serialization stub, not a live view tree (Gemini made
+    // this point and it corrected my design), so there is no traversal - the ids
+    // have to be named, and a wrong id is a runtime failure on a home screen.
     const src = read(path.join(WIDGET_DIR, "DoxyPEPWidgetProvider.java"));
-    expect(src).toMatch(/redactedText/);
-    expect(src).toMatch(/setViewVisibility\(R\.id\.widget_doxy_status,\s*View\.GONE\)/);
-    expect(src).toMatch(/setViewVisibility\(R\.id\.widget_doxy_countdown,\s*View\.GONE\)/);
+    expect(src).toMatch(/WidgetRedacted\.apply\(/);
+    expect(src).toMatch(/R\.id\.widget_doxy_title/);
+    expect(src).toMatch(/R\.id\.widget_doxy_status/);
+    expect(src).toMatch(/R\.id\.widget_doxy_countdown/);
+  });
+
+  it("there is exactly ONE implementation of the redacted render", () => {
+    // The anti-duplication assertion, narrowed.
+    //
+    // The first version of this asserted no provider calls setViewVisibility at
+    // all, and it failed on NextDose - which has three, for the Chronometer
+    // show/hide it legitimately owns. Hiding a countdown that does not exist is
+    // the provider's own business and has nothing to do with redaction, so the
+    // assertion was claiming something false.
+    //
+    // What is actually wanted is one implementation, not zero call sites. So:
+    // the helper holds the loop, and every provider calls it exactly once. If a
+    // provider grows a second branch of its own, this fails - which is the
+    // outcome Gemini warned about (seven near-duplicate inline branches, seven
+    // places for one typo).
+    const helper = read(path.join(WIDGET_DIR, "WidgetRedacted.java"));
+    expect(helper, "the shared helper is missing").toMatch(/setViewVisibility/);
+    for (const f of WIRED) {
+      const src = read(path.join(WIDGET_DIR, f));
+      const calls = src.match(/WidgetRedacted\.apply\(/g) || [];
+      expect(calls.length, `${f} calls WidgetRedacted.apply ${calls.length} times; expected exactly once`).toBe(1);
+    }
   });
 
   it("every id it hides actually exists in its layout", () => {
@@ -111,10 +148,16 @@ describe("inventory of what is not wired yet", () => {
     // breaks every time one is finished - and this repo's rule is that a guard
     // should describe a property, not track a work list. The list is printed so
     // the next session sees it without reading seven providers.
+    // The other six were wired in the follow-up commit, so this is now a hard
+    // requirement rather than a progress note. It was deliberately written as a
+    // description while the work was in flight, because a guard that fails on a
+    // work list is either deleted or blocks anyone finishing it - and the number
+    // to assert has now changed for a real reason, not because someone loosened
+    // it to make a run green.
     expect(
-      NOT_WIRED.length === 0 || NOT_WIRED.length === 6,
-      `expected either 0 or 6 unwired providers, found ${NOT_WIRED.length}: ${NOT_WIRED.join(", ")}`,
-    ).toBe(true);
+      NOT_WIRED,
+      `every data widget must honour its Redacted tier. Not wired: ${NOT_WIRED.join(", ")}`,
+    ).toEqual([]);
     if (NOT_WIRED.length) {
       console.log(`  [widget-redacted] not yet wired: ${NOT_WIRED.join(", ").replace(/\.java/g, "")}`);
     }

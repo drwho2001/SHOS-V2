@@ -114,9 +114,14 @@ async function updateCycleWidget() {
             day: cycleDay,
             phase,
             nextPeriod: nextPeriod || null,
-            category: "Tracking",
-            state: phase,
-          });
+                category: "Tracking",
+                state: phase,
+              },
+              // Cycle day and the next-period date are specifics. The PHASE
+              // survives - it is a coarse biological state, not an identity, and
+              // without it this widget could not honestly say it is tracking.
+              `Tracking: ${phase}`
+              );
       }
     }
   } catch (e) {
