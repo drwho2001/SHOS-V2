@@ -1190,6 +1190,10 @@ export default function App() {
   const [settingsInitialScreen, setSettingsInitialScreen] = useState(null);
   const openSettingsToCalendar = () => { setSettingsInitialScreen("calendar"); setShowSettings(true); };
   const openSettingsToPrivacy = () => { setSettingsInitialScreen("privacy"); setShowSettings(true); };
+  // ADDED 2 Oct 2026 - the U=U note's "U=U" link opens the Glossary entry that
+  // carries the sourced citations. Same shape as openSettingsToPrivacy above, so
+  // the note can reach the evidence from any module without owning navigation.
+  const openSettingsToGlossary = () => { setSettingsInitialScreen("glossary"); setShowSettings(true); };
   const [showSearch, setShowSearch] = useState(false);
   // ADDED 28 Sep 2026 (Phase 2b) — real ask: coming back from a search
   // result. `navigateToRecord` closes the search overlay and opens the
@@ -2798,14 +2802,14 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
           matches the `<div>` it replaces. */}
       <main style={{ flex: 1, paddingTop: `calc(env(safe-area-inset-top) + ${dueBannerHeight + refillBannerHeight + testingBannerHeight + clinicVisitBannerHeight + vaccinationBannerHeight}px)`, paddingBottom: "calc(76px + env(safe-area-inset-bottom))" }}>
         {active === "home" ? (
-          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)}
+          <HomeScreen onQuickAdd={handleQuickAdd} onOpenSettings={() => setShowSettings(true)} onOpenSearch={() => setShowSearch(true)} onNavigateToRecord={navigateToRecord} onQuickAddWithPrefill={handleQuickAddWithPrefill} onOpenCalendar={openSettingsToCalendar} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler} onLockNow={() => setLocked(true)}
             markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "home"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
         ) : ActiveModule ? (
           <Suspense fallback={<div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, fontFamily: "'Inter', sans-serif" }}>Loading...</div>}>
             <ActiveModule key={`${active}-${navResetCount}`} openAddOnMount={quickAdd} onConsumedQuickAdd={() => { setQuickAdd(false); setQuickAddTarget(null); }} quickAddTarget={quickAddTarget}
               openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}
               prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
-              onOpenSettings={() => setShowSettings(true)} onOpenPrivacySettings={openSettingsToPrivacy} registerModuleBackHandler={registerModuleBackHandler}
+              onOpenSettings={() => setShowSettings(true)} onOpenPrivacySettings={openSettingsToPrivacy} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler}
               markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "healthcare"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
           </Suspense>
         ) : (

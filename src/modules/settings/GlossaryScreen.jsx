@@ -6,9 +6,14 @@ import { CaretLeftIcon as ChevronLeft, BookOpenTextIcon as BookOpen } from "@pho
 import { NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../../calculations/responsive";
+// ADDED 2 Oct 2026 - the U=U note on any record now LINKS here (its underlined
+// "U=U"), so this entry carries the sourced citations rather than the note
+// expanding a panel of its own. Imported rather than re-typed so there is one
+// owner of the citation list and it cannot drift from the one the note tested.
+import { U_U_SOURCES } from "../../calculations/hivStatusCalculations";
 
 const GLOSSARY_TERMS = [
-  { term: "U=U (Undetectable = Untransmittable)", body: "If you are on HIV treatment and your viral load stays undetectable - below 50 copies per millilitre of blood, confirmed on repeated tests - you cannot pass HIV on sexually. It is the strongest evidence we have in HIV prevention, and it is why treatment is both treatment and prevention. The word that matters is 'stays': one undetectable result is a single measurement, whereas U=U rests on a viral load that has remained undetectable over time. Different laboratories can detect down to different levels, so 'undetectable' always describes a test result rather than a fixed state of your health. Source: BHIVA, Guidelines for the routine investigation and monitoring of adult HIV positive people - viral suppression is below 50 copies/mL, and assay detection limits differ between manufacturers (roughly 20-75)." },
+  { term: "U=U (Undetectable = Untransmittable)", body: "If you are on HIV treatment and your viral load stays undetectable - below 50 copies per millilitre of blood, confirmed on repeated tests - you cannot pass HIV on sexually. It is the strongest evidence we have in HIV prevention, and it is why treatment is both treatment and prevention. The word that matters is 'stays': one undetectable result is a single measurement, whereas U=U rests on a viral load that has remained undetectable over time. Different laboratories can detect down to different levels, so 'undetectable' always describes a test result rather than a fixed state of your health. Source: BHIVA, Guidelines for the routine investigation and monitoring of adult HIV positive people - viral suppression is below 50 copies/mL, and assay detection limits differ between manufacturers (roughly 20-75)." , sources: U_U_SOURCES },
   { term: "PrEP", body: "Pre-exposure prophylaxis — medication taken regularly (daily, or event-based around sex) before an exposure, to reduce the chance of getting HIV." },
   { term: "PEP", body: "Post-exposure prophylaxis — a course of HIV medication started within 72 hours after a potential HIV exposure, to reduce the chance of infection taking hold." },
   { term: "DoxyPEP", body: "Doxycycline post-exposure prophylaxis. A single dose of the antibiotic doxycycline, taken within 72 hours after condomless oral, vaginal, or anal sex. Shown to reduce the chance of some bacterial STIs (see Resources → Sexual health for the full guidance)." },
@@ -98,6 +103,28 @@ export function GlossaryScreen({ onClose }) {
               <div key={t.term} style={{ padding: "12px 14px", borderBottom: `1px solid ${T.border}`, breakInside: "avoid" }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary, marginBottom: 3 }}>{t.term}</div>
                 <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.4 }}>{t.body}</div>
+                {/* ADDED 2 Oct 2026 — the sourced citations, for the terms that
+                    have them. This is where the U=U note's underlined "U=U"
+                    lands, so it is also where someone being handed a phone, or
+                    arguing with this app about a medical claim, finds something
+                    to check. Rendered from the imported list, never re-typed. */}
+                {t.sources && t.sources.length > 0 && (
+                  <ul style={{ margin: "6px 0 0", paddingLeft: 16 }}>
+                    {t.sources.map((s) => (
+                      <li key={s.url} style={{ marginBottom: 3 }}>
+                        <a
+                          href={s.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: T.textSecondary, textDecoration: "underline", textUnderlineOffset: 2 }}
+                        >
+                          {s.label}
+                        </a>{" "}
+                        <span style={{ color: T.textDisabled }}>({s.publisher})</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             ))}
           </div>

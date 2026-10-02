@@ -535,7 +535,12 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
   // ADDED 1 Sep 2026 — real ask: a Resources section.
   const [showResources, setShowResources] = useState(false);
   // ADDED 1 Sep 2026 — real ask, item 2 of the follow-up feature list: a glossary.
-  const [showGlossary, setShowGlossary] = useState(false);
+  // CHANGED 2 Oct 2026 — can be opened directly to this screen, so the U=U note
+  // on any record can LINK here rather than expanding a panel of its own. Without
+  // this the note's own dropdown was the only route to the citations, which put
+  // clinical evidence inside a component instead of in the one place a reader
+  // actually looks it up.
+  const [showGlossary, setShowGlossary] = useState(initialScreen === "glossary");
   const [showGuide, setShowGuide] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(initialScreen === "privacy");
   // ADDED — real ask: audited settings grouping — a real home for
@@ -871,7 +876,7 @@ function SettingsScreen({ onClose, onExport, onImportClick, status, onNavigateTo
         // and bottom padding on a wrong theory, then reverted. MyProfileModule's
         // own root already provides both; the real defect is its display:flex.
         <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 210 }}>
-          <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} />
+          <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={() => setShowGlossary(true)} />
         </div>
       )}
       {showBackupExport && (

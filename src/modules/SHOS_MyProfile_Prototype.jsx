@@ -942,7 +942,7 @@ function useResolvedHivStatus(stated) {
   );
 }
 
-function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
+function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
     const [form, setForm] = useState(profile);
     const editSheetRef = useRef(null);
     useEffect(() => { editSheetRef.current?.focus(); }, []);
@@ -1217,7 +1217,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T }) {
               under the value, and shown unconditionally. See HivStatusNote.jsx:
               showing it only where the status is positive-undetectable would
               itself disclose, because its presence would flag who is HIV+. */}
-          <HivStatusNote T={T} label="HIV status" />
+          <HivStatusNote T={T} label="HIV status" onOpen={onOpenGlossary} />
 
           {/* ADDED 29 Sep 2026 (t025) — HIV status, in the section that already
               holds sexual-health status rather than a new card of its own.
@@ -1317,7 +1317,7 @@ function ReadRow({ label, value, T }) {
   );
 }
 
-function ProfileDataView({ profile, T }) {
+function ProfileDataView({ profile, T, onOpenGlossary }) {
   // ADDED — real audit finding (desktop full-width sweep): this
   // stack of ~14 SectionCards had no width cap or reflow at all, so
   // it read as one long, narrow single column even at 1600px.
@@ -1489,7 +1489,7 @@ function ProfileDataView({ profile, T }) {
             two screens are read in different moods: this is the one you glance at
             to check your own status, so it is exactly where a note explaining
             what "undetectable" means earns its place. */}
-        <HivStatusNote T={T} label="HIV status" />
+        <HivStatusNote T={T} label="HIV status" onOpen={onOpenGlossary} />
       </SectionCard>
       <SectionCard title="About me" T={T}>
         <ReadRow label="Note" value={profile.aboutMeNotes} T={T} />
@@ -1668,7 +1668,7 @@ function ProfileSummary({ profile, T, onEdit }) {
 // open straight into the edit form instead of the summary view —
 // optional, every existing call site keeps its current behavior by
 // simply not passing it.
-export default function MyProfileModule({ onClose, registerModuleBackHandler, openEditingOnMount = false }) {
+export default function MyProfileModule({ onClose, registerModuleBackHandler, openEditingOnMount = false, onOpenGlossary }) {
   const [profile, setProfile] = useLoadedState(() => MyProfileRepository.getProfile(), [], DEFAULT_PROFILE);
   const [editing, setEditing] = useState(openEditingOnMount);
   // CHANGED 26 Aug 2026 — real ask: Share/Export placement, deferred
@@ -1761,11 +1761,11 @@ export default function MyProfileModule({ onClose, registerModuleBackHandler, op
         </div>
 
         <ProfileSummary profile={profile} T={T} onEdit={() => setEditing(true)} />
-        <ProfileDataView profile={profile} T={T} />
+        <ProfileDataView profile={profile} T={T} onOpenGlossary={onOpenGlossary} />
         {showShare && <ShareProfilePanel T={T} resolvedHivStatus={shareHivResolved} hivStatusInformedDate={profile?.hivStatusInformedDate || ""} />}
 
         {editing && (
-          <MyProfileEditScreen profile={profile} onSave={saveEdit} onCancel={() => setEditing(false)} T={T} />
+          <MyProfileEditScreen profile={profile} onSave={saveEdit} onCancel={() => setEditing(false)} T={T} onOpenGlossary={onOpenGlossary} />
         )}
       </div>
     </div>

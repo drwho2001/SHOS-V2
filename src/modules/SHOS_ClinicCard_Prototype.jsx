@@ -163,7 +163,7 @@ function StubRow({ children, T }) {
   );
 }
 
-export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickAddWithPrefill, registerModuleBackHandler }) {
+export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickAddWithPrefill, registerModuleBackHandler, onOpenGlossary }) {
   useEscapeToClose(onClose);
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
@@ -825,7 +825,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       )}
       {showMyProfile && (
         <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 310 }}>
-          <MyProfileModule onClose={() => setShowMyProfile(false)} openEditingOnMount registerModuleBackHandler={registerModuleBackHandler} />
+          <MyProfileModule onClose={() => setShowMyProfile(false)} openEditingOnMount registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={onOpenGlossary} />
         </div>
       )}
       </div>

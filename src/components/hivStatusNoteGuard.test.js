@@ -20,6 +20,8 @@ const JSX_TEXT = { sourceType: "module", plugins: ["jsx"] };
 const read = (p) => readFileSync(resolve(process.cwd(), p), "utf8");
 const CALC = read("src/calculations/hivStatusCalculations.js");
 const NOTE = read("src/components/HivStatusNote.jsx");
+// The citations render in the Glossary since 2 Oct 2026.
+const GLOSSARY_SCREEN = read("src/modules/settings/GlossaryScreen.jsx");
 const PROFILE = read("src/modules/SHOS_MyProfile_Prototype.jsx");
 const CONTACTS = read("src/modules/SHOS_Contacts_Prototype.jsx");
 const GLOSSARY = read("src/modules/settings/GlossaryScreen.jsx");
@@ -255,17 +257,25 @@ describe("the U=U sources are real, cited documents rather than assertions", () 
   it("the component actually renders those sources, and does so ungated", () => {
     // The list existing is not the same as the note showing it. Asserting only
     // the export would let a component that ignores it stay green forever.
-    expect(NOTE).toMatch(/U_U_SOURCES/);
+    // CHANGED 2 Oct 2026: the sources moved to the GLOSSARY, which is where the
+    // underlined "U=U" links. Asserting they render in the note would now pin
+    // the design the owner explicitly rejected.
+    expect(GLOSSARY_SCREEN).toMatch(/U_U_SOURCES/);
+    expect(GLOSSARY_SCREEN).toMatch(/t\.sources/);
     // ...and the expand must not be conditioned on anything about the record.
     // Same reasoning as the rest of this file: conditional UI reveals state.
-    expect(NOTE).not.toMatch(/\{[^}]*\bsuppressed\b[^}]*\}\s*&&\s*\{?open/);
-    expect(NOTE).toMatch(/setOpen/);
+    expect(NOTE).not.toMatch(/\{[^}]*\bsuppressed\b[^}]*\}\s*&&\s*\{?showSentence/);
+    // CHANGED 2 Oct 2026: the disclosure is now the info bubble revealing the
+    // one-sentence statement, and the fuller text is in the Glossary.
+    expect(NOTE).toMatch(/setShowSentence/);
+    expect(NOTE).toMatch(/aria-expanded/);
   });
 
   it("links open externally and safely", () => {
-    expect(NOTE).toMatch(/target="_blank"/);
+    // Moved to the Glossary with the citations themselves.
+    expect(GLOSSARY_SCREEN).toMatch(/target="_blank"/);
     // rel is the half that matters: without it the opened page gets a
     // window.opener handle back into the app.
-    expect(NOTE).toMatch(/rel="noopener noreferrer"/);
+    expect(GLOSSARY_SCREEN).toMatch(/rel="noopener noreferrer"/);
   });
 });

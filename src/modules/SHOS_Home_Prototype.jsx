@@ -151,7 +151,7 @@ function NotificationPermissionNudge({ status, onStatusChange }) {
 // Glossary screens needed the same check for #93 — relocating
 // already-working code, no behavior change here.
 
-function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, registerModuleBackHandler, onLockNow, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen }) {
+function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToRecord, onQuickAddWithPrefill, onOpenCalendar, onOpenGlossary, registerModuleBackHandler, onLockNow, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen }) {
   const isDesktopWidth = useIsDesktopWidth();
   // ADDED 30 Sep 2026 (audit) — hooks must be called unconditionally at the top
   // of a component, which is why this sits here rather than next to the row it
@@ -1298,7 +1298,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         //
         // Left exactly as found.
         <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 200 }}>
-          <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} />
+          <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={onOpenGlossary} />
         </div>
       )}
       {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={(tab, id, subTab) => { markClinicCardReturn?.(); onNavigateToRecord(tab, id, subTab); }} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}

@@ -1804,7 +1804,7 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
 // dependency on props/state).
 const REDUNDANT_PLATFORM_SUGGESTIONS = ["phone", "snapchat", "fabguys", "fabswingers", "recon"];
 
-function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
+function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOpenGlossary }) {
   useEscapeToClose(onClose);
   // FIXED 28 Sep 2026 — Anonymise mode. The duplicate warning below named the
   // OTHER contact, so opening any contact's edit sheet while masking would have
@@ -2152,7 +2152,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T }) {
           {/* ADDED 1 Oct 2026 - unconditional, same reason as the read view: a
               note that appeared only for positive-undetectable contacts would
               identify them. */}
-          <HivStatusNote T={T} label="HIV status" />
+          <HivStatusNote T={T} label="HIV status" onOpen={onOpenGlossary} />
           {/* ADDED 1 Oct 2026 - a contact's status is STATED, not derived, so
               there is no test record here to date it from. Rather than force a
               test date the user does not have, or record a status that reads as
@@ -2278,7 +2278,7 @@ function describeAvailabilityRule(r) {
 // ── Contact Profile — same SectionCard treatment and reordered
 // Location & logistics as the edit sheet, plus the don't-meet-again
 // warning banner. ──
-function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, onNavigateToRecord, triggerDelete }) {
+function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, onNavigateToRecord, triggerDelete, onOpenGlossary }) {
   // CHANGED — Phase 2 encryption groundwork: ContactRepository went
   // async — this used to be a plain render-body const, previously
   // flagged safe to leave alone "since it re-runs every render", the
@@ -2652,7 +2652,7 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               disclose: the note's presence would tell anyone glancing at the
               screen which of your contacts are HIV-positive. Uniformity is the
               privacy mechanism. See HivStatusNote.jsx. */}
-          {!(hideFurther || anonymise) && <HivStatusNote T={T} label="HIV status" />}
+          {!(hideFurther || anonymise) && <HivStatusNote T={T} label="HIV status" onOpen={onOpenGlossary} />}
           {/* ADDED 1 Oct 2026 - a STATED status has no test record behind it, so
               its date is "when you were told", not "when they were tested". Kept
               as its own row rather than folded into the status line above,
@@ -3367,7 +3367,7 @@ function ContactsSettingsScreen({ onClose, onOpenGeneralSettings, onOpenPrivacyS
   );
 }
 
-export default function ContactsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, onOpenSettings, onOpenPrivacySettings, registerModuleBackHandler } = {}) {
+export default function ContactsModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, onOpenSettings, onOpenPrivacySettings, onOpenGlossary, registerModuleBackHandler } = {}) {
   const [contacts, setContacts] = useLoadedState(() => loadContacts(), [], []);
   // FIXED — real crash found via a live bulk-delete/bulk-archive audit:
   // loadContacts() returns ContactRepository.getAll(), async since this
@@ -3539,13 +3539,13 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
         {screen === "list" ? (
           <ContactsList contacts={contacts} T={T} onOpen={openProfile} onAdd={() => setEditingContact({})} sortBy={sortBy} setSortBy={setSortBy} query={query} setQuery={setQuery}
             onOpenMyProfile={() => setShowMyProfile(true)} onOpenImportProfile={() => setShowImportProfile(true)} onOpenContactsSettings={() => setShowContactsSettings(true)} refresh={refresh}
-            deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />
+            deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} onOpenGlossary={onOpenGlossary} />
         ) : (
-          <ContactProfile contactId={activeContactId} T={T} onBack={backToList} onEdit={async (id) => setEditingContact(await ContactRepository.getById(id))} onOpenContact={openProfile} refresh={refresh} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} />
+          <ContactProfile contactId={activeContactId} T={T} onBack={backToList} onEdit={async (id) => setEditingContact(await ContactRepository.getById(id))} onOpenContact={openProfile} refresh={refresh} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} onOpenGlossary={onOpenGlossary} />
         )}
 
         {editingContact !== null && (
-          <ContactEditSheet contact={editingContact.id ? editingContact : null} contacts={contacts} onSave={saveEdit} onClose={() => setEditingContact(null)} refresh={refresh} T={T} />
+          <ContactEditSheet contact={editingContact.id ? editingContact : null} contacts={contacts} onSave={saveEdit} onClose={() => setEditingContact(null)} refresh={refresh} T={T} onOpenGlossary={onOpenGlossary} />
         )}
 
         {/* CHANGED 18 Aug 2026 — removed this module's own static, non-
@@ -3555,7 +3555,7 @@ export default function ContactsModule({ openAddOnMount = false, onConsumedQuick
             lives once, in App.jsx, shared across every module. */}
         {showMyProfile && (
           <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", zIndex: 210 }}>
-            <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} />
+            <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={onOpenGlossary} />
           </div>
         )}
         {showImportProfile && (

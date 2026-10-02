@@ -805,6 +805,20 @@ which is the same shape as every other time in this file where a check reported
 green on something that had not actually been exercised. The guard now rejects a
 `#` inside any `if:` block.
 
+## Recently shipped (2 Oct 2026, later still still still — the U=U note became a link, and my first guard for it was vacuous)
+
+**The owner corrected the design twice, and the second correction is the one that shipped.** My first version rendered the whole sentence — "An undetectable viral load (below 50 copies/mL) prevents sexual transmission of HIV." — permanently on every record, then expanded a dropdown carrying the explanation and citations inline. Both wrong. It ships as **`ⓘ U=U`**: the bubble reveals the sentence, the underlined `U=U` is the link (an underline *is* the affordance, so it should behave like one), and the fuller text with its citations lives in the **Glossary**, which is where someone being handed a phone, or arguing with this app about a medical claim, actually looks things up.
+
+**The link needed threading, and there were more of them than expected.** `MyProfileModule` is mounted in **four** places — Settings, Home, Contacts, ClinicCard — and `HivStatusNote` in four more. `onOpenGlossary` is now threaded through all of them, and `SettingsScreen` can open the Glossary directly (`initialScreen === "glossary"`), which is what the link resolves to.
+
+**New guard: `src/components/uUNoteLinkGuard.test.js` — and its first version was VACUOUS, caught only by mutation testing.** It asserted that call sites PASS `onOpenGlossary`. It did not assert that the RECEIVER ACCEPTS it, so deleting `onOpenGlossary` from `ContactProfile`'s parameter list — which leaves every U=U on a contact profile pointing nowhere, the exact defect the file exists to prevent — left the whole suite **green**. The rewrite reads each enclosing component's parameter list off the AST and asserts the prop is destructured. The same mutation now fails naming `ContactProfile` and its line. **A guard that only inspects one end of a wire proves nothing about the other end.**
+
+It also asserts, for the same reason, that every `<MyProfileModule>` mount passes the prop and that at least four exist — so a fifth entry point added later fails here rather than shipping a dead link. Covers both directions of the wiring and the App-level helper it depends on.
+
+**Two existing assertions were retargeted rather than deleted**, because they were protecting something real that had MOVED: the citations no longer render in the note, so asserting they do would have pinned the design the owner rejected. They now assert the Glossary renders them, and that its links carry `rel="noopener noreferrer"`.
+
+Also caught in the same change: **`ContactsModule` never destructured `onOpenGlossary`**, which ESLint reported as four `no-undef` errors — a render-time `ReferenceError` in exactly the class of code unit tests import without rendering.
+
 ## Recently shipped (2 Oct 2026, later still still — "high viral load" became "detectable", and the U=U note now hands over its evidence)
 
 **"Positive - high viral load" is now "Positive - detectable", and the old wording was making a claim the app cannot support.** The app knows whether a
