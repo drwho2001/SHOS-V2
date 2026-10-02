@@ -102,11 +102,23 @@ export const DEFAULT_TIERS = {
  * Keys are the literal strings a provider may pass to the bridge at this tier.
  */
 export const ALLOWED_AT_REDACTED = {
-  nextDose: ["category", "state"],
+  // CHANGED 2 Oct 2026 - countdownAt is ALLOWED at Redacted, on the owner's
+  // decision. My first version excluded it on the grounds that "a countdown
+  // timestamp is a time", which is right about an absolute time and wrong about a
+  // countdown. "in 4h 12m" says how long you have left; "20:00" reveals your
+  // daily routine, which is the thing worth not disclosing and the thing a
+  // passer-by could actually use. So the countdown discloses strictly LESS than
+  // the wall-clock time it replaces, and excluding it made Redacted worse than
+  // useless for the one widget whose whole job is a deadline.
+  //
+  // The distinction being made is absolute time versus elapsed time. The former
+  // is a fact about the user's routine; the latter is only true right now, and
+  // goes stale on its own.
+  nextDose: ["category", "state", "countdownAt"],
   refillDue: ["category", "count"],
   nextAppointment: ["category", "count"],
   lastTest: ["category", "state"],
-  doxyPepWindow: ["category", "state"],
+  doxyPepWindow: ["category", "state", "countdownAt"],
   cycle: ["category", "state"],
   clinicCard: ["category", "count"],
 };

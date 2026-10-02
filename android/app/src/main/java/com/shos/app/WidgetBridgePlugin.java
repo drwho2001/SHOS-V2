@@ -79,7 +79,12 @@ public class WidgetBridgePlugin extends Plugin {
         NextDoseWidgetProvider.updateNextDose(
                 getContext(),
                 opt(call, "medName"),
-                opt(call, "nextDoseTime")
+                opt(call, "nextDoseTime"),
+                // 0 when absent, which the provider reads as "no countdown".
+                // Deliberately not defaulted to "now": that would render a
+                // Chronometer counting up from zero, which looks like a live
+                // reading rather than the absence of one.
+                call.getLong("countdownAt", 0L)
         );
         call.resolve();
     }

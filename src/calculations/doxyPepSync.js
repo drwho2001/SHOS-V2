@@ -132,10 +132,15 @@ async function updateDoxyPEPWidget(status) {
         status: statusText,
         expiryMs,
         // category/state are what survive a Redacted tier, so the widget reads
-        // "DoxyPEP - Active" rather than going blank. expiryMs is deliberately
-        // NOT on the redacted list: a countdown timestamp is a time.
+        // "DoxyPEP - Active" rather than going blank. expiryMs is sent under the
+        // new name countdownAt so it survives too: a relative countdown
+        // discloses less than a wall-clock time, since it reveals no routine.
+        // The field is RENAMED rather than reused because "expiryMs" reads like
+        // an absolute deadline in any code review, and the whole point is that
+        // the two are not the same disclosure.
         category: "DoxyPEP",
         state: statusText,
+        countdownAt: status.deadline ? status.deadline.getTime() : null,
       });
     }
   } catch (e) {

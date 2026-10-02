@@ -25,4 +25,22 @@
         android:text="Next dose: --:--"
         android:textSize="14sp"
         android:textColor="#B0B0B0" />
+
+    <!-- CHANGED 2 Oct 2026 - a real Chronometer rather than a JS interval.
+         The widget has updatePeriodMillis="0" because a medicine schedule is
+         not a minute-resolution thing, so without this the countdown would tick
+         once and then lie for the next hour. Chronometer is updated by the
+         system UI, so it needs no alarm, no wake lock and no app process - the
+         whole reason not to drive this from a setInterval on the JS side.
+
+         setChronometerCountDown (rather than counting up) is what makes it read
+         "in 4h 12m" towards the deadline instead of counting away from it. -->
+    <Chronometer
+        android:id="@+id/widget_countdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:visibility="gone"
+        android:textSize="14sp"
+        android:textColor="#FFFFFF" />
 </LinearLayout>

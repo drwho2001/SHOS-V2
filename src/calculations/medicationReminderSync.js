@@ -254,6 +254,10 @@ async function updateRefillWidget() {
           // "Medication - due now" instead of going blank and looking broken.
           category: "Medication",
           state: state.due.length ? "due now" : "scheduled",
+          // CHANGED 2 Oct 2026 - countdown survives a Redacted tier, on the
+          // owner's decision. It discloses LESS than nextDoseTime: "in 4h" is
+          // true only right now and reveals no routine, where "20:00" does.
+          countdownAt: nextUnlock || null,
         });
       }
   } catch (e) {

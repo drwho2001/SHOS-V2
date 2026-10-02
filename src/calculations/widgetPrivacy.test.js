@@ -139,11 +139,17 @@ describe("fieldAllowed enforces one meaning of Redacted everywhere", () => {
 
   it("no identifying field is on any widget's redacted list", () => {
     // The rule, restated as a test so it cannot drift: redacted may carry a
-    // category and a count or coarse state, never identity.
+    // category, a count, a coarse state, and a RELATIVE countdown.
+    //
+    // note what is NOT here: absolute times. nextDoseTime and retestDue are a
+    // wall-clock time and a date respectively, and both are excluded - "20:00"
+    // reveals a daily routine, which is the disclosure this tier exists to
+    // prevent. countdownAt is allowed because it is elapsed time, which is only
+    // true at the moment it is read and reveals no routine at all.
     const FORBIDDEN_AT_REDACTED = [
-      "medName", "nextDoseTime", "countdown", "nextRefill", "nextAppt", "location",
+      "medName", "nextDoseTime", "nextRefill", "nextAppt", "location",
       "lastTestDate", "retestDue", "testType", "cycleDay", "cyclePhase", "nextPeriod",
-      "clinicName", "clinicNum", "nhsNum", "docType",
+      "clinicName", "clinicNum", "nhsNum", "docType", "title", "date", "expiryMs",
     ];
     // Imported through resolveAllTiers' sibling table via a small shim, so this
     // test does not simply restate the module's own export back at itself.
@@ -151,6 +157,15 @@ describe("fieldAllowed enforces one meaning of Redacted everywhere", () => {
     for (const field of FORBIDDEN_AT_REDACTED) {
       expect(mod.includes(`"${field}"`), `${field} must not appear as an allowed redacted field`).toBe(false);
     }
+  });
+
+  it("a relative countdown IS allowed at redacted, on the owner's decision", () => {
+    // Asserted positively as well as by the absence above, because an omission
+    // test alone would pass if the whole field were renamed out of existence.
+    expect(fieldAllowed("nextDose", "countdownAt", "redacted")).toBe(true);
+    expect(fieldAllowed("doxyPepWindow", "countdownAt", "redacted")).toBe(true);
+    // ...while the absolute time beside it still is not.
+    expect(fieldAllowed("nextDose", "nextDoseTime", "redacted")).toBe(false);
   });
 
   it("an unknown widget refuses everything rather than defaulting open", () => {
