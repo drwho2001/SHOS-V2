@@ -49,7 +49,7 @@ public class WidgetBootReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent == null || !Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
+        if (intent == null || !isBootAction(intent.getAction())) {
             return;
         }
         try {
@@ -60,6 +60,26 @@ public class WidgetBootReceiver extends BroadcastReceiver {
             // update repopulates.
             Log.w(TAG, "could not blank widgets on boot", e);
         }
+    }
+
+    /**
+     * Accepts both boot broadcasts, and the order of these two matters.
+     *
+     * The first version of this file accepted BOOT_COMPLETED alone, which reads
+     * like the obvious choice and is the wrong one: that broadcast fires only
+     * AFTER the user unlocks the device. system_server re-paints a widget's last
+     * cached RemoteViews from disk without waking the app, so a receiver that
+     * waits for BOOT_COMPLETED cannot blank anything until someone types a PIN -
+     * which is precisely after the disclosure it exists to prevent.
+     *
+     * LOCKED_BOOT_COMPLETED arrives while the user is still locked, and reaches
+     * this receiver because the manifest marks it android:directBootAware.
+     * BOOT_COMPLETED is retained as the pre-N fallback, where no direct-boot
+     * concept exists and it is the only signal there is.
+     */
+    private static boolean isBootAction(String action) {
+        return Intent.ACTION_LOCKED_BOOT_COMPLETED.equals(action)
+                || Intent.ACTION_BOOT_COMPLETED.equals(action);
     }
 
     private void blankAll(Context context) {

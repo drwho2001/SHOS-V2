@@ -57,8 +57,33 @@
              RECEIVE_BOOT_COMPLETED is already declared above. -->
         <receiver
             android:name=".widget.WidgetBootReceiver"
-            android:exported="true">
+            android:exported="true"
+            android:directBootAware="true">
             <intent-filter>
+                <!-- LOCKED_BOOT_COMPLETED is the one that matters, and the
+                     BOOT_COMPLETED below is kept only as a pre-N fallback.
+
+                     ACTION_BOOT_COMPLETED fires "after the user has unlocked the
+                     device" (Android docs, Direct Boot guide). Android's
+                     system_server re-paints the last RemoteViews it cached for a
+                     widget straight back onto the display after a reboot,
+                     WITHOUT running the app - so a receiver listening only for
+                     BOOT_COMPLETED does not run until someone enters a PIN.
+                     In exactly the scenario this receiver exists for (a phone
+                     rebooted and then taken by someone else) the cached
+                     medication name and DoxyPEP countdown would sit on the lock
+                     screen until the owner unlocked, and this receiver would
+                     not have fired yet.
+
+                     ACTION_LOCKED_BOOT_COMPLETED fires while the user is still
+                     locked, but only reaches a receiver marked
+                     android:directBootAware="true" - hence the attribute above.
+
+                     Blanking needs no vault access: it is an AppWidgetManager
+                     update with an empty RemoteViews. Credential-encrypted
+                     storage is unavailable until first unlock, but that does not
+                     stop us hiding things - only from being read. -->
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
