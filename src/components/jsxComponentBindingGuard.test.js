@@ -189,10 +189,18 @@ describe("every JSX component used in a screen is actually bound", () => {
         offenders.push(`${file}:${line} <${name}>`);
       }
     }
-    expect(
+expect(
       offenders,
       "these render component names that are neither imported nor declared - a render-time ReferenceError: " +
         offenders.join(", "),
     ).toEqual([]);
-  });
+    // 30s, explicitly. This test parses EVERY .jsx under src/modules and
+    // src/components with @babel/parser on every run - it is a real AST sweep,
+    // not an assertion over a string. Vitest's 5s default is not a budget for
+    // that, and on this machine (measured at 674 MB free) the full suite pushed
+    // it past the default and produced a TIMEOUT that looked like a failure of
+    // the assertion it was never asserting. The repo's standing rule is that a
+    // result must not depend on machine speed; the equivalent here is that the
+    // budget reflects the work rather than a fixed default.
+  }, 30_000);
 });

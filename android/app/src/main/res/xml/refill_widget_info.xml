@@ -14,7 +14,7 @@
      it looked like it hadn't loaded". -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:label="Refills Due"
-    android:description="Which medications need refilling"
+    android:description="@string/widget_desc_refill"
     android:minWidth="180dp"
     android:minHeight="100dp"
     android:minResizeWidth="180dp"

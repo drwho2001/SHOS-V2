@@ -14,7 +14,7 @@
      it looked like it hadn't loaded". -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:label="DoxyPEP Window"
-    android:description="Whether you are inside a DoxyPEP window"
+    android:description="@string/widget_desc_doxy_pep"
     android:minWidth="180dp"
     android:minHeight="100dp"
     android:minResizeWidth="180dp"

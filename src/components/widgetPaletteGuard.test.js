@@ -128,7 +128,31 @@ describe("widget picker (t056)", () => {
       const label = xml.match(/android:label="([^"]+)"/)?.[1];
       expect(label, `${w} has no android:label`).toBeTruthy();
       expect(label.trim().length, `${w} has a blank label`).toBeGreaterThan(0);
-      expect(xml, `${w} has no android:description`).toMatch(/android:description="[^"]+"/);
+      expect(xml, `${w} has no android:description`).toMatch(/android:description="@string\/[a-z_]+"/);
+    }
+  });
+
+  it("every widget description is a string RESOURCE reference, not inline text", () => {
+    // CI caught this, not the local gate: android:description on
+    // <appwidget-provider> is a reference attribute, and a literal fails with
+    // "is incompatible with attribute description (attr) reference" at
+    // :app:processDebugResources. The local toolchain cannot compile Android
+    // resources, so nothing in verify:fast would ever have seen it. Asserting it
+    // here moves the failure from a 4-minute CI round trip to a unit test.
+    const strings = fs.readFileSync(`${RES}/values/strings.xml`, "utf8");
+    for (const w of widgets) {
+      const xml = fs.readFileSync(`${RES}/xml/${w}_widget_info.xml`, "utf8");
+      const desc = xml.match(/android:description="([^"]+)"/)?.[1];
+      expect(desc, `${w} has no description`).toBeTruthy();
+      expect(
+        desc.startsWith("@string/"),
+        `${w} description is "${desc}" - it must be a @string/ reference or the APK build fails`,
+      ).toBe(true);
+      // ...and the resource it points at must actually exist and be non-empty.
+      const name = desc.replace("@string/", "");
+      const declared = strings.match(new RegExp(`<string name="${name}">([^<]*)</string>`))?.[1];
+      expect(declared, `${w} points at @string/${name} which is not declared`).toBeTruthy();
+      expect(declared.trim().length, `@string/${name} is blank`).toBeGreaterThan(0);
     }
   });
 

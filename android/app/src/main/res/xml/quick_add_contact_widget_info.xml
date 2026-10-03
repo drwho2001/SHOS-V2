@@ -14,7 +14,7 @@
      it looked like it hadn't loaded". -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:label="Quick Add Contact"
-    android:description="Jump straight to adding a contact"
+    android:description="@string/widget_desc_quick_add_contact"
     android:minWidth="110dp"
     android:minHeight="100dp"
     android:minResizeWidth="110dp"
