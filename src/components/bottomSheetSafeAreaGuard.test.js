@@ -29,6 +29,19 @@
 //
 // Parsed with @babel/parser rather than grepped, per the convention this repo
 // settled on after several regex scans produced false results.
+//
+// ADDED 3 Oct 2026 - explicit 30s timeouts on the three tests below.
+//
+// It walks all of src/ and runs @babel/parser over every .jsx on every run, so
+// it is a real AST sweep rather than an assertion over a string. Vitest's 5s
+// default is not a budget for that work: under full-suite load on this machine
+// (measured at 327-674 MB free) guards of this shape timed out and reported a
+// failure of an assertion they were never evaluating. Seven sibling guards were
+// given the same budget in the same pass, because a fix scoped to the one that
+// happened to go red is not a fix to the class.
+//
+// Measured, not guessed: run this file alone and divide the reported test
+// duration by its test count before raising this further.
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
@@ -129,7 +142,7 @@ describe("bottom-sheet roots must clear the system navigation bar", () => {
       offenders,
       "these bottom-sheet roots would put their footer under the OS nav bar; add paddingBottom: \"env(safe-area-inset-bottom)\""
     ).toEqual([]);
-  });
+  }, 30_000);
 
   it("the roots that were actually broken are all still guarded", () => {
     // A count, not a spot check: if someone refactors one of these sheets into a
@@ -138,7 +151,7 @@ describe("bottom-sheet roots must clear the system navigation bar", () => {
     let roots = 0;
     for (const f of ALL) roots += bottomSheetRoots(f).length;
     expect(roots).toBeGreaterThanOrEqual(20);
-  });
+  }, 30_000);
 
   it("the detector distinguishes a guarded root from an unguarded one", () => {
     // Non-vacuity, proved against a throw-away file rather than real source.
@@ -185,5 +198,5 @@ describe("bottom-sheet roots must clear the system navigation bar", () => {
     } finally {
       fs.rmSync(fixture, { force: true });
     }
-  });
+  }, 30_000);
 });

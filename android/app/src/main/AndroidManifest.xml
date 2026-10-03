@@ -89,7 +89,7 @@
         </receiver>
 
         <receiver
-            android:name=".widget.NextDoseWidgetProvider"
+            android:name=".widget.NextDoseWidgetProvider" android:label="@string/receiver_label_next_dose"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -101,7 +101,7 @@
 
         <!-- ADDED 22 Sep 2026 — Refill Due widget -->
         <receiver
-            android:name=".widget.RefillWidgetProvider"
+            android:name=".widget.RefillWidgetProvider" android:label="@string/receiver_label_refill"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -113,7 +113,7 @@
 
         <!-- ADDED 22 Sep 2026 — Next Appointment widget -->
         <receiver
-            android:name=".widget.AppointmentWidgetProvider"
+            android:name=".widget.AppointmentWidgetProvider" android:label="@string/receiver_label_appointment"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -125,7 +125,7 @@
 
         <!-- ADDED 22 Sep 2026 — Quick Add Encounter widget (deep link only) -->
         <receiver
-            android:name=".widget.QuickAddEncounterWidgetProvider"
+            android:name=".widget.QuickAddEncounterWidgetProvider" android:label="@string/receiver_label_quick_add_encounter"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -137,7 +137,7 @@
 
         <!-- ADDED 23 Sep 2026 — DoxyPEP Window widget -->
         <receiver
-            android:name=".widget.DoxyPEPWidgetProvider"
+            android:name=".widget.DoxyPEPWidgetProvider" android:label="@string/receiver_label_doxy_pep"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -149,7 +149,7 @@
 
         <!-- ADDED 23 Sep 2026 — Cycle/Fertility widget -->
         <receiver
-            android:name=".widget.CycleWidgetProvider"
+            android:name=".widget.CycleWidgetProvider" android:label="@string/receiver_label_cycle"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -161,7 +161,7 @@
 
         <!-- ADDED 23 Sep 2026 — Last Test/Retest Due widget -->
         <receiver
-            android:name=".widget.TestWidgetProvider"
+            android:name=".widget.TestWidgetProvider" android:label="@string/receiver_label_test"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -173,7 +173,7 @@
 
         <!-- ADDED 23 Sep 2026 — Quick Add Contact widget (deep link only) -->
         <receiver
-            android:name=".widget.QuickAddContactWidgetProvider"
+            android:name=".widget.QuickAddContactWidgetProvider" android:label="@string/receiver_label_quick_add_contact"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -185,7 +185,7 @@
 
         <!-- ADDED 23 Sep 2026 — Quick Add Medication widget (deep link only) -->
         <receiver
-            android:name=".widget.QuickAddMedicationWidgetProvider"
+            android:name=".widget.QuickAddMedicationWidgetProvider" android:label="@string/receiver_label_quick_add_medication"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -197,7 +197,7 @@
 
         <!-- ADDED 23 Sep 2026 — Clinic Card widget (with Maps link, redacted sensitive fields) -->
         <receiver
-            android:name=".widget.ClinicCardWidgetProvider"
+            android:name=".widget.ClinicCardWidgetProvider" android:label="@string/receiver_label_clinic_card"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

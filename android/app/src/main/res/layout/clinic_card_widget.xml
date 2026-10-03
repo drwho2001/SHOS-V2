@@ -35,8 +35,7 @@
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_accent"
-        android:textStyle="bold"
-        android:autoLink="map" />
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/widget_clinic_tests"

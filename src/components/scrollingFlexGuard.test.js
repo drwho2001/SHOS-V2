@@ -2,6 +2,20 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "@babel/parser";
+// ADDED 3 Oct 2026 - explicit timeout for this guard.
+//
+// It walks all of src/ and runs @babel/parser over every .jsx on every run, so
+// it is a real AST sweep rather than an assertion over a string. Vitest's 5s
+// default is not a budget for that work: under full-suite load on this machine
+// (measured at 327-674 MB free) these guards timed out and reported a failure
+// of an assertion they were never evaluating. Two were fixed individually
+// before the pattern was recognised; all of them are now handled together,
+// because a fix scoped to the one that happened to go red is not a fix to the
+// class.
+//
+// Measured, not guessed: run this file alone and divide the reported test
+// duration by its test count before raising this further.
+
 
 // Guards t060: a SCROLLING container that is also a FLEX container can never
 // scroll far enough to reveal all of its own content.
@@ -132,7 +146,7 @@ describe("scrolling containers must not also be flex containers (t060)", () => {
     } finally {
       fs.rmSync(fixture, { force: true });
     }
-  });
+  }, 60000);
 
   it("SettingsScreen's own root is no longer a scrolling flex container", () => {
     const settings = FINDINGS.find((r) => r.file.endsWith("SHOS_Settings_Prototype.jsx"));
@@ -141,7 +155,7 @@ describe("scrolling containers must not also be flex containers (t060)", () => {
       offenders,
       "SHOS_Settings_Prototype.jsx still has a position:fixed scroll container that is also display:flex - that is the t060 defect",
     ).toEqual([]);
-  });
+  }, 60000);
 
   it("the inventory is reported with enough detail to act on", () => {
     const summary = FINDINGS.flatMap((r) =>
@@ -153,5 +167,5 @@ describe("scrolling containers must not also be flex containers (t060)", () => {
     console.log("\n  scrolling flex containers remaining: " + summary.length);
     for (const s of summary) console.log("    " + s);
     expect(Array.isArray(summary)).toBe(true);
-  });
+  }, 60000);
 });

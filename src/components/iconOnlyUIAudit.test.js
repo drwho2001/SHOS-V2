@@ -57,6 +57,20 @@ import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { parse } from "@babel/parser";
+// ADDED 3 Oct 2026 - explicit timeout for this guard.
+//
+// It walks all of src/ and runs @babel/parser over every .jsx on every run, so
+// it is a real AST sweep rather than an assertion over a string. Vitest's 5s
+// default is not a budget for that work: under full-suite load on this machine
+// (measured at 327-674 MB free) these guards timed out and reported a failure
+// of an assertion they were never evaluating. Two were fixed individually
+// before the pattern was recognised; all of them are now handled together,
+// because a fix scoped to the one that happened to go red is not a fix to the
+// class.
+//
+// Measured, not guessed: run this file alone and divide the reported test
+// duration by its test count before raising this further.
+
 
 // The rule's own carve-out, quoted from CLAUDE.md. Gear/person/magnifying-glass
 // are the three named in the rule; close, plus, bin and check are the same
@@ -293,7 +307,7 @@ describe("icon-only UI rule", () => {
     // exact failure CLAUDE.md records four times over.
     expect(filesScanned).toBeGreaterThan(10);
     expect(found.length).toBeGreaterThan(20);
-  });
+  }, 30000);
 
   it("can actually see text, in every form React children take", () => {
     // The mirror of the defect above. If text detection returned "" for
@@ -332,7 +346,7 @@ describe("icon-only UI rule", () => {
     // And the last one must be UNDECIDABLE, not "no text". If it were reported
     // as empty it would be filed as a gap, which is defect #5 all over again.
     expect(seen[7].unknown).toBe(true);
-  });
+  }, 30000);
 
   it("every icon-only element has a recorded, reasoned verdict", () => {
     // A verdict with no reason is not a verdict. This is what stops the list
@@ -343,7 +357,7 @@ describe("icon-only UI rule", () => {
       expect(Number.isInteger(v.count), `${key} needs a count`).toBe(true);
       expect(v.count, `${key} count must be positive`).toBeGreaterThan(0);
     }
-  });
+  }, 30000);
 
   it("finds exactly the reviewed set - a NEW icon-only element fails this", () => {
     const actual = {};
@@ -356,7 +370,7 @@ describe("icon-only UI rule", () => {
       Object.entries(VERDICTS).map(([k, v]) => [k, v.count])
     );
     expect(actual).toEqual(expected);
-  });
+  }, 30000);
 
   it("the favourite star keeps the semantics the audit gave it", () => {
     // The one real gap this audit found. Pinned directly so the fix cannot be
@@ -378,5 +392,5 @@ describe("icon-only UI rule", () => {
     expect(star[0]).toMatch(/Remove \$\{contact\.name\} from favourites/);
     expect(star[0]).toMatch(/Add \$\{contact\.name\} to favourites/);
     expect(star[0]).not.toMatch(/aria-label=\{undefined\}/);
-  });
+  }, 30000);
 });

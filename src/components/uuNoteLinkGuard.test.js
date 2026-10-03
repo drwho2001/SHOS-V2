@@ -20,6 +20,20 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "@babel/parser";
+// ADDED 3 Oct 2026 - explicit timeout for this guard.
+//
+// It walks all of src/ and runs @babel/parser over every .jsx on every run, so
+// it is a real AST sweep rather than an assertion over a string. Vitest's 5s
+// default is not a budget for that work: under full-suite load on this machine
+// (measured at 327-674 MB free) these guards timed out and reported a failure
+// of an assertion they were never evaluating. Two were fixed individually
+// before the pattern was recognised; all of them are now handled together,
+// because a fix scoped to the one that happened to go red is not a fix to the
+// class.
+//
+// Measured, not guessed: run this file alone and divide the reported test
+// duration by its test count before raising this further.
+
 
 const SRC = path.resolve("src");
 
@@ -133,7 +147,7 @@ describe("every U=U link has somewhere to go", () => {
     }
     expect(bad, "these U=U notes would render a link that goes nowhere").toEqual([]);
     expect(n, "found no HivStatusNote mounts - the guard is not looking where they are").toBeGreaterThanOrEqual(4);
-  });
+  }, 30000);
 
   it("every component that RENDERS a HivStatusNote accepts onOpenGlossary", () => {
     // The direction the first version missed: a component whose signature lacks
@@ -153,7 +167,7 @@ describe("every U=U link has somewhere to go", () => {
     }
     expect(bad, "these render a U=U link wired to nothing").toEqual([]);
     expect(checked, "found no enclosing components - the guard is not looking where they are").toBeGreaterThanOrEqual(3);
-  });
+  }, 30000);
 
   it("every MyProfileModule mount passes onOpenGlossary", () => {
     // My Profile is reachable from four places. A new one that forgets gives a
@@ -172,16 +186,16 @@ describe("every U=U link has somewhere to go", () => {
     }
     expect(bad, "these My Profile entry points would give a dead U=U link").toEqual([]);
     expect(n, "found no MyProfileModule mounts - the guard is not looking where they are").toBeGreaterThanOrEqual(4);
-  });
+  }, 30000);
 
   it("App.jsx defines the glossary helper the link depends on", () => {
     const app = fs.readFileSync(path.join(SRC, "App.jsx"), "utf8");
     expect(app).toMatch(/openSettingsToGlossary/);
     expect(app).toMatch(/setSettingsInitialScreen\("glossary"\)/);
-  });
+  }, 30000);
 
   it("Settings can open the Glossary screen directly, which is what the link relies on", () => {
     const settings = fs.readFileSync(path.join(SRC, "modules/SHOS_Settings_Prototype.jsx"), "utf8");
     expect(settings).toMatch(/showGlossary.*initialScreen === "glossary"/);
-  });
+  }, 30000);
 });

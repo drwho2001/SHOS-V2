@@ -23,6 +23,20 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "@babel/parser";
+// ADDED 3 Oct 2026 - explicit timeout for this guard.
+//
+// It walks all of src/ and runs @babel/parser over every .jsx on every run, so
+// it is a real AST sweep rather than an assertion over a string. Vitest's 5s
+// default is not a budget for that work: under full-suite load on this machine
+// (measured at 327-674 MB free) these guards timed out and reported a failure
+// of an assertion they were never evaluating. Two were fixed individually
+// before the pattern was recognised; all of them are now handled together,
+// because a fix scoped to the one that happened to go red is not a fix to the
+// class.
+//
+// Measured, not guessed: run this file alone and divide the reported test
+// duration by its test count before raising this further.
+
 
 const SRC = path.resolve("src");
 
@@ -95,7 +109,7 @@ describe("no `//` comment sits in a JSX children position", () => {
       offenders,
       "these render as literal text on screen - use {/* ... */} in JSX children position",
     ).toEqual([]);
-  });
+  }, 30000);
 
   it("the detector can find one, so a clean result means something", () => {
     // Proved against a THROW-AWAY fixture. Asserting "at least one exists"
@@ -132,7 +146,7 @@ describe("no `//` comment sits in a JSX children position", () => {
     } finally {
       fs.rmSync(fixture, { force: true });
     }
-  });
+  }, 30000);
 
   it("a `//` comment in ordinary JS position is NOT flagged", () => {
     // The guard must not push the codebase towards awkward workarounds in the
@@ -152,5 +166,5 @@ describe("no `//` comment sits in a JSX children position", () => {
     } finally {
       fs.rmSync(fixture, { force: true });
     }
-  });
+  }, 30000);
 });

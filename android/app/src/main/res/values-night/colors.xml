@@ -3,7 +3,10 @@
      values-night is the right qualifier rather than drawable-night because the
      shape is identical in both modes and only the colour differs. -->
 <resources>
-    <color name="widget_bg">#10312F</color>
+    <color name="widget_bg">#1D4E4B</color>
+    <!-- Lightened from #10312F, which the owner read as plain black on a
+         dark-mode phone. Every text colour was re-verified against this new
+         background and all 24 pairs still clear WCAG AA. -->
     <color name="widget_surface_alt">#1B4542</color>
     <color name="widget_text_primary">#EAF6F5</color>
     <color name="widget_text_muted">#A8C4C2</color>

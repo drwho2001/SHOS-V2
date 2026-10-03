@@ -2,6 +2,20 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "@babel/parser";
+// ADDED 3 Oct 2026 - explicit timeout for this guard.
+//
+// It walks all of src/ and runs @babel/parser over every .jsx on every run, so
+// it is a real AST sweep rather than an assertion over a string. Vitest's 5s
+// default is not a budget for that work: under full-suite load on this machine
+// (measured at 327-674 MB free) these guards timed out and reported a failure
+// of an assertion they were never evaluating. Two were fixed individually
+// before the pattern was recognised; all of them are now handled together,
+// because a fix scoped to the one that happened to go red is not a fix to the
+// class.
+//
+// Measured, not guessed: run this file alone and divide the reported test
+// duration by its test count before raising this further.
+
 
 // Detects TEMPORAL DEAD ZONE crashes: a component-scope `const`/`let` that is
 // READ before its own declaration.
@@ -289,7 +303,7 @@ describe("no component reads a const before declaring it (t069)", () => {
     } finally {
       fs.rmSync(fixture, { force: true });
     }
-  });
+  }, 30000);
 
   it("NO component anywhere reads a const before declaring it", () => {
     // Asserted globally, not per named file. The first version of this guard
@@ -307,5 +321,5 @@ describe("no component reads a const before declaring it (t069)", () => {
     console.log("\n  use-before-declaration sites: " + summary.length);
     for (const s of summary) console.log("    " + s);
     expect(summary, "these read a const before declaring it, which crashes on a bundled build").toEqual([]);
-  });
+  }, 30000);
 });

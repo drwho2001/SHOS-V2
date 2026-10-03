@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ADDED 3 Oct 2026 - pool t056 (no label, no per-widget preview) and t062
-     (unbounded resize producing empty boxes, confirmed on a real device).
+<!-- CHANGED 3 Oct 2026 - one size for all ten, and a sortable label.
 
-     android:label was ABSENT on all ten before this, so the picker listed ten
-     entries all named after the app. previewImage now points at a distinct
-     vector per widget, and previewLayout (API 31+) points at the REAL layout -
-     the layouts already carry placeholder android:text, so the picker renders a
-     truthful preview rather than an empty card. previewLayout is simply
-     ignored below API 31, where previewImage is the fallback.
+     The label is what the launcher sorts on, so the three Quick Add widgets
+     share a "Quick Add: " prefix to keep them clustered instead of scattered
+     alphabetically. That is a real fix for "the order is cluttered", and it is
+     also why the Quick Add labels gained a colon: without a common prefix
+     "Contact"/"Encounter"/"Medication" sort by their own first letter.
 
-     min/targetCell/minResize/maxResize: see the sizing rationale in the
-     generating script. The maxResize cap is the fix for "I made it bigger and
-     it looked like it hadn't loaded". -->
+     min/targetCell are now IDENTICAL across all ten, because a picker offering
+     four different footprints reads as cluttered even when each size is
+     individually correct. maxResize still varies where the content genuinely
+     needs it - that is the cap that stops the empty-black-box growth, which is
+     a different concern from the size the picker offers. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:label="Quick Add Contact"
+    android:label="Quick Add: Contact"
     android:description="@string/widget_desc_quick_add_contact"
-    android:minWidth="110dp"
+    android:minWidth="180dp"
     android:minHeight="100dp"
     android:minResizeWidth="110dp"
-    android:minResizeHeight="100dp"
-    android:maxResizeWidth="110dp"
-    android:maxResizeHeight="150dp"
-    android:targetCellWidth="2"
+    android:minResizeHeight="80dp"
+    android:maxResizeWidth="180dp"
+    android:maxResizeHeight="220dp"
+    android:targetCellWidth="3"
     android:targetCellHeight="2"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/quick_add_contact_widget"

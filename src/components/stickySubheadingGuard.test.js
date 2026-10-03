@@ -20,6 +20,20 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "@babel/parser";
+// ADDED 3 Oct 2026 - explicit timeout for this guard.
+//
+// It walks all of src/ and runs @babel/parser over every .jsx on every run, so
+// it is a real AST sweep rather than an assertion over a string. Vitest's 5s
+// default is not a budget for that work: under full-suite load on this machine
+// (measured at 327-674 MB free) these guards timed out and reported a failure
+// of an assertion they were never evaluating. Two were fixed individually
+// before the pattern was recognised; all of them are now handled together,
+// because a fix scoped to the one that happened to go red is not a fix to the
+// class.
+//
+// Measured, not guessed: run this file alone and divide the reported test
+// duration by its test count before raising this further.
+
 
 const SRC = path.resolve("src");
 
@@ -99,7 +113,7 @@ describe("sticky sub-heading offsets must not each carry their own number", () =
       offenders,
       "these sticky bars hardcode a safe-area offset; use STICKY_SUBHEADING_TOP so they cannot drift apart again",
     ).toEqual([]);
-  });
+  }, 30000);
 
   it("the shared constant is the one in designTokens, and still says 58", () => {
     const tokens = fs.readFileSync(path.join(SRC, "calculations/designTokens.js"), "utf8");
@@ -108,7 +122,7 @@ describe("sticky sub-heading offsets must not each carry their own number", () =
     // If the banner's padding or title size changes, this number has to change
     // with it, and this is where that gets said out loud.
     expect(tokens).toMatch(/STICKY_SUBHEADING_TOP\s*=\s*"calc\(env\(safe-area-inset-top\) \+ 58px\)"/);
-  });
+  }, 30000);
 
   it("every site that uses the constant also imports it", () => {
     // A missing import is a ReferenceError at render time - the exact class of
@@ -122,7 +136,7 @@ describe("sticky sub-heading offsets must not each carry their own number", () =
       broken.push(path.relative(SRC, f).replace(/\\/g, "/"));
     }
     expect(broken, "uses STICKY_SUBHEADING_TOP without importing it").toEqual([]);
-  });
+  }, 30000);
 
   it("the detector itself can find a hardcoded offset", () => {
     // Non-vacuity, proved against a THROW-AWAY file rather than real source.
@@ -152,5 +166,5 @@ describe("sticky sub-heading offsets must not each carry their own number", () =
     } finally {
       fs.rmSync(fixture, { force: true });
     }
-  });
+  }, 30000);
 });
