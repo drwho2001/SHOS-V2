@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="#1B1B1F"
+    android:background="@drawable/widget_background"
     android:gravity="center">
 
     <TextView
@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:text="DoxyPEP Window"
         android:textSize="16sp"
-        android:textColor="#FFFFFF"
+        android:textColor="@color/widget_text_primary"
         android:textStyle="bold" />
 
     <TextView
@@ -24,7 +24,7 @@
         android:layout_marginTop="8dp"
         android:text="No active window"
         android:textSize="18sp"
-        android:textColor="#FF9800"
+        android:textColor="@color/widget_warn"
         android:textStyle="bold" />
 
     <TextView
@@ -34,5 +34,5 @@
         android:layout_marginTop="4dp"
         android:text=""
         android:textSize="12sp"
-        android:textColor="#B0B0B0" />
+        android:textColor="@color/widget_text_muted" />
 </LinearLayout>

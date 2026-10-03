@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ADDED 3 Oct 2026 - dark-mode (system) widget palette.
+     values-night is the right qualifier rather than drawable-night because the
+     shape is identical in both modes and only the colour differs. -->
+<resources>
+    <color name="widget_bg">#10312F</color>
+    <color name="widget_surface_alt">#1B4542</color>
+    <color name="widget_text_primary">#EAF6F5</color>
+    <color name="widget_text_muted">#A8C4C2</color>
+    <color name="widget_good">#5BD07F</color>
+    <color name="widget_warn">#FFB74D</color>
+    <!-- Lightened from #FF7BAC: measured at 4.39:1 on widget_surface_alt, which
+         is under WCAG AA. The clinic card is the only widget that puts text on
+         the inner alt surface, so a colour that passes on the card can still fail
+         inside it - which is why both backgrounds are measured, not just the
+         obvious one. Measured after the change: 7.79:1 on the card, 5.92:1 on
+         the inner alt surface. -->
+    <color name="widget_cycle">#FFA8C9</color>
+    <color name="widget_accent">#4FD1C5</color>
+</resources>

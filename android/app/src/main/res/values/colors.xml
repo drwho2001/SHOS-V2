@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ADDED 3 Oct 2026 - widget palette (pool t057/t056/t062).
+     Light-mode (system) values. The dark counterparts live in values-night/,
+     NOT drawable-night/: only the COLOUR changes between modes, the shape XML
+     is identical, so duplicating the drawable would be pure file duplication.
+
+     Every colour here is semantic rather than literal because the previous
+     layouts hardcoded them per-file, which is how ten widgets ended up with ten
+     slightly different greys and no way to tell them apart in a picker. -->
+<resources>
+    <!-- Teal-tinted rather than neutral: the owner's decision, and the one that
+         makes the picker legible. Ten per-module accent colours would need ten
+         separate contrast checks and would read as noise side by side. -->
+    <color name="widget_bg">#E3F1F0</color>
+    <color name="widget_surface_alt">#FFFFFF</color>
+    <color name="widget_text_primary">#0C2E2D</color>
+    <color name="widget_text_muted">#4C6664</color>
+    <!-- Semantic accents. Each is chosen to clear WCAG AA 4.5:1 as TEXT on
+         widget_bg, which the old #09582E-on-dark pairing did not have to do
+         because dark-on-light inverts the problem. Checked, not eyeballed. -->
+    <color name="widget_good">#0B6B33</color>
+    <color name="widget_warn">#8A5200</color>
+    <color name="widget_cycle">#A8003F</color>
+    <color name="widget_accent">#00696B</color>
+</resources>

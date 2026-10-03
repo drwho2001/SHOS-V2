@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="#1B1B1F"
+    android:background="@drawable/widget_background"
     android:gravity="center">
 
     <TextView
@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:text="Clinic Card"
         android:textSize="16sp"
-        android:textColor="#FFFFFF"
+        android:textColor="@color/widget_text_primary"
         android:textStyle="bold" />
 
     <TextView
@@ -24,7 +24,7 @@
         android:layout_marginTop="8dp"
         android:text="No upcoming appointment"
         android:textSize="14sp"
-        android:textColor="#09582E"
+        android:textColor="@color/widget_good"
         android:textStyle="bold" />
 
     <TextView
@@ -34,7 +34,7 @@
         android:layout_marginTop="4dp"
         android:text=""
         android:textSize="12sp"
-        android:textColor="#008585"
+        android:textColor="@color/widget_accent"
         android:textStyle="bold"
         android:autoLink="map" />
 
@@ -45,7 +45,7 @@
         android:layout_marginTop="4dp"
         android:text=""
         android:textSize="12sp"
-        android:textColor="#B0B0B0" />
+        android:textColor="@color/widget_text_muted" />
 
     <LinearLayout
         android:id="@+id/widget_clinic_sensitive_row"
@@ -60,7 +60,7 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="#333333" />
+            android:background="@color/widget_surface_alt" />
 
         <TextView
             android:id="@+id/widget_clinic_doctype"
@@ -69,7 +69,7 @@
             android:layout_marginTop="8dp"
             android:text="••••• tap to reveal"
             android:textSize="12sp"
-            android:textColor="#B0B0B0" />
+            android:textColor="@color/widget_text_muted" />
 
         <TextView
             android:id="@+id/widget_clinic_clinic_num"
@@ -78,7 +78,7 @@
             android:layout_marginTop="4dp"
             android:text="••••• tap to reveal"
             android:textSize="12sp"
-            android:textColor="#B0B0B0" />
+            android:textColor="@color/widget_text_muted" />
 
         <TextView
             android:id="@+id/widget_clinic_nhs_num"
@@ -87,7 +87,7 @@
             android:layout_marginTop="4dp"
             android:text="••••• tap to reveal"
             android:textSize="12sp"
-            android:textColor="#B0B0B0" />
+            android:textColor="@color/widget_text_muted" />
 
         <TextView
             android:id="@+id/widget_clinic_reveal"
@@ -96,7 +96,7 @@
             android:layout_marginTop="8dp"
             android:text="Tap to reveal sensitive info"
             android:textSize="11sp"
-            android:textColor="#008585"
+            android:textColor="@color/widget_accent"
             android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>

@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="#1B1B1F"
+    android:background="@drawable/widget_background"
     android:gravity="center">
 
     <TextView
@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:text="Medication"
         android:textSize="16sp"
-        android:textColor="#FFFFFF"
+        android:textColor="@color/widget_text_primary"
         android:textStyle="bold" />
 
     <TextView
@@ -24,7 +24,7 @@
         android:layout_marginTop="8dp"
         android:text="Next dose: --:--"
         android:textSize="14sp"
-        android:textColor="#B0B0B0" />
+        android:textColor="@color/widget_text_muted" />
 
     <!-- CHANGED 2 Oct 2026 - a real Chronometer rather than a JS interval.
          The widget has updatePeriodMillis="0" because a medicine schedule is
@@ -42,5 +42,5 @@
         android:layout_marginTop="4dp"
         android:visibility="gone"
         android:textSize="14sp"
-        android:textColor="#FFFFFF" />
+        android:textColor="@color/widget_text_primary" />
 </LinearLayout>

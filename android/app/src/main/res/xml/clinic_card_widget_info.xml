@@ -1,9 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ADDED 3 Oct 2026 - pool t056 (no label, no per-widget preview) and t062
+     (unbounded resize producing empty boxes, confirmed on a real device).
+
+     android:label was ABSENT on all ten before this, so the picker listed ten
+     entries all named after the app. previewImage now points at a distinct
+     vector per widget, and previewLayout (API 31+) points at the REAL layout -
+     the layouts already carry placeholder android:text, so the picker renders a
+     truthful preview rather than an empty card. previewLayout is simply
+     ignored below API 31, where previewImage is the fallback.
+
+     min/targetCell/minResize/maxResize: see the sizing rationale in the
+     generating script. The maxResize cap is the fix for "I made it bigger and
+     it looked like it hadn't loaded". -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:label="Clinic Card"
+    android:description="Your clinician-facing summary card"
     android:minWidth="250dp"
     android:minHeight="200dp"
+    android:minResizeWidth="250dp"
+    android:minResizeHeight="200dp"
+    android:maxResizeWidth="250dp"
+    android:maxResizeHeight="300dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="3"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/clinic_card_widget"
+    android:previewLayout="@layout/clinic_card_widget"
+    android:previewImage="@drawable/widget_preview_clinic_card"
     android:resizeMode="horizontal|vertical"
-    android:widgetCategory="home_screen"
-    android:previewImage="@drawable/widget_preview" />
+    android:widgetCategory="home_screen" />

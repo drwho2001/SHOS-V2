@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ADDED 3 Oct 2026 - picker preview for the quick_add_contact widget. Previously all ten
+     widgets shared one placeholder, so the picker showed ten identical cards. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="80dp"
+    android:viewportWidth="120"
+    android:viewportHeight="80">
+    <path
+        android:fillColor="#10312F"
+        android:pathData="M0,8 Q0,0 8,0 H112 Q120,0 120,8 V72 Q120,80 112,80 H8 Q0,80 0,72 Z" />
+    <path
+        android:fillColor="#4FD1C5"
+        android:pathData="M10,14 H16 Q18,14 18,16 V64 Q18,66 16,66 H10 Q8,66 8,64 V16 Q8,14 10,14 Z" />
+    <path
+        android:fillColor="#EAF6F5"
+        android:fillAlpha="0.92"
+        android:pathData="M14,20 H48 Q50,20 50,22 Q50,24 48,24 H14 Q12,24 12,22 Q12,20 14,20 Z" />
+    <path
+        android:strokeColor="#4FD1C5"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:pathData="M48,16 v14 M41,23 h14" />
+</vector>

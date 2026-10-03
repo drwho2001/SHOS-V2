@@ -1,9 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ADDED 3 Oct 2026 - pool t056 (no label, no per-widget preview) and t062
+     (unbounded resize producing empty boxes, confirmed on a real device).
+
+     android:label was ABSENT on all ten before this, so the picker listed ten
+     entries all named after the app. previewImage now points at a distinct
+     vector per widget, and previewLayout (API 31+) points at the REAL layout -
+     the layouts already carry placeholder android:text, so the picker renders a
+     truthful preview rather than an empty card. previewLayout is simply
+     ignored below API 31, where previewImage is the fallback.
+
+     min/targetCell/minResize/maxResize: see the sizing rationale in the
+     generating script. The maxResize cap is the fix for "I made it bigger and
+     it looked like it hadn't loaded". -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:label="Last Test"
+    android:description="How long since your last test"
     android:minWidth="180dp"
     android:minHeight="100dp"
+    android:minResizeWidth="180dp"
+    android:minResizeHeight="100dp"
+    android:maxResizeWidth="180dp"
+    android:maxResizeHeight="170dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/test_widget"
+    android:previewLayout="@layout/test_widget"
+    android:previewImage="@drawable/widget_preview_test"
     android:resizeMode="horizontal|vertical"
-    android:widgetCategory="home_screen"
-    android:previewImage="@drawable/widget_preview" />
+    android:widgetCategory="home_screen" />
