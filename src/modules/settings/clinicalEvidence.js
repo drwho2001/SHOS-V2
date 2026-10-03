@@ -32,29 +32,51 @@
 // plain English for a non-clinical reader - the "hand it to someone who doubts
 // you" case rather than the "evidence for a clinician" case.
 
+// GROUPED BY CONTEXT, in the Resources screen's own shape, at the owner's
+// explicit ask ("similar to resources, group by context"). A flat list of four
+// PDFs makes the reader do the sorting: two are UK, one is US, one is
+// international, and one of the two UK ones is written for a non-clinical
+// reader while the other is not. Grouping says which is which, which is the
+// difference between handing someone a source and making them find it.
+//
+// The group KEY is separate from the label so the order and the wording can
+// change without touching the data, and so a source carrying a key that is not
+// in this map is a test failure rather than a citation that silently renders
+// nowhere. That failure mode is the reason the map is explicit rather than
+// derived from whichever group happens to appear first.
+export const EVIDENCE_GROUPS = [
+  { key: "uk", label: "UK guidance" },
+  { key: "plain", label: "Plain-English explanations" },
+  { key: "international", label: "International guidance" },
+];
+
 export const U_U_SOURCES = [
   {
     label: "BHIVA: routine investigation and monitoring of HIV-positive adults",
     publisher: "British HIV Association",
     url: "https://bhiva.org/wp-content/uploads/2024/10/Monitoring-Guidelines.pdf.pdf",
     checkedOn: "2026-10-02",
+    group: "uk",
   },
   {
     label: "BHIVA non-technical summary (plain-English, states U=U directly)",
     publisher: "British HIV Association",
     url: "https://bhiva.org/wp-content/uploads/2024/12/HIV-2-non-tech-summary.pdf",
     checkedOn: "2026-10-02",
+    group: "plain",
   },
   {
     label: "U=U for clinical practice",
     publisher: "HIV Guidelines (NIH/WHS/HIVMA)",
     url: "https://www.hivguidelines.org/guideline/u-equals-u",
     checkedOn: "2026-10-02",
+    group: "international",
   },
   {
     label: "Undetectable = Untransmittable",
     publisher: "UNAIDS",
     url: "https://www.unaids.org/sites/default/files/media_asset/undetectable-untransmittable_en.pdf",
     checkedOn: "2026-10-02",
+    group: "international",
   },
 ];

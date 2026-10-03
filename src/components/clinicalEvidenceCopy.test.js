@@ -19,6 +19,17 @@ import path from "node:path";
 const SRC = path.resolve("src");
 const read = (p) => fs.readFileSync(path.join(SRC, p), "utf8");
 
+// Negative assertions in this file run against COMMENT-STRIPPED source, and the
+// stripper is proven non-vacuous below. This is not ceremony: the first run of
+// the drop-down test went green because the word "collapsed" appears in the
+// comment explaining WHY the drop-down was removed. A raw substring check on
+// this repo cannot distinguish code from the prose documenting it, which is the
+// single most repeated guard failure in this codebase.
+const stripComments = (src) =>
+  src
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+    .replace(/\/\/.*$/gm, (m) => m.replace(/[^\n]/g, " "));
+
 const NOTE = read("components/HivStatusNote.jsx");
 const CALC = read("calculations/hivStatusCalculations.js");
 const EVIDENCE_SCREEN = read("modules/settings/ClinicalEvidenceScreen.jsx");
@@ -168,14 +179,75 @@ describe("the clinical citations are present, real, and not user-editable", () =
     expect(GLOSSARY).not.toMatch(/U_U_SOURCES/);
   });
 
-  it("the evidence screen renders the citations, collapsed, with safe links", () => {
+  it("the evidence screen renders every citation, open, with safe links", () => {
     expect(EVIDENCE_SCREEN).toMatch(/U_U_SOURCES/);
-    expect(EVIDENCE_SCREEN).toMatch(/useState\(false\)/); // collapsed on open
-    expect(EVIDENCE_SCREEN).toMatch(/aria-expanded/);
     expect(EVIDENCE_SCREEN).toMatch(/target="_blank"/);
     // rel is the half that matters: without it the opened page gets a
     // window.opener handle back into the app.
     expect(EVIDENCE_SCREEN).toMatch(/rel="noopener noreferrer"/);
+  });
+
+  it("the citations are NOT behind a drop-down - the evidence is the point of the screen", () => {
+    // REVERSED 2 Oct 2026 at the owner's ask. The first version collapsed all
+    // four links behind one toggle, on the grounds that the ask was decluttering.
+    // That is the wrong trade for THIS screen: its entire purpose is that the
+    // evidence can be checked by whoever the phone was handed to, so requiring a
+    // tap to see whether any sources exist re-opens the doubt the screen closes.
+    // Grouping answers the decluttering concern instead.
+    expect(
+      stripComments(EVIDENCE_SCREEN),
+      "the citation list is collapsed behind a toggle again",
+    ).not.toMatch(/aria-expanded/);
+    expect(
+      stripComments(EVIDENCE_SCREEN),
+      "EvidenceGroup takes a collapsed prop again",
+    ).not.toMatch(/collapsed/i);
+    // The collapsed state used useState(false); it must not creep back as a
+    // re-introduced "expanded" flag either, which is the same hiding.
+    expect(stripComments(EVIDENCE_SCREEN), "a show/hide state for the citation list crept back").not.toMatch(
+      /setUuOpen|useState\((true|false)\)/,
+    );
+  });
+
+  it("the comment stripper actually strips, so the negative above is not vacuous", () => {
+    // Without this the drop-down test could pass for the wrong reason - a
+    // stripper that silently did nothing would make every negative in this file
+    // assert against raw source again, comments included.
+    expect(stripComments('const a = 1; // collapsed\nconst b = 2;')).not.toContain("collapsed");
+    expect(stripComments('const a = 1; // collapsed\nconst b = 2;')).toContain("const b = 2;");
+    expect(stripComments("/* collapsed */ const a = 1;")).not.toContain("collapsed");
+    // Prove the real file has comments, i.e. there is something to strip. If this
+    // ever fails, the stripper is being applied to text that has no comments and
+    // the negative assertions are no longer testing what they claim to.
+    expect(stripComments(EVIDENCE_SCREEN), "the screen has no comments to strip").not.toBe(EVIDENCE_SCREEN);
+  });
+
+  it("cites are grouped by context, in the Resources screen's shape", () => {
+    expect(EVIDENCE_DATA).toMatch(/export const EVIDENCE_GROUPS/);
+    expect(EVIDENCE_SCREEN).toMatch(/EVIDENCE_GROUPS\.map/);
+    // Resources' own shape is a sectionLabel heading above one surface card per
+    // group. Matching it rather than inventing a third grouping style is the
+    // point of "similar to resources".
+    expect(EVIDENCE_SCREEN).toMatch(/TYPE\.sectionLabel/);
+  });
+
+  it("every citation lands in a group that is actually rendered", async () => {
+    // THE FAILURE MODE THIS PROTECTS: a source carrying a group key that is not
+    // in EVIDENCE_GROUPS renders NOWHERE. No error, no empty heading, no test
+    // failure anywhere else - the citation simply vanishes from the screen whose
+    // whole job is to show it, and the app is back to asserting a clinical claim
+    // with less evidence than it thinks it has.
+    const { U_U_SOURCES, EVIDENCE_GROUPS } = await import("../modules/settings/clinicalEvidence");
+    const keys = new Set(EVIDENCE_GROUPS.map((g) => g.key));
+    const orphans = U_U_SOURCES.filter((s) => !keys.has(s.group)).map((s) => `${s.label} -> ${s.group}`);
+    expect(orphans, "these citations would render nowhere: " + orphans.join(", ")).toEqual([]);
+    // And the inverse: a declared group with no sources would leave a bare
+    // heading. EvidenceGroup returns null for an empty list, so this is about the
+    // map staying honest rather than about a crash.
+    const empty = EVIDENCE_GROUPS.filter((g) => !U_U_SOURCES.some((s) => s.group === g.key)).map((g) => g.label);
+    expect(empty, "these group headings would render with nothing under them: " + empty.join(", ")).toEqual([]);
+    // A group label is user-facing copy, so it cannot be blank.
+    expect(EVIDENCE_GROUPS.every((g) => typeof g.label === "string" && g.label.trim().length > 0)).toBe(true);
   });
 
   it("shows the date each source was actually checked, so a stale citation is findable", () => {

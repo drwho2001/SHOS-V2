@@ -20,12 +20,12 @@
 // IT IS UI, NOT DATA. Nothing here is stored, editable, or user-owned. That is
 // the entire point: a claim this app makes cannot lose its evidence behind an
 // edit.
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect } from "react";
 import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
-import { CaretLeftIcon as ChevronLeft, FlaskIcon as Flask, CaretDownIcon } from "@phosphor-icons/react";
+import { CaretLeftIcon as ChevronLeft, FlaskIcon as Flask } from "@phosphor-icons/react";
 import { NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
-import { U_U_SOURCES } from "./clinicalEvidence";
+import { U_U_SOURCES, EVIDENCE_GROUPS } from "./clinicalEvidence";
 
 // The one-sentence takeaway, leading the entry - the owner's own wording, and
 // deliberately NOT phrased about the reader. It states what the science is, not
@@ -42,63 +42,44 @@ const LEAD =
 const DETAIL =
   "Undetectable = Untransmittable, usually shortened to U=U. When someone is on HIV treatment and their viral load stays undetectable - below 50 copies per millilitre of blood, confirmed on repeated tests - they cannot pass HIV on sexually. The word that matters is 'stays': one undetectable result is a single measurement, whereas U=U rests on a viral load that has remained undetectable over time. Different laboratories can detect down to different levels, so 'undetectable' always describes a test result rather than a fixed state of someone's health.";
 
-function EvidenceGroup({ title, intro, sources, collapsed, onToggle, T }) {
+// ALWAYS SHOWN, NOT A DROP-DOWN - reversed 2 Oct 2026 at the owner's explicit
+// ask, after the first version collapsed this behind a single toggle. The first
+// argument for collapsing was decluttering, and Gemini made the opposite case:
+// the whole purpose of this screen is that the evidence is CHECKABLE by someone
+// the phone is handed to, so hiding it behind a tap re-introduces the exact
+// doubt the screen exists to answer. The decluttering worry is answered by
+// grouping instead of hiding - four links under three headings reads shorter
+// than one collapsed row the reader has to open to learn there are four.
+function EvidenceGroup({ title, sources, T }) {
+  if (!sources || sources.length === 0) return null;
   return (
-    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, marginBottom: 14, overflow: "hidden" }}>
-      <div
-        role="button"
-        tabIndex={0}
-        aria-expanded={!collapsed}
-        onClick={onToggle}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-          }
-        }}
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "12px 14px", cursor: "pointer" }}
-      >
-        <div style={{ ...TYPE.sectionLabel, color: T.textSecondary }}>{title}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: T.textDisabled }}>{sources.length}</span>
-          <CaretDownIcon
-            size={13}
-            color={T.textSecondary}
-            style={{ transform: collapsed ? "none" : "rotate(180deg)", transition: "transform 150ms ease" }}
-          />
-        </div>
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ ...TYPE.sectionLabel, color: T.textDisabled, padding: "0 0 6px" }}>{title}</div>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: "12px 14px" }}>
+        {/* fontSize is set on THIS <ul> deliberately, and so is one on each
+            <li> further down. The original version set neither, so both
+            inherited the browser's 16px ROOT default instead of the 12px the
+            surrounding card text uses - same font family, so it read as a
+            different typeface rather than an obvious size bug. Measured on the
+            device before fixing, not guessed at. */}
+        <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12 }}>
+          {sources.map((s) => (
+            <li key={s.url} style={{ marginBottom: 8, fontSize: 12, lineHeight: 1.45 }}>
+              <a
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: T.textSecondary, textDecoration: "underline", textUnderlineOffset: 2 }}
+              >
+                {s.label}
+              </a>{" "}
+              <span style={{ color: T.textDisabled }}>
+                ({s.publisher} &middot; checked {s.checkedOn})
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
-
-      {!collapsed && (
-        <div style={{ padding: "0 14px 14px" }}>
-          {intro && (
-            <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.45, marginBottom: 10 }}>{intro}</div>
-          )}
-          {/* fontSize is set on THIS <ul> deliberately, and so is one on each
-              <li> further down. The original version set neither, so both
-              inherited the browser's 16px ROOT default instead of the 12px the
-              surrounding card text uses - same font family, so it read as a
-              different typeface rather than an obvious size bug. Measured on the
-              device before fixing, not guessed at. */}
-          <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12 }}>
-            {sources.map((s) => (
-              <li key={s.url} style={{ marginBottom: 8, fontSize: 12, lineHeight: 1.45 }}>
-                <a
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: T.textSecondary, textDecoration: "underline", textUnderlineOffset: 2 }}
-                >
-                  {s.label}
-                </a>{" "}
-                <span style={{ color: T.textDisabled }}>
-                  ({s.publisher} &middot; checked {s.checkedOn})
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }
@@ -110,13 +91,14 @@ export default function ClinicalEvidenceScreen({ onClose }) {
   // pattern for no reason.
   const T = darkMode ? DARK : NEUTRAL;
 
-  // Collapsed by default: the owner's ask was decluttering, and an open list of
-  // four PDF links competes with the explanation it is evidence FOR. Component
-  // state, deliberately NOT persisted - it is a reading convenience rather than a
-  // preference, and the governing privacy rule is that the note's presence cannot
-  // disclose anything, so "I opened the U=U evidence" must not become a stored
-  // signal either.
-  const [uuOpen, setUuOpen] = useState(false);
+  // Grouped by context, in EVIDENCE_GROUPS' declared order rather than in
+  // whatever order the sources happen to sit in the array - so adding a source
+  // cannot reorder the screen, and a group whose sources all move elsewhere
+  // simply stops rendering instead of leaving an empty heading.
+  const groups = EVIDENCE_GROUPS.map((g) => ({
+    ...g,
+    sources: U_U_SOURCES.filter((s) => s.group === g.key),
+  }));
 
   const dialogRef = useRef(null);
   useEffect(() => { dialogRef.current?.focus(); }, []);
@@ -197,14 +179,9 @@ export default function ClinicalEvidenceScreen({ onClose }) {
           <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.45 }}>{DETAIL}</div>
         </div>
 
-        <EvidenceGroup
-          title="U=U sources"
-          intro="Published guidance and evidence for the statement above."
-          sources={U_U_SOURCES}
-          collapsed={!uuOpen}
-          onToggle={() => setUuOpen((v) => !v)}
-          T={T}
-        />
+        {groups.map((g) => (
+          <EvidenceGroup key={g.key} title={g.label} sources={g.sources} T={T} />
+        ))}
 
         <div style={{ fontSize: 11, color: T.textDisabled, lineHeight: 1.5 }}>
           These are third-party documents and are not maintained by this app. Each one was opened and
