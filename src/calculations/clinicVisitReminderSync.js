@@ -133,8 +133,14 @@ export async function syncClinicVisitReminders() {
   return { visit, resultA, resultB };
 }
 
-async function updateAppointmentWidget(visit) {
+export async function updateAppointmentWidget(visit) {
   try {
+    // ADDED 4 Oct 2026 - self-sufficient. A widget's visual state is
+    // UNCONDITIONAL while reminder logic is conditional by nature, so this is
+    // callable with no argument (from syncAllWidgets) and fetches its own data.
+    // Passing undefined is different from passing null on purpose: undefined
+    // means "go and look", null means "there genuinely is none".
+    if (visit === undefined) visit = await getSoonestBookedVisit();
     const count = visit ? 1 : 0;
     const nextAppt = visit
       ? `${visit.title || "Appointment"} — ${new Date(realTimestampFromStored(visit.date)).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}`
@@ -156,15 +162,30 @@ if (bridge && bridge.plugin.updateAppointment) {
   }
 }
 
-async function updateClinicCardWidget(visit) {
+export async function updateClinicCardWidget(visit) {
   try {
+    // Self-sufficient, and NULL-SAFE - see updateAppointmentWidget above.
+    //
+    // FIXED 4 Oct 2026, and this was the cause of the launcher showing
+    // "Can't load widget" for this widget alone while the other nine rendered.
+    // Two independent paths reached it:
+    //   1. `visit.linkedTestIds` was dereferenced with no null guard, so when
+    //      there was no upcoming visit this threw, the surrounding catch
+    //      swallowed it, and no RemoteViews was ever pushed. A host with no
+    //      RemoteViews is exactly what "Can't load widget" means.
+    //   2. syncClinicVisitReminders returns early when the reminder is
+    //      acknowledged or suppressed, BEFORE reaching the widget push - so a
+    //      suppressed reminder left this widget permanently unpushed.
+    // (1) is fixed here. (2) is fixed by decoupling: syncAllWidgets calls this
+    // directly, so the widget no longer depends on the reminder path at all.
+    if (visit === undefined) visit = await getSoonestBookedVisit();
     const bridge = await getWidgetBridge();
     if (bridge && bridge.plugin.updateClinicCard) {
-      const tests = visit.linkedTestIds?.length || 0;
+      const tests = visit?.linkedTestIds?.length || 0;
       const testsStr = tests > 0 ? `${tests} test${tests > 1 ? "s" : ""}` : "None";
-      const docType = visit.visitType || "";
-      const clinicNum = visit.clinicNumber || "";
-      const nhsNum = visit.nhsNumber || "";
+      const docType = visit?.visitType || "";
+      const clinicNum = visit?.clinicNumber || "";
+      const nhsNum = visit?.nhsNumber || "";
 
       // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate. This widget
       // discloses more than any other: a location, a test count and a date.
@@ -173,9 +194,11 @@ async function updateClinicCardWidget(visit) {
       // deliberate and load-bearing rather than an oversight - see
       // widgetPlaintextSink.test.js, which fails if it is ever written.
       await sendWidgetUpdate(bridge, "clinicCard", "updateClinicCard", {
-        title: visit.title || "Appointment",
-        date: visit.date ? new Date(realTimestampFromStored(visit.date)).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "",
-        location: visit.location || "",
+        title: visit?.title || "No upcoming appointment",
+        date: visit?.date
+          ? new Date(realTimestampFromStored(visit.date)).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
+          : "",
+        location: visit?.location || "",
         tests: testsStr,
         docType,
         clinicNum,

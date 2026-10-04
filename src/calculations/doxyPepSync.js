@@ -122,8 +122,22 @@ export async function syncDoxyPepAlert() {
   return status;
 }
 
-async function updateDoxyPEPWidget(status) {
+export async function updateDoxyPEPWidget(status) {
   try {
+    // Self-sufficient, like the clinic-visit and test pushers: undefined means
+    // "go and derive it", so syncAllWidgets can call this with no argument.
+    // Without it, status.overdue would throw on undefined and the widget would
+    // silently never update - the same shape of bug as the Clinic Card's.
+    if (status === undefined) {
+      // Copied from this file's own sync path (lines 53-63) rather than
+      // re-derived, because guessing at the repository names here would be
+      // exactly how the widget ended up silently broken in the first place.
+      const doxyMed = findDoxyPepMedication(await MedicationRepository.getAll());
+      const encounters = await EncounterRepository.getAll();
+      const doxyLogs = doxyMed ? await LogRepository.getForMedication(doxyMed.id) : [];
+      status = getDoxyPepStatus(encounters, doxyLogs);
+      if (doxyMed) status.medicationId = doxyMed.id;
+    }
     const bridge = await getWidgetBridge();
     if (bridge && bridge.plugin.updateDoxyPEP) {
       const statusText = status.overdue ? "Overdue" : (status.active ? "Active" : "No active window");

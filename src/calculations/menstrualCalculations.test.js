@@ -37,10 +37,34 @@ import { storedDayKey, localDayKey } from "./dateInputHelpers";
 // the component that mattered, and the widget's three defects survived for a
 // different version of the same reason: the logic was INLINE, so no test could
 // reach it. Extracting it is only half the job - the call site has to be proven.
+// RETARGETED 4 Oct 2026. updateCycleWidget moved out of the JSX into
+// src/calculations/cycleWidgetSync.js so the central syncAllWidgets could import
+// it - a pusher trapped inside a React module can only be called from that
+// module's own handlers, which is why the Cycle widget refreshed on cycle create
+// and never on edit or delete.
+//
+// The assertion's INTENT is unchanged and still worth having: this widget must use
+// the pure helpers rather than inline arithmetic, because three real defects
+// (elapsed-millisecond cycleDay, a predicted date with no timeZone, and an
+// unguarded avgLength) came from exactly that. Only the file it reads moved. The
+// old path is asserted empty below so this cannot silently drift back.
 const WIDGET_SRC = readFileSync(
-  path.join(process.cwd(), "src", "modules", "SHOS_MenstrualHealth_Prototype.jsx"),
+  path.join(process.cwd(), "src", "calculations", "cycleWidgetSync.js"),
   "utf8",
 );
+
+describe("the widget pusher was not moved back into a React module", () => {
+  it("does not live in SHOS_MenstrualHealth_Prototype.jsx any more", () => {
+    const jsx = readFileSync(
+      path.join(process.cwd(), "src", "modules", "SHOS_MenstrualHealth_Prototype.jsx"),
+      "utf8",
+    );
+    expect(
+      jsx.includes("async function updateCycleWidget"),
+      "updateCycleWidget is back inside the JSX - the central sync cannot import it from there",
+    ).toBe(false);
+  });
+});
 
 // Comments are stripped before any negative assertion, and the stripper is
 // proven non-vacuous below. This is the recorded reason several earlier guards

@@ -47,82 +47,16 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, RADIUS, TYPE, resolveDarkAccent
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
-import { getCycleDay, getCyclePhase, getNextPeriodDayKey, formatDayKeyForDisplay } from "../calculations/menstrualCalculations";
 import { daysForUnit, INTERVAL_UNITS, CONTRACEPTION_INTERVAL_UNITS } from "../calculations/contraceptionCalculations";
 import { useEscapeToClose } from "../components/useEscapeToClose";
-import { sendWidgetUpdate } from "../calculations/widgetBridgeUpdate";
+// MOVED 4 Oct 2026 to calculations/cycleWidgetSync.js, so the central
+// syncAllWidgets can reach it. It used to live here, which meant this widget was
+// pushed from exactly one place - the create handler - so editing or deleting a
+// cycle left the home screen showing whatever it last had. That is the same
+// coupling that left Last Test showing "No tests logged" while the dashboard
+// showed a test from a week earlier.
+import { updateCycleWidget } from "../calculations/cycleWidgetSync";
 
-let WidgetBridge = null;
-async function getWidgetBridge() {
-  if (WidgetBridge) return { plugin: WidgetBridge };
-  try {
-    const { Capacitor } = await import("@capacitor/core");
-    if (!Capacitor.isNativePlatform()) {
-      WidgetBridge = false;
-      return null;
-    }
-    const { registerPlugin } = await import("@capacitor/core");
-    WidgetBridge = registerPlugin("WidgetBridge");
-  } catch (e) {
-    WidgetBridge = false;
-  }
-  // WRAPPED, NOT RETURNED BARE. A Capacitor plugin proxy is a catch-all Proxy, so
-  // `proxy.then` is a function and the proxy looks thenable; returning it from an
-  // async function makes the engine invoke `.then()` on it, which Capacitor
-  // rejects as "WidgetBridge.then() is not implemented on android". Verified live
-  // on a real device - it threw before the plugin method was ever reached.
-  return WidgetBridge ? { plugin: WidgetBridge } : null;
-}
-
-async function updateCycleWidget() {
-  try {
-    const bridge = await getWidgetBridge();
-    if (bridge && bridge.plugin.updateCycle) {
-      const { MenstrualCycleRepository } = await import("../repositories/menstrualCycleRepository");
-      const cycles = await MenstrualCycleRepository.getAll();
-      const activeCycles = cycles.filter((c) => !c.isArchived).sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
-      if (activeCycles.length > 0) {
-        const latest = activeCycles[0];
-        const avgLength = await MenstrualCycleRepository.getAverageCycleLengthDays();
-        // FIXED 29 Sep 2026 (t020) - three defects, all moved into
-        // menstrualCalculations.js so they are testable at all. This logic
-        // used to live inline here, behind a plugin bridge, inside an async
-        // function in a large JSX file, which is why none of it could be
-        // exercised without a device.
-        //
-        // 1. cycleDay divided ELAPSED MILLISECONDS between a real instant and a
-        //    stored fake-UTC value. At 22:00 on the start date most of the
-        //    world is on day 1, but the maths said day 2 - and phase is derived
-        //    from cycleDay, so the home screen reported the wrong PHASE.
-        // 2. the predicted date was rendered with no timeZone, so west of UTC
-        //    it showed the previous day.
-        // 3. NOT A TIMEZONE BUG, and the one no amount of running timezone
-        //    variants would have found: `avgLength * 86400000` with no null
-        //    guard, while getAverageCycleLengthDays() returns null below two
-        //    logged cycles. `null * anything` is 0, so the prediction collapsed
-        //    onto the start date and the widget told a user with one recorded
-        //    cycle that their next period was due the day their last one began.
-        const cycleDay = getCycleDay(latest.startDate);
-        if (cycleDay === null) return;
-        const phase = getCyclePhase(cycleDay);
-        const nextPeriod = formatDayKeyForDisplay(getNextPeriodDayKey(latest.startDate, avgLength));
-          // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate. cycleDay,
-          // phase and nextPeriod are all specific, so a Redacted tier keeps only
-          // category + state and the widget reads "Tracking - follicular" rather
-          // than going blank.
-          await sendWidgetUpdate(bridge, "cycle", "updateCycle", {
-            day: cycleDay,
-            phase,
-            nextPeriod: nextPeriod || null,
-            category: "Tracking",
-            state: phase,
-          });
-      }
-    }
-  } catch (e) {
-    console.debug("Cycle widget update skipped:", e);
-  }
-}
 
 // CHANGED 2 Sep 2026 — real ask: Menstrual gets its own dedicated
 // colour (menstrualPurple) instead of borrowing ACTION.red purely for

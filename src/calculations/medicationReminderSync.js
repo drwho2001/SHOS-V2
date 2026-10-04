@@ -178,7 +178,7 @@ export async function syncMedicationReminders() {
   return { scheduled: false };
 }
 
-async function updateRefillWidget() {
+export async function updateRefillWidget() {
   try {
     // FIXED 30 Sep 2026 (audit) — this had THREE stacked defects and the
     // combination was completely silent.

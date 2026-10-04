@@ -22,6 +22,14 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
         }
     }
 
+    /**
+     * The "no data available" RemoteViews. Contains no user data at all, so
+     * pushing it can neither write to the plaintext sink nor disclose anything
+     * to the launcher process. See res/layout/widget_unavailable.xml.
+     */
+    private static RemoteViews unavailableViews(Context context) {
+        return new RemoteViews(context.getPackageName(), R.layout.widget_unavailable);
+    }
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
@@ -30,7 +38,17 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
         // whatever Android last rendered and writes nothing new, which is the
         // correct trade: a stale widget is visible and fixable, a plaintext file
         // of sexual-health data is neither.
-        if (prefs == null) return;
+        if (prefs == null) {
+            // Fail-closed, but never leave the host with nothing. See
+            // R.layout.widget_unavailable: a provider that returns before
+            // updateAppWidget() leaves the launcher showing its own
+            // "Can't load widget", which is indistinguishable from a broken
+            // widget. This pushes a layout containing NO user data, so the
+            // privacy decision in WidgetPrefs is unchanged - nothing is written
+            // in plaintext and nothing is disclosed to the launcher process.
+            appWidgetManager.updateAppWidget(appWidgetId, unavailableViews(context));
+            return;
+        }
         int apptCount = prefs.getInt(KEY_APPT_COUNT, 0);
         String nextAppt = prefs.getString(KEY_NEXT_APPT, "No appointments");
 
@@ -49,9 +67,10 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
         // Click opens Clinic Visits tab
         Intent intent = new Intent(context, com.shos.app.MainActivity.class);
         intent.setData(Uri.parse("com.shos.app://clinic-visits"));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
-            context, 0, intent, android.app.PendingIntent.FLAG_IMMUTABLE);
+        context,
+        appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
@@ -65,7 +84,17 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
         // whatever Android last rendered and writes nothing new, which is the
         // correct trade: a stale widget is visible and fixable, a plaintext file
         // of sexual-health data is neither.
-        if (prefs == null) return;
+        if (prefs == null) {
+            // Fail-closed, but never leave the host with nothing. See
+            // R.layout.widget_unavailable: a provider that returns before
+            // updateAppWidget() leaves the launcher showing its own
+            // "Can't load widget", which is indistinguishable from a broken
+            // widget. This pushes a layout containing NO user data, so the
+            // privacy decision in WidgetPrefs is unchanged - nothing is written
+            // in plaintext and nothing is disclosed to the launcher process.
+            appWidgetManager.updateAppWidget(appWidgetId, unavailableViews(context));
+            return;
+        }
         prefs.edit()
             .putInt(KEY_APPT_COUNT, count)
             .putString(KEY_NEXT_APPT, nextAppt)

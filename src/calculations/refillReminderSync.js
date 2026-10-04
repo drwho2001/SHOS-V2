@@ -181,7 +181,7 @@ export async function syncRefillReminder() {
   return { scheduled: true, needsRefill };
 }
 
-async function updateRefillWidget() {
+export async function updateRefillWidget() {
   try {
     const { getRefillDueMedications } = await import("./refillReminderSync");
     const needsRefill = await getRefillDueMedications();

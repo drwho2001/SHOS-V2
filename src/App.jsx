@@ -2186,13 +2186,31 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
   // sync. Silently no-ops in any environment without @capacitor/app
   // (browser preview) — shortcuts are an Android-only concept anyway.
   useEffect(() => {
-    // Routes widget taps + App Shortcuts via the pure mapping in
-    // calculations/deepLinkRoutes.js (unit-tested there). Extended 24 Sep
-    // 2026 audit: the old 2-branch version only knew medication/encounter,
-    // so 8 of the 10 widget routes no-op'd even once taps actually delivered
-    // a URL (they never did - providers set action-only intents, fixed
-    // alongside this). clinic-card routes resolve null on purpose (no
-    // App-level opener exists yet - documented open, not silent).
+// Routes widget taps + App Shortcuts via the pure mapping in
+      // calculations/deepLinkRoutes.js (unit-tested there). Extended 24 Sep
+      // 2026 audit: the old 2-branch version only knew medication/encounter,
+      // so 8 of the 10 widget routes no-op'd even once taps actually delivered
+      // a URL (they never did - providers set action-only intents, fixed
+      // alongside this).
+      //
+      // CORRECTED 4 Oct 2026: the comment here used to say "clinic-card routes
+      // resolve null on purpose (no App-level opener exists yet - documented
+      // open, not silent)". That stopped being true on 24 Sep, when
+      // deepLinkRoutes.js started returning
+      // `{ type: "navigate", tab: "healthcare", subTab: "clinicCard" }`. A stale
+      // comment that says a route is inert, sitting directly above the code that
+      // routes it, is worse than no comment - it invites the next reader to
+      // "fix" working code.
+      //
+      // FIXED 4 Oct 2026, and this is why the Clinic Card widget tap was landing on
+      // the dashboard instead of the Clinic Card: every provider built its
+      // PendingIntent with NEW_TASK|CLEAR_TOP and NO SINGLE_TOP. Per the Intent
+      // contract, CLEAR_TOP without SINGLE_TOP destroys the existing Activity and
+      // creates a new one, so onNewIntent never fires and this listener never sees
+      // the URL. Providers now set SINGLE_TOP and FLAG_UPDATE_CURRENT with a
+      // requestCode unique per widget instance. Pool task t062 recorded this as
+      // "not reproducible from the code as written"; it is reproducible, by reading
+      // the flags.
     // FIXED 30 Sep 2026 (audit) — this effect registered the native
     // `appUrlOpen` listener once on mount with an `[]` dependency list, while
     // the handler it registered calls `handleQuickAdd` and `navigateTo`. Both

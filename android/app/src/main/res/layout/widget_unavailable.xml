@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ADDED 4 Oct 2026 - the "no data available" layout.
+
+     WHY THIS EXISTS. Seven providers begin with:
+
+         SharedPreferences prefs = WidgetPrefs.get(context);
+         if (prefs == null) return;
+
+     and return BEFORE calling updateAppWidget(). That is correct as a privacy
+     decision - WidgetPrefs fails closed rather than falling back to a plaintext
+     store - but it left the launcher holding NO RemoteViews at all for that
+     widget id, and that is exactly what the launcher's "Can't load widget"
+     message means. A privacy-safe empty state and a broken widget look identical
+     from the home screen, which made this undiagnosable.
+
+     This layout is the third option: push a valid RemoteViews that contains NO
+     user data whatsoever. It writes nothing to the plaintext sink, discloses
+     nothing to the launcher process, and satisfies the host contract, so the user
+     sees "Open SHOS to load" instead of a dead box. The fail-closed decision in
+     WidgetPrefs is untouched - this is what gets rendered when it declines.
+
+     Deliberately identical in every widget so there is one thing to review. The
+     app icon is NOT drawn here: it would mean shipping a bitmap into a layout
+     used by all seven, and the text alone is unambiguous. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/widget_background"
+    android:gravity="center">
+
+    <TextView
+        android:id="@+id/widget_unavailable_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Open SHOS to load"
+        android:textSize="13sp"
+        android:textColor="@color/widget_text_muted"
+        android:gravity="center" />
+</LinearLayout>

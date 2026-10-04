@@ -58,6 +58,14 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
         }
     }
 
+    /**
+     * The "no data available" RemoteViews. Contains no user data at all, so
+     * pushing it can neither write to the plaintext sink nor disclose anything
+     * to the launcher process. See res/layout/widget_unavailable.xml.
+     */
+    private static RemoteViews unavailableViews(Context context) {
+        return new RemoteViews(context.getPackageName(), R.layout.widget_unavailable);
+    }
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
@@ -66,7 +74,17 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
         // whatever Android last rendered and writes nothing new, which is the
         // correct trade: a stale widget is visible and fixable, a plaintext file
         // of sexual-health data is neither.
-        if (prefs == null) return;
+        if (prefs == null) {
+            // Fail-closed, but never leave the host with nothing. See
+            // R.layout.widget_unavailable: a provider that returns before
+            // updateAppWidget() leaves the launcher showing its own
+            // "Can't load widget", which is indistinguishable from a broken
+            // widget. This pushes a layout containing NO user data, so the
+            // privacy decision in WidgetPrefs is unchanged - nothing is written
+            // in plaintext and nothing is disclosed to the launcher process.
+            appWidgetManager.updateAppWidget(appWidgetId, unavailableViews(context));
+            return;
+        }
         String title = prefs.getString(KEY_APPT_TITLE, "No upcoming appointment");
         String date = prefs.getString(KEY_APPT_DATE, "");
         String location = prefs.getString(KEY_APPT_LOCATION, "");
@@ -113,9 +131,10 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
         // Main click opens full Clinic Card
         Intent mainIntent = new Intent(context, com.shos.app.MainActivity.class);
         mainIntent.setData(Uri.parse("com.shos.app://clinic-card"));
-        mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         android.app.PendingIntent mainPendingIntent = android.app.PendingIntent.getActivity(
-            context, 0, mainIntent, android.app.PendingIntent.FLAG_IMMUTABLE);
+        context,
+        appWidgetId, mainIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_root, mainPendingIntent);
 
         // Location click opens Maps
@@ -123,7 +142,7 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
             Intent mapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(location)));
             mapIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             android.app.PendingIntent mapPendingIntent = android.app.PendingIntent.getActivity(
-                context, 1, mapIntent, android.app.PendingIntent.FLAG_IMMUTABLE);
+                context, 1, mapIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
             views.setOnClickPendingIntent(R.id.widget_clinic_location, mapPendingIntent);
         }
 
@@ -132,7 +151,7 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
         revealIntent.setData(Uri.parse("com.shos.app://widget/reveal-clinic"));
         revealIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         android.app.PendingIntent revealPendingIntent = android.app.PendingIntent.getActivity(
-            context, 2, revealIntent, android.app.PendingIntent.FLAG_IMMUTABLE);
+            context, 2, revealIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_clinic_reveal, revealPendingIntent);
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
@@ -155,7 +174,17 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
         // whatever Android last rendered and writes nothing new, which is the
         // correct trade: a stale widget is visible and fixable, a plaintext file
         // of sexual-health data is neither.
-        if (prefs == null) return;
+        if (prefs == null) {
+            // Fail-closed, but never leave the host with nothing. See
+            // R.layout.widget_unavailable: a provider that returns before
+            // updateAppWidget() leaves the launcher showing its own
+            // "Can't load widget", which is indistinguishable from a broken
+            // widget. This pushes a layout containing NO user data, so the
+            // privacy decision in WidgetPrefs is unchanged - nothing is written
+            // in plaintext and nothing is disclosed to the launcher process.
+            appWidgetManager.updateAppWidget(appWidgetId, unavailableViews(context));
+            return;
+        }
         prefs.edit()
             .putString(KEY_APPT_TITLE, title)
             .putString(KEY_APPT_DATE, date)

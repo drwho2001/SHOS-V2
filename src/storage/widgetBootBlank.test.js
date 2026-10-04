@@ -134,9 +134,22 @@ it("every data widget with a layout is blanked, not just the first", () => {
     const layoutDir = path.join(ROOT, "android/app/src/main/res/layout");
     const onDisk = new Set(readdirSync(layoutDir).filter((f) => f.endsWith(".xml")).map((f) => f.replace(".xml", "")));
     const providers = readdirSync(providerDir).filter((f) => f.endsWith("WidgetProvider.java"));
+    // CHANGED 4 Oct 2026 - the static fallback layout is excluded. Every provider
+    // gained an `unavailableViews()` helper rendering R.layout.widget_unavailable,
+    // and both this filter and the loop below took the FIRST R.layout match, so
+    // they began resolving every provider to the fallback and then failed asking
+    // why that layout is not blanked on boot.
+    //
+    // It should not be blanked, and asking for it to be would be wrong: the
+    // fallback's entire content is the fixed string "Open SHOS to load", so there
+    // is nothing to hide. The invariant this guard protects is "every layout that
+    // renders STORED DATA is blanked before first unlock", and the fallback
+    // renders none. The data layouts are still required, unchanged.
+    const dataLayoutOf = (src) =>
+      [...src.matchAll(/R\.layout\.(\w+)/g)].map((m) => m[1]).find((l) => l !== "widget_unavailable");
     const dataProviders = providers.filter((f) => {
       const src = readFileSync(path.join(providerDir, f), "utf8");
-      const layout = (src.match(/R\.layout\.(\w+)/) || [])[1];
+      const layout = dataLayoutOf(src);
       return layout && onDisk.has(layout) && /WidgetPrefs\.get\(/.test(src);
     });
 
@@ -149,7 +162,7 @@ it("every data widget with a layout is blanked, not just the first", () => {
 
     for (const provider of dataProviders) {
       const src = readFileSync(path.join(providerDir, provider), "utf8");
-      const layout = src.match(/R\.layout\.(\w+)/)[1];
+      const layout = dataLayoutOf(src);
       expect(blanked, `${provider} renders stored data as ${layout} but that layout is not blanked on boot`).toContain(layout);
     }
   });

@@ -36,7 +36,21 @@ const dataProviders = readdirSync(WIDGET_DIR)
   .filter((f) => f.endsWith("WidgetProvider.java"))
   .filter((f) => {
     const src = read(path.join(WIDGET_DIR, f));
-    const layout = (src.match(/R\.layout\.(\w+)/) || [])[1];
+    // CHANGED 4 Oct 2026 - the static fallback layout is now excluded. Every
+    // provider gained an `unavailableViews()` helper that renders
+    // R.layout.widget_unavailable when the encrypted store is unavailable, and this
+    // line took the FIRST R.layout match in the file - so it started resolving
+    // every provider to the fallback and asserting that the data views it hides
+    // exist in a layout that, by design, contains no data views at all.
+    //
+    // The fallback is a genuinely different thing and is checked by
+    // widgetTapAndFallbackGuard, which asserts it carries exactly one fixed
+    // string and no @string/ reference. Filtering it here is a narrowing of THIS
+    // guard's scope to data-bearing layouts, not a weakening: the assertions
+    // themselves are untouched, and they now run against the layout the provider
+    // actually renders data into.
+    const layouts = [...src.matchAll(/R\.layout\.(\w+)/g)].map((m) => m[1]);
+    const layout = layouts.find((l) => l !== "widget_unavailable");
     return layout && readdirSync(LAYOUT_DIR).includes(`${layout}.xml`) && /WidgetPrefs\.get\(/.test(src);
   })
   .sort();
@@ -72,7 +86,13 @@ describe("redacting the payload is not the same as redacting the screen", () => 
     // failure on a home screen, and it is exactly the kind of thing CI's
     // compiler cannot see because RemoteViews ids are resolved reflectively.
     const src = read(path.join(WIDGET_DIR, "DoxyPEPWidgetProvider.java"));
-    const layoutName = src.match(/R\.layout\.(\w+)/)[1];
+    // Exclude the static fallback: it renders no data views by design, so the
+    // ids this provider hides are resolved against the layout it actually renders
+    // data into. Same narrowing as the provider filter above - the assertions
+    // themselves are unchanged.
+    const layoutName = [...src.matchAll(/R\.layout\.(\w+)/g)]
+      .map((m) => m[1])
+      .find((l) => l !== "widget_unavailable");
     const layout = read(path.join(LAYOUT_DIR, `${layoutName}.xml`));
     for (const id of src.matchAll(/setViewVisibility\(R\.id\.(\w+)/g)) {
       expect(layout, `${id[1]} is hidden but does not exist in ${layoutName}.xml`).toContain(

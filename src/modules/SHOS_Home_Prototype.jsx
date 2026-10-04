@@ -81,6 +81,7 @@ import { syncMedicationReminders } from "../calculations/medicationReminderSync"
 import { syncTestingReminder } from "../calculations/testingReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { syncClinicVisitReminders } from "../calculations/clinicVisitReminderSync";
+import { syncAllWidgets } from "../calculations/syncAllWidgets";
 import { syncVaccinationReminders } from "../calculations/vaccinationReminderSync";
 import { syncClinicVisitsToCalendar } from "../storage/calendarSyncService";
 import MyProfileModule from "./SHOS_MyProfile_Prototype";
@@ -424,6 +425,23 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
   useEffect(() => {
     syncRefillReminder();
     syncClinicVisitReminders();
+  }, []);
+
+  // ADDED 4 Oct 2026 - home-screen widgets are pushed from HERE, on mount,
+  // rather than from inside the reminder syncs above.
+  //
+  // Every widget push used to sit on the happy path of a reminder function, which
+  // meant a reminder that was correctly suppressed (disabled, acknowledged,
+  // overdue, or a Positive result with no routine retest) also silently stopped
+  // the widget updating. Found on a real device: the Clinic Card showed the
+  // launcher's "Can't load widget" and Last Test showed "No tests logged" while
+  // the dashboard showed a test from a week earlier.
+  //
+  // Deliberately independent of the reminder syncs rather than folded into them:
+  // a widget must always reflect reality, while a reminder is conditional by
+  // nature, and coupling them is what produced both bugs.
+  useEffect(() => {
+    syncAllWidgets();
   }, []);
 
   // ADDED 16 Sep 2026 — real gap found auditing notifications end to

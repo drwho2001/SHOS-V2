@@ -150,7 +150,7 @@ export async function syncTestingReminder() {
   return { scheduled: true, dueDate };
 }
 
-async function updateTestWidget() {
+export async function updateTestWidget() {
   try {
     const bridge = await getWidgetBridge();
     if (bridge && bridge.plugin.updateTest) {
