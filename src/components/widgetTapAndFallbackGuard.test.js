@@ -65,10 +65,20 @@ describe("a host is never left without RemoteViews (device bug: 'Can't load widg
     // Returning at that point was correct for privacy and wrong for the user: the
     // launcher held no RemoteViews at all, and shows its own "Can't load widget"
     // - indistinguishable from a broken widget.
+    //
+    // Scoped to the PER-INSTANCE updateAppWidget, which is the only place a
+    // widget id exists. The public static bridge method must still return plainly
+    // when prefs are null - it has no instance and its whole job is to write the
+    // prefs - so asserting the bare pattern anywhere would have demanded a
+    // reference to an undefined variable, which is the compile error CI caught on
+    // the first attempt at this.
     for (const f of dataProviders) {
       const src = fs.readFileSync(path.join(JAVA_DIR, f), "utf8");
+      const staticAt = src.search(/\n\s*public static void update\w+\(/);
+      const instancePart =
+        staticAt === -1 ? src : src.slice(0, staticAt);
       expect(
-        /if \(prefs == null\) return;/.test(src),
+        /if \(prefs == null\) return;/.test(instancePart),
         `${f} returns on null prefs before pushing anything, which leaves the host with no RemoteViews`,
       ).toBe(false);
       expect(src, `${f} has no unavailableViews fallback`).toMatch(/unavailableViews/);
@@ -81,9 +91,9 @@ describe("a host is never left without RemoteViews (device bug: 'Can't load widg
     // here, it becomes a plaintext disclosure to the launcher process.
     //
     // Asserted as EXACT equality rather than a "looks data-free" heuristic. The
-    // first version of this test used a loose regex that flagged its own
-    // placeholder string, which is the same failure mode as the other guards in
-    // this repo that pass by reading the comment documenting the fix.
+    // first version used a loose regex that flagged its own placeholder string,
+    // which is the same failure mode as the guards in this repo that pass by
+    // reading the comment documenting the fix.
     const xml = fs.readFileSync(
       "android/app/src/main/res/layout/widget_unavailable.xml",
       "utf8",
@@ -92,12 +102,39 @@ describe("a host is never left without RemoteViews (device bug: 'Can't load widg
     expect(texts, "the fallback should carry exactly one string").toEqual([
       "Open SHOS to load",
     ]);
-    // No resource references that could resolve to user data, and no id that any
-    // provider writes text into.
     expect(xml, "the fallback must not reference a string resource").not.toMatch(/@string\//);
     expect(xml, "the fallback must not be a data-bearing layout").not.toMatch(
       /widget_(clinic|refill|test|doxy|cycle|next)_/,
     );
+  });
+
+  it("no static bridge method touches a per-instance variable or pushes views", () => {
+    // MY OWN BUG, caught by CI's APK build rather than by anything local: the
+    // fallback codemod replaced `if (prefs == null) return;` in BOTH the private
+    // per-instance updateAppWidget AND the public static bridge method that writes
+    // the prefs. The static method has no widget instance and no AppWidgetManager
+    // in scope - it acquires both further down, after the write - so the build
+    // failed across all seven providers with "cannot find symbol: variable
+    // appWidgetId".
+    //
+    // The correct behaviour there is a plain return: that method's job is to WRITE
+    // the prefs and it must write nothing when they are unavailable. Asserted here
+    // so a future edit is caught by a unit test rather than a 4-minute CI round
+    // trip, because the local toolchain cannot compile Java at all.
+    for (const f of dataProviders) {
+      const src = fs.readFileSync(path.join(JAVA_DIR, f), "utf8");
+      const at = src.search(/\n\s*public static void update\w+\(/);
+      if (at === -1) continue;
+      const staticBody = src.slice(at);
+      expect(
+        /\bappWidgetId\b/.test(staticBody),
+        `${f} references appWidgetId inside a static method, where no instance is in scope`,
+      ).toBe(false);
+      expect(
+        /appWidgetManager\.updateAppWidget/.test(staticBody),
+        `${f} pushes RemoteViews from a static method with no manager in scope`,
+      ).toBe(false);
+    }
   });
 });
 

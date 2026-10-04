@@ -84,17 +84,8 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
         // whatever Android last rendered and writes nothing new, which is the
         // correct trade: a stale widget is visible and fixable, a plaintext file
         // of sexual-health data is neither.
-        if (prefs == null) {
-            // Fail-closed, but never leave the host with nothing. See
-            // R.layout.widget_unavailable: a provider that returns before
-            // updateAppWidget() leaves the launcher showing its own
-            // "Can't load widget", which is indistinguishable from a broken
-            // widget. This pushes a layout containing NO user data, so the
-            // privacy decision in WidgetPrefs is unchanged - nothing is written
-            // in plaintext and nothing is disclosed to the launcher process.
-            appWidgetManager.updateAppWidget(appWidgetId, unavailableViews(context));
-            return;
-        }
+        if (prefs == null) return; // no instance in scope here; the per-instance
+            // updateAppWidget() above is what pushes the fallback
         prefs.edit()
             .putInt(KEY_APPT_COUNT, count)
             .putString(KEY_NEXT_APPT, nextAppt)

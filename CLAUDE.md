@@ -829,6 +829,22 @@ green on something that had not actually been exercised. The guard now rejects a
 Also: the `App.jsx` comment claiming clinic-card routes "resolve null on purpose" has been false since 24 Sep, and it sits directly above the code that routes them.
 
 Verified: `verify:fast` green - build, lint, **1161 tests across 103 files**. Three mutations red, each reproducing an exact device symptom: the bare `visit.` deref, a stripped `SINGLE_TOP`, and a provider returning with no `RemoteViews`. The APK build is the real verification of the Java and resource changes.
+
+## Recently shipped (4 Oct 2026, later - the fallback codemod over-applied to a method with no widget in scope, and CI was the only thing that could see it)
+
+**The first push of the entry above did not compile, and nothing local could have told me.** `npm run verify:fast` was green, `aapt2` was green, and the file looked correct - because in both of the places it *looked* correct, it was.
+
+The defect: a provider has **two** `if (prefs == null)` guards, not one. The first is in the private per-instance `updateAppWidget(context, manager, appWidgetId)`, where pushing a fallback is exactly right. The second is in the public static bridge method `updateTest(context, ...)` whose entire job is to **write** the prefs and then loop over instances calling `updateAppWidget()`. That method has **no widget id and no `AppWidgetManager` in scope** - it acquires the manager further down, *after* the write - so the replacement I applied there referenced two undefined variables in all seven providers, and the APK build failed with `cannot find symbol: variable appWidgetId`. Re-measure with: `gh run view <id> --log-failed | Select-String "cannot find symbol"`.
+
+**This is the ninth recorded instance of "fix the pattern once" being wrong because the pattern is not actually uniform** - and the first one where the second copy was *correct code* rather than an oversight. The honest fix is a plain `return` there, not a smaller version of my mistake: the bridge method must write nothing when storage is unavailable, and the per-instance method is what pushes the fallback. Both roles now say so in a comment.
+
+**The guard I wrote for this was itself wrong in the same direction, which is worth recording because it took a round trip to see.** Its first version asserted no provider contains the literal `if (prefs == null) return;` anywhere - and went red on the *fix*, because that bare return is now genuinely correct in the static method. Scoped it to the per-instance body, which is the only place the invariant applies. **A guard that demands uniformity will always eventually be wrong, because the two copies legitimately differ.**
+
+New assertion, mutation-verified: reintroducing the exact shipped line turns it red naming `TestWidgetProvider.java` and which of the two failures it was - a per-instance variable in a static method, or a push with no manager in scope. **The local toolchain cannot compile Java at all**, so this was a 4-minute CI round trip to find and is now a unit test.
+
+**The second CI-adjacent failure was the ninth instance of the machine-speed class, and the fix was the class again.** `scripts/sessionBridge.test.js`'s "never issues a duplicate id" **timed out** under `verify:fast` and passed standalone - that suite's whole contract is process-level, so its `bus()` helper is a real `node` spawn, and that one test issues **13** of them (7.7s of test time in isolation against vitest's 5s default). I had touched nothing it reads. Counted the file properly rather than fixing the one that failed: **six** tests spawn >=4 subprocesses, so all six now share one documented `SUBPROCESS_BUDGET_MS` constant - the same treatment the eight AST guards already got, and an add-only change that cannot turn a correct test red.
+
+Verified: `verify:fast` green - **1162 tests across 103 files**.
 ## Recently shipped (3 Oct 2026, latest - the ten widgets had no names, one shared preview, and no theme)
 
 **All three of the owner widget-picker complaints were real, and each was confirmed by measurement before anything was changed.** No `android:label` on any of the ten `widget_info.xml` files, so the picker listed ten entries all named after the app; all ten pointed at ONE shared placeholder vector, so no preview distinguished them; and every layout hardcoded `#1B1B1F`, so all ten widgets were black boxes on a light wallpaper. That last defect was then confirmed **visually on the real device** before a line was written.

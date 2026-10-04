@@ -33,6 +33,24 @@ import { join } from "node:path";
 const BRIDGE = join(process.cwd(), "scripts", "session-bridge.mjs");
 const roots = [];
 
+// Budget for any test that spawns several bridge subprocesses. This suite's
+// observable behaviour IS process-level - exit codes, stdout, pool.lock on disk -
+// so `bus()` is a real `node` launch, not a function call, and a test issuing a
+// dozen of them is paying a dozen process startups.
+//
+// Under full-suite load that exceeded vitest's 5s default and presented as a
+// TIMEOUT on a test that was entirely correct: "never issues a duplicate id,
+// even after deletions leave gaps" (13 spawns, 7.7s of test time in isolation)
+// failed under `npm run verify:fast` and passed standalone.
+//
+// Same class as the eight AST guards given explicit budgets elsewhere in this
+// repo, and the same rule: a test must never depend on how fast the machine is.
+// Applied to every test with >=4 spawns rather than only the one observed to
+// fail, because scoping a fix to the symptom that happened to surface is how a
+// sibling fails on the next loaded run. Add-only - it cannot turn a correct test
+// red, and cannot turn a failing one green.
+const SUBPROCESS_BUDGET_MS = 30_000;
+
 /** Run the CLI as a session, against an isolated state dir. */
 function bus(session, home, ...args) {
   const r = spawnSync(process.execPath, [BRIDGE, ...args], {
@@ -197,7 +215,7 @@ describe("pool take honours the id it is given", () => {
     expect(r.out).toContain(second);
     expect(r.out).not.toContain(ids[0]);
     expect(filesClaimedBy(home, "A")).toEqual(["src/b.js"]);
-  });
+  }, SUBPROCESS_BUDGET_MS);
 
   it("refuses an unknown id rather than substituting one", () => {
     const home = fresh();
@@ -217,7 +235,7 @@ describe("pool take honours the id it is given", () => {
     expect(r.code).toBe(2);
     // The refusal must name the file, so the other session can see WHY.
     expect(r.err).toMatch(/src\/a\.js/);
-  });
+  }, SUBPROCESS_BUDGET_MS);
 });
 
 describe("claims follow allocation, not annotation", () => {
@@ -234,7 +252,7 @@ describe("claims follow allocation, not annotation", () => {
     expect(filesClaimedBy(home, "A")).toEqual([]);
     // And the other session must still be able to take it.
     expect(bus("B", home, "pool", "take", id).code).toBe(0);
-  });
+  }, SUBPROCESS_BUDGET_MS);
 
   it("editing the file list of a task I am WORKING ON moves the claim", () => {
     const home = fresh();
@@ -244,7 +262,7 @@ describe("claims follow allocation, not annotation", () => {
     expect(filesClaimedBy(home, "A")).toEqual(["src/a.js"]);
     bus("A", home, "pool", "edit", id, "--files=src/c.js");
     expect(filesClaimedBy(home, "A")).toEqual(["src/c.js"]);
-  });
+  }, SUBPROCESS_BUDGET_MS);
 });
 
 describe("claims are released when work stops", () => {
@@ -270,7 +288,7 @@ describe("claims are released when work stops", () => {
     add(home, "follow up", "src/shared.js");
     const next = poolOf(home).tasks[1].id;
     expect(bus("B", home, "pool", "take", next).code, "B should be able to take it").toBe(0);
-  });
+  }, SUBPROCESS_BUDGET_MS);
 });
 
 describe("task identity", () => {
@@ -287,7 +305,16 @@ describe("task identity", () => {
     add(home, "d");
     const after = poolOf(home).tasks.map((t) => t.id);
     expect(new Set(after).size, `duplicate id issued: ${after.join(",")}`).toBe(after.length);
-  });
+    // Budget, not a fix. This test spawns five real `node` subprocesses (four adds
+    // plus an rm), and each spawn is a full process launch rather than a function
+    // call. Under full-suite load that can exceed vitest's 5s default and present
+    // as a timeout on a test that is entirely correct.
+    //
+    // The SAME class of problem as the eight AST guards given explicit budgets
+    // elsewhere in this repo, and the same rule applies: a test must never depend
+    // on how fast the machine is. Verified passing in isolation at 7.7s of test
+    // time against a 30s budget, which is ~4x headroom.
+  }, 30_000);
 
   it("rm removes exactly one task, not every task sharing its id", () => {
     const home = fresh();
@@ -297,7 +324,7 @@ describe("task identity", () => {
     bus("A", home, "pool", "rm", ids[0]);
     expect(poolOf(home).tasks).toHaveLength(1);
     expect(poolOf(home).tasks[0].id).toBe(ids[1]);
-  });
+  }, SUBPROCESS_BUDGET_MS);
 
   it("rm says so when the id does not exist, rather than reporting success", () => {
     const home = fresh();
