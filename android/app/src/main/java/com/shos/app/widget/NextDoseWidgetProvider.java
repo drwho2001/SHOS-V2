@@ -5,7 +5,9 @@ import android.appwidget.AppWidgetProvider;
 import android.os.SystemClock;
 import android.view.View;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.widget.RemoteViews;
 import com.shos.app.R;
 
@@ -92,6 +94,30 @@ public class NextDoseWidgetProvider extends AppWidgetProvider {
         } else {
             views.setViewVisibility(R.id.widget_countdown, View.GONE);
         }
+
+        // CHANGED 4 Oct 2026 - this provider had NO click intent at all, so the
+        // widget rendered and tapping it did nothing whatsoever. Every other one
+        // of the ten providers had a tap; this one was simply missed, and the
+        // guard written to catch bad tap FLAGS skipped it precisely because it
+        // had no intent to inspect (see widgetTapAndFallbackGuard.test.js).
+        //
+        // Destination is the bare `medication` host, not `medication/inventory`.
+        // The route table documents bare `medication` as the dashboard "where the
+        // per-medication Log-dose buttons live", which is what someone tapping a
+        // countdown to their next dose actually wants; inventory is stock level,
+        // which is what the Refill widget is for.
+        Intent intent = new Intent(context, com.shos.app.MainActivity.class);
+        intent.setData(Uri.parse("com.shos.app://medication"));
+        // SINGLE_TOP without which CLEAR_TOP destroys the running Activity, so
+        // onNewIntent never fires, Capacitor's appUrlOpen never fires, and the
+        // tap silently lands on Home. The other nine providers needed the same.
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        // Per-instance requestCode: without FLAG_UPDATE_CURRENT Android returns
+        // the CACHED PendingIntent and drops this data URI.
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
+                context,
+                appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+        views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }

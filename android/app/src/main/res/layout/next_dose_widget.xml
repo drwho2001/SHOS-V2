@@ -42,5 +42,13 @@
         android:layout_marginTop="4dp"
         android:visibility="gone"
         android:textSize="14sp"
-        android:textColor="@color/widget_text_primary" />
+        android:textColor="@color/widget_text_primary"
+        <!-- The root LinearLayout carries the click PendingIntent, and a
+        Chronometer extends TextView. A TextView only swallows touches when
+        something makes it clickable, so these are false by default - stated
+        explicitly because the failure is invisible if a later edit adds
+        android:clickable="true": the countdown would then be the one region of
+        the widget that does nothing on tap. -->
+        android:clickable="false"
+        android:focusable="false" />
 </LinearLayout>

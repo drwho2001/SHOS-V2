@@ -33,11 +33,70 @@ describe("widget taps reach the app (device bug: every tap landed on the dashboa
     // reading the flags.
     for (const f of providers) {
       const src = fs.readFileSync(path.join(JAVA_DIR, f), "utf8");
-      if (!/addFlags\(/.test(src)) continue; // no tap intent at all
       expect(
         /FLAG_ACTIVITY_SINGLE_TOP/.test(src),
         `${f} builds a tap intent without FLAG_ACTIVITY_SINGLE_TOP, so a warm tap destroys the Activity and the URL is never delivered`,
       ).toBe(true);
+    }
+  });
+
+  it("every provider attaches a tap to its layout root - none may skip out", () => {
+    // The first version of the flag test above carried
+    //   if (!/addFlags\(/.test(src)) continue; // no tap intent at all
+    // which is a vacuous exemption of exactly the case it exists to catch. It
+    // exempted the WORSE failure: a provider with bad flags routes wrongly, a
+    // provider with no intent at all does nothing when tapped.
+    //
+    // It went green on NextDoseWidgetProvider, which was the only one of the ten
+    // with no PendingIntent, no Intent, no URI and no setOnClickPendingIntent.
+    // Asserting the flags only ever tests a tap that is already there.
+    //
+    // The real invariant is the one Gemini named: every RemoteViews pushed must
+    // have setOnClickPendingIntent on the layout's root, or be a collection view
+    // using setPendingIntentTemplate. None of this app's widgets are collections,
+    // so that branch is asserted as absent rather than accommodated.
+    for (const f of providers) {
+      const src = fs.readFileSync(path.join(JAVA_DIR, f), "utf8");
+      expect(
+        /setOnClickPendingIntent\(R\.id\.widget_root/.test(src),
+        `${f} never attaches a tap to its root, so the widget does nothing when tapped`,
+      ).toBe(true);
+      expect(
+        /setPendingIntentTemplate/.test(src),
+        `${f} uses a collection template; if that is intended it needs its own test, not a silent pass`,
+      ).toBe(false);
+    }
+  });
+
+  it("every widget layout gives its root an explicit id for the tap to attach to", () => {
+    // A tap can only be attached to a view that has an id. Without this, the
+    // provider assertion above could pass on an id that no layout declares.
+    //
+    // The layout is read out of the provider's own `R.layout.X` reference rather
+    // than from a lookup table here, so this cannot drift from the code the way a
+    // second list of filenames would. widget_unavailable is excluded: it is the
+    // shared static fallback and deliberately has nothing to tap.
+    for (const f of providers) {
+      const src = fs.readFileSync(path.join(JAVA_DIR, f), "utf8");
+      const layout =
+        [...src.matchAll(/R\.layout\.(\w+)/g)]
+          .map((m) => m[1])
+          .find((n) => n !== "widget_unavailable");
+      expect(layout, `${f} never constructs RemoteViews from a layout`).toBeTruthy();
+
+      const xml = fs.readFileSync(
+        `android/app/src/main/res/layout/${layout}.xml`,
+        "utf8",
+      );
+      // Strip the <?xml ...?> declaration first - it is the first tag-shaped
+      // match in the file and is not an element.
+      const body = xml.replace(/<\?[\s\S]*?\?>/g, "");
+      const root = body.match(/<[A-Za-z][^>]*?>/)?.[0];
+      expect(root, `${layout}.xml has no root element`).toBeTruthy();
+      expect(
+        root,
+        `${layout}.xml's root element has no android:id, so no click PendingIntent can attach to it`,
+      ).toMatch(/android:id="@\+id\/widget_root"/);
     }
   });
 
