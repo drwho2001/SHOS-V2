@@ -2231,8 +2231,15 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
       if (!route) return;
       // Read through the ref rather than closing over the render's copies.
       if (route.type === "quickAdd") deepLinkHandlers.current.handleQuickAdd(route.tab, route.target);
-      else if (route.type === "navigate") deepLinkHandlers.current.navigateTo(route.tab, route.subTab);
-      else if (route.type === "action" && route.action === "revealClinicCard") {
+      else if (route.type === "navigate") {
+        // `clinic-card` is the one navigate route whose subTab is not a real
+        // Healthcare sub-tab - it is the Clinic Card overlay. Handled here
+        // rather than inside navigateTo so the flag fires for a widget tap and
+        // nothing else; navigateTo's own contract stays "switch tab, optionally
+        // pick a sub-tab".
+        if (route.subTab === "clinicCard") setPendingOpenClinicCard(true);
+        deepLinkHandlers.current.navigateTo(route.tab, route.subTab);
+      } else if (route.type === "action" && route.action === "revealClinicCard") {
         // Handled by ClinicCardWidgetProvider's reveal intent
       }
     };
@@ -2266,8 +2273,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
   // clears the context.
   const navigateTo = (tabKey, subTab, searchReturn = null) => {
     setActive(tabKey);
-    setQuickAddTarget(subTab || null);
-    setQuickAdd(false);
+    setQuickAddTarget(subTab || null);    setQuickAdd(false);
     setNavResetCount((c) => c + 1);
     setSearchReturn(searchReturn);
   };
@@ -2294,6 +2300,24 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
   // reuses that same plumbing rather than building new per-module
   // wiring.
   const [pendingOpenRecordId, setPendingOpenRecordId] = useState(null);
+
+  // ADDED 4 Oct 2026 - `com.shos.app://clinic-card` resolved to
+  // navigateTo("healthcare", "clinicCard"), and NOTHING consumed that subTab.
+  // Measured on a real device: the deep link resolved, the app switched to
+  // Healthcare, and the Clinic Card never opened - so tapping the Clinic Card
+  // widget looked identical to the old "every tap lands on the dashboard" bug
+  // it was supposed to be fixed by.
+  //
+  // A separate signal rather than reusing `openClinicCardOnMount`, because that
+  // prop is derived from `clinicCardReturnTab` and means "we are RETURNING to
+  // the Clinic Card, remember where to go back to". Overloading it with "a deep
+  // link asked for this" would conflate two unrelated meanings and could strand
+  // a back-navigation target.
+  //
+  // Follows the existing openAddOnMount / onConsumedQuickAdd idiom exactly: a
+  // pending flag the target module consumes on mount and clears, so it fires
+  // once rather than on every render.
+  const [pendingOpenClinicCard, setPendingOpenClinicCard] = useState(false);
   // CHANGED — real ask: Global Search results should open the actual
   // record, not just switch to its tab. Extended with an optional
   // subTab, reusing the exact same quickAddTarget mechanism already
@@ -2828,7 +2852,8 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
               openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}
               prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
               onOpenSettings={() => setShowSettings(true)} onOpenPrivacySettings={openSettingsToPrivacy} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler}
-              markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "healthcare"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)} />
+              markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "healthcare"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)}
+              openClinicCardOnDeepLink={pendingOpenClinicCard} onConsumedClinicCardDeepLink={() => setPendingOpenClinicCard(false)} />
           </Suspense>
         ) : (
           <div style={{ padding: 40, textAlign: "center", color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, fontFamily: "'Inter', sans-serif" }}>

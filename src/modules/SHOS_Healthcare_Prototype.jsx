@@ -26,7 +26,7 @@ import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import AttachmentsScreen from "./SHOS_Attachments_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
 
-function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, openRecordId, onConsumedRecordOpen, onNavigateToRecord, prefillData, onConsumedPrefill, onQuickAddWithPrefill, registerModuleBackHandler, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen }) {
+function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, openRecordId, onConsumedRecordOpen, onNavigateToRecord, prefillData, onConsumedPrefill, onQuickAddWithPrefill, registerModuleBackHandler, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen, openClinicCardOnDeepLink, onConsumedClinicCardDeepLink }) {
   // CHANGED — real ask: "Symptom Log" > "Symptoms", swap its list
   // position with Vaccinations, ensure all six sit in two clean rows
   // of three. Order below now reads Testing/Clinic Visits/Vaccinations
@@ -67,6 +67,27 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ADDED 4 Oct 2026 - a deep link asked for the Clinic Card (the
+  // ClinicCardWidgetProvider's tap URI, `com.shos.app://clinic-card`).
+  //
+  // The route table maps it to tab "healthcare" + subTab "clinicCard", but
+  // "clinicCard" is not one of the six Healthcare sub-tabs - it is this
+  // overlay. So the route resolved, Healthcare switched, and nothing opened:
+  // measured on a real device, where it is indistinguishable from the old
+  // "every widget tap lands on the dashboard" bug.
+  //
+  // A SEPARATE effect from the one above, deliberately. That one is mount-once
+  // with `[]` and serves back-navigation; this one keys on the flag so it also
+  // fires when Healthcare is ALREADY mounted and a widget tap arrives. Sharing
+  // one effect would mean either the deep link does nothing on a warm app, or
+  // the back-navigation behaviour starts re-firing every time the flag is set.
+  useEffect(() => {
+    if (openClinicCardOnDeepLink) {
+      setShowClinicCard(true);
+      onConsumedClinicCardDeepLink?.();
+    }
+  }, [openClinicCardOnDeepLink, onConsumedClinicCardDeepLink]);
   const [showAttachments, setShowAttachments] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   // No dialog ref/effect here: TimelineModule's own root
