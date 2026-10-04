@@ -34,7 +34,20 @@
          whole reason not to drive this from a setInterval on the JS side.
 
          setChronometerCountDown (rather than counting up) is what makes it read
-         "in 4h 12m" towards the deadline instead of counting away from it. -->
+         "in 4h 12m" towards the deadline instead of counting away from it.
+
+         CHANGED 4 Oct 2026 - clickable/focusable stated explicitly. The root
+         LinearLayout carries the click PendingIntent, and a Chronometer extends
+         TextView; a TextView only consumes touches when something makes it
+         clickable, so these are false by default. Stated because the failure is
+         invisible if a later edit adds android:clickable="true": the countdown
+         would become the one region of the widget that does nothing on tap.
+
+         NOTE this comment sits ABOVE the tag, not inside it. An XML comment is
+         not legal inside a tag's attribute list, and putting one there fails
+         :app:parseDebugLocalResources with "Element type must be followed by
+         either attribute specifications, '>' or '/>'". Same shape as the JSX
+         `//`-in-children-position bug this repo has already recorded. -->
     <Chronometer
         android:id="@+id/widget_countdown"
         android:layout_width="wrap_content"
@@ -43,12 +56,6 @@
         android:visibility="gone"
         android:textSize="14sp"
         android:textColor="@color/widget_text_primary"
-        <!-- The root LinearLayout carries the click PendingIntent, and a
-        Chronometer extends TextView. A TextView only swallows touches when
-        something makes it clickable, so these are false by default - stated
-        explicitly because the failure is invisible if a later edit adds
-        android:clickable="true": the countdown would then be the one region of
-        the widget that does nothing on tap. -->
         android:clickable="false"
         android:focusable="false" />
 </LinearLayout>
