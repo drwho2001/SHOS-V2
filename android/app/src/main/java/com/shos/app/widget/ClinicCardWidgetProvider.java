@@ -143,7 +143,7 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
 
         // Verified at source in node_modules/@capacitor/app, not inferred.
 
-        intent.setAction(Intent.ACTION_VIEW);
+        mainIntent.setAction(Intent.ACTION_VIEW);
         mainIntent.setData(Uri.parse("com.shos.app://clinic-card"));
         mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         android.app.PendingIntent mainPendingIntent = android.app.PendingIntent.getActivity(
@@ -175,7 +175,7 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
 
         // Verified at source in node_modules/@capacitor/app, not inferred.
 
-        intent.setAction(Intent.ACTION_VIEW);
+        revealIntent.setAction(Intent.ACTION_VIEW);
         revealIntent.setData(Uri.parse("com.shos.app://widget/reveal-clinic"));
         revealIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         android.app.PendingIntent revealPendingIntent = android.app.PendingIntent.getActivity(

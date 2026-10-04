@@ -138,23 +138,28 @@ describe("a host is never left without RemoteViews (device bug: 'Can't load widg
     //   - `adb shell am start -a android.intent.action.VIEW` DID route correctly
     //     warm, and the only difference was that am start supplies the action.
     //
-    // Asserted as "at least as many setAction calls as MainActivity constructors",
-    // because a provider may legitimately build more than one (ClinicCard builds
-    // three: the main tap, a geo: map link, and a reveal link).
+    // Asserted per VARIABLE, not as a count. The first version compared "at
+    // least as many setAction calls as constructors" and passed a build that did
+    // not compile: ClinicCard names its intents mainIntent/revealIntent, the
+    // codemod emitted a bare `intent.setAction(...)`, and the totals still
+    // matched. Counting is not pairing - the property is that the intent which is
+    // constructed with the data URI is the same one given the action.
     for (const f of providers) {
       const src = fs.readFileSync(path.join(JAVA_DIR, f), "utf8");
-      const ctors = (
-        src.match(/new Intent\(context, com\.shos\.app\.MainActivity\.class\)/g) || []
-      ).length;
-      expect(ctors, `${f} builds no tap intent at all`).toBeGreaterThan(0);
+      const ctors = [
+        ...src.matchAll(/Intent (\w+) = new Intent\(context, com\.shos\.app\.MainActivity\.class\)/g),
+      ].map((m) => m[1]);
 
-      const actions = (src.match(/\.setAction\(Intent\.ACTION_VIEW\)/g) || []).length;
-      expect(
-        actions,
-        `${f} builds ${ctors} MainActivity intent(s) but sets ACTION_VIEW ${actions} ` +
-          `time(s). Capacitor's AppPlugin discards any onNewIntent that is not an ` +
-          `ACTION_VIEW, so the tap does nothing from a warm app.`,
-      ).toBeGreaterThanOrEqual(ctors);
+      expect(ctors.length, `${f} builds no tap intent at all`).toBeGreaterThan(0);
+
+      for (const name of ctors) {
+        expect(
+          new RegExp(`\\b${name}\\.setAction\\(Intent\\.ACTION_VIEW\\)`).test(src),
+          `${f} constructs "${name}" but never calls ${name}.setAction(Intent.ACTION_VIEW). ` +
+            `Capacitor's AppPlugin discards any onNewIntent that is not an ACTION_VIEW, ` +
+            `so this tap does nothing from a warm app.`,
+        ).toBe(true);
+      }
     }
   });
 

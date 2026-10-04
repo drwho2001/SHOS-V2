@@ -908,6 +908,10 @@ Also: ClinicCard's map and reveal PendingIntents used **hardcoded request codes 
 
 1171 tests across 105 files, verify:fast green. The APK build is the real verification of the Java, and the warm tap is the real verification of that build - neither is checkable locally.
 
+**The first push of that entry did not compile, and my guard waved it through.** The ACTION_VIEW codemod captured each intent's *variable name* from the regex and then emitted a hardcoded `intent.setAction(...)` - but ClinicCard names them `mainIntent` and `revealIntent`, so all three providers compiled and ClinicCard failed at `cannot find symbol: variable intent`. Tenth recorded instance of this class, and the first where **the guard for the change asserted the change was present and still passed a build that did not compile.**
+
+The reason is that the assertion compared *counts*: "at least as many `setAction` calls as constructors". Three constructors, three `setAction` calls, one of them on the wrong variable - green. **Counting is not pairing.** The property that actually matters is that the intent constructed with the data URI is the same one given the action, so it now pairs them by name: for every `Intent X = new Intent(context, MainActivity.class)` it asserts `X.setAction(Intent.ACTION_VIEW)`. Mutation-verified by reintroducing the exact shipped line, which now fails naming `mainIntent`.
+
 ## Recently shipped (4 Oct 2026, later - an XML comment inside a tag, the exact twin of the JSX comment that shipped rendered source code onto the Clinic Card)
 
 **The first push of the entry above did not build, and the cause was mine again.** I put an explanatory XML comment *inside* the `<Chronometer ... />` attribute list. XML has no comment production there, so `:app:parseDebugLocalResources` failed with "Element type \"Chronometer\" must be followed by either attribute specifications, \">\" or \"/>\"". Re-measure with: `gh run view <id> --log-failed | Select-String "Element type"`.
