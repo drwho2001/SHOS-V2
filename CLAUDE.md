@@ -886,7 +886,29 @@ That leaves the failure inside the static bridge method, after `WidgetPrefs.get(
 
 **Two tooling findings that cost real time here, so nobody re-learns them.** This WebView's CDP **does not honour `awaitPromise`** - `Runtime.evaluate` with it simply never returns, so an async probe has to stash its result on `window` and be polled with a second synchronous evaluate. And a **backgrounded WebView throttles timers** hard enough that a `setTimeout(r, 12000)` race inside the app ran for 18+ seconds without firing, which reads exactly like a hung bridge call. Both produced confident false conclusions before being caught; bring the app to the foreground before concluding anything from a timer.
 
-## Recently shipped (4 Oct 2026, later still still - an XML comment inside a tag, the exact twin of the JSX comment that shipped rendered source code onto the Clinic Card)
+## Recently shipped (4 Oct 2026, latest - the warm-tap bug was one missing line, and my own fix this session caused a second bug alongside it)
+
+**Every widget tap landed on the dashboard from a warm app. All ten. One missing `setAction`.** Measured on the owner's phone (Redmi 23124RA7EO, Android 15 / HyperOS 2.0, Lawnchair 15.Beta 3, WebView 153): every widget reported "works from cold, goes to the dashboard when warm" - encounter, medication, next dose, last test, refills, appointment, cycle and clinic card alike. A total, warm-only failure across ten independent widgets is not ten bugs, and treating the symmetry as coincidence is what had kept this invisible through several rounds of flag-fixing.
+
+**The cause is in Capacitor, not in this app.** `node_modules/@capacitor/app/.../AppPlugin.java:148`:
+```java
+if (!Intent.ACTION_VIEW.equals(action) || url == null) { return; }
+```
+Every provider built its tap intent as `new Intent(context, MainActivity.class)` + `setData(uri)` with **no action**. Cold start works because the launch-intent path does not apply that check. Warm, the intent arrives via `onNewIntent`, `getAction()` is null, Capacitor returns early, `appUrlOpen` is never emitted, and the tap just resumes the app wherever it already was. **Verified at source rather than taken from Gemini**, which independently reached the same conclusion - the repo's standing rule is that a sub-model's report is not evidence, and this one happened to be checkable.
+
+**The control that cracked it is the part worth remembering.** Earlier the same session, firing the *identical* URI with `adb shell am start -a android.intent.action.VIEW` on a *warm* app routed perfectly - Medication and Healthcare/Testing both landed correctly - and I recorded that as "warm routing verified" in the entry below. It was not the same test. `am start` supplies `ACTION_VIEW`; a widget tap does not. So the one experiment that appeared to prove the fix worked was measuring a different code path from the bug. Three rounds of SINGLE_TOP work had been chasing a flag that was necessary and not sufficient.
+
+**A second bug, mine, from the same round.** I gave `NextDoseWidgetProvider` a tap at all (it had none), pointing it at bare `com.shos.app://medication` - chosen from a route-table comment describing `/dashboard`, without reading the code below it. Bare `medication` resolves to `{ type: "quickAdd", tab: "medication" }`: the **Add Medication sheet**. Owner-reported as "next dose navigates to add medication from cold - wrong". Now `com.shos.app://medication/dashboard`. This is the entry above's own lesson repeating verbatim: the comment described the neighbourhood, the code described the house.
+
+**`CLEAR_TOP` removed from all ten.** It is implied under `launchMode=singleTask`, buys nothing, and its only historical role here was enabling the Activity-destroying path. `NEW_TASK|SINGLE_TOP` only.
+
+**Three new assertions in `widgetTapAndFallbackGuard.test.js`, all mutation-verified.** (1) Every `MainActivity` intent sets `ACTION_VIEW`, asserted as *at least as many* `setAction` calls as constructors, because ClinicCard legitimately builds three intents (main tap, `geo:` map link, reveal link) and a `1 === 1` assertion would have cried wolf on the one provider that differs. (2) No provider reintroduces `CLEAR_TOP`. (3) Every tap URI must have a host branch in `deepLinkRoutes.js`, and the bare-`medication` case is named explicitly with the reason - consulting the route table rather than duplicating the URI list as a second source of truth that could drift. All three go red on the exact defect, naming the file.
+
+Also: ClinicCard's map and reveal PendingIntents used **hardcoded request codes 1 and 2**, colliding across instances and with every other provider. Now derived from `appWidgetId`.
+
+1171 tests across 105 files, verify:fast green. The APK build is the real verification of the Java, and the warm tap is the real verification of that build - neither is checkable locally.
+
+## Recently shipped (4 Oct 2026, later - an XML comment inside a tag, the exact twin of the JSX comment that shipped rendered source code onto the Clinic Card)
 
 **The first push of the entry above did not build, and the cause was mine again.** I put an explanatory XML comment *inside* the `<Chronometer ... />` attribute list. XML has no comment production there, so `:app:parseDebugLocalResources` failed with "Element type \"Chronometer\" must be followed by either attribute specifications, \">\" or \"/>\"". Re-measure with: `gh run view <id> --log-failed | Select-String "Element type"`.
 

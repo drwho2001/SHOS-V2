@@ -119,6 +119,97 @@ describe("widget taps reach the app (device bug: every tap landed on the dashboa
 });
 
 describe("a host is never left without RemoteViews (device bug: 'Can't load widget')", () => {
+  it("every tap intent sets ACTION_VIEW, or Capacitor silently discards it", () => {
+    // THE ROOT CAUSE of "every widget tap lands on the dashboard from a warm app",
+    // found on a real device and verified against Capacitor's own source rather
+    // than inferred:
+    //
+    //   node_modules/@capacitor/app/.../AppPlugin.java:148
+    //     if (!Intent.ACTION_VIEW.equals(action) || url == null) { return; }
+    //
+    // Every provider built its tap intent as `new Intent(context, MainActivity.class)`
+    // + `setData(uri)` with NO action. On a COLD app the launch-intent path does
+    // not apply that check, so it worked. On a WARM app the intent arrives via
+    // onNewIntent, the action is null, Capacitor returns early, appUrlOpen is
+    // never emitted, and the tap just resumes the app where it already was.
+    //
+    // Two independent signals converged on it and both are worth keeping:
+    //   - the observed failure was total and warm-only, not per-widget;
+    //   - `adb shell am start -a android.intent.action.VIEW` DID route correctly
+    //     warm, and the only difference was that am start supplies the action.
+    //
+    // Asserted as "at least as many setAction calls as MainActivity constructors",
+    // because a provider may legitimately build more than one (ClinicCard builds
+    // three: the main tap, a geo: map link, and a reveal link).
+    for (const f of providers) {
+      const src = fs.readFileSync(path.join(JAVA_DIR, f), "utf8");
+      const ctors = (
+        src.match(/new Intent\(context, com\.shos\.app\.MainActivity\.class\)/g) || []
+      ).length;
+      expect(ctors, `${f} builds no tap intent at all`).toBeGreaterThan(0);
+
+      const actions = (src.match(/\.setAction\(Intent\.ACTION_VIEW\)/g) || []).length;
+      expect(
+        actions,
+        `${f} builds ${ctors} MainActivity intent(s) but sets ACTION_VIEW ${actions} ` +
+          `time(s). Capacitor's AppPlugin discards any onNewIntent that is not an ` +
+          `ACTION_VIEW, so the tap does nothing from a warm app.`,
+      ).toBeGreaterThanOrEqual(ctors);
+    }
+  });
+
+  it("no provider reintroduces FLAG_ACTIVITY_CLEAR_TOP", () => {
+    // CLEAR_TOP is implied under launchMode=singleTask, so it buys nothing, and
+    // without SINGLE_TOP alongside it the running Activity is destroyed instead
+    // of receiving onNewIntent - which is the failure mode this file already
+    // guards against for SINGLE_TOP. Asserted absent so the pair cannot drift
+    // back to the broken combination.
+    for (const f of providers) {
+      const src = fs.readFileSync(path.join(JAVA_DIR, f), "utf8");
+      expect(
+        /FLAG_ACTIVITY_CLEAR_TOP/.test(src),
+        `${f} reintroduced FLAG_ACTIVITY_CLEAR_TOP, which is redundant under singleTask and only risks destroying the Activity`,
+      ).toBe(false);
+    }
+  });
+
+  it("every tap targets a route the app actually resolves", () => {
+    // `com.shos.app://medication` (bare) resolves to
+    // { type: "quickAdd", tab: "medication" } - the Add Medication SHEET - not the
+    // dashboard. Only /log and /dashboard resolve to a navigate. I picked the
+    // bare host for the Next Dose widget after reading a comment that described
+    // /dashboard, without checking the fallback, and it opened Add Medication on
+    // a cold launch. The route table is the single source of truth for what each
+    // URI means, so it is consulted here rather than duplicated as a second list.
+    const routes = fs.readFileSync("src/calculations/deepLinkRoutes.js", "utf8");
+
+    for (const f of providers) {
+      const src = fs.readFileSync(path.join(JAVA_DIR, f), "utf8");
+      for (const m of src.matchAll(/Uri\.parse\("(com\.shos\.app:\/\/[^"]+)"\)/g)) {
+        const uri = m[1];
+        const host = uri.replace("com.shos.app://", "").split("/")[0].split("?")[0];
+        const path = "/" + (uri.replace("com.shos.app://", "").split("/")[1] || "").split("?")[0];
+
+        // The route table must know this host at all.
+        expect(
+          routes.includes(`"${host}"`),
+          `${f} points at ${uri}, and deepLinkRoutes.js has no branch for host "${host}" - the tap would resolve to null and do nothing`,
+        ).toBe(true);
+
+        // The bare medication host is the one genuinely ambiguous case: it is a
+        // quickAdd (opens Add Medication), not a dashboard navigation. Any widget
+        // whose purpose is "show me my medication status" must say so explicitly.
+        if (host === "medication" && path === "/") {
+          expect(
+            f,
+            `${f} uses bare com.shos.app://medication, which opens the Add Medication form. ` +
+              `Use /dashboard to reach the medication dashboard.`,
+          ).not.toBe("NextDoseWidgetProvider.java");
+        }
+      }
+    }
+  });
+
   it("no data provider returns before calling updateAppWidget", () => {
     // WidgetPrefs fails closed and returns null rather than writing plaintext.
     // Returning at that point was correct for privacy and wrong for the user: the

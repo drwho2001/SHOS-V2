@@ -130,8 +130,22 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
 
         // Main click opens full Clinic Card
         Intent mainIntent = new Intent(context, com.shos.app.MainActivity.class);
+
+        // ACTION_VIEW IS LOAD-BEARING, not decoration. Capacitor's own App
+
+        // plugin drops any intent arriving through onNewIntent that is not an
+
+        // ACTION_VIEW - AppPlugin.java:148 does `if (!Intent.ACTION_VIEW.equals
+
+        // (action) || url == null) return;` - so a bare setData() intent never
+
+        // emits appUrlOpen and the tap silently does nothing on a warm app.
+
+        // Verified at source in node_modules/@capacitor/app, not inferred.
+
+        intent.setAction(Intent.ACTION_VIEW);
         mainIntent.setData(Uri.parse("com.shos.app://clinic-card"));
-        mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         android.app.PendingIntent mainPendingIntent = android.app.PendingIntent.getActivity(
         context,
         appWidgetId, mainIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
@@ -142,16 +156,30 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
             Intent mapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(location)));
             mapIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             android.app.PendingIntent mapPendingIntent = android.app.PendingIntent.getActivity(
-                context, 1, mapIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+                context, appWidgetId * 10 + 1, mapIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
             views.setOnClickPendingIntent(R.id.widget_clinic_location, mapPendingIntent);
         }
 
         // Reveal click
         Intent revealIntent = new Intent(context, com.shos.app.MainActivity.class);
+
+        // ACTION_VIEW IS LOAD-BEARING, not decoration. Capacitor's own App
+
+        // plugin drops any intent arriving through onNewIntent that is not an
+
+        // ACTION_VIEW - AppPlugin.java:148 does `if (!Intent.ACTION_VIEW.equals
+
+        // (action) || url == null) return;` - so a bare setData() intent never
+
+        // emits appUrlOpen and the tap silently does nothing on a warm app.
+
+        // Verified at source in node_modules/@capacitor/app, not inferred.
+
+        intent.setAction(Intent.ACTION_VIEW);
         revealIntent.setData(Uri.parse("com.shos.app://widget/reveal-clinic"));
         revealIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         android.app.PendingIntent revealPendingIntent = android.app.PendingIntent.getActivity(
-            context, 2, revealIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+            context, appWidgetId * 10 + 2, revealIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_clinic_reveal, revealPendingIntent);
 
         appWidgetManager.updateAppWidget(appWidgetId, views);

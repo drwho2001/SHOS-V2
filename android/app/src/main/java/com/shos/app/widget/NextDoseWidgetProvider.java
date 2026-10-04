@@ -107,11 +107,25 @@ public class NextDoseWidgetProvider extends AppWidgetProvider {
         // countdown to their next dose actually wants; inventory is stock level,
         // which is what the Refill widget is for.
         Intent intent = new Intent(context, com.shos.app.MainActivity.class);
-        intent.setData(Uri.parse("com.shos.app://medication"));
+
+        // ACTION_VIEW IS LOAD-BEARING, not decoration. Capacitor's own App
+
+        // plugin drops any intent arriving through onNewIntent that is not an
+
+        // ACTION_VIEW - AppPlugin.java:148 does `if (!Intent.ACTION_VIEW.equals
+
+        // (action) || url == null) return;` - so a bare setData() intent never
+
+        // emits appUrlOpen and the tap silently does nothing on a warm app.
+
+        // Verified at source in node_modules/@capacitor/app, not inferred.
+
+        intent.setAction(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse("com.shos.app://medication/dashboard"));
         // SINGLE_TOP without which CLEAR_TOP destroys the running Activity, so
         // onNewIntent never fires, Capacitor's appUrlOpen never fires, and the
         // tap silently lands on Home. The other nine providers needed the same.
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         // Per-instance requestCode: without FLAG_UPDATE_CURRENT Android returns
         // the CACHED PendingIntent and drops this data URI.
         android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
