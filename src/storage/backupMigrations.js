@@ -57,6 +57,77 @@ function migrateMedicationDosePerUnit(med) {
   return { ...rest, notes: rest.notes ? `${preserved}\n${rest.notes}` : preserved };
 }
 
+import { planSeedIdMigration } from "./seedIdMigration.js";
+
+/**
+ * Re-keys legacy demo ids in an IMPORTED BACKUP, the way
+ * `seedIdMigration.runSeedIdMigration()` does for records already on disk.
+ *
+ * ADDED 5 Oct 2026 - the import half of the same incident. The two halves are
+ * genuinely separate and only one of them shipped: a backup written before the
+ * 3a re-key carries `contact_001`, and importing it into a current install
+ * bypasses the on-disk migration entirely, because that migration reads
+ * repositories rather than a parsed file.
+ *
+ * Why it matters, and it is not a tidiness concern. After 3a, `SEED_*_IDS`
+ * contains only `seed_*_9001`-style ids, so demo records arriving under a legacy
+ * id are INVISIBLE to `countSampleData()` and unremovable by
+ * `clearSampleData()` - the exact state the 1 Oct fix created and the exact one
+ * the owner had to have a human session resolve. The demo data is then
+ * indistinguishable from the user's own records, which is worse than the
+ * original bug: it is not merely un-clearable, it is un-clearable *and*
+ * un-identifiable.
+ *
+ * Reuses `planSeedIdMigration()` rather than reimplementing the rule. That is
+ * load-bearing rather than tidy: the rule that decides whether a record is the
+ * user's own data (`isSeed === false`) now has exactly ONE implementation, and
+ * two copies of a data-loss rule is precisely how the two halves could drift
+ * into disagreeing about which records are real.
+ *
+ * Pure - takes a backup's `data` object, returns a new one. Never mutates.
+ */
+function migrateSeedIdsInBackup(data) {
+  // Only real collections, and only ones the plan can act on. Keyed by the
+  // backup's OWN top-level keys, which is what the caller has, rather than by
+  // the repository names inside seedIdMigration.js - the two spellings differ
+  // ("clinic visits" vs "clinicVisits") and conflating them would silently skip
+  // a collection.
+  const collections = Object.entries(data)
+    .filter(([, v]) => Array.isArray(v))
+    .map(([name, records]) => ({ name, records }));
+  if (collections.length === 0) return data;
+
+  const plan = planSeedIdMigration(collections);
+  if (!plan || plan.totalChanged === 0) return data;
+
+  // `rewritten` is a Map keyed by collection name, and holds ONLY the
+  // collections that changed - so every key in it must exist in `data`. A
+  // defensive skip rather than an assumption: this is a data-recovery path, and
+  // a `undefined` spread here would silently produce a shorter collection.
+  // The defensive `name in out` check is unreachable VIA THIS PATH, and the
+  // mutation proving it is recorded in the commit: `rewritten`'s keys come from
+  // `Object.entries(data)`, so every one of them is already in `data`. It is kept
+  // because `migrateBackupData` is exported and a future caller may hand this a
+  // differently-shaped object - but it is not load-bearing today, and saying
+  // otherwise would be the over-confident comment this repo keeps having to
+  // correct later.
+  // Copied rather than mutated in place. `migrateBackupData` is the only caller
+  // today and it already spreads, so this copy is currently redundant - but the
+  // function is exported, and "this helper mutates its argument" is a property a
+  // caller should never have to discover.
+  const out = { ...data };
+  for (const [name, records] of plan.rewritten) {
+    if (name in out) out[name] = records;
+  }
+  return out;
+}
+
+// Whole-backup migrations, applied to `data` itself rather than to individual
+// records within one collection. Kept separate from RECORD_MIGRATIONS because
+// the unit is different: those rewrite fields, this rewrites ids and every
+// reference to them, so it must see all collections at once to be correct.
+const DATA_MIGRATIONS = [migrateSeedIdsInBackup];
+
 const MEDICATION_MIGRATIONS = [migrateMedicationDosePerUnit];
 
 // Keyed by the exact top-level key backupService.js's own export/import
@@ -94,7 +165,23 @@ function migrateCollection(items, migrations) {
 // data. Returns a new object; never mutates the parsed backup in place.
 export function migrateBackupData(data) {
   if (!data || typeof data !== "object") return data;
-  const migrated = { ...data };
+  // Whole-backup migrations FIRST, before the per-record ones. Order matters for
+  // a real reason rather than convention: these rewrite ids and references, so
+  // every collection must still be in its pre-migration shape when they run. A
+  // per-record migration that ran first could not know which ids had moved.
+  // Whole-backup migrations FIRST, before the per-record ones. The ordering is a
+  // real constraint, not a convention - these rewrite ids and every reference to
+  // them, so each collection must still be in its pre-migration shape when they
+  // run.
+//
+// HONEST CAVEAT, because the mutation test says so: with today's migration set
+// the two orders produce IDENTICAL output, so no test here can distinguish them.
+// That is true today because the only per-record migration (dosePerUnit) touches
+// a field no id migration reads. The constraint becomes load-bearing the moment a
+// per-record migration keys off `id` or an `*Id` field - which is precisely when
+// the ordering would be silently wrong and nothing would say so. Recorded here
+// rather than claimed as tested.
+const migrated = DATA_MIGRATIONS.reduce((acc, migrate) => migrate(acc), { ...data });
   for (const [key, migrations] of Object.entries(RECORD_MIGRATIONS)) {
     if (key in migrated) migrated[key] = migrateCollection(migrated[key], migrations);
   }

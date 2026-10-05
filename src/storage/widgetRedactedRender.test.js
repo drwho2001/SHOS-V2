@@ -225,18 +225,30 @@ const dataProviders = readdirSync(WIDGET_DIR)
 const WIRED = dataProviders.filter((f) => /KEY_REDACTED_TEXT|redactedText/.test(read(path.join(WIDGET_DIR, f))));
 const NOT_WIRED = dataProviders.filter((f) => !WIRED.includes(f));
 
+// 40s, explicitly. This test re-reads all fourteen provider files, all twelve
+  // layouts, the bridge, and every pusher under src/calculations - on EVERY run -
+  // and then does delimiter balancing over the whole concatenated source. Standalone
+  // it takes ~24s, which is not a normal test's cost and which vitest's 5s default
+  // treats as a failure under load.
+//
+// So the budget is stated rather than inferred: a timeout here presents as an
+  // assertion failure of something this file never asserted, which is exactly the
+// misdiagnosis that cost hours on jsxComponentBindingGuard before it was given a
+// budget of its own.
+const SCAN_TIMEOUT_MS = 40_000;
+
 describe("redacting the payload is not the same as redacting the screen", () => {
-  it("discovered the seven data widgets, or the inventory below is meaningless", () => {
+  it("discovered the seven data widgets, or the inventory below is meaningless", SCAN_TIMEOUT_MS, () => {
     // NON-VACUITY. If this filter ever matched nothing, every test after it
     // would pass on an empty set and report a fully-wired privacy system.
     expect(dataProviders.length, "no data-rendering providers discovered").toBe(7);
   });
 
-  it("DoxyPEP, the widget that was lying, is wired", () => {
+  it("DoxyPEP, the widget that was lying, is wired", SCAN_TIMEOUT_MS, () => {
     expect(WIRED).toContain("DoxyPEPWidgetProvider.java");
   });
 
-  it("DoxyPEP hides the views it already names, rather than enumerating a tree", () => {
+  it("DoxyPEP hides the views it already names, rather than enumerating a tree", SCAN_TIMEOUT_MS, () => {
     // RemoteViews is an IPC serialization stub, not a live view tree - it cannot
     // iterate children. Gemini made this point and it corrected my design. The
     // saving grace is that each provider already hardcodes the 2-3 ids it sets
@@ -247,7 +259,7 @@ describe("redacting the payload is not the same as redacting the screen", () => 
     expect(src).toMatch(/setViewVisibility\(R\.id\.widget_doxy_countdown,\s*View\.GONE\)/);
   });
 
-  it("every id it hides actually exists in its layout", () => {
+  it("every id it hides actually exists in its layout", SCAN_TIMEOUT_MS, () => {
     // setViewVisibility on an id absent from the inflated layout is a runtime
     // failure on a home screen, and it is exactly the kind of thing CI's
     // compiler cannot see because RemoteViews ids are resolved reflectively.
@@ -267,7 +279,7 @@ describe("redacting the payload is not the same as redacting the screen", () => 
     }
   });
 
-  it("the bridge forwards ClinicCard's line, defaulting to empty rather than null", () => {
+  it("the bridge forwards ClinicCard's line, defaulting to empty rather than null", SCAN_TIMEOUT_MS, () => {
     const bridge = read(path.join(ROOT, "android/app/src/main/java/com/shos/app/WidgetBridgePlugin.java"));
     // Every WIRED provider, not just DoxyPEP. The bug this file exists for was
     // precisely that a provider was wired on the JS side and the bridge never
@@ -344,7 +356,7 @@ describe("redacting the payload is not the same as redacting the screen", () => 
     }
   });
 
-  it("JS passes a line for every wired widget, and it discloses nothing identifying", () => {
+  it("JS passes a line for every wired widget, and it discloses nothing identifying", SCAN_TIMEOUT_MS, () => {
     // The other half of the same fix, and the half that is cheap to test. At
     // full the real fields are used; at off nothing at all is sent.
     const helper = read(path.join(ROOT, "src/calculations/widgetBridgeUpdate.js"));
@@ -701,7 +713,7 @@ describe("redacting the payload is not the same as redacting the screen", () => 
 });
 
 describe("inventory of what is not wired yet", () => {
-  it("reports the remaining five, and reports none once they are done", () => {
+  it("reports the remaining five, and reports none once they are done", SCAN_TIMEOUT_MS, () => {
     // Deliberately a description rather than a failure. Making it a hard failure
     // would mean either shipping six half-wired widgets or writing a test that
     // breaks every time one is finished - and this repo's rule is that a guard
@@ -728,7 +740,7 @@ describe("inventory of what is not wired yet", () => {
     ).toEqual([]);
   });
 
-  it("a provider already wired is never silently unwired", () => {
+  it("a provider already wired is never silently unwired", SCAN_TIMEOUT_MS, () => {
     // The real invariant, replacing the count. Wiring a provider is a one-way
     // door: dropping its KEY_REDACTED_TEXT would silently put health-identifying
     // text back on a home screen, and nothing else in this file would notice -
@@ -745,7 +757,7 @@ describe("inventory of what is not wired yet", () => {
     }
   });
 
-  it("every WIRED provider both READS, STORES, and RENDERS its line", () => {
+  it("every WIRED provider both READS, STORES, and RENDERS its line", SCAN_TIMEOUT_MS, () => {
     // REPLACED a test I wrote wrongly. It asserted the bridge and the provider
     // agree on the storage key string, and both failures were the guard being
     // right: the bridge never touches that key at all. It passes a value to the

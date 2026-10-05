@@ -24,6 +24,41 @@ const ROOT = process.cwd();
 const read = (...p) => readFileSync(path.join(ROOT, ...p), "utf8");
 const SMOKE = read("scripts", "smoke-test.cjs");
 
+/**
+ * Blank out JS comments, preserving every offset.
+ *
+ * A state machine, not regexes: an apostrophe inside a comment ("the suite's")
+ * would open a string literal that never closes, and a `'(?:[^'\\]|\\.)*'` regex
+ * would then delete real code for the rest of the file.
+ */
+function stripJsComments(src) {
+  const out = src.split("");
+  let i = 0;
+  while (i < src.length) {
+    const two = src.slice(i, i + 2);
+    if (two === "//") {
+      while (i < src.length && src[i] !== "\n") { out[i] = " "; i++; }
+      continue;
+    }
+    if (two === "/*") {
+      const e = src.indexOf("*/", i + 2);
+      const stop = e < 0 ? src.length : e + 2;
+      for (let k = i; k < stop; k++) if (src[k] !== "\n") out[k] = " ";
+      i = stop;
+      continue;
+    }
+    const c = src[i];
+    if (c === '"' || c === "'" || c === "`") {
+      let j = i + 1;
+      while (j < src.length && src[j] !== c) { if (src[j] === "\\") j++; j++; }
+      i = j < src.length ? j + 1 : src.length;
+      continue;
+    }
+    i++;
+  }
+  return out.join("");
+}
+
 describe("the smoke suite reports what it actually runs", () => {
   it("every registered flow announces itself with a [N/M] title", () => {
     // The registration call sites. `run("name", ...)` is the only way a flow is
@@ -58,10 +93,37 @@ describe("the smoke suite reports what it actually runs", () => {
     // "[21/21]" alongside a 22-flow suite reads as a bug in the suite, and it
     // is how a renumbering slip would be noticed at all - so it is asserted
     // rather than left to a human noticing.
-    const total = (SMOKE.match(/\\n\[\d+\/(\d+)\] /g) || []).map((m) => Number(m.match(/\/(\d+)\]/) [1]));
+    // COMMENTS ARE STRIPPED FIRST, and this is a real fix rather than hygiene.
+    //
+    // The pattern below matches a literal `\n[` inside a JS string, and a COMMENT
+    // can contain that too. It already did: a 24 Sep comment quoting the historical
+    // CI flake (`real CI flake ([3/15] timed out...)`) was counted as a flow title,
+    // so the suite appeared to declare two different totals and this guard failed on
+    // a file that was entirely correct.
+    //
+    // It sat green for weeks because the stale literal was always there and only
+    // another session adding flows - which moved the real total from /15 to /25 -
+    // made the two disagree. A guard that fails on someone else's unrelated change
+    // reads as "their change broke it", which is how a stale-guard bug gets blamed
+    // on whoever touched the file last.
+    const code = stripJsComments(SMOKE);
+    // The trailing space matters: it is what distinguishes a title from a bare
+    // `[3/15]` sitting mid-comment.
+    const total = (code.match(/\\n\[\d+\/(\d+)\] /g) || []).map((m) => Number(m.match(/\/(\d+)\]/)[1]));
     const unique = [...new Set(total)];
-    expect(unique.length).toBe(1);
-    expect(unique[0]).toBe((SMOKE.match(/await run\("([^"]+)"/g) || []).length);
+    // Asserting only `length === 1` is what let a 25-versus-26 slip through for
+    // as long as it existed: it asks "is there one total", not "is it the right
+    // one". Both matter, and the second is the one that catches a flow being
+    // added without the other 25 titles being renumbered.
+    expect(unique.length, `smoke-test.cjs declares more than one total: ${unique.join(", ")}`).toBe(1);
+    const flowCount = (code.match(/await run\("([^"]+)"/g) || []).length;
+    expect(unique[0]).toBe(flowCount);
+    // ...and the sequence must be 1..N with no gaps, so a renumbering slip is
+    // caught even if every literal happens to agree on the total.
+    const nums = (code.match(/\\n\[(\d+)\/\d+\] /g) || []).map((m) => Number(m.match(/\[(\d+)/)[1]));
+    expect([...nums].sort((a, b) => a - b), `flow titles are not 1..${flowCount}`).toEqual(
+      Array.from({ length: flowCount }, (_, i) => i + 1),
+    );
   });
 
   it("SMOKE_ONLY refuses to report success when its filter matches nothing", () => {
