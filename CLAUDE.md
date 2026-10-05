@@ -372,6 +372,19 @@ not listed here is unambiguous.
 |---|---|
 | `bc04295` "Give the Clinic Card PDF its first test…" | **BOTH sessions.** Theirs: `clinicCardPdf.test.js` + the Clinic Card PDF entry below. Mine, swept in by their `git add -A src`: `reminderSuppression.js` + its test, `medicationReminderSync.js`, `appPreferencesRepository.js`, and 247 lines of `App.jsx`. The message describes only their half. |
 | `d7f84a1` "Finish banner suppression, and stop prescribing the command that caused the accident" | Mine only — the rest of Phase 3, the wiring guard, the `CHANGE-PROCEDURE.md` root-cause fix, and the second scratch-file deletion. |
+| `092f467` "Make clear-sample-data safe by stamping edits…" | **BOTH sessions**, second occurrence of the same accident 40 days later. **Mine:** `clearSampleData.js` (the `isSampleRecord` helper + the `referencedSeedIds` amendment that finally lets a recovered record vouch for what it references), `isSeedAuthorityGuard.test.js`, the 14 `isSeed: false` stamps inside `update()`, the CLAUDE.md entry, the footer. **Swept in by C, mid-apply, under my message:** the 3a seed re-key — **157 `seed_*_9001` lines** across the 14 repositories. The message describes none of it. C raised this and was right; see `docs/CHANGE-PROCEDURE.md` §3. **NOT a double-apply:** `9c9008c^` is `092f467`, so C's own commit finished the remainder — its 12-file diff is the two new guards (280 + 135 lines), the `tabForRecordId` fix, CLAUDE.md, and 25 lines of *stale-comment* repair (`contact_003` → `seed_contact_9003` in a comment). Zero `seed_seed_` matches anywhere in `src/`; HEAD carries a clean `seed_contact_9001…9016`. |
+
+**Both sweeps-in have the same cause and the fix did not survive the first one.**
+`bc04295` was a blanket `git add -A src`. `092f467` was **explicit paths** — the 14
+repositories were in my list legitimately for the `isSeed` stamp, and C's
+uncommitted re-key in the *same files* rode along inside the same `git add`.
+**Explicit paths cannot protect you when another session is editing the same
+files you have legitimately claimed**, which is the case this repo runs on
+constantly. The only real protection is `git add <path>` immediately before
+committing, after re-running `git status`, so the window between read and commit
+is seconds rather than the length of a review. Both times the innocent party paid:
+B had to document a split commit, and C's commit message now under-describes work
+that is provably in it.
 
 So: the Phase 3 banner-suppression entry below is split across those two
 commits, and the Clinic Card PDF entry sits in the same commit as the first
