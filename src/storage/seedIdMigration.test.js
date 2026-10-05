@@ -287,6 +287,52 @@ describe("the legacy list matches the real pre-re-key seed arrays", () => {
   });
 });
 
+describe("a duplicated user record on a legacy id is reported, not rewritten", () => {
+  // Cannot occur in a collection that honours ids as unique - repositories
+  // derive the next id FROM existing ids. Guarded anyway because the owner's
+  // own recovered data occupies exactly these legacy ids, so an import that
+  // merged without deduping is where this would land, and a migration whose
+  // whole purpose is to protect data must not be what creates the corruption.
+  it("reports the duplicate rather than emitting two records with one id", () => {
+    const { duplicateUserIds, rewritten } = plan([
+      ["contacts", [
+        { id: "contact_001", name: "Sean Wilson", isSeed: false },
+        { id: "contact_001", name: "Sam Benstead", isSeed: false },
+      ]],
+    ]);
+    expect(duplicateUserIds.length).toBe(1);
+    expect(duplicateUserIds[0]).toMatch(/contact_001/);
+    // No rewrite is offered at all, so a caller that honours this cannot write
+    // a collection containing two entries with the same id.
+    expect(rewritten.has("contacts")).toBe(false);
+  });
+
+  it("reports nothing for a normal collection", () => {
+    const { duplicateUserIds } = plan([
+      ["contacts", [
+        { id: "contact_001", name: "Sean Wilson", isSeed: false },
+        { id: "contact_002", name: "Daniel Philips", isSeed: false },
+      ]],
+    ]);
+    expect(duplicateUserIds).toEqual([]);
+  });
+
+  it("a single user record on a legacy id is NOT a duplicate", () => {
+    // The ordinary case for the owner's 74 recovered records - one per id. If
+    // this reported a duplicate, the migration would refuse to run on exactly
+    // the install it exists to protect.
+    const { duplicateUserIds, totalChanged } = plan([
+      ["contacts", [
+        { id: "contact_001", name: "Sean Wilson", isSeed: false },
+        { id: "contact_002", name: "Daniel Philips", isSeed: false },
+        { id: "contact_003", name: "Patrick Clare", isSeed: false },
+      ]],
+    ]);
+    expect(duplicateUserIds).toEqual([]);
+    expect(totalChanged).toBe(0);
+  });
+});
+
 describe("the dangerous inverse is guarded too", () => {
   it("a record that is neither a legacy seed nor isSeed:false is left completely alone", () => {
     const records = [

@@ -272,6 +272,10 @@ export function planSeedIdMigration(collections) {
       if (!record || typeof record !== "object") continue;
       if (!LEGACY_SEED_IDS.has(record.id)) continue;
       if (isUserRecord(record)) {
+        // NOTE: this branch also means the id is NOT added to idsToRewrite, so
+        // references to it stay pointing at the user's own record. That is the
+        // correct outcome and it is load-bearing - see the "duplicates"
+        // assertion in planSeedIdMigration's own test suite.
         skippedUserRecords++;
         continue;
       }
@@ -280,6 +284,35 @@ export function planSeedIdMigration(collections) {
     }
     if (rekey.length) rekeyByCollection.set(name, new Set(rekey));
   }
+
+  // A record carrying `isSeed === false` keeps its legacy id, while an UNEDITED
+  // demo record on the SAME id would be re-keyed to a new one. Those two
+  // records then share an id in the output, which every repository treats as a
+  // primary key - two entries in a list, and a `find()` that returns whichever
+  // the sort happens to put first.
+  //
+  // This cannot happen in a collection that genuinely honours ids as unique
+  // (repositories derive the next id FROM the existing ids, so two records
+  // cannot collide). It is guarded rather than assumed for one real reason:
+  // the owner's own recovered data occupies exactly these legacy ids, so if an
+  // import ever merged a backup into an existing collection without deduping -
+  // backupService.js's Merge path, for instance - this is where it would land,
+  // and a migration that is supposed to be strictly protective must not be the
+  // thing that creates the corruption.
+  const collisions = [];
+  for (const { name, records } of collections) {
+    const seen = new Set();
+    for (const record of records) {
+      if (!record || typeof record !== "object") continue;
+      if (isUserRecord(record) && LEGACY_SEED_IDS.has(record.id)) {
+        if (seen.has(record.id)) collisions.push(`${name}: ${record.id} appears more than once`);
+        seen.add(record.id);
+      }
+    }
+  }
+  // Reported, never thrown from: a data-recovery path must not lock the user
+  // out of their own app over a precondition. The caller sees the count.
+  const duplicateUserIds = collisions;
 
   // Pass 2: rewrite ids and references across every collection.
   const rewritten = new Map();
@@ -308,7 +341,7 @@ export function planSeedIdMigration(collections) {
     }
   }
 
-  return { idsToRewrite, rekeyByCollection, rewritten, totalChanged, skippedUserRecords };
+  return { idsToRewrite, rekeyByCollection, rewritten, totalChanged, skippedUserRecords, duplicateUserIds };
 }
 
 /**
@@ -330,7 +363,7 @@ export function planSeedIdMigration(collections) {
  */
 export async function runSeedIdMigration() {
   if (await storage.load(SEED_ID_MIGRATION_FLAG_KEY, false)) {
-    return { migrated: 0, skippedUserRecords: 0, failed: [], skipped: true };
+    return { migrated: 0, skippedUserRecords: 0, duplicateUserIds: [], failed: [], skipped: true };
   }
 
   const collections = [];
@@ -350,13 +383,31 @@ export async function runSeedIdMigration() {
     return { migrated: 0, skippedUserRecords: 0, failed };
   }
 
-  const plan = planSeedIdMigration(collections);
+const plan = planSeedIdMigration(collections);
+
+  if (plan.duplicateUserIds.length) {
+    // A user record on a legacy seed id appears twice in the same collection.
+    // Re-keying would either drop one or write two records sharing an id, so
+    // the safe move is to do nothing this boot and say why. The flag is NOT
+    // set, so this reports again rather than silently giving up.
+    return {
+      migrated: 0,
+      skippedUserRecords: plan.skippedUserRecords,
+      duplicateUserIds: plan.duplicateUserIds,
+      failed: [],
+    };
+  }
 
   if (plan.totalChanged === 0) {
     // Nothing to do - a fresh install, or already migrated. Set the flag either
     // way so the sweep does not repeat on every launch.
     await storage.save(SEED_ID_MIGRATION_FLAG_KEY, true);
-    return { migrated: 0, skippedUserRecords: plan.skippedUserRecords, failed: [] };
+    return {
+      migrated: 0,
+      skippedUserRecords: plan.skippedUserRecords,
+      duplicateUserIds: [],
+      failed: [],
+    };
   }
 
   // Persist before touching the flag, and report per-repository failure so a
@@ -377,9 +428,19 @@ export async function runSeedIdMigration() {
   if (writeFailed.length) {
     // Deliberately NOT setting the flag: the install is half-migrated, and a
     // flag would make that permanent. Retrying next boot is the safe outcome.
-    return { migrated: 0, skippedUserRecords: plan.skippedUserRecords, failed: writeFailed };
+    return {
+      migrated: 0,
+      skippedUserRecords: plan.skippedUserRecords,
+      duplicateUserIds: [],
+      failed: writeFailed,
+    };
   }
 
   await storage.save(SEED_ID_MIGRATION_FLAG_KEY, true);
-  return { migrated: plan.totalChanged, skippedUserRecords: plan.skippedUserRecords, failed: [] };
+  return {
+    migrated: plan.totalChanged,
+    skippedUserRecords: plan.skippedUserRecords,
+    duplicateUserIds: [],
+    failed: [],
+  };
 }
