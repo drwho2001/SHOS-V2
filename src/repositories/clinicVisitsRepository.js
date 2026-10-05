@@ -219,7 +219,7 @@ let seedVisits = [
     isArchived: false,
   },
   // ADDED — real example thread: early pregnancy scan + miscarriage
-  // aftercare (see pregnancyRepository.js's own pregnancy_002).
+  // aftercare (see pregnancyRepository.js's own seed_pregnancy_9002).
   {
     ...DEFAULT_CLINIC_VISIT,
     id: "seed_visit_9002",
@@ -243,7 +243,7 @@ let seedVisits = [
     isArchived: false,
   },
   // ADDED 9 Sep 2026 — real ask: links to the new Chlamydia-positive
-  // test (test_006) — every existing visit's own linkedTestIds either
+  // test (seed_test_9006) — every existing visit's own linkedTestIds either
   // points at the Gonorrhoea episode or is empty, so this is the first
   // seed visit exercising a genuinely different infection's treatment
   // path, plus a future-appointment example (isFutureAppointment/
@@ -273,7 +273,7 @@ let seedVisits = [
     reasonForVisit: ["Routine screen"],
     clinicalNotes: "Full annual screen — all clear.",
     linkedTestIds: ["seed_test_9007"],
-    // ADDED 26 Sep 2026 — this is where vaccination_003's clinic-visit
+    // ADDED 26 Sep 2026 — this is where seed_vaccination_9003's clinic-visit
     // link now lives. It previously existed only as a clinicVisitIds entry
     // on the vaccination itself, so this visit showed no vaccinations at
     // all despite the vaccine being given here.
@@ -292,7 +292,7 @@ let seedVisits = [
   },
   // ADDED 9 Sep 2026 — real ask: an IUD insertion appointment, the
   // clinic-visit half of contraceptionRepository.js's own new IUD
-  // entry (linked both directions, same pattern as visit_001's own
+  // entry (linked both directions, same pattern as seed_visit_9001's own
   // linkedTestIds).
   {
     ...DEFAULT_CLINIC_VISIT,

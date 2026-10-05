@@ -59,7 +59,7 @@ function daysAgo(n, hour = 9, minute = 30) {
 }
 
 let seedLogs = [
-  // PrEP (med_001)
+  // PrEP (seed_med_9001)
   { id: "seed_log_9001", medicationId: "seed_med_9001", type: "refill", delta: 30, date: daysAgo(8, 9), voided: false },
   { id: "seed_log_9002", medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(1, 8), voided: false },
   { id: "seed_log_9003", medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(2, 8), voided: false },
@@ -68,19 +68,19 @@ let seedLogs = [
   { id: "seed_log_9006", medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(5, 8), voided: false },
   { id: "seed_log_9007", medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(6, 8), voided: false },
 
-  // DoxyPEP (med_002)
+  // DoxyPEP (seed_med_9002)
   { id: "seed_log_9008", medicationId: "seed_med_9002", type: "refill", delta: 16, date: daysAgo(20, 9), voided: false },
   { id: "seed_log_9009", medicationId: "seed_med_9002", type: "dose", delta: -6, date: daysAgo(5, 22), voided: false },
 
-  // Vitamin D3 (med_003)
+  // Vitamin D3 (seed_med_9003)
   { id: "seed_log_9010", medicationId: "seed_med_9003", type: "refill", delta: 90, date: daysAgo(60, 9), voided: false },
   { id: "seed_log_9011", medicationId: "seed_med_9003", type: "dose", delta: -30, date: daysAgo(30, 8), voided: false },
   { id: "seed_log_9012", medicationId: "seed_med_9003", type: "dose", delta: -14, date: daysAgo(1, 20), voided: false },
 
-  // Antihistamine (med_004)
+  // Antihistamine (seed_med_9004)
   { id: "seed_log_9013", medicationId: "seed_med_9004", type: "dose", delta: -1, date: daysAgo(2, 14), voided: false },
 
-  // Amoxicillin, finished course (med_005)
+  // Amoxicillin, finished course (seed_med_9005)
   { id: "seed_log_9014", medicationId: "seed_med_9005", type: "dose", delta: -21, date: daysAgo(45, 9), voided: false },
 ];
 

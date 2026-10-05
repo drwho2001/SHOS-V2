@@ -438,7 +438,7 @@ let seedContacts = [
     createdAt: daysAgo(6),
     isArchived: false,
   },
-  // Deliberate near-duplicate of contact_003 ("Sam") — same phone
+  // Deliberate near-duplicate of seed_contact_9003 ("Sam") — same phone
   // number, a genuinely different display name — real test data for
   // findContactDuplicateCandidates() (fuzzyMatch.js), which flags an
   // exact phone match directly regardless of name similarity.

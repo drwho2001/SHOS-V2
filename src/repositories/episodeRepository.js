@@ -74,9 +74,9 @@ export const DEFAULT_EPISODE = {
 // ADDED 1 Sep 2026 — real ask: a real example Timeline episode, tying
 // together the example Encounter/Symptom Log/Testing/Clinic Visit/
 // Vaccination seed data across this session's repositories — exposure
-// encounter (encounter_003, with contact_005 "F. Mercury") → symptoms
-// (symlog_001) → positive test (test_001) → treatment (visit_001) →
-// TOC (test_002), resolved. Gives a new user one real end-to-end
+// encounter (seed_encounter_9003, with seed_contact_9005 "F. Mercury") → symptoms
+// (seed_symlog_9001) → positive test (seed_test_9001) → treatment (seed_visit_9001) →
+// TOC (seed_test_9002), resolved. Gives a new user one real end-to-end
 // example of what the Timeline feature actually tracks, not just
 // isolated records in each module.
 let seedEpisodes = [

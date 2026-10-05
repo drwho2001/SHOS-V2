@@ -1000,11 +1000,21 @@ function PregnancyTab({ T, openRecordId, onConsumedRecordOpen, registerModuleBac
 // own prefix already says which repository — and so which inner tab —
 // it belongs to (cycle_/contra_/pregnancy_, same prefixes
 // generateId() in each repository already uses).
+//
+// FIXED 5 Oct 2026 — the seed re-key (3a) made this fail silently.
+// Seed ids are now `seed_cycle_9001` rather than `cycle_001`, and
+// `"seed_cycle_9001".startsWith("cycle_")` is false, so a Global
+// Search result pointing at a seeded cycle/contraception/pregnancy
+// record reached Healthcare with no inner tab selected. Strip the
+// `seed_` prefix before testing rather than adding a second branch
+// per id shape, because the shape is a property of "is this a demo
+// record" and belongs in exactly one place.
 function tabForRecordId(id) {
   if (!id) return null;
-  if (id.startsWith("cycle_")) return "cycle";
-  if (id.startsWith("contra_")) return "contraception";
-  if (id.startsWith("pregnancy_")) return "pregnancy";
+  const key = id.startsWith("seed_") ? id.slice(5) : id;
+  if (key.startsWith("cycle_")) return "cycle";
+  if (key.startsWith("contra_")) return "contraception";
+  if (key.startsWith("pregnancy_")) return "pregnancy";
   return null;
 }
 

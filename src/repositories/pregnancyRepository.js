@@ -88,7 +88,7 @@ const seedPositiveTestDate = daysAgo(75);
 let seedPregnancies = [
   { ...DEFAULT_PREGNANCY, id: "seed_pregnancy_9001", testDate: daysAgo(40), testResult: "Negative", notes: "Precautionary test." },
   // ADDED — real ask: a full simulated pregnancy/miscarriage thread
-  // (see contact_008/encounterRepository.js's Morgan encounters,
+  // (see seed_contact_9008/encounterRepository.js's Morgan encounters,
   // clinicVisitsRepository.js's scan + aftercare visits,
   // contraceptionRepository.js's post-miscarriage method switch).
   // `sensitive` set explicitly here since seed data is a raw object,

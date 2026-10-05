@@ -59,7 +59,7 @@ function addDays(dateStr, n) {
   return d.toISOString().slice(0, 10);
 }
 // CHANGED — real narrative fix: these dates now line up with the
-// simulated pregnancy thread (pregnancyRepository.js's pregnancy_002)
+// simulated pregnancy thread (pregnancyRepository.js's seed_pregnancy_9002)
 // — stopped the pill BEFORE conceiving, not after, and didn't start
 // Depot until AFTER the miscarriage resolved (Depot is never started
 // during a known pregnancy). See encounterRepository.js's Morgan
@@ -71,7 +71,7 @@ let seedEntries = [
   // ADDED 9 Sep 2026 — real ask: represent hormone-related contraception
   // needs through real data — a hormonal IUD, linked to a real clinic
   // visit for the insertion appointment (see clinicVisitsRepository.js's
-  // own visit_006) and to medicationRepository.js's new Testosterone
+  // own seed_visit_9006) and to medicationRepository.js's new Testosterone
   // entry via the shared notes context. A currently-active entry (no
   // endDate), independent of the Depot method above — this app's own
   // design already allows more than one concurrent method on record.

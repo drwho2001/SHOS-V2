@@ -45,8 +45,8 @@ export const DEFAULT_VACCINATION = {
   // ClinicVisitsRepository's own `vaccinationsGivenIds` holding the other
   // copy. Both were editable and neither updated the other, so linking a
   // vaccination to a visit from one screen left the other screen showing
-  // nothing — demonstrable in the seed data, where vaccination_003 claimed
-  // visit_005 while visit_005 listed no vaccinations at all.
+  // nothing — demonstrable in the seed data, where seed_vaccination_9003 claimed
+  // seed_visit_9005 while seed_visit_9005 listed no vaccinations at all.
   //
   // Now the visit owns the link, exactly as it already did for tests
   // (TestingRepository.clinicVisitIds is documented dead for this same
@@ -105,7 +105,7 @@ let seedVaccinations = [
     isArchived: false,
   },
   // ADDED — real ask: "vaccinate MenB" — the same 4CMenB vaccine's own
-  // literal, on-label purpose, distinct from vaccination_001's
+  // literal, on-label purpose, distinct from seed_vaccination_9001's
   // off-label Gonorrhoea cross-protection use above. Earlier in the
   // 4-month window (routine), not connected to the STI episode.
   {
@@ -139,7 +139,7 @@ let seedVaccinations = [
     date: daysAgo(160),
     provider: "56 Dean Street",
     injectionSite: "Deltoid",
-    // MOVED 26 Sep 2026 — the link to visit_005 now lives on that visit's
+    // MOVED 26 Sep 2026 — the link to seed_visit_9005 now lives on that visit's
     // own `vaccinationsGivenIds`, since the visit is the single source of
     // truth for this relation. Previously only this side had it, which is
     // exactly the one-sided-link bug the move fixes.

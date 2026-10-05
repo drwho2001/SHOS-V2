@@ -84,8 +84,8 @@ let seedEntries = [
   // (dateResolved set) — no seed data exercised the genuinely different
   // "still active" state (dateResolved null), which the whole Active/
   // Resolved split this module is built around depends on. Linked to
-  // the new Chlamydia test/visit thread (test_006/encounter_015) rather
-  // than reusing the Gonorrhoea episode's own symlog_001.
+  // the new Chlamydia test/visit thread (seed_test_9006/seed_encounter_9015) rather
+  // than reusing the Gonorrhoea episode's own seed_symlog_9001.
   {
     ...DEFAULT_SYMPTOM_ENTRY,
     id: "seed_symlog_9002",
