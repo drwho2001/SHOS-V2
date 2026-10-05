@@ -27,6 +27,7 @@ import { runKinkExpansionMigration } from "./registries/kinkRegistry";
 import { runProtectionPepMigration } from "./registries/protectionRegistry";
 import { runSampleTypeMigration } from "./repositories/customOptionListsRepository";
 import { runSeedIdMigration } from "./storage/seedIdMigration";
+import { runSeedReconciliation } from "./storage/seedReconciliation";
 import { syncDarkModePreferenceFromStorage } from "./calculations/darkModePreference";
 import { AppPreferencesRepository } from "./repositories/appPreferencesRepository";
 // ADDED 3 Sep 2026 — real ask: "clear notification awareness" — a
@@ -1081,7 +1082,7 @@ export default function App() {
       // failing (or a corrupted flag) can't block the others or boot
       // itself — same "don't lock the user out of their own app over
       // this" reasoning as the eager-migration catch above.
-      for (const migration of [runKinkExpansionMigration, runProtectionPepMigration, runSampleTypeMigration, runSeedIdMigration]) {
+      for (const migration of [runKinkExpansionMigration, runProtectionPepMigration, runSampleTypeMigration, runSeedIdMigration, runSeedReconciliation]) {
         try {
           await migration();
         } catch (err) {

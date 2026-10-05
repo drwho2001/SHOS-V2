@@ -131,7 +131,7 @@ function daysAgo(n, hour = 10, minute = 0) {
   return d.toISOString();
 }
 
-let seedTests = [
+export let seedTests = [
   {
     ...DEFAULT_TEST,
     id: "seed_test_9001",

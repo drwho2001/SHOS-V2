@@ -200,7 +200,7 @@ function daysAgo(n, hour = 14, minute = 0) {
   return d.toISOString();
 }
 
-let seedVisits = [
+export let seedVisits = [
   {
     ...DEFAULT_CLINIC_VISIT,
     id: "seed_visit_9001",

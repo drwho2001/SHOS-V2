@@ -58,7 +58,7 @@ function daysAgo(n, hour = 9, minute = 30) {
   return d.toISOString();
 }
 
-let seedLogs = [
+export let seedLogs = [
   // PrEP (seed_med_9001)
   { id: "seed_log_9001", medicationId: "seed_med_9001", type: "refill", delta: 30, date: daysAgo(8, 9), voided: false },
   { id: "seed_log_9002", medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(1, 8), voided: false },
