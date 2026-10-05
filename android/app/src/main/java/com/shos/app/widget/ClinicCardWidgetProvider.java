@@ -51,6 +51,15 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
 
     private static final String KEY_APPT_REVEALED = "clinic_appt_revealed";
 
+    // ADDED 5 Oct 2026 (t059) - the pre-formatted one-line wording for a Redacted
+    // widget, decided in JS. This is the second provider to get one; DoxyPEP was
+    // the first, and it is the reference implementation.
+    //
+    // WHY A SEPARATE KEY rather than reusing KEY_APPT_TITLE: all seven data
+    // providers share ONE SharedPreferences file, so a shared key name would have
+    // each provider overwrite the previous one's line.
+    private static final String KEY_REDACTED_TEXT = "redacted_text_clinic";
+
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         // ADDED 4 Oct 2026 - TEMPORARY DIAGNOSTIC. If this line never appears in
@@ -107,6 +116,34 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
         boolean revealed = prefs.getBoolean(KEY_APPT_REVEALED, false);
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.clinic_card_widget);
+
+        // CHANGED 5 Oct 2026 (t059) - honour the Redacted tier, following
+        // DoxyPEPWidgetProvider's pattern exactly.
+        //
+        // THIS WAS THE REAL DEFECT IN THIS TASK. sendWidgetUpdate already filtered
+        // the payload at a Redacted tier, and its unit tests asserted that and
+        // passed - but filtering protects the PAYLOAD, and only the provider
+        // decides what is RENDERED. Without this block the filtered payload left
+        // title/date/location empty, the provider fell through to its own
+        // placeholder, and this widget disclosed an appointment title, a clinic
+        // location, a date and a test count on the home screen regardless of the
+        // user's privacy setting. clinicCard DEFAULTS to redacted, so this was the
+        // behaviour a user got without ever configuring anything.
+        //
+        // The hidden ids are already hardcoded here; RemoteViews is an IPC
+        // serialization stub and cannot iterate a view tree, so naming them is the
+        // whole mechanism.
+        String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+        if (redactedText != null && !redactedText.isEmpty()) {
+            views.setTextViewText(R.id.widget_clinic_title, redactedText);
+            views.setViewVisibility(R.id.widget_clinic_date, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_location, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_sensitive_row, android.view.View.GONE);
+            android.util.Log.i("ClinicCardWidget", "pushing REDACTED views for id=" + appWidgetId);
+            appWidgetManager.updateAppWidget(appWidgetId, views);
+            return;
+        }
 
         if (!title.isEmpty() && !title.equals("No upcoming appointment")) {
             views.setTextViewText(R.id.widget_clinic_title, title);
@@ -205,7 +242,8 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
     // it impossible to reintroduce by accident, and
     // src/storage/widgetPlaintextSink.test.js asserts the write is absent.
     public static void updateClinicCard(Context context, String title, String date, String location,
-                                        String tests, String docType, String clinicNum) {
+                                        String tests, String docType, String clinicNum,
+                                        String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -223,6 +261,7 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
             .putString(KEY_APPT_TESTS, tests)
             .putString(KEY_APPT_DOCTYPE, docType)
             .putString(KEY_APPT_CLINIC_NUM, clinicNum)
+            .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .putBoolean(KEY_APPT_REVEALED, false)
             .apply();
 

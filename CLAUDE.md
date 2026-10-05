@@ -921,6 +921,37 @@ That leaves the failure inside the static bridge method, after `WidgetPrefs.get(
 
 **Two tooling findings that cost real time here, so nobody re-learns them.** This WebView's CDP **does not honour `awaitPromise`** - `Runtime.evaluate` with it simply never returns, so an async probe has to stash its result on `window` and be polled with a second synchronous evaluate. And a **backgrounded WebView throttles timers** hard enough that a `setTimeout(r, 12000)` race inside the app ran for 18+ seconds without firing, which reads exactly like a hung bridge call. Both produced confident false conclusions before being caught; bring the app to the foreground before concluding anything from a timer.
 
+## Recently shipped (5 Oct 2026, later still - the Clinic Card widget ignored the user's own privacy setting, and six mutations proved my guard was decorative)
+
+**Six of the seven data widgets disclosed their real content at a Redacted tier.** `sendWidgetUpdate` filters the payload and its own unit tests assert that, and they pass — but filtering protects the *payload*, and only the provider decides what is *rendered*. `clinicCard` DEFAULTS to `redacted`, so a user who configured nothing got their appointment title, clinic location, date and test count on the home screen anyway. Fixed following DoxyPEP's existing pattern exactly: bridge forwards `opt(call, "redactedText")`, provider stores it under its own key (`redacted_text_clinic` — all seven share one prefs file, so a shared key overwrites itself), and the provider's redacted branch hides every disclosing view and returns.
+
+**The stale task listed three defects and two were already fixed.** Contrast had been resolved on 3 Oct by the `values-night` palette work — measured now at 4.8:1 worst across both backgrounds, with the maths self-checked against canonical WCAG pairs. `autoLink=map` is not in the layout at all. Only the disclosure gap was real. **A task written on 1 Oct describes the 1 Oct code**, which is the third time in this file that an inherited claim was measurably stale rather than merely wrong.
+
+**The far more useful finding is that my guard was decorative, and it took sixteen mutation attempts to find out.** `widgetRedactedRender.test.js` passed throughout. Against it:
+
+- *reading the redacted line and not rendering it* — green
+- *rendering it but leaving the location visible* — green
+- *rendering it but leaving the clinic-number row visible* — green
+- *deleting the JS fifth argument* — green
+- *passing `undefined` or `""` as the line* — green
+- *the bridge reading `redactedText` and handing the provider a different method* — green
+
+Six real disclosure paths, six green runs. **The guard was checking that a key existed and a string was passed, which is not the same as checking that health-identifying text reaches the home screen.** Three causes, each worth stating:
+
+- **Fixed windows.** The payload object is ~1,600 characters; the distance from the method name to the fifth argument is 1,566–1,581 today. Every `{0,900}`-style window samples only the payload and concludes nothing follows. Only delimiter balancing survives, and a *balanced* one — the JS pusher's own comment cites its two root causes by number, `"(1)"` and `"(2)"`, so balancing raw source counted three phantom arguments from prose and reported 7 for a call that passes 5. Comments are now stripped before any offset is computed.
+- **Comment-delimited prose.** The method name appears inside the explanatory comment *above* the call as well, so a name search found prose. `codeCallers` is now filtered on comment-stripped source, and the name is asserted to be an argument of the call that was actually measured — otherwise a deleted call still satisfied every assertion via an earlier `sendWidgetUpdate(` in the file.
+- **`setViewVisibility(id, View.VISIBLE)` counted as hiding.** Collecting ids without their arguments meant un-hiding the sensitive row passed. Only a `GONE`/`INVISIBLE` argument hides, and containment is resolved against the **layout**, because the masked branch legitimately sets `"••••• tap to reveal"` on those ids — flagging those would have demanded a widget stop rendering its own redaction, the opposite error.
+
+Two of my own test bugs are recorded at the assertion. `expect(x).toBe(/regex/)` is `Object.is`, not a pattern match, so it can never pass — written as though it were a real assertion. And a mutation pattern like `clinicCardRedactedLine(tests)` matched the function *declaration* first and left the call untouched: three mutations reported "STILL GREEN" purely because they had not applied, which is a different failure from a test that does not go red and is why the harness reports `DID NOT APPLY` separately.
+
+**Sixteen mutations now red, all sixteen for the right reason**, plus a green baseline as the precondition. The inventory test's hardcoded "6 unwired" was also wrong in kind: it passed on any unwired count of 6 and would have failed on 5 once Clinic Card was correctly wired, so the invariant is now stated as the one-way door it is — a provider that was wired is never silently unwired.
+
+Also: `WidgetRedacted.java`, claimed in this file as holding the single shared implementation of the redaction across seven providers, **does not exist**. The mechanism is per-provider `KEY_REDACTED_TEXT`, which is why this change added a seventh copy of three lines rather than one call. No shared class was ever written; the claim is corrected in place rather than left as an instruction to build it.
+
+Also fixed a red lint gate that was blocking every session including C's: a stale `eslint-disable-next-line no-new-func` in `seedIdRouting.test.js` (from C's `9c9008c`), removed. Recorded as a mistake too — I first logged it as being inside my own commit, which `git show --stat` disproved.
+
+1235 tests across 108 files, verify:fast green.
+
 ## Recently shipped (5 Oct 2026, latest - clear sample data deleted 74 real records, and a flag nothing read would not have stopped it)
 
 **A second, worse incident than the 1 Oct one. The owner renamed seed records in place, pressed "Clear sample data", and lost 74 of their own records** — 16 contacts, 18 encounters, 7 tests, 7 locations, 14 dose logs, 3 vaccinations, 3 symptom entries, 2 clinic visits, 2 medications, 1 episode, 1 measurement. Not one was demo data: the seed names are Alex/Jordan/Sam/Riley/Morgan, and the lost records were Sean Wilson, Daniel Philips, Pascal Ken, Patrick Clare and eleven others, with **zero overlap** across contacts, encounters, locations, tests and clinic visits.

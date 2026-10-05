@@ -44,7 +44,6 @@ function loadTabForRecordId() {
     // Return the FUNCTION, not the result of calling it. This is the whole
     // point: the real implementation is under test, so a later edit to
     // tabForRecordId changes what these assertions measure.
-    // eslint-disable-next-line no-new-func
     return new Function("return (" + src + ")")();
   }
   throw new Error("tabForRecordId not found in SHOS_MenstrualHealth_Prototype.jsx");

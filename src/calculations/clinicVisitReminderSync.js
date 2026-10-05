@@ -162,8 +162,24 @@ if (bridge && bridge.plugin.updateAppointment) {
   }
 }
 
-export async function updateClinicCardWidget(visit) {
-  try {
+/**
+ * ADDED 5 Oct 2026 (t059) - the pre-formatted one-line wording a Redacted Clinic
+ * Card widget shows, mirroring doxyPepRedactedLine().
+ *
+ * Deliberately says NOTHING identifying: no appointment title, no clinic, no date,
+ * no location. The test COUNT survives because the Redacted rule allows category
+ * presence plus a coarse count - "3 tests" names nobody - and because "is a clinic
+ * appointment coming at all" is the entire question a glance at this widget asks.
+ * A count of zero still reads as an answer rather than as a broken widget, which is
+ * what a bare "Clinic card" would have looked like.
+ */
+export function clinicCardRedactedLine(tests) {
+  const n = Number(tests);
+  if (!Number.isFinite(n) || n <= 0) return "Clinic card - nothing due";
+  return `Clinic card - ${n} test${n > 1 ? "s" : ""} booked`;
+}
+
+export async function updateClinicCardWidget(visit) {  try {
     // Self-sufficient, and NULL-SAFE - see updateAppointmentWidget above.
     //
     // FIXED 4 Oct 2026, and this was the cause of the launcher showing
@@ -208,7 +224,22 @@ export async function updateClinicCardWidget(visit) {
         // number worth having without handing over the rest.
         category: "Clinic card",
         count: tests,
-      });
+      },
+      // CHANGED 5 Oct 2026 (t059) - the fifth argument is the pre-formatted
+      // Redacted line. Supplied HERE rather than inside the payload because this
+      // file is the only place that knows what a Clinic Card widget means;
+      // widgetBridgeUpdate deliberately knows nothing about what any widget
+      // displays.
+      //
+      // It exists at all because filtering alone was not enough, and that is the
+      // lesson recorded from DoxyPEP: with only a filtered payload the provider
+      // fell back to its own placeholder. Safe, but a widget that says nothing
+      // about what it is for is worse than useless. A test COUNT is allowed under
+      // the Redacted rule - "3 tests" identifies nobody - and it is the one number
+      // worth having here, since "is a clinic visit coming" is the entire question
+      // a glance at this widget is asking.
+      clinicCardRedactedLine(tests)
+    );
     }
   } catch (e) {
     console.debug("ClinicCard widget update skipped:", e);

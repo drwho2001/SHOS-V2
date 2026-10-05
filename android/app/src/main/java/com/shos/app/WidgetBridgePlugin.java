@@ -187,15 +187,20 @@ public class WidgetBridgePlugin extends Plugin {
             return;
         }
         android.util.Log.i("WidgetBridge", "updateClinicCard ENTER isBlank=" + isBlank(call));
-        ClinicCardWidgetProvider.updateClinicCard(
-                getContext(),
-                opt(call, "title"),
-                opt(call, "date"),
-                opt(call, "location"),
-                opt(call, "tests"),
-                opt(call, "docType"),
-                opt(call, "clinicNum")
-        );
+    ClinicCardWidgetProvider.updateClinicCard(
+      getContext(),
+      opt(call, "title"),
+      opt(call, "date"),
+      opt(call, "location"),
+      opt(call, "tests"),
+      opt(call, "docType"),
+      opt(call, "clinicNum"),
+      // CHANGED 5 Oct 2026 (t059) - the pre-formatted Redacted line, or "" when
+      // the tier is not Redacted. Empty rather than absent so the provider's
+      // "is there a redacted line?" check needs no null case and a stale value
+      // from a previous update cannot survive a tier change back to full.
+      opt(call, "redactedText")
+    );
         call.resolve();
     }
 
