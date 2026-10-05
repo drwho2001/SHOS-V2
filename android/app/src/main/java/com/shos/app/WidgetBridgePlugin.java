@@ -186,6 +186,7 @@ public class WidgetBridgePlugin extends Plugin {
             call.resolve();
             return;
         }
+        android.util.Log.i("WidgetBridge", "updateClinicCard ENTER isBlank=" + isBlank(call));
         ClinicCardWidgetProvider.updateClinicCard(
                 getContext(),
                 opt(call, "title"),

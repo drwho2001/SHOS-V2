@@ -53,6 +53,10 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+        // ADDED 4 Oct 2026 - TEMPORARY DIAGNOSTIC. If this line never appears in
+        // logcat, the system is not delivering onUpdate at all and the problem is
+        // registration-side, not in this provider's rendering.
+        android.util.Log.i("ClinicCardWidget", "onUpdate FIRED, ids=" + appWidgetIds.length);
         for (int appWidgetId : appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId);
         }
@@ -67,6 +71,11 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
         return new RemoteViews(context.getPackageName(), R.layout.widget_unavailable);
     }
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+        // ADDED 4 Oct 2026 - TEMPORARY DIAGNOSTIC, remove once the "no widget
+        // write since 2 Oct" bug is found. The launcher shows "Can't load widget"
+        // precisely when this method never reaches its updateAppWidget call, so
+        // each step is logged to find where it stops.
+        android.util.Log.i("ClinicCardWidget", "updateAppWidget ENTER id=" + appWidgetId);
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -82,6 +91,7 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
             // widget. This pushes a layout containing NO user data, so the
             // privacy decision in WidgetPrefs is unchanged - nothing is written
             // in plaintext and nothing is disclosed to the launcher process.
+            android.util.Log.i("ClinicCardWidget", "prefs NULL -> pushing FALLBACK for id=" + appWidgetId);
             appWidgetManager.updateAppWidget(appWidgetId, unavailableViews(context));
             return;
         }
@@ -182,6 +192,7 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
             context, appWidgetId * 10 + 2, revealIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_clinic_reveal, revealPendingIntent);
 
+        android.util.Log.i("ClinicCardWidget", "pushing DATA views for id=" + appWidgetId);
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
@@ -202,6 +213,7 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
         // whatever Android last rendered and writes nothing new, which is the
         // correct trade: a stale widget is visible and fixable, a plaintext file
         // of sexual-health data is neither.
+        android.util.Log.i("ClinicCardWidget", "static updateClinicCard called, prefs=" + (prefs != null));
         if (prefs == null) return; // no instance in scope here; the per-instance
             // updateAppWidget() above is what pushes the fallback
         prefs.edit()
