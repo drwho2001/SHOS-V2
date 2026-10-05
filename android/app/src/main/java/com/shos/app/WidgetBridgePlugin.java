@@ -84,8 +84,12 @@ public class WidgetBridgePlugin extends Plugin {
                 // Deliberately not defaulted to "now": that would render a
                 // Chronometer counting up from zero, which looks like a live
                 // reading rather than the absence of one.
-                call.getLong("countdownAt", 0L)
-        );
+                call.getLong("countdownAt", 0L),
+      // CHANGED 5 Oct 2026 - the pre-formatted Redacted line, or "" when the
+      // tier is not Redacted. Empty rather than absent, so the provider needs no
+      // null case and a stale value cannot survive a change back to full.
+      opt(call, "redactedText")
+    );
         call.resolve();
     }
 
@@ -99,8 +103,12 @@ public class WidgetBridgePlugin extends Plugin {
         RefillWidgetProvider.updateRefill(
                 getContext(),
                 call.getInt("count", 0),
-                opt(call, "nextRefill")
-        );
+                opt(call, "nextRefill"),
+      // CHANGED 5 Oct 2026 - the pre-formatted Redacted line, or "" when the
+      // tier is not Redacted. Empty rather than absent, so the provider needs no
+      // null case and a stale value cannot survive a change back to full.
+      opt(call, "redactedText")
+    );
         call.resolve();
     }
 
@@ -114,8 +122,12 @@ public class WidgetBridgePlugin extends Plugin {
         AppointmentWidgetProvider.updateAppointment(
                 getContext(),
                 call.getInt("count", 0),
-                opt(call, "nextAppt")
-        );
+                opt(call, "nextAppt"),
+      // CHANGED 5 Oct 2026 - the pre-formatted Redacted line, or "" when the
+      // tier is not Redacted. Empty rather than absent, so the provider needs no
+      // null case and a stale value cannot survive a change back to full.
+      opt(call, "redactedText")
+    );
         call.resolve();
     }
 
@@ -129,8 +141,12 @@ public class WidgetBridgePlugin extends Plugin {
         TestWidgetProvider.updateTest(
                 getContext(),
                 opt(call, "lastTest"),
-                opt(call, "retestDue")
-        );
+                opt(call, "retestDue"),
+      // CHANGED 5 Oct 2026 - the pre-formatted Redacted line, or "" when the
+      // tier is not Redacted. Empty rather than absent, so the provider needs no
+      // null case and a stale value cannot survive a change back to full.
+      opt(call, "redactedText")
+    );
         call.resolve();
     }
 
@@ -166,8 +182,12 @@ public class WidgetBridgePlugin extends Plugin {
                 getContext(),
                 call.getInt("day", 0),
                 opt(call, "phase"),
-                opt(call, "nextPeriod")
-        );
+                opt(call, "nextPeriod"),
+      // CHANGED 5 Oct 2026 - the pre-formatted Redacted line, or "" when the
+      // tier is not Redacted. Empty rather than absent, so the provider needs no
+      // null case and a stale value cannot survive a change back to full.
+      opt(call, "redactedText")
+    );
         call.resolve();
     }
 

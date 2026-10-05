@@ -28,6 +28,7 @@ import { realTimestampFromStored } from "./dateInputHelpers";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { buildClinicVisitSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } from "./reminderSuppression";
 import { sendWidgetUpdate } from "./widgetBridgeUpdate";
+import { redactedWidgetLine } from "./widgetPrivacy";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -154,7 +155,8 @@ if (bridge && bridge.plugin.updateAppointment) {
           count,
           nextAppt,
           category: "Appointments",
-        });
+        },
+          appointmentRedactedLine(count));
     }
   } catch (e) {
     // Widget bridge not available (web) — ignore
@@ -305,4 +307,17 @@ export async function handleSnoozeClinicVisit() {
     iconColor: ACCENTS.healthcare,
   });
   return { minutes: 30 };
+}
+
+/**
+ * ADDED 5 Oct 2026 (t059 follow-on) - the Redacted line for the Appointments
+ * widget, the sibling of clinicCardRedactedLine below.
+ *
+ * ALLOWED_AT_REDACTED permits category + count. The appointment's own TITLE is
+ * dropped: titles are free text typed by the user and routinely contain the
+ * clinic's specialty, which identifies the visit far more than a count does.
+ */
+export function appointmentRedactedLine(count) {
+  const n = Number(count);
+  return redactedWidgetLine("Appointments", Number.isFinite(n) && n > 0 ? `${n} upcoming` : "none booked");
 }

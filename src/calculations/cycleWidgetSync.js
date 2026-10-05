@@ -33,6 +33,7 @@ import {
   getNextPeriodDayKey,
   formatDayKeyForDisplay,
 } from "./menstrualCalculations";
+import { redactedWidgetLine } from "./widgetPrivacy";
 
 // Copied from the other four sync files rather than shared. Each one has its own
 // copy of this, which is not ideal - it is why the thenable-proxy bug below had to
@@ -85,7 +86,8 @@ export async function updateCycleWidget() {
           nextPeriod: nextPeriod || null,
           category: "Tracking",
           state: phase,
-        });
+        },
+          cycleRedactedLine(phase));
       }
     }
   } catch (e) {
@@ -94,3 +96,15 @@ export async function updateCycleWidget() {
 }
 
 export default updateCycleWidget;
+
+/**
+ * ADDED 5 Oct 2026 (t059 follow-on) - the Redacted line for the Cycle widget.
+ *
+ * ALLOWED_AT_REDACTED permits category + state, so the line keeps the cycle PHASE
+ * and drops the day number, the next-period date and the length of the current
+ * cycle. The phase is the one coarse fact that still answers "is anything worth
+ * acting on"; the rest is a window into the user's cycle.
+ */
+export function cycleRedactedLine(phase) {
+  return redactedWidgetLine("Tracking", phase || "no data");
+}

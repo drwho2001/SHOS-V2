@@ -15,6 +15,11 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
     private static final String KEY_APPT_COUNT = "appt_count";
     private static final String KEY_NEXT_APPT = "next_appt";
 
+// CHANGED 5 Oct 2026 (t059 follow-on) - the pre-formatted one-line wording for a
+// Redacted widget, decided in JS. Distinct per provider because all seven share
+// ONE SharedPreferences file, so a shared key name would overwrite itself.
+private static final String KEY_REDACTED_TEXT = "redacted_text_appt";
+
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
@@ -54,6 +59,21 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.appointment_widget);
 
+            // CHANGED 5 Oct 2026 (t059 follow-on) - honour the Redacted tier.
+            //
+            // sendWidgetUpdate filters the payload, but filtering protects the PAYLOAD
+            // and only the provider decides what is RENDERED. The ids are named rather
+            // than discovered because RemoteViews is an IPC serialization stub and
+            // cannot iterate a view tree.
+            String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+            if (redactedText != null && !redactedText.isEmpty()) {
+                views.setTextViewText(R.id.widget_appt_title, redactedText);
+            views.setViewVisibility(R.id.widget_appt_count, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_next_appt, android.view.View.GONE);
+                appWidgetManager.updateAppWidget(appWidgetId, views);
+                return;
+            }
+
         if (apptCount > 0) {
             views.setTextViewText(R.id.widget_appt_title, "Appointments");
             views.setTextViewText(R.id.widget_appt_count, apptCount + " upcoming");
@@ -91,7 +111,8 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
-    public static void updateAppointment(Context context, int count, String nextAppt) {
+    public static void updateAppointment(Context context, int count, String nextAppt,
+                                         String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -104,6 +125,7 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
         prefs.edit()
             .putInt(KEY_APPT_COUNT, count)
             .putString(KEY_NEXT_APPT, nextAppt)
+            .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .apply();
 
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

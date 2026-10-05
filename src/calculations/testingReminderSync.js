@@ -30,6 +30,7 @@ import { ACCENTS } from "./designTokens";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { buildTestingSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } from "./reminderSuppression";
 import { sendWidgetUpdate } from "./widgetBridgeUpdate";
+import { redactedWidgetLine } from "./widgetPrivacy";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -188,14 +189,16 @@ export async function updateTestWidget() {
           retestDue,
           category: "Testing",
           state: lastTest ? "logged" : "none",
-        });
+        },
+          lastTestRedactedLine(lastTest));
       } else {
         await sendWidgetUpdate(bridge, "lastTest", "updateTest", {
           lastTest: "No tests logged",
           retestDue: "-",
           category: "Testing",
           state: "none",
-        });
+        },
+        lastTestRedactedLine(null));
       }
     }
   } catch (e) {
@@ -223,4 +226,16 @@ export async function handleSnoozeTesting() {
     iconColor: ACCENTS.healthcare,
   });
   return { minutes: 30 };
+}
+
+/**
+ * ADDED 5 Oct 2026 (t059 follow-on) - the Redacted line for the Last Test widget.
+ *
+ * ALLOWED_AT_REDACTED permits category + state for this widget, so the line says
+ * whether a test is on file and nothing else. The test's own NAME and both dates
+ * are dropped deliberately: a test date is a fact about when the user was sexually
+ * active, which is the most identifying thing this widget could show.
+ */
+export function lastTestRedactedLine(lastTest) {
+  return redactedWidgetLine("Testing", lastTest ? "test logged" : "none logged");
 }

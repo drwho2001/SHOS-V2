@@ -30,6 +30,14 @@ const ROOT = process.cwd();
 const WIDGET_DIR = path.join(ROOT, "android/app/src/main/java/com/shos/app/widget");
 const LAYOUT_DIR = path.join(ROOT, "android/app/src/main/res/layout");
 const read = (p) => readFileSync(p, "utf8");
+// The JS pushers, DISCOVERED rather than listed - so a pusher added later is
+// covered without this file being edited, and so removing a file cannot make a
+// check pass on an empty set. Module scope because callSites() needs it too, and a
+// per-test copy left callSites reading nothing.
+const CALC = path.join(ROOT, "src/calculations");
+const sources = readdirSync(CALC)
+  .filter((f) => f.endsWith(".js") && !f.endsWith(".test.js"))
+  .map((f) => ({ name: f, src: read(path.join(CALC, f)) }));
 
 /**
  * Replace comment contents with spaces, preserving every offset.
@@ -38,36 +46,111 @@ const read = (p) => readFileSync(p, "utf8");
  * and the non-vacuity case below is what proves this stripper is not simply
  * deleting the very text it is asked to find.
  */
-function stripComments(src) {
-  let out = "";
+/**
+ * Blank out every string literal and comment, preserving all offsets.
+ *
+ * A state machine rather than four regexes, and the reason is measured rather than
+ * stylistic: an apostrophe inside a COMMENT - and these files are full of prose
+ * containing "the owner's" and "widget's" - opens a string that never closes, so a
+ * `'(?:[^'\\]|\\.)*'` regex runs to the end of the file and deletes real code.
+ * That is how `nextDoseRedactedLine` came to look undeclared to a brace counter
+ * running on blanked text. Regexes for "a string literal" cannot tell a quote in
+ * code from a quote in a comment; a scanner can, because it tracks state.
+ *
+ * Template literals are blanked to their opening and closing backticks only, so
+ * the ${...} interpolations inside them survive as code - which is correct, since
+ * their braces are real braces.
+ */
+function blankNonCode(src) {
+  const out = src.split("");
+  const blank = (from, to) => {
+    for (let i = from; i < to && i < src.length; i++) if (src[i] !== "\n") out[i] = " ";
+  };
   let i = 0;
-  // String literals are preserved - a "//" inside one is not a comment - which
-  // also means quotes must be tracked or this strips half a Java call's
-  // arguments.
-  let inStr = false;
   while (i < src.length) {
     const two = src.slice(i, i + 2);
-    if (inStr) {
-      out += src[i];
-      if (src[i] === "\\") { out += src[i + 1] ?? ""; i += 2; continue; }
-      if (src[i] === '"') inStr = false;
-      i++;
+    if (two === "//") { while (i < src.length && src[i] !== "\n") { out[i] = " "; i++; } continue; }
+    if (two === "/*") { const e = src.indexOf("*/", i + 2); blank(i, e < 0 ? src.length : e + 2); i = e < 0 ? src.length : e + 2; continue; }
+    const c = src[i];
+    if (c === '"' || c === "'") {
+      let j = i + 1;
+      while (j < src.length && src[j] !== c) { if (src[j] === "\\") j++; j++; }
+      if (j >= src.length) { i++; continue; } // unterminated: not a literal
+      // The delimiters are KEPT and only the contents blanked. Blanking them too
+      // destroyed the very method-name and key strings these assertions locate -
+      // every `sendWidgetUpdate(bridge, "x"` became `sendWidgetUpdate(bridge, `, so
+      // the callers stopped being findable at all.
+      blank(i + 1, j);
+      i = j + 1;
       continue;
     }
-    if (src[i] === '"') { inStr = true; out += src[i]; i++; continue; }
-    if (two === "//") {
-      while (i < src.length && src[i] !== "\n") { out += " "; i++; }
-    } else if (two === "/*") {
-      while (i < src.length && src.slice(i, i + 2) !== "*/") {
-        out += src[i] === "\n" ? "\n" : " ";
-        i++;
+    if (c === "`") {
+      // Contents blanked, both delimiters KEPT, and the ${...} interpolations
+      // inside left as code - their braces are real braces and the brace counter
+      // must see them.
+      let j = i + 1;
+      let depth = 0;
+      while (j < src.length) {
+        if (src[j] === "\\") { blank(j, j + 2); j += 2; continue; }
+        if (src[j] === "$" && src[j + 1] === "{") { depth++; j += 2; continue; }
+        if (depth > 0) {
+          if (src[j] === "{") depth++;
+          else if (src[j] === "}") depth--;
+          j++;
+          continue;
+        }
+        if (src[j] === "`") break;
+        blank(j, j + 1);
+        j++;
       }
-      out += "  "; i += 2;
-    } else {
-      out += src[i]; i++;
+      i = j < src.length ? j + 1 : src.length;
+      continue;
     }
+    i++;
   }
-  return out;
+  return out.join("");
+}
+
+/**
+ * Replace comment and string CONTENTS with spaces, keeping offsets and keeping
+ * delimiters, so string LITERALS remain readable while a delimiter inside prose
+ * cannot be counted as code.
+ *
+ * Built on blankNonCode - one scanner, not two - so it cannot reintroduce the
+ * apostrophe-in-a-comment bug blankNonCode's own doc describes.
+ */
+function stripComments(src) {
+  const out = src.split("");
+  const blank = (from, to) => {
+    for (let i = from; i < to && i < src.length; i++) if (src[i] !== "\n") out[i] = " ";
+  };
+  let i = 0;
+  while (i < src.length) {
+    const two = src.slice(i, i + 2);
+    if (two === "//") { while (i < src.length && src[i] !== "\n") { out[i] = " "; i++; } continue; }
+    if (two === "/*") { const e = src.indexOf("*/", i + 2); blank(i, e < 0 ? src.length : e + 2); i = e < 0 ? src.length : e + 2; continue; }
+    // A string literal is SKIPPED WHOLE - contents and all - so a "//" inside one
+    // is not a comment and its text stays readable. Blanking string contents here
+    // was the bug: the assertions locate calls by the literal method name inside
+    // sendWidgetUpdate(bridge, "updateAppointment", ...), so a version that
+    // blanked string contents made every caller unfindable and the suite reported
+    // that a wired provider "has no pusher".
+    const c = src[i];
+    if (c === '"' || c === "'") {
+      let j = i + 1;
+      while (j < src.length && src[j] !== c) { if (src[j] === "\\") j++; j++; }
+      i = j < src.length ? j + 1 : src.length;
+      continue;
+    }
+    if (c === "`") {
+      let j = i + 1;
+      while (j < src.length && src[j] !== "`") { if (src[j] === "\\") j += 2; else j++; }
+      i = j < src.length ? j + 1 : src.length;
+      continue;
+    }
+    i++;
+  }
+  return out.join("");
 }
 
 /**
@@ -78,6 +161,25 @@ function stripComments(src) {
  * how the Clinic Card's sensitive row already works. A regex cannot express
  * "descendant of", and this repo has four audits that failed on exactly that.
  */
+/**
+ * Every offset at which `sendWidgetUpdate(bridge, "<widget>"` appears, across the
+ * concatenated pushers.
+ *
+ * Returned rather than searched inline so the loop above cannot accidentally
+ * check only the first one - which is the bug this exists to fix.
+ */
+function callSites(widget) {
+  const src = sources.map((s) => s.src).join("\n");
+  const code = stripComments(src);
+  const out = [];
+  for (let i = code.indexOf(`sendWidgetUpdate(bridge, "${widget}"`); i !== -1;
+       i = code.indexOf(`sendWidgetUpdate(bridge, "${widget}"`, i + 1)) {
+    out.push(i);
+  }
+  return out;
+}
+
+/** Does `id` sit inside one of `hiddenIds` in this layout? */
 function insideHidden(layoutXml, id, hiddenIds) {
   const stack = [];
   // Sequential scan over tags only; self-closing tags push and pop immediately,
@@ -261,11 +363,9 @@ describe("redacting the payload is not the same as redacting the screen", () => 
     // renamed on the native side fails here instead of silently going unchecked.
     // Every pusher under src/calculations, DISCOVERED - so a pusher added later is
     // covered rather than needing this file edited, and so a file removed or
-    // renamed cannot make the check vacuously pass on an empty set.
-    const CALC = path.join(ROOT, "src/calculations");
-    const sources = readdirSync(CALC)
-      .filter((f) => f.endsWith(".js") && !f.endsWith(".test.js"))
-      .map((f) => ({ name: f, src: read(path.join(CALC, f)) }));
+    // renamed cannot make the check vacuously pass on an empty set. The discovery
+    // itself is at module scope, above - a per-test copy here left callSites()
+    // reading nothing, which is exactly the kind of failure a guard must not have.
     expect(sources.length, "no pusher sources discovered").toBeGreaterThan(5);
 
     for (const f of WIRED) {
@@ -400,18 +500,203 @@ describe("redacting the payload is not the same as redacting the screen", () => 
       }
     }
 
-    // And the LINE itself, not merely that one exists. A redacted line that
-    // happened to interpolate a clinic name or an appointment title would satisfy
-    // every assertion above and disclose on the home screen - which is the whole
-    // thing the tier exists to prevent.
-    const clinic = read(path.join(ROOT, "src/calculations/clinicVisitReminderSync.js"));
-    const body = clinic.slice(clinic.indexOf("function clinicCardRedactedLine"));
-    const ret = body.slice(0, body.indexOf("}"));
-    for (const forbidden of ["title", "location", "clinicNumber", "date", "docType", "visitType"]) {
-      expect(ret, `clinicCardRedactedLine mentions "${forbidden}", which is identifying`).not.toMatch(
-        new RegExp(forbidden),
-      );
+    // And the LINES themselves, not merely that one exists. A redacted line that
+    // happened to interpolate a medication name, a clinic or an appointment title
+    // would satisfy every assertion above and disclose on the home screen - which
+    // is the whole thing the tier exists to prevent.
+    //
+    // EVERY builder, not just the Clinic Card's. Four of the five lines I added
+    // were unguarded: mutations that made the Cycle line leak the day number, the
+    // Refills line leak a medication name, and the Next Dose line leak the drug
+    // itself all stayed green.
+    //
+    // The forbidden list is derived from what each widget's payload actually
+    // carries, per provider, rather than one global list - a global list would
+    // either miss a field or forbid the count that is deliberately allowed.
+    const SENSITIVE = {
+      clinicCard: ["title", "location", "clinicNumber", "date", "docType", "visitType", "nhs"],
+      nextDose: ["medName", "med.name", "nextDoseTime", "name"],
+      refillDue: ["nextRefill", "medName", "name"],
+      lastTest: ["lastTest", "retestDue", "testName", "organism"],
+      nextAppointment: ["nextAppt", "title", "clinic"],
+      cycle: ["day", "nextPeriod", "cycleLength", "startDate"],
+    };
+    // The builder is found THROUGH ITS CALL SITE, not by matching the first
+    // function in the file. The earlier version took the first `*RedactedLine`
+    // in the concatenated source, so four of six widgets were checked against
+    // whichever function happened to be first - and a mutation to the Cycle or
+    // Next Dose line stayed green while the Clinic Card's was tested six times.
+    for (const [widget, fields] of Object.entries(SENSITIVE)) {
+      // EVERY CALL SITE, not the first. refillDue is pushed from two files -
+      // medicationReminderSync.js and refillReminderSync.js - each with its own copy
+      // of the line builder. Checking only the first left the second unchecked,
+      // and a mutation that hardcoded "PrEP due" into that second copy stayed
+      // green: the guard read the alphabetically-earlier file, mutated the other.
+      //
+      // Duplication between the two is deliberate and recorded in both files; what
+      // is not acceptable is a privacy guard that silently covers one of them.
+      for (const callAt of callSites(widget)) {
+      // The SAME concatenation callSites() searched, so every offset below is in
+      // this string's coordinates. Building it per iteration from the raw sources
+      // instead made the offsets point into different text.
+      const src = sources.map((s) => s.src).join("\n");
+      expect(callAt, `no sendWidgetUpdate call found for ${widget}`).toBeGreaterThan(-1);
+      // Balanced to the call's own closing paren, so the window cannot run into a
+      // later call - refillDue is pushed from two files, and a fixed window would
+      // read whichever came second.
+      const open = src.indexOf("(", src.indexOf("sendWidgetUpdate", callAt));
+      let callDepth = 0, close = -1;
+      for (let i = open; i < src.length; i++) {
+        if ("([{".includes(src[i])) callDepth++;
+        else if (")]}".includes(src[i])) { callDepth--; if (callDepth === 0) { close = i; break; } }
+      }
+      expect(close, `${widget}'s call could not be balanced`).toBeGreaterThan(-1);
+      const tail = src.slice(callAt, close);
+      const used = tail.match(/(\w+RedactedLine)\(/);
+      expect(
+        used,
+        `${widget}'s call site never passes a Redacted line builder, so it can only fall ` +
+          `back to its own placeholder`,
+      ).toBeTruthy();
+      
+      // To the end of the function: the first `}` at brace depth 0 after the
+      // opening one, so a nested block cannot truncate the slice.
+      // Braces are counted on a SKELETON built from the WHOLE source with literals and
+      // comments blanked, never on a slice of the raw text.
+      //
+      // Both earlier attempts got this wrong in the same way, and the second was
+      // worse: `body` extended to the end of the concatenated file, so a single
+      // unpaired quote in any LATER file made the blanking regex match across
+      // thousands of characters and delete braces that were never there. The
+      // function then appeared to close mid-identifier, which is why four of six
+      // builders reported no literals at all and every leak mutation stayed green.
+      //
+      // Order matters: blank once, globally, then count, then slice. Blanking
+      // after slicing cannot work, because the slice boundaries depend on the
+      // blanking.
+// EVERY DECLARATION of this builder, not the first.
+        //
+        // refillDue is pushed from two files, each carrying its own copy of
+        // refillRedactedLine, so "the first declaration" is whichever file sorts
+        // first - and the other copy is then never examined. A mutation that
+        // hardcoded "PrEP due" into that second copy left the suite green.
+        //
+        // The skeleton is built once for the whole source and the declarations
+        // found in it, so the offsets are consistent with the slices below.
+        const skeleton = blankNonCode(src);
+        const decls = [...skeleton.matchAll(new RegExp(`function ${used[1]}\\(`, "g"))].map((m) => m.index);
+        expect(decls.length, `${used[1]} is called but never declared`).toBeGreaterThan(0);
+        for (const defAt of decls) {
+        let braceDepth = 0, end = -1;
+        for (let i = skeleton.indexOf("{", defAt); i < skeleton.length; i++) {
+          if (skeleton[i] === "{") braceDepth++;
+          else if (skeleton[i] === "}") { braceDepth--; if (braceDepth === 0) { end = i + 1; break; } }
+        }
+        expect(end, `${used[1]}() has no closing brace`).toBeGreaterThan(defAt);
+        const body = src.slice(defAt, end);
+      const ret = body.slice(0, end);
+      // Every string LITERAL in the line must come from a closed vocabulary.
+      //
+      // The interpolation check below catches a field reaching the line; this
+      // catches the other half, which is a hardcoded value. Four mutations
+      // slipped through it - a line hardcoded to say "PrEP due", one saying
+      // "at Dean Street", and two naming a drug - because none of them
+      // interpolates anything at all. There is no field to catch, so the check has
+      // to be about the words themselves.
+      //
+      // Deliberately a closed list rather than a denylist of identifying words: a
+      // denylist has to anticipate every name, drug and street a developer might
+      // type, and fails quietly on the one they did not think of. A vocabulary of
+      // what a Redacted line is ALLOWED to say cannot be evaded that way, and a
+      // new safe phrase is a one-line change in a visible place.
+      // Every word in the line must come from a closed vocabulary. Word-by-word
+      // rather than whole-literal, because the shipped lines are assembled from
+      // fragments - "Clinic card - nothing due" is three safe words joined, and
+      // a whole-literal allowlist would have to enumerate every combination each
+      // builder happens to produce.
+      //
+      // Deliberately a closed list rather than a denylist of identifying words: a
+      // denylist has to anticipate every name, drug and street a developer might
+      // type, and fails quietly on the one they did not think of. What a Redacted
+      // line is ALLOWED to say cannot be evaded that way, and adding a safe word
+      // is a one-line change in a visible place.
+      //
+      // Prose inside the function is ignored - the explanation above it is where
+      // this list earns its keep, and it names things the line must never contain.
+      const code = ret.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\/\/[^\n]*/g, " ");
+      const ALLOWED_WORDS = new Set([
+        // Categories.
+        "testing", "medication", "refills", "appointments", "tracking",
+        "clinic", "card", "doxypep",
+        // Coarse states.
+        "logged", "none", "due", "all", "stocked", "booked", "nothing",
+        "upcoming", "active", "overdue", "no", "data",
+        // Used only as a unit noun in "N tests booked".
+        "test", "tests",
+      ]);
+      const COUNTDOWN = /^in \d+[hdm]( \d+[hm])?$/;
+      // TEMPLATE literals are scanned too, not only double-quoted ones. Almost every
+      // line is built with a template, so scanning only "..." checked nothing
+      // that ships - and six mutations that rewrote a template to leak a drug, a
+      // street or a date all passed.
+      const literals = [
+        ...[...code.matchAll(/"([^"\\]*)"/g)].map((m) => m[1]),
+        ...[...code.matchAll(/`([^`]*)`/g)].map((m) => m[1]),
+      ].filter((s) => s.trim().length >= 2);
+      for (const lit of literals) {
+        // Interpolations are removed first: the check is about the FIXED words,
+        // and `${...}` is covered by the field check below.
+        const fixed = lit.replace(/\$\{[^}]*\}/g, " ").trim();
+        // Interpolation bodies are replaced by a DIGIT, not by nothing. That matters:
+        // stripping them entirely turned "in ${hours}h ${mins % 60}m" into
+        // "in  h  m", which matches neither the countdown pattern nor the word
+        // list - so the one shipped countdown line failed its own guard.
+        const numeric = lit.replace(/\$\{[^}]*\}/g, "0");
+        const isCount = /^\d+$/.test(fixed);
+        const ok = !fixed || isCount || COUNTDOWN.test(numeric) ||
+          fixed.toLowerCase().split(/[\s-]+/).every((w) => ALLOWED_WORDS.has(w));
+        expect(
+          ok,
+          `${used[1]}() contains the literal "${lit}", whose words are not all on the ` +
+            `allowed list for a Redacted line. A hardcoded name, drug or address ` +
+            `discloses exactly as much as an interpolated one - a mutation that ` +
+            `hardcoded "PrEP due" or "at Dean Street" passed every other assertion here.`,
+        ).toBe(true);
+      }
+
+      // The field must not be INTERPOLATED into the line, not merely mentioned.
+      // Reading lastTest as a boolean - "test logged" or "none logged" - discloses
+      // nothing, and forbidding the bare name made the shipped code fail, which is
+      // the same class of error as flagging a provider's own masked "tap to
+      // reveal" branch as a disclosure. What must never happen is the VALUE
+      // reaching the home screen.
+      for (const field of fields) {
+        const f = field.replace(/\./g, "\\.");
+        expect(
+          ret,
+          `${used[1]}() interpolates "${field}" into the Redacted line, which is ` +
+            `health-identifying for ${widget}. A Redacted line may carry a category ` +
+            `and a coarse count only.`,
+        ).not.toMatch(new RegExp(`\\$\\{\\s*[^}]*\\b${f}\\b`));
+        // ...and not concatenated into a string either, which is the same
+        // disclosure written differently.
+        expect(
+          ret,
+          `${used[1]}() concatenates "${field}" into the Redacted line.`,
+        ).not.toMatch(new RegExp(`["'\`][^"'\`]*\\+\\s*\\b${f}\\b`));
+      }
+        }
+      }
     }
+
+    // And the keys must be DISTINCT, because all seven providers share ONE
+    // SharedPreferences file: a shared key name means each provider silently
+    // overwrites the previous one's line. Asserting the key exists - which the
+    // tests above do - says nothing about whether two providers collided.
+    const keys = WIRED.map((f) =>
+      (read(path.join(WIDGET_DIR, f)).match(/KEY_REDACTED_TEXT\s*=\s*"([^"]+)"/) || [])[1],
+    );
+    expect(new Set(keys).size, `redacted-text keys collide: ${keys.join(", ")}`).toBe(keys.length);
   });
 });
 
@@ -431,13 +716,16 @@ describe("inventory of what is not wired yet", () => {
     // is actually worth keeping is "the set only ever SHRINKS" - wired providers
     // are never un-wired - so that is asserted directly instead, by naming the
     // providers already done.
+    // All seven are wired as of 5 Oct 2026, so this is now an assertion rather
+    // than a description - which is the only state worth asserting. The "either 0
+    // or N" form it replaces was satisfied by a coincidence: it passed on any
+    // unwired count of 6, and would have failed on 5 the moment Clinic Card was
+    // correctly wired. A guard that demands a stale number reads like coverage
+    // while measuring nothing.
     expect(
-      NOT_WIRED.length === 0 || NOT_WIRED.length === 5,
-      `expected either 0 or 5 unwired providers, found ${NOT_WIRED.length}: ${NOT_WIRED.join(", ")}`,
-    ).toBe(true);
-    if (NOT_WIRED.length) {
-      console.log(`  [widget-redacted] not yet wired: ${NOT_WIRED.join(", ").replace(/\.java/g, "")}`);
-    }
+      NOT_WIRED,
+      `every data widget must honour its Redacted tier. Still unwired: ${NOT_WIRED.join(", ")}`,
+    ).toEqual([]);
   });
 
   it("a provider already wired is never silently unwired", () => {
@@ -447,7 +735,12 @@ describe("inventory of what is not wired yet", () => {
     // the tests below only check providers that ARE wired, so they would simply
     // stop being checked. Named rather than discovered, so the removal of a name
     // from this list is itself the reviewable change.
-    for (const f of ["DoxyPEPWidgetProvider.java", "ClinicCardWidgetProvider.java"]) {
+    for (const f of [
+      "DoxyPEPWidgetProvider.java", "ClinicCardWidgetProvider.java",
+      "TestWidgetProvider.java", "RefillWidgetProvider.java",
+      "AppointmentWidgetProvider.java", "NextDoseWidgetProvider.java",
+      "CycleWidgetProvider.java",
+    ]) {
       expect(WIRED, `${f} was wired and is no longer - that is a privacy regression`).toContain(f);
     }
   });
@@ -517,8 +810,19 @@ describe("inventory of what is not wired yet", () => {
       // the shipped code because the branch pushes and returns immediately - there
       // is no intervening push to bound by - so the window ran to the end of the
       // method and found a later return.
-      const closeAt = dataBranch.indexOf("\n        }", pushAt);
-      expect(closeAt, `${f} redacted branch's closing brace was not found`).toBeGreaterThan(-1);
+      // By brace depth, not by indentation. The shipped code is mixed-line-ending and
+      // its five providers nest at different depths, so a literal "\n        }"
+      // anchor matched nothing in four of them and the assertion silently became
+      // "is there a return somewhere later in the method" - which a mutation that
+      // DELETED this very return passed, since the method still ends with one.
+      const branchOpen = dataBranch.lastIndexOf("{", pushAt);
+      expect(branchOpen, `${f} redacted branch's opening brace was not found`).toBeGreaterThan(-1);
+      let bd2 = 0, closeAt = -1;
+      for (let i = branchOpen; i < dataBranch.length; i++) {
+        if (dataBranch[i] === "{") bd2++;
+        else if (dataBranch[i] === "}") { bd2--; if (bd2 === 0) { closeAt = i; break; } }
+      }
+      expect(closeAt, `${f} redacted branch has no closing brace`).toBeGreaterThan(branchOpen);
       const body = dataBranch.slice(pushAt, closeAt);
       expect(
         /\breturn\b/.test(body),

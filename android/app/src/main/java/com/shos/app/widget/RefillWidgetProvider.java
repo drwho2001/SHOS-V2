@@ -15,6 +15,11 @@ public class RefillWidgetProvider extends AppWidgetProvider {
     private static final String KEY_REFILL_COUNT = "refill_count";
     private static final String KEY_NEXT_REFILL = "next_refill_med";
 
+// CHANGED 5 Oct 2026 (t059 follow-on) - the pre-formatted one-line wording for a
+// Redacted widget, decided in JS. Distinct per provider because all seven share
+// ONE SharedPreferences file, so a shared key name would overwrite itself.
+private static final String KEY_REDACTED_TEXT = "redacted_text_refill";
+
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
@@ -53,6 +58,21 @@ public class RefillWidgetProvider extends AppWidgetProvider {
         String nextRefill = prefs.getString(KEY_NEXT_REFILL, "No refills due");
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.refill_widget);
+
+            // CHANGED 5 Oct 2026 (t059 follow-on) - honour the Redacted tier.
+            //
+            // sendWidgetUpdate filters the payload, but filtering protects the PAYLOAD
+            // and only the provider decides what is RENDERED. The ids are named rather
+            // than discovered because RemoteViews is an IPC serialization stub and
+            // cannot iterate a view tree.
+            String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+            if (redactedText != null && !redactedText.isEmpty()) {
+                views.setTextViewText(R.id.widget_refill_title, redactedText);
+            views.setViewVisibility(R.id.widget_refill_count, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
+                appWidgetManager.updateAppWidget(appWidgetId, views);
+                return;
+            }
         
         if (refillCount > 0) {
             views.setTextViewText(R.id.widget_refill_title, "Refills Due");
@@ -98,7 +118,8 @@ public class RefillWidgetProvider extends AppWidgetProvider {
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
-    public static void updateRefill(Context context, int count, String nextRefillMed) {
+    public static void updateRefill(Context context, int count, String nextRefillMed,
+                                     String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -111,6 +132,7 @@ public class RefillWidgetProvider extends AppWidgetProvider {
         prefs.edit()
             .putInt(KEY_REFILL_COUNT, count)
             .putString(KEY_NEXT_REFILL, nextRefillMed)
+            .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .apply();
 
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

@@ -32,6 +32,7 @@ import { scheduleNotification, cancelNotification, registerNotificationActionTyp
 import { ACCENTS } from "./designTokens";
 import { nowAsStoredDateTime } from "./dateInputHelpers";
 import { sendWidgetUpdate } from "./widgetBridgeUpdate";
+import { redactedWidgetLine } from "./widgetPrivacy";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -221,7 +222,8 @@ export async function updateRefillWidget() {
         // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate so the stored
         // tier actually applies. Before this, the "Redacted" option in Settings
         // changed nothing at all for this widget.
-        await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill });
+        await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill },
+          refillRedactedLine(count));
         }
 
     // The next-dose widget had a provider, a layout, a manifest receiver and a
@@ -258,7 +260,8 @@ export async function updateRefillWidget() {
           // owner's decision. It discloses LESS than nextDoseTime: "in 4h" is
           // true only right now and reveals no routine, where "20:00" does.
           countdownAt: nextUnlock || null,
-        });
+        },
+          nextDoseRedactedLine(nextUnlock));
       }
   } catch (e) {
     // CHANGED 30 Sep 2026 (audit) — this catch is the reason the bug above was
@@ -339,4 +342,39 @@ export async function handleSnooze() {
       iconColor: ACCENTS.medication,
   });
   return { minutes: prefs.snoozeMinutes };
+}
+
+/**
+ * ADDED 5 Oct 2026 (t059 follow-on) - the Redacted line for the Next Dose widget.
+ *
+ * The medication NAME is the most disclosing field on any of the ten widgets, and
+ * this widget DEFAULTS to Full precisely because the owner chose to see it. At a
+ * Redacted tier the name goes and the COUNTDOWN stays: per ALLOWED_AT_REDACTED,
+ * countdownAt is allowed, because elapsed time discloses strictly less than the
+ * wall-clock time it replaces.
+ */
+export function nextDoseRedactedLine(countdownAt) {
+  const ms = Number(countdownAt);
+  if (!Number.isFinite(ms) || ms <= 0) return redactedWidgetLine("Medication", "none due");
+  const mins = Math.floor(ms / 60000);
+  const hours = Math.floor(mins / 60);
+  return redactedWidgetLine("Medication", hours > 0 ? `in ${hours}h ${mins % 60}m` : `in ${mins}m`);
+}
+
+/**
+ * ADDED 5 Oct 2026 (t059 follow-on) - the Redacted line for the Refills widget.
+ *
+ * Lives HERE rather than in refillReminderSync.js because this is the file that
+ * actually pushes it: one pusher sends BOTH refillDue and nextDose, so the call
+ * was in this file while the builder had been written beside the other reminder
+ * logic. Same shape as updateClinicCardWidget's own note about deriving values at
+ * the point of use.
+ *
+ * ALLOWED_AT_REDACTED permits category + count, so the line carries how many
+ * medications are low and drops the medication NAME - which is the field that
+ * discloses, since a named medication on a home screen states what the user takes.
+ */
+export function refillRedactedLine(count) {
+  const n = Number(count);
+  return redactedWidgetLine("Refills", Number.isFinite(n) && n > 0 ? `${n} due` : "all stocked");
 }

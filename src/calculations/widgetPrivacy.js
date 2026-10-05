@@ -193,3 +193,20 @@ export function fieldAllowed(widgetKey, fieldName, tier) {
   if (!allowed) return false;
   return allowed.includes(fieldName);
 }
+
+/**
+ * Compose a Redacted widget line from a category and a coarse detail.
+ *
+ * ADDED 5 Oct 2026 (t059 follow-on). Shared because it is pure formatting and
+ * genuinely identical across five callers - unlike the privacy DECISION, which
+ * stays with each widget, because only that file knows what its widget means.
+ *
+ * Says nothing identifying by construction: both inputs are categories or counts,
+ * which the Redacted rule allows, and neither is a name, date, location or type.
+ * A count of zero is rendered rather than dropped, so an empty line never reads as
+ * a broken widget.
+ */
+export function redactedWidgetLine(category, detail) {
+  const d = detail === null || detail === undefined ? "" : String(detail).trim();
+  return d ? `${category} - ${d}` : category;
+}

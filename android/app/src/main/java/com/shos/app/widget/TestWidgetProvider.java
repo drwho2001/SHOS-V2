@@ -15,6 +15,11 @@ public class TestWidgetProvider extends AppWidgetProvider {
     private static final String KEY_LAST_TEST = "last_test";
     private static final String KEY_RETEST_DUE = "retest_due";
 
+// CHANGED 5 Oct 2026 (t059 follow-on) - the pre-formatted one-line wording for a
+// Redacted widget, decided in JS. Distinct per provider because all seven share
+// ONE SharedPreferences file, so a shared key name would overwrite itself.
+private static final String KEY_REDACTED_TEXT = "redacted_text_test";
+
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
@@ -54,6 +59,21 @@ public class TestWidgetProvider extends AppWidgetProvider {
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.test_widget);
 
+            // CHANGED 5 Oct 2026 (t059 follow-on) - honour the Redacted tier.
+            //
+            // sendWidgetUpdate filters the payload, but filtering protects the PAYLOAD
+            // and only the provider decides what is RENDERED. The ids are named rather
+            // than discovered because RemoteViews is an IPC serialization stub and
+            // cannot iterate a view tree.
+            String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+            if (redactedText != null && !redactedText.isEmpty()) {
+                views.setTextViewText(R.id.widget_test_title, redactedText);
+            views.setViewVisibility(R.id.widget_last_test, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
+                appWidgetManager.updateAppWidget(appWidgetId, views);
+                return;
+            }
+
         views.setTextViewText(R.id.widget_test_title, "Last Test");
         views.setTextViewText(R.id.widget_last_test, lastTest);
         views.setTextViewText(R.id.widget_retest_due, "Retest due: " + retestDue);
@@ -85,7 +105,8 @@ public class TestWidgetProvider extends AppWidgetProvider {
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
-    public static void updateTest(Context context, String lastTest, String retestDue) {
+    public static void updateTest(Context context, String lastTest, String retestDue,
+                                   String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -98,6 +119,7 @@ public class TestWidgetProvider extends AppWidgetProvider {
         prefs.edit()
             .putString(KEY_LAST_TEST, lastTest)
             .putString(KEY_RETEST_DUE, retestDue)
+            .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .apply();
 
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

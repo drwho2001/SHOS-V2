@@ -29,6 +29,7 @@ import { AppPreferencesRepository } from "../repositories/appPreferencesReposito
 // dynamic one.
 import { buildRefillSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } from "./reminderSuppression";
 import { sendWidgetUpdate } from "./widgetBridgeUpdate";
+import { redactedWidgetLine } from "./widgetPrivacy";
 
 let WidgetBridge = null;
 async function getWidgetBridge() {
@@ -195,7 +196,8 @@ export async function updateRefillWidget() {
       // the same bridge method; both are wired to the shared helper so neither
       // can drift from the tier rule, but the duplication itself is still worth
       // collapsing. Left as-is rather than refactored mid-change.
-      await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill, category: "Refills" });
+      await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill, category: "Refills" },
+        refillRedactedLine(count));
     }
   } catch (e) {
     // Widget bridge not available (web) — ignore
@@ -263,4 +265,21 @@ export async function handleSnoozeRefill(minutes = 30, ids = null) {
     iconColor: ACCENTS.medication,
   });
   return { minutes };
+}
+
+/**
+ * ADDED 5 Oct 2026 (t059 follow-on) - the Redacted line for the Refills widget.
+ *
+ * BOTH this file and medicationReminderSync.js push refillDue, so the builder
+ * exists in both rather than being imported across a pusher boundary that exists
+ * only because syncAllWidgets lists them as one entry. Deliberate duplication,
+ * recorded here rather than collapsed mid-change.
+ *
+ * ALLOWED_AT_REDACTED permits category + count, so the line carries how many
+ * medications are low and drops the medication NAME - the field that discloses,
+ * since a named medication on a home screen states what the user takes.
+ */
+export function refillRedactedLine(count) {
+  const n = Number(count);
+  return redactedWidgetLine("Refills", Number.isFinite(n) && n > 0 ? `${n} due` : "all stocked");
 }
