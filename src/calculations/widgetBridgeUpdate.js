@@ -69,7 +69,24 @@ async function loadStoredPrivacy() {
  * @returns true if the update was sent, false if there was no bridge
  */
 export async function sendWidgetUpdate(bridge, widgetKey, method, payload, redactedText) {
-  if (!bridge || typeof bridge[method] !== "function") return false;
+  // FIXED 5 Oct 2026 - THE WHOLE WIDGET FEATURE WAS DEAD HERE, SILENTLY.
+  //
+  // Every call site passes the WRAPPER that getWidgetBridge() returns:
+  //     { plugin: WidgetBridge }
+  // and every plugin method therefore lives on `bridge.plugin`, not on `bridge`.
+  // The guard below indexed the wrapper directly:
+  //     if (!bridge || typeof bridge[method] !== "function") return false;
+  // which is ALWAYS true for a wrapped bridge, so this function returned false
+  // for every widget, forever, and nothing was ever written to widget storage.
+  //
+  // Measured on a real device: the WidgetBridge plugin registers, every
+  // provider's own onUpdate fires and pushes perfectly - built from preferences
+  // frozen on 2026-10-02, because nothing had written to them since.
+  //
+  // Unwrap to the plugin first, and tolerate a bare plugin too so this helper
+  // cannot be broken a second time by a different caller shape.
+  const plugin = bridge && typeof bridge === "object" && bridge.plugin ? bridge.plugin : bridge;
+  if (!plugin || typeof plugin[method] !== "function") return false;
 
   if (!isDataWidget(widgetKey)) {
     // Not a data widget, so there is no tier to apply. Only reachable by a
@@ -84,7 +101,7 @@ export async function sendWidgetUpdate(bridge, widgetKey, method, payload, redac
     // Deliberately sends nothing but the tier. Not "send the fields and let the
     // provider hide them": a value that crosses the bridge is a value in widget
     // storage, and the point of Off is that it is not there.
-    await bridge[method]({ tier: "off" });
+    await plugin[method]({ tier: "off" });
     return true;
   }
 
@@ -122,6 +139,6 @@ export async function sendWidgetUpdate(bridge, widgetKey, method, payload, redac
     allowed.redactedText = redactedText;
   }
 
-  await bridge[method]({ ...allowed, tier });
+  await plugin[method]({ ...allowed, tier });
   return true;
 }

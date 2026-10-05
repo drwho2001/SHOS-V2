@@ -17,10 +17,21 @@ import { AppPreferencesRepository } from "../repositories/appPreferencesReposito
 import { sendWidgetUpdate } from "./widgetBridgeUpdate.js";
 
 /** A bridge that records exactly what each method was handed. */
-function fakeBridge(method) {
-  const calls = [];
-  return { calls, [method]: (payload) => { calls.push(payload); return Promise.resolve(); } };
-}
+// FIXED 5 Oct 2026 - this fake used to return a BARE plugin
+  // ({ calls, [method]: fn }), which is the shape nothing in production ever
+  // passes. Every real call site passes the WRAPPER that getWidgetBridge()
+  // returns: { plugin: WidgetBridge }. sendWidgetUpdate indexed the wrapper
+  // directly, so it returned false for every widget, forever - and every test
+  // here still passed, because they were all exercising a shape that no caller
+  // uses. That is the "wiring shipped but nothing calls it" class this repo has
+  // recorded repeatedly, wearing a very convincing disguise: a green suite.
+  //
+  // So the fake now returns the PRODUCTION shape. `calls` hangs off the plugin,
+  // exactly as a real Capacitor proxy would carry the methods there.
+  function fakeBridge(method) {
+    const plugin = { calls: [], [method]: (payload) => { plugin.calls.push(payload); return Promise.resolve(); } };
+    return { plugin };
+  }
 
 const FULL = { medName: "Testosterone", nextDoseTime: "20:00" };
 
@@ -36,7 +47,7 @@ describe("the tier is applied at the write boundary", () => {
     AppPreferencesRepository.getPreferences.mockResolvedValue({ widgetPrivacy: { nextDose: "full" } });
     const bridge = fakeBridge("updateNextDose");
     await sendWidgetUpdate(bridge, "nextDose", "updateNextDose", FULL);
-    expect(bridge.calls[0]).toEqual({ medName: "Testosterone", nextDoseTime: "20:00", tier: "full" });
+    expect(bridge.plugin.calls[0]).toEqual({ medName: "Testosterone", nextDoseTime: "20:00", tier: "full" });
   });
 
   it("redacted drops the identifying fields and keeps the category", async () => {
@@ -44,9 +55,9 @@ describe("the tier is applied at the write boundary", () => {
     const bridge = fakeBridge("updateNextDose");
     await sendWidgetUpdate(bridge, "nextDose", "updateNextDose", { ...FULL, category: "Medication" });
     // The medication name and the time are the entire disclosure.
-    expect(bridge.calls[0].medName).toBeUndefined();
-    expect(bridge.calls[0].nextDoseTime).toBeUndefined();
-    expect(bridge.calls[0].category).toBe("Medication");
+    expect(bridge.plugin.calls[0].medName).toBeUndefined();
+    expect(bridge.plugin.calls[0].nextDoseTime).toBeUndefined();
+    expect(bridge.plugin.calls[0].category).toBe("Medication");
   });
 
   it("off sends NOTHING but the tier", async () => {
@@ -55,7 +66,7 @@ describe("the tier is applied at the write boundary", () => {
     await sendWidgetUpdate(bridge, "nextDose", "updateNextDose", FULL);
     // Not "send it and let the provider hide it" - a value that crosses the
     // bridge is a value in widget storage, and Off means it is not there.
-    expect(bridge.calls[0]).toEqual({ tier: "off" });
+    expect(bridge.plugin.calls[0]).toEqual({ tier: "off" });
   });
 
   it("an UNREADABLE stored value discloses nothing", async () => {
@@ -64,7 +75,7 @@ describe("the tier is applied at the write boundary", () => {
     AppPreferencesRepository.getPreferences.mockResolvedValue({ widgetPrivacy: { nextDose: "detailed" } });
     const bridge = fakeBridge("updateNextDose");
     await sendWidgetUpdate(bridge, "nextDose", "updateNextDose", FULL);
-    expect(bridge.calls[0]).toEqual({ tier: "off" });
+    expect(bridge.plugin.calls[0]).toEqual({ tier: "off" });
   });
 
   it("never configured uses the per-widget default, so a first run is not destructive", async () => {
@@ -73,7 +84,7 @@ describe("the tier is applied at the write boundary", () => {
     await sendWidgetUpdate(bridge, "nextDose", "updateNextDose", FULL);
     // nextDose defaults to full; a widget that silently went blank on upgrade
     // because the feature is new would be a hostile surprise.
-    expect(bridge.calls[0]).toEqual({ ...FULL, tier: "full" });
+    expect(bridge.plugin.calls[0]).toEqual({ ...FULL, tier: "full" });
   });
 
   it("an unreadable preference file is not a reason to disclose", async () => {
@@ -82,7 +93,7 @@ describe("the tier is applied at the write boundary", () => {
     await sendWidgetUpdate(bridge, "nextDose", "updateNextDose", FULL);
     // Resolves to the safe per-widget default rather than throwing, because a
     // widget must not stop updating just because storage hiccuped.
-    expect(bridge.calls[0].medName).toBe("Testosterone");
+    expect(bridge.plugin.calls[0].medName).toBe("Testosterone");
   });
 
   it("warns when a field is dropped, so a new field cannot be added silently", async () => {
@@ -99,7 +110,7 @@ describe("the tier is applied at the write boundary", () => {
     // "nextDosee", ...) would filter against no table and send everything.
     const bridge = fakeBridge("updateNextDose");
     await expect(sendWidgetUpdate(bridge, "nextDosee", "updateNextDose", FULL)).rejects.toThrow(/not a data widget/);
-    expect(bridge.calls).toHaveLength(0);
+    expect(bridge.plugin.calls).toHaveLength(0);
   });
 
   it("no bridge means no send, and that is not an error", async () => {
@@ -122,21 +133,21 @@ describe("the pre-formatted redacted line", () => {
     AppPreferencesRepository.getPreferences.mockResolvedValue({ widgetPrivacy: { nextDose: "redacted" } });
     const redacted = fakeBridge("updateNextDose");
     await sendWidgetUpdate(redacted, "nextDose", "updateNextDose", FULL, "Medication - due now");
-    expect(redacted.calls[0].redactedText).toBe("Medication - due now");
+    expect(redacted.plugin.calls[0].redactedText).toBe("Medication - due now");
 
     AppPreferencesRepository.getPreferences.mockResolvedValue({ widgetPrivacy: { nextDose: "full" } });
     const full = fakeBridge("updateNextDose");
     await sendWidgetUpdate(full, "nextDose", "updateNextDose", FULL, "Medication - due now");
     // At full the real fields are used; sending the line too would leave a
     // provider unable to tell which tier rendered it.
-    expect(full.calls[0].redactedText).toBeUndefined();
+    expect(full.plugin.calls[0].redactedText).toBeUndefined();
 
     AppPreferencesRepository.getPreferences.mockResolvedValue({ widgetPrivacy: { nextDose: "off" } });
     const off = fakeBridge("updateNextDose");
     await sendWidgetUpdate(off, "nextDose", "updateNextDose", FULL, "Medication - due now");
     // Off sends nothing but the tier. An empty string here would still be a
     // value in widget storage.
-    expect(off.calls[0]).toEqual({ tier: "off" });
+    expect(off.plugin.calls[0]).toEqual({ tier: "off" });
   });
 });
 

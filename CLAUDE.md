@@ -886,6 +886,24 @@ That leaves the failure inside the static bridge method, after `WidgetPrefs.get(
 
 **Two tooling findings that cost real time here, so nobody re-learns them.** This WebView's CDP **does not honour `awaitPromise`** - `Runtime.evaluate` with it simply never returns, so an async probe has to stash its result on `window` and be polled with a second synchronous evaluate. And a **backgrounded WebView throttles timers** hard enough that a `setTimeout(r, 12000)` race inside the app ran for 18+ seconds without firing, which reads exactly like a hung bridge call. Both produced confident false conclusions before being caught; bring the app to the foreground before concluding anything from a timer.
 
+## Recently shipped (5 Oct 2026, later - THE ENTIRE WIDGET FEATURE WAS DEAD AT ONE LINE, AND 14 GREEN TESTS NEVER NOTICED)
+
+**`sendWidgetUpdate()` returned `false` for every widget, forever, and nothing was ever written to widget storage.** The whole feature - ten providers, a bridge, a privacy-tier system, a settings screen - has been inert since it was written.
+
+```js
+if (!bridge || typeof bridge[method] !== "function") return false;
+```
+
+Every call site passes the **wrapper** that `getWidgetBridge()` returns: `{ plugin: WidgetBridge }`. The methods therefore live on `bridge.plugin`, not on `bridge`. Indexing the wrapper directly is always `undefined`, so the guard always fired and the function always returned early. No throw, no log, no warning.
+
+**How it was finally found, since eleven days of device testing had missed it.** By instrumenting the native side and looking for the ABSENCE of a line, which is the part worth remembering. The log showed `WidgetPrefs: store OPENED`, `onUpdate FIRED`, `updateAppWidget ENTER`, `pushing DATA views` - the providers working perfectly - and no `WidgetBridge: updateClinicCard ENTER`. Plugin registers, providers push, **JS never calls the bridge.** Two earlier hypotheses were both wrong and both were ruled out by measurement before acting: `WidgetPrefs.get()` returning null (no - it logs OPENED every time), and an `Error` escaping the `Exception` catch (no - and that widening has been reverted).
+
+**And the test suite was not merely blind to this, it was actively concealing it.** `widgetBridgeUpdate.test.js`'s `fakeBridge` returned a **bare plugin** shape - `{ calls, [method]: fn }` - which is the shape *nothing in production ever passes*. So 14 tests exercised a wrapper-unwrapping function against an unwrapped fake, all green, while every real caller silently got nothing. **A suite that proves a function works against a shape no caller uses is worse than no suite**, because it converts an unknown into a false assurance. The fake now returns the production `{ plugin }` shape, which is what made this bug visible at all - the moment I changed it, six tests went red naming the exact line.
+
+Two fixes, and the second is the one that matters: unwrap to `plugin` first in `sendWidgetUpdate` (tolerating a bare plugin too, so a different caller shape cannot break it again), **and** correct the fake so the class cannot recur.
+
+Mutation-verified: reverting to indexing the wrapper fails 9 of the 14 tests. 1171 tests across 105 files, verify:fast green.
+
 ## Recently shipped (5 Oct 2026, latest - widgets showed 3-day-old data, and the cause was a guard that swallowed the failure at an invisible log level)
 
 **The Clinic Card widget showed "Can't load widget" and every other widget showed data frozen at 2 Oct. Root cause found by instrumentation, not inference, and it was a call site in the wrong place.**
