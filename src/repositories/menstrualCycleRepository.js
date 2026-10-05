@@ -51,9 +51,9 @@ const seedStart1 = daysAgo(58);
 const seedStart2 = addDays(seedStart1, 28);
 const seedStart3 = addDays(seedStart2, 29);
 let seedCycles = [
-  { ...DEFAULT_CYCLE, id: "cycle_001", startDate: seedStart1, endDate: addDays(seedStart1, 5), flow: "Medium", symptomIds: [], notes: "" },
-  { ...DEFAULT_CYCLE, id: "cycle_002", startDate: seedStart2, endDate: addDays(seedStart2, 4), flow: "Heavy", symptomIds: [], notes: "" },
-  { ...DEFAULT_CYCLE, id: "cycle_003", startDate: seedStart3, endDate: null, flow: "Light", symptomIds: [], notes: "Ongoing." },
+  { ...DEFAULT_CYCLE, id: "seed_cycle_9001", startDate: seedStart1, endDate: addDays(seedStart1, 5), flow: "Medium", symptomIds: [], notes: "" },
+  { ...DEFAULT_CYCLE, id: "seed_cycle_9002", startDate: seedStart2, endDate: addDays(seedStart2, 4), flow: "Heavy", symptomIds: [], notes: "" },
+  { ...DEFAULT_CYCLE, id: "seed_cycle_9003", startDate: seedStart3, endDate: null, flow: "Light", symptomIds: [], notes: "Ongoing." },
 ];
 
 // CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
@@ -143,7 +143,7 @@ export const MenstrualCycleRepository = {
     let updated = null;
     cycles = cycles.map((c) => {
       if (c.id !== id) return c;
-      updated = { ...c, ...changes, updatedAt: new Date().toISOString() };
+      updated = { ...c, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
       return updated;
     });
     await persist();

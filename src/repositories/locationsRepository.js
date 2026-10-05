@@ -55,19 +55,19 @@ export const DEFAULT_LOCATION = {
 // both grouped under the same type) — left unset here so the field
 // doesn't look like a redundant echo of the name on a fresh install.
 let seedLocations = [
-  { ...DEFAULT_LOCATION, id: "location_001", name: "Home", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
-  { ...DEFAULT_LOCATION, id: "location_002", name: "His place", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
-  { ...DEFAULT_LOCATION, id: "location_003", name: "Sauna", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
-  { ...DEFAULT_LOCATION, id: "location_004", name: "Public", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
-  { ...DEFAULT_LOCATION, id: "location_005", name: "Car", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
+  { ...DEFAULT_LOCATION, id: "seed_location_9001", name: "Home", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
+  { ...DEFAULT_LOCATION, id: "seed_location_9002", name: "His place", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
+  { ...DEFAULT_LOCATION, id: "seed_location_9003", name: "Sauna", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
+  { ...DEFAULT_LOCATION, id: "seed_location_9004", name: "Public", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
+  { ...DEFAULT_LOCATION, id: "seed_location_9005", name: "Car", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
   // ADDED 9 Sep 2026 — real ask: none of the 5 above ever populate
   // type/address/relatedContactId at all — the comment above explains
   // WHY type was deliberately left off (it only earns its keep once
   // there's a second location of the same kind) — so this adds exactly
   // that second same-kind location, plus the two other fields nothing
   // else exercises.
-  { ...DEFAULT_LOCATION, id: "location_006", name: "Steamworks", type: "🛀 Sauna", address: "Shoreditch, London", createdAt: "2026-08-01T09:00:00.000Z", isArchived: false },
-  { ...DEFAULT_LOCATION, id: "location_007", name: "Devon's flat", type: "🏠 His House", address: "Bristol", relatedContactId: "contact_011", createdAt: "2026-08-15T09:00:00.000Z", isArchived: false },
+  { ...DEFAULT_LOCATION, id: "seed_location_9006", name: "Steamworks", type: "🛀 Sauna", address: "Shoreditch, London", createdAt: "2026-08-01T09:00:00.000Z", isArchived: false },
+  { ...DEFAULT_LOCATION, id: "seed_location_9007", name: "Devon's flat", type: "🏠 His House", address: "Bristol", relatedContactId: "seed_contact_9011", createdAt: "2026-08-15T09:00:00.000Z", isArchived: false },
 ];
 
 // CHANGED — real groundwork for encryption at rest (see CLAUDE.md's
@@ -172,7 +172,7 @@ export const LocationsRepository = {
       // other repository's own updatedAt stamping (see episodeRepository.js/
       // logRepository.js's own comments on why this matters for
       // backupService.js's staleness check).
-      updated = { ...l, ...changes, updatedAt: new Date().toISOString() };
+      updated = { ...l, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
       return updated;
     });
     await persist();

@@ -49,7 +49,7 @@ const STORAGE_KEY = "shos_medications";
 
 let seedMedications = [
   {
-    id: "med_001",
+    id: "seed_med_9001",
     name: "PrEP (Descovy)",
     unit: "tablet",
     usagePattern: "daily",
@@ -65,7 +65,7 @@ let seedMedications = [
     sortOrder: 0,
   },
   {
-    id: "med_002",
+    id: "seed_med_9002",
     name: "DoxyPEP (Doxycycline)",
     unit: "capsule",
     usagePattern: "prn",
@@ -81,7 +81,7 @@ let seedMedications = [
     sortOrder: 1,
   },
   {
-    id: "med_003",
+    id: "seed_med_9003",
     name: "Vitamin D3",
     unit: "tablet",
     usagePattern: "daily",
@@ -97,7 +97,7 @@ let seedMedications = [
     sortOrder: 2,
   },
   {
-    id: "med_004",
+    id: "seed_med_9004",
     name: "Antihistamine (PRN)",
     unit: "tablet",
     usagePattern: "prn",
@@ -113,7 +113,7 @@ let seedMedications = [
     sortOrder: 3,
   },
   {
-    id: "med_005",
+    id: "seed_med_9005",
     name: "Amoxicillin (course, finished)",
     unit: "capsule",
     usagePattern: "custom",
@@ -137,7 +137,7 @@ let seedMedications = [
   // "custom" usagePattern already used for Amoxicillin's own non-daily/
   // non-prn regimen.
   {
-    id: "med_006",
+    id: "seed_med_9006",
     name: "Testosterone (Sustanon)",
     unit: "injection",
     usagePattern: "custom",
@@ -382,7 +382,7 @@ export const MedicationRepository = {
       if (m.id !== id) return m;
       // ADDED 26 Aug 2026 — real ask: last-updated indicator, rolled
       // out consistently across every module.
-      updatedMedication = { ...m, ...changes, updatedAt: new Date().toISOString() };
+      updatedMedication = { ...m, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
       return updatedMedication;
     });
     await persist();

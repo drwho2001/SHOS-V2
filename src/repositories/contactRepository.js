@@ -303,7 +303,7 @@ function daysAgo(n, hour = 9, minute = 0) {
 let seedContacts = [
   {
     ...DEFAULT_CONTACT,
-    id: "contact_001",
+    id: "seed_contact_9001",
     name: "Alex",
     notes: "Met through mutual friends.",
     createdAt: "2026-07-01T09:00:00.000Z",
@@ -311,7 +311,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
-    id: "contact_002",
+    id: "seed_contact_9002",
     name: "Jordan",
     snapchat: "jordan_snap",
     contactableVia: ["Snapchat"],
@@ -323,7 +323,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
-    id: "contact_003",
+    id: "seed_contact_9003",
     name: "Sam",
     phone: "07700 900123",
     contactableVia: ["Phone/WhatsApp"],
@@ -334,7 +334,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
-    id: "contact_004",
+    id: "seed_contact_9004",
     name: "Riley",
     createdAt: "2026-06-01T09:00:00.000Z",
     isArchived: true,
@@ -348,7 +348,7 @@ let seedContacts = [
   // Mercury is the exposure contact for that scenario.
   {
     ...DEFAULT_CONTACT,
-    id: "contact_005",
+    id: "seed_contact_9005",
     name: "F. Mercury",
     pronouns: "He/him",
     gender: "Male",
@@ -362,7 +362,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
-    id: "contact_006",
+    id: "seed_contact_9006",
     name: "Sylvie J.",
     pronouns: "She/her",
     gender: "Trans-female",
@@ -375,7 +375,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
-    id: "contact_007",
+    id: "seed_contact_9007",
     name: "Grace J.",
     pronouns: "She/her",
     gender: "Female",
@@ -392,7 +392,7 @@ let seedContacts = [
   // own relationshipContactIds).
   {
     ...DEFAULT_CONTACT,
-    id: "contact_008",
+    id: "seed_contact_9008",
     name: "Morgan",
     pronouns: "She/her",
     gender: "Female",
@@ -422,7 +422,7 @@ let seedContacts = [
   // there's no real id to safely reference yet.
   {
     ...DEFAULT_CONTACT,
-    id: "contact_009",
+    id: "seed_contact_9009",
     name: "Priya",
     pronouns: "They/them",
     gender: "Non-binary",
@@ -444,7 +444,7 @@ let seedContacts = [
   // exact phone match directly regardless of name similarity.
   {
     ...DEFAULT_CONTACT,
-    id: "contact_010",
+    id: "seed_contact_9010",
     name: "Sam T.",
     phone: "07700 900123",
     contactableVia: ["Phone/WhatsApp"],
@@ -454,7 +454,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
-    id: "contact_011",
+    id: "seed_contact_9011",
     name: "Devon",
     pronouns: "He/him",
     gender: "Trans-male",
@@ -477,7 +477,7 @@ let seedContacts = [
   // this contact as if he were.
   {
     ...DEFAULT_CONTACT,
-    id: "contact_012",
+    id: "seed_contact_9012",
     name: "Kai",
     pronouns: "He/they",
     gender: "Male",
@@ -494,7 +494,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
-    id: "contact_013",
+    id: "seed_contact_9013",
     name: "Ash",
     pronouns: "She/they",
     gender: "Non-binary",
@@ -514,7 +514,7 @@ let seedContacts = [
   // get flagged inactive.
   {
     ...DEFAULT_CONTACT,
-    id: "contact_014",
+    id: "seed_contact_9014",
     name: "Anonymous — sauna",
     notes: "One-off, sauna encounter, no contact details exchanged.",
     excludeFromActiveTracking: true,
@@ -524,7 +524,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
-    id: "contact_015",
+    id: "seed_contact_9015",
     name: "Jamie",
     pronouns: "He/him",
     gender: "Male",
@@ -537,7 +537,7 @@ let seedContacts = [
   },
   {
     ...DEFAULT_CONTACT,
-    id: "contact_016",
+    id: "seed_contact_9016",
     name: "Nat",
     pronouns: "She/her",
     gender: "Female",
@@ -733,7 +733,7 @@ export const ContactRepository = {
       // profile isn't the same thing as a logged encounter, so it
       // shouldn't trigger the "you have unbacked-up changes" warning
       // the way a new Test or Activity genuinely should.
-      updatedContact = { ...c, ...changes, updatedAt: new Date().toISOString() };
+      updatedContact = { ...c, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
       return updatedContact;
     });
     await persist();

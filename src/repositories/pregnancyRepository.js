@@ -86,7 +86,7 @@ function addDays(n, isoDate) {
 }
 const seedPositiveTestDate = daysAgo(75);
 let seedPregnancies = [
-  { ...DEFAULT_PREGNANCY, id: "pregnancy_001", testDate: daysAgo(40), testResult: "Negative", notes: "Precautionary test." },
+  { ...DEFAULT_PREGNANCY, id: "seed_pregnancy_9001", testDate: daysAgo(40), testResult: "Negative", notes: "Precautionary test." },
   // ADDED — real ask: a full simulated pregnancy/miscarriage thread
   // (see contact_008/encounterRepository.js's Morgan encounters,
   // clinicVisitsRepository.js's scan + aftercare visits,
@@ -96,7 +96,7 @@ let seedPregnancies = [
   // shapeForSave() would have defaulted it to on a real save.
   {
     ...DEFAULT_PREGNANCY,
-    id: "pregnancy_002",
+    id: "seed_pregnancy_9002",
     testDate: seedPositiveTestDate,
     testResult: "Positive",
     estimatedDueDate: addDays(245, seedPositiveTestDate),
@@ -208,7 +208,7 @@ export const PregnancyRepository = {
     let updated = null;
     pregnancies = pregnancies.map((p) => {
       if (p.id !== id) return p;
-      updated = { ...shapeForSave(p, changes), id: p.id, createdAt: p.createdAt, isArchived: p.isArchived, updatedAt: new Date().toISOString() };
+      updated = { ...shapeForSave(p, changes), id: p.id, createdAt: p.createdAt, isArchived: p.isArchived, updatedAt: new Date().toISOString(), isSeed: false };
       return updated;
     });
     await persist();

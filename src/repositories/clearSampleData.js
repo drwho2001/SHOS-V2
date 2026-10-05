@@ -80,6 +80,31 @@ const SAMPLE_REPOSITORIES = [
   ["Medications", MedicationRepository, SEED_MEDICATION_IDS],
 ];
 
+/**
+ * Is this record still sample data?
+ *
+ * ADDED 5 Oct 2026 - a real data-loss incident, and the second half of the fix
+ * for the first. Every repository's `update()` now stamps `isSeed: false` on the
+ * record it writes, because editing a demo record IS the moment it becomes the
+ * user's own data. That flag is AUTHORITATIVE here: a record carrying it is real
+ * data no matter what its id says.
+ *
+ * WHY IT MATTERS RIGHT NOW: a backup was recovered containing 74 real records
+ * restored under the ORIGINAL seed ids, each stamped `isSeed: false`. Before
+ * this, identification was purely by id membership in SEED_*_IDS - so an
+ * `isSeed: false` that nothing read would have protected nothing, and a second
+ * "Clear sample data" would have deleted all 74 again, silently.
+ *
+ * The order matters and is deliberate: `isSeed === false` is checked FIRST, so a
+ * flag can never be overridden by id membership. An unknown/missing flag (every
+ * record that has never been edited) falls through to the id test, which is the
+ * pre-existing behaviour.
+ */
+function isSampleRecord(record, seedIds) {
+  if (record.isSeed === false) return false;
+  return seedIds.has(record.id);
+}
+
 // FIXED 1 Oct 2026 - a real data-loss bug, found by losing the owner's own
 // medication history. Everything above this block claimed the opposite: "there
 // is no way to tell them apart except by id... clear sample data is safe at any
@@ -121,7 +146,23 @@ function referencedSeedIds(collections) {
   const referenced = new Set();
   for (const { name, records, seedIds } of collections) {
     for (const record of records) {
-      if (seedIds.has(record.id)) continue; // sample data cannot vouch for itself
+      // CHANGED 5 Oct 2026, and this is the half that makes the isSeed flag
+      // actually protect anything.
+      //
+      // This used to be `if (seedIds.has(record.id)) continue`, on the reasoning
+      // that "sample data cannot vouch for itself". True of an UNEDITED seed -
+      // but a recovered record carrying `isSeed: false` while still sitting on
+      // its original seed id is the user's own data, and it absolutely must be
+      // able to vouch for the records it points at. Keying on the id alone meant
+      // exactly those records were silenced, so a real record could not protect
+      // a real dependency.
+      //
+      // Deliberately NOT relaxed to "any record at all": an unedited seed
+      // cluster is self-referential (every seed contact is referenced by a seed
+      // encounter), so letting seeds vouch for each other would retain the whole
+      // seed set and Clear Sample Data would silently delete nothing. See the
+      // long note on isSampleRecord above.
+      if (isSampleRecord(record, seedIds)) continue; // unedited sample data cannot vouch for itself
       for (const [key, value] of Object.entries(record)) {
         if (!key.endsWith("Id") && !key.endsWith("Ids")) continue;
         for (const v of Array.isArray(value) ? value : [value]) {
@@ -170,7 +211,7 @@ export async function countSampleData() {
   // keep the export screen warning about data that is actually the user's.
   const referenced = referencedSeedIds(collections);
   for (const { name, records, seedIds } of collections) {
-    const count = records.filter((r) => seedIds.has(r.id) && !referenced.has(r.id)).length;
+    const count = records.filter((r) => isSampleRecord(r, seedIds) && !referenced.has(r.id)).length;
     if (count > 0) byCollection.push({ name, count });
     total += count;
   }
@@ -234,7 +275,7 @@ export async function clearSampleData() {
       // THE FIX: a seed record something real points at is kept, with its
       // history. See the long note above for the incident and for why this is
       // a referential check rather than a "has the user edited it" guess.
-      const real = records.filter((r) => !seedIds.has(r.id) || referenced.has(r.id));
+      const real = records.filter((r) => !isSampleRecord(r, seedIds) || referenced.has(r.id));
       const dropped = records.length - real.length;
       if (dropped === 0) { kept += records.length; continue; }
       // replaceAll() is the same call resetAllData.js uses: it replaces the

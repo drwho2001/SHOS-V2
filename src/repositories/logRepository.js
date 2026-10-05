@@ -60,28 +60,28 @@ function daysAgo(n, hour = 9, minute = 30) {
 
 let seedLogs = [
   // PrEP (med_001)
-  { id: "log_001", medicationId: "med_001", type: "refill", delta: 30, date: daysAgo(8, 9), voided: false },
-  { id: "log_002", medicationId: "med_001", type: "dose", delta: -1, date: daysAgo(1, 8), voided: false },
-  { id: "log_003", medicationId: "med_001", type: "dose", delta: -1, date: daysAgo(2, 8), voided: false },
-  { id: "log_004", medicationId: "med_001", type: "dose", delta: -1, date: daysAgo(3, 8), voided: false },
-  { id: "log_005", medicationId: "med_001", type: "dose", delta: -1, date: daysAgo(4, 8), voided: false },
-  { id: "log_006", medicationId: "med_001", type: "dose", delta: -1, date: daysAgo(5, 8), voided: false },
-  { id: "log_007", medicationId: "med_001", type: "dose", delta: -1, date: daysAgo(6, 8), voided: false },
+  { id: "seed_log_9001", medicationId: "seed_med_9001", type: "refill", delta: 30, date: daysAgo(8, 9), voided: false },
+  { id: "seed_log_9002", medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(1, 8), voided: false },
+  { id: "seed_log_9003", medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(2, 8), voided: false },
+  { id: "seed_log_9004", medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(3, 8), voided: false },
+  { id: "seed_log_9005", medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(4, 8), voided: false },
+  { id: "seed_log_9006", medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(5, 8), voided: false },
+  { id: "seed_log_9007", medicationId: "seed_med_9001", type: "dose", delta: -1, date: daysAgo(6, 8), voided: false },
 
   // DoxyPEP (med_002)
-  { id: "log_008", medicationId: "med_002", type: "refill", delta: 16, date: daysAgo(20, 9), voided: false },
-  { id: "log_009", medicationId: "med_002", type: "dose", delta: -6, date: daysAgo(5, 22), voided: false },
+  { id: "seed_log_9008", medicationId: "seed_med_9002", type: "refill", delta: 16, date: daysAgo(20, 9), voided: false },
+  { id: "seed_log_9009", medicationId: "seed_med_9002", type: "dose", delta: -6, date: daysAgo(5, 22), voided: false },
 
   // Vitamin D3 (med_003)
-  { id: "log_010", medicationId: "med_003", type: "refill", delta: 90, date: daysAgo(60, 9), voided: false },
-  { id: "log_011", medicationId: "med_003", type: "dose", delta: -30, date: daysAgo(30, 8), voided: false },
-  { id: "log_012", medicationId: "med_003", type: "dose", delta: -14, date: daysAgo(1, 20), voided: false },
+  { id: "seed_log_9010", medicationId: "seed_med_9003", type: "refill", delta: 90, date: daysAgo(60, 9), voided: false },
+  { id: "seed_log_9011", medicationId: "seed_med_9003", type: "dose", delta: -30, date: daysAgo(30, 8), voided: false },
+  { id: "seed_log_9012", medicationId: "seed_med_9003", type: "dose", delta: -14, date: daysAgo(1, 20), voided: false },
 
   // Antihistamine (med_004)
-  { id: "log_013", medicationId: "med_004", type: "dose", delta: -1, date: daysAgo(2, 14), voided: false },
+  { id: "seed_log_9013", medicationId: "seed_med_9004", type: "dose", delta: -1, date: daysAgo(2, 14), voided: false },
 
   // Amoxicillin, finished course (med_005)
-  { id: "log_014", medicationId: "med_005", type: "dose", delta: -21, date: daysAgo(45, 9), voided: false },
+  { id: "seed_log_9014", medicationId: "seed_med_9005", type: "dose", delta: -21, date: daysAgo(45, 9), voided: false },
 ];
 
 // CHANGED — Phase 2 encryption groundwork: ensureLoaded()/memoized-
@@ -194,7 +194,7 @@ export const LogRepository = {
       // its known blind spot. Real dose/refill/waste log corrections
       // now count toward the backup-staleness reminder like any other
       // real activity.
-      updatedEntry = { ...l, ...changes, updatedAt: new Date().toISOString() };
+      updatedEntry = { ...l, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
       return updatedEntry;
     });
     await persist();

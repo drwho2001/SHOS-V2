@@ -203,7 +203,7 @@ function daysAgo(n, hour = 14, minute = 0) {
 let seedVisits = [
   {
     ...DEFAULT_CLINIC_VISIT,
-    id: "visit_001",
+    id: "seed_visit_9001",
     title: "Treatment — Gonorrhoea",
     date: daysAgo(7),
     location: "56 Dean Street",
@@ -211,18 +211,18 @@ let seedVisits = [
     reasonForVisit: ["Treatment"],
     clinicalImpression: "Symptomatic urethritis, confirmed Gonorrhoea",
     clinicalNotes: "Confirmed Gonorrhoea on symptomatic screen. Single-dose antibiotic given in clinic. TOC (test of cure) advised in 2 weeks. Partner notification checklist started.",
-    linkedTestIds: ["test_001", "test_002"],
+    linkedTestIds: ["seed_test_9001", "seed_test_9002"],
     adHocMedicationsGiven: [{ id: "adhocmed_seed_001", name: "Ceftriaxone 1g IM", notes: "Single dose, given in clinic." }],
     symptomTypeIds: ["symptom_cat_001"],
-    symptomsDiscussedIds: ["symlog_001"],
-    primaryReasonSymptomLogId: "symlog_001",
+    symptomsDiscussedIds: ["seed_symlog_9001"],
+    primaryReasonSymptomLogId: "seed_symlog_9001",
     isArchived: false,
   },
   // ADDED — real example thread: early pregnancy scan + miscarriage
   // aftercare (see pregnancyRepository.js's own pregnancy_002).
   {
     ...DEFAULT_CLINIC_VISIT,
-    id: "visit_002",
+    id: "seed_visit_9002",
     title: "Early pregnancy scan",
     date: daysAgo(70),
     location: "Local hospital — antenatal unit",
@@ -233,7 +233,7 @@ let seedVisits = [
   },
   {
     ...DEFAULT_CLINIC_VISIT,
-    id: "visit_003",
+    id: "seed_visit_9003",
     title: "Miscarriage aftercare",
     date: daysAgo(50),
     location: "Local hospital — antenatal unit",
@@ -250,14 +250,14 @@ let seedVisits = [
   // nextReviewDate/followUpType are all unset on every existing visit).
   {
     ...DEFAULT_CLINIC_VISIT,
-    id: "visit_004",
+    id: "seed_visit_9004",
     title: "Treatment — Chlamydia",
     date: daysAgo(196),
     location: "56 Dean Street",
     clinician: ["Lucy"],
     reasonForVisit: ["Treatment"],
     clinicalNotes: "Confirmed Chlamydia on symptomatic screen. Doxycycline course given. TOC advised in 3 weeks.",
-    linkedTestIds: ["test_006"],
+    linkedTestIds: ["seed_test_9006"],
     isFutureAppointment: true,
     nextReviewDate: daysAgo(175),
     followUpType: "Test of cure",
@@ -265,19 +265,19 @@ let seedVisits = [
   },
   {
     ...DEFAULT_CLINIC_VISIT,
-    id: "visit_005",
+    id: "seed_visit_9005",
     title: "Routine annual screen",
     date: daysAgo(160),
     location: "56 Dean Street",
     clinician: ["Jonathan"],
     reasonForVisit: ["Routine screen"],
     clinicalNotes: "Full annual screen — all clear.",
-    linkedTestIds: ["test_007"],
+    linkedTestIds: ["seed_test_9007"],
     // ADDED 26 Sep 2026 — this is where vaccination_003's clinic-visit
     // link now lives. It previously existed only as a clinicVisitIds entry
     // on the vaccination itself, so this visit showed no vaccinations at
     // all despite the vaccine being given here.
-    vaccinationsGivenIds: ["vaccination_003"],
+    vaccinationsGivenIds: ["seed_vaccination_9003"],
     // ADDED 26 Sep 2026 — the merged take-home/restock field on a real
     // record, so the new quantity UI has something to render and the shape
     // is exercised by seed data rather than shipping untested. The second
@@ -285,8 +285,8 @@ let seedVisits = [
     // half-container quantity, because that is the case the unit switch
     // exists for: a DoxyPEP course shorter than a full pack.
     takeHomeMedications: [
-      { medicationId: "med_001", unit: "containers", quantity: 1 },
-      { medicationId: "med_003", unit: "units", quantity: 14 },
+      { medicationId: "seed_med_9001", unit: "containers", quantity: 1 },
+      { medicationId: "seed_med_9003", unit: "units", quantity: 14 },
     ],
     isArchived: false,
   },
@@ -296,7 +296,7 @@ let seedVisits = [
   // linkedTestIds).
   {
     ...DEFAULT_CLINIC_VISIT,
-    id: "visit_006",
+    id: "seed_visit_9006",
     title: "IUD insertion",
     date: daysAgo(75),
     location: "56 Dean Street",
@@ -410,7 +410,7 @@ export const ClinicVisitsRepository = {
       if (v.id !== id) return v;
       // ADDED 26 Aug 2026 — real ask: last-updated indicator, rolled
       // out consistently across every module.
-      updated = { ...v, ...changes, updatedAt: new Date().toISOString() };
+      updated = { ...v, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
       return updated;
     });
     await persist();

@@ -246,7 +246,7 @@ function daysAgo(n, hour = 9, minute = 0) {
 let seedMeasurements = [
   {
     ...DEFAULT_MEASUREMENT,
-    id: "measurement_001",
+    id: "seed_measurement_9001",
     type: "CD4 count",
     date: daysAgo(30),
     value: 620,
@@ -258,7 +258,7 @@ let seedMeasurements = [
   },
   {
     ...DEFAULT_MEASUREMENT,
-    id: "measurement_002",
+    id: "seed_measurement_9002",
     type: "Weight",
     date: daysAgo(14),
     value: 68.04,
@@ -270,7 +270,7 @@ let seedMeasurements = [
   },
   {
     ...DEFAULT_MEASUREMENT,
-    id: "measurement_003",
+    id: "seed_measurement_9003",
     type: BLOOD_PRESSURE_TYPE,
     date: daysAgo(14),
     systolic: 118,
@@ -288,7 +288,7 @@ let seedMeasurements = [
   // to exercise the custom-type + typeKind flow end-to-end.
   {
     ...DEFAULT_MEASUREMENT,
-    id: "measurement_004",
+    id: "seed_measurement_9004",
     type: "Weight",
     date: daysAgo(2),
     value: 67.5,
@@ -300,7 +300,7 @@ let seedMeasurements = [
   },
   {
     ...DEFAULT_MEASUREMENT,
-    id: "measurement_005",
+    id: "seed_measurement_9005",
     type: "CD4 count",
     date: daysAgo(120),
     value: 590,
@@ -312,7 +312,7 @@ let seedMeasurements = [
   },
   {
     ...DEFAULT_MEASUREMENT,
-    id: "measurement_006",
+    id: "seed_measurement_9006",
     type: "Blood glucose",
     date: daysAgo(5),
     value: 5.4,
@@ -452,7 +452,7 @@ export const MeasurementRepository = {
     measurements = measurements.map((m) => {
       if (m.id !== id) return m;
       const merged = { ...DEFAULT_MEASUREMENT, ...m, ...changes };
-      updated = { ...shapeForCreate(merged), id: m.id, createdAt: m.createdAt, isArchived: m.isArchived, updatedAt: new Date().toISOString() };
+      updated = { ...shapeForCreate(merged), id: m.id, createdAt: m.createdAt, isArchived: m.isArchived, updatedAt: new Date().toISOString(), isSeed: false };
       return updated;
     });
     await persist();

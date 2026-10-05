@@ -69,14 +69,14 @@ function daysAgo(n, hour = 8, minute = 0) {
 let seedEntries = [
   {
     ...DEFAULT_SYMPTOM_ENTRY,
-    id: "symlog_001",
+    id: "seed_symlog_9001",
     title: "Discharge + discomfort",
     symptomIds: ["symptom_cat_001"],
     dateStarted: daysAgo(11),
     dateResolved: daysAgo(3),
     severity: "Moderate",
-    relatedEncounterIds: ["encounter_003"],
-    relatedTestIds: ["test_001"],
+    relatedEncounterIds: ["seed_encounter_9003"],
+    relatedTestIds: ["seed_test_9001"],
     notes: "Started a few days after seeing F. Mercury — went in for a symptomatic test.",
     isArchived: false,
   },
@@ -88,20 +88,20 @@ let seedEntries = [
   // than reusing the Gonorrhoea episode's own symlog_001.
   {
     ...DEFAULT_SYMPTOM_ENTRY,
-    id: "symlog_002",
+    id: "seed_symlog_9002",
     title: "Mild discharge",
     symptomIds: ["symptom_cat_001"],
     dateStarted: daysAgo(198),
     dateResolved: daysAgo(190),
     severity: "Mild",
-    relatedEncounterIds: ["encounter_015"],
-    relatedTestIds: ["test_006"],
+    relatedEncounterIds: ["seed_encounter_9015"],
+    relatedTestIds: ["seed_test_9006"],
     notes: "Noticed a couple of days after the encounter with Kai.",
     isArchived: false,
   },
   {
     ...DEFAULT_SYMPTOM_ENTRY,
-    id: "symlog_003",
+    id: "seed_symlog_9003",
     title: "Ongoing mild irritation",
     symptomIds: ["symptom_cat_001"],
     dateStarted: daysAgo(2),
@@ -211,7 +211,7 @@ export const SymptomLogRepository = {
       if (e.id !== id) return e;
       // ADDED 26 Aug 2026 — real ask: last-updated indicator, rolled
       // out consistently across every module.
-      updated = { ...e, ...changes, updatedAt: new Date().toISOString() };
+      updated = { ...e, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
       return updated;
     });
     await persist();

@@ -89,7 +89,7 @@ function dateOnly(n) {
 let seedVaccinations = [
   {
     ...DEFAULT_VACCINATION,
-    id: "vaccination_001",
+    id: "seed_vaccination_9001",
     title: "Gonorrhoea vaccine (4CMenB)",
     vaccine: "Gonorrhoea",
     reason: ["High-risk status"],
@@ -110,7 +110,7 @@ let seedVaccinations = [
   // 4-month window (routine), not connected to the STI episode.
   {
     ...DEFAULT_VACCINATION,
-    id: "vaccination_002",
+    id: "seed_vaccination_9002",
     title: "Meningitis B vaccine (4CMenB)",
     vaccine: "Meningitis B",
     reason: ["Routine"],
@@ -132,7 +132,7 @@ let seedVaccinations = [
   // covers.
   {
     ...DEFAULT_VACCINATION,
-    id: "vaccination_003",
+    id: "seed_vaccination_9003",
     title: "Hepatitis A/B vaccine (Twinrix), dose 1",
     vaccine: "Hepatitis A/B",
     reason: ["Routine"],
@@ -155,7 +155,7 @@ let seedVaccinations = [
   },
   {
     ...DEFAULT_VACCINATION,
-    id: "vaccination_004",
+    id: "seed_vaccination_9004",
     title: "Hepatitis A/B vaccine (Twinrix), dose 2",
     vaccine: "Hepatitis A/B",
     reason: ["Routine"],
@@ -308,7 +308,7 @@ export const VaccinationRepository = {
       if (v.id !== id) return v;
       // ADDED 26 Aug 2026 — real ask: last-updated indicator, rolled
       // out consistently across every module.
-      updated = { ...v, ...changes, updatedAt: new Date().toISOString() };
+      updated = { ...v, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
       return updated;
     });
     await persist();

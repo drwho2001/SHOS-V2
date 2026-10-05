@@ -134,7 +134,7 @@ function daysAgo(n, hour = 10, minute = 0) {
 let seedTests = [
   {
     ...DEFAULT_TEST,
-    id: "test_001",
+    id: "seed_test_9001",
     title: "Symptomatic screen — Gonorrhoea positive",
     date: daysAgo(9),
     resultDate: daysAgo(7),
@@ -146,12 +146,12 @@ let seedTests = [
     mostRecent: false,
     followUpActionedDate: daysAgo(8),
     notes: "Discharge + discomfort a few days after an encounter. Positive for Gonorrhoea, negative for everything else screened.",
-    clinicVisitIds: ["visit_001"],
+    clinicVisitIds: ["seed_visit_9001"],
     isArchived: false,
   },
   {
     ...DEFAULT_TEST,
-    id: "test_002",
+    id: "seed_test_9002",
     title: "Test of cure — Gonorrhoea",
     date: daysAgo(2),
     resultDate: daysAgo(1),
@@ -162,7 +162,7 @@ let seedTests = [
     resultIds: ["result_002"],
     mostRecent: true,
     notes: "Test of cure, 2 weeks after treatment — confirms it's cleared.",
-    clinicVisitIds: ["visit_001"],
+    clinicVisitIds: ["seed_visit_9001"],
     isArchived: false,
   },
   // ADDED — real ask: "testing needed encounters with different
@@ -173,7 +173,7 @@ let seedTests = [
   // with Morgan (see encounterRepository.js/contactRepository.js).
   {
     ...DEFAULT_TEST,
-    id: "test_003",
+    id: "seed_test_9003",
     title: "Routine PrEP monitoring screen",
     date: daysAgo(100),
     resultDate: daysAgo(97),
@@ -188,7 +188,7 @@ let seedTests = [
   },
   {
     ...DEFAULT_TEST,
-    id: "test_004",
+    id: "seed_test_9004",
     title: "Pre-relationship screen",
     date: daysAgo(113),
     resultDate: daysAgo(110),
@@ -214,7 +214,7 @@ let seedTests = [
   // was never exercised by demo data.
   {
     ...DEFAULT_TEST,
-    id: "test_005",
+    id: "seed_test_9005",
     title: "Home kit STI screen",
     date: daysAgo(3),
     resultDate: null,
@@ -232,7 +232,7 @@ let seedTests = [
   },
   {
     ...DEFAULT_TEST,
-    id: "test_006",
+    id: "seed_test_9006",
     title: "Symptomatic screen — Chlamydia positive",
     date: daysAgo(196),
     resultDate: daysAgo(193),
@@ -244,12 +244,12 @@ let seedTests = [
     mostRecent: false,
     writtenPlan: "Doxycycline course, test of cure in 3 weeks.",
     notes: "Mild discharge after a hookup — positive for Chlamydia, negative for everything else screened.",
-    clinicVisitIds: ["visit_004"],
+    clinicVisitIds: ["seed_visit_9004"],
     isArchived: false,
   },
   {
     ...DEFAULT_TEST,
-    id: "test_007",
+    id: "seed_test_9007",
     title: "Routine annual screen",
     date: daysAgo(160),
     resultDate: daysAgo(155),
@@ -259,7 +259,7 @@ let seedTests = [
     organismIds: [],
     resultIds: ["result_002"],
     mostRecent: false,
-    clinicVisitIds: ["visit_005"],
+    clinicVisitIds: ["seed_visit_9005"],
     isArchived: false,
   },
 ];
@@ -377,7 +377,7 @@ export const TestingRepository = {
       // to the user, deliberately NOT wired into any activity/backup-
       // check logic — per the user's own clarification, an edit isn't the
       // same thing as a logged encounter.
-      const merged = { ...t, ...changes, updatedAt: new Date().toISOString() };
+      const merged = { ...t, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
       // Same future-date guard as create().
       const isFuture = merged.date && new Date(merged.date) > new Date();
       updated = isFuture ? { ...merged, mostRecent: false } : merged;

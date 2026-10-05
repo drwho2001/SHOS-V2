@@ -886,6 +886,24 @@ That leaves the failure inside the static bridge method, after `WidgetPrefs.get(
 
 **Two tooling findings that cost real time here, so nobody re-learns them.** This WebView's CDP **does not honour `awaitPromise`** - `Runtime.evaluate` with it simply never returns, so an async probe has to stash its result on `window` and be polled with a second synchronous evaluate. And a **backgrounded WebView throttles timers** hard enough that a `setTimeout(r, 12000)` race inside the app ran for 18+ seconds without firing, which reads exactly like a hung bridge call. Both produced confident false conclusions before being caught; bring the app to the foreground before concluding anything from a timer.
 
+## Recently shipped (5 Oct 2026, latest - clear sample data deleted 74 real records, and a flag nothing read would not have stopped it)
+
+**A second, worse incident than the 1 Oct one. The owner renamed seed records in place, pressed "Clear sample data", and lost 74 of their own records** — 16 contacts, 18 encounters, 7 tests, 7 locations, 14 dose logs, 3 vaccinations, 3 symptom entries, 2 clinic visits, 2 medications, 1 episode, 1 measurement. Not one was demo data: the seed names are Alex/Jordan/Sam/Riley/Morgan, and the lost records were Sean Wilson, Daniel Philips, Pascal Ken, Patrick Clare and eleven others, with **zero overlap** across contacts, encounters, locations, tests and clinic visits.
+
+**Why the 1 Oct fix could not have prevented it, which is the part worth keeping.** `referencedSeedIds` skipped seed records as reference sources (`if (seedIds.has(record.id)) continue` — "sample data cannot vouch for itself"). That is true of an *unedited* seed, but every seed contact is referenced by a seed encounter, so a self-referential cluster was vulnerable as a unit and "non-sample" excluded exactly the records that would have protected it. Relaxing it is **also not the fix**: every seed contact is referenced by a seed encounter, so retaining "any referenced seed" retains the entire seed set, `countSampleData()` returns 0 forever, and Clear Sample Data silently deletes nothing. A seed cluster is self-referential by construction, so the reference graph is mutual reinforcement and carries no signal about user intent. **Only an explicit edit signal can separate an edited "Sean Wilson" from an unedited "Alex".**
+
+**The fix: editing a record is what makes it the user's own data.** Every repository's `update()` now stamps `isSeed: false` on the record it writes — all 14, verified individually to sit inside their own `update()` and nowhere else. "Edit as a copy" was proposed and **rejected by the owner**; Gemini independently argued against it too, because the owner would end up with two PrEP records and no idea why.
+
+**And the second half, which is the one that actually protects: the flag is authoritative, not advisory.** `isSampleRecord()` checks `isSeed === false` **before** any id test, so id membership can never override it. This matters immediately rather than theoretically — a recovered backup holds those 74 records back under their *original seed ids*, each stamped `isSeed: false`. While identification was purely by `SEED_*_IDS` membership, a flag nothing read protected nothing and a second "Clear sample data" would have deleted all 74 again. The ordering is asserted by test, not just by comment.
+
+**`referencedSeedIds`'s skip now also keys on `isSampleRecord`,** which is the half that makes a recovered record able to vouch for what it references. Keying on the raw id silenced exactly those records, so real data could not protect a real dependency.
+
+New guard `src/components/isSeedAuthorityGuard.test.js`, six tests, **all six mutation-verified**: removing the stamp from one repository; testing the flag *after* the id set; reverting either of the two filters to a raw id test; and removing `isSampleRecord` entirely. Two non-vacuity properties are asserted deliberately — the stamp must be on code rather than in a comment, and the tests fail if any decision site bypasses the helper.
+
+**A tooling failure worth recording, because it produced six false positives.** The mutation harness called `execFileSync("npx", …)`, which throws on Windows because `npx` is a `.cmd` — so *every* run "failed" and all six mutations reported RED, plus a RED baseline that should have been the first warning. A broken harness that always reports the desired result is worse than no harness: it would have "verified" six mutations that never ran. Invoking `node node_modules/vitest/vitest.mjs` instead fixed it, and the same trap is recorded in `docs/CHANGE-PROCEDURE.md`.
+
+1177 tests across 106 files, verify:fast green.
+
 ## Recently shipped (5 Oct 2026, later - THE ENTIRE WIDGET FEATURE WAS DEAD AT ONE LINE, AND 14 GREEN TESTS NEVER NOTICED)
 
 **`sendWidgetUpdate()` returned `false` for every widget, forever, and nothing was ever written to widget storage.** The whole feature - ten providers, a bridge, a privacy-tier system, a settings screen - has been inert since it was written.
@@ -1705,6 +1723,17 @@ is the kind that actively teaches the next session it is safe.
 **non-sample** record through a field ending `Id`/`Ids`. Referenced → kept, with
 its history. `countSampleData` gets the same exemption, or the first-run banner
 never clears and the export screen keeps warning about the user's own data.
+
+**SUPERSEDED 5 Oct 2026 — this fix was NOT sufficient, and a second incident
+proves it.** "Pointed at by a **non-sample** record" was the loophole: every seed
+contact is referenced by a seed *encounter*, so a self-referential seed cluster
+was vulnerable as a unit and "non-sample" excluded exactly the records that would
+have protected it. Editing a seed was also never recorded, so a renamed demo record
+stayed sample data by id forever. What actually fixes it is the `isSeed: false`
+flag stamped on every `update()` — see the 5 Oct entry below. The claim that this
+made clear-sample-data safe was wrong, and it is recorded here rather than
+quietly edited away because the reasoning above is still correct about *why* the
+referential check exists.
 
 **Rejected the obvious alternative, and the rejection is the interesting part.**
 The natural approach is a field-diff "has the user edited this?" heuristic.

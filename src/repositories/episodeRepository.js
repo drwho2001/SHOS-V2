@@ -82,15 +82,15 @@ export const DEFAULT_EPISODE = {
 let seedEpisodes = [
   {
     ...DEFAULT_EPISODE,
-    id: "episode_001",
+    id: "seed_episode_9001",
     title: "Gonorrhoea — Sep 2026",
     triggerReason: "Symptom-driven",
-    startEncounterId: "encounter_003",
-    atRiskEncounterIds: ["encounter_004", "encounter_005"],
+    startEncounterId: "seed_encounter_9003",
+    atRiskEncounterIds: ["seed_encounter_9004", "seed_encounter_9005"],
     notifiedEncounterIds: [],
-    testIds: ["test_001", "test_002"],
-    clinicVisitIds: ["visit_001"],
-    symptomLogIds: ["symlog_001"],
+    testIds: ["seed_test_9001", "seed_test_9002"],
+    clinicVisitIds: ["seed_visit_9001"],
+    symptomLogIds: ["seed_symlog_9001"],
     resolvedDate: (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString(); })(),
     resolution: "Treated — course complete",
     notes: "TOC negative — resolved. Partner notification checklist used for encounters since the exposure date.",
@@ -190,7 +190,7 @@ export const EpisodeRepository = {
       // an existing record (not just brand-new ones); without it, editing
       // an Episode's own fields couldn't trigger the "you should back up"
       // reminder at all.
-      updated = { ...e, ...changes, updatedAt: new Date().toISOString() };
+      updated = { ...e, ...changes, updatedAt: new Date().toISOString(), isSeed: false };
       return updated;
     });
     await persist();
