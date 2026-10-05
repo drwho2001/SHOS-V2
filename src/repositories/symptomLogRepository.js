@@ -66,7 +66,7 @@ function daysAgo(n, hour = 8, minute = 0) {
   return d.toISOString();
 }
 
-export let seedEntries = [
+let seedEntries = [
   {
     ...DEFAULT_SYMPTOM_ENTRY,
     id: "seed_symlog_9001",

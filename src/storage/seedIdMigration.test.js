@@ -50,33 +50,19 @@ function readCurrentSeedIds() {
     } catch {
       continue; // not a plain module we can parse; not a seed owner
     }
-    // The 3e work made the seed arrays EXPORTED (`export let seedContacts = [`),
-    // which wraps the declaration in an ExportNamedDeclaration instead of
-    // leaving it at the top level. Unwrap it - or this silently starts finding
-    // zero arrays and the round-trip assertion below becomes vacuous, which is
-    // the exact failure mode this test exists to prevent. It did: the change
-    // turned this file red rather than leaving the gap unnoticed.
     for (const node of ast.program.body) {
-      const stmts =
-        node.type === "ExportNamedDeclaration" && node.declaration
-          ? [node.declaration]
-          : node.type === "VariableDeclaration"
-            ? [node]
-            : [];
-      for (const st of stmts) {
-        if (st.type !== "VariableDeclaration") continue;
-        for (const d of st.declarations) {
-          if (!/^seed/.test(d.id.name || "")) continue;
-          if (d.init?.type !== "ArrayExpression") continue;
-          for (const el of d.init.elements) {
-            if (el?.type !== "ObjectExpression") continue;
-            for (const p of el.properties) {
-              if (p.type !== "ObjectProperty") continue;
-              const key = p.key.type === "Identifier" ? p.key.name : p.key.value;
-              if (key !== "id") continue;
-              if (p.value.type !== "StringLiteral") continue;
-              if (/^seed_[a-z]+_\d+$/.test(p.value.value)) ids.push(p.value.value);
-            }
+      if (node.type !== "VariableDeclaration") continue;
+      for (const d of node.declarations) {
+        if (!/^seed/.test(d.id.name || "")) continue;
+        if (d.init?.type !== "ArrayExpression") continue;
+        for (const el of d.init.elements) {
+          if (el?.type !== "ObjectExpression") continue;
+          for (const p of el.properties) {
+            if (p.type !== "ObjectProperty") continue;
+            const key = p.key.type === "Identifier" ? p.key.name : p.key.value;
+            if (key !== "id") continue;
+            if (p.value.type !== "StringLiteral") continue;
+            if (/^seed_[a-z]+_\d+$/.test(p.value.value)) ids.push(p.value.value);
           }
         }
       }

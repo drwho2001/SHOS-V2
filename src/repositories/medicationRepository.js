@@ -47,7 +47,7 @@ const STORAGE_KEY = "shos_medications";
 // lives in logRepository.js instead, linked by medicationId).
 // ---------------------------------------------------------------------
 
-export let seedMedications = [
+let seedMedications = [
   {
     id: "seed_med_9001",
     name: "PrEP (Descovy)",

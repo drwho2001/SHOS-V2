@@ -243,7 +243,7 @@ function daysAgo(n, hour = 9, minute = 0) {
 // both have something to actually show on a fresh install: a weight
 // entered in lb (demonstrates real conversion, not just storage) and a
 // blood pressure reading (demonstrates the special-cased shape).
-export let seedMeasurements = [
+let seedMeasurements = [
   {
     ...DEFAULT_MEASUREMENT,
     id: "seed_measurement_9001",

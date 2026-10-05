@@ -72,39 +72,11 @@ function parseCode(code, file) {
   return parse(code, { sourceType: "module", plugins: ["jsx"] });
 }
 
-// Unwraps `export let seedX = [...]` into the VariableDeclaration itself.
-//
-// 3e made the seed arrays exported so seedReconciliation.js can compare a
-// stored record against the current seed DEFINITION, not just its id set. An
-// exported declaration is wrapped in an ExportNamedDeclaration, so any walker
-// looking only at `program.body` for a VariableDeclaration silently finds
-// NOTHING - and then every assertion below passes vacuously or fails at once,
-// depending on how it handles the absence.
-//
-// This bit 46 assertions across three test files the moment it shipped. The
-// lesson is the one this repo has recorded repeatedly: changing a shared shape
-// ("seed arrays are top-level VariableDeclarations") is not a one-file change,
-// and a green run on the file you edited is not evidence the others survived.
-function variableDeclarationsIn(ast) {
-  const out = [];
-  for (const node of ast.program.body) {
-    if (node.type === "ExportNamedDeclaration" && node.declaration) {
-      if (node.declaration.type === "VariableDeclaration") out.push(node.declaration);
-      continue;
-    }
-    if (node.type === "ExportDefaultDeclaration" && node.declaration) {
-      if (node.declaration.type === "VariableDeclaration") out.push(node.declaration);
-      continue;
-    }
-    if (node.type === "VariableDeclaration") out.push(node);
-  }
-  return out;
-}
-
 // Locates a `let <array> = [` literal by walking the AST, so a nested array or
 // object cannot confuse a text scan. Returns the array node's source range.
 function findSeedArrayNode(ast, arrayName) {
-  for (const node of variableDeclarationsIn(ast)) {
+  for (const node of ast.program.body) {
+    if (node.type !== "VariableDeclaration") continue;
     for (const d of node.declarations) {
       if (d.id.type === "Identifier" && d.id.name === arrayName && d.init?.type === "ArrayExpression") {
         return d.init;
@@ -239,22 +211,20 @@ describe("no seed id survives outside its own seed array", () => {
       const code = sourceOf(file);
       const ast = parseCode(code, file);
       const node = findSeedArrayNode(ast, array);
-// Everything except the seed array node itself, walked structurally. The
-    // walk starts at program, so ExportNamedDeclaration wrappers are traversed
-    // like any other node and `node === seedArray` still excludes the literal.
-    const outside = [];
-    (function walk(n) {
-      if (!n || typeof n !== "object") return;
-      if (Array.isArray(n)) return n.forEach(walk);
-      if (n === node) return; // do not descend into the seed array
-      if (n.type === "StringLiteral" && /^seed_[a-z]+_\d+$/.test(n.value)) {
-        outside.push(n.value);
-      }
-      for (const k of Object.keys(n)) {
-        if (["loc", "start", "end", "leadingComments", "trailingComments", "comments"].includes(k)) continue;
-        walk(n[k]);
-      }
-    })(ast.program);
+      // Everything except the seed array node itself, walked structurally.
+      const outside = [];
+      (function walk(n, insideSeedArray) {
+        if (!n || typeof n !== "object") return;
+        if (Array.isArray(n)) return n.forEach((c) => walk(c, insideSeedArray));
+        if (n === node) return; // do not descend into the seed array
+        if (n.type === "StringLiteral" && /^seed_[a-z]+_\d+$/.test(n.value)) {
+          outside.push(n.value);
+        }
+        for (const k of Object.keys(n)) {
+          if (["loc", "start", "end", "leadingComments", "trailingComments", "comments"].includes(k)) continue;
+          walk(n[k], insideSeedArray);
+        }
+      })(ast.program, false);
       if (outside.length) offenders.push(`${file}: ${[...new Set(outside)].join(", ")}`);
     }
     expect(

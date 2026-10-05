@@ -50,7 +50,7 @@ function addDays(dateStr, n) {
 const seedStart1 = daysAgo(58);
 const seedStart2 = addDays(seedStart1, 28);
 const seedStart3 = addDays(seedStart2, 29);
-export let seedCycles = [
+let seedCycles = [
   { ...DEFAULT_CYCLE, id: "seed_cycle_9001", startDate: seedStart1, endDate: addDays(seedStart1, 5), flow: "Medium", symptomIds: [], notes: "" },
   { ...DEFAULT_CYCLE, id: "seed_cycle_9002", startDate: seedStart2, endDate: addDays(seedStart2, 4), flow: "Heavy", symptomIds: [], notes: "" },
   { ...DEFAULT_CYCLE, id: "seed_cycle_9003", startDate: seedStart3, endDate: null, flow: "Light", symptomIds: [], notes: "Ongoing." },

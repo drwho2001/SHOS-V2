@@ -86,7 +86,7 @@ function dateOnly(n) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-export let seedVaccinations = [
+let seedVaccinations = [
   {
     ...DEFAULT_VACCINATION,
     id: "seed_vaccination_9001",

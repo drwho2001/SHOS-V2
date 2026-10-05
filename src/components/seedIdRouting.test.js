@@ -108,13 +108,9 @@ describe("the seeded ids this depends on really do carry the seed_ prefix", () =
       const code = readFileSync(join(process.cwd(), "src", "repositories", file), "utf8");
       const ast = parse(code, { sourceType: "module" });
       let found = null;
-      // `export let seedCycles = [...]` wraps the declaration in an
-      // ExportNamedDeclaration, so a body-level VariableDeclaration-only scan
-      // finds nothing and this test silently stops covering the seed arrays.
       for (const node of ast.program.body) {
-        const decl = node.type === "ExportNamedDeclaration" ? node.declaration : node;
-        if (decl?.type !== "VariableDeclaration") continue;
-        for (const d of decl.declarations) {
+        if (node.type !== "VariableDeclaration") continue;
+        for (const d of node.declarations) {
           if (d.id.name === array && d.init?.type === "ArrayExpression") found = d.init;
         }
       }

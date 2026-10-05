@@ -300,7 +300,7 @@ function daysAgo(n, hour = 9, minute = 0) {
   return d.toISOString();
 }
 
-export let seedContacts = [
+let seedContacts = [
   {
     ...DEFAULT_CONTACT,
     id: "seed_contact_9001",

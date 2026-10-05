@@ -65,7 +65,7 @@ function addDays(dateStr, n) {
 // during a known pregnancy). See encounterRepository.js's Morgan
 // encounters for the same timeline.
 const seedDepotStart = daysAgo(45);
-export let seedEntries = [
+let seedEntries = [
   { ...DEFAULT_CONTRACEPTION_ENTRY, id: "seed_contra_9001", method: "Combined pill", formulation: "Pill/Tablet", startDate: daysAgo(400), endDate: daysAgo(95), notes: "Stopped when the relationship with Morgan became exclusive." },
   { ...DEFAULT_CONTRACEPTION_ENTRY, id: "seed_contra_9002", method: "Depot", formulation: "Injection", startDate: seedDepotStart, intervalDays: 84, nextDueDate: addDays(seedDepotStart, 84), notes: "Started after the miscarriage — wanted something more reliable than the pill." },
   // ADDED 9 Sep 2026 — real ask: represent hormone-related contraception

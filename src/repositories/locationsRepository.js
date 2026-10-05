@@ -54,7 +54,7 @@ export const DEFAULT_LOCATION = {
 // (two different named saunas, "his place" vs a second guy's place,
 // both grouped under the same type) — left unset here so the field
 // doesn't look like a redundant echo of the name on a fresh install.
-export let seedLocations = [
+let seedLocations = [
   { ...DEFAULT_LOCATION, id: "seed_location_9001", name: "Home", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
   { ...DEFAULT_LOCATION, id: "seed_location_9002", name: "His place", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },
   { ...DEFAULT_LOCATION, id: "seed_location_9003", name: "Sauna", createdAt: "2026-07-01T09:00:00.000Z", isArchived: false },

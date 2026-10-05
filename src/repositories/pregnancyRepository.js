@@ -85,7 +85,7 @@ function addDays(n, isoDate) {
   return d.toISOString().slice(0, 10);
 }
 const seedPositiveTestDate = daysAgo(75);
-export let seedPregnancies = [
+let seedPregnancies = [
   { ...DEFAULT_PREGNANCY, id: "seed_pregnancy_9001", testDate: daysAgo(40), testResult: "Negative", notes: "Precautionary test." },
   // ADDED — real ask: a full simulated pregnancy/miscarriage thread
   // (see seed_contact_9008/encounterRepository.js's Morgan encounters,

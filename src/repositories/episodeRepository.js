@@ -79,7 +79,7 @@ export const DEFAULT_EPISODE = {
 // TOC (seed_test_9002), resolved. Gives a new user one real end-to-end
 // example of what the Timeline feature actually tracks, not just
 // isolated records in each module.
-export let seedEpisodes = [
+let seedEpisodes = [
   {
     ...DEFAULT_EPISODE,
     id: "seed_episode_9001",
