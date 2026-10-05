@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
 import { resolveDeepLinkRoute } from "./calculations/deepLinkRoutes";
+import { syncAllWidgets } from "./calculations/syncAllWidgets";
 import { useDarkModePreference } from "./calculations/darkModePreference";
 import { NEUTRAL_DARK as DARK } from "./calculations/designTokens";
 // ADDED — real architecture extraction, see each file's own header.
@@ -1464,7 +1465,26 @@ export default function App() {
 
   useEffect(() => {
     checkDueMeds();
-    const onVisible = () => { if (document.visibilityState === "visible") checkDueMeds(); };
+    const onVisible = () => { if (document.visibilityState === "visible") checkDueMeds();
+    // ADDED 5 Oct 2026 - measured root cause of "the widgets show stale data
+    // and no bridge write has landed since 2 Oct".
+    //
+    // syncAllWidgets() lived in HomeScreen's own mount-once effect. That is the
+    // wrong place: Home mounts BEFORE the vault is unlocked, so every pusher's
+    // first repository read rejects, and each one is swallowed by a per-pusher
+    // try/catch that logged at console.debug - invisible in a WebView. Proved on
+    // the device by instrumenting the native side: the WidgetBridge plugin
+    // registers, and NOT ONE bridge method is ever called, while the providers
+    // themselves push perfectly on every placement - built from prefs frozen on
+    // 2 Oct.
+    //
+    // Called here instead, beside checkDueMeds(), for exactly the same reason
+    // that one is called twice: this is the first point at which encrypted data
+    // is genuinely readable. Home is still free to call it on mount too - the
+    // queue serialises, and a second call is harmless - which is what keeps a
+    // Home visit refreshing the widgets without waiting for a restart.
+    syncAllWidgets();
+  };
     document.addEventListener("visibilitychange", onVisible);
     // Safety-net poll, deliberately independent of the OS notification
     // pipeline actually working — see this block's own comment above.

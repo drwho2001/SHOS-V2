@@ -886,6 +886,31 @@ That leaves the failure inside the static bridge method, after `WidgetPrefs.get(
 
 **Two tooling findings that cost real time here, so nobody re-learns them.** This WebView's CDP **does not honour `awaitPromise`** - `Runtime.evaluate` with it simply never returns, so an async probe has to stash its result on `window` and be polled with a second synchronous evaluate. And a **backgrounded WebView throttles timers** hard enough that a `setTimeout(r, 12000)` race inside the app ran for 18+ seconds without firing, which reads exactly like a hung bridge call. Both produced confident false conclusions before being caught; bring the app to the foreground before concluding anything from a timer.
 
+## Recently shipped (5 Oct 2026, latest - widgets showed 3-day-old data, and the cause was a guard that swallowed the failure at an invisible log level)
+
+**The Clinic Card widget showed "Can't load widget" and every other widget showed data frozen at 2 Oct. Root cause found by instrumentation, not inference, and it was a call site in the wrong place.**
+
+**The measurement that pinned it.** Instrumenting the native side (temporary `Log.i` at each decision point) produced, on one launch:
+```
+Capacitor: Registering plugin instance: WidgetBridge
+WidgetPrefs: get() store OPENED                        <- store works, every time
+ClinicCardWidget: onUpdate FIRED, ids=1
+ClinicCardWidget: updateAppWidget ENTER id=321
+ClinicCardWidget: pushing DATA views for id=321         <- the provider works fine
+TestWidgetProvider: pushed DATA views id=320
+```
+and, absent from that output, **`WidgetBridge: updateClinicCard ENTER`**. The plugin registers and **not one bridge method is ever called from JS**. The providers' own `onUpdate` fires on every placement and pushes happily - built from preferences that have not been written since **2026-10-02 06:31**. So the widgets were never broken: they were frozen, re-rendering the same stale snapshot.
+
+**The cause: `syncAllWidgets()` was called from the wrong place.** It lived in `HomeScreen`'s mount-once effect, and **Home mounts before the vault is unlocked**. Every pusher's first repository read therefore rejected, and each rejection was caught by the per-pusher `try/catch` in `syncAllWidgets.js`, which logged at **`console.debug`** - which is *invisible in a WebView*. The user-visible symptom was only that widgets showed stale data; there was no error anywhere. It now also runs in `App.jsx` beside `checkDueMeds()`, inside `finishBootAfterUnlock()`, which is the first point at which encrypted data is genuinely readable - and that is exactly why `checkDueMeds` was already called a second time there, for the same Phase 4 reason.
+
+**The guard that hid it is the more transferable finding, and it is the same shape as the vacuous ones already recorded here.** `syncAllWidgets` exists precisely to stop "one early return starves everything after it", and it did its job: one widget failing cannot stop the other five. It also swallowed the *only* diagnostic that would have shown the whole feature was dead. Now `console.warn`, still suppressed on web via the same dynamic import the pushers use (NOT `window.Capacitor`, which this build does not expose - a guard built on that would never fire, which is the opposite of the point). **A per-widget guard that cannot be seen failing is not a guard.**
+
+Two smaller findings recorded at the same change, both from the same logcat: six files each call `registerPlugin("WidgetBridge")`, producing five harmless `already registered` warnings; and `WidgetPrefs`' two `catch` blocks were widened from `Exception` to `Throwable` for the diagnostic, on the reasoning that an `Error` (e.g. `NoClassDefFoundError` from a missing crypto provider) would escape an `Exception` catch entirely and would explain both the missing write *and* the absent warning. **The logs disproved that** - `store OPENED` on every call - so the widening is reverted rather than left in as an unexplained change.
+
+**Everything ruled out by measurement first**, so the next session does not repeat it: the `widget_unavailable` fallback layout is present and inflatable in the APK; `androidx.security.crypto` is present (749 references across all 14 dex files); all ten providers override `onUpdate`; a fresh placement really does trigger `AppWidgetServiceImpl.updateAppWidgetInstanceLocked`; the store is genuinely encrypted (AndroidX, obfuscated keysets), so this was never a plaintext-fallback privacy defect; and calling the bridge by hand RESOLVES - because that path bypasses the failing data read entirely, which is why it looked like the bridge was fine.
+
+1171 tests across 105 files, verify:fast green. The temporary `Log.i` calls are still in this build **on purpose**: an instrument should not be removed until the thing it measures has been seen to change. `WidgetBridge: updateClinicCard ENTER` appearing in logcat is the confirmation.
+
 ## Recently shipped (4 Oct 2026, latest - the warm-tap bug was one missing line, and my own fix this session caused a second bug alongside it)
 
 **Every widget tap landed on the dashboard from a warm app. All ten. One missing `setAction`.** Measured on the owner's phone (Redmi 23124RA7EO, Android 15 / HyperOS 2.0, Lawnchair 15.Beta 3, WebView 153): every widget reported "works from cold, goes to the dashboard when warm" - encounter, medication, next dose, last test, refills, appointment, cycle and clinic card alike. A total, warm-only failure across ten independent widgets is not ten bugs, and treating the symmetry as coincidence is what had kept this invisible through several rounds of flag-fixing.

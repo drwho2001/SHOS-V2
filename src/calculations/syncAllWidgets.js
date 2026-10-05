@@ -72,6 +72,24 @@ const PUSHERS = [
 let queue = Promise.resolve();
 
 /**
+ * True only on a real device. Web genuinely has no widget bridge, so a failed
+ * push there is expected and must not be surfaced as a warning.
+ *
+ * Uses the same dynamic import the pushers themselves use. NOT `window.Capacitor`
+ * - that is not exposed in this build, and a guard built on it would never fire,
+ * which is the opposite of the point. Verified by grep: no reference to
+ * window/globalThis Capacitor anywhere in src/.
+ */
+async function isNativePlatform() {
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Push every home-screen widget from current data.
  *
  * Safe to call from anywhere and as often as you like: it never throws, it does
@@ -84,10 +102,22 @@ export function syncAllWidgets() {
         try {
           await push();
         } catch (e) {
-          // One widget failing must not starve the other five. Logged at debug
-          // rather than warn, because the bridge is genuinely absent on web and
-          // that is not a fault worth surfacing.
-          console.debug(`Widget push skipped (${name}):`, e);
+          // One widget failing must not starve the other five.
+          //
+          // CHANGED 5 Oct 2026 from console.debug to console.warn, and this is
+          // the most useful line in the file. It was console.debug, which is
+          // INVISIBLE in a WebView - and that is precisely how the real bug hid
+          // for days: every pusher was throwing on its first repository read
+          // (Home mounts before the vault unlocks), each throw was swallowed
+          // here at debug level, and the only visible symptom was widgets quietly
+          // showing stale data. A per-widget guard that cannot be seen failing is
+          // not a guard.
+          //
+          // Still suppressed on web, where an absent bridge is expected rather
+          // than a fault - which is why this awaits rather than guessing.
+          if (await isNativePlatform()) {
+            console.warn(`Widget push FAILED (${name}):`, e);
+          }
         }
       }
     })
