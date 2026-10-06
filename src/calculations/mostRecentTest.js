@@ -26,6 +26,7 @@
 // ONE OWNER, per this repo's "store facts, derive state" rule. Pure functions
 // taking the records already loaded, per the calculation/repository split - see
 // testingCalculations.js's own header for the same convention.
+import { isCompletedTestRecord } from "./testingCalculations";
 
 /**
  * Which infections a test actually screened for.
@@ -97,7 +98,7 @@ export function mostRecentTestDate(tests, options = {}) {
   const { infection = null, todayIsoDay = null } = options;
   const today = todayIsoDay ?? new Date().toISOString().slice(0, 10);
   const eligible = (Array.isArray(tests) ? tests : []).filter(
-    (t) => !t?.isArchived && t?.date && t.date.slice(0, 10) <= today,
+    (t) => isCompletedTestRecord(t) && t.date && t.date.slice(0, 10) <= today,
   );
   const matching = eligible.filter((t) => testCoversInfection(t, infection));
   if (!matching.length) return null;

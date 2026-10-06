@@ -96,6 +96,17 @@ describe("the rules this helper inherited, now in one place", () => {
     expect(mostRecentTestDate([future], { infection: "HIV" })).toBeNull();
   });
 
+  it("does not mistake a scheduled routine retest for a completed test", () => {
+    const scheduled = {
+      id: "planned",
+      date: "2026-09-20T12:00:00.000Z",
+      testingFor: ["HIV"],
+      isRoutineRetestPlan: true,
+    };
+    expect(mostRecentTestDate([HIV_TEST, scheduled], { infection: "HIV", todayIsoDay: "2026-10-01" })).toBe(HIV_TEST.date);
+    expect(mostRecentTestDate([scheduled], { infection: "HIV", todayIsoDay: "2026-10-01" })).toBeNull();
+  });
+
   it("returns the newest eligible test, not the first", () => {
     const older = { id: "t_o", date: "2026-01-01T09:00:00.000Z", testingFor: ["HIV"] };
     expect(mostRecentTestDate([older, HIV_TEST], { infection: "HIV" })).toBe(HIV_TEST.date);

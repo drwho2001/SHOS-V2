@@ -25,6 +25,7 @@
 // that relationship visible rather than picking an arbitrary new hue.
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { FormTabs } from "../components/FormTabs";
 import { UserIcon as User, DownloadSimpleIcon as Download, CopyIcon as Copy, CheckIcon as Check, XIcon as X, CaretLeftIcon as ChevronLeft, ShareNetworkIcon as Share, MessengerLogoIcon as MessengerLogo, TelegramLogoIcon as TelegramLogo, InstagramLogoIcon as InstagramLogo, WhatsappLogoIcon as WhatsappLogo, XLogoIcon as XLogo, SnapchatLogoIcon as SnapchatLogo, CrosshairIcon as Crosshair } from "@phosphor-icons/react";
 
 // Same real-platform-logo lookup as Contacts' own copy (self-contained
@@ -126,6 +127,11 @@ function buildDark() {
   };
 }
 const radius = RADIUS;
+const PROFILE_EDIT_TABS = [
+  { key: "about", label: "About" },
+  { key: "lifestyle", label: "Lifestyle & interests" },
+  { key: "health", label: "Health & safety" },
+];
 
 // ── Shared form primitives — same visual shape as Contacts', kept
 // local per the self-contained-module pattern rather than importing
@@ -944,6 +950,7 @@ function useResolvedHivStatus(stated) {
 
 function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
     const [form, setForm] = useState(profile);
+    const [activeFormTab, setActiveFormTab] = useState(PROFILE_EDIT_TABS[0].key);
     const editSheetRef = useRef(null);
     useEffect(() => { editSheetRef.current?.focus(); }, []);
     // ADDED 28 Sep 2026 — Escape-to-dismiss sweep, second pass. This is a
@@ -1071,6 +1078,10 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
       </div>
 
       <div style={{ padding: "0 16px 100px" }}>
+        <FormTabs tabs={PROFILE_EDIT_TABS} activeKey={activeFormTab} onChange={setActiveFormTab}
+          ariaLabel="My Profile form sections" accent={T.contactsTeal} accentText={T.contactsTealText}
+          textColor={T.textSecondary} border={T.border} surface={T.bg}>
+        <div>
         <SectionCard title="Identity" T={T}>
           <PhotoPicker value={form.profilePicture} onChange={set("profilePicture")} T={T} />
           <TextField label="Full name" value={form.displayName} onChange={set("displayName")} T={T} placeholder="Your full name" />
@@ -1110,6 +1121,12 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
           <TagInput label="Other platforms" value={form.contactableVia} onChange={set("contactableVia")} T={T} placeholder="Grindr, Tinder, etc." />
         </SectionCard>
 
+        <SectionCard title="About me" T={T}>
+          <TextAreaField label="A short note about yourself" value={form.aboutMeNotes} onChange={set("aboutMeNotes")} T={T} placeholder="Not shown to anyone unless you share your profile." />
+        </SectionCard>
+        </div>
+
+        <div>
         <SectionCard title="Hosting / Travel" T={T}>
           <SelectField label="Hosts" value={form.hosts} onChange={set("hosts")} options={HOSTS_OPTIONS} T={T} />
           <SelectField label="Travels" value={form.travels} onChange={set("travels")} options={TRAVELS_OPTIONS} T={T} />
@@ -1167,7 +1184,9 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
           )}
         </SectionCard>
         ) : null}
+        </div>
 
+        <div>
         {/* SUPERSEDED — real design decision: contraception is no
             longer edited here. contraceptionRepository.js is the
             single owner of real contraception data (method, dates,
@@ -1272,10 +1291,6 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
           </div>
         </SectionCard>
 
-        <SectionCard title="About me" T={T}>
-          <TextAreaField label="A short note about yourself" value={form.aboutMeNotes} onChange={set("aboutMeNotes")} T={T} placeholder="Not shown to anyone unless you share your profile." />
-        </SectionCard>
-
         {/* ADDED 19 Aug 2026 — Clinic Card's two real, previously-flagged
             gaps (Allergies, Emergency information), the user's explicit call
             on where they should live. Deliberately its own section,
@@ -1293,6 +1308,8 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
           <TextField label="Emergency contact phone" value={form.emergencyContactPhone} onChange={set("emergencyContactPhone")} T={T} placeholder="e.g. +44 7700 900123" />
           <TextAreaField label="Other emergency notes" value={form.emergencyNotes} onChange={set("emergencyNotes")} T={T} placeholder="e.g. blood type, relevant conditions" />
         </SectionCard>
+        </div>
+        </FormTabs>
       </div>
     </div>
   );

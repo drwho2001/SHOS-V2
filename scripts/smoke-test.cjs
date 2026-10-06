@@ -2958,6 +2958,26 @@ async function testMyProfileEditFormRenders(page) {
   const sheet = page.getByRole("dialog", { name: "Edit My Profile" });
   console.log("  ok - the Edit My Profile sheet opened");
 
+  const profileTabs = page.getByRole("tablist", { name: "My Profile form sections" });
+  assert(await profileTabs.getByRole("tab").count() === 3,
+    "My Profile edit is organized into three contextual form tabs");
+  await profileTabs.getByRole("tab", { name: "Lifestyle & interests" }).click();
+  await page.getByLabel("Hosts").waitFor({ state: "visible", timeout: 8000 });
+  assert(await page.getByLabel("Hosts").isVisible(),
+    "the Lifestyle tab shows hosting/travel fields");
+  await profileTabs.getByRole("tab", { name: "Health & safety" }).click();
+  const healthPanel = page.getByRole("tabpanel", { name: "Health & safety" });
+  const emergencyInfo = healthPanel.getByText("Clinical & emergency info (never shared)");
+  await emergencyInfo.waitFor({ state: "visible", timeout: 8000 });
+  assert(await emergencyInfo.isVisible(),
+    "the Health & safety tab shows private clinical/emergency fields");
+  await profileTabs.getByRole("tab", { name: "About" }).click();
+  await page.getByLabel("Full name").waitFor({ state: "visible", timeout: 8000 });
+  assert(await page.getByLabel("Full name").isVisible(),
+    "the About tab returns to identity fields");
+  await profileTabs.getByRole("tab", { name: "Health & safety" }).click();
+  await page.getByLabel("Override if tested elsewhere").waitFor({ state: "visible", timeout: 8000 });
+
   // Assert on the ErrorBoundary's OWN copy, not merely on the absence of the
   // form: a crash that unmounts the form would satisfy "the form is gone" too,
   // so the positive assertion has to be about the failure being visible.
@@ -3060,6 +3080,22 @@ async function testContactEditFormRenders(page) {
   await sheet.waitFor({ state: "visible", timeout: 10000 });
   console.log("  ok - the Edit contact sheet opened");
 
+  const contactTabs = page.getByRole("tablist", { name: "Contact form sections" });
+  assert(await contactTabs.getByRole("tab").count() === 3,
+    "Contact edit is organized into three contextual form tabs");
+  await contactTabs.getByRole("tab", { name: "Meeting & profile" }).click();
+  await page.getByLabel("Hosts").waitFor({ state: "visible", timeout: 8000 });
+  assert(await page.getByLabel("Hosts").isVisible(),
+    "the Meeting tab shows location/logistics fields");
+  await contactTabs.getByRole("tab", { name: "Interests & contact" }).click();
+  await page.getByLabel("Phone/WhatsApp").waitFor({ state: "visible", timeout: 8000 });
+  assert(await page.getByLabel("Phone/WhatsApp").isVisible(),
+    "the Interests & contact tab shows contact methods");
+  await contactTabs.getByRole("tab", { name: "About" }).click();
+  await page.getByLabel("Full name").waitFor({ state: "visible", timeout: 8000 });
+  assert(await page.getByLabel("Full name").isVisible(),
+    "the About tab keeps the required contact identity field reachable");
+
   const boundaryText = await page.getByText("Something went wrong").count();
   assert(boundaryText === 0,
     `a contact's Edit sheet rendered without the ErrorBoundary. It found ${boundaryText} copy/copies of the boundary text.`);
@@ -3071,4 +3107,27 @@ async function testContactEditFormRenders(page) {
   assert(selects > 0,
     `the Edit contact sheet rendered its option controls (found ${selects} select elements). A sheet that opened but rendered no pickers would satisfy "no crash" on its own.`);
   console.log(`  ok - sheet rendered ${selects} option controls`);
+
+  await page.keyboard.press("Escape");
+  await sheet.waitFor({ state: "detached", timeout: 8000 });
+  await nav(page, "Encounter");
+  const addEncounter = page.getByRole("button", { name: "Add encounter" }).first();
+  await addEncounter.waitFor({ state: "visible", timeout: 8000 });
+  await addEncounter.click();
+  const encounterSheet = page.getByRole("dialog", { name: "Add Encounter" });
+  await encounterSheet.waitFor({ state: "visible", timeout: 10000 });
+  const encounterTabs = page.getByRole("tablist", { name: "Encounter form sections" });
+  assert(await encounterTabs.getByRole("tab").count() === 3,
+    "Encounter edit is organized into three contextual form tabs");
+  await encounterTabs.getByRole("tab", { name: "Activity & protection" }).click();
+  await page.getByLabel("My role").waitFor({ state: "visible", timeout: 8000 });
+  assert(await page.getByLabel("My role").isVisible(),
+    "the Activity tab shows encounter practices");
+  await encounterTabs.getByRole("tab", { name: "Health & notes" }).click();
+  const encounterNotes = page.getByRole("textbox", { name: "Notes" });
+  await encounterNotes.waitFor({ state: "visible", timeout: 8000 });
+  assert(await encounterNotes.isVisible(),
+    "the Health & notes tab shows the notes field");
+  await page.keyboard.press("Escape");
+  await encounterSheet.waitFor({ state: "detached", timeout: 8000 });
 }

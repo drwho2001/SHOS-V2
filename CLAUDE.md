@@ -831,6 +831,56 @@ which is the same shape as every other time in this file where a check reported
 green on something that had not actually been exercised. The guard now rejects a
 `#` inside any `if:` block.
 
+## Recently shipped (6 Oct 2026, later - a routine retest you can actually schedule, and a test that caught three bugs I wrote)
+
+**Session D. `isRoutineRetestPlan` is a real persisted state, and it is excluded
+from every "have I been tested" answer the app gives.** A plan is an intention,
+not a result, so `isCompletedTestRecord()` in `testingCalculations.js` is now the
+single owner of that distinction and is consumed by `mostRecentTestDate`, all four
+`statsCalculations` test derivations, all three `testingReminderSync` reads, Home,
+the Clinic Card, Healthcare's year count and the Clinic Card PDF. Re-measure the
+call sites with `grep -rn "isCompletedTestRecord" src/`.
+
+**Eligibility is now a defined core panel — Gonorrhoea, Chlamydia, HIV, Syphilis
+— and it is the same rule for the suggestion, the reminder and the new action.**
+A single negative result for one infection is not the routine screen. This is a
+visible change to already-shipped behaviour, so it is pinned by a named test in
+`reminderDueShapes.test.js` rather than left to be rediscovered as "the reminder
+broke": a partial panel no longer arms the retest reminder *at all*, and that is
+visible on this repo's own seed data, whose newest test is a Gonorrhoea-only
+test-of-cure.
+
+**The schedule action creates the record directly instead of opening the blank
+Add form.** That form's draft key is `testEdit_new`, shared by every unsaved new
+test in the app, so opening it from here would overwrite an unrelated
+half-written draft — the hazard this file already records once. Creating the plan
+gives it its own id and its own `testEdit_<id>` draft key.
+
+**Three bugs the tests caught, none of which reading the diff would have.**
+`Array.flatMap` does not flatten a `Set`, so the infection-overlap helper
+compared against Set *objects* and reported no overlap for every plan — and it was
+truthy and non-empty, so a `.length` guard would have looked correct. A leap-year
+fixture passed only because it used a future date, which the new completion rule
+correctly rejects; it now injects the clock. And a partial-panel test read stale
+module state, because `TestingRepository` caches its records at module scope and
+changing a mocked store after the first load is silently ignored — the fixture now
+swaps through the real `replaceAll`, since a fixture that quietly does not take
+effect is worse than no fixture.
+
+**Measured boundary:** 104 tests across 8 files green, lint clean, production
+build clean, encoding guard clean. No browser flow covers schedule → plan → mark
+done yet; coverage is unit plus repository-integration.
+
+**Three test files were red and were left red, all for reasons outside this
+change.** `snapshotFidelity`'s `tests` collection is provably red at HEAD: the
+frozen snapshot in `seedDivergence.js` holds `test_001` while HEAD's seed array
+holds `seed_test_9001`, so it predates session C's seed re-key — the new
+`DEFAULT_TEST` fields widen the same divergence but the id mismatch alone decides
+it, and regeneration (`SHOS_REGEN_SNAPSHOT=1`) belongs in that other session's
+file. `widgetRedactedRender` fails on a `nextDoseRedactedLine` literal in
+`medicationReminderSync.js`, untouched at HEAD. `scripts/sessionBridge.test.js` is
+the known-flaky subprocess suite.
+
 ## Recently shipped (6 Oct 2026 - frozen demo identity, snapshot fidelity, and the import path now share one rule)
 
 **Session A took over the remaining seed-safety work after Sessions B/C stalled.** The 02:28 blocker was correct: `seedDivergence.js` initially classified **6/6 medications, 14/14 dose logs, 2/4 vaccinations and 1/1 episodes** as user data. Wired as-is, Clear Sample Data would silently remove nothing. The shipped fix keeps the destructive direction closed and makes all three places that act on the answer use one shared rule: `clearSampleData.js`, `seedIdMigration.js`, and the backup-import migration.

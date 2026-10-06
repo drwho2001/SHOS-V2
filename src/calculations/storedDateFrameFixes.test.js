@@ -274,6 +274,9 @@ describe("day-key rules used by the retest reminder", () => {
 
 describe("suggestedRoutineRetestDate adds three months in the stored frame", () => {
   const results = (name) => new Map([["r1", name]]);
+  // Eligibility needs a full core panel; the DATE arithmetic is what this file
+  // exists to pin, so every fixture carries the panel and stays focused on that.
+  const CORE_PANEL = ["Gonorrhoea", "Chlamydia", "HIV", "Syphilis"];
 
   it("is the same date in every timezone", () => {
     for (const tz of ZONES) {
@@ -288,7 +291,7 @@ describe("suggestedRoutineRetestDate adds three months in the stored frame", () 
       // My first expectation here said 2026-12-01, i.e. the unclamped rollover,
       // and the test caught my own arithmetic rather than a defect.
       expect(
-        suggestedRoutineRetestDate({ date: "2026-08-31T23:30:00.000Z", resultIds: ["r1"] }, results("Negative")),
+        suggestedRoutineRetestDate({ date: "2026-08-31T23:30:00.000Z", resultIds: ["r1"], testingFor: CORE_PANEL }, results("Negative")),
         `TZ=${tz}`
       ).toBe("2026-11-30");
     }
@@ -300,22 +303,38 @@ describe("suggestedRoutineRetestDate adds three months in the stored frame", () 
       // 30 Nov + 3 months is 30 Feb, which does not exist. setUTCMonth rolls it
       // to 1 or 2 March, so the retest would be a month late without the clamp.
       expect(
-        suggestedRoutineRetestDate({ date: "2025-11-30T09:00:00.000Z", resultIds: ["r1"] }, results("Negative")),
+        suggestedRoutineRetestDate({ date: "2025-11-30T09:00:00.000Z", resultIds: ["r1"], testingFor: CORE_PANEL }, results("Negative")),
         `TZ=${tz}`
       ).toBe("2026-02-28");
     }
   });
 
-  it("handles a leap year February", () => {
+it("handles a leap year February", () => {
     process.env.TZ = "Europe/London";
+    // The clock is injected because 30 Nov 2027 + 3 months lands in Feb 2028 -
+    // the only way to reach a 29 February - and that date is in the future
+    // relative to whenever this runs. Without the injectable clock this test
+    // could only pass in 2028, which is the "test that only passes sometimes"
+    // shape this file exists to avoid.
     expect(
-      suggestedRoutineRetestDate({ date: "2027-11-30T09:00:00.000Z", resultIds: ["r1"] }, results("Negative"))
+      suggestedRoutineRetestDate({ date: "2027-11-30T09:00:00.000Z", resultIds: ["r1"], testingFor: CORE_PANEL }, results("Negative"), "2027-12-01")
     ).toBe("2028-02-29");
+  });
+
+  it("offers nothing for a test dated in the future", () => {
+    // NEW RULE, and it is a real behaviour change rather than a detail. A
+    // booked test has not happened, so there is nothing to count three months
+    // from - previously any future-dated record still produced a suggestion,
+    // which is how a not-yet-taken test could generate its own follow-up.
+    process.env.TZ = "Europe/London";
+    const booked = { date: "2027-11-30T09:00:00.000Z", resultIds: ["r1"], testingFor: CORE_PANEL };
+    expect(suggestedRoutineRetestDate(booked, results("Negative"), "2026-10-06")).toBeNull();
+    expect(suggestedRoutineRetestDate(booked, results("Negative"), "2027-12-01")).toBe("2028-02-29");
   });
 
   it("returns null for a positive result or a missing date", () => {
     process.env.TZ = "Europe/London";
-    expect(suggestedRoutineRetestDate({ date: "2026-08-31T09:00:00.000Z", resultIds: ["r1"] }, results("Positive"))).toBeNull();
-    expect(suggestedRoutineRetestDate({ resultIds: ["r1"] }, results("Negative"))).toBeNull();
+    expect(suggestedRoutineRetestDate({ date: "2026-08-31T09:00:00.000Z", resultIds: ["r1"], testingFor: CORE_PANEL }, results("Positive"))).toBeNull();
+    expect(suggestedRoutineRetestDate({ resultIds: ["r1"], testingFor: CORE_PANEL }, results("Negative"))).toBeNull();
   });
 });

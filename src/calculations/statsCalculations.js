@@ -15,6 +15,7 @@
 // session while fixing the same class of bug - the reason the canonical versions
 // exist at all.
 import { storedDayKey, localDayKey, calendarDaysBetween, daysSinceStoredDay } from "./dateInputHelpers";
+import { isCompletedTestRecord } from "./testingCalculations";
 
 // ── Activity ──
 
@@ -88,7 +89,7 @@ export function getTestingFrequencyStats(tests) {
   // than the 8 the user's own calendar says.
   const now = new Date();
   const todayKey = localDayKey(now);
-  const real = tests.filter((t) => !t.isArchived && t.date && storedDayKey(t.date) <= todayKey)
+  const real = tests.filter((t) => isCompletedTestRecord(t) && t.date && storedDayKey(t.date) <= todayKey)
     .sort((a, b) => (storedDayKey(a.date) < storedDayKey(b.date) ? -1 : 1));
   if (real.length < 2) {
     const lastDate = real[0]?.date || null;
@@ -138,7 +139,7 @@ export function getTestingIntervalTrend(tests) {
   // divide as getTestingFrequencyStats above, applied to the trend figure.
   const now = new Date();
   const todayKey = localDayKey(now);
-  const real = tests.filter((t) => !t.isArchived && t.date && storedDayKey(t.date) <= todayKey)
+  const real = tests.filter((t) => isCompletedTestRecord(t) && t.date && storedDayKey(t.date) <= todayKey)
     .sort((a, b) => (storedDayKey(a.date) < storedDayKey(b.date) ? -1 : 1));
   if (real.length < 2) return { currentGapVsAverage: null, recentTrend: null };
 
@@ -364,7 +365,7 @@ export function getTopSymptoms(symptomEntries, resolveSymptomName, topN = 5) {
 // resolver-callback pattern — this file stays I/O-free, the caller
 // resolves ids via whichever registry it already has loaded.
 export function getPositiveTestsByOrganism(tests, resolveOrganismName, resolveResultName, topN = 8) {
-  const real = tests.filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+  const real = tests.filter((t) => isCompletedTestRecord(t) && t.date && new Date(t.date) <= new Date());
   const seenEvents = new Set(); // `${date}|${bucketKey}`
   const counts = {};
   for (const t of real) {
@@ -400,7 +401,7 @@ export function getPositiveTestsByOrganism(tests, resolveOrganismName, resolveRe
 // records from the same visit with different sampleType entries really
 // are two different physical samples, not a double-count of one fact.
 export function getTestsBySite(tests, topN = 8) {
-  const real = tests.filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+  const real = tests.filter((t) => isCompletedTestRecord(t) && t.date && new Date(t.date) <= new Date());
   const counts = {};
   for (const t of real) {
     for (const site of t.sampleType || []) counts[site] = (counts[site] || 0) + 1;

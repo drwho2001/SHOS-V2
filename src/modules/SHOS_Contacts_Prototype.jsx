@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import { FormTabs } from "../components/FormTabs";
 import { HivStatusNote } from "../components/HivStatusNote";
 import {
   PlusIcon as Plus, MagnifyingGlassIcon as Search, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, GearSixIcon as Settings2, GearIcon as SettingsIcon,
@@ -156,6 +157,11 @@ function buildDark() {
   };
 }
 const radius = RADIUS;
+const CONTACT_EDIT_TABS = [
+  { key: "about", label: "About" },
+  { key: "meeting", label: "Meeting & profile" },
+  { key: "interests", label: "Interests & contact" },
+];
 
 function loadContacts() {
   return ContactRepository.getAll();
@@ -1818,6 +1824,7 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
   const isNew = !contact;
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
+  const [activeFormTab, setActiveFormTab] = useState(CONTACT_EDIT_TABS[0].key);
   // ADDED 19 Aug 2026 — draft autosave, real fix for a real gap the user
   // flagged: in-progress edits used to live only in this component's
   // memory, gone on any refresh. draftKey is scoped per-contact (or
@@ -1953,6 +1960,10 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
         )}
 
         <div tabIndex={0} style={{ overflowY: "auto", padding: "0 20px", flex: 1 }}>
+        <FormTabs tabs={CONTACT_EDIT_TABS} activeKey={activeFormTab} onChange={setActiveFormTab}
+          ariaLabel="Contact form sections" accent={T.contactsTeal} accentText={T.contactsTealText}
+          textColor={T.textSecondary} border={T.border} surface={T.bg}>
+        <div>
         <SectionCard T={T} title="Identity">
           <PhotoPicker T={T} value={form.profilePicture} onChange={set("profilePicture")} />
           <TextField T={T} label="Full name" value={form.name} onChange={set("name")} placeholder="Full name" />
@@ -2026,7 +2037,9 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
             <ToggleSwitch T={T} value={form.excludeFromActiveTracking} onChange={set("excludeFromActiveTracking")} />
           </div>
         </SectionCard>
+        </div>
 
+        <div>
         <SectionCard T={T} title="Location & logistics">
           <SelectField T={T} label="Hosts" value={form.hosts} onChange={set("hosts")} options={HOSTS_OPTIONS} />
           <SelectField T={T} label="Travels" value={form.travels} onChange={set("travels")} options={TRAVELS_OPTIONS} />
@@ -2173,7 +2186,9 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
             helper="When they told you - not when they were tested. This information may be out of date."
           />
         </SectionCard>
+        </div>
 
+        <div>
         <SectionCard T={T} title="Kink">
           {/* REVERTED — the user clarified the cross-exclusion (a kink
               already in Limits hidden from Stated Kinks' suggestions,
@@ -2239,6 +2254,8 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
             <LinkedContactsField T={T} contactId={form.id} allContacts={contacts} refresh={refresh} />
           </SectionCard>
         )}
+        </div>
+        </FormTabs>
         </div>
 
         <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>

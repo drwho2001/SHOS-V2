@@ -21,6 +21,7 @@ import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 // link to it, never delete the Measurement itself (see
 // measurementRepository.js's own "one room, three doors" comment).
 import { MeasurementRepository } from "./measurementRepository.js";
+import { ROUTINE_RETEST_PANEL } from "../calculations/testingCalculations.js";
 // ADDED — real gap found via the new orphan-reference checker
 // (orphanReferenceCheck.js): delete-time cleanup needs both directions
 // of the Testing↔Clinic Visits relationship — clinicVisitsRepository.js
@@ -33,7 +34,10 @@ import { SymptomLogRepository } from "./symptomLogRepository.js";
 import { EpisodeRepository } from "./episodeRepository.js";
 import { PartnerNotificationRepository } from "./partnerNotificationRepository.js";
 
-const STORAGE_KEY = "shos_tests";
+// Exported for its own test, matching contactRepository.js: the mock adapter
+// needs the real key or a typo in it silently loads the seed array instead of
+// the empty fixture, and every assertion then passes against demo data.
+export const STORAGE_KEY = "shos_tests";
 
 export const SETTING_OPTIONS = ["🏥😎 Clinic - Routine", "🏥🤢 Clinic - Symptomatic", "🏥➕ Clinic - Positive test", "🏠 Home"];
 // (SAMPLE_TYPE_OPTIONS moved to customOptionListsRepository.js, real
@@ -98,6 +102,13 @@ export const DEFAULT_TEST = {
   kitCodeSk: "",
   kitAccessKey: "",
   attachments: [],        // real, wired — see attachment shape below
+  // Routine retest plans are records for a future intention, not a test result.
+  // They are excluded from completed-test calculations until explicitly marked
+  // performed from the plan's detail screen.
+  isRoutineRetestPlan: false,
+  routineRetestSourceTestId: null,
+  plannedForDate: null,
+  routineRetestPerformedAt: null,
   // CHANGED 19 Aug 2026 — clinicVisitIds is now REAL, not stubbed.
   // Clinic Visits exists as a module now (see clinicVisitsRepository.js),
   // per the user's own instruction applied consistently: wire a relationship
@@ -364,6 +375,68 @@ export const TestingRepository = {
     this._supersedeOlderMostRecent(newTest);
     await persist();
     return newTest;
+  },
+
+  async createRoutineRetestPlan({ title, date, sourceTestId }) {
+    const day = String(date || "").slice(0, 10);
+    const parsedDay = new Date(`${day}T12:00:00.000Z`);
+    if (!String(title || "").trim() || !/^\d{4}-\d{2}-\d{2}$/.test(day) || Number.isNaN(parsedDay.getTime()) || parsedDay.toISOString().slice(0, 10) !== day) {
+      throw new Error("A title and valid planned test date are required.");
+    }
+return this.create({
+      title: String(title || "").trim(),
+      // Midday, not midnight. A plan's date is an intention for a calendar day,
+      // and every "has this date passed" comparison in this app is a DAY-KEY
+      // comparison (isDayKeyDue, storedDayKey). Storing 00:00 makes the stored
+      // instant read as the day before in every zone west of UTC, which is the
+      // exact shift bug dateInputHelpers.js exists to prevent.
+      date: `${day}T12:00:00.000Z`,
+      plannedForDate: day,
+      // The panel is stored on the plan deliberately. Without it a plan carries
+      // no idea what it is a plan FOR, so nothing can tell whether a later real
+      // test supersedes it, and the list row cannot say what is being retested.
+      // testingFor here is descriptive, not a result: resultIds stays empty, so
+      // isRoutineRetestEligible cannot match a plan and propose retesting it.
+      testingFor: [...ROUTINE_RETEST_PANEL],
+      resultIds: [],
+      sampleType: [],
+      mostRecent: false,
+      isRoutineRetestPlan: true,
+      routineRetestSourceTestId: sourceTestId || null,
+    });
+  },
+
+  async markRoutineRetestPerformed(id, changes) {
+    const existing = await this.getById(id);
+    if (!existing?.isRoutineRetestPlan) return null;
+    return this.update(id, {
+      ...changes,
+      isRoutineRetestPlan: false,
+      routineRetestPerformedAt: new Date().toISOString(),
+      plannedForDate: existing.plannedForDate || existing.date?.slice(0, 10) || null,
+    });
+  },
+
+async updateRoutineRetestPlan(id, { title, date }) {
+    const existing = await this.getById(id);
+    if (!existing?.isRoutineRetestPlan) return null;
+    const day = String(date || "").slice(0, 10);
+    const parsedDay = new Date(`${day}T12:00:00.000Z`);
+    if (!String(title || "").trim() || !/^\d{4}-\d{2}-\d{2}$/.test(day) || Number.isNaN(parsedDay.getTime()) || parsedDay.toISOString().slice(0, 10) !== day) {
+      throw new Error("A title and valid planned test date are required.");
+    }
+    return this.update(id, {
+      title: String(title).trim(),
+      date: `${day}T12:00:00.000Z`,
+      plannedForDate: day,
+      testingFor: [...ROUTINE_RETEST_PANEL],
+      // Explicitly re-asserted, not merely absent: `update` merges, so a caller
+      // that passed a stale isRoutineRetestPlan: true (the record being edited
+      // as a normal test, say) would otherwise keep a record claiming to be an
+      // intention while carrying a result.
+      isRoutineRetestPlan: true,
+      mostRecent: false,
+    });
   },
 
   async update(id, changes) {

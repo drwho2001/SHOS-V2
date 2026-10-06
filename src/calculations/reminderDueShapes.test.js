@@ -41,6 +41,7 @@ vi.mock("../storage/storageAdapter", () => {
 });
 
 import { getTestingDueState } from "./testingReminderSync";
+import { TestingRepository } from "../repositories/testingRepository";
 import { getVaccinationDueState } from "./vaccinationReminderSync";
 import { getClinicVisitDueState } from "./clinicVisitReminderSync";
 import { getRefillDueMedications } from "./refillReminderSync";
@@ -53,10 +54,51 @@ import { buildSimpleSignature, buildMedsSignature, REMINDER_KIND, isBannerVisibl
 // which keeps the fixture away from DST and month-index traps.
 const ALL_DUE = new Date("2027-03-01T12:00:00.000Z");
 
-beforeEach(() => {
+// 2026-12-01 + the three-calendar-month interval = 2027-03-01, which is exactly
+// the pinned clock, so the precondition below is due on the day rather than
+// merely by now. A fixture that only happened to be old enough would stop
+// meaning anything the day the interval changed.
+const FULL_PANEL_NEGATIVE = { title: "Routine screen" };
+
+// Replaces this repository's records through its REAL API.
+//
+// NOT just mockStore.set(). The repository caches its records at module scope on
+// first read (ensureLoaded), so changing the mocked store after that point is
+// silently ignored - which is exactly what happened on the first attempt at the
+// partial-panel test below: it read the previous test's records and reported the
+// opposite of the truth. A fixture that silently does not take effect is worse
+// than no fixture, so the swap goes through replaceAll, which is what production
+// uses.
+async function useTests(records) {
+  await TestingRepository.replaceAll(records);
+}
+
+beforeEach(async () => {
   mockStore.clear();
   vi.useFakeTimers();
   vi.setSystemTime(ALL_DUE);
+  // FIXED 6 Oct 2026 (t072). This file's precondition went RED when the routine
+  // retest suggestion was gated on a completed NEGATIVE CORE PANEL, and the
+  // reason is the seed data rather than the change: the newest seeded test is a
+  // Gonorrhoea-only test-of-cure, which is deliberately realistic and is not a
+  // routine panel. So with the seed alone, no routine retest is ever suggested
+  // and this file asserted its precondition was false.
+  //
+  // The fix is a FIXTURE, not a weakened assertion and not an edit to the shipped
+  // seed (which is another session's area, and demo data is not this feature's to
+  // reshape). One real-shaped full-panel negative test, past, is what the
+  // precondition needs to mean anything.
+  await useTests([
+    {
+      ...FULL_PANEL_NEGATIVE,
+      id: "seed_test_fixture_panel",
+      date: "2026-12-01T10:00:00.000Z",
+      resultDate: "2026-12-03T10:00:00.000Z",
+      resultIds: ["result_002"],
+      testingFor: ["Gonorrhoea", "Chlamydia", "HIV", "Syphilis"],
+      isArchived: false,
+    },
+  ]);
 });
 
 describe("precondition: the seed data really is due for every kind", () => {
@@ -75,6 +117,39 @@ describe("precondition: the seed data really is due for every kind", () => {
     expect(vaccine.due, "the seed's earliest vaccination is due at this clock").toBe(true);
     expect(refills.length, "at least one refill is due at this clock").toBeGreaterThan(0);
     expect(due.length, "at least one dose is due at this clock").toBeGreaterThan(0);
+  });
+});
+
+describe("a partial panel no longer arms the routine retest reminder", () => {
+  // A DELIBERATE behaviour change, pinned here so it cannot be rediscovered as
+  // a bug later and cannot drift back unnoticed either.
+  //
+  // Before the panel gate, any negative result armed the reminder. The owner
+  // asked for an STI-ONLY routine retest workflow over a defined core panel
+  // (Gonorrhoea, Chlamydia, HIV, Syphilis), applied consistently to the
+  // suggestion, the reminder and the new scheduling action. The consequence is
+  // real and user-visible: a user whose most recent test covered only some of
+  // the panel is no longer reminded at all. That is the decision, not a defect -
+  // but it is the kind that reads as "the reminder broke", so it is stated here
+  // rather than left to be inferred from a failing seed.
+  it("a Gonorrhoea-only negative produces no suggested retest", async () => {
+    await useTests([
+      {
+        ...FULL_PANEL_NEGATIVE,
+        id: "seed_test_fixture_partial",
+        date: "2026-12-01T10:00:00.000Z",
+        resultIds: ["result_002"],
+        testingFor: ["Gonorrhoea"],
+        isArchived: false,
+      },
+    ]);
+    const state = await getTestingDueState();
+    expect(state.due, "a partial panel must not arm the routine retest reminder").toBe(false);
+  });
+
+  it("the full core panel does arm it", async () => {
+    const state = await getTestingDueState();
+    expect(state.due).toBe(true);
   });
 });
 

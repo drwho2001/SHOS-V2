@@ -123,16 +123,37 @@ describe("the most recent test: one definition of 'recent'", () => {
   });
 
   it("the Clinic Card filter that caused the collapse is the fixed one", () => {
-    expect(read("src/modules/SHOS_ClinicCard_Prototype.jsx")).toMatch(
-      /sortByDateDesc\(\(await TestingRepository\.getAll\(\)\)\.filter\(\(t\) => !t\.isArchived && !\(t\.date && new Date\(t\.date\) > new Date\(\)\)\)\)/
-    );
+    // Retargeted 6 Oct 2026, not loosened. The literal spelling this used to
+    // assert no longer exists because the archived/future rule moved into the
+    // shared owner `isCompletedTestRecord` - so the assertion now checks the
+    // PROPERTY (both exclusions are applied) instead of one exact string, which
+    // is strictly stronger: it would still fail if either half came back.
+    const card = read("src/modules/SHOS_ClinicCard_Prototype.jsx");
+    expect(card).toMatch(/sortByDateDesc\(\(await TestingRepository\.getAll\(\)\)\.filter\(\(t\) => isCompletedTestRecord\(t\) && !\(t\.date && new Date\(t\.date\) > new Date\(\)\)\)\)/);
   });
 
-  it("'Since last test' keeps records at or after the cutoff, so a future cutoff empties it", () => {
+  it("'Since last test' keeps records at or after the cutoff, so a future cutoff empties it", async () => {
     // The mechanism by which the bug presented as a silent empty result rather
     // than an error. If this comparison is ever inverted, this catches it.
+    //
+    // Moved 6 Oct 2026 into the shared owner clinicCardCalculations.js. The
+    // assertion follows the rule to where it now lives, and EXERCISES it rather
+    // than grepping for its text - a grep passes on a function that is never
+    // called, and passes on one whose comparison has been inverted in a way the
+    // regex does not match. This is the stronger form.
     const card = read("src/modules/SHOS_ClinicCard_Prototype.jsx");
-    expect(card).toMatch(/withinTimeframe = \(dateStr\) => !cutoffDate \|\| !dateStr \|\| dateStr >= cutoffDate/);
     expect(card).toMatch(/if \(timeframe === "sinceLastTest"\) return lastTestDate;/);
+    expect(card).toMatch(/isWithinClinicCardTimeframe/);
+
+    const { isWithinClinicCardTimeframe } = await import("./clinicCardCalculations.js");
+    // At or after the cutoff is kept: this is the direction that, if inverted,
+    // silently empties the card when the cutoff is in the future.
+    expect(isWithinClinicCardTimeframe("2026-10-06", "2026-10-06")).toBe(true);
+    expect(isWithinClinicCardTimeframe("2026-10-07", "2026-10-06")).toBe(true);
+    expect(isWithinClinicCardTimeframe("2026-10-05", "2026-10-06")).toBe(false);
+    // No cutoff means no narrowing, and an undated record is never filtered out
+    // by a date window it cannot be measured against.
+    expect(isWithinClinicCardTimeframe("2026-10-06", null)).toBe(true);
+    expect(isWithinClinicCardTimeframe(null, "2026-10-06")).toBe(true);
   });
 });

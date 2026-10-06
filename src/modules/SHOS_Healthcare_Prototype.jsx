@@ -11,6 +11,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, reso
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack } from "@phosphor-icons/react";
 import { TestingRepository } from "../repositories/testingRepository";
+import { isCompletedTestRecord } from "../calculations/testingCalculations";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 import { VaccinationRepository } from "../repositories/vaccinationRepository";
 import TestingModule from "./SHOS_Testing_Prototype";
@@ -165,7 +166,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       const today = new Date().toISOString().slice(0, 10);
       const overdue = (await VaccinationRepository.getAll()).filter((v) => isVaccinationOverdue(v, today)).length;
       const thisYear = new Date().getFullYear();
-      const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && new Date(t.date).getFullYear() === thisYear).length;
+      const tests = (await TestingRepository.getAll()).filter((t) => isCompletedTestRecord(t) && t.date && new Date(t.date).getFullYear() === thisYear).length;
       setSummary({ activeSymptoms: symptoms, overdueVaccinations: overdue, testsThisYear: tests });
     })();
   }, [dataVersion]);

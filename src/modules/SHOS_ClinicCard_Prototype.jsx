@@ -5,6 +5,7 @@ import MyProfileModule from "./SHOS_MyProfile_Prototype";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { LogRepository } from "../repositories/logRepository";
 import { TestingRepository } from "../repositories/testingRepository";
+import { isCompletedTestRecord } from "../calculations/testingCalculations";
 import { OrganismRegistry } from "../registries/organismRegistry";
 import { ResultsRegistry } from "../registries/resultsRegistry";
 import { EncounterRepository } from "../repositories/encounterRepository";
@@ -30,6 +31,7 @@ import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, ACTION_TEXT_SAFE, RADIUS, TYPE,
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { getVaccinationNextDue, getVaccinationDate } from "../calculations/vaccinationCalculations";
+import { isWithinClinicCardTimeframe } from "../calculations/clinicCardCalculations";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
@@ -194,7 +196,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
     // My Profile and the Encounters filter all exclude future tests. This was
     // the only one of the four that did not, so the fix is to make it agree
     // rather than to decide anything new.
-    const tests = useLoadedMemo(async () => sortByDateDesc((await TestingRepository.getAll()).filter((t) => !t.isArchived && !(t.date && new Date(t.date) > new Date()))), [], []);
+  const tests = useLoadedMemo(async () => sortByDateDesc((await TestingRepository.getAll()).filter((t) => isCompletedTestRecord(t) && !(t.date && new Date(t.date) > new Date()))), [], []);
   const encounters = useLoadedMemo(async () => sortByDateDesc(await EncounterRepository.getAll()), [], []);
   const [profile, setProfile] = useLoadedState(() => MyProfileRepository.getProfile(), [], DEFAULT_PROFILE);
 
@@ -205,11 +207,11 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   // timeframe... maybe generic for whole clinic card — so can say all
   // since X date, or all since last test (which system can pull that
   // date through)." One shared control, applied to Recent Encounters
-  // and Vaccinations. Deliberately NOT applied to Recent STI Testing
-  // itself — "since last test" filtering the Testing section against
-  // the most recent test's own date is circular (a test can't happen
-  // "since itself") — nor to Current Treatment/Active Symptoms/
-  // Medications, which represent current state, not history to narrow.
+  // Recent Encounters, Recent Contacts, Vaccinations, and Recent STI Testing.
+  // "Since last test" includes the most recent test that anchors the cutoff;
+  // other date windows filter tests by their stored date. Current Treatment,
+  // Active Symptoms and Medications represent current state, not history to
+  // narrow, so they do not use this timeframe.
   const lastTestDate = tests[0]?.date || null;
   const [timeframe, setTimeframe] = useState("all");
   const [customDate, setCustomDate] = useState("");
@@ -232,7 +234,6 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
     if (timeframe === "custom" && customDate) return customDate;
     return null;
   }, [timeframe, customDate, lastTestDate]);
-  const withinTimeframe = (dateStr) => !cutoffDate || !dateStr || dateStr >= cutoffDate;
 
   // CHANGED — Phase 2 encryption groundwork: ResultsRegistry/
   // SymptomsRegistry are now async — this used to be a plain render-
@@ -319,7 +320,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
     setEditingIdentity(false);
   };
 
-  const recentTests = tests.slice(0, 5).map((t) => {
+  const recentTests = tests.filter((t) => isWithinClinicCardTimeframe(t.date, cutoffDate)).slice(0, 5).map((t) => {
     const resultNames = (t.resultIds || []).map((id) => resultNameById.get(id) || "—");
     const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
     const testingFor = (t.testingFor || []).join(", ") || t.title || "Test";
@@ -386,13 +387,13 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
   const vaccinations = sortByDateDesc(
     (Array.isArray(vaccinationsRaw) ? vaccinationsRaw : [])
       .map((v) => ({ v, when: getVaccinationDate(v) }))
-      .filter(({ v, when }) => !v.isArchived && withinTimeframe(when))
+      .filter(({ v, when }) => !v.isArchived && isWithinClinicCardTimeframe(when, cutoffDate))
       .map(({ v }) => v),
     (v) => getVaccinationDate(v)
   );
   const overdueVaccinations = useLoadedMemo(() => VaccinationRepository.getOverdue(), [], []);
 
-  const recentPartners = encounters.filter((e) => withinTimeframe(e.date)).slice(0, 8).map((e) => ({
+  const recentPartners = encounters.filter((e) => isWithinClinicCardTimeframe(e.date, cutoffDate)).slice(0, 8).map((e) => ({
     id: e.id,
     title: e.title || e.encounterType || "Encounter",
     subtitle: e.date ? formatRelativeDate(e.date) : "",
@@ -413,7 +414,7 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
     const contactsById = new Map(contactsRaw.map((c) => [c.id, c]));
     const seen = new Set();
     const out = [];
-    for (const e of sortByDateDesc(encounters.filter((e) => withinTimeframe(e.date)))) {
+    for (const e of sortByDateDesc(encounters.filter((e) => isWithinClinicCardTimeframe(e.date, cutoffDate)))) {
       for (const cid of e.attendeeIds || []) {
         if (seen.has(cid) || !contactsById.has(cid)) continue;
         seen.add(cid);
@@ -434,7 +435,6 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
       if (out.length >= 8) break;
     }
     return out;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- withinTimeframe closes over cutoffDate, depend on that directly instead of a function recreated every render
   }, [contactsRaw, encounters, cutoffDate, anonymise]);
 
   return (
@@ -651,7 +651,9 @@ export default function ClinicCardScreen({ onClose, onNavigateToRecord, onQuickA
         <div style={isDesktopWidth ? { breakInside: "avoid", marginBottom: 8 } : undefined}>
       <SectionHeader T={T} onTap={() => goTo("healthcare", "testing")}>Recent STI testing</SectionHeader>
       <SectionCard T={T}>
-        {recentTests.length === 0 ? <EmptyRow T={T}>No tests logged yet.</EmptyRow> : recentTests.map((t) => (
+        {recentTests.length === 0 ? (
+          <EmptyRow T={T}>{tests.length === 0 ? "No tests logged yet." : "No tests in this timeframe."}</EmptyRow>
+        ) : recentTests.map((t) => (
           <Row T={T} key={t.id} title={t.title} subtitle={t.subtitle} alert={t.alert} onTap={() => setPendingNav({ tab: "healthcare", subTab: "testing", recordId: t.id, label: t.title, moduleLabel: "Testing" })} />
         ))}
       </SectionCard>

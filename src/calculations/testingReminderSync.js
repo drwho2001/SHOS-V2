@@ -22,7 +22,7 @@ import { isDayKeyDue, formatDayKey, formatStoredDate } from "./dateInputHelpers"
 // routine retest reminder) — one source of truth for "when's my next
 // test due", not two that could quietly drift apart.
 import { TestingRepository } from "../repositories/testingRepository";
-import { suggestedRoutineRetestDate } from "./testingCalculations";
+import { isCompletedTestRecord, suggestedRoutineRetestDate } from "./testingCalculations";
 import { ResultsRegistry } from "../registries/resultsRegistry";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName, TESTING_ACTION_TYPE_ID } from "../storage/notificationService";
 import { NotificationPreferencesRepository, isTestingSnoozed } from "../repositories/notificationPreferencesRepository";
@@ -59,7 +59,7 @@ async function getWidgetBridge() {
 // Same suggestedRoutineRetestDate() source of truth as the schedule
 // path below — no separate concept to drift out of sync.
 export async function getTestingDueState() {
-  const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+  const tests = (await TestingRepository.getAll()).filter((t) => isCompletedTestRecord(t) && t.date && new Date(t.date) <= new Date());
   if (tests.length === 0) return { due: false };
   const mostRecent = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
   const resultNameById = new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name]));
@@ -84,7 +84,7 @@ export async function syncTestingReminder() {
   }
   // Same "real tests only, not scheduled-but-not-yet-happened ones"
   // filter used elsewhere in this app (e.g. getTestingFrequencyStats).
-  const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+  const tests = (await TestingRepository.getAll()).filter((t) => isCompletedTestRecord(t) && t.date && new Date(t.date) <= new Date());
   if (tests.length === 0) {
     await cancelNotification(NOTIFICATION_IDS.testingReminder);
     return { scheduled: false };
@@ -159,7 +159,7 @@ export async function updateTestWidget() {
       const { ResultsRegistry } = await import("../registries/resultsRegistry");
       const { suggestedRoutineRetestDate } = await import("./testingCalculations");
 
-      const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && new Date(t.date) <= new Date());
+      const tests = (await TestingRepository.getAll()).filter((t) => isCompletedTestRecord(t) && t.date && new Date(t.date) <= new Date());
       if (tests.length > 0) {
         const mostRecent = [...tests].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
         const resultNameById = new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name]));

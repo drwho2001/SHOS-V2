@@ -44,6 +44,7 @@ import { storedDayKey, localDayKey, calendarDaysBetween, daysSinceStoredDay } fr
 // means each ring stays a plain fact about one thing, not a computed
 // judgment blending several into one number.
 import { getTestingFrequencyStats, getOverallAdherence, getOverallContainerAdherence, BASHH_TESTING_INTERVAL_DAYS } from "../calculations/statsCalculations";
+import { isCompletedTestRecord } from "../calculations/testingCalculations";
 import { computeAdherence } from "../calculations/medicationCalculations";
 import { getLastBackupInfo, runAutoExportIfDue } from "../storage/backupService";
 import { countSampleData, clearSampleData } from "../repositories/clearSampleData";
@@ -533,7 +534,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
     // async — same "wrap just this one gated/isolated block" approach
     // used throughout this effect.
     (async () => {
-      const tests = (await TestingRepository.getAll()).filter((t) => !t.isArchived && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
+      const tests = (await TestingRepository.getAll()).filter((t) => isCompletedTestRecord(t) && t.date && t.date.slice(0, 10) <= new Date().toISOString().slice(0, 10));
       const sortedTests = [...tests].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
       setLastTest(sortedTests[0] || null);
       setTestingStats(getTestingFrequencyStats(tests));

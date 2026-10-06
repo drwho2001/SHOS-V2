@@ -13,7 +13,7 @@ import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryS
 import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
 import PartnerNotificationSheet from "./SHOS_PartnerNotification_Prototype";
 import { PartnerNotificationRepository } from "../repositories/partnerNotificationRepository";
-import { nowAsDateString, formatStoredDate, formatInstantDate } from "../calculations/dateInputHelpers";
+import { nowAsDateString, nowAsStoredDateTime, formatStoredDate, formatInstantDate } from "../calculations/dateInputHelpers";
 import {
   TestingRepository, DEFAULT_TEST,
   SETTING_OPTIONS, TESTING_FOR_OPTIONS,
@@ -46,7 +46,7 @@ import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 // gets a real linked Measurement, never a duplicate field here.
 import { MeasurementRepository } from "../repositories/measurementRepository";
 import { InlineMeasurementSheet } from "./SHOS_Measurements_Prototype";
-import { suggestedRoutineRetestDate } from "../calculations/testingCalculations";
+import { findSupersededRoutineRetestPlans, isCompletedTestRecord, isRoutineRetestEligible, routineRetestPlanTitle, suggestedRoutineRetestDate } from "../calculations/testingCalculations";
 // ADDED — real ask: proactive "due for retest" notification, built on
 // top of suggestedRoutineRetestDate's already-real calculation above.
 import { syncTestingReminder } from "../calculations/testingReminderSync";
@@ -150,6 +150,7 @@ function formatDate(iso) {
 // 90 days" is a calendar question, and it is now asked in days.
 const RECENT_TEST_WINDOW_DAYS = 90;
 function isRecentTest(test, allTests) {
+  if (test.isRoutineRetestPlan) return true;
   if (!test.date) return false;
   // FIXED 29 Sep 2026 (t020) - found by the new structural guard, NOT by a
   // manual search: this line compares against a millisecond window constant
@@ -162,7 +163,8 @@ function isRecentTest(test, allTests) {
   // offset. This figure decides the faded treatment on old records.
   const withinWindow = (daysSinceStoredDay(test.date) ?? Infinity) <= RECENT_TEST_WINDOW_DAYS;
   if (withinWindow) return true;
-  const rank = [...allTests].sort((a, b) => (a.date < b.date ? 1 : -1)).findIndex((t) => t.id === test.id);
+  const completedTests = allTests.filter(isCompletedTestRecord);
+  const rank = completedTests.sort((a, b) => (a.date < b.date ? 1 : -1)).findIndex((t) => t.id === test.id);
   return rank !== -1 && rank < 2;
 }
 
@@ -933,7 +935,7 @@ function TestEditSheet({ testId, prefillData, isOpen, onClose, onSaved, onBefore
 }
 
 // ── Detail view ──
-function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDelete, refresh, allTests, registerModuleBackHandler }) {
+function TestDetail({ testId, onBack, onEdit, onOpenRecord, onNavigateToRecord, onDataChanged, T, triggerDelete, refresh, allTests, registerModuleBackHandler }) {
   const [test, setTest] = useLoadedState(() => TestingRepository.getById(testId), [testId], null);
   // ADDED — real ask: "hide result until result date... similar to
   // Dom/sub half-toggle." Soft-masked by default rather than fully
@@ -1014,7 +1016,11 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
   const resultNames = (test.resultIds || []).map((id) => resultNameById.get(id)).filter(Boolean);
   const isPositive = resultNames.some((r) => r.toLowerCase() === "positive");
   const resultPending = test.resultDate && new Date(test.resultDate) > new Date() && !revealEarly;
-  const isArchived = !isRecentTest(test, allTests || [test]);
+  const isOlder = !isRecentTest(test, allTests || [test]);
+  const isPlan = Boolean(test.isRoutineRetestPlan);
+  const plannedDay = test.plannedForDate || test.date?.slice(0, 10) || null;
+  const planIsOverdue = isPlan && plannedDay && plannedDay <= nowAsDateString();
+  const canScheduleRetest = !isPlan && isRoutineRetestEligible(test, resultNameById);
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -1037,6 +1043,37 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
       )}
 
       <div style={{ padding: "0 16px 100px" }}>
+        {/* ADDED — a scheduled retest is an INTENTION, not a result, so it says
+            so before anything else on the screen. It is deliberately the most
+            prominent thing on the record: a plan shown like a completed test
+            would be read as "already tested" by anyone glancing at it, which is
+            the same false-assurance shape mostRecentTest.js exists to prevent.
+            `overdue` here means the planned day has passed with the plan still
+            marked pending, which is the state worth flagging. */}
+        {isPlan && (
+          <div role="status" style={{ display: "flex", flexDirection: "column", gap: 8, background: planIsOverdue ? `${T.goldText}18` : `${T.healthcareBlue}12`, border: `1px solid ${planIsOverdue ? T.goldText : T.healthcareBlue}`, borderRadius: radius.md, padding: 12, marginBottom: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: planIsOverdue ? T.goldText : T.healthcareBlue }}>
+              {planIsOverdue ? "Scheduled — date has passed" : "Scheduled — not yet done"}
+            </div>
+            <div style={{ fontSize: 12, color: T.textSecondary }}>
+              Planned for {formatDate(plannedDay)} · {(test.testingFor || []).join(", ") || "Routine panel"}
+            </div>
+            <div style={{ fontSize: 12, color: T.textSecondary }}>
+              This is a plan, not a result. Nothing here counts as a completed test.
+            </div>
+            <div role="button" tabIndex={0} aria-label="Mark this scheduled test as done" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => {
+              // The EXPLICIT transition. It converts the plan into a real
+              // completed record dated today and then opens the edit sheet, so
+              // the result is recorded immediately - a plan marked done with no
+              // result would sit in the records as "completed, result unknown",
+              // which is a worse record than either state on its own.
+              const done = await TestingRepository.markRoutineRetestPerformed(testId, { date: nowAsStoredDateTime() });
+              if (done) onEdit(testId);
+            }} style={{ alignSelf: "flex-start", fontSize: 13, fontWeight: 700, color: T.healthcareBlue, cursor: "pointer", padding: "6px 0" }}>
+              Mark as done
+            </div>
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           {/* CHANGED — real ask: this was still the old flat
               red-if-positive/else-blue leftover, "pointless" the same
@@ -1044,10 +1081,10 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
               — the fix here just hadn't reached this screen too.
               Shares the same recency-aware logic as the list row now
               (see computeTestDotColor's own comment). */}
-          <span style={{ width: 10, height: 10, borderRadius: radius.full, background: computeTestDotColor(test, allTests || [test], T, resultNameById, revealEarly), display: "inline-block", opacity: isArchived ? 0.5 : 1 }} />
-          <h1 style={{ ...TYPE.recordTitle, margin: 0, color: isArchived ? T.textSecondary : T.textPrimary }}>{test.title || "Untitled test"}</h1>
+          <span style={{ width: 10, height: 10, borderRadius: radius.full, background: computeTestDotColor(test, allTests || [test], T, resultNameById, revealEarly), display: "inline-block", opacity: isOlder ? 0.5 : 1 }} />
+          <h1 style={{ ...TYPE.recordTitle, margin: 0, color: isOlder ? T.textSecondary : T.textPrimary }}>{test.title || "Untitled test"}</h1>
         </div>
-        <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>{formatDate(test.date)}</div>
+        <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 20, fontFamily: "'Inter', sans-serif" }}>{formatDate(test.date)}</div>
 
         <SectionCard title="Overview" T={T}>
           {/* MOVED — real ask: Result date should read near the top,
@@ -1104,12 +1141,50 @@ function TestDetail({ testId, onBack, onEdit, onNavigateToRecord, T, triggerDele
             </div>
           )}
           {(() => {
+            // Never on a plan: a plan is a scheduled intention, and printing a
+            // "retest suggested" date derived from its own placeholder date
+            // would invent a second, wrong schedule on top of the real one.
+            if (isPlan) return null;
             const suggested = suggestedRoutineRetestDate(test, resultNameById);
             return suggested ? (
               <div style={{ fontSize: 12, color: T.healthcareBlue, background: `${T.healthcareBlue}12`, borderRadius: radius.sm, padding: "8px 10px", marginTop: 8 }}>
                 Routine retest suggested around {formatDate(suggested)}.
               </div>
             ) : null;
+          })()}
+          {/* ADDED — the owner's "STI-only routine retest workflow". Only offered
+              for a completed NEGATIVE core-panel screen, which is the same
+              eligibility the suggestion above and the reminder both use, so the
+              three cannot disagree about what "eligible" means.
+
+              WHY IT CREATES THE PLAN DIRECTLY rather than opening the blank Add
+              form pre-filled. That form's draft key is `testEdit_new`, shared by
+              every unsaved new test in the app - so opening it from here would
+              overwrite an unrelated half-written test draft, which is the exact
+              hazard this repo has already recorded once. Creating the record
+              instead gives the plan its own id, and its own `testEdit_<id>` draft
+              key, so the form can still be used to add detail with nothing to
+              clobber. */}
+          {canScheduleRetest && (() => {
+            const day = suggestedRoutineRetestDate(test, resultNameById);
+            return (
+              <div role="button" tabIndex={0} aria-label={`Schedule a routine retest around ${formatDate(day)}`} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={async () => {
+                const created = await TestingRepository.createRoutineRetestPlan({
+                  title: routineRetestPlanTitle(),
+                  date: day,
+                  sourceTestId: testId,
+                });
+                refresh?.();
+                onDataChanged?.();
+                // Straight to the new plan's own detail screen, so the thing just
+                // created is the thing on screen. Navigating out to the module
+                // instead would leave the user guessing whether it saved.
+                if (created?.id) onOpenRecord?.(created.id);
+              }} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, cursor: "pointer", marginTop: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: T.healthcareBlue }}>Schedule this retest</span>
+                <span style={{ fontSize: 12, color: T.textSecondary }}>{formatDate(day)}</span>
+              </div>
+            );
           })()}
         </SectionCard>
 
@@ -1443,32 +1518,37 @@ function TestRow({ t, tests, resultNameById, T, selectMode, selectedIds, toggleS
   const isPositive = !resultPending && resultNames.some((r) => r.toLowerCase() === "positive");
   const isNegative = !resultPending && resultNames.some((r) => r.toLowerCase() === "negative");
   const dotColor = computeTestDotColor(t, tests, T, resultNameById);
-  const isArchived = !isRecentTest(t, tests);
+  const isOlder = !isRecentTest(t, tests);
   return (
     <div onClick={() => selectMode ? toggleSelected(t.id) : onOpen(t.id)}
       onMouseDown={() => startPress(t.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(t.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
       role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selectedIds.includes(t.id) : undefined} aria-label={t.title || "Untitled test"} tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? toggleSelected(t.id) : onOpen(t.id); } }}
-      style={{ background: selectedIds.includes(t.id) ? `${T.healthcareBlue}10` : isArchived ? T.surfaceVariant : T.surface, border: `1px solid ${selectedIds.includes(t.id) ? T.healthcareBlue : isPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
+       style={{ background: selectedIds.includes(t.id) ? `${T.healthcareBlue}10` : isOlder ? T.surfaceVariant : T.surface, border: `1px solid ${selectedIds.includes(t.id) ? T.healthcareBlue : isPositive ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
       {selectMode && (
         <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selectedIds.includes(t.id) ? T.healthcareBlue : T.border}`, background: selectedIds.includes(t.id) ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
           {selectedIds.includes(t.id) && <Check size={13} color="#FFFFFF" />}
         </div>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ width: 8, height: 8, borderRadius: radius.full, background: dotColor, display: "inline-block", opacity: isArchived ? 0.5 : 1 }} />
-        <span style={{ fontSize: 15, fontWeight: 600, color: isArchived ? T.textSecondary : T.textPrimary }}>{t.title || "Untitled test"}</span>
-        {t.mostRecent && <Check size={13} color={T.healthcareBlue} />}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ width: 8, height: 8, borderRadius: radius.full, background: dotColor, display: "inline-block", opacity: isOlder ? 0.5 : 1 }} />
+        <span style={{ fontSize: 15, fontWeight: 600, color: isOlder ? T.textSecondary : T.textPrimary }}>{t.title || "Untitled test"}</span>
+        {isOlder && <span style={{ fontSize: 10, fontWeight: 700, color: T.textSecondary, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 999, padding: "2px 6px", whiteSpace: "nowrap" }}>Older test</span>}
+{t.mostRecent && <Check size={13} color={T.healthcareBlue} />}
+        {/* A plan must never read as a result from a glance at the list either.
+            Without this it sorts among completed tests, shows its future date,
+            and looks like a test already taken. */}
+        {t.isRoutineRetestPlan && <span style={{ fontSize: 10, fontWeight: 700, color: T.textSecondary, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 999, padding: "2px 6px", whiteSpace: "nowrap" }}>Scheduled</span>}
       </div>
-      <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(t.date)}</div>
+      <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(t.date)}</div>
       {t.setting && (
-        <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2 }}>{t.setting}</div>
+        <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textSecondary, marginLeft: 16, marginTop: 2 }}>{t.setting}</div>
       )}
       {resultPending ? (
-        <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : T.textDisabled, marginLeft: 16, marginTop: 2, fontStyle: "italic", opacity: isArchived ? 0.5 : 1 }}>Pending — expected {formatDate(t.resultDate)}</div>
+        <div style={{ fontSize: 12, color: isOlder ? T.textDisabled : T.textDisabled, marginLeft: 16, marginTop: 2, fontStyle: "italic", opacity: isOlder ? 0.5 : 1 }}>Pending — expected {formatDate(t.resultDate)}</div>
       ) : resultNames.length > 0 && (
-        <div style={{ fontSize: 12, color: isArchived ? T.textDisabled : (isPositive ? T.actionRed : isNegative ? T.actionGreenText : T.goldText), marginLeft: 16, marginTop: 2, fontWeight: isPositive || isNegative ? 700 : 400, opacity: isArchived ? 0.5 : 1 }}>{resultNames.join(", ")}</div>
+        <div style={{ fontSize: 12, color: isPositive ? T.actionRed : isNegative ? T.actionGreenText : T.goldText, marginLeft: 16, marginTop: 2, fontWeight: isPositive || isNegative ? 700 : 400 }}>{resultNames.join(", ")}</div>
       )}
       </div>
     </div>
@@ -1574,11 +1654,49 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
     return () => registerModuleBackHandler(null);
   }, [screen, registerModuleBackHandler]);
 
+  // ADDED — a scheduled retest that the user has since gone and done is not an
+  // error to clean up silently. The plan only ever REPORTS itself here, and this
+  // state holds the pending question; the three answers are the user's, per the
+  // owner's own decision (never silently delete a plan).
+  const [supersededPlans, setSupersededPlans] = useState(null);
+  const checkSupersededPlans = async (savedTestId) => {
+    const saved = await TestingRepository.getById(savedTestId);
+    if (!saved) return;
+    const all = await TestingRepository.getAll();
+    const stale = findSupersededRoutineRetestPlans(all, saved);
+    setSupersededPlans(stale.length ? { plans: stale, savedTest: saved } : null);
+  };
+  // "Keep the plan" is the default and the cheapest: do nothing but close. It is
+  // the default because a plan is not wrong when the user went early - they may
+  // simply intend another screen.
+  const keepPlans = () => setSupersededPlans(null);
+  const archivePlans = async () => {
+    for (const p of supersededPlans.plans) await TestingRepository.archive(p.id);
+    setSupersededPlans(null);
+    refresh();
+    syncTestingReminder();
+  };
+  // "Update" moves the plan onto the interval the NEW test implies, so it follows
+  // from the test that was actually just recorded rather than the one that was
+  // planned before it. Uses the same suggestedRoutineRetestDate as the reminder
+  // and the detail screen, so the three cannot disagree.
+  const updatePlans = async () => {
+    const resultNameById = new Map((await ResultsRegistry.getAll()).map((r) => [r.id, r.name]));
+    for (const p of supersededPlans.plans) {
+      const day = suggestedRoutineRetestDate(supersededPlans.savedTest, resultNameById);
+      if (!day) continue;
+      await TestingRepository.updateRoutineRetestPlan(p.id, { title: p.title, date: day });
+    }
+    setSupersededPlans(null);
+    refresh();
+    syncTestingReminder();
+  };
+
   let screenContent = null;
   if (screen.name === "landing") {
     screenContent = <TestingLanding T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "edit", id: null })} tests={tests} refresh={refresh} deleteToast={deleteToast} undoDelete={undoDelete} redoDelete={redoDelete} triggerDelete={triggerDelete} />;
   } else if (screen.name === "detail") {
-    screenContent = <TestDetail T={T} testId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} refresh={refresh} allTests={tests} registerModuleBackHandler={registerModuleBackHandler} />;
+    screenContent = <TestDetail T={T} testId={screen.id} onBack={backToList} onEdit={(id) => setScreen({ name: "edit", id })} onOpenRecord={(id) => setScreen({ name: "detail", id })} onNavigateToRecord={onNavigateToRecord} triggerDelete={triggerDelete} refresh={refresh} allTests={tests} registerModuleBackHandler={registerModuleBackHandler} onDataChanged={onDataChanged} />;
   } else if (screen.name === "edit") {
     screenContent = (
       <TestEditSheet T={T} testId={screen.id} prefillData={!screen.id ? addPrefill : null}
@@ -1590,7 +1708,7 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
         // returned to (the detail view looked correct because it loads by id,
         // which is why this hid so well). onDataChanged only reaches
         // Healthcare-internal consumers, not this module's own list.
-        onSaved={(id) => { refresh(); onDataChanged?.(); syncTestingReminder(); setScreen({ name: "detail", id }); }}
+        onSaved={async (id) => { refresh(); onDataChanged?.(); syncTestingReminder(); setScreen({ name: "detail", id }); await checkSupersededPlans(id); }}
         onBeforeEdit={editUndo.captureBeforeEdit}
         onAfterEdit={editUndo.notifyEdited}
         onNavigateToRecord={onNavigateToRecord} />
@@ -1612,6 +1730,36 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
           style={{ position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)", width: 340, background: editUndo.toast.mode === "undo" ? "#1B1B1F" : T.healthcareBlue, color: "#FFFFFF", borderRadius: 999, padding: "10px 16px", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.25)", zIndex: 230, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {editUndo.toast.mode === "undo" ? <Check size={14} /> : <RefreshCcw size={14} />}
           {editUndo.toast.mode === "undo" ? "Test updated — tap to undo" : "Undone — tap to redo"}
+        </div>
+      )}
+      {/* ADDED — asked rather than assumed. A plan the user has quietly done is
+          reported, never resolved on their behalf: archiving it silently would
+          destroy a record they created on purpose, and editing it silently would
+          invent a new date they never chose. Every path is a real, reversible
+          choice, and dismissing keeps the plan exactly as it was. */}
+      {supersededPlans && (
+        <div role="dialog" aria-label="Scheduled retest already done" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 240 }}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, padding: 18, maxWidth: 420, width: "100%" }}>
+            <h2 style={{ ...TYPE.subScreenTitle, margin: "0 0 8px", color: T.textPrimary }}>Scheduled retest already done</h2>
+            <div style={{ fontSize: 13, color: T.textSecondary, marginBottom: 14 }}>
+              {supersededPlans.plans.length === 1
+                ? "You saved a test that covers the planned retest for this date. What would you like to do with the plan?"
+                : `You saved a test that covers ${supersededPlans.plans.length} planned retests for this date. What would you like to do with them?`}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <span role="button" tabIndex={0} aria-label="Update the scheduled retest date" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={updatePlans} style={{ padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, color: T.healthcareBlue, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                Update to the next suggested date
+              </span>
+              <span role="button" tabIndex={0} aria-label="Keep the scheduled retest as it is" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={keepPlans} style={{ padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, color: T.textPrimary, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                Keep it as planned
+              </span>
+              {/* Archive, not delete: the default for "no longer current" is this
+                  app's archive path, and a plan is recoverable from Trash. */}
+              <span role="button" tabIndex={0} aria-label="Archive the scheduled retest" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={archivePlans} style={{ padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.actionRed}`, color: T.actionRedText, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                Archive {supersededPlans.plans.length > 1 ? "them" : "it"}
+              </span>
+            </div>
+          </div>
         </div>
       )}
       {screenContent}

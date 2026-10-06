@@ -15,6 +15,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
+import { FormTabs } from "../components/FormTabs";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
@@ -119,6 +120,11 @@ function buildDark() {
   };
 }
 const radius = RADIUS;
+const ENCOUNTER_EDIT_TABS = [
+  { key: "basics", label: "Basics" },
+  { key: "activity", label: "Activity & protection" },
+  { key: "health", label: "Health & notes" },
+];
 
 function loadEncounters() {
   return EncounterRepository.getAll();
@@ -1561,6 +1567,7 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
 function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord }) {
   useEscapeToClose(onClose);
   const isNew = !encounterId;
+  const [activeFormTab, setActiveFormTab] = useState(ENCOUNTER_EDIT_TABS[0].key);
   const editSheetRef = useRef(null);
   useEffect(() => { editSheetRef.current?.focus(); }, []);
   const [contacts, setContacts] = useLoadedState(loadContacts, [], []);
@@ -1708,6 +1715,10 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
       )}
 
       <div style={{ padding: "0 16px 60px" }}>
+        <FormTabs tabs={ENCOUNTER_EDIT_TABS} activeKey={activeFormTab} onChange={setActiveFormTab}
+          ariaLabel="Encounter form sections" accent={T.encountersPink} accentText={T.encountersPink}
+          textColor={T.textSecondary} border={T.border} surface={T.bg}>
+        <div>
         <SectionCard title="Overview" T={T}>
           <TextField label="Title" value={form.title} onChange={set("title")} T={T} placeholder="e.g. Alex — coffee then back to theirs" />
           <DateTimeField label="Date & time" value={form.date} onChange={set("date")} T={T} />
@@ -1745,7 +1756,9 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           <AttendeePicker value={form.attendeeIds} onChange={set("attendeeIds")} T={T} contacts={contacts} onCreatePlaceholder={createPlaceholderContact} />
           <RegistrySinglePicker label="Location" value={form.locationId} onChange={set("locationId")} T={T} registry={LocationsRepository} placeholder="e.g. His place, Sauna, or a written address" showLocateButton contacts={contacts} attendeeIds={form.attendeeIds} />
         </SectionCard>
+        </div>
 
+        <div>
         <SectionCard title="Practices" T={T}>
           <SelectField label="My role" value={form.myRole} onChange={set("myRole")} options={MY_ROLE_OPTIONS} T={T} />
           <GivingReceivingChips label="My position" value={form.myPosition} onChange={set("myPosition")} options={MY_POSITION_OPTIONS} T={T} />
@@ -1763,7 +1776,9 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           <SelectField label="My PrEP coverage" value={form.myPrepCoverage} onChange={set("myPrepCoverage")} options={PREP_COVERAGE_OPTIONS} T={T} />
           <SelectField label="My DoxyPEP status" value={form.myDoxyPepStatus} onChange={set("myDoxyPepStatus")} options={DOXYPEP_STATUS_OPTIONS} T={T} />
         </SectionCard>
+        </div>
 
+        <div>
         <SectionCard title="Health" T={T}>
           <RegistryTagPicker label="Symptoms noted" value={form.symptomsNoted} onChange={set("symptomsNoted")} T={T} registry={SymptomsRegistry} />
         </SectionCard>
@@ -1772,6 +1787,8 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
           <textarea value={form.notes} onChange={(e) => set("notes")(e.target.value)} rows={4} aria-label="Notes"
             style={{ width: "100%", padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 14, boxSizing: "border-box", marginTop: 8 }} />
         </SectionCard>
+        </div>
+        </FormTabs>
       </div>
       </div>
     </div>

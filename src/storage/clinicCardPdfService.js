@@ -24,6 +24,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { LogRepository } from "../repositories/logRepository";
 import { TestingRepository } from "../repositories/testingRepository";
+import { isCompletedTestRecord } from "../calculations/testingCalculations";
 import { ResultsRegistry } from "../registries/resultsRegistry";
 import { EncounterRepository } from "../repositories/encounterRepository";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
@@ -102,7 +103,7 @@ async function assembleClinicCardData() {
   // but this chained .filter() straight onto .getAll() was missed then
   // — would throw "getAll(...).filter is not a function" at runtime.
   const meds = await Promise.all((await MedicationRepository.getAll()).filter((m) => !m.isArchived).map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) })));
-  const tests = sortByDateDesc((await TestingRepository.getAll()).filter((t) => !t.isArchived));
+  const tests = sortByDateDesc((await TestingRepository.getAll()).filter(isCompletedTestRecord));
   const encounters = sortByDateDesc(await EncounterRepository.getAll());
   const vaccinations = sortByDateDesc((await VaccinationRepository.getAll()).filter((v) => !v.isArchived));
   const overdueVaccinations = await VaccinationRepository.getOverdue();

@@ -58,6 +58,27 @@ describe('statsCalculations', () => {
       const result = getTestingFrequencyStats(tests);
       expect(result.testCount).toBe(1);
     });
+
+    it('does not count a scheduled retest as a completed test', () => {
+      const tests = [
+        { id: 'completed', date: '2026-09-01T08:00:00.000Z', isArchived: false },
+        { id: 'planned', date: '2026-09-20T08:00:00.000Z', isArchived: false, isRoutineRetestPlan: true },
+      ];
+      expect(getTestingFrequencyStats(tests).testCount).toBe(1);
+      expect(getTestingIntervalTrend(tests).currentGapVsAverage).toBeNull();
+    });
+  });
+
+  describe('test breakdowns', () => {
+    it('omits planned retests from positive-result and sample-site counts', () => {
+      const tests = [
+        { id: 'completed', date: '2026-09-01T08:00:00.000Z', resultIds: ['positive'], organismIds: ['org'], testingFor: ['Gonorrhoea'], sampleType: ['Urine'] },
+        { id: 'planned', date: '2026-09-20T08:00:00.000Z', isRoutineRetestPlan: true, resultIds: ['positive'], organismIds: ['org'], testingFor: ['Gonorrhoea'], sampleType: ['Blood'] },
+      ];
+      expect(getPositiveTestsByOrganism(tests, (id) => id === 'org' ? 'Gonorrhoea' : null, (id) => id === 'positive' ? 'Positive' : null))
+        .toEqual([{ name: 'Gonorrhoea', count: 1 }]);
+      expect(getTestsBySite(tests)).toEqual([{ name: 'Urine', count: 1 }]);
+    });
   });
 
   describe('getTestingIntervalTrend', () => {
