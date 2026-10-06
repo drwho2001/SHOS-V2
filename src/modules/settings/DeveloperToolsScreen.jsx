@@ -13,6 +13,7 @@ import { localStorageAdapter } from "../../storage/storageAdapter";
 import { resetAllData } from "../../repositories/resetAllData";
 import { countSampleData, clearSampleData, onSampleDataChanged } from "../../repositories/clearSampleData";
 import { findOrphanReferences } from "../../calculations/orphanReferenceCheck";
+import { describeRepair, clearDanglingReference, repointDanglingReference, repairOptions, undoRepair } from "../../calculations/referenceRepair";
 import { ContactRepository } from "../../repositories/contactRepository";
 import { EncounterRepository } from "../../repositories/encounterRepository";
 import { MedicationRepository } from "../../repositories/medicationRepository";
@@ -35,6 +36,152 @@ function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+// ADDED 6 Oct 2026 (session B) - one broken relation-by-id, and what can be
+// done about it.
+//
+// Kept as its own component because this row carries real state: a target
+// picker, a two-step confirm, and an undo that has to survive the re-scan
+// re-running underneath it. Inlining all of that into the map callback
+// above would mean four pieces of shared state across N rows, which is how
+// one row's pending repair ends up applied to another's record.
+//
+// THE THREE THINGS THIS ROW DELIBERATELY DOES NOT DO:
+//
+// - No auto-repair. Nothing happens without a tap on this specific row.
+// - No bulk repair. "Fix all 40" is one mistap away from 40 wrong writes,
+//   and the user is staring at a list of ids they have no context for.
+// - No merge of the record's own field values with anything. It removes or
+//   re-points ONE id. A record pointing at three contacts where one was
+//   deleted still has two good ones, and emptying the field to "tidy it up"
+//   would discard real data to fix a problem one entry caused.
+//
+// The undo keeps the EXACT prior field value rather than re-deriving it, so
+// it cannot itself be the second thing that is subtly wrong.
+function OrphanRow({ orphan, onRepaired, darkMode }) {
+  const [shape, setShape] = useState(null);
+  const [confirming, setConfirming] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [options, setOptions] = useState([]);
+  const [undo, setUndo] = useState(null);
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    describeRepair(orphan).then((s) => { if (live) setShape(s); });
+    return () => { live = false; };
+  }, [orphan]);
+
+  const rerun = () => { setShape(null); setConfirming(false); setPicking(false); setUndo(null); setError(null); onRepaired(); };
+
+  const run = async (fn) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const { previous } = await fn();
+      setUndo(previous);
+      setConfirming(false);
+      setPicking(false);
+      // Re-scan so the row disappears for the right reason (the write
+      // landed) rather than being hidden by hand.
+      setTimeout(rerun, 1200);
+    } catch (e) {
+      setError(e?.message || "That did not work.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openPicker = async () => {
+    setBusy(true);
+    try { setOptions(await repairOptions(orphan)); setPicking(true); }
+    catch (e) { setError(e?.message || "Could not read the list to choose from."); }
+    finally { setBusy(false); }
+  };
+
+  const btn = { fontSize: 11, fontWeight: 700, cursor: busy ? "default" : "pointer", padding: "3px 6px", borderRadius: 6, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) };
+  const muted = darkMode ? DARK.textDisabled : NEUTRAL.textDisabled;
+
+  return (
+    <div style={{ padding: "8px 0", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+      <div style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600 }}>{orphan.recordType}: {orphan.recordLabel}</div>
+      <div style={{ fontSize: 11, color: muted, marginTop: 2 }}>
+        its <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{orphan.field}</span> points at a {orphan.targetType} that no longer exists (id: {orphan.danglingId})
+      </div>
+
+      {undo !== null && (
+        <div style={{ fontSize: 11, color: ACCENTS.home, marginTop: 5 }}>
+          Cleared it.{" "}
+          <span role="button" tabIndex={0} aria-label={`Undo the repair to ${orphan.field}`} onClick={() => run(() => undoRepair(orphan, undo))}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); run(() => undoRepair(orphan, undo)); } }}
+            style={{ textDecoration: "underline", cursor: "pointer" }}>
+            Undo
+          </span>
+        </div>
+      )}
+
+      {!undo && shape && (
+        <>
+          {shape.canRepair ? (
+            confirming ? (
+              <div style={{ marginTop: 6, fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
+                Remove this broken link from <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{orphan.field}</span>? Any other ids in that field are left alone.
+                <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                  <span role="button" tabIndex={0} aria-label="Yes, clear the broken reference"
+                    onClick={() => run(() => clearDanglingReference(orphan))}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); run(() => clearDanglingReference(orphan)); } }}
+                    style={{ ...btn, color: ACTION.red, borderColor: ACTION.red, opacity: busy ? 0.5 : 1 }}>
+                    {busy ? "Working…" : "Yes, clear it"}
+                  </span>
+                  <span role="button" tabIndex={0} aria-label="Cancel" onClick={() => setConfirming(false)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setConfirming(false); } }}
+                    style={{ ...btn, color: muted }}>Cancel</span>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                <span role="button" tabIndex={0} aria-label={`Clear the broken reference on ${orphan.field}`} onClick={() => setConfirming(true)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setConfirming(true); } }}
+                  style={{ ...btn, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, opacity: busy ? 0.5 : 1 }}>
+                  Clear this reference
+                </span>
+                {shape.canRepoint && (
+                  <span role="button" tabIndex={0} aria-label={`Point ${orphan.field} at a different ${orphan.targetType}`} onClick={openPicker}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPicker(); } }}
+                    style={{ ...btn, color: ACCENTS.home, opacity: busy ? 0.5 : 1 }}>
+                    {busy ? "Loading…" : "Point it at…"}
+                  </span>
+                )}
+              </div>
+            )
+          ) : (
+            <div style={{ fontSize: 11, color: muted, marginTop: 5 }}>{shape.reason} Open the record and clear it there.</div>
+          )}
+
+          {picking && (
+            <div style={{ marginTop: 6, fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary }}>
+              Point it at which {orphan.targetType}?
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 4 }}>
+                {options.length === 0 && <span style={{ color: muted }}>There are none left to point at, so clearing it is the only option.</span>}
+                {options.slice(0, 40).map((opt) => (
+                  <span key={opt.id} role="button" tabIndex={0} aria-label={`Point ${orphan.field} at ${opt.label}`}
+                    onClick={() => run(() => repointDanglingReference(orphan, opt.id))}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); run(() => repointDanglingReference(orphan, opt.id)); } }}
+                    style={{ ...btn, color: ACCENTS.home }}>
+                    {opt.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {error && <div style={{ fontSize: 11, color: ACTION.red, marginTop: 5 }}>{error}</div>}
+    </div>
+  );
 }
 
 export function DeveloperToolsScreen({ onClose }) {
@@ -245,9 +392,17 @@ export function DeveloperToolsScreen({ onClose }) {
       {/* ADDED — real ask: surface dangling relation-by-ID references
           (e.g. an Encounter whose attendeeIds still names a Contact
           that's since been hard-deleted) — nothing else in the app
-          currently notices these. Read-only: flags them for a human to
-          fix by hand, same "never silently merge/fix" restraint the
-          Registry duplicate checker already applies. */}
+          currently notices these.
+          CHANGED 6 Oct 2026: this section used to say "Read-only: flags
+          them for a human to fix by hand, same never-silently-fix
+          restraint the Registry duplicate checker applies." That was half
+          true and is now false in a way worth recording: the RESTRAINT is
+          still exactly right, but "by hand" meant a multi-step errand for
+          one stale id, and a report you cannot act on is a report that
+          gets ignored. Each row now offers Clear / Point-at, both
+          explicitly per-row per-field, with the prior value kept for undo.
+          See referenceRepair.js's own header for what is deliberately not
+          offered — no auto-repair, no bulk repair, no field merging. */}
       <div style={{ ...TYPE.sectionLabel, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, padding: "0 16px 6px" }}>Data integrity</div>
       <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
         <div onClick={() => orphans.length > 0 && setShowOrphans((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: orphans.length > 0 ? "pointer" : "default" }}>
@@ -265,12 +420,7 @@ export function DeveloperToolsScreen({ onClose }) {
         {showOrphans && orphans.length > 0 && (
           <div style={{ padding: "0 0 9px" }}>
             {orphans.map((o, i) => (
-              <div key={i} style={{ padding: "8px 0", borderTop: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
-                <div style={{ fontSize: 12, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, fontWeight: 600 }}>{o.recordType}: {o.recordLabel}</div>
-                <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, marginTop: 2 }}>
-                  its <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{o.field}</span> points at a {o.targetType} that no longer exists (id: {o.danglingId})
-                </div>
-              </div>
+              <OrphanRow key={`${o.recordId}|${o.field}|${o.danglingId}`} orphan={o} onRepaired={() => setOrphanCheckKey((k) => k + 1)} darkMode={darkMode} />
             ))}
           </div>
         )}

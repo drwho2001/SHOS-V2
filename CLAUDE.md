@@ -831,6 +831,115 @@ which is the same shape as every other time in this file where a check reported
 green on something that had not actually been exercised. The guard now rejects a
 `#` inside any `if:` block.
 
+## Recently shipped (6 Oct 2026, latest - "None found" was false: the integrity checker missed four live reference fields, and the strongest item on the roadmap was fixing an existing technique)
+
+**Session B. Owner ask: what other data-refinement approaches are worth doing,
+given current state and futureproofing, and challenge the previous session's
+"no, the dataset is too small". Answer: the conclusion survives, the reasoning
+does not, and the highest-value item is not a new technique at all.**
+
+**"Dataset too small" is the wrong axis.** The right one is blast radius x
+reversibility x confidence. Features whose value scales with volume (similarity
+search, a vector index, transitive entity clustering, bulk field edit, on-device
+ML) genuinely decline — but not because there are ~500 records, because a false
+positive silently rewrites medical history and the owner finds out at a clinic
+appointment, a risk identical at 50 records and at 50,000. Features whose value
+is volume-independent — integrity scanning, repair, discovery of one specific
+bad record — are worth building, and cheap because the data is in memory.
+
+**THE MEASURED DEFECT, and it is the whole first tier of the roadmap.**
+`orphanReferenceCheck.js` is the app's ONLY data-integrity scanner, and
+Developer Tools renders its result as a confident "None found". That was false.
+Enumerating every id-bearing key in every repository's `DEFAULT_*` literal with
+`@babel/parser` found **four live reference fields checked by nothing**:
+`linkedContactIds` (contactRepository), `relationshipContactIds`
+(myProfileRepository), `routineRetestSourceTestId` (testingRepository — added
+the previous day by t072, so the one piece of code whose entire job is noticing
+newly added fields did not notice a field added the day before), and
+`takeHomeMedications[].medicationId` (clinicVisitsRepository). This is the same
+failure as t070 six days earlier — the seed regenerator read 11 of 14
+repositories because its own list was hand-maintained — recurring in the sibling
+hand-maintained list, in the same week, with no guard on either.
+
+**Two of my own measurement errors, both the comment-matching trap this file
+records, and the second one is why an AST sweep was not optional.** I first
+reported FIVE gaps. Two were wrong: `medicationsPrescribedIds` and
+`restockMedicationIds` were restructured into `takeHomeMedications` on 26 Sep,
+and the only place their old names still appear is the *comment* explaining the
+merge. I reported them to the owner as measured gaps. A regex cannot tell a key
+from a comment quoting it, which is now the fourth recorded instance in this
+repo and the one that cost the most, because it was the number I put in front of
+the owner.
+
+**The fourth gap is invisible to any schema scan, and that changed the guard's
+design.** `takeHomeMedications` is declared `[]`, so the id inside each entry
+exists only at runtime. A guard that enumerates `DEFAULT_*` literals to decide
+what is covered would score this file complete while a dangling medication
+reference went unreported — a vacuous pass on the one class the guard exists to
+catch. So `orphanReferenceCoverage.test.js` asserts the relationship in **both**
+directions: schema -> checker (catches tomorrow's new field) and checker ->
+schema (catches a check pointing at a field that was deleted, which
+`checkArray`'s `ids || []` tolerates by silently checking nothing — this file
+already had one such dead check, removed 26 Sep, and its own comment says so).
+It also carries the >20-field non-vacuity floor, and an exemption map whose
+every entry must carry a substantive reason.
+
+**The guard was vacuous on its first run and mutation testing caught it — the
+second time in this repo that the guard was written by me in the same session as
+the thing it protects.** It collected any ObjectProperty keyed `field` and took
+its string value, which only proves a LABEL exists; replacing the checked
+expression with `null` left the suite GREEN. Same shape as the recorded
+`uUNoteLinkGuard` failure — I read the name a check *claims* to check, not the
+field it actually *reads*. A field now counts as checked only when the call
+expression also mentions it. Two collector bugs on the way, both mine: the first
+scan looked inside the ctx object literal and found ZERO fields (the expression
+is a sibling *argument*), which is how a too-weak guard became one reading
+nothing at all; the baseline-red check is what stopped me trusting it. Final: 4/4
+mutations red, green baseline, source restored byte-for-byte.
+
+**T1 — the scan can now be acted on, which a report you cannot act on does not
+merit.** New `src/calculations/referenceRepair.js` removes or re-points ONE id on
+ONE record, per explicit tap, with the prior field value kept for undo. No
+auto-repair, no bulk repair, no merging of field values — and the reason a
+report with no repair was the real problem is that "fix it by hand" is a
+multi-step errand for one stale id, which is why this section is not in the
+working notes. The destructive part is guarded explicitly: **it removes only the
+dangling id, never the whole field**, because a record pointing at three
+contacts where one was deleted still has two good ones.
+
+**Its shapes are DERIVED from each repository's own declared default, not
+hand-written per field** — the only thing stated by hand is the four entry-id
+keys, because an empty default genuinely cannot say what sits inside an entry.
+That is a fourth hand-maintained surface, so the coverage guard was extended to
+assert it too. **A unit test then caught a real design error of mine: my
+fallback for an unresolvable shape was "assume scalar", justified in a comment
+as the conservative choice. That reasoning was backwards** — treating an
+unresolvable list as scalar writes `null` and destroys the whole list, which is
+strictly worse, and it would have wiped My Profile's other relationship
+contacts. The answer for an unknown shape is now refusal, not a guess in either
+direction. 14 tests, **7/7 mutations red**, including "clear the whole list
+instead of one id".
+
+**One harness bug worth recording, because it reported green without checking.**
+A suite that fails to PARSE emits no "Tests N failed" line, so a counter reading
+only that line scored a syntax-error run as GREEN — and one mutation of mine was
+invalid for exactly that reason. A `Failed Suites` count and an absent test
+count are now both treated as red. Separately, one mutation stayed green because
+my fixture put the dangling entry FIRST, so "keep the first entry" and "drop the
+dangling one" produced the same answer; a fixture where the wrong implementation
+and the right one agree is not a test.
+
+**Measured boundary:** 20 new tests across 2 files, mutation-verified 4/4 and
+7/7, lint and build clean. Red at the time of writing and NOT from this change,
+each confirmed by import graph rather than assumption: `seedSnapshotCoverage`
+(3) and `seedIdMigration` (3) read only seedDivergence and the three
+menstrual/contraception/pregnancy repositories; `widgetTapAndFallbackGuard`
+reads Java/XML files session A has uncommitted in this tree; and
+`widgetRedactedRender` is recorded red at HEAD. The encoding gate also fails on
+`ClinicCardWidgetProvider.java` — mojibake in session A's *uncommitted* version
+only, with HEAD clean and all five files touched here verified clean, so it is
+deliberately left alone rather than edited out from under them.
+
 ## Recently shipped (6 Oct 2026, later still - the Clinic Card would not inflate at all, and the PICKER is what proved it was the layout)
 
 **The Clinic Card widget rendered as "Can't load widget" on a black background in the widget picker AND on the home screen, while the other nine rendered correctly.** Found by the owner looking at the phone, and it had been open since the widgets first shipped.

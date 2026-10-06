@@ -91,9 +91,31 @@ async function checkArray(results, exists, ids, ctx) {
 // so `exists` (kinkExists) can now be async too — same fix as
 // checkSingle/checkArray above, for the same reason (an unawaited call
 // here would let `return results` at the bottom of findOrphanReferences
-// run before a genuinely dangling reference was ever flagged).
-async function checkKinkSelections(results, exists, selections, ctx) {
-  for (const sel of selections || []) { if (sel?.kinkId && !(await exists(sel.kinkId))) flag(results, { ...ctx, danglingId: sel.kinkId }); }
+// run before its flag (if any) was ever pushed).
+//
+// GENERALISED 6 Oct 2026 — this was `checkKinkSelections`, hardcoded to
+// the `{ kinkId, role }` selection shape. It was the only helper for
+// "an array of objects that each carry a foreign key", and a second
+// shape of exactly that kind arrived (Clinic Visit's own
+// `takeHomeMedications`, each entry `{ medicationId, unit, quantity }`),
+// so the alternative was a near-identical fourth copy of the same loop.
+// The key is now a parameter; every call site names which key of the
+// entry it means.
+//
+// The reason this class matters more than it looks: an id-bearing shape
+// like `takeHomeMedications` CANNOT be found by scanning the
+// repository's `DEFAULT_*` literal, because its default is an empty
+// array — the shape only exists at runtime once a user adds an entry.
+// A guard that enumerates the schema finds nothing here and would pass
+// while a genuinely dangling reference went unreported. That is why
+// `orphanReferenceCoverage.test.js` asserts the checker↔schema
+// relationship in BOTH directions rather than only "is every declared
+// field checked".
+async function checkIdObjects(results, exists, list, key, ctx) {
+  for (const entry of list || []) {
+    const id = entry?.[key];
+    if (id && !(await exists(id))) flag(results, { ...ctx, danglingId: id });
+  }
 }
 
 // CHANGED — real groundwork for encryption at rest: LocationsRepository
@@ -122,16 +144,31 @@ export async function findOrphanReferences() {
 
   for (const c of await ContactRepository.getAll()) {
     const ctx = { recordType: "Contact", recordLabel: c.nickname || c.name, recordId: c.id };
-    await checkKinkSelections(results, kinkExists, c.statedKinks, { ...ctx, field: "statedKinks", targetType: "Kink Registry" });
-    await checkKinkSelections(results, kinkExists, c.limits, { ...ctx, field: "limits", targetType: "Kink Registry" });
+    await checkIdObjects(results, kinkExists, c.statedKinks, "kinkId", { ...ctx, field: "statedKinks", targetType: "Kink Registry" });
+    await checkIdObjects(results, kinkExists, c.limits, "kinkId", { ...ctx, field: "limits", targetType: "Kink Registry" });
     await checkArray(results, chemExists, c.knownChems, { ...ctx, field: "knownChems", targetType: "Chems Registry" });
+    // ADDED 6 Oct 2026 — this field has been live and checked by nothing
+    // since it shipped. It is Contact-to-Contact (self-referential), and
+    // `unlinkContacts` clears it symmetrically on delete, so in practice it
+    // should never dangle — which is exactly why it needs checking rather
+    // than assuming. An earlier import path, or any future delete that
+    // bypasses the symmetric unlink, would leave a link to a contact that
+    // no longer exists, and the two profiles would each render a dangling
+    // "Linked contacts" row.
+    await checkArray(results, contactExists, c.linkedContactIds, { ...ctx, field: "linkedContactIds", targetType: "Contact" });
   }
 
   const profile = await MyProfileRepository.getProfile();
   const profileCtx = { recordType: "My Profile", recordLabel: "My Profile", recordId: "profile" };
-  await checkKinkSelections(results, kinkExists, profile.statedKinks, { ...profileCtx, field: "statedKinks", targetType: "Kink Registry" });
-  await checkKinkSelections(results, kinkExists, profile.limits, { ...profileCtx, field: "limits", targetType: "Kink Registry" });
+  await checkIdObjects(results, kinkExists, profile.statedKinks, "kinkId", { ...profileCtx, field: "statedKinks", targetType: "Kink Registry" });
+  await checkIdObjects(results, kinkExists, profile.limits, "kinkId", { ...profileCtx, field: "limits", targetType: "Kink Registry" });
   await checkArray(results, chemExists, profile.knownChems, { ...profileCtx, field: "knownChems", targetType: "Chems Registry" });
+  // ADDED 6 Oct 2026 — same class as Contact's own linkedContactIds above.
+  // These are the contacts that count toward the user's own relationship
+  // status, and a hard-deleted Contact clears this via
+  // `MyProfileRepository.unlinkRelationshipContact` — a second, separate
+  // cascade from the one that clears the Contact's own side.
+  await checkArray(results, contactExists, profile.relationshipContactIds, { ...profileCtx, field: "relationshipContactIds", targetType: "Contact" });
 
   // CHANGED — checkSingle()/checkArray() are now async (contactExists/
   // locationExists can be), so every loop here is a for...of + await
@@ -143,7 +180,7 @@ export async function findOrphanReferences() {
     const ctx = { recordType: "Encounter", recordLabel: e.title || e.encounterType, recordId: e.id };
     await checkArray(results, contactExists, e.attendeeIds, { ...ctx, field: "attendeeIds", targetType: "Contact" });
     await checkSingle(results, locationExists, e.locationId, { ...ctx, field: "locationId", targetType: "Location" });
-    await checkKinkSelections(results, kinkExists, e.kinksInvolved, { ...ctx, field: "kinksInvolved", targetType: "Kink Registry" });
+    await checkIdObjects(results, kinkExists, e.kinksInvolved, "kinkId", { ...ctx, field: "kinksInvolved", targetType: "Kink Registry" });
     await checkArray(results, protectionExists, e.protectionUsed, { ...ctx, field: "protectionUsed", targetType: "Protection Registry" });
     await checkArray(results, chemExists, e.chemsAlcoholUsed, { ...ctx, field: "chemsAlcoholUsed", targetType: "Chems Registry" });
     await checkArray(results, symptomExists, e.symptomsNoted, { ...ctx, field: "symptomsNoted", targetType: "Symptoms Registry" });
@@ -154,6 +191,13 @@ export async function findOrphanReferences() {
     await checkArray(results, organismExists, t.organismIds, { ...ctx, field: "organismIds", targetType: "Organism Registry" });
     await checkArray(results, resultExists, t.resultIds, { ...ctx, field: "resultIds", targetType: "Results Registry" });
     await checkArray(results, clinicVisitExists, t.clinicVisitIds, { ...ctx, field: "clinicVisitIds", targetType: "Clinic Visit" });
+    // ADDED 6 Oct 2026 — a Test created from "schedule a routine retest"
+    // records which test it came from, so a retest plan can always be
+    // traced back to the result that prompted it. Added the same day that
+    // feature shipped (t072) and picked up by nothing, which is precisely
+    // how the other gaps in this file happened: a field is added, and the
+    // one thing whose entire job is noticing added fields does not notice.
+    await checkSingle(results, testExists, t.routineRetestSourceTestId, { ...ctx, field: "routineRetestSourceTestId", targetType: "Test" });
   }
 
   for (const s of await SymptomLogRepository.getAll()) {
@@ -171,6 +215,22 @@ export async function findOrphanReferences() {
     await checkArray(results, symptomLogExists, v.symptomsDiscussedIds, { ...ctx, field: "symptomsDiscussedIds", targetType: "Symptom Log entry" });
     await checkSingle(results, symptomLogExists, v.primaryReasonSymptomLogId, { ...ctx, field: "primaryReasonSymptomLogId", targetType: "Symptom Log entry" });
     await checkArray(results, vaccinationExists, v.vaccinationsGivenIds, { ...ctx, field: "vaccinationsGivenIds", targetType: "Vaccination" });
+    // ADDED 6 Oct 2026 — the medication a visit prescribed to take home.
+    // The field's own history is the reason this check is worth its
+    // existence: 26 Sep restructured `medicationsPrescribedIds` and
+    // `restockMedicationIds` into this one list, because two boxes asking
+    // the same question with the answer stored twice is exactly the
+    // "one fact, one canonical owner" problem this app's architecture
+    // rules exist to prevent.
+    //
+    // It is also the one reference field a schema scan CANNOT find: the
+    // declared default is an empty array, so the `{ medicationId, unit,
+    // quantity }` shape exists only at runtime. Any future check that
+    // enumerates `DEFAULT_*` literals to decide what is covered would
+    // score this file as complete while this reference went unchecked —
+    // which is why `orphanReferenceCoverage.test.js` asserts the
+    // checker↔schema relationship in both directions.
+    await checkIdObjects(results, medicationExists, v.takeHomeMedications, "medicationId", { ...ctx, field: "takeHomeMedications", targetType: "Medication" });
   }
 
   for (const v of await VaccinationRepository.getAll()) {
