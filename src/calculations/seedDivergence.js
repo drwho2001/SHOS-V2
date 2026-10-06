@@ -2547,12 +2547,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "symptomLogIds": [
         "seed_symlog_9001"
       ],
-      "resolvedDate": "2026-10-05T19:49:32.640Z",
+      "resolvedDate": "2026-10-05T19:57:57.270Z",
       "resolution": "Treated — course complete",
       "notes": "TOC negative — resolved. Partner notification checklist used for encounters since the exposure date.",
       "isArchived": false,
       "id": "episode_001",
-      "createdAt": "2026-09-27T19:49:32.640Z"
+      "createdAt": "2026-09-27T19:57:57.270Z"
     }
   ],
   "Logs": [
@@ -2710,6 +2710,97 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "date": "2026-08-22T08:30:00.000Z",
       "voided": false
     }
+  ],
+  "Cycles": [
+    {
+      "startDate": "2026-08-09",
+      "endDate": "2026-08-14",
+      "flow": "Medium",
+      "symptomIds": [],
+      "notes": "",
+      "isArchived": false,
+      "id": "cycle_001"
+    },
+    {
+      "startDate": "2026-09-06",
+      "endDate": "2026-09-10",
+      "flow": "Heavy",
+      "symptomIds": [],
+      "notes": "",
+      "isArchived": false,
+      "id": "cycle_002"
+    },
+    {
+      "startDate": "2026-10-05",
+      "endDate": null,
+      "flow": "Light",
+      "symptomIds": [],
+      "notes": "Ongoing.",
+      "isArchived": false,
+      "id": "cycle_003"
+    }
+  ],
+  "Contraception": [
+    {
+      "method": "Combined pill",
+      "formulation": "Pill/Tablet",
+      "startDate": "2025-09-01",
+      "endDate": "2026-07-03",
+      "intervalDays": null,
+      "nextDueDate": null,
+      "linkedClinicVisitId": null,
+      "notes": "Stopped when the relationship with Morgan became exclusive.",
+      "isArchived": false,
+      "id": "contra_001"
+    },
+    {
+      "method": "Depot",
+      "formulation": "Injection",
+      "startDate": "2026-08-22",
+      "endDate": null,
+      "intervalDays": 84,
+      "nextDueDate": "2026-11-14",
+      "linkedClinicVisitId": null,
+      "notes": "Started after the miscarriage — wanted something more reliable than the pill.",
+      "isArchived": false,
+      "id": "contra_002"
+    },
+    {
+      "method": "IUD (hormonal)",
+      "formulation": "IUD/Implant",
+      "startDate": "2026-07-23",
+      "endDate": null,
+      "intervalDays": null,
+      "nextDueDate": null,
+      "linkedClinicVisitId": "seed_visit_9006",
+      "notes": "Testosterone alone isn't reliable contraception — opted for a hormonal IUD as well.",
+      "isArchived": false,
+      "id": "contra_003"
+    }
+  ],
+  "Pregnancy": [
+    {
+      "testDate": "2026-08-27",
+      "testResult": "Negative",
+      "estimatedDueDate": null,
+      "status": "",
+      "outcomeDate": null,
+      "sensitive": false,
+      "notes": "Precautionary test.",
+      "isArchived": false,
+      "id": "pregnancy_001"
+    },
+    {
+      "testDate": "2026-07-23",
+      "testResult": "Positive",
+      "estimatedDueDate": "2027-03-25",
+      "status": "Miscarriage",
+      "outcomeDate": "2026-08-14",
+      "sensitive": true,
+      "notes": "Found out at 5 weeks. Miscarried naturally at home, confirmed at follow-up.",
+      "isArchived": false,
+      "id": "pregnancy_002"
+    }
   ]
 };
 
@@ -2734,7 +2825,7 @@ const LEGACY_SEED_DEFINITIONS = (() => {
 })();
 
 /** Total records in the snapshot. A non-vacuity precondition for its tests. */
-export const LEGACY_SEED_SNAPSHOT_SIZE = 88;
+export const LEGACY_SEED_SNAPSHOT_SIZE = 96;
 
 /**
  * The fields worth comparing, deliberately narrow.

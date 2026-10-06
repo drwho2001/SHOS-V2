@@ -44,6 +44,9 @@ import { MeasurementRepository } from "../repositories/measurementRepository.js"
 import { LocationsRepository } from "../repositories/locationsRepository.js";
 import { EpisodeRepository } from "../repositories/episodeRepository.js";
 import { LogRepository } from "../repositories/logRepository.js";
+import { MenstrualCycleRepository } from "../repositories/menstrualCycleRepository.js";
+import { ContraceptionRepository } from "../repositories/contraceptionRepository.js";
+import { PregnancyRepository } from "../repositories/pregnancyRepository.js";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const TARGET = join(REPO, "src", "calculations", "seedDivergence.js");
@@ -60,6 +63,29 @@ const COLLECTIONS = [
   ["Locations", LocationsRepository],
   ["Episodes", EpisodeRepository],
   ["Logs", LogRepository],
+  // The three that were missing, and why the omission was invisible for so long.
+  //
+  // FOURTEEN repositories export a SEED_*_IDS set; this list had eleven. Without
+  // them the snapshot held no cycle/contraception/pregnancy row, so those demo
+  // ids were unrecognised, and an unrecognised id is classified as the USER's
+  // data - the safe direction, and a completely silent one. Clear Sample Data
+  // already listed all three in its own SAMPLE_REPOSITORIES, so it counted those
+  // records and then declined to remove them: a button that reports rows it will
+  // not clear.
+  //
+  // The recorded reason for the gap was that these seed arrays "are empty when
+  // menstrualTrackingEnabled is false". That was wrong and is worth correcting
+  // where the mistake was made: the arrays are populated unconditionally
+  // (seed_cycle_9001..9003 and friends), and the arrays are only *absent from the
+  // storage key* when the preference is off. A wrong reason in a task title sends
+  // the next session looking for a preference gate that does not exist.
+  //
+  // `seedSnapshotCoverage.test.js` is the guard that stops a fourth, fifth or
+  // sixth collection being left out the same way: it fails on any repository
+  // exporting SEED_*_IDS that this list does not read.
+  ["Cycles", MenstrualCycleRepository],
+  ["Contraception", ContraceptionRepository],
+  ["Pregnancy", PregnancyRepository],
 ];
 
 // Snapshot ids live in the legacy space (`contact_001`) because the snapshot must
