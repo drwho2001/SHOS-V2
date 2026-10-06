@@ -225,6 +225,19 @@ oversight.
   the pure docs-gate decision function. `--fast` (build/lint/tests/encoding/
   docs), `--smoke-only`, `--docs-only`.
 - `docs/CHANGE-PROCEDURE.md` — the commit/push algorithm itself.
+- `docs/MODELS.md` — **which models this machine can actually use**, and why
+  the rest cannot. Written 6 Oct 2026 from executed requests, not from a
+  config file. Read it before choosing or changing a session's model. The two
+  facts it exists to stop being re-derived: the OpenCode **Go** account is
+  the paid one (Zen returns `402 Insufficient account funds`, which is
+  expected, not a fault), and the free models are **not equally private** —
+  `space-bunny-free` and `longcat-2.5-preview-free` are documented
+  zero-retention while Nemotron's free tier explicitly forbids submitting
+  personal or confidential data, which matters more than usual for this app.
+  It also records why a session "stops mid response": the free tier is
+  **shared across every concurrent session**, so two sessions on one model
+  trip the rate limit together. Run two sessions on two different model
+  families.
 
 ## Working conventions for this project specifically
 
@@ -817,6 +830,20 @@ workflow runs at all. "It parses" looked like sufficient evidence and was not �
 which is the same shape as every other time in this file where a check reported
 green on something that had not actually been exercised. The guard now rejects a
 `#` inside any `if:` block.
+
+## Recently shipped (6 Oct 2026 - the frozen snapshot cannot describe the app's own data, and that is a guard class this repo had never needed before)
+
+**Session A. Verification only; the code fix is not in this entry, because it is not done.** What is recorded here is a durable finding and the rule that came out of it. Open work lives in the work pool (`node scripts\session-bridge.mjs pool list`), not in prose here, per the standing rule at the top of this file.
+
+**A warning was posted on the session bus and the code was changed anyway.** At 02:28 on 6 Oct a Blocker notice said `src/calculations/seedDivergence.js` "cannot classify current live seed data as demo". It was correct. The module is meant to decide whether a record is removable demo data or the user's own, and measured against the real repositories it got **6/6 medications, 14/14 dose logs, 2/4 vaccinations and 1/1 episodes wrong** - reading pristine demo records as the user's. Wired into `clearSampleData.js` that is not a data-loss bug but the opposite failure and just as real: **Clear Sample Data silently deletes nothing, forever.** The wiring had already been reverted once by the time I picked it up; that revert was correct, and it is the reason `clearSampleData.js` is still id-only today.
+
+**Why every test said it was fine: they compared the snapshot to itself.** Sixteen tests against the module passed throughout. Each took its fixture from the module's own `legacyDefinitionFor()`, so they proved the snapshot was internally self-consistent and never once asked whether it still described reality. This is the recorded "measures nothing, looks green" failure reached from a new direction - not a missing assertion but an assertion pointed at the wrong subject. **A frozen fixture is a claim about the present wearing the costume of history, and nothing in either suite checked it against the thing it claims to describe.** `src/calculations/snapshotFidelity.test.js` is that check: it goes to the eleven repositories, takes what they actually return, and fails with a per-field diff naming the offending field. It is the test this work needed first and did not have.
+
+**Three distinct causes, and the third is a design error rather than a bug.** (1) `statedKinks`, `limits` and `kinksInvolved` changed shape on 18 Aug from a flat array of id strings to `[{kinkId, role}]`, and the repositories normalise on every read - so the snapshot holds `"kink_037"` and every live record holds `{kinkId:"kink_037", role:null}`. Exactly three fields, found by grepping every `normalizeKinkSelections()` call site rather than by fixing the one that failed first. (2) **The seed arrays build dates relative to today (`daysAgo(9)`), so the same seed yields a different absolute timestamp every day, while the snapshot froze whatever it saw.** Comparing absolute timestamps can therefore never succeed - the snapshot was already a day stale the next morning. Fixed by projecting each side against **its own epoch**: today for the live record, the snapshot's capture date for the frozen row. (3) The snapshot was captured from the **raw seed arrays**, but every real record is built as `{ ...DEFAULT_MEDICATION, ...row }`, so live records carry ~5 default fields (`route`, `medicationType`, `doseComponents`, `scheduleIntervalDays`, `refillCancelledAt`) the snapshot never saw. Byte-comparing full key sets cannot match, and no amount of normalisation fixes it.
+
+**The asymmetry that decides how (3) must be fixed, and it is the part worth keeping.** Comparing only the fields the snapshot knows makes every unedited demo record read as diverged - the feature breaks, nothing is destroyed. Comparing all fields, which is what happens today, means a user who edited one of those newer fields has that edit invisible to the rule and **their record is deleted.** One direction breaks a button; the other destroys records. **So a divergence guard's failure modes are not symmetric, and the one that deletes data must be closed by fixing the fixture rather than by narrowing the comparison.** This is the same asymmetry as `isSeed === false` being authoritative, arriving from the opposite end: there the safe reading is a false positive, here it is a false negative.
+
+**A constant that looks derivable and is not.** The projection needs to know when the snapshot was taken, and it cannot be inferred from the snapshot's contents - a seed record's own `createdAt` is part of the *seeded* data, usually a fixed literal like `2026-07-01`, so it records when the demo was written rather than when the fixture was captured. Deriving it yields a plausible wrong constant that fails in exactly the silent direction above. It is an explicit documented constant, and the fidelity test is what proves it right.
 
 ## Recently shipped (5 Oct 2026, later - 74 real records deleted by id, and the fix is one thing: stop sharing an id space)
 

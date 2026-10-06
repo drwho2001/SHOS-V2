@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
-import { it, expect } from "vitest";
+import { it, expect, describe } from "vitest";
+import {
+  isDemoData,
+  legacyDefinitionFor,
+} from "../calculations/seedDivergence.js";
 
 /**
  * Guards the fix for a real data-loss incident: "Clear sample data" deleted 74
@@ -137,4 +141,80 @@ it("referencedSeedIds lets a real record vouch, and an unedited seed not", () =>
       "record (isSeed:false under a seed id) cannot vouch for what it references - " +
       "which is the other half of the incident",
   ).toBe(true);
+});
+
+// The tests above mirror isSampleRecord's contract in the test file, because it
+// is not exported. That mirror is why every one of the 6 original assertions
+// passed against a rule that was wrong in its DEFAULT branch: they all described
+// the two-line version, and none of them described a flagless record.
+//
+// The tests below import the real rule instead. `isSampleData` is not exported
+// from clearSampleData.js, so this exercises `isDemoData` - the function that
+// now owns that decision - rather than a copy of it. A copy cannot catch the
+// copy being wrong; the whole incident was a second implementation of a
+// data-loss rule drifting from the first.
+//
+// THE CLASS OF TEST THAT WAS MISSING, stated once so it is not missed again:
+// 82 mutations across two seed suites were green while this rule returned the
+// wrong answer for a record with no flag - which is the shape that lost 74 real
+// records. Every mutation touched the flagged branch. A guard against data loss
+// has to assert that the AMBIGUOUS case is preserved, not merely that the
+// already-flagged case is safe.
+describe("a flagless record on a seed id is decided by content, not by id", () => {
+  // Same id as a demo record. No flag to save it. Different content - which is
+  // exactly what a record restored from an old backup, or edited on a build that
+  // predates the flag, looks like. Before divergence detection this returned
+  // true, and true here means "safe to delete".
+  it("keeps a flagless record that diverges from the demo data", () => {
+    const record = { ...legacyDefinitionFor({ id: "contact_001" }), name: "Sean Wilson" };
+    delete record.collection;
+    expect(record.isSeed, "fixture must be flagless or this proves nothing").toBeUndefined();
+    expect(isDemoData(record)).toBe(false);
+  });
+
+  it("still deletes a flagless record that matches the demo data exactly", () => {
+    // The counterpart, and the reason divergence detection is safe to enable: if
+    // everything diverged, Clear Sample Data would silently do nothing and demo
+    // data would be undeletable forever. That is a real failure mode, not a
+    // hypothetical one - an earlier version of this guard over-protected and
+    // had it reverted.
+    const definition = legacyDefinitionFor({ id: "contact_001" });
+    const { collection, ...record } = definition;
+    expect(isDemoData(record)).toBe(true);
+  });
+
+  it("cannot be talked out of the flag by matching content", () => {
+    // Ordering. A perfect content match is the strongest "demo data" signal
+    // available; the flag must still win, because the flag is the user's own
+    // statement and a content match is an inference about the user.
+    const definition = legacyDefinitionFor({ id: "contact_001" });
+    const { collection, ...record } = definition;
+    expect(isDemoData({ ...record, isSeed: false })).toBe(false);
+  });
+
+  it("treats a record that was never a seed id as the user's, flagless or not", () => {
+    // The fail-safe direction. A record with no snapshot row is not demo data,
+    // because defaulting the unknown case to "demo" would delete anything a
+    // hand-edited backup or a future install brought in.
+    expect(isDemoData({ id: "contact_9999", name: "Anyone" })).toBe(false);
+    expect(isDemoData({ id: "contact_9999", name: "Anyone", isSeed: false })).toBe(false);
+  });
+
+  it("clearSampleData routes its decision through the shared rule, not the id set", () => {
+    // Structural. The behavioural tests above prove the RULE is right; this
+    // proves the deletion chokepoint actually calls it. A correct rule that
+    // nothing reaches is the exact shape of the 29 Sep widget failure - a whole
+    // feature, registered and commented as working, that had never once run.
+    const src = fs.readFileSync(path.join(REPO_DIR, "clearSampleData.js"), "utf8");
+    expect(
+      /from "\.\.\/calculations\/seedDivergence\.js"/.test(src),
+      "clearSampleData does not import the shared rule",
+    ).toBe(true);
+    const body = src.slice(src.indexOf("function isSampleRecord"));
+    expect(
+      /return isDemoData\(record\)/.test(body.slice(0, body.indexOf("}"))),
+      "isSampleRecord no longer ends in the shared rule - an id-only decision " +
+        "is back, which is what deleted 74 records on 5 Oct",
+    ).toBe(true);
+  });
 });
