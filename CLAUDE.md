@@ -870,6 +870,65 @@ verify:fast green - build, lint, **1397 tests across 119 files**, encoding, inhe
 
 **Still open, unchanged: t069** (an old record carrying both a legacy seed id and a renamed legacy field diverges from the frozen current definition and is not re-keyed; safe for data, can leave a legacy demo id). It needs a scope decision, not a fix.
 
+## Recently shipped (6 Oct 2026, latest - Clinic Visit and Symptom records now fade with age, and the interesting half is what the fade must NOT do)
+
+**Session D. New `src/calculations/recordRecency.js` owns "is this record
+current?", and the deliberate absence in it is the point.** The rule is **rank,
+not a window**: one of the two most recent records on file is current. That is a
+fact about the user's own data.
+
+**Why not copy Testing's 90 days.** Testing can justify a 90-day window because
+BASHH publishes a 3-monthly routine screening interval, and that figure is cited
+at the constant. There is no equivalent published interval for "how old a clinic
+visit should look", so reusing the number would be **borrowing a sourced figure
+out of the only context that sourced it** — the same mistake as the old 0.8/0.2
+medication lockout factors, which read as deliberate right up until someone
+audited them and found no source at all. `windowDays` therefore defaults to
+`null` and is only a parameter, so a caller that genuinely has a sourced figure
+can pass one and it can only *add* recency.
+
+**A guard asserts the absence, because that is what can regress.** It fails if
+either module defines its own `RECENT_*DAYS` constant or passes a `windowDays`
+literal. A guard cannot prove a clinical number is right; it *can* prove nobody
+typed one in, which is the actual hazard. It went red on first run — written
+before the fix, as it should be.
+
+**The fade never touches the content, and there is always a text label.** Age
+steps the surrounding background and text down; the record's own meaning survives.
+Testing already carried an "Older test" pill and Clinic Visits an "Older visit"
+one, and **a fade alone would convey the state visually only** — invisible to a
+screen-reader user and to anyone who cannot perceive the step down. Three
+instances of one convention, not three new ones.
+
+**Three records must never be faded, and each exclusion is a different reason.**
+A **future clinic appointment** is dated later than everything else by
+definition, so ranking it would dim exactly the record the user most needs to
+read. An **ongoing symptom** is current by definition — it is still happening —
+so a symptom's rule is deliberately not the visit rule copied over. A record with
+a **missing or unparseable date** is missing or broken *data*, and fading it for
+data the user never entered would read as a judgement about the record itself.
+
+**That last exclusion caught two real bugs in my own helper, both the same
+mistake.** The first version faded a record with an unparseable date, and then
+faded a record it could not *place* — an empty pool, or a caller whose list does
+not contain it. Both are absence of evidence, and both had the same answer: the
+helper may only ever fade a record it **positively ranked** below the top two, and
+never one it merely failed to measure. That is now a named test.
+
+**Two measurement errors of my own, both caught because a passing number looked
+too good.** I first probed a stale `dist/` and reported "0 dangling dots, 0
+overlaps" as if it verified the previous batch — it verified nothing. This round I
+probed Clinic Visits and got 0 labelled rows because I guessed the sub-tab label
+was `text="Clinic visits"` when the real label is `Clinic Visits`, so the click
+never happened and I was measuring the Testing list. Both times the fix was to
+read the real labels and rebuild first.
+
+**Measured boundary:** 11 tests, lint/build/encoding clean, `symptom-link` smoke
+flow green. Verified live against a **freshly rebuilt** preview: Clinic Visits 3
+labelled-and-faded rows of 15, Symptoms 1 of 12, and **every** labelled row has a
+background distinct from all the normal ones — which is the claim that matters,
+since a label with no fade would look identical in a text search.
+
 ## Recently shipped (6 Oct 2026, later still - the Contacts card gains a gold accent for favourites, and half the task was already shipped)
 
 **Session D. t080 arrived as "pin favourites to the top of the list, optional

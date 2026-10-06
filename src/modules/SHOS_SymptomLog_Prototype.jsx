@@ -26,6 +26,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { isRecentRecord } from "../calculations/recordRecency";
 
 // ADDED 19 Aug 2026 — Symptom Log (Symptoms Tracker in Notion — see
 // symptomLogRepository.js's header for the deliberate naming decision
@@ -604,16 +605,33 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
   // deletedRecent/undoDelete/triggerDelete lifted to SymptomLogModule,
   // shared with EntryDetail.
 
+  // ADDED 6 Oct 2026 (t081) - de-emphasise older records, mirroring Testing's
+  // own treatment rather than inventing a third one: age is shown by fading the
+  // record AROUND the content, never the content itself.
+  //
+  // AN ONGOING SYMPTOM IS NEVER FADED, and that is the whole reason this is not
+  // just the Clinic Visits rule copied over. An active symptom is current BY
+  // DEFINITION - it is still happening - so ranking it by date would dim exactly
+  // the records the user most needs to act on, which is the failure mode this
+  // feature exists to avoid.
+  //
+  // Recency for a resolved entry is measured from when it RESOLVED, not when it
+  // started, because a two-year illness that ended last month is recent news.
+  const recencyPool = entries.map((x) => ({ id: x.id, date: x.dateResolved || x.dateStarted }));
   const Row = (e) => {
     const symptomName = e.symptomIds.map((id) => symptomNameById.get(id)).filter(Boolean).join(", ");
     const isActive = !e.dateResolved;
     const isSelected = selectedIds.includes(e.id);
+    const isRecent = isActive || isRecentRecord({ id: e.id, date: e.dateResolved || e.dateStarted }, recencyPool);
+    const rowT = isRecent
+      ? T
+      : { ...T, surface: T.surfaceVariant, textPrimary: T.textSecondary, textSecondary: T.textDisabled };
     return (
       <div key={e.id} onClick={() => selectMode ? toggleSelected(e.id) : onOpen(e.id)}
         onMouseDown={() => startPress(e.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(e.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
         role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? isSelected : undefined} aria-label={e.title} tabIndex={0}
         onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); selectMode ? toggleSelected(e.id) : onOpen(e.id); } }}
-        style={{ background: isSelected ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${isSelected ? T.healthcareBlue : isActive && e.severity === "Severe" ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", marginBottom: 10, display: "flex", gap: 10 }}>
+        style={{ background: isSelected ? `${T.healthcareBlue}10` : rowT.surface, border: `1px solid ${isSelected ? T.healthcareBlue : isActive && e.severity === "Severe" ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", marginBottom: 10, display: "flex", gap: 10 }}>
         {selectMode && (
           <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${isSelected ? T.healthcareBlue : T.border}`, background: isSelected ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
             {isSelected && <Check size={13} color="#FFFFFF" />}
@@ -622,11 +640,19 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
         <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: radius.full, background: isActive ? severityColor(e.severity, T) : T.actionGreen, display: "inline-block" }} />
-          <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{e.title}</span>
+          <span style={{ fontSize: 15, fontWeight: 600, color: rowT.textPrimary }}>{e.title}</span>
         </div>
-        <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ fontSize: 12, color: rowT.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
           {symptomName ? `${symptomName} · ` : ""}{formatDate(e.dateStarted)}{e.severity ? ` · ${e.severity}` : ""}
         </div>
+        {/* ADDED 6 Oct 2026 (t081) - a fade alone would convey this state
+            VISUALLY only, which this app's own accessibility work treats as a
+            gap: a screen-reader user, and anyone who cannot perceive the step
+            down in background and text weight, would learn nothing. Testing
+            already carries an "Older test" pill and Clinic Visits an "Older
+            visit" one for the same reason, so this is the third instance of one
+            convention rather than a new one. */}
+        {!isRecent && <div style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, marginLeft: 16, marginTop: 2 }}>Older entry</div>}
         </div>
       </div>
     );

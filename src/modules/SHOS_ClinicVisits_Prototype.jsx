@@ -54,6 +54,7 @@ import { suggestedQuantity, round2 } from "../calculations/takeHomeQuantity";
 // See clinicVisitShape.js for why an UNRECOGNISED reason must hide nothing.
 import { fieldGroupsForReasons, shouldGuideForm, clearPlan, applyFieldClear } from "../calculations/clinicVisitShape";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import { isRecentRecord } from "../calculations/recordRecency";
 
 // Same Healthcare blue + font conventions as Testing — applied from
 // creation, not retrofitted, per the user's standing instruction.
@@ -1774,7 +1775,7 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
               <div style={{ ...TYPE.sectionLabel, color: T.textSecondary, marginBottom: 8 }}>{group.key}</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: 10 }}>
                 {group.items.map((v) => (
-                  <VisitRow key={v.id} v={v} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
+                  <VisitRow key={v.id} v={v} allVisits={visits} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
                 ))}
               </div>
             </div>
@@ -1788,7 +1789,7 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
             </div>
           )}
           {sorted.map((v) => (
-            <VisitRow key={v.id} v={v} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
+            <VisitRow key={v.id} v={v} allVisits={visits} T={T} selectMode={selectMode} selectedIds={selectedIds} toggleSelected={toggleSelected} onOpen={onOpen} startPress={startPress} cancelPress={cancelPress} handleTouchMove={handleTouchMove} />
           ))}
         </div>
       )}
@@ -1815,13 +1816,25 @@ function VisitsLanding({ onOpen, onAdd, T, visits, refresh, deleteToast, undoDel
 // ADDED — pulled out of VisitsLanding's own inline .map() body so the
 // desktop-grid month-grouping pass and the mobile flat list both render
 // the exact same row markup, unchanged.
-function VisitRow({ v, T, selectMode, selectedIds, toggleSelected, onOpen, startPress, cancelPress, handleTouchMove }) {
+function VisitRow({ v, allVisits, T, selectMode, selectedIds, toggleSelected, onOpen, startPress, cancelPress, handleTouchMove }) {
+  // ADDED 6 Oct 2026 (t081) - mirrors Testing's own recency treatment: age is
+  // shown by fading the record AROUND the content, never by muting the content
+  // itself, so a visit's real meaning survives being old.
+  //
+  // A FUTURE appointment is excluded outright. It is dated later than everything
+  // else on file by definition, so ranking it would fade exactly the record the
+  // user most needs to read - which is the failure mode this whole feature has to
+  // avoid.
+  const isRecent = v.isFutureAppointment || isRecentRecord(v, allVisits);
+  const rowT = isRecent
+    ? T
+    : { ...T, surface: T.surfaceVariant, textPrimary: T.textSecondary, textSecondary: T.textDisabled };
   return (
     <div onClick={() => selectMode ? toggleSelected(v.id) : onOpen(v.id)}
       onMouseDown={() => startPress(v.id)} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={(evt) => startPress(v.id, evt)} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
       role={selectMode ? "checkbox" : "button"} aria-checked={selectMode ? selectedIds.includes(v.id) : undefined} aria-label={v.title || "Untitled visit"} tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMode ? toggleSelected(v.id) : onOpen(v.id); } }}
-      style={{ background: selectedIds.includes(v.id) ? `${T.healthcareBlue}10` : T.surface, border: `1px solid ${selectedIds.includes(v.id) ? T.healthcareBlue : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
+      style={{ background: selectedIds.includes(v.id) ? `${T.healthcareBlue}10` : rowT.surface, border: `1px solid ${selectedIds.includes(v.id) ? T.healthcareBlue : T.border}`, borderRadius: radius.md, padding: 14, cursor: "pointer", display: "flex", gap: 10 }}>
       {selectMode && (
         <div style={{ width: 22, height: 22, borderRadius: radius.full, border: `2px solid ${selectedIds.includes(v.id) ? T.healthcareBlue : T.border}`, background: selectedIds.includes(v.id) ? T.healthcareBlue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
           {selectedIds.includes(v.id) && <Check size={13} color="#FFFFFF" />}
@@ -1829,12 +1842,13 @@ function VisitRow({ v, T, selectMode, selectedIds, toggleSelected, onOpen, start
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary }}>{v.title || "Untitled visit"}</span>
+        <span style={{ fontSize: 15, fontWeight: 600, color: rowT.textPrimary }}>{v.title || "Untitled visit"}</span>
         {v.isFutureAppointment && <Calendar size={13} color={T.healthcareBlue} />}
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2, fontFamily: "'Inter', sans-serif" }}>{formatDate(v.date)}</div>
-      {v.clinician.length > 0 && <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.clinician.join(", ")}</div>}
-      {v.location && <div style={{ fontSize: 12, color: T.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.location}</div>}
+      {!isRecent && <div style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, marginLeft: 16, marginTop: 2 }}>Older visit</div>}
+      {v.clinician.length > 0 && <div style={{ fontSize: 12, color: rowT.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.clinician.join(", ")}</div>}
+      {v.location && <div style={{ fontSize: 12, color: rowT.textSecondary, marginLeft: 16, marginTop: 2 }}>{v.location}</div>}
       </div>
     </div>
   );
