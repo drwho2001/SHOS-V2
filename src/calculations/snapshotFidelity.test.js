@@ -128,8 +128,26 @@ function shiftDates(value, days) {
   return value;
 }
 
+/** Shift every date-shaped string by `minutes`, recursively. */
+function shiftMinutes(value, minutes) {
+  const MS = 60000;
+  if (typeof value === "string") {
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) {
+      return new Date(new Date(value).getTime() + minutes * MS).toISOString();
+    }
+    return value;
+  }
+  if (Array.isArray(value)) return value.map((v) => shiftMinutes(v, minutes));
+  if (value && typeof value === "object") {
+    const out = {};
+    for (const k of Object.keys(value)) out[k] = shiftMinutes(value[k], minutes);
+    return out;
+  }
+  return value;
+}
+
 /**
- * The two regressions that a self-referential test cannot see.
+ * The regressions that a self-referential test cannot see.
  *
  * Both were real bugs on 6 Oct, and a mutation harness proved neither was
  * covered: disabling the date projection, and disabling the kink-shape
@@ -156,6 +174,31 @@ describe("the projection is what makes the comparison survive a day passing", ()
         `a seeded encounter with every date ${days} day(s) older stopped matching. ` +
           `Absolute date comparison would treat that as a user edit, so demo data ` +
           `would silently become undeletable.`,
+      ).toBe(true);
+    }
+  });
+
+  it("still matches when only the time of day differs", async () => {
+    // The regression that actually shipped a red suite: a field set to
+    // `new Date().toISOString()` (Episode.resolvedDate) records when the seed was
+    // evaluated, so regenerating the snapshot hours later changed it. Comparing
+    // the HOUR was tried first and drifted 77 minutes, failing anyway - any
+    // clock-based tolerance is defeated by a clock.
+    //
+    // Shifted in MINUTES precisely so this cannot pass by accident: the day
+    // offsets stay equal, so a day-resolution comparison passes, and a
+    // time-of-day comparison fails. That is the property being pinned.
+    const { episodes: EpisodeRepository } = await freshRepos();
+    const all = await EpisodeRepository.getAll();
+    const live = all.find((r) => legacyDefinitionFor(r));
+    if (!live) throw new Error("no seeded episode loaded");
+
+    for (const minutes of [5, 90, 600]) {
+      const shifted = shiftMinutes(live, minutes);
+      expect(
+        isDemoData(shifted),
+        `a seeded episode ${minutes} minutes off classified as USER data. ` +
+          `Clear Sample Data would keep demo data the user never touched.`,
       ).toBe(true);
     }
   });

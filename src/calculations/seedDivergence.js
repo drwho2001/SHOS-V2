@@ -2793,8 +2793,26 @@ function projectDate(value, anchor) {
   // guard that reports itself broken every time the fixture is regenerated, and a
   // check nobody trusts is one nobody runs.
   if (!isDateTime) return `D${offset}`;
-  const sameHourAsAnchor = value.slice(11, 13) === anchor.slice(11, 13);
-  return `T${offset}@${sameHourAsAnchor ? "same" : value.slice(11, 13)}`;
+
+  // TIME OF DAY IS NOT COMPARED, and that is a deliberate limitation rather than
+  // a rounding choice.
+  //
+  // A field set to `new Date().toISOString()` - `Episode.resolvedDate` is the one
+  // that exists today - records "when the seed array was evaluated". Two
+  // evaluations an hour apart produce two different values, so any time-of-day
+  // comparison makes that record diverge purely from regeneration. The first fix
+  // compared the HOUR, and the next run drifted 77 minutes and failed anyway: a
+  // tolerance is being defeated by a clock, which is what it was chosen to avoid.
+  //
+  // So the comparison is day-resolution, and the cost is stated: a user who edits
+  // only the time of day of a record sitting on a seed id, on the same calendar
+  // day, is not detected. That is the price of a fixture that can be regenerated
+  // at any time without becoming wrong, which matters more - the alternative is a
+  // guard that reports itself broken on every regeneration and is then ignored.
+  //
+  // `snapshotFidelity.test.js` covers the day-resolution case explicitly, and a
+  // migration that needs hour-level fidelity has never existed.
+  return `T${offset}`;
 }
 
 /**
