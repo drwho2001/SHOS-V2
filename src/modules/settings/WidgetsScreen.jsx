@@ -11,6 +11,7 @@ import { useLoadedState } from "../../calculations/loadedRepositoryState";
 // agree. Reading it from the owner also means the settings screen shows the same
 // answer the widgets will act on.
 import { tierFor, isDataWidget } from "../../calculations/widgetPrivacy";
+import { syncAllWidgets } from "../../calculations/syncAllWidgets";
 
 export function WidgetsScreen({ onClose }) {
   const [darkMode] = useDarkModePreference();
@@ -104,6 +105,7 @@ export function WidgetsScreen({ onClose }) {
     try {
       const { AppPreferencesRepository } = await import("../../repositories/appPreferencesRepository");
       await AppPreferencesRepository.update({ widgetPrivacy: newPrefs.widgetPrivacy });
+      await syncAllWidgets();
     } catch (e) {
       console.debug("Widget privacy save failed:", e);
     }

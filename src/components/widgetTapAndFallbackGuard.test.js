@@ -308,6 +308,48 @@ describe("widget pushes are decoupled from reminder scheduling", () => {
     expect(home).toMatch(/syncAllWidgets\(\)/);
   });
 
+  it("changing a widget's privacy tier re-pushes the widgets", () => {
+    // The stale-widget bug: the tier is persisted, the screen re-renders, and the
+    // home screen widget keeps showing the OLD disclosure until something else
+    // triggers a push - so the user changes a privacy setting and sees no effect
+    // on the thing they were trying to hide.
+    //
+    // The assertion is anchored on the handler body rather than on the file, so a
+    // `syncAllWidgets()` call elsewhere in WidgetsScreen.jsx cannot satisfy it.
+    // That is the same mistake this repo has already made twice with comment-
+    // matching and title-matching: a substring present somewhere in the file
+    // standing in for the behaviour being protected.
+    const src = read("src/modules/settings/WidgetsScreen.jsx");
+    const start = src.indexOf("const handlePrivacyChange");
+    expect(start, "handlePrivacyChange declaration not found").toBeGreaterThan(-1);
+    // Bound the slice by the closing of THAT function's arrow body, not by the
+    // next occurrence of its own name. The first version used a fallback that
+    // silently widened to the rest of the file when the anchor was missing, and
+    // the guard stayed green with the sync call deleted - a window that made the
+    // test look like coverage while measuring nothing.
+    const end = src.indexOf("\n  };", start);
+    expect(end, "could not bound handlePrivacyChange's body").toBeGreaterThan(start);
+    const body = src.slice(start, end);
+
+    expect(body, "changing a privacy tier must re-push the widgets").toMatch(/syncAllWidgets\(\)/);
+    // And it has to be AWAITED. A bare call would be swallowed by the catch below
+    // on failure and, worse, would let the handler return before the push lands -
+    // so the test below also asserts the awaited form, because "the call exists"
+    // and "the push completes before the handler resolves" are different claims.
+    expect(body, "the sync must be awaited, not fire-and-forget").toMatch(/await\s+syncAllWidgets\(\)/);
+
+    // Imported as a NAMED export. A default import would be undefined at runtime
+    // - the module has no default-importable identity through this path - and the
+    // call site would throw inside the try block, where the catch logs at debug
+    // and the widgets stay stale. That is the exact failure this whole commit is
+    // about, wearing a different hat: a correct call that never runs.
+    expect(
+      src,
+      "syncAllWidgets is exported both named and default, but the default " +
+        "binding here is the one that silently fails at runtime",
+    ).not.toMatch(/import\s+syncAllWidgets\s+from/);
+  });
+
   it("every bridge method a provider exists for is reached from the central sync", () => {
     // SUPERSEDES an earlier version of this test, which asserted that no reminder
     // function returns before its last widget push. That was the right invariant
