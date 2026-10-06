@@ -229,13 +229,26 @@ export function handleSnoozeDoxy() {
  * either leak or lie. formatRemaining() is not used because it takes DAYS and
  * this is a 72-hour window, where "0d remaining" would be both useless and
  * wrong.
+ *
+ * CHANGED 6 Oct 2026 - the category is now "Antibiotics", not "DoxyPEP".
+ *
+ * This is not a euphemism preference, it is the reason the tier exists. "DoxyPEP"
+ * is an acronym only the sexually-active-in-the-last-72-hours crowd knows, so
+ * rendering it on a home screen discloses recent condomless sex to anyone who
+ * happens to know the word - to a housemate, a friend over your shoulder, a
+ * passer-by on the train. "Antibiotics" says the same thing to the person who
+ * chose to place the widget, and nothing at all to anyone else. The owner's
+ * decision to this effect is recorded in CLAUDE.md from 2 Oct 2026; it had been
+ * written down and never implemented, which is exactly the failure this repo
+ * keeps re-learning in a new shape.
  */
 export function doxyPepRedactedLine(status) {
-  if (status.overdue) return "DoxyPEP - overdue";
-  if (!status.active) return "DoxyPEP - none active";
-  if (!status.deadline) return "DoxyPEP - active";
+  const CATEGORY = "Antibiotics";
+  if (status.overdue) return `${CATEGORY} - window overdue`;
+  if (!status.active) return `${CATEGORY} - no window`;
+  if (!status.deadline) return `${CATEGORY} - window active`;
   const remainingMs = status.deadline.getTime() - Date.now();
   const hours = Math.floor(remainingMs / 3600000);
   const minutes = Math.floor((remainingMs % 3600000) / 60000);
-  return hours > 0 ? `DoxyPEP - in ${hours}h ${minutes}m` : `DoxyPEP - in ${minutes}m`;
+  return hours > 0 ? `${CATEGORY} - in ${hours}h ${minutes}m` : `${CATEGORY} - in ${minutes}m`;
 }

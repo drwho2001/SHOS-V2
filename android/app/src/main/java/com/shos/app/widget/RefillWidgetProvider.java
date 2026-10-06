@@ -65,7 +65,34 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_refill";
             // and only the provider decides what is RENDERED. The ids are named rather
             // than discovered because RemoteViews is an IPC serialization stub and
             // cannot iterate a view tree.
-            String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+            // HOISTED 6 Oct 2026 - the root tap target is attached BEFORE the
+        // Redacted branch, not after it. Every data provider attached it
+        // below the Redacted early-return, so at a Redacted tier the widget
+        // rendered but had NO tap target at all - and the owner had set every
+        // widget to Redacted. It depends only on `context` and `appWidgetId`,
+        // never on the data, so one copy here is correct for every tier.
+        Intent intent = new Intent(context, com.shos.app.MainActivity.class);
+
+        // ACTION_VIEW IS LOAD-BEARING, not decoration. Capacitor's own App
+
+        // plugin drops any intent arriving through onNewIntent that is not an
+
+        // ACTION_VIEW - AppPlugin.java:148 does `if (!Intent.ACTION_VIEW.equals
+
+        // (action) || url == null) return;` - so a bare setData() intent never
+
+        // emits appUrlOpen and the tap silently does nothing on a warm app.
+
+        // Verified at source in node_modules/@capacitor/app, not inferred.
+
+        intent.setAction(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse("com.shos.app://medication/inventory"));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
+        context,
+        appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+        views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
+        String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
             if (redactedText != null && !redactedText.isEmpty()) {
                 views.setTextViewText(R.id.widget_refill_title, redactedText);
             views.setViewVisibility(R.id.widget_refill_count, android.view.View.GONE);
@@ -92,27 +119,6 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_refill";
         // /inventory rather than /dashboard, and /dashboard is untouched, because
         // the DoxyPEP status widget also targets it and that one genuinely belongs
         // there - it shows an adherence figure that only the dashboard renders.
-        Intent intent = new Intent(context, com.shos.app.MainActivity.class);
-
-        // ACTION_VIEW IS LOAD-BEARING, not decoration. Capacitor's own App
-
-        // plugin drops any intent arriving through onNewIntent that is not an
-
-        // ACTION_VIEW - AppPlugin.java:148 does `if (!Intent.ACTION_VIEW.equals
-
-        // (action) || url == null) return;` - so a bare setData() intent never
-
-        // emits appUrlOpen and the tap silently does nothing on a warm app.
-
-        // Verified at source in node_modules/@capacitor/app, not inferred.
-
-        intent.setAction(Intent.ACTION_VIEW);
-        intent.setData(Uri.parse("com.shos.app://medication/inventory"));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
-        context,
-        appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
-        views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
 
         android.util.Log.i("RefillWidgetProvider", "pushed DATA views id=" + appWidgetId);
         appWidgetManager.updateAppWidget(appWidgetId, views);

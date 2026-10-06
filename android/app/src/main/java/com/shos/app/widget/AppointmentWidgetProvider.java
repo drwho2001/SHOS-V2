@@ -65,26 +65,12 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_appt";
             // and only the provider decides what is RENDERED. The ids are named rather
             // than discovered because RemoteViews is an IPC serialization stub and
             // cannot iterate a view tree.
-            String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
-            if (redactedText != null && !redactedText.isEmpty()) {
-                views.setTextViewText(R.id.widget_appt_title, redactedText);
-            views.setViewVisibility(R.id.widget_appt_count, android.view.View.GONE);
-            views.setViewVisibility(R.id.widget_next_appt, android.view.View.GONE);
-                appWidgetManager.updateAppWidget(appWidgetId, views);
-                return;
-            }
-
-        if (apptCount > 0) {
-            views.setTextViewText(R.id.widget_appt_title, "Appointments");
-            views.setTextViewText(R.id.widget_appt_count, apptCount + " upcoming");
-            views.setTextViewText(R.id.widget_next_appt, "Next: " + nextAppt);
-        } else {
-            views.setTextViewText(R.id.widget_appt_title, "Appointments");
-            views.setTextViewText(R.id.widget_appt_count, "None booked");
-            views.setTextViewText(R.id.widget_next_appt, "");
-        }
-
-        // Click opens Clinic Visits tab
+            // HOISTED 6 Oct 2026 - the root tap target is attached BEFORE the
+        // Redacted branch, not after it. Every data provider attached it
+        // below the Redacted early-return, so at a Redacted tier the widget
+        // rendered but had NO tap target at all - and the owner had set every
+        // widget to Redacted. It depends only on `context` and `appWidgetId`,
+        // never on the data, so one copy here is correct for every tier.
         Intent intent = new Intent(context, com.shos.app.MainActivity.class);
 
         // ACTION_VIEW IS LOAD-BEARING, not decoration. Capacitor's own App
@@ -106,6 +92,26 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_appt";
         context,
         appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
+        String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+            if (redactedText != null && !redactedText.isEmpty()) {
+                views.setTextViewText(R.id.widget_appt_title, redactedText);
+            views.setViewVisibility(R.id.widget_appt_count, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_next_appt, android.view.View.GONE);
+                appWidgetManager.updateAppWidget(appWidgetId, views);
+                return;
+            }
+
+        if (apptCount > 0) {
+            views.setTextViewText(R.id.widget_appt_title, "Appointments");
+            views.setTextViewText(R.id.widget_appt_count, apptCount + " upcoming");
+            views.setTextViewText(R.id.widget_next_appt, "Next: " + nextAppt);
+        } else {
+            views.setTextViewText(R.id.widget_appt_title, "Appointments");
+            views.setTextViewText(R.id.widget_appt_count, "None booked");
+            views.setTextViewText(R.id.widget_next_appt, "");
+        }
+
+        // Click opens Clinic Visits tab
 
         android.util.Log.i("AppointmentWidgetProvider", "pushed DATA views id=" + appWidgetId);
         appWidgetManager.updateAppWidget(appWidgetId, views);

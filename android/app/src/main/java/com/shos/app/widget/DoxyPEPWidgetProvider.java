@@ -68,6 +68,33 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
         // understand what a tier is. It hides only the two views it already
         // names a few lines below - RemoteViews cannot iterate a view tree, but
         // it does not need to, because these ids are already hardcoded here.
+        // HOISTED 6 Oct 2026 - the root tap target is attached BEFORE the
+        // Redacted branch, not after it. Every data provider attached it
+        // below the Redacted early-return, so at a Redacted tier the widget
+        // rendered but had NO tap target at all - and the owner had set every
+        // widget to Redacted. It depends only on `context` and `appWidgetId`,
+        // never on the data, so one copy here is correct for every tier.
+        Intent intent = new Intent(context, com.shos.app.MainActivity.class);
+
+        // ACTION_VIEW IS LOAD-BEARING, not decoration. Capacitor's own App
+
+        // plugin drops any intent arriving through onNewIntent that is not an
+
+        // ACTION_VIEW - AppPlugin.java:148 does `if (!Intent.ACTION_VIEW.equals
+
+        // (action) || url == null) return;` - so a bare setData() intent never
+
+        // emits appUrlOpen and the tap silently does nothing on a warm app.
+
+        // Verified at source in node_modules/@capacitor/app, not inferred.
+
+        intent.setAction(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse("com.shos.app://medication/dashboard"));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
+        context,
+        appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+        views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
         String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
         if (redactedText != null && !redactedText.isEmpty()) {
             views.setTextViewText(R.id.widget_doxy_title, redactedText);
@@ -97,27 +124,6 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
         }
 
         // Click opens Medication tab
-        Intent intent = new Intent(context, com.shos.app.MainActivity.class);
-
-        // ACTION_VIEW IS LOAD-BEARING, not decoration. Capacitor's own App
-
-        // plugin drops any intent arriving through onNewIntent that is not an
-
-        // ACTION_VIEW - AppPlugin.java:148 does `if (!Intent.ACTION_VIEW.equals
-
-        // (action) || url == null) return;` - so a bare setData() intent never
-
-        // emits appUrlOpen and the tap silently does nothing on a warm app.
-
-        // Verified at source in node_modules/@capacitor/app, not inferred.
-
-        intent.setAction(Intent.ACTION_VIEW);
-        intent.setData(Uri.parse("com.shos.app://medication/dashboard"));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
-        context,
-        appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
-        views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }

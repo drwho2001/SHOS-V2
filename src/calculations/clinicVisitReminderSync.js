@@ -24,7 +24,7 @@ import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName, CLINIC_VISIT_ACTION_TYPE_ID } from "../storage/notificationService";
 import { NotificationPreferencesRepository, isClinicVisitSnoozed } from "../repositories/notificationPreferencesRepository";
 import { ACCENTS } from "./designTokens";
-import { realTimestampFromStored } from "./dateInputHelpers";
+import { realTimestampFromStored, storedDayKey, localDayKey, calendarDaysBetween } from "./dateInputHelpers";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { buildClinicVisitSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } from "./reminderSuppression";
 import { sendWidgetUpdate } from "./widgetBridgeUpdate";
@@ -52,12 +52,28 @@ async function getWidgetBridge() {
   return WidgetBridge ? { plugin: WidgetBridge } : null;
 }
 
-export async function getSoonestBookedVisit() {
+/**
+ * Every visit that is booked and still in the future, soonest first.
+ *
+ * ADDED 6 Oct 2026 so the Appointments widget can report an HONEST count.
+ * `getSoonestBookedVisit()` returns one visit or null, and the widget derived
+ * `count = visit ? 1 : 0` from that - so a user with three appointments booked
+ * was told "1 upcoming". That is a small thing to be wrong about, but it is
+ * exactly the kind of quiet inaccuracy that makes a glanceable widget lose the
+ * user's trust, and the whole point of this round is that "1 upcoming" was not
+ * enough to trust in the first place.
+ */
+export async function getUpcomingBookedVisits() {
   const nowMs = Date.now();
   const booked = (await ClinicVisitsRepository.getAll())
     .filter((v) => !v.isArchived && v.isFutureAppointment && v.date && realTimestampFromStored(v.date) > nowMs);
+  return booked.sort((a, b) => realTimestampFromStored(a.date) - realTimestampFromStored(b.date));
+}
+
+export async function getSoonestBookedVisit() {
+  const booked = await getUpcomingBookedVisits();
   if (booked.length === 0) return null;
-  return booked.reduce((a, b) => (realTimestampFromStored(a.date) < realTimestampFromStored(b.date) ? a : b));
+  return booked[0];
 }
 
 async function syncOneSlot({ visit, enabled, hoursBefore, notificationId, label }) {
@@ -141,8 +157,21 @@ export async function updateAppointmentWidget(visit) {
     // callable with no argument (from syncAllWidgets) and fetches its own data.
     // Passing undefined is different from passing null on purpose: undefined
     // means "go and look", null means "there genuinely is none".
-    if (visit === undefined) visit = await getSoonestBookedVisit();
-    const count = visit ? 1 : 0;
+// ONE repository read, and the count is always the real one.
+    //
+    // The first version of this change called getSoonestBookedVisit() and then
+    // getUpcomingBookedVisits() unconditionally, which read every booked visit
+    // twice on every push - and this function runs from syncAllWidgets, which
+    // pushes every widget on every app foreground.
+    //
+    // It is read unconditionally even when the caller passed a visit, because a
+    // single passed visit cannot tell us how many OTHERS are booked. The passed
+    // visit is still what gets displayed - it is the soonest one by construction -
+    // so the two agree, and the count is no longer "1" for a user with three
+    // appointments.
+    const upcoming = await getUpcomingBookedVisits();
+    if (visit === undefined) visit = upcoming[0] || null;
+    const count = upcoming.length;
     const nextAppt = visit
       ? `${visit.title || "Appointment"} — ${new Date(realTimestampFromStored(visit.date)).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}`
       : "No appointments";
@@ -156,7 +185,7 @@ if (bridge && bridge.plugin.updateAppointment) {
           nextAppt,
           category: "Appointments",
         },
-          appointmentRedactedLine(count));
+          appointmentRedactedLine(count, visit?.date));
     }
   } catch (e) {
     // Widget bridge not available (web) — ignore
@@ -317,7 +346,44 @@ export async function handleSnoozeClinicVisit() {
  * dropped: titles are free text typed by the user and routinely contain the
  * clinic's specialty, which identifies the visit far more than a count does.
  */
-export function appointmentRedactedLine(count) {
+/**
+ * The Redacted line for the Appointments widget.
+ *
+ * CHANGED 6 Oct 2026, from the owner's report that "Appointments - 1 upcoming"
+ * gave them no confidence the widget was worth having. A bare count answers "is
+ * anything on" without answering "do I need to do anything about it", and a
+ * glanceable widget that only answers the first question is one nobody glances
+ * at.
+ *
+ * The fix is a RELATIVE day bucket on the soonest booked visit, which stays
+ * inside the Redacted rule: elapsed time rather than absolute time, the same
+ * distinction already made for the medication and DoxyPEP countdowns in
+ * widgetPrivacy.js. "in 3 days" is true only right now and reveals no routine;
+ * "Tue 14 Oct at 09:30" is a fact about the user's calendar and reveals the
+ * clinic, the specialty and the hour they are usually there.
+ *
+ * It is deliberately a BUCKET, not an exact figure. "in 3 days" carries the
+ * reassurance without being the kind of precise number that adds identifying
+ * information back.
+ *
+ * `nextDate` is the visit's STORED (fake-UTC) date, and the day maths goes
+ * through storedDayKey + localDayKey + calendarDaysBetween rather than elapsed
+ * milliseconds - this repo has been bitten by dividing a span by 86400000 across
+ * a DST boundary, and it is the recorded rule for exactly this shape.
+ */
+export function appointmentRedactedLine(count, nextDate, now = new Date()) {
   const n = Number(count);
-  return redactedWidgetLine("Appointments", Number.isFinite(n) && n > 0 ? `${n} upcoming` : "none booked");
+  if (!Number.isFinite(n) || n <= 0) return redactedWidgetLine("Appointments", "none booked");
+
+  const booked = n === 1 ? "1 booked" : `${n} booked`;
+  const from = storedDayKey(nextDate);
+  if (!from) return redactedWidgetLine("Appointments", booked);
+
+  const days = calendarDaysBetween(localDayKey(now), from);
+  if (days === null) return redactedWidgetLine("Appointments", booked);
+  // Same-day and past-dated are stated plainly: a booked visit whose day has
+  // arrived is the case where "in 0 days" would read as a bug.
+  if (days <= 0) return redactedWidgetLine("Appointments", `${booked} - today`);
+  if (days === 1) return redactedWidgetLine("Appointments", `${booked} - tomorrow`);
+  return redactedWidgetLine("Appointments", `${booked} - in ${days} days`);
 }

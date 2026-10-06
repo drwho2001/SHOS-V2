@@ -645,6 +645,25 @@ describe("redacting the payload is not the same as redacting the screen", () => 
         "upcoming", "active", "overdue", "no", "data",
         // Used only as a unit noun in "N tests booked".
         "test", "tests",
+        // ADDED 6 Oct 2026, for the owner's report that a Redacted widget showing
+        // only a count gave no confidence it was worth having. A glanceable
+        // widget that cannot answer "do I need to do anything about this?" is one
+        // nobody glances at.
+        //
+        // All of these are RELATIVE, which is the distinction the Redacted rule
+        // already draws and already allows: elapsed/relative time discloses
+        // strictly less than the absolute time it replaces, because it is true
+        // only at the moment it is read and reveals no routine. "Today" and
+        // "tomorrow" name a calendar day, so they sit slightly closer to absolute
+        // time than "in 12 days" does - which is exactly why the absolute date
+        // stays forbidden and only the nearest days are spelled out. A user
+        // glancing at a lock screen learns "it is soon", never "it is the 14th".
+        "now", "today", "tomorrow", "days",
+        // Preposition, for the same relative-time phrasing ("in 12 days").
+        // Grammatically inert - it cannot identify anybody - and it is already
+        // permitted inside the countdown pattern, so allowing it standalone
+        // widens nothing.
+        "in",
       ]);
       const COUNTDOWN = /^in \d+[hdm]( \d+[hm])?$/;
       // TEMPLATE literals are scanned too, not only double-quoted ones. Almost every
@@ -665,8 +684,25 @@ describe("redacting the payload is not the same as redacting the screen", () => 
         // list - so the one shipped countdown line failed its own guard.
         const numeric = lit.replace(/\$\{[^}]*\}/g, "0");
         const isCount = /^\d+$/.test(fixed);
+        // Digits are stripped PER TOKEN, not only when the whole literal is a
+        // number. The `isCount` case above covers a bare "3"; it did not cover
+        // "1 booked", whose "1" is equally a count and equally discloses nothing,
+        // so the shipped Appointments line failed its own vocabulary. Adding "1"
+        // to the list would have been treating a symptom; the rule the guard
+        // already states is that a coarse COUNT is allowed, and that has to apply
+        // wherever a count appears in a sentence rather than only when the
+        // literal happens to be nothing but digits.
+        // Empty tokens are dropped too: the separator set includes "-", so a literal
+        // like "${booked} - today" splits into ["", "today"] and the empty string
+        // is not a word. Filtering digits but not empties would have failed the
+        // shipped line for a punctuation artefact rather than for anything it
+        // says.
+        const words = fixed
+          .toLowerCase()
+          .split(/[\s-]+/)
+          .filter((w) => w && !/^\d+$/.test(w));
         const ok = !fixed || isCount || COUNTDOWN.test(numeric) ||
-          fixed.toLowerCase().split(/[\s-]+/).every((w) => ALLOWED_WORDS.has(w));
+          words.every((w) => ALLOWED_WORDS.has(w));
         expect(
           ok,
           `${used[1]}() contains the literal "${lit}", whose words are not all on the ` +

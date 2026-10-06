@@ -133,6 +133,44 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
         // The hidden ids are already hardcoded here; RemoteViews is an IPC
         // serialization stub and cannot iterate a view tree, so naming them is the
         // whole mechanism.
+        // HOISTED 6 Oct 2026 - the root tap target is attached BEFORE the Redacted
+        // branch below, not after it.
+        //
+        // Found by reading, after the owner reported this widget "can't load"
+        // with every widget set to Redacted. The Redacted branch returns early,
+        // and the click PendingIntent used to be attached further down - after
+        // that return. So at a Redacted tier this widget had NO tap target at
+        // all: it rendered, it was simply inert. Every one of the seven data
+        // providers had this shape, which is why the symptom looked like "some
+        // are broke" rather than naming a rule.
+        //
+        // It is attached here rather than duplicated into both branches because
+        // it depends only on `context` and `appWidgetId`, never on the data, so
+        // one copy before the branch is correct for every tier. The location and
+        // reveal targets below deliberately stay where they are: both depend on
+        // data that a Redacted tier is not permitted to render.
+        Intent mainIntent = new Intent(context, com.shos.app.MainActivity.class);
+
+        // ACTION_VIEW IS LOAD-BEARING, not decoration. Capacitor's own App
+
+        // plugin drops any intent arriving through onNewIntent that is not an
+
+        // ACTION_VIEW - AppPlugin.java:148 does `if (!Intent.ACTION_VIEW.equals
+
+        // (action) || url == null) return;` - so a bare setData() intent never
+
+        // emits appUrlOpen and the tap silently does nothing on a warm app.
+
+        // Verified at source in node_modules/@capacitor/app, not inferred.
+
+        mainIntent.setAction(Intent.ACTION_VIEW);
+        mainIntent.setData(Uri.parse("com.shos.app://clinic-card"));
+        mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        android.app.PendingIntent mainPendingIntent = android.app.PendingIntent.getActivity(
+        context,
+        appWidgetId, mainIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+        views.setOnClickPendingIntent(R.id.widget_root, mainPendingIntent);
+
         String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
         if (redactedText != null && !redactedText.isEmpty()) {
             views.setTextViewText(R.id.widget_clinic_title, redactedText);
@@ -175,29 +213,9 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
             views.setViewVisibility(R.id.widget_clinic_sensitive_row, android.view.View.GONE);
         }
 
-        // Main click opens full Clinic Card
-        Intent mainIntent = new Intent(context, com.shos.app.MainActivity.class);
-
-        // ACTION_VIEW IS LOAD-BEARING, not decoration. Capacitor's own App
-
-        // plugin drops any intent arriving through onNewIntent that is not an
-
-        // ACTION_VIEW - AppPlugin.java:148 does `if (!Intent.ACTION_VIEW.equals
-
-        // (action) || url == null) return;` - so a bare setData() intent never
-
-        // emits appUrlOpen and the tap silently does nothing on a warm app.
-
-        // Verified at source in node_modules/@capacitor/app, not inferred.
-
-        mainIntent.setAction(Intent.ACTION_VIEW);
-        mainIntent.setData(Uri.parse("com.shos.app://clinic-card"));
-        mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        android.app.PendingIntent mainPendingIntent = android.app.PendingIntent.getActivity(
-        context,
-        appWidgetId, mainIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
-        views.setOnClickPendingIntent(R.id.widget_root, mainPendingIntent);
-
+// Main click is attached ABOVE, before the Redacted branch, so that every
+        // tier has a tap target. The two below remain here because both depend on
+        // data a Redacted tier does not render.
         // Location click opens Maps
         if (!location.isEmpty()) {
             Intent mapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(location)));

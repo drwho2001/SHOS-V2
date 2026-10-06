@@ -424,4 +424,61 @@ describe("widget pushes are decoupled from reminder scheduling", () => {
       /if \(visit === undefined\)/,
     );
   });
+
+  it("the root tap target survives the Redacted branch, not just exists", () => {
+    // ADDED 6 Oct 2026. Found on the owner's phone with every widget set to
+    // Redacted: the widgets rendered and tapping them did nothing.
+    //
+    // Every one of the seven data providers attached its root PendingIntent AFTER
+    // the Redacted early-return, so at a Redacted tier - which is what the owner
+    // had configured - the widget had no tap target at all.
+    //
+    // WHY THE EXISTING ASSERTIONS ALL MISSED IT, which is the part worth keeping:
+    // the guard above proves every provider LAYOUT declares `widget_root`, and
+    // this file's other test proves `setOnClickPendingIntent` is CALLED
+    // somewhere. Both are true of a provider whose only tap target is unreachable,
+    // because both are statements about existence rather than about ORDER.
+    // "Is it called" and "is it called before the thing that returns" are different
+    // questions, and only the second one is the bug.
+    //
+    // Read from the Java rather than a hardcoded file list, so a new provider is
+    // covered by construction - the same reasoning as the bridge-method test above,
+    // which reads the plugin instead of listing widgets.
+    const DATA_PROVIDERS = [
+      "Appointment",
+      "ClinicCard",
+      "Cycle",
+      "DoxyPEP",
+      "NextDose",
+      "Refill",
+      "Test",
+    ];
+
+    for (const name of DATA_PROVIDERS) {
+      const path = `android/app/src/main/java/com/shos/app/widget/${name}WidgetProvider.java`;
+      const src = read(path);
+      const methodStart = src.indexOf("private static void updateAppWidget");
+      expect(methodStart, `${name}: updateAppWidget not found`).toBeGreaterThan(-1);
+      const body = src.slice(methodStart);
+
+      // Comments are stripped because this repo's Java is heavily commented and
+      // those comments quote the very expressions being searched for - an earlier
+      // guard in this same file fell foul of exactly that.
+      const code = body.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+
+      const clickAt = code.indexOf("setOnClickPendingIntent(R.id.widget_root");
+      const branchAt = code.indexOf("String redactedText = prefs.getString(KEY_REDACTED_TEXT");
+      expect(clickAt, `${name}: has no root tap target at all`).toBeGreaterThan(-1);
+      expect(
+        branchAt,
+        `${name}: has no Redacted branch - update this guard rather than letting it pass`,
+      ).toBeGreaterThan(-1);
+      expect(
+        clickAt,
+        branchAt,
+        `${name}WidgetProvider attaches its root tap target AFTER the Redacted ` +
+          `early-return, so this widget is un-tappable at a Redacted tier`,
+      ).toBeLessThan(branchAt);
+    }
+  });
 });

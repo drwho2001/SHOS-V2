@@ -151,6 +151,95 @@ describe("the pre-formatted redacted line", () => {
   });
 });
 
+describe("the Next Dose redacted line is ELAPSED time, not an absolute instant", () => {
+  // FIXED 6 Oct 2026. Found on the owner's phone, not by reading: the widget read
+  // "Medication - in 497595h 0m". `countdownAt` is the absolute instant the dose
+  // unlocks, and the formatter divided it by 60000, printing hours since 1970.
+  //
+  // This is the same class as the DoxyPEP clock bug below, arrived at from the
+  // opposite end: there the FIXTURE moved and the function was right; here the
+  // function never subtracted `now` at all, so the number was always wrong and
+  // nothing about its shape said so.
+  const NOW = new Date("2026-10-06T12:00:00.000Z").getTime();
+
+  it("reads as hours remaining, not hours since 1970", async () => {
+    const { nextDoseRedactedLine } = await import("./medicationReminderSync.js");
+    const in5h = NOW + 5 * 3600000;
+    expect(nextDoseRedactedLine(in5h, NOW)).toBe("Medication - in 5h 0m");
+    // The exact owner-reported shape. 497595h is what an absolute timestamp
+    // divided by 60000 looks like, so this asserts the magnitude explicitly.
+    expect(nextDoseRedactedLine(NOW + 5 * 3600000, NOW)).not.toMatch(/\d{4,}h/);
+  });
+
+  it("uses minutes alone under an hour", async () => {
+    const { nextDoseRedactedLine } = await import("./medicationReminderSync.js");
+    expect(nextDoseRedactedLine(NOW + 7 * 60000, NOW)).toBe("Medication - in 7m");
+    expect(nextDoseRedactedLine(NOW + 7 * 60000, NOW)).not.toMatch(/0h/);
+  });
+
+  it("buckets past a day into days rather than hundreds of hours", async () => {
+    // Not only more readable: "in 960h" is the same unusable magnitude as the
+    // bug, so a number too big to act on is functionally no information at all.
+    const { nextDoseRedactedLine } = await import("./medicationReminderSync.js");
+    expect(nextDoseRedactedLine(NOW + 40 * 24 * 3600000, NOW)).toBe("Medication - in 40d");
+  });
+
+  it("says due now once the unlock instant has passed", async () => {
+    // Before this fix a passed instant printed a huge NEGATIVE-derived hour
+    // count; the provider's Chronometer was hidden in that state, so the whole
+    // line was the only thing the user saw.
+    const { nextDoseRedactedLine } = await import("./medicationReminderSync.js");
+    expect(nextDoseRedactedLine(NOW - 60000, NOW)).toBe("Medication - due now");
+  });
+
+  it("still handles no dose at all, and unusable input", async () => {
+    const { nextDoseRedactedLine } = await import("./medicationReminderSync.js");
+    expect(nextDoseRedactedLine(null, NOW)).toBe("Medication - none due");
+    expect(nextDoseRedactedLine(undefined, NOW)).toBe("Medication - none due");
+    expect(nextDoseRedactedLine("not a number", NOW)).toBe("Medication - none due");
+  });
+});
+
+describe("the Appointments redacted line carries a relative day bucket", () => {
+  // CHANGED 6 Oct 2026 - the owner reported "Appointments - 1 upcoming" as not
+  // giving enough confidence to keep using the widget. A bare count answers "is
+  // anything on" and not "do I need to act", so the line now says how far off it
+  // is in ELAPSED days, which is the distinction widgetPrivacy.js already makes
+  // for the two countdowns.
+  //
+  // Imported inside each `it` for the same reason the DoxyPEP tests below do:
+  // a top-level `await import` sits in a describe callback, which is not async,
+  // and fails to parse.
+  const NOW = new Date("2026-10-06T12:00:00.000Z");
+
+  it("states how far off the soonest visit is, without naming a date", async () => {
+    const { appointmentRedactedLine } = await import("./clinicVisitReminderSync.js");
+    expect(appointmentRedactedLine(1, "2026-10-09T09:30:00.000Z", NOW)).toBe("Appointments - 1 booked - in 3 days");
+    // The privacy property, asserted directly: no month, no weekday, no hour.
+    expect(appointmentRedactedLine(1, "2026-10-09T09:30:00.000Z", NOW)).not.toMatch(/Oct|October|Mon|Tue|09:30/);
+  });
+
+  it("says today and tomorrow in words rather than 'in 0 days'", async () => {
+    const { appointmentRedactedLine } = await import("./clinicVisitReminderSync.js");
+    expect(appointmentRedactedLine(1, "2026-10-06T09:30:00.000Z", NOW)).toBe("Appointments - 1 booked - today");
+    expect(appointmentRedactedLine(1, "2026-10-07T09:30:00.000Z", NOW)).toBe("Appointments - 1 booked - tomorrow");
+    expect(appointmentRedactedLine(1, "2026-10-06T09:30:00.000Z", NOW)).not.toMatch(/in 0 days/);
+  });
+
+  it("counts every booked visit, not just whether one exists", async () => {
+    const { appointmentRedactedLine } = await import("./clinicVisitReminderSync.js");
+    expect(appointmentRedactedLine(3, "2026-10-09T09:30:00.000Z", NOW)).toBe("Appointments - 3 booked - in 3 days");
+  });
+
+  it("still answers honestly with nothing booked, or no usable date", async () => {
+    const { appointmentRedactedLine } = await import("./clinicVisitReminderSync.js");
+    expect(appointmentRedactedLine(0, null, NOW)).toBe("Appointments - none booked");
+    expect(appointmentRedactedLine(undefined, undefined, NOW)).toBe("Appointments - none booked");
+    expect(appointmentRedactedLine(1, "", NOW)).toBe("Appointments - 1 booked");
+    expect(appointmentRedactedLine(1, "not a date", NOW)).toBe("Appointments - 1 booked");
+  });
+});
+
 describe("the DoxyPEP redacted line", () => {
   // CHANGED 2 Oct 2026. This suite originally FAILED, and the reason is the
   // clock bug this repo has now recorded several times: the fixture built its
@@ -175,7 +264,7 @@ describe("the DoxyPEP redacted line", () => {
   it("never says there is no window when there is one", async () => {
     const { doxyPepRedactedLine } = await import("./doxyPepSync.js");
     const active = { overdue: false, active: true, deadline: new Date(Date.now() + 5 * 3600000) };
-    expect(doxyPepRedactedLine(active)).toBe("DoxyPEP - in 5h 0m");
+    expect(doxyPepRedactedLine(active)).toBe("Antibiotics - in 5h 0m");
     // The specific regression: the old behaviour rendered the provider's
     // placeholder, which reads "No active window".
     expect(doxyPepRedactedLine(active)).not.toMatch(/no active window/i);
@@ -183,16 +272,16 @@ describe("the DoxyPEP redacted line", () => {
 
   it("reports the genuinely-inactive and overdue cases honestly", async () => {
     const { doxyPepRedactedLine } = await import("./doxyPepSync.js");
-    expect(doxyPepRedactedLine({ overdue: true, active: false })).toBe("DoxyPEP - overdue");
-    expect(doxyPepRedactedLine({ overdue: false, active: false })).toBe("DoxyPEP - none active");
+    expect(doxyPepRedactedLine({ overdue: true, active: false })).toBe("Antibiotics - window overdue");
+    expect(doxyPepRedactedLine({ overdue: false, active: false })).toBe("Antibiotics - no window");
     // Active but with no deadline must not claim a countdown it does not have.
-    expect(doxyPepRedactedLine({ overdue: false, active: true })).toBe("DoxyPEP - active");
+    expect(doxyPepRedactedLine({ overdue: false, active: true })).toBe("Antibiotics - window active");
   });
 
   it("uses minutes alone under an hour, not '0h'", async () => {
     const { doxyPepRedactedLine } = await import("./doxyPepSync.js");
     const soon = { overdue: false, active: true, deadline: new Date(Date.now() + 7 * 60000) };
-    expect(doxyPepRedactedLine(soon)).toBe("DoxyPEP - in 7m");
+    expect(doxyPepRedactedLine(soon)).toBe("Antibiotics - in 7m");
     expect(doxyPepRedactedLine(soon)).not.toMatch(/0h/);
   });
 });

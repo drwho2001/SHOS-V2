@@ -69,7 +69,39 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             // and only the provider decides what is RENDERED. The ids are named rather
             // than discovered because RemoteViews is an IPC serialization stub and
             // cannot iterate a view tree.
-            String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+            // HOISTED 6 Oct 2026 - the root tap target is attached BEFORE the
+        // Redacted branch, not after it. Every data provider attached it
+        // below the Redacted early-return, so at a Redacted tier the widget
+        // rendered but had NO tap target at all - and the owner had set every
+        // widget to Redacted. It depends only on `context` and `appWidgetId`,
+        // never on the data, so one copy here is correct for every tier.
+        Intent intent = new Intent(context, com.shos.app.MainActivity.class);
+
+        // ACTION_VIEW IS LOAD-BEARING, not decoration. Capacitor's own App
+
+        // plugin drops any intent arriving through onNewIntent that is not an
+
+        // ACTION_VIEW - AppPlugin.java:148 does `if (!Intent.ACTION_VIEW.equals
+
+        // (action) || url == null) return;` - so a bare setData() intent never
+
+        // emits appUrlOpen and the tap silently does nothing on a warm app.
+
+        // Verified at source in node_modules/@capacitor/app, not inferred.
+
+        intent.setAction(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse("com.shos.app://medication/dashboard"));
+        // SINGLE_TOP without which CLEAR_TOP destroys the running Activity, so
+        // onNewIntent never fires, Capacitor's appUrlOpen never fires, and the
+        // tap silently lands on Home. The other nine providers needed the same.
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        // Per-instance requestCode: without FLAG_UPDATE_CURRENT Android returns
+        // the CACHED PendingIntent and drops this data URI.
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
+                context,
+                appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+        views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
+        String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
             if (redactedText != null && !redactedText.isEmpty()) {
                 views.setTextViewText(R.id.widget_med_name, redactedText);
             views.setViewVisibility(R.id.widget_next_dose, android.view.View.GONE);
@@ -125,32 +157,6 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         // per-medication Log-dose buttons live", which is what someone tapping a
         // countdown to their next dose actually wants; inventory is stock level,
         // which is what the Refill widget is for.
-        Intent intent = new Intent(context, com.shos.app.MainActivity.class);
-
-        // ACTION_VIEW IS LOAD-BEARING, not decoration. Capacitor's own App
-
-        // plugin drops any intent arriving through onNewIntent that is not an
-
-        // ACTION_VIEW - AppPlugin.java:148 does `if (!Intent.ACTION_VIEW.equals
-
-        // (action) || url == null) return;` - so a bare setData() intent never
-
-        // emits appUrlOpen and the tap silently does nothing on a warm app.
-
-        // Verified at source in node_modules/@capacitor/app, not inferred.
-
-        intent.setAction(Intent.ACTION_VIEW);
-        intent.setData(Uri.parse("com.shos.app://medication/dashboard"));
-        // SINGLE_TOP without which CLEAR_TOP destroys the running Activity, so
-        // onNewIntent never fires, Capacitor's appUrlOpen never fires, and the
-        // tap silently lands on Home. The other nine providers needed the same.
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        // Per-instance requestCode: without FLAG_UPDATE_CURRENT Android returns
-        // the CACHED PendingIntent and drops this data URI.
-        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
-                context,
-                appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
-        views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }

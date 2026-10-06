@@ -353,10 +353,38 @@ export async function handleSnooze() {
  * countdownAt is allowed, because elapsed time discloses strictly less than the
  * wall-clock time it replaces.
  */
-export function nextDoseRedactedLine(countdownAt) {
-  const ms = Number(countdownAt);
-  if (!Number.isFinite(ms) || ms <= 0) return redactedWidgetLine("Medication", "none due");
-  const mins = Math.floor(ms / 60000);
+export function nextDoseRedactedLine(countdownAt, now = Date.now()) {
+  // FIXED 6 Oct 2026, from the owner's phone: this widget read "Medication - in
+  // 497595h 0m". `countdownAt` is the ABSOLUTE instant the dose unlocks
+  // (`unlockAt`, passed straight through as `countdownAt`), so dividing it by
+  // 60000 has been printing HOURS SINCE 1970 rather than hours remaining, for
+  // every user, at every dose, for as long as this line has existed.
+  //
+  // It is a one-character class of mistake and it was invisible for a month
+  // because the number is plausible-looking: it is an integer, it is formatted
+  // like every other countdown in the app, and only its magnitude is wrong. The
+  // sibling function in doxyPepSync.js already subtracted Date.now() and read
+  // correctly, which is why only this widget showed it - see its own
+  // doxyPepRedactedLine() for the working shape.
+  //
+  // `now` is a PARAMETER, not a bare Date.now(), so a test can pin the clock.
+  // The suite's other clock tests already record why: a margin makes a test pass
+  // that would fail for the wrong reason, and a pinned clock makes the answer
+  // the same at 04:48 as at 11:15.
+  const target = Number(countdownAt);
+  if (!Number.isFinite(target) || target <= 0) return redactedWidgetLine("Medication", "none due");
+  const remainingMs = target - Number(now);
+  if (remainingMs <= 0) return redactedWidgetLine("Medication", "due now");
+
+  // Days, not hours, past 24h. "in 960h" is the same kind of unreadable as the
+  // bug above: a number too large to be useful at a glance is functionally
+  // indistinguishable from no information at all, which is the state this widget
+  // was in. A next dose more than a day away is also the scheduled, non-urgent
+  // case, so a coarse bucket is the honest reading of it as well as the legible one.
+  const mins = Math.floor(remainingMs / 60000);
+  if (mins >= 60 * 24) {
+    return redactedWidgetLine("Medication", `in ${Math.floor(mins / (60 * 24))}d`);
+  }
   const hours = Math.floor(mins / 60);
   return redactedWidgetLine("Medication", hours > 0 ? `in ${hours}h ${mins % 60}m` : `in ${mins}m`);
 }
