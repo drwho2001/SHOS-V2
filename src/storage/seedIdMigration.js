@@ -51,6 +51,10 @@
 // source and asserted by a test against that same source.
 
 import { localStorageAdapter as storage } from "./storageAdapter.js";
+// The shared demo/user rule. Lives in calculations/ rather than here so
+// clearSampleData.js can import it too: importing this module from a repository
+// would close a repositories -> storage -> repositories cycle.
+import { isDemoData } from "../calculations/seedDivergence.js";
 import { ContactRepository } from "../repositories/contactRepository";
 import { EncounterRepository } from "../repositories/encounterRepository";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
@@ -265,6 +269,10 @@ export function planSeedIdMigration(collections) {
   const idsToRewrite = new Set();
   const rekeyByCollection = new Map();
   let skippedUserRecords = 0;
+  // Flagless records on a legacy seed id whose content differs from the frozen
+  // snapshot. Reported separately from skippedUserRecords because the two are
+  // different claims: one is the user saying so, the other is us inferring it.
+  let divergedUserRecords = 0;
 
   for (const { name, records } of collections) {
     const rekey = [];
@@ -279,6 +287,31 @@ export function planSeedIdMigration(collections) {
         skippedUserRecords++;
         continue;
       }
+      // ADDED 6 Oct 2026 - a record on a legacy seed id with NO flag, whose
+      // content differs from the frozen snapshot, is the USER'S data, not
+      // demo data that happens to be unedited. That is the shape the 5 Oct
+      // incident deleted: a real record restored under an original seed id.
+      //
+      // Re-keying it would be actively harmful rather than merely wrong: the id
+      // moves into the space the demo records now occupy, so a genuinely unedited
+      // demo record already on that id would end up sharing it. Two records with
+      // one id in a collection that derives its next id by scanning existing ids
+      // is exactly the corruption this migration exists to prevent.
+      if (!isDemoData(record)) {
+        divergedUserRecords++;
+        continue;
+      }
+      // ADDED 6 Oct 2026 - a record on a legacy seed id with NO flag, whose
+      // content differs from the frozen snapshot, is the USER'S data, not
+      // demo data that happens to be unedited. That is the shape the 5 Oct
+      // incident deleted: a real record restored under an original seed id.
+      //
+      // Re-keying it would be actively harmful rather than merely wrong: the id
+      // moves into the space the demo records now occupy, so a genuinely unedited
+      // demo record already on that id would end up sharing it. Two records with
+      // one id in a collection that derives its next id by scanning existing ids
+      // is exactly the corruption this migration exists to prevent. The rule is
+      // shared with clearSampleData so the two cannot disagree about it.
       rekey.push(record.id);
       idsToRewrite.add(record.id);
     }
@@ -341,7 +374,7 @@ export function planSeedIdMigration(collections) {
     }
   }
 
-  return { idsToRewrite, rekeyByCollection, rewritten, totalChanged, skippedUserRecords, duplicateUserIds };
+  return { idsToRewrite, rekeyByCollection, rewritten, totalChanged, skippedUserRecords, divergedUserRecords, duplicateUserIds };
 }
 
 /**

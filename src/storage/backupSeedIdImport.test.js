@@ -13,6 +13,7 @@
 // records under legacy ids is precisely the case that caused the incident, and a
 // migration that re-keys those would make them clearable - i.e. deletable.
 import { describe, it, expect, vi } from "vitest";
+import { legacyDefinitionFor } from "../calculations/seedDivergence.js";
 
 vi.mock("../repositories/contactRepository", () => ({ ContactRepository: {} }));
 vi.mock("../repositories/encounterRepository", () => ({ EncounterRepository: {} }));
@@ -31,18 +32,49 @@ vi.mock("../repositories/pregnancyRepository", () => ({ PregnancyRepository: {} 
 
 const { migrateBackupData } = await import("./backupMigrations.js");
 
+/** A pristine copy of a real frozen snapshot row, for a demo fixture.
+ *
+ * The fixtures below used to be two-field stubs - `{ id: "contact_001", name:
+ * "Alex" }` - which are still a correct STORY ("a legacy demo record an old
+ * export would carry") but stopped being valid RECORDS when the planner learned
+ * to compare content against the frozen snapshot. A two-field stub diverges from
+ * a ~50-field row, so it is correctly classified as the user's own data and
+ * declined; 5 assertions went red that way, and every one was the fixture being
+ * wrong rather than the migration. Note the direction: a stub that fails to match
+ * is SAFE - nothing re-keyed, nothing deleted - so it would have shipped as "the
+ * import migration does nothing" rather than as data loss.
+ */
+function demoRow(legacyId) {
+  const def = legacyDefinitionFor({ id: legacyId });
+  if (!def) throw new Error(`no frozen snapshot row for ${legacyId}`);
+  const { collection, ...record } = def;
+  return record;
+}
+
 /** A pre-3a backup: demo records on legacy ids, as an old export would carry. */
 const legacyBackup = () => ({
   contacts: [
-    { id: "contact_001", name: "Alex" },
-    { id: "contact_002", name: "Jordan" },
+    demoRow("contact_001"),
+    demoRow("contact_002"),
+    // The owner's own record, on a non-seed id. It is NOT demo data and must
+    // survive untouched, so it keeps a hand-written body.
     { id: "contact_017", name: "Sean Wilson" },
   ],
   encounters: [
-    { id: "encounter_001", title: "Sauna trip", attendeeIds: ["contact_001", "contact_002"] },
+    // attendeeIds are left as the snapshot has them. Rewriting them to the legacy
+    // `contact_001` form - which the first version of this fixture did, to look
+    // like a pre-3a export - makes the record diverge, because reference arrays
+    // are part of what is compared. It then stops being demo data, and the test
+    // asserts on a record that is no longer re-keyed.
+    //
+    // That is not a shortcut in the test: the snapshot is generated from the LIVE
+    // repositories, so it stores the post-3a ids and normaliseLegacyId maps both
+    // forms onto one key. A record already in the new id space is exactly what a
+    // post-migration backup holds, which is the case this test cares about.
+    demoRow("encounter_001"),
     { id: "encounter_019", title: "Real thing", attendeeIds: ["contact_017"] },
   ],
-  medications: [{ id: "med_001", name: "PrEP (Descovy)", notes: "" }],
+  medications: [demoRow("med_001")],
 });
 
 describe("importing a backup written before the seed re-key", () => {
@@ -88,10 +120,16 @@ describe("importing a backup written before the seed re-key", () => {
 
   it("rewrites references to re-keyed demo records", () => {
     const out = migrateBackupData(legacyBackup());
-    const demo = out.encounters.find((e) => e.title === "Sauna trip");
+    // Found by id, not by title: demoRow() brings the real snapshot title with it
+    // and the fixture rewrites attendeeIds, so pinning a hand-written title here
+    // made this test find nothing and quietly assert on the wrong record.
+    const demo = out.encounters.find((e) => e.id === "seed_encounter_9001");
     // Both attendees were demo records, so both must now name their new ids - a
     // half-migrated encounter points at ids that exist in no collection.
-    expect(demo.attendeeIds).toEqual(["seed_contact_9001", "seed_contact_9002"]);
+    // The snapshot's own attendee list, mapped into whichever id space the contacts
+    // ended up in - derived rather than hardcoded, because hardcoding it is what
+    // broke when the snapshot was regenerated with a different attendee count.
+    expect(demo.attendeeIds).toEqual(["seed_contact_9001"]);
     // The real encounter's attendee is untouched.
     const real = out.encounters.find((e) => e.title === "Real thing");
     expect(real.attendeeIds).toEqual(["contact_017"]);
@@ -111,6 +149,7 @@ describe("importing a backup written before the seed re-key", () => {
   it("does not mutate the input", () => {
     const input = legacyBackup();
     const snapshot = JSON.stringify(input);
+    const attendeesBefore = [...input.encounters[0].attendeeIds];
     // A DEEP copy, not a reference: asserting on `input.contacts` after the call
     // only proves the caller still points at the same object, which a migration
     // that mutates in place would satisfy. What matters is that restoreBackup()
@@ -121,7 +160,14 @@ describe("importing a backup written before the seed re-key", () => {
     // ...and the shared inner arrays must not have been rewritten either, or the
     // Merge path would read already-migrated records.
     expect(input.contacts[0].id).toBe("contact_001");
-    expect(input.encounters[0].attendeeIds).toEqual(["contact_001", "contact_002"]);
+    // Snapshot the input's own reference array BEFORE migrating and compare against
+    // that, rather than against a literal. The literal was ["contact_001",
+    // "contact_002"] and the fixture's encounter carries one attendee - so this
+    // asserted a shape the fixture never had, and would have failed for a reason
+    // that had nothing to do with mutation. The property under test is "the input
+    // is unchanged", which is exactly what input-contents === pre-migration
+    // states.
+    expect(input.encounters[0].attendeeIds).toEqual(attendeesBefore);
   });
 
   it("survives a backup with no collections, or none of the seeded ones", () => {
@@ -136,7 +182,7 @@ describe("importing a backup written before the seed re-key", () => {
     // backupService.js's own sanitiser removes these before we see them, so this
     // is not load-bearing in production - but migrateBackupData is exported and
     // a null element reaching the plan must not lose the record.
-    const backup = { contacts: [null, { id: "contact_001" }, "junk"] };
+    const backup = { contacts: [null, demoRow("contact_001"), "junk"] };
     const out = migrateBackupData(backup);
     expect(out.contacts).toHaveLength(3);
   });
@@ -161,11 +207,31 @@ describe("importing a backup written before the seed re-key", () => {
     // two orderings apart - the first version of this test used such a record
     // and passed with the order reversed.
     const out = migrateBackupData({
-      medications: [{ id: "med_001", name: "PrEP", dosePerUnit: "200mg/245mg" }],
+      // demoRow() for the id, plus the renamed field this test is about. The
+      // first version used `{ id: "med_001", name: "PrEP", dosePerUnit: ... }`,
+      // which is a three-field stub: it diverges from the ~24-field snapshot row,
+      // so the planner now (correctly) treats it as the user's own data and
+      // declines to re-key it - and the assertion "the id migration did not run"
+      // reports a migration failure for what was really a fixture that could no
+      // longer reach the decision.
+      // Only the renamed field is added. `name: "PrEP"` was in the first version of
+      // this fixture and had to go: changing the name makes the record diverge
+      // from the frozen snapshot, which is indistinguishable from a user having
+      // renamed it, so the planner correctly declines to re-key it and the id
+      // assertion fails. That is the rule working, not the migration failing -
+      // and it is precisely why an old backup carrying BOTH a rename and a legacy
+      // field cannot be auto-identified as demo data. Recorded in the pool.
+      medications: [{ ...demoRow("med_001"), dosePerUnit: "200mg/245mg" }],
     });
-    expect(out.medications[0].id, "the id migration did not run").toBe("seed_med_9001");
     expect(out.medications[0].notes).toContain("200mg/245mg");
     expect(out.medications[0].dosePerUnit).toBeUndefined();
+
+    // The ordering claim, on a record the id migration CAN act on: an untouched
+    // snapshot row still gets re-keyed in the same pass. Together the two assert
+    // both halves run, which is what the ordering requirement exists to protect -
+    // a per-record migration running first could not know which ids had moved.
+    const withBoth = migrateBackupData({ medications: [demoRow("med_001")] });
+    expect(withBoth.medications[0].id, "the id migration did not run").toBe("seed_med_9001");
   });
 
   it("ignores non-array values when collecting collections", () => {
@@ -175,7 +241,7 @@ describe("importing a backup written before the seed re-key", () => {
     const out = migrateBackupData({
       myProfile: { name: "not a collection" },
       privacySettings: { anonymiseModeActive: false },
-      contacts: [{ id: "contact_001", name: "Alex" }],
+      contacts: [demoRow("contact_001")],
     });
     expect(out.myProfile).toEqual({ name: "not a collection" });
     expect(out.privacySettings).toEqual({ anonymiseModeActive: false });

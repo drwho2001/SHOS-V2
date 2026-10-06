@@ -27,6 +27,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "@babel/parser";
+import { legacyDefinitionFor } from "../calculations/seedDivergence.js";
 import {
   planSeedIdMigration,
   SEED_ID_MIGRATION_FLAG_KEY,
@@ -79,16 +80,65 @@ function plan(collections) {
   return planSeedIdMigration(collections.map(([name, records]) => ({ name, records })));
 }
 
+/**
+ * A pristine copy of a real frozen snapshot row.
+ *
+ * The fixtures below used to be one- or two-field stubs - `{ id: "contact_001",
+ * name: "Alex" }`. Those are still correct as STORIES ("this is a legacy demo
+ * record that should be re-keyed") but they stopped being valid RECORDS the
+ * moment the planner learned to compare content against a frozen snapshot: a
+ * two-field stub diverges from a ~50-field row, so the planner correctly
+ * classified it as the user's own data and declined to re-key it. 15 assertions
+ * went red, and every one of them was the test being wrong rather than the code.
+ *
+ * This is the same trap as an assertion pointed at the wrong subject: the tests
+ * were checking a decision using a fixture that could no longer reach it. Note
+ * the direction - a stub that fails to match is SAFE (nothing re-keyed, nothing
+ * deleted), so it would have shipped as "the migration does nothing" rather than
+ * as data loss. The fix is real rows, not a looser comparison.
+ */
+function demoRow(legacyId) {
+  const def = legacyDefinitionFor({ id: legacyId });
+  if (!def) return null;
+  const { collection, ...record } = def;
+  return record;
+}
+
+/**
+ * Legacy ids the frozen snapshot actually covers.
+ *
+ * It does not cover all of them, and the gap is real rather than cosmetic.
+ * Regenerating the snapshot from the repositories returns nothing for
+ * menstrualCycles, contraception and pregnancies because those seed arrays are
+ * gated behind `menstrualTrackingEnabled` and are empty on a default install -
+ * 88 rows against a 96-entry legacy map.
+ *
+ * Those records exist only once tracking is switched on, so on a default install
+ * there is nothing for the snapshot to describe. A record in one of those
+ * collections on a legacy seed id therefore classifies as the USER's data and is
+ * left alone, which is the safe direction: undeletable demo data rather than
+ * deleted user data. Recorded as pool work rather than papered over.
+ */
+function coveredLegacyIds(ids) {
+  return ids.filter((id) => legacyDefinitionFor({ id }) !== null);
+}
+
+/** The legacy id a current `seed_x_900N` id came from. */
+function legacyOf(seedId) {
+  const m = /^seed_([a-z]+)_(\d+)$/.exec(seedId);
+  return m ? `${m[1]}_${String(Number(m[2]) - 9001 + 1).padStart(3, "0")}` : seedId;
+}
+
 describe("legacy demo records are re-keyed to the seed_ form", () => {
   it("re-keys an unedited legacy contact", () => {
-    const { rewritten } = plan([["contacts", [{ id: "contact_001", name: "Alex" }]]]);
+    const { rewritten } = plan([["contacts", [demoRow("contact_001")]]]);
     expect(rewritten.get("contacts")[0].id).toBe("seed_contact_9001");
     expect(rewritten.get("contacts")[0].name).toBe("Alex");
   });
 
   it("leaves the trailing number preserved, so the mapping stays reversible", () => {
     const { rewritten } = plan([
-      ["contacts", [{ id: "contact_016" }, { id: "log_014" }, { id: "test_007" }]],
+      ["contacts", [demoRow("contact_016"), demoRow("log_014"), demoRow("test_007")]],
     ]);
     const ids = rewritten.get("contacts").map((r) => r.id);
     expect(ids).toEqual(["seed_contact_9016", "seed_log_9014", "seed_test_9007"]);
@@ -140,13 +190,17 @@ describe("THE RULE THAT MATTERS MOST: a user record is never touched", () => {
     // Every record that has never been edited has no flag at all. Defaulting to
     // "user" would mean the migration never runs and the protection never lands;
     // defaulting to "demo" matches clearSampleData.js's own isSampleRecord().
-    const { rewritten, skippedUserRecords } = plan([["contacts", [{ id: "contact_001" }]]]);
+    const { rewritten, skippedUserRecords } = plan([["contacts", [demoRow("contact_001")]]]);
     expect(rewritten.get("contacts")[0].id).toBe("seed_contact_9001");
     expect(skippedUserRecords).toBe(0);
   });
 
   it("treats an isSeed:true record as demo data", () => {
-    const { rewritten } = plan([["contacts", [{ id: "contact_001", isSeed: true }]]]);
+    // `isSeed: true` is a DEMO claim, so the record is re-keyed. Built from a real
+    // snapshot row rather than a bare `{ id }`: the planner decides by content,
+    // and a stub would diverge and be left alone - the opposite of what this
+    // test is asserting, so it would have passed for the wrong reason.
+    const { rewritten } = plan([["contacts", [{ ...demoRow("contact_001"), isSeed: true }]]]);
     expect(rewritten.get("contacts")[0].id).toBe("seed_contact_9001");
   });
 });
@@ -154,7 +208,7 @@ describe("THE RULE THAT MATTERS MOST: a user record is never touched", () => {
 describe("references to a re-keyed record are rewritten with it", () => {
   it("rewrites a singular Id field", () => {
     const { rewritten } = plan([
-      ["contacts", [{ id: "contact_001" }]],
+      ["contacts", [demoRow("contact_001")]],
       ["locations", [{ id: "location_050", relatedContactId: "contact_001" }]],
     ]);
     expect(rewritten.get("locations")[0].relatedContactId).toBe("seed_contact_9001");
@@ -162,7 +216,7 @@ describe("references to a re-keyed record are rewritten with it", () => {
 
   it("rewrites an Ids array, leaving unrelated entries alone", () => {
     const { rewritten } = plan([
-      ["contacts", [{ id: "contact_001" }, { id: "contact_002" }]],
+      ["contacts", [demoRow("contact_001"), demoRow("contact_002")]],
       ["encounters", [{ id: "encounter_019", attendeeIds: ["contact_001", "contact_017", "contact_002"] }]],
     ]);
     expect(rewritten.get("encounters")[0].attendeeIds).toEqual([
@@ -177,9 +231,9 @@ describe("references to a re-keyed record are rewritten with it", () => {
     // reference medications, and the re-key has to move all of them together or
     // the demo data develops dangling ids.
     const { rewritten } = plan([
-      ["contacts", [{ id: "contact_001" }]],
+      ["contacts", [demoRow("contact_001")]],
       ["encounters", [{ id: "encounter_001", attendeeIds: ["contact_001"] }]],
-      ["medications", [{ id: "med_001" }]],
+      ["medications", [demoRow("med_001")]],
       ["logs", [{ id: "log_050", medicationId: "med_001" }]],
     ]);
     expect(rewritten.get("encounters")[0].attendeeIds).toEqual(["seed_contact_9001"]);
@@ -191,7 +245,7 @@ describe("references to a re-keyed record are rewritten with it", () => {
     // Documented limit, matching referencedSeedIds' own: a hand-kept relation
     // map is a second thing to forget to update, so the rule is name-based.
     const { rewritten } = plan([
-      ["contacts", [{ id: "contact_001" }]],
+      ["contacts", [demoRow("contact_001")]],
       ["locations", [{ id: "location_050", contactLabel: "contact_001" }]],
     ]);
     expect(rewritten.has("locations")).toBe(false);
@@ -200,7 +254,7 @@ describe("references to a re-keyed record are rewritten with it", () => {
 
 describe("the migration is idempotent", () => {
   it("a second run finds nothing to do", () => {
-    const once = plan([["contacts", [{ id: "contact_001" }]], ["encounters", [{ id: "encounter_001", attendeeIds: ["contact_001"] }]]]);
+    const once = plan([["contacts", [demoRow("contact_001")]], ["encounters", [{ id: "encounter_001", attendeeIds: ["contact_001"] }]]]);
     const next = once.rewritten.get("contacts");
     const enc = once.rewritten.get("encounters");
     const twice = plan([["contacts", next], ["encounters", enc]]);
@@ -217,7 +271,7 @@ describe("the migration is idempotent", () => {
   it("survives a non-record element rather than throwing from a data path", () => {
     // Same reasoning as backupMigrations.js: safety must not depend on the
     // ORDER of two private functions in two files with nothing enforcing it.
-    const { rewritten } = plan([["contacts", [null, "junk", { id: "contact_001" }]]]);
+    const { rewritten } = plan([["contacts", [null, "junk", demoRow("contact_001")]]]);
     expect(rewritten.get("contacts")[0]).toBeNull();
     expect(rewritten.get("contacts")[1]).toBe("junk");
     expect(rewritten.get("contacts")[2].id).toBe("seed_contact_9001");
@@ -248,9 +302,24 @@ describe("the legacy list matches the real pre-re-key seed arrays", () => {
     // them to exactly the current seed id. That closes the loop in both
     // directions: a seed id the migration cannot reproduce, or a legacy id it
     // does not know about, both fail here.
-    const { rewritten } = plan([["probe", legacyIds.map((id) => ({ id }))]]);
+    //
+    // demoRow(), not `{ id }`: the planner now decides by CONTENT against the
+    // frozen snapshot, so a bare id object diverges from a real row and is
+    // correctly treated as the user's own data - which would make this test pass
+    // for the wrong reason if it were asserting anything at all.
+    const covered = coveredLegacyIds(legacyIds);
+    expect(
+      covered.length,
+      "the frozen snapshot stopped covering the seed arrays - without this " +
+        "assertion the filter below could silently cover nothing at all",
+    ).toBeGreaterThan(50);
+    const { rewritten } = plan([["probe", covered.map((id) => demoRow(id))]]);
     const migrated = rewritten.get("probe").map((r) => r.id);
-    expect(migrated).toEqual(currentSeedIds);
+    // Only the covered ids were fed in (see coveredLegacyIds), so the expected
+    // side must be filtered the same way. Comparing against the unfiltered list
+    // is what the 88-vs-96 mismatch was, not a migration failure.
+    const expected = currentSeedIds.filter((id) => covered.includes(legacyOf(id)));
+    expect(migrated).toEqual(expected);
   });
 
   it("every legacy id in the map is one a seed array genuinely used", () => {
@@ -272,9 +341,11 @@ describe("the legacy list matches the real pre-re-key seed arrays", () => {
 
     // Anything the map claims that no seed array ever used.
     const orphans = [];
-    for (const probe of derivedLegacy) {
+    for (const probe of coveredLegacyIds([...derivedLegacy])) {
       // A record carrying this id must be re-keyed, proving the map knows it.
-      const { rewritten } = plan([["probe", [{ id: probe }]]]);
+      // demoRow() rather than `{ id }`, for the reason given in the round-trip
+      // test above: a bare id object no longer reaches the re-key decision.
+      const { rewritten } = plan([["probe", [demoRow(probe)]]]);
       if (!rewritten.has("probe")) orphans.push(probe);
     }
     expect(orphans, `these legacy ids are not covered by the migration: ${orphans.join(", ")}`).toEqual([]);

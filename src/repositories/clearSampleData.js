@@ -59,6 +59,17 @@ import { LogRepository, SEED_MEDICATION_LOG_IDS } from "./logRepository";
 import { MenstrualCycleRepository, SEED_MENSTRUAL_CYCLE_IDS } from "./menstrualCycleRepository";
 import { ContraceptionRepository, SEED_CONTRACEPTION_IDS } from "./contraceptionRepository";
 import { PregnancyRepository, SEED_PREGNANCY_IDS } from "./pregnancyRepository";
+// The shared demo/user rule lives in calculations/ rather than beside this file
+// because seedIdMigration.js needs it too, and importing THIS module from there
+// would close a repositories -> storage -> repositories cycle. One implementation,
+// so the two chokepoints cannot drift - a second copy of this decision is what
+// let Path 1 (a post-3d backup whose records never pass through the migration)
+// reach the delete button unexamined.
+import {
+  isDemoData,
+  legacyDefinitionFor,
+  stampDivergedRecords,
+} from "../calculations/seedDivergence.js";
 
 // Each entry: the repository to filter, and the ids that are sample data.
 // Order follows resetAllData.js's own ordering (Contacts, Encounters, then
@@ -99,10 +110,26 @@ const SAMPLE_REPOSITORIES = [
  * flag can never be overridden by id membership. An unknown/missing flag (every
  * record that has never been edited) falls through to the id test, which is the
  * pre-existing behaviour.
+ *
+ * CORRECTED 6 Oct 2026 - id membership alone is still not enough, and the
+ * session-bus blocker that said so was right. A record restored from a backup, or
+ * edited on a build that predates the flag, carries NO `isSeed` and can sit on a
+ * legacy seed id. That is exactly the shape that lost 74 real records on 5 Oct.
+ *
+ * Those are now decided by CONTENT against a frozen snapshot of what shipped,
+ * not by the id alone: `isDemoData` is the same function the seed-id migration
+ * uses, and `snapshotFidelity.test.js` checks it against the live repositories
+ * so the snapshot cannot quietly stop describing the app's own demo data.
+ *
+ * `seedIds` is still consulted, but only as a cheap gate - a record that is
+ * neither in the seed id set nor in the snapshot is the user's without any
+ * further work, which is the fail-safe direction.
  */
 function isSampleRecord(record, seedIds) {
+  if (!record || typeof record !== "object") return false;
   if (record.isSeed === false) return false;
-  return seedIds.has(record.id);
+  if (!seedIds.has(record.id) && !legacyDefinitionFor(record)) return false;
+  return isDemoData(record);
 }
 
 // FIXED 1 Oct 2026 - a real data-loss bug, found by losing the owner's own
@@ -262,22 +289,51 @@ function notify() {
 export async function clearSampleData() {
   let removed = 0;
   let kept = 0;
+  let stamped = 0;
   const failed = [];
-  const { collections, failures } = await loadSampleCollections();
+  const { collections: loaded, failures } = await loadSampleCollections();
+
+  // A flagless record that DIVERGED from the frozen snapshot is the user's own
+  // data. `stampDivergedRecords` writes `isSeed: false` on it BEFORE any deletion
+  // decision is made, so the deletion below reads an authoritative flag rather
+  // than re-running the same field diff. It returns new objects and never
+  // mutates, so a failure below cannot leave the repository half-converted.
+  const collections = [];
+  for (const c of loaded) {
+    try {
+      const result = stampDivergedRecords(c.records);
+      collections.push({ ...c, records: result.records, stamped: result.stamped });
+      stamped += result.stamped.length;
+    } catch (e) {
+      // Without this the collection would vanish from the run entirely and the
+      // caller would be told the clear succeeded over data never inspected.
+      failed.push({ name: c.name, error: e?.message || String(e) });
+    }
+  }
+
   const referenced = referencedSeedIds(collections);
   // A repository that could not even be read never reaches the loop below, so
   // its failure is reported here. Without this the caller would be told the
   // clear succeeded while that collection was never inspected.
   failed.push(...failures);
 
-  for (const { name, repo, records, seedIds } of collections) {
+  for (const { name, repo, records, seedIds, stamped: collectionStamped } of collections) {
     try {
       // THE FIX: a seed record something real points at is kept, with its
       // history. See the long note above for the incident and for why this is
       // a referential check rather than a "has the user edited it" guess.
       const real = records.filter((r) => !isSampleRecord(r, seedIds) || referenced.has(r.id));
       const dropped = records.length - real.length;
-      if (dropped === 0) { kept += records.length; continue; }
+      if (dropped === 0) {
+        // Nothing to remove, but a flagless record that DIVERGED from the frozen
+        // snapshot was just identified as the user's own data. Persisting that
+        // turns today's inference into a fact every later reader - the migration,
+        // reconciliation, this same function - takes at face value, so the
+        // heuristic never has to be re-derived or drift.
+        if (collectionStamped && collectionStamped.length) await repo.replaceAll(real);
+        kept += real.length;
+        continue;
+      }
       // replaceAll() is the same call resetAllData.js uses: it replaces the
       // repository's in-memory cache AND persists, which is what makes the
       // sample data stay gone across a reload.
@@ -292,5 +348,5 @@ export async function clearSampleData() {
   // Always notify, even on a partial clear: a screen that skipped a repository
   // still needs to stop claiming there is sample data here.
   notify();
-  return { removed, kept, failed };
+  return { removed, kept, stamped, failed };
 }
