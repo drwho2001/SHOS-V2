@@ -494,3 +494,25 @@ export const FONT_FAMILY_MONO = "'JetBrains Mono', monospace";
  * hardcoded offset fails a test rather than opening a gap.
  */
 export const STICKY_SUBHEADING_TOP = "calc(env(safe-area-inset-top) + 58px)";
+
+/**
+ * Stick position for a screen's OWN top bar - the Settings sub-screen headers and
+ * anything else that is the topmost element on its screen with nothing above it.
+ *
+ * WHY NOT STICKY_SUBHEADING_TOP. That constant is the Healthcare screen-title
+ * banner's height (58px), which is correct only for bars that sit directly beneath
+ * that specific banner. A Settings sub-screen header has nothing above it, so
+ * reusing it would leave a 58px band of dead space between the header and the top
+ * of the screen. That is the same mistake as borrowing a sourced clinical
+ * constant out of the context that sourced it: the number is right somewhere else.
+ *
+ * WHY + 8px. The status-bar inset alone would butt the header straight against
+ * the system bar. This matches the offset the four real screen-title banners were
+ * given on 16 Sep 2026, so a header that scrolls under the status bar has the same
+ * deliberate breathing room every other top bar in this app has.
+ *
+ * The safe-area term resolves to 0px in a desktop browser and on an emulator
+ * without a notch, which is why this cannot be confirmed by opening the app on a
+ * development machine - see CLAUDE.md's standing note on that.
+ */
+export const STICKY_SCREEN_HEADER_TOP = "calc(env(safe-area-inset-top) + 8px)";

@@ -870,6 +870,67 @@ verify:fast green - build, lint, **1397 tests across 119 files**, encoding, inhe
 
 **Still open, unchanged: t069** (an old record carrying both a legacy seed id and a renamed legacy field diverges from the frozen current definition and is not re-keyed; safe for data, can leave a legacy demo id). It needs a scope decision, not a fix.
 
+## Recently shipped (6 Oct 2026, later still - 19 of the 20 Settings headers, and the one I could not commit had another session's work in it)
+
+**Session D, t075. "Settings: sticky header leaves a gap against the status bar
+while scrolling."** One bug, **20 sites**: every Settings sub-screen header was
+`position: "sticky", top: 0` with a plain `padding: 16px` and no safe-area inset,
+so the header stuck *under* the system status bar. This is the identical defect
+class CLAUDE.md records fixed on the four screen-title banners on 16 Sep 2026.
+Measured before editing rather than assumed: **19 files** carried the
+single-line spelling and `ClinicalEvidenceScreen.jsx` the multi-line one, so a
+script that only matched one of the two would have "fixed" 19 of 20 and reported
+success.
+
+**The constant could not be reused, and that was the decision worth making.**
+`STICKY_SUBHEADING_TOP` already exists and is the obvious candidate — but it is
+`env(...) + 58px`, the Healthcare screen-title *banner's height*, correct only for
+bars sitting directly beneath that specific banner. A Settings sub-screen header
+has nothing above it, so reusing it would open a **58px band of dead space**.
+That is the same mistake as borrowing a sourced clinical constant out of the
+context that sourced it: right number, wrong place. New
+`STICKY_SCREEN_HEADER_TOP = env(...) + 8px`, matching the offset the four banners
+were given, with the reasoning recorded at the constant itself.
+
+**New guard: `src/components/settingsStickyHeaderGuard.test.js`, six tests,
+mutation-verified** — reintroducing `top: 0` turns 2 of them red, restoring it
+returns them to green. It sweeps **all** sub-screens rather than a hand-listed
+set, because the existing header checks in this repo enumerate filenames and a
+screen added later is never inspected by any of them. It also asserts a sweep
+found more than 15 files, so an empty set cannot make it pass vacuously, and it
+checks each file actually **imports** the constant — a missing import is a
+render-time `ReferenceError` in exactly the class of code unit tests import
+without rendering.
+
+**Two tooling failures of my own, both recorded because both would have shipped.**
+A whitespace-tidying regex of mine used `\s+,` where `\s` **spans newlines**, so
+it ate `position: "sticky",\n          b` and deleted the `position` and `b`
+characters out of `ClinicalEvidenceScreen.jsx`. Caught by a per-file diff-shape
+check (`+2/-2` expected) rather than by lint or build — the file still parsed,
+because the damage was whitespace and one letter inside a style object, which is
+precisely the class every gate here passes. Restored from git and redone by hand
+with the editor. **The check that caught it is now part of the routine**: after a
+bulk edit, assert every touched file changed the expected number of lines.
+
+**The 20th header could not be committed, and the reason is the interesting part.**
+`DeveloperToolsScreen.jsx` carried **session B's uncommitted work** — a full
+dangling-reference-repair feature, ~160 lines across new `orphanReferenceRepair`
+calls, its own state and undo — which my one line was sitting inside. This is the
+third recorded instance of one session's edit landing under another's commit
+message (`bc04295`, `092f467`), and the near-miss is worth more than the fix: a
+blanket `git add` here would have shipped B's half-finished feature inside a
+commit about a status bar. Handled by saving B's exact bytes, resetting the file to
+HEAD, applying only my two lines, committing, then restoring B's content
+byte-for-byte so their work returns to the working tree with my change now
+*beneath* it. **B has no claim on this file despite actively editing it** — a real
+coordination gap, since the claims table is what the next reader trusts.
+
+**Measured boundary:** 6 new tests, mutation-verified, lint, production build and
+the encoding guard clean. **This change cannot be visually confirmed from a
+development machine** — `env(safe-area-inset-top)` resolves to 0px in a desktop
+browser, so the sticky offset is 8px here and the real gap only appears under a
+notch. The device is the verification, and that limit is stated at the constant.
+
 ## Recently shipped (6 Oct 2026, latest - a dashboard shortcut to the retest scheduler, which navigates rather than writes)
 
 **Session D. t082 asked for "Dashboard Quick Add: human-friendly titles (routine

@@ -1,7 +1,7 @@
 // GuideScreen — extracted verbatim from src/modules/SHOS_Settings_Prototype.jsx
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useRef, useEffect } from "react";
-import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
+import { NEUTRAL_DARK as DARK, STICKY_SCREEN_HEADER_TOP } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft, CompassIcon as Compass } from "@phosphor-icons/react";
 import { ACCENT_TEXT_SAFE, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
@@ -92,7 +92,7 @@ export function GuideScreen({ onClose, onStartTour }) {
           the same complaint in a different shape. Reverted to a plain
           full-width header, matching the body below (also reverted to
           full-width). */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: STICKY_SCREEN_HEADER_TOP, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         {/* ADDED — real ask: this screen's own title had no icon, even
             though its Settings-menu row already has one (Compass) —

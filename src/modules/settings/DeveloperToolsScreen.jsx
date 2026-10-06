@@ -1,7 +1,7 @@
 // DeveloperToolsScreen — extracted verbatim from src/modules/SHOS_Settings_Prototype.jsx
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useState, useRef, useEffect } from "react";
-import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
+import { NEUTRAL_DARK as DARK, STICKY_SCREEN_HEADER_TOP } from "../../calculations/designTokens";
 import { WarningIcon as AlertTriangle, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, TrashIcon as Trash2, LinkBreakIcon as LinkBreak, BugIcon as Bug } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, ACTION_TEXT_SAFE, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
@@ -193,7 +193,7 @@ export function DeveloperToolsScreen({ onClose }) {
 
   return (
     <div ref={dialogRef} role="dialog" aria-label="Developer tools" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: darkMode ? DARK.bg : NEUTRAL.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: STICKY_SCREEN_HEADER_TOP, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>Developer tools</h1>
       </div>

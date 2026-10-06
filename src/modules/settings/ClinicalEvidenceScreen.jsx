@@ -21,7 +21,7 @@
 // the entire point: a claim this app makes cannot lose its evidence behind an
 // edit.
 import React, { useRef, useEffect } from "react";
-import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
+import { NEUTRAL_DARK as DARK, STICKY_SCREEN_HEADER_TOP } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft, FlaskIcon as Flask } from "@phosphor-icons/react";
 import { NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
@@ -127,7 +127,7 @@ export default function ClinicalEvidenceScreen({ onClose }) {
           gap: 10,
           padding: 16,
           position: "sticky",
-          top: 0,
+          top: STICKY_SCREEN_HEADER_TOP,
           background: darkMode ? DARK.bg : NEUTRAL.bg,
           borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border),
         }}

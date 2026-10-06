@@ -1,7 +1,7 @@
 // GlossaryScreen — extracted verbatim from src/modules/SHOS_Settings_Prototype.jsx
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useState, useRef, useEffect } from "react";
-import { NEUTRAL_DARK as DARK } from "../../calculations/designTokens";
+import { NEUTRAL_DARK as DARK, STICKY_SCREEN_HEADER_TOP } from "../../calculations/designTokens";
 import { CaretLeftIcon as ChevronLeft, BookOpenTextIcon as BookOpen } from "@phosphor-icons/react";
 import { NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
@@ -61,7 +61,7 @@ export function GlossaryScreen({ onClose, onOpenClinicalEvidence }) {
       {/* CHANGED 16 Sep 2026, later still — same "full width page, not a
           narrow centered column" reversal as GuideScreen above; see
           that screen's own comment for the full reasoning. */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: STICKY_SCREEN_HEADER_TOP, background: darkMode ? DARK.bg : NEUTRAL.bg, borderBottom: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
         <ChevronLeft size={22} color={darkMode ? DARK.textPrimary : NEUTRAL.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         {/* ADDED — real ask: same as GuideScreen above, carrying this
             screen's own Settings-menu row icon (BookOpen) through into
