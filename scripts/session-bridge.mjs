@@ -897,9 +897,22 @@ function poolHandler(args) {
         }
         const clash = (named.files || []).filter((f) => heldByOthers.has(f));
         if (clash.length) {
+          // The refusal has to answer "what do I do now?", and the previous
+          // version answered it wrongly. It named the files but not WHO held them,
+          // and pointed at `pool block` - which marks the TASK blocked, a
+          // different operation, and is the wrong action when the holder is dead
+          // and you are its successor. So the one command a blocked session reads
+          // pointed it away from the command that actually unblocks it. Both real
+          // remedies are now named, because which one applies is a fact only the
+          // reader has.
+          const held = clash
+            .map((f) => `${f} (held by ${claims[f].holders.filter((h) => h.by !== ME).map((h) => h.by).join(", ")})`)
+            .join(", ");
+          console.error(`${wanted} touches files held by another session: ${held}`);
+          console.error(`  still being worked on? leave it alone, or park it: pool block ${wanted}`);
+          console.error("  session finished, or you have taken it over? release its claim first:");
           console.error(
-            `${wanted} touches files held by another session: ${clash.join(", ")} - ` +
-              `use pool block ${wanted} instead`
+            `    node scripts\\session-bridge.mjs claim release ${clash.join(" ")} --from=<session> --reason="..."`
           );
           POOL_EXIT_CODE = 2;
           return;
@@ -1237,6 +1250,47 @@ const KINDS = {
   mistake: "Mistake",
 };
 
+// ── durable state writes, shared by `log` and by claim takeover ─────────────
+// Both are cross-session records that must outlive the process that made them.
+// One implementation, not two: the first version of the takeover path grew its
+// own inline copy of the notice format, and a second copy of an append-only
+// format is a second thing that can drift from what `inbox` actually reads.
+
+function postNotice(text) {
+  mkdirSync(HOME_DIR, { recursive: true });
+  const notices = existsSync(NOTICE_PATH)
+    ? readFileSync(NOTICE_PATH, "utf8").split("\n").filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean)
+    : [];
+  const seq = (notices.length ? notices[notices.length - 1].seq || 0 : 0) + 1;
+  appendFileSync(
+    NOTICE_PATH,
+    JSON.stringify({ seq, at: new Date().toISOString(), from: ME, text }) + "\n",
+    "utf8"
+  );
+  return seq;
+}
+
+const BACKLOG_HEADER =
+  "# Conversation backlog\n\n" +
+  "Durable record of decisions, dead ends, and open state, so a NEW session can\n" +
+  "pick up without re-deriving everything. Appended by every session via\n" +
+  "`session-bridge.mjs log`; read it with `session-bridge.mjs backlog`.\n\n" +
+  "Times are UTC. This file is outside the repository on purpose.\n\n---\n\n";
+
+// Recorded in BOTH places, and that is behavioural rather than belt-and-braces:
+// `inbox` is what a RETURNING session runs first, and the backlog is what a
+// session reading state cold finds. An override that reached only one of them
+// would be invisible to half its audience - which is what happened to the file-
+// less workaround task this replaced.
+function recordState(kind, text, noticeText) {
+  mkdirSync(HOME_DIR, { recursive: true });
+  if (!existsSync(BACKLOG_PATH)) writeFileSync(BACKLOG_PATH, BACKLOG_HEADER, "utf8");
+  const at = new Date().toISOString();
+  appendFileSync(BACKLOG_PATH, `### ${at} — ${ME} — ${KINDS[kind]}\n${text}\n\n`, "utf8");
+  const seq = postNotice(noticeText || `${KINDS[kind]}: ${text.slice(0, 160)}`);
+  return { seq, at };
+}
+
 commands.log = async (args) => {
   const kindArg = args.find((a) => a.startsWith("--kind="));
   const kind = kindArg ? kindArg.split("=")[1] : "state";
@@ -1249,32 +1303,7 @@ commands.log = async (args) => {
     console.error('Usage: log "<entry>" [--kind=decision|blocker|finding|question|state|done|mistake]');
     process.exit(2);
   }
-  mkdirSync(HOME_DIR, { recursive: true });
-  if (!existsSync(BACKLOG_PATH)) {
-    writeFileSync(
-      BACKLOG_PATH,
-      "# Conversation backlog\n\n" +
-        "Durable record of decisions, dead ends, and open state, so a NEW session can\n" +
-        "pick up without re-deriving everything. Appended by every session via\n" +
-        "`session-bridge.mjs log`; read it with `session-bridge.mjs backlog`.\n\n" +
-        "Times are UTC. This file is outside the repository on purpose.\n\n---\n\n",
-      "utf8"
-    );
-  }
-  const at = new Date().toISOString();
-  appendFileSync(BACKLOG_PATH, `### ${at} — ${ME} — ${KINDS[kind]}\n${text}\n\n`, "utf8");
-
-  // Recorded as a notice too, so a session that only runs `inbox` still sees
-  // that something changed, without needing to know the backlog exists.
-  const notices = existsSync(NOTICE_PATH)
-    ? readFileSync(NOTICE_PATH, "utf8").split("\n").filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean)
-    : [];
-  const seq = (notices.length ? notices[notices.length - 1].seq || 0 : 0) + 1;
-  appendFileSync(
-    NOTICE_PATH,
-    JSON.stringify({ seq, at, from: ME, text: `${KINDS[kind]}: ${text.slice(0, 160)}` }) + "\n",
-    "utf8"
-  );
+  const { seq, at } = recordState(kind, text);
   console.log(`logged (${KINDS[kind]}) at ${stamp(at)} — also posted as notice #${seq}`);
 };
 
@@ -1385,17 +1414,45 @@ commands.lessons = async (args) => {
   console.log(body);
 };
 
+// CLAIMING AND RELEASING - one verb, two directions.
+//
+// Three separate defects made an authorised takeover impossible, and all three
+// were found the same way: by a session reading this tool's own instructions.
+// (1) `help` listed only `claim <file...>`, so `claim release` was undiscoverable
+// even though it had existed the whole time. (2) Even once found, it only ever
+// dropped ME's own claims, so it could not release the stale FOREIGN claim that
+// was actually blocking. (3) `pool take`'s refusal pointed at `pool block`,
+// which is not the remedy for a dead holder. The documented answer was therefore
+// wrong twice over, and the only thing left to file was a file-less workaround.
 commands.claim = async (args) => {
   const mode = args[0] === "release" ? "release" : "claim";
-  const files = args.filter((a) => a !== "release");
-  if (!files.length) { console.error("Usage: claim <file...> | claim release <file...>"); process.exit(2); }
+  // `--flag=value` only, matching --kind=/--files=/--evidence= everywhere else in
+  // this tool, and that is what makes the file list safe to derive by filtering:
+  // any argument beginning with `--` is a flag, so it can never be mistaken for a
+  // filename. The previous version filtered only the literal "release", so
+  // `claim release src/a.js --from=B` treated "--from=B" as a file - inert on
+  // release, but in claim mode it wrote a real claim entry for a file literally
+  // named "--from=B", permanently held and releasable by nobody.
+  const flagValue = (name) => {
+    const hit = args.find((a) => a.startsWith(`--${name}=`));
+    return hit ? hit.slice(name.length + 3) : undefined;
+  };
+  const files = args.filter((a) => a !== "release" && !a.startsWith("--"));
+  if (!files.length) {
+    console.error("Usage: claim <file...>");
+    console.error("       claim release <file...>");
+    console.error('       claim release <file...> --from=<session> --reason="..."   (authorised takeover)');
+    process.exit(2);
+  }
+  const takeoverFrom = mode === "release" ? flagValue("from") : undefined;
   const store = readJson(CLAIM_PATH, {});
   // Declared outside the branch because the exit-code check below is outside it
   // too; the first version declared it with const inside the if-block and threw
   // "clash is not defined" on exactly the path it existed to report.
+const released = [];
+const notMine = [];
   let clash = [];
   if (mode === "claim") {
-    // Holders are a LIST, not a single value. With a single value a second
     // claimer silently replaced the first, so the table only ever showed the
     // most recent claimant and NEITHER session could see that a conflict existed
     // — a collision check that cannot represent a collision.
@@ -1410,17 +1467,101 @@ commands.claim = async (args) => {
       const holders = (store[f]?.holders || []).filter((h) => h.by !== ME);
       store[f] = { holders: [...holders, { by: ME, at: new Date().toISOString() }] };
     }
-  } else {
+  } else if (takeoverFrom) {
+    // AUTHORISED TAKEOVER: releasing a claim recorded against a DIFFERENT
+    // session. Deliberately hard to do by accident. It needs an explicit --from
+    // AND a written reason, because this is the one operation here that destroys
+    // another session's record of what it was doing - and a reason is the only
+    // thing that makes the release reviewable by whoever finds it later. It is
+    // NOT gated on a staleness timer on purpose: this tool already learned that a
+    // wall-clock threshold will reap live work (see the lease comment above), so
+    // liveness is the owner's call, made explicitly, not a number's.
+    const reason = (flagValue("reason") || "").trim();
+    if (!reason) {
+      console.error(
+        '--from= requires --reason="..." - releasing another session\'s claim is an override, and an override nobody can explain afterwards is exactly how two sessions end up editing one file'
+      );
+      process.exit(2);
+    }
+    // EVERY file is validated before ANY write. A partial release is worse than
+    // none: the other session would see some of its files free, could not tell
+    // which, and would either idle or start editing a file still held.
+    const problems = [];
     for (const f of files) {
-      if (store[f]) {
-        const kept = store[f].holders.filter((h) => h.by !== ME);
-        if (kept.length) store[f] = { holders: kept };
-        else delete store[f];
+      if (!store[f]) {
+        problems.push(`${f} (not claimed at all)`);
+      } else {
+        const others = (store[f].holders || []).map((h) => h.by);
+        if (!others.includes(takeoverFrom)) {
+          problems.push(`${f} (not held by ${takeoverFrom}; held by ${others.join(", ") || "nobody"})`);
+        }
+      }
+    }
+    if (problems.length) {
+      console.error(`refusing to release ${takeoverFrom}'s claims - nothing was changed:`);
+      for (const p of problems) console.error(`  ${p}`);
+      process.exit(2);
+    }
+    for (const f of files) {
+      const kept = store[f].holders.filter((h) => h.by !== takeoverFrom);
+      if (kept.length) store[f] = { holders: kept };
+      else delete store[f];
+    }
+    writeJson(CLAIM_PATH, store);
+    const { seq } = recordState(
+      "state",
+      `Claim takeover: ${ME} released ${files.join(", ")} from ${takeoverFrom}. Reason: ${reason}`,
+      `CLAIM TAKEOVER: ${ME} released ${files.join(", ")} from ${takeoverFrom} - ${reason}`
+    );
+    console.log(`released ${files.length} claim(s) from ${takeoverFrom}`);
+    console.log(`  reason: ${reason}`);
+    console.log(`  recorded as notice #${seq} and in the backlog - ${takeoverFrom} sees it in \`inbox\` if it returns`);
+    return;
+} else {
+    // Plain release: MY claims only, and deliberately still unable to touch
+    // anyone else's. The asymmetry is the point - a typo in a filename must not
+    // be able to strip a live claim, so reaching another session's claim always
+    // requires naming it on purpose and justifying it.
+    //
+    // Found by running the command, not by reading it: the first version printed
+    // `release: src/x.js` with exit 0 whether or not anything was actually
+    // released. Pointed at a file another session held, it removed nothing and
+    // still reported success - the exact "a helper that can quietly do nothing"
+    // shape this repo keeps paying for, and the worst place to have it, because
+    // the session doing it is the one already stuck and looking for a way out.
+    // So the release reports what it actually changed, and a file it left alone
+    // is named as left alone.
+    for (const f of files) {
+      if (!store[f]) {
+        notMine.push(`${f} (no claim)`);
+        continue;
+      }
+      const kept = store[f].holders.filter((h) => h.by !== ME);
+      if (!kept.length) {
+        delete store[f];
+        released.push(f);
+      } else if (kept.length === store[f].holders.length) {
+        notMine.push(`${f} (held by ${kept.map((h) => h.by).join(", ")})`);
+      } else {
+        store[f] = { holders: kept };
+        released.push(f);
       }
     }
   }
   writeJson(CLAIM_PATH, store);
-  console.log(`${mode}: ${files.join(", ")}`);
+  if (mode === "release") {
+    if (released.length) console.log(`released: ${released.join(", ")}`);
+    if (notMine.length) {
+      console.log(`left alone (not your claim): ${notMine.join(", ")}`);
+      console.log(`  to release another session's claim on purpose, name it and justify it:`);
+      console.log(`    claim release <file...> --from=<session> --reason="..."`);
+      // Non-zero, because "I asked for a release and did not get one" must not
+      // read as success to a script - and must not read as one to a session.
+      if (!released.length) process.exitCode = 2;
+    }
+  } else {
+    console.log(`${mode}: ${files.join(", ")}`);
+  }
   if (clash.length) {
     // Advisory, not a block: the claim is still recorded so BOTH sessions can
     // see the conflict, but the non-zero exit lets a caller or a later step
@@ -1433,11 +1574,40 @@ commands.claims = async () => {
   const store = readJson(CLAIM_PATH, {});
   const rows = Object.entries(store);
   if (!rows.length) { console.log("(no claims)"); return; }
+  // A claim with NO TASK BEHIND IT is the shape that blocks a takeover, and it
+  // is invisible until someone tries to take a task touching the same file - at
+  // which point the only visible fact is a session name and a timestamp. So the
+  // table says which claims are orphaned, rather than leaving the diagnosis to be
+  // reconstructed from the pool by hand.
+  //
+  // Deliberately phrased as "no task in flight" and NOT as "abandoned" or "stale".
+  // This tool cannot observe whether a session is alive - the recorded PID belongs
+  // to a `node session-bridge.mjs` process that exited milliseconds after the fact
+  // and is deliberately never consulted - and a session may legitimately hold a
+  // file with no pool task (a manual `claim`, work not worth a task row). Calling
+  // it abandoned would be a claim the tool cannot make, and the existing
+  // stale-lease test pins exactly that honesty for the pool half.
+  let pool = null;
+  try { pool = loadPool(); } catch { /* no pool yet - every claim is then unlabelled */ }
+  const inFlight = new Map();
+  if (pool) {
+    for (const t of pool.tasks) {
+      if (t.status !== "doing" || !t.owner) continue;
+      for (const f of t.files || []) {
+        if (!inFlight.has(f)) inFlight.set(f, new Set());
+        inFlight.get(f).add(t.owner);
+      }
+    }
+  }
   for (const [f, v] of rows.sort()) {
     const holders = v.holders || [];
     const names = holders.map((h) => (h.by === ME ? `${h.by} (me)` : h.by));
     const conflict = holders.length > 1 ? "   <-- CONFLICT, both sessions hold this" : "";
-    console.log(`  ${names.join(" + ")}  ${f}   (since ${stamp(v.holders[0]?.at)}) ${conflict}`);
+    const orphans = holders.filter((h) => !inFlight.get(f)?.has(h.by)).map((h) => h.by);
+    const orphan = orphans.length && pool
+      ? `   <-- ${orphans.join(",")} has no task in flight (orphan claim; a takeover needs: claim release ${f} --from=${orphans[0]} --reason="...")`
+      : "";
+    console.log(`  ${names.join(" + ")}  ${f}   (since ${stamp(holders[0]?.at)}) ${conflict}${orphan}`);
   }
 };
 
@@ -1489,18 +1659,26 @@ commands["help"] = async () => {
   task write <slug> <file>     write a numbered doc (refuses to overwrite)
   task read <slug> [file]      read one doc, or list the folder
   task list                    list all tasks
-  claim <file...>              record file ownership
+claim <file...>              record file ownership
+  claim release <file...>      release YOUR OWN claims (also done by pool done|block|release)
+  claim release <file...> --from=<session> --reason="..."
+                               authorised takeover: free files held by a session that
+                               has finished, or that you have taken over. Requires a
+                               reason, refuses if the named session does not hold the
+                               file, changes NOTHING unless every file validates, and
+                               is recorded to the notice log and the backlog.
   log "<entry>" [--kind=X]     append to the conversation backlog
   backlog [N|--all]          read recent backlog entries (what a NEW session does first)
   lesson "<rule>" "<do instead>"     record a durable RULE/DO/EVIDENCE lesson (--evidence required)
   lessons [--grep X]           read all lessons, or grep them
-  claims                       show current claims
+  claims                       show current claims, marking any with no task in flight
   pool list                    show the approved work pool
   pool add "<title>" [--files=a,b]   add an already-approved task
   pool propose "<title>"         propose one; inert until the owner approves it
   pool approve <id>            owner approves a proposed task
-  pool take                     pull the next approved task (atomic-ish)
-  pool done|block|release <id>  finish, park, or hand a task back
+  pool take [id]               allocate a task and claim its files, BEFORE any work
+  pool touch <id>              extend the lease - run this at each stage of long work
+  pool done|block|release <id>  finish, park, or hand a task back (all release its files)
   pool edit <id> [--title=...] [--files=a,b]   correct a task in place, keeping its id + history
   pool rm <id[,id]> [--all-mine]               delete tasks; --all-mine takes only the ones you allocated
   toast <title> <message>       native TUI notification

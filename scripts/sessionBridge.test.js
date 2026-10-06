@@ -291,6 +291,184 @@ describe("claims are released when work stops", () => {
   }, SUBPROCESS_BUDGET_MS);
 });
 
+describe("releasing another session's claim (authorised takeover)", () => {
+  // The regression test for L-070. A session's file claim outlived the session,
+  // `pool take` refused on it, `help` did not document that `claim release`
+  // existed, the existing `claim release` could only ever drop ME's own claims,
+  // and `pool take`'s refusal pointed at `pool block` - which is a different
+  // operation. So the documented answer was wrong twice over and the only way
+  // forward was to file a file-less workaround task. Every test here is one of
+  // those four facts, pinned.
+  it("frees a stale foreign claim so the other session can work on the file", () => {
+    const home = fresh();
+    add(home, "first", "src/a.js");
+    const t1 = poolOf(home).tasks[0].id;
+    bus("A", home, "pool", "take", t1);
+    add(home, "follow up", "src/a.js");
+    const t2 = poolOf(home).tasks[1].id;
+    // The dead end: B is refused, and this refusal is the whole problem.
+    expect(bus("B", home, "pool", "take", t2).code).toBe(2);
+    // The remedy.
+    const rel = bus("B", home, "claim", "release", "src/a.js", "--from=A", "--reason=owner authorised takeover");
+    expect(rel.code, rel.err).toBe(0);
+    expect(filesClaimedBy(home, "A")).toEqual([]);
+    expect(bus("B", home, "pool", "take", t2).code, "B should now get the task").toBe(0);
+  }, SUBPROCESS_BUDGET_MS);
+
+  it("refuses without a reason, and changes nothing", () => {
+    // An override nobody can explain afterwards is how two sessions end up
+    // editing one file, so the reason is required rather than merely encouraged.
+    const home = fresh();
+    add(home, "task", "src/a.js");
+    const id = poolOf(home).tasks[0].id;
+    bus("A", home, "pool", "take", id);
+    const r = bus("B", home, "claim", "release", "src/a.js", "--from=A");
+    expect(r.code).toBe(2);
+    expect(r.err).toMatch(/--reason/);
+    expect(filesClaimedBy(home, "A")).toEqual(["src/a.js"]);
+  });
+
+  it("refuses when the named session does not hold the file, changing nothing", () => {
+    // Guards the typo, and guards the worse case: releasing by session NAME must
+    // never release a different holder's claim just because the name was wrong.
+    const home = fresh();
+    add(home, "task", "src/a.js");
+    const id = poolOf(home).tasks[0].id;
+    bus("A", home, "pool", "take", id);
+    const r = bus("B", home, "claim", "release", "src/a.js", "--from=C", "--reason=typo in the name");
+    expect(r.code).toBe(2);
+    expect(r.err).toMatch(/not held by C/);
+    expect(filesClaimedBy(home, "A")).toEqual(["src/a.js"]);
+  });
+
+  it("is all-or-nothing: one unheld filename releases nothing at all", () => {
+    // A partial release is worse than none - the other session would see some of
+    // its files free, could not tell which, and would either idle or start editing
+    // a file still held. So validation runs across every file before any write.
+    const home = fresh();
+    add(home, "task", "src/a.js,src/b.js");
+    const id = poolOf(home).tasks[0].id;
+    bus("A", home, "pool", "take", id);
+    const r = bus("B", home, "claim", "release", "src/a.js", "src/nope.js", "--from=A", "--reason=mixed batch");
+    expect(r.code).toBe(2);
+    expect(r.err).toMatch(/nothing was changed/i);
+    expect(filesClaimedBy(home, "A").sort()).toEqual(["src/a.js", "src/b.js"]);
+  }, SUBPROCESS_BUDGET_MS);
+
+  it("records the takeover where the returning session will actually find it", () => {
+    const home = fresh();
+    add(home, "task", "src/a.js");
+    const id = poolOf(home).tasks[0].id;
+    bus("A", home, "pool", "take", id);
+    bus("B", home, "claim", "release", "src/a.js", "--from=A", "--reason=session finished and pushed");
+    // Two audiences, not belt-and-braces: `inbox` is what a returning session
+    // runs first, the backlog is what a session reading state cold finds.
+    const notices = readFileSync(join(home, "notices.jsonl"), "utf8");
+    expect(notices).toMatch(/CLAIM TAKEOVER/);
+    expect(notices).toMatch(/session finished and pushed/);
+    expect(readFileSync(join(home, "backlog.md"), "utf8")).toMatch(/Claim takeover/);
+  }, SUBPROCESS_BUDGET_MS);
+
+  it("a plain release still cannot strip another session's claim", () => {
+    // The asymmetry is deliberate, and it is the whole safety property: reaching
+    // someone else's claim must require naming it on purpose and justifying it.
+    const home = fresh();
+    add(home, "task", "src/a.js");
+    const id = poolOf(home).tasks[0].id;
+    bus("A", home, "pool", "take", id);
+    const r = bus("B", home, "claim", "release", "src/a.js");
+    expect(r.code, "must not report success for a no-op").toBe(2);
+    expect(r.out).toMatch(/left alone/i);
+    expect(filesClaimedBy(home, "A")).toEqual(["src/a.js"]);
+  }, SUBPROCESS_BUDGET_MS);
+
+  it("a flag is never mistaken for a filename", () => {
+    // The old file list filtered only the literal "release", so `claim --x` wrote
+    // a real claim entry for a file literally named "--x" - permanently held, and
+    // releasable by nobody.
+    const home = fresh();
+    bus("A", home, "claim", "src/a.js", "--from=B");
+    expect(Object.keys(claimsOf(home))).toEqual(["src/a.js"]);
+  });
+});
+
+describe("help documents the release modes", () => {
+  it("names `claim release`, and the takeover form", () => {
+    // L-070's actual cause: `claim release` had existed all along and was absent
+    // from `help`, so a session reading the tool's own instructions concluded it
+    // did not exist and filed a workaround instead. This is the guard for that,
+    // and it is cheap precisely because the failure was documentation-shaped.
+    const home = fresh();
+    const out = bus("A", home, "help").out;
+    // Each form asserted SEPARATELY, not as one `/claim release/` substring. The
+    // first version did the latter, and mutation testing showed why that is
+    // worthless: deleting the plain-release line left the takeover line's
+    // "claim release" still matching, so the guard stayed green with half the
+    // documentation gone. A substring check cannot tell "documented" from
+    // "mentioned somewhere in the same block".
+    expect(out, "help must document releasing your own claims").toMatch(
+      /claim release <file\.\.\.>\s+release YOUR OWN/
+    );
+    expect(out, "help must document the takeover form").toMatch(
+      /claim release <file\.\.\.> --from=<session> --reason=/
+    );
+    expect(out, "help must document lease extension for long work").toMatch(/pool touch/);
+  });
+});
+
+describe("claims reports which claims have no task behind them", () => {
+  it("marks an orphan claim and names the remedy", () => {
+    // The shape that blocks a takeover is invisible until someone tries to take a
+    // task touching the same file - at which point the only visible facts are a
+    // session name and a timestamp. The table now says so.
+    const home = fresh();
+    bus("A", home, "claim", "src/a.js");
+    const out = bus("B", home, "claims").out;
+    expect(out).toMatch(/no task in flight/);
+    expect(out).toMatch(/--from=A/);
+  });
+
+  it("does not mark a claim whose task really is in flight", () => {
+    // Non-vacuity, and the reason it matters: a marker that is always on is
+    // decoration, and would train the next session to ignore the word.
+    const home = fresh();
+    add(home, "task", "src/a.js");
+    const id = poolOf(home).tasks[0].id;
+    bus("A", home, "pool", "take", id);
+    expect(bus("B", home, "claims").out).not.toMatch(/no task in flight/);
+  }, SUBPROCESS_BUDGET_MS);
+
+  it("does not call a claim abandoned or stale - it cannot know that", () => {
+    // Same honesty rule the pool half already follows: this tool cannot observe
+    // liveness (the recorded pid belongs to a process that exited milliseconds
+    // later), and a session may hold a file with no pool task at all.
+    const home = fresh();
+    bus("A", home, "claim", "src/a.js");
+    const out = bus("B", home, "claims").out.toLowerCase();
+    expect(out).not.toMatch(/abandoned|owner process gone|is dead/);
+  });
+});
+
+describe("a refusal says what to do next", () => {
+  it("names the holding session and both real remedies", () => {
+    // `pool take` used to name the files but not the holder, and point only at
+    // `pool block` - the wrong action when the holder is dead and you are its
+    // successor. The one command a stuck session reads pointed it away from the
+    // command that unblocks it.
+    const home = fresh();
+    add(home, "first", "src/a.js");
+    const t1 = poolOf(home).tasks[0].id;
+    bus("A", home, "pool", "take", t1);
+    add(home, "follow up", "src/a.js");
+    const t2 = poolOf(home).tasks[1].id;
+    const r = bus("B", home, "pool", "take", t2);
+    expect(r.code).toBe(2);
+    expect(r.err).toMatch(/held by A/);
+    expect(r.err).toMatch(/claim release/);
+    expect(r.err).toMatch(/pool block/);
+  }, SUBPROCESS_BUDGET_MS);
+});
+
 describe("task identity", () => {
   it("never issues a duplicate id, even after deletions leave gaps", () => {
     // A duplicate id makes two tasks unmarkable, unhittable and jointly

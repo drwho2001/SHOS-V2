@@ -41,7 +41,8 @@ All of these are `node scripts/session-bridge.mjs <command>`.
 |---|---|
 | `claim <file...>` | Record that you own these files. Warns and **exits 3** if another session already holds one. |
 | `claims` | Show the claim table. A file held by two sessions is flagged `CONFLICT`. |
-| `claim release <file...>` | Drop *your* hold, leaving any other session's. |
+| `claim release <file...>` | Drop *your* hold, leaving any other session's. Reports what it changed, and **exits 2** if it changed nothing. |
+| `claim release <file...> --from=<session> --reason="..."` | Authorised **takeover**: free files held by a session that has finished or that you have taken over. Requires a reason, refuses if that session does not hold the file, changes nothing unless every file validates, and is recorded to the notice log and the backlog. See *When a file you need is claimed by a dead session*. |
 | `notice <text>` | Leave a message for the other session. |
 | `inbox` | Show notices and task folders since **your last** check. Cursor-based, so nothing repeats. |
 | `task new <slug> [brief]` | Start a joint task. |
@@ -63,12 +64,12 @@ left to `--help`, which until 29 Sep omitted `edit` and `rm` entirely.
 | `pool add "<title>" [--files=a,b]` | Add an **owner-approved** task. |
 | `pool propose "<title>" [--files=a,b]` | Propose one; `pool take` will not return it until `pool approve <id>`. |
 | `pool approve <id>` | Owner approves a proposal. |
-| `pool take` | Take the next available task; **its files are claimed automatically**. |
+| `pool take [id]` | Take a task (the next available, or that one by id); **its files are claimed automatically**, before any work starts. |
 | `pool allocate <id>` | Take one specific task by id. Does **not** check file claims — see below. |
 | `pool done <id>` / `block <id>` / `release <id>` | Finish, park, or hand a task back. |
 | `pool edit <id> [--title=…] [--files=…]` | Correct a task **in place**; id and history are immutable. |
 | `pool rm <id[,id]> [--all-mine]` | Delete tasks. `--all-mine` takes only the ones you allocated. |
-| `pool touch <id>` | Extend the lease for work legitimately running longer than 4h. |
+| `pool touch <id>` | Extend the lease. Run it **before and after each stage** of long work — see the table in *While you work*. |
 | `pool reap` | Return lease-expired tasks to the pool. |
 
 **Always pass `--files` when adding a task.** `claimFiles` is a no-op on an empty
@@ -93,6 +94,102 @@ collision rather than working around one.
 **Ids are reused after a `rm`.** A prose reference in a handover or notice to a
 removed id will silently start pointing at a different task. Read ids live from
 `pool list`; do not carry one forward from a document.
+
+## Taking a task, working it, and giving it back
+
+The point of the pool is that the other session never has to ask what you are
+doing, and never has to wait to find out. Three things have to be true for that,
+and each has a specific way to fail.
+
+### Before you touch a file
+
+1. Read shared state: `lessons`, `backlog`, `claims`, `inbox`, `pool list`.
+2. Pick a task whose files do not clash with a current claim.
+3. `pool take <id>` — allocation and file claim are the **same action**, recorded
+   before any work starts.
+4. Confirm with `claims`.
+
+If `pool take` refuses, it names the holding session and both remedies. Do not
+work around it silently: see *When a file you need is claimed by a dead session*.
+
+### While you work: touch the pool at every stage change
+
+`pool touch <id>` extends the lease (4 hours by default). Run it **before and
+after each stage**, not once at the start:
+
+| Stage | Why the touch matters there |
+|---|---|
+| picking up the task / starting to implement | the clock starts at allocation |
+| running unit tests, then flow/smoke tests | often the longest single step |
+| committing and pushing | staging and a build can both run long |
+| updating `CLAUDE.md` / the Notion log | happens after the code work is done, and is easy to forget entirely |
+| handing back, blocking, or going quiet for any reason | so the other session is not left guessing |
+
+The reason this is about **efficiency** rather than ceremony: the lease is the
+only liveness signal this tool has. A recorded pid belongs to a
+`node session-bridge.mjs` process that exited milliseconds later and is
+deliberately never consulted, so a long task that never touches its lease looks
+identical to a dead one — and `pool reap` will hand its files to whoever asks
+next. One command, no cost to anybody.
+
+The reason it is still not a reason to *stall*: **never park a claimed file
+silently.** If a stage is going to take a while, touch the lease, post a `notice`
+or a `log` line saying what you are doing and until when, then carry on. The other
+session's time is the scarce resource here; a claim held quietly for an hour is
+worse than a slightly stale lease.
+
+### Giving it back
+
+| You are… | Command | Files |
+|---|---|---|
+| finished, verified, pushed, documented | `pool done <id>` | released |
+| genuinely blocked, or parked deliberately | `pool block <id>` | released |
+| abandoning it, or handing it to the other session | `pool release <id>` | released, back to `approved` |
+
+All three release the file claims. That used to be missing, and it was a slow,
+quiet failure: a completed task kept its files, so follow-up work in the same
+area was impossible and the pool froze one file at a time with no error anywhere.
+
+### When a file you need is claimed by a dead session
+
+This is the case that used to have no answer at all. A session finishes, pushes,
+and goes away without running its own `pool done`; its claims outlive it, and
+`pool take` then refuses any task touching those files — forever, because the
+claim was the only record of that work.
+
+Do **not** edit `claims.json` by hand, and do not invent a file-less task to route
+around it (that was the workaround, and it hid the real state). Use the takeover
+form:
+
+```powershell
+node scripts\session-bridge.mjs claim release <file...> --from=<session> --reason="..."
+```
+
+It is deliberately hard to do by accident:
+
+- **`--reason` is required.** This is the one command here that destroys another
+  session's record of what it was doing, and a reason is the only thing that makes
+  the release reviewable by whoever finds it later.
+- **It refuses if the named session does not actually hold the file**, so a typo
+  cannot silently release someone else's claim instead.
+- **It is all-or-nothing.** Every file is validated before anything is written.
+  A partial release is worse than none: the other session would see some files
+  free, could not tell which, and would either idle or start editing a file still
+  held.
+- **It is recorded** to the notice log (which a returning session sees in
+  `inbox`) and to the backlog (which a session reading state cold finds).
+- A plain `claim release <file...>` still only ever drops **your own** claims, and
+  now says so explicitly and exits non-zero if it changed nothing — a silent
+  no-op reported as success is the failure mode this whole tool keeps hitting.
+
+There is deliberately **no staleness timer** on this. The tool already learned
+that a wall-clock threshold will reap live work, so whether a session is finished
+is the owner's call, made explicitly, rather than a number's.
+
+`claims` now marks any claim with **no task in flight** as an orphan and prints
+the exact command above. It does *not* say "abandoned" or "stale": this tool
+cannot observe liveness, and a session may legitimately hold a file with no pool
+task at all.
 
 ## The joint-work protocol
 
