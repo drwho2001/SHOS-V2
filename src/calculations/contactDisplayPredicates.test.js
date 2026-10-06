@@ -184,4 +184,30 @@ describe("the Contacts card and profile actually use the shared predicates", () 
     expect(rowStyle, "the name row must reserve space for the absolutely-positioned star")
       .toMatch(/paddingRight:/);
   });
+
+  it("a favourited card gets the accent, and selection still wins over it", () => {
+    // t080. Two properties, and the second is the one that matters: a checkbox
+    // the user is looking at must never be overridden by a stored preference, and
+    // a gold-tinted selected card reads as "selected AND favourite" when the
+    // truth is "selected".
+    const card = source.slice(source.indexOf("function ContactCard("));
+    const cardStyle = card.slice(card.indexOf("style={{ position: \"relative\""), card.indexOf("style={{ position: \"relative\"") + 420);
+    expect(cardStyle, "a favourited card should carry the accent")
+      .toMatch(/contact\.favourited/);
+    // Selection is the FIRST branch of both the background and the border, so it
+    // takes precedence by construction rather than by ordering luck.
+    expect(cardStyle, "selection must be evaluated before the favourite accent")
+      .toMatch(/background: selected \?/);
+    expect(cardStyle, "selection must be evaluated before the favourite accent")
+      .toMatch(/border: `1px solid \$\{selected \?/);
+  });
+
+  it("the favourite accent and the favourite star share one colour constant", () => {
+    // Two hardcoded golds on one card is two definitions of "this is a favourite",
+    // and the kind of thing that drifts the moment one is restyled.
+    const card = source.slice(source.indexOf("function ContactCard("));
+    const golds = card.match(/E8A33D/g) || [];
+    expect(golds.length, "the gold should be defined once and used by the star and the accent")
+      .toBeGreaterThanOrEqual(2);
+  });
 });

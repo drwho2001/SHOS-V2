@@ -1581,9 +1581,25 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
     else onOpen(contact.id);
   };
   const cardLabel = anonymise ? MASKED : displayName(contact);
+  // ADDED 6 Oct 2026 (t080) - a subtle gold accent on a favourited card.
+  //
+  // ONE CONSTANT, because the star above already hardcodes the same gold and the
+  // two drifting apart would be the arrival of two different "this is a favourite"
+  // colours on one card.
+  //
+  // Deliberately weak. A favourite is already marked three ways that need no
+  // colour at all: it sorts to the top of every sort mode, the star is filled
+  // rather than outlined, and the star's accessible label states the state. So
+  // this is a findable-at-a-glance cue, not the signal - it is a 10%-alpha tint
+  // and a hairline border, and nothing about the record's meaning depends on it.
+  //
+  // SELECTION STILL WINS, because a checkbox the user is looking at must not be
+  // overridden by a stored preference; and flagged never reaches here at all,
+  // since the red border is already a stronger "do not meet again" signal.
+  const GOLD = "#E8A33D";
   return (
     <div onClick={handleClick} onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress} onTouchStart={startPress} onTouchMove={handleTouchMove} onTouchEnd={cancelPress}
-      style={{ position: "relative", background: selected ? `${T.contactsTeal}10` : T.surface, border: `1px solid ${selected ? T.contactsTeal : flaggedDontMeetAgain ? T.actionRed : T.border}`, borderRadius: radius.md, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,.06)", cursor: "pointer", display: "flex", gap: 12 }}>
+      style={{ position: "relative", background: selected ? `${T.contactsTeal}10` : contact.favourited && !selected ? `${GOLD}0A` : T.surface, border: `1px solid ${selected ? T.contactsTeal : flaggedDontMeetAgain ? T.actionRed : contact.favourited ? GOLD : T.border}`, borderRadius: radius.md, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,.06)", cursor: "pointer", display: "flex", gap: 12 }}>
       {/* ADDED 17 Sep 2026 — real fix for a genuine axe `nested-interactive`
           violation: this card used to be role="button" itself, with the
           status dot below ALSO role="button" — an interactive widget

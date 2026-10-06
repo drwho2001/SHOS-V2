@@ -870,6 +870,43 @@ verify:fast green - build, lint, **1397 tests across 119 files**, encoding, inhe
 
 **Still open, unchanged: t069** (an old record carrying both a legacy seed id and a renamed legacy field diverges from the frozen current definition and is not re-keyed; safe for data, can leave a legacy demo id). It needs a scope decision, not a fix.
 
+## Recently shipped (6 Oct 2026, later still - the Contacts card gains a gold accent for favourites, and half the task was already shipped)
+
+**Session D. t080 arrived as "pin favourites to the top of the list, optional
+subtle gold accent" — and the pinning half has existed since 26 Aug.** Checked
+before building, per the standing rule, and the existing rule was already correct:
+`favourited !== favourited` returns **before** every sort-mode branch, so it is an
+override on top of whichever sort is active rather than a replacement for it. The
+only real work was the accent.
+
+**It is deliberately weak, and the reason is that a favourite is already marked
+three ways that need no colour at all** — it sorts to the top of every sort mode,
+the star is filled rather than outlined, and the star's accessible label states
+the state in words. So this is a findable-at-a-glance cue, not the signal: a 10%
+tint and a hairline border, with nothing about the record's meaning depending on
+it. An accent that became the primary marker would be a regression on an existing
+feature that already works.
+
+**Selection still wins**, because a checkbox the user is looking at must not be
+overridden by a stored preference — and a gold-tinted selected card reads as
+"selected AND favourite" when the truth is only "selected". Both the background and
+the border test `selected` first, so precedence is by construction rather than by
+ordering luck. `flagged` never reaches the branch at all: its red border is already
+a stronger signal than a favourite's gold.
+
+**One constant, because the star above already hardcoded the same gold.** Two
+hardcoded golds on one card is two definitions of "this is a favourite", and the
+kind of thing that drifts the moment one is restyled.
+
+**Measured boundary:** 19 tests in `contactDisplayPredicates.test.js` (two new,
+asserting the accent exists, that selection is evaluated first for both background
+and border, and that the gold appears exactly once as a constant). Lint, build and
+the encoding guard clean. Verified live against a **freshly rebuilt** preview build
+— 14 real cards, **exactly 1 gold-bordered**, which is the one seeded
+`favourited: true` contact, already at the top of the list. The first probe run of
+this was against a *stale* `dist/` and therefore measured nothing; rebuilding first
+is the whole difference between a measurement and an assumption.
+
 ## Recently shipped (6 Oct 2026, latest - the Contacts card showed an age that was not there, and a duplicate badge was a React bug in disguise)
 
 **Session D. Four device-reported Contacts card items, and two of them were not
