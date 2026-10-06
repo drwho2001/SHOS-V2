@@ -68,6 +68,61 @@ describe("widget taps reach the app (device bug: every tap landed on the dashboa
     }
   });
 
+  it("every widget layout does not contain a nested container or a bare divider view", () => {
+    // ADDED 6 Oct 2026, after the Clinic Card widget was found rendering as
+    // "Can't load widget" on a black background in BOTH the widget picker and on
+    // the home screen, while the other nine rendered correctly.
+    //
+    // The picker is what made this a layout fault rather than a provider or
+    // push-path fault: the picker inflates previewLayout in the launcher process
+    // without ever invoking the provider, so no Java could be responsible.
+    //
+    // Every cause that could be checked statically was checked and eliminated
+    // first - all ten layouts and all ten widget_info.xml files resolve every
+    // resource reference, all ten root elements are identical, both preview
+    // vectors are structurally identical, and there are no drawable-night
+    // variants at all. What remained was the one structural difference between
+    // this widget and the nine working ones: clinic_card_widget.xml was the only
+    // layout containing a nested ViewGroup, and the only one containing a bare
+    // View divider. Flattening it fixed the widget.
+    //
+    // Scoped over ALL ten layouts rather than the one that was broken. That is
+    // the whole point: the previous checks here listed a handful of filenames by
+    // hand, and a layout added later was never inspected by any of them.
+    const layouts = new Set(["widget_unavailable"]);
+    for (const f of providers) {
+      const src = fs.readFileSync(path.join(JAVA_DIR, f), "utf8");
+      for (const m of src.matchAll(/R\.layout\.(\w+)/g)) layouts.add(m[1]);
+    }
+    // Non-vacuity: if discovery broke, an empty set would make every assertion
+    // below pass. A guard that reports success having found nothing is the
+    // failure mode this repo keeps paying for.
+    expect(layouts.size, "discovered too few widget layouts to be a real survey").toBeGreaterThan(9);
+
+    const GROUPS = /<(LinearLayout|RelativeLayout|FrameLayout|GridLayout)\b/g;
+    for (const name of layouts) {
+      const xml = fs.readFileSync(
+        `android/app/src/main/res/layout/${name}.xml`,
+        "utf8",
+      );
+      const code = xml.replace(/<\?[\s\S]*?\?>/g, "").replace(/<!--[\s\S]*?-->/g, "");
+      const groups = [...code.matchAll(GROUPS)].length;
+      expect(
+        groups,
+        `${name}.xml contains ${groups} ViewGroups. Every widget layout in this app is ` +
+          `a single container of plain TextViews - the Clinic Card's nested container ` +
+          `was the only one, and it is what stopped that widget inflating.`,
+      ).toBe(1);
+      const bareViews = [...code.matchAll(/<View\b/g)].length;
+      expect(
+        bareViews,
+        `${name}.xml contains ${bareViews} bare View divider(s). clinic_card_widget.xml ` +
+          `was the only layout with one, and it shipped as the only widget that would ` +
+          `not render.`,
+      ).toBe(0);
+    }
+  });
+
   it("every widget layout gives its root an explicit id for the tap to attach to", () => {
     // A tap can only be attached to a view that has an id. Without this, the
     // provider assertion above could pass on an id that no layout declares.
@@ -90,7 +145,19 @@ describe("widget taps reach the app (device bug: every tap landed on the dashboa
       );
       // Strip the <?xml ...?> declaration first - it is the first tag-shaped
       // match in the file and is not an element.
-      const body = xml.replace(/<\?[\s\S]*?\?>/g, "");
+      //
+      // XML COMMENTS ARE STRIPPED TOO, and that is not a nicety. A comment is not
+      // an element, and this guard takes the FIRST tag-shaped match as the root -
+      // so any comment that happens to mention a tag hijacks it. This repo has a
+      // long list of guards that passed or failed on their own explanatory prose
+      // rather than on the code; the first version of this assertion read the
+      // literal "<View>" out of a comment in clinic_card_widget.xml and reported
+      // that the Clinic Card's root element was a <View>, which is not a view in
+      // that file at all. Matching code by reading comments is the same defect
+      // every time it appears.
+      const body = xml
+        .replace(/<\?[\s\S]*?\?>/g, "")
+        .replace(/<!--[\s\S]*?-->/g, "");
       const root = body.match(/<[A-Za-z][^>]*?>/)?.[0];
       expect(root, `${layout}.xml has no root element`).toBeTruthy();
       expect(

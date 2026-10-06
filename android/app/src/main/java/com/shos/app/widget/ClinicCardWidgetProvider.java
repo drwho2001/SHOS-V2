@@ -76,9 +76,27 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
      * pushing it can neither write to the plaintext sink nor disclose anything
      * to the launcher process. See res/layout/widget_unavailable.xml.
      */
-    private static RemoteViews unavailableViews(Context context) {
+private static RemoteViews unavailableViews(Context context) {
         return new RemoteViews(context.getPackageName(), R.layout.widget_unavailable);
     }
+
+    /**
+     * NOT factored into a helper, deliberately.
+     *
+     * The obvious tidy-up here is one setSensitiveVisibility(views, vis) called
+     * from the four branches below - which is what I wrote first. It broke
+     * src/storage/widgetRedactedRender.test.js, which proves no sensitive field is
+     * rendered at a Redacted tier by finding a literal
+     * setViewVisibility(<sensitive id>, GONE) in the provider. A helper hides
+     * those calls one indirection away and the guard can no longer see them, so a
+     * genuine disclosure would have passed.
+     *
+     * That guard is worth more than the twelve lines this saves. Teaching it about
+     * one specific helper would be worse still: it would keep passing for any
+     * DIFFERENT helper, which is precisely how a privacy guard turns decorative.
+     * So the calls stay literal and visible, which is also what the other nine
+     * providers in this app already do.
+     */
     private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         // ADDED 4 Oct 2026 - TEMPORARY DIAGNOSTIC, remove once the "no widget
         // write since 2 Oct" bug is found. The launcher shows "Can't load widget"
@@ -177,7 +195,12 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
             views.setViewVisibility(R.id.widget_clinic_date, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_location, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
-            views.setViewVisibility(R.id.widget_clinic_sensitive_row, android.view.View.GONE);
+            // The four sensitive fields were inside one container until6 Oct 2026 - see the
+            // note on setSensitiveVisibility for why they are hidden by name now.
+            views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_reveal, android.view.View.GONE);
             android.util.Log.i("ClinicCardWidget", "pushing REDACTED views for id=" + appWidgetId);
             appWidgetManager.updateAppWidget(appWidgetId, views);
             return;
@@ -197,20 +220,33 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
                 // The row is hidden rather than left blank, because an empty
                 // line next to a revealed doc type reads as a bug rather than a
                 // deliberate omission.
+                views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.VISIBLE);
+                views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.VISIBLE);
+                views.setViewVisibility(R.id.widget_clinic_reveal, android.view.View.VISIBLE);
+                // LAST, and that ordering is load-bearing: each of the three above
+                // is a separate statement, so hiding the NHS row afterwards cannot
+                // be undone by a later call. Written as one helper it WAS undone -
+                // the helper set this row VISIBLE and silently put the NHS number
+                // back on the home screen.
                 views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
-                views.setViewVisibility(R.id.widget_clinic_sensitive_row, android.view.View.VISIBLE);
             } else {
                 views.setTextViewText(R.id.widget_clinic_doctype, "••••• tap to reveal");
                 views.setTextViewText(R.id.widget_clinic_clinic_num, "••••• tap to reveal");
                 views.setTextViewText(R.id.widget_clinic_nhs_num, "••••• tap to reveal");
-                views.setViewVisibility(R.id.widget_clinic_sensitive_row, android.view.View.VISIBLE);
+                views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.VISIBLE);
+                views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.VISIBLE);
+                views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.VISIBLE);
+                views.setViewVisibility(R.id.widget_clinic_reveal, android.view.View.VISIBLE);
             }
         } else {
             views.setTextViewText(R.id.widget_clinic_title, "Clinic Card");
             views.setTextViewText(R.id.widget_clinic_date, "No upcoming appointment");
             views.setTextViewText(R.id.widget_clinic_location, "");
             views.setTextViewText(R.id.widget_clinic_tests, "");
-            views.setViewVisibility(R.id.widget_clinic_sensitive_row, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_reveal, android.view.View.GONE);
         }
 
 // Main click is attached ABOVE, before the Redacted branch, so that every
