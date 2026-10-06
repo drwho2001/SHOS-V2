@@ -1622,10 +1622,6 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "kitCodeSk": "",
       "kitAccessKey": "",
       "attachments": [],
-      "isRoutineRetestPlan": false,
-      "routineRetestSourceTestId": null,
-      "plannedForDate": null,
-      "routineRetestPerformedAt": null,
       "clinicVisitIds": [
         "seed_visit_9001"
       ],
@@ -1657,10 +1653,6 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "kitCodeSk": "",
       "kitAccessKey": "",
       "attachments": [],
-      "isRoutineRetestPlan": false,
-      "routineRetestSourceTestId": null,
-      "plannedForDate": null,
-      "routineRetestPerformedAt": null,
       "clinicVisitIds": [
         "seed_visit_9001"
       ],
@@ -1695,10 +1687,6 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "kitCodeSk": "",
       "kitAccessKey": "",
       "attachments": [],
-      "isRoutineRetestPlan": false,
-      "routineRetestSourceTestId": null,
-      "plannedForDate": null,
-      "routineRetestPerformedAt": null,
       "clinicVisitIds": [],
       "isArchived": false,
       "id": "test_003"
@@ -1731,10 +1719,6 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "kitCodeSk": "",
       "kitAccessKey": "",
       "attachments": [],
-      "isRoutineRetestPlan": false,
-      "routineRetestSourceTestId": null,
-      "plannedForDate": null,
-      "routineRetestPerformedAt": null,
       "clinicVisitIds": [],
       "isArchived": false,
       "id": "test_004"
@@ -1767,10 +1751,6 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "kitCodeSk": "SK-77016",
       "kitAccessKey": "AXQ-93K1",
       "attachments": [],
-      "isRoutineRetestPlan": false,
-      "routineRetestSourceTestId": null,
-      "plannedForDate": null,
-      "routineRetestPerformedAt": null,
       "clinicVisitIds": [],
       "isArchived": false,
       "id": "test_005"
@@ -1804,10 +1784,6 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "kitCodeSk": "",
       "kitAccessKey": "",
       "attachments": [],
-      "isRoutineRetestPlan": false,
-      "routineRetestSourceTestId": null,
-      "plannedForDate": null,
-      "routineRetestPerformedAt": null,
       "clinicVisitIds": [
         "seed_visit_9004"
       ],
@@ -1845,10 +1821,6 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "kitCodeSk": "",
       "kitAccessKey": "",
       "attachments": [],
-      "isRoutineRetestPlan": false,
-      "routineRetestSourceTestId": null,
-      "plannedForDate": null,
-      "routineRetestPerformedAt": null,
       "clinicVisitIds": [
         "seed_visit_9005"
       ],
@@ -2547,12 +2519,12 @@ export const RAW_LEGACY_SEED_ARRAYS = {
       "symptomLogIds": [
         "seed_symlog_9001"
       ],
-      "resolvedDate": "2026-10-05T16:47:47.519Z",
+      "resolvedDate": "2026-10-05T04:00:28.643Z",
       "resolution": "Treated — course complete",
       "notes": "TOC negative — resolved. Partner notification checklist used for encounters since the exposure date.",
       "isArchived": false,
       "id": "episode_001",
-      "createdAt": "2026-09-27T16:47:47.519Z"
+      "createdAt": "2026-09-27T04:00:28.643Z"
     }
   ],
   "Logs": [
