@@ -19,7 +19,25 @@
 // Auth is $NOTION_TOKEN. Never written anywhere, never logged.
 
 const TOKEN = process.env.NOTION_TOKEN;
-const VERSION = "2022-06-28";
+
+// FIXED 6 Oct 2026. This was 2022-06-28, which is what CLAUDE.md's own
+// 30 Sep entry recorded as the WRONG value - it now returns HTTP 400 with an
+// error enumerating every block type ("body.children[0].embed should be
+// defined... bookmark... image..."), which reads like a malformed body rather
+// than an API-version problem, and is exactly the kind of message that gets a
+// valid request written off as broken.
+//
+// Verified here rather than taken from the note: with 2022-06-28 reads still
+// work, so `check` passing proved nothing about writes. Probing all three
+// variants side by side against this page gave 2022-06-28 = 400, no version
+// header = 400, 2025-09-03 = 200.
+//
+// THE REASON THE MCP STILL FAILS IS NOT THIS. The MCP returns 401 while this
+// token, used directly, returns 200 from /v1/users/me - so the credential is
+// valid and the MCP layer is what is broken. Do not "fix" this script's auth
+// because the MCP says unauthorized; that measurement was taken in the wrong
+// direction and cost a session.
+const VERSION = "2025-09-03";
 
 const PAGES = {
   development: { id: "3b013572-4f67-80ab-b1a0-c665a828e241", name: "Development Log" },
