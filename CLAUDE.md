@@ -870,7 +870,37 @@ verify:fast green - build, lint, **1397 tests across 119 files**, encoding, inhe
 
 **Still open, unchanged: t069** (an old record carrying both a legacy seed id and a renamed legacy field diverges from the frozen current definition and is not re-keyed; safe for data, can leave a legacy demo id). It needs a scope decision, not a fix.
 
-## Recently shipped (6 Oct 2026, latest - Clinic Visit and Symptom records now fade with age, and the interesting half is what the fade must NOT do)
+## Recently shipped (6 Oct 2026, latest - a dashboard shortcut to the retest scheduler, which navigates rather than writes)
+
+**Session D. t082 asked for "Dashboard Quick Add: human-friendly titles (routine
+retest, first vaccine dose)". The Home labels were already plain** — "New
+contact", "New encounter", "Log test", "New clinic visit", "Log symptom" — so the
+two examples read as **new actions**, not renames. That was ambiguous enough to
+ask rather than guess, and the owner's answer was **retest only**: a "first vaccine
+dose" title is wrong for a booster or a repeat dose, so `Log vaccination` was
+deliberately left alone and that decision is now pinned by a test.
+
+**The button navigates and does not write, which is the whole design.** A
+scheduled retest is a real persisted record (`isRoutineRetestPlan`), so a one-tap
+shortcut that *created* one would write a persistent plan the user never saw or
+confirmed — including which test it follows. The action deliberately lives on the
+test's own detail screen for exactly that reason, and this button takes you to
+where those actions are.
+
+**It also must not open the blank Add form.** A plan is not a completed test, so
+saving one through the New-test form would record a test that has not happened —
+the precise confusion the whole scheduled-plan feature exists to prevent. It uses
+`onNavigateToRecord("healthcare", null, "testing")`, the same plain-navigation path
+the existing "Log medication" button already uses, rather than `onQuickAdd`. A
+guard asserts that negative, because the wrong version would look identical in
+code review and sit one keystroke away.
+
+**Measured boundary:** 3 tests in `quickAddRouting.test.js`, lint, production
+build and the encoding guard clean. Verified live against a rebuilt preview: the
+button is present on the dashboard, tapping it lands on Testing, it does **not**
+open a blank Add-test form, and the page logs zero errors.
+
+## Recently shipped (6 Oct 2026 - Clinic Visit and Symptom records now fade with age, and the interesting half is what the fade must NOT do)
 
 **Session D. New `src/calculations/recordRecency.js` owns "is this record
 current?", and the deliberate absence in it is the point.** The rule is **rank,

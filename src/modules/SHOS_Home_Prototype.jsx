@@ -1164,6 +1164,23 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
         <QuickAddButton icon={Stethoscope} label="New clinic visit" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "clinicVisits")} />
         <QuickAddButton icon={Thermometer} label="Log symptom" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "symptomLog")} />
         <QuickAddButton icon={Syringe} label="Log vaccination" color={healthcareColor} onClick={() => onQuickAdd("healthcare", "vaccinations")} />
+        {/* ADDED 6 Oct 2026 (t082) - "Schedule routine retest", by the owner's
+            choice of the two examples they gave (the vaccine one was declined as
+            a label, since "first vaccine dose" is wrong for a booster).
+
+            IT NAVIGATES AND DOES NOT WRITE, which is the whole point of this
+            being a shortcut rather than a second "add" action. A scheduled retest
+            is a real record in its own right (testingRepository.js's
+            isRoutineRetestPlan), and creating one from here with a single tap
+            would mean writing a persistent plan the user never saw or confirmed -
+            including which test it follows. The action itself deliberately lives
+            on the test's own detail screen for that reason, and this button takes
+            you to where those actions are.
+
+            Plain navigation, so it reuses onNavigateToRecord rather than the
+            quick-add mechanism, exactly as the "Log medication" button above
+            does for the same reason. */}
+        <QuickAddButton icon={Calendar} label="Schedule routine retest" color={healthcareColor} onClick={() => onNavigateToRecord("healthcare", null, "testing")} />
         {/* ADDED — real ask: shortcuts to Menstrual/Contraception,
             only when the feature is enabled — same gating as the
             SummaryRows above and the Healthcare sub-tab itself. */}
