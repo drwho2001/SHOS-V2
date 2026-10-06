@@ -70,21 +70,19 @@ and `adb_wifi_enabled` both 1; 25 alarms correctly scheduled; all six
 
 ## DO THESE FIRST (≈20 minutes, highest value)
 
-### 1. The Widgets privacy dropdowns are wired to nothing — **KNOWN FAIL**
+### 1. Per-widget privacy tiers — **IMPLEMENTED; DEVICE RENDER CHECK**
 
-- **Do:** Settings → **Widgets**. Set *Refills Due* to **Redacted** and *Next
-  Appointment* to **Redacted**. Press back to Home and look at both widgets.
-- **Look for:** whether the medication name and appointment title disappeared.
-- **PASS:** they disappeared.
-- **FAIL (expected):** the widgets are byte-for-byte unchanged. Refills Due still
-  reads `Next: <medication name>`; Next Appointment still reads
-  `Next: <visit title> — <date>`.
-- **Why:** `widgetPrivacy` has exactly four references in the whole codebase, all
-  inside `WidgetsScreen.jsx` itself (lines 18, 73, 77, 94). Nothing else reads it.
-  The screen's own copy promises "Redacted shows counts only" and "Off disables
-  the widget entirely" — neither happens.
-- **Also note:** the screen lists only 7 of the 10 widgets. Cycle, Last Test and
-  Clinic Card have no privacy control at all.
+- **Do:** Settings → **Widgets**. Set *Refills Due* and *Next Appointment* to
+  **Redacted**, then inspect both placed widgets. Also try **Off**, then restore
+  **Full** on one widget.
+- **PASS:** Redacted shows its generic category/count line without names, dates,
+  times or locations; Off blanks the widget; Full restores the configured details.
+- **Code state:** each of the seven data widgets now has its own setting and the
+  bridge applies that tier at write time; changing a tier triggers a widget sync.
+  The three Quick Add widgets are shortcuts and correctly have no tier picker.
+- **Still useful on-device:** source and unit tests prove the write/render path,
+  but only a placed widget verifies the launcher displays the expected
+  `RemoteViews` after each setting change.
 
 ### 2. Home-screen widgets ignore the disclosure level — **KNOWN FAIL**
 
@@ -100,22 +98,21 @@ and `adb_wifi_enabled` both 1; 25 alarms correctly scheduled; all six
   home-screen widgets**".
 - **The one correct widget:** Next Dose, which shows a time and never a name.
 
-### 3. Duress PIN plus a home-screen widget — **KNOWN FAIL**
+### 3. Duress PIN plus a home-screen widget — **LIMITATION DISCLOSED; DEVICE CHECK**
 
 - **Do:** Have a real medication due for refill and a real booked clinic visit.
   Open the app so the widgets populate. Lock the app (Home tab 🔒 icon), enter the
   **duress** PIN, then press Home so the launcher and its widgets are visible.
 - **Look for:** what the widgets say while the decoy session is showing.
-- **PASS:** counts only.
-- **FAIL (expected):** the real medication name and appointment title are plainly
-  readable on the home screen.
-- **Why this matters:** the app is explicitly careful about the sibling case. The
-  Privacy screen already tells the user that "reminders your phone has already
-  scheduled will still fire" — and there is a test pinning that disclosure so it
-  cannot be quietly deleted. Widgets are the same leak through a different door
-  and are **not** disclosed anywhere. Worse, widget data is written to disk the
-  moment the app runs, so unlike a notification it does not need a scheduled
-  alarm to be visible.
+- **Expected:** the widget remains under the launcher's control and may continue
+  showing the information permitted by its own Full/Redacted/Off setting. Duress
+  mode changes the app screen; it does not hide already-placed launcher widgets.
+  The Privacy screen now states this limitation and points users to Settings →
+  Widgets to choose Redacted or Off before handing over the phone.
+- **Record:** whether the visible widget agrees with its configured tier, and
+  whether the disclosure is visible in Privacy & Security before setting the
+  duress PIN. Do not treat an already-disclosed Full-tier widget remaining visible
+  as a new regression; this check verifies the documented boundary on hardware.
 
 ### 4. Android back button out of Partner Notification
 

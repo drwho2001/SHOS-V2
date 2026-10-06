@@ -40,6 +40,23 @@ import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../reposito
 /** The single placeholder every masked surface uses. */
 export const ANONYMISED = "•••• hidden";
 
+// Keep the coverage list, file inventory and user-facing copy in one place. The
+// Privacy screen and Guide must not drift from the modules checked by the wiring
+// test below.
+export const ANONYMISE_MODE_SURFACE_MODULES = [
+  { label: "Contacts", file: "SHOS_Contacts_Prototype.jsx" },
+  { label: "Encounters", file: "SHOS_Encounters_Prototype.jsx" },
+  { label: "Home", file: "SHOS_Home_Prototype.jsx" },
+  { label: "Global Search", file: "SHOS_GlobalSearch_Prototype.jsx" },
+  { label: "Symptom Log", file: "SHOS_SymptomLog_Prototype.jsx" },
+  { label: "Episodes", file: "SHOS_Timeline_Prototype.jsx" },
+  { label: "Partner Notification", file: "SHOS_PartnerNotification_Prototype.jsx" },
+  { label: "My Profile", file: "SHOS_MyProfile_Prototype.jsx" },
+  { label: "Clinic Card", file: "SHOS_ClinicCard_Prototype.jsx" },
+];
+const anonymiseSurfaceLabels = ANONYMISE_MODE_SURFACE_MODULES.map(({ label }) => label);
+export const ANONYMISE_MODE_SURFACES = `${anonymiseSurfaceLabels.slice(0, -1).join(", ")}, and ${anonymiseSurfaceLabels[anonymiseSurfaceLabels.length - 1]}`;
+
 /** Read the flag with the same pattern the two working screens already used. */
 export function useAnonymiseMode() {
   const [privacy] = useLoadedState(

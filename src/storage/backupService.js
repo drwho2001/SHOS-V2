@@ -138,7 +138,7 @@ export const EXPORT_GROUPS = [
     { dataKey: "clinicVisits", label: "Clinic Visits" },
     { dataKey: "symptomLog", label: "Symptom Log" },
     { dataKey: "vaccinations", label: "Vaccinations" },
-    { dataKey: "episodes", label: "Timeline episodes" },
+    { dataKey: "episodes", label: "Episodes" },
     { dataKey: "organisms", label: "Organism Registry" },
     { dataKey: "results", label: "Results Registry" },
     { dataKey: "measurements", label: "Measurements" },

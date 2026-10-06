@@ -44,6 +44,14 @@ describe("the duress PIN screen states the notification limitation", () => {
     expect(codeOnly).toMatch(/lock screen/i);
   });
 
+  it("warns that duress mode does not hide launcher widgets and points to their privacy controls", () => {
+    expect(codeOnly).toMatch(/home-screen widgets/i);
+    expect(codeOnly).toMatch(/does not hide widgets/i);
+    expect(codeOnly).toMatch(/continue showing/i);
+    expect(codeOnly).toMatch(/Redacted or Off/i);
+    expect(codeOnly).toMatch(/Settings → Widgets/i);
+  });
+
   it("does not claim the decoy is total while qualifying it", () => {
     // The stronger claim is checked only to confirm it still exists to be
     // qualified - if a future edit weakens the claim without keeping the

@@ -6,6 +6,7 @@ import { CaretLeftIcon as ChevronLeft, CompassIcon as Compass } from "@phosphor-
 import { ACCENT_TEXT_SAFE, NEUTRAL, RADIUS, TYPE } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../../calculations/responsive";
+import { ANONYMISE_MODE_SURFACES } from "../../calculations/anonymiseDisplay";
 
 const GUIDE_SECTIONS = [
   {
@@ -53,7 +54,7 @@ const GUIDE_SECTIONS = [
       "Your records are encrypted on this device at all times — that's always on, even before you set up App Lock.",
       "App Lock (Settings → Security & Privacy → Privacy) — an extra gate on top of that: a PIN or biometric, so someone holding your unlocked phone can't just open the app. Off by default, since most people already lock their phone.",
       "Duress PIN — if you set one, it opens a decoy version of the app with fake data instead of your real records. A real safety feature, not a demo.",
-      "Anonymise mode — masks attendee names on Contacts and Encounters, useful if someone might glance at your screen.",
+      `Anonymise mode — hides identifying details across ${ANONYMISE_MODE_SURFACES}, useful if someone might glance at your screen.`,
       "None of this replaces your phone's own lock screen — think of App Lock as an extra layer.",
     ],
   },

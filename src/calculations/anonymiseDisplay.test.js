@@ -4,8 +4,8 @@
 //
 // The review's actual finding was not a wrong value on a screen; it was that
 // `privacySettingsRepository.anonymiseModeActive` was read in only 2 of the 9
-// files that render a contact's name. Every value below therefore passed while
-// the feature was 7/9 broken. A unit test on these pure helpers could never
+// modules that display or make contact identity discoverable. Every value below
+// therefore passed while the feature was 7/9 broken. A unit test on these pure helpers could never
 // have seen that.
 //
 // So the load-bearing test here is the SECOND one: a structural sweep proving
@@ -18,6 +18,8 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   ANONYMISED,
+  ANONYMISE_MODE_SURFACES,
+  ANONYMISE_MODE_SURFACE_MODULES,
   contactName,
   contactDetail,
   contactSearchText,
@@ -70,22 +72,14 @@ describe("anonymiseDisplay", () => {
   });
 
   // The structural guard — the test that would have caught the original bug.
-  it("every screen that renders a contact's name now consults the shared helper", () => {
+  it("every module surface that displays or exposes contact identity consults the shared helper", () => {
     const modulesDir = join(process.cwd(), "src", "modules");
     const files = readdirSync(modulesDir).filter((f) => f.endsWith(".jsx"));
 
-    // Screens known to render a person's name. Each was verified by reading
-    // the real source, not by guessing from a filename — a file that stopped
-    // showing names would simply drop off this list.
-    const mustBeMasked = [
-      "SHOS_Contacts_Prototype.jsx",
-      "SHOS_Encounters_Prototype.jsx",
-      "SHOS_GlobalSearch_Prototype.jsx",
-      "SHOS_PartnerNotification_Prototype.jsx",
-      "SHOS_Timeline_Prototype.jsx",
-      "SHOS_MyProfile_Prototype.jsx",
-      "SHOS_ClinicCard_Prototype.jsx",
-    ];
+    // Surfaces known to display contact identity or make it discoverable by
+    // search. This inventory also owns the names shown in Guide and Privacy,
+    // avoiding a second hand-maintained list in either screen.
+    const mustBeMasked = ANONYMISE_MODE_SURFACE_MODULES.map(({ file }) => file);
 
     const offenders = [];
     for (const name of mustBeMasked) {
@@ -95,6 +89,12 @@ describe("anonymiseDisplay", () => {
       }
     }
     expect(offenders).toEqual([]);
+
+    const integratedSurfaces = files.filter((name) => {
+      const src = readFileSync(join(modulesDir, name), "utf8");
+      return /import\s*\{[^}]*\buseAnonymiseMode\b[^}]*\}\s*from\s*["'][^"']*anonymiseDisplay/.test(src);
+    });
+    expect([...integratedSurfaces].sort()).toEqual([...mustBeMasked].sort());
 
     // And the invariant that actually broke: a second, private copy of the
     // placeholder string. That duplication is what let the two original
@@ -138,6 +138,23 @@ describe("anonymiseDisplay", () => {
       .replace(/\/\/.*$/gm, "");
     expect(strippedSample).toContain("ANONYMISED");
     expect(strippedSample.length).toBeGreaterThan(1000);
+  });
+
+  it("Guide and Privacy screens share the verified coverage list and export uses the UI name Episodes", () => {
+    const guide = readFileSync(join(process.cwd(), "src", "modules", "settings", "GuideScreen.jsx"), "utf8");
+    const privacy = readFileSync(join(process.cwd(), "src", "modules", "settings", "PrivacyScreen.jsx"), "utf8");
+    const backup = readFileSync(join(process.cwd(), "src", "storage", "backupService.js"), "utf8");
+    const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    const guideCode = stripComments(guide);
+    const privacyCode = stripComments(privacy);
+    const backupCode = stripComments(backup);
+
+    const labels = ANONYMISE_MODE_SURFACE_MODULES.map(({ label }) => label);
+    expect(ANONYMISE_MODE_SURFACES).toBe(`${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`);
+    expect(guideCode).toContain("ANONYMISE_MODE_SURFACES");
+    expect(privacyCode).toContain("ANONYMISE_MODE_SURFACES");
+    expect(backupCode).toMatch(/dataKey:\s*"episodes",\s*label:\s*"Episodes"/);
+    expect(backupCode).not.toContain("Timeline episodes");
   });
 
   it("Global Search keeps masked contacts OUT of the index, not just off screen", () => {

@@ -8,6 +8,7 @@ import { DISCLOSURE_LEVELS, normaliseDisclosureLevel } from "../../calculations/
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedState } from "../../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../../calculations/responsive";
+import { ANONYMISE_MODE_SURFACES } from "../../calculations/anonymiseDisplay";
 import { PrivacySettingsRepository, DEFAULT_PRIVACY_SETTINGS } from "../../repositories/privacySettingsRepository";
 import { enablePinProtection, disablePinProtectionWithPin, changePin, enableBiometricSlot, disableBiometricSlot, setRecoveryString as setRecoveryStringVault, hasRecoveryString, clearRecoveryString as clearRecoveryStringVault } from "../../storage/cryptoService";
 import { checkBiometryAvailable } from "../../storage/biometricAuthService";
@@ -337,8 +338,8 @@ const [disclosureLevel, setDisclosureLevel] = useState(
                 does not. The export caveat is the part a user would
                 otherwise have no way of discovering. */}
             {settings.anonymiseModeActive
-              ? "Contact names, photos, addresses and car details are hidden across Contacts, Encounters, Global Search, Episodes, Partner Notification, My Profile and the Clinic Card."
-              : "Tap right before handing your phone over — hides contact names, photos, addresses and car registration throughout the app. Never turns on by itself."}
+              ? `Identifying details are hidden across ${ANONYMISE_MODE_SURFACES}.`
+              : `Tap right before handing your phone over — hides identifying details across ${ANONYMISE_MODE_SURFACES}. Never turns on by itself.`}
           </div>
           {/* NEW 28 Sep 2026 — the limit of the promise, stated plainly. An
               export is a file you have deliberately chosen to create, and
@@ -564,6 +565,9 @@ const [disclosureLevel, setDisclosureLevel] = useState(
                 silent default. */}
             <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10, marginTop: -4 }}>
               One thing the decoy can't cover: reminders your phone has already scheduled will still fire, because a phone alarm is set independently of the app. A medication alert set up beforehand will still appear on your lock screen.
+            </div>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10, marginTop: -4 }}>
+              Home-screen widgets are separate from the app: entering the duress PIN does not hide widgets already placed on your launcher, and they can continue showing the information allowed by each widget's privacy setting. Set sensitive widgets to Redacted or Off in Settings → Widgets before handing over your phone.
             </div>
             {settingDuressPin ? (
               <>
