@@ -264,3 +264,79 @@ export function travelsByCar(contact) {
   if (!contact) return false;
   return contact.drives === true || (Array.isArray(contact.travelMode) ? contact.travelMode : []).includes("Car");
 }
+
+/**
+ * Whether this contact has an age worth PRINTING.
+ *
+ * ADDED 6 Oct 2026 (t077) - the card's own guard was `contact.age != null`,
+ * which renders a bare separator dot with no number beside it whenever age is an
+ * empty string, a non-numeric string or NaN. The Contacts editor already
+ * normalises "" to null on change (AgeField's own onChange), which is why it
+ * never showed up while typing - but age also arrives from paths the editor does
+ * not own: a backup import, a shared profile import, or any record written by an
+ * older build. A dot with nothing after it looks like a value that failed to
+ * render, on a screen where the rest of the row is real data.
+ *
+ * WHY THE READ SIDE AND NOT THE WRITER. Patching each writer would mean
+ * remembering this in every future path that can produce a contact, and the
+ * symptom is a rendering one. This is also the same lesson as travelsByCar
+ * above: the rule is one predicate with one owner, not four `!= null` checks
+ * that will drift apart.
+ *
+ * FAILS TOWARDS "no age" deliberately, per the repo's standing preference. A
+ * missing age costs a glance at the profile; a fabricated or NaN one is a false
+ * statement about a person.
+ *
+ * 0 is treated as no age: it is not a plausible age, and it is what a numeric
+ * input left at its default produces.
+ *
+ * @param {object} contact
+ * @returns {number|null} a usable age, or null when there is none
+ */
+export function displayableAge(contact) {
+  const raw = contact?.age;
+  if (raw === null || raw === undefined || raw === "") return null;
+  // Tolerates a numeric string, because an imported record can legitimately hold
+  // one and Number("") above already removed the empty case.
+  const n = typeof raw === "number" ? raw : Number(String(raw).trim());
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}
+
+/**
+ * The contact methods to actually render, deduplicated by service.
+ *
+ * ADDED 6 Oct 2026 (t079). Methods is a genuine multi-select, so the same
+ * service can legitimately be present twice - selected on two devices, or merged
+ * from a shared profile and the user's own edit. The card mapped the raw array,
+ * so a duplicate produced two identical icons.
+ *
+ * The duplicate was also a REACT bug rather than only a cosmetic one: the badges
+ * were keyed by the method string, so two entries meant two children with the
+ * same key. React warns on that and its reconciliation of the keyed children
+ * becomes unreliable - the sort of thing that shows up much later as a row that
+ * renders the wrong icon.
+ *
+ * Case-insensitive, because "WhatsApp" and "whatsapp" are the same service and
+ * the badge table is matched on the exact string - so two spellings would also
+ * produce two visually identical icons. First spelling wins, because that is the
+ * one the user chose and therefore the one the option list can match.
+ *
+ * @param {string[]} methods
+ * @returns {string[]} unique methods, original order and original spelling
+ */
+export function dedupeContactMethods(methods) {
+  if (!Array.isArray(methods)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const raw of methods) {
+    if (typeof raw !== "string") continue;
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(trimmed);
+  }
+  return out;
+}

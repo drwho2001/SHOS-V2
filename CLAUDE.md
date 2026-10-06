@@ -870,6 +870,72 @@ verify:fast green - build, lint, **1397 tests across 119 files**, encoding, inhe
 
 **Still open, unchanged: t069** (an old record carrying both a legacy seed id and a renamed legacy field diverges from the frozen current definition and is not re-keyed; safe for data, can leave a legacy demo id). It needs a scope decision, not a fix.
 
+## Recently shipped (6 Oct 2026, latest - the Contacts card showed an age that was not there, and a duplicate badge was a React bug in disguise)
+
+**Session D. Four device-reported Contacts card items, and two of them were not
+what they looked like.** `contactCalculations.js` gains two pure predicates —
+`displayableAge()` and `dedupeContactMethods()` — and both card call sites read
+them, so the profile header cannot drift from the card the way it would if each
+were patched where it rendered.
+
+**The dangling age dot was a guard that only checked for `null`.** The card
+rendered `· {age}` behind `contact.age != null`, so an age of `""`, a
+non-numeric string or `NaN` produced a separator dot with **nothing after it** —
+on a card where every other value is real data, so it reads as a value that
+failed to render rather than one that was never there.
+
+**Why it was so hard to reproduce, and why that is the useful part:** the Contacts
+editor already normalises `""` to `null` in `AgeField`'s own `onChange`, so
+typing an age and clearing it never triggers it. The bad values arrive by routes
+the editor does not own — a **backup import**, a **shared-profile import**, or a
+record written by an **older build**. The guard was on the read side, which is
+where the fix belongs too: patching each writer would mean remembering this in
+every future path that can produce a contact, and the symptom is a rendering one.
+`0` is treated as no age, because it is not a plausible age and it is what a
+number input left at default produces.
+
+**The duplicate social-media icon was a React bug, not only a visual one.**
+`MethodIcons` mapped the raw array with `key={m}`, and methods is a genuine
+multi-select — the same service can legitimately be present twice (selected on two
+devices, or merged from a shared profile and the user's own edit). So a duplicate
+meant **two children sharing a React key**, which warns and makes reconciliation
+of the keyed children unreliable — the sort of thing that surfaces much later as a
+row rendering the wrong icon. Dedup is case-insensitive with first-spelling-wins,
+because the badge table matches on the exact string, so two spellings would also
+have produced two visually identical icons.
+
+**The ordering change is the one with a reason behind it.** The social-media
+summary moved *down*, after travel and accommodation. It used to sit immediately
+after the age, which put a run of method icons ahead of the facts that decide
+whether a meetup is possible — where they are, how they get there, whether they
+host. It is also the widest item on the row, so putting it last keeps the leading
+icons from wrapping first.
+
+**And the star overlap was two missing properties on one row.** The favourite star
+is `position:absolute`, so a long name ran *under* it rather than around it. The
+name row now reserves its footprint with a **conditional** `paddingRight` (a card
+with no star, or in select mode, carries no dead space) and `flexWrap`s so a long
+name drops to a second line while the small icons stay on one.
+
+**A guard I wrote for this went red on the fix itself, which is the recorded
+failure mode for negative source checks.** The assertion "no age is rendered
+behind `contact.age != null`" matched the explanatory comment *inside the card*,
+which quotes that exact expression on a continuation line of a JSX `{/* … */}`
+block — a line starting with neither `//` nor `*`, so a line-prefix filter did not
+remove it. Replaced with a real block-then-line comment stripper, and the
+stripper is proved against a throwaway fixture before anything depends on it: a
+stripper that removed nothing would make every negative check pass for the wrong
+reason.
+
+**Measured boundary:** 17 new tests, **mutation-verified** — reintroducing
+`contact.age != null` turns 2 of them red, source restored byte-for-byte. Lint,
+build and the encoding guard clean; the five Contacts/accessibility guards
+(`iconOnlyUIAudit`, `jsxCommentGuard`, `bottomSheetSafeArea`, `anonymiseDisplay`,
+`optionShapeGuard`) 35/35. A throwaway Playwright probe measured **14 real cards:
+0 dangling dots, 0 duplicate badge sets, 0 star overlaps** — but read that as *no
+regression* only, because the seed data never contains the bad shapes. For t077 and
+t079 the actual proof is the unit test plus the mutation, not the probe.
+
 ## Recently shipped (6 Oct 2026, later - a routine retest you can actually schedule, and a test that caught three bugs I wrote)
 
 **Session D. `isRoutineRetestPlan` is a real persisted state, and it is excluded

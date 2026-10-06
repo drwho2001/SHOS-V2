@@ -61,7 +61,7 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 // contactRepository.js into the real in-app editable option list
 // system already used elsewhere (Vaccine, Reason for visit, etc.).
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
-import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomplete, getContactableVia, normalizeTag, extractKinkRoleFromText, hasPhysicalDetail, mergeCummerRow, travelsByCar } from "../calculations/contactCalculations";
+import { getKnownCities, getKnownValues, getCompletenessScore, isContactIncomplete, getContactableVia, normalizeTag, extractKinkRoleFromText, hasPhysicalDetail, mergeCummerRow, travelsByCar, displayableAge, dedupeContactMethods } from "../calculations/contactCalculations";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 // ADDED 19 Aug 2026 — Anonymise mode. See privacySettingsRepository.js
 // for the full reasoning. Read-only from Contacts' side, same
@@ -303,18 +303,23 @@ function MethodBadge({ method, T, size }) {
 // toggle-a-caption shape as the active-status dot/icon cluster above.
 function MethodIcons({ methods, T, size = 22 }) {
   const [showLegend, setShowLegend] = useState(false);
-  if (!methods || methods.length === 0) return null;
+  // FIXED 6 Oct 2026 (t079) - was `if (!methods || methods.length === 0)`. The
+  // array is now deduplicated FIRST, so the emptiness check and the render are
+  // driven by the same list. Previously the two disagreed: a contact whose only
+  // entry was a duplicate still rendered, because the raw array was non-empty.
+  const unique = dedupeContactMethods(methods);
+  if (unique.length === 0) return null;
   return (
     <div>
       <div role="button" tabIndex={0} aria-label="Contact methods — tap for details"
         onClick={(e) => { e.stopPropagation(); setShowLegend((v) => !v); }}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowLegend((v) => !v); } }}
         style={{ display: "flex", gap: 6, alignItems: "center", cursor: "pointer" }}>
-        {methods.map((m) => <MethodBadge key={m} method={m} T={T} size={size} />)}
+        {unique.map((m) => <MethodBadge key={m} method={m} T={T} size={size} />)}
       </div>
       {showLegend && (
         <div onClick={(e) => e.stopPropagation()} style={{ fontSize: 11, color: T.textSecondary, fontWeight: 500, marginTop: 2 }}>
-          {methods.join(", ")}
+          {unique.join(", ")}
         </div>
       )}
     </div>
@@ -1648,7 +1653,20 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
         <img src={contact.profilePicture} alt="" style={{ width: 44, height: 44, borderRadius: radius.full, objectFit: "cover", flexShrink: 0 }} />
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+      {/* FIXED 6 Oct 2026 (t076) - two real layout defects on this row, both
+          caused by the same thing: it is a flex row of inline items with no
+          reserved space and no wrapping.
+
+          The favourite star is position:absolute top:10 right:10, so anything
+          wide enough ran UNDER it rather than around it. paddingRight reserves
+          the star's footprint, and it is conditional so a card with no star (or
+          in select mode, where a checkbox occupies the left instead) does not
+          carry dead space.
+
+          flexWrap lets a long name drop to a second line instead of being
+          squeezed to nothing, which is what "two-line long-name layout" means
+          here: the NAME wraps, the small icons after it stay on one line. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap", paddingRight: (!selectMode && onToggleFavourite) ? 24 : 0 }}>
         <span role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={(e) => { e.stopPropagation(); setShowStatusInfo((v) => !v); }}
           title={statusCopy.title}
           aria-label={isInactive ? "Inactive contact, tap for details" : "Active contact, tap for details"}
@@ -1657,9 +1675,14 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
         {ratingEmoji && <span style={{ fontSize: 14 }}>{ratingEmoji}</span>}
         {/* Age — tuned this round to sit close in size to the name (was
             too small a jump, 12px vs 15px reading as a much bigger drop
-            than intended). Now 14px, one step down, not two. */}
-        {contact.age != null && <span style={{ fontSize: 14, color: T.textSecondary }}>· {contact.ageIsApprox ? "≈" : ""}{contact.age}</span>}
-        <MethodIcons methods={methods} T={T} />
+            than intended). Now 14px, one step down, not two.
+            FIXED 6 Oct 2026 (t077) - the guard was `contact.age != null`,
+            which renders a bare separator dot with no number beside it whenever
+            age is "", a non-numeric string or NaN. The editor normalises ""
+            to null on change, so this never appeared while typing - but a
+            record from a backup import, a shared profile, or an older build can
+            carry one, and then the card shows a dot and nothing after it. */}
+        {displayableAge(contact) != null && <span style={{ fontSize: 14, color: T.textSecondary }}>· {contact.ageIsApprox ? "≈" : ""}{displayableAge(contact)}</span>}
         {/* ADDED 10 Sep 2026 — real ask: "use pin next to city" — a
             literal location pin, always shown alongside the city name
             (distinct from the "will travel to you" NavigationArrow
@@ -1724,6 +1747,15 @@ function ContactCard({ contact, onOpen, T, summary = EMPTY_ENCOUNTER_SUMMARY, an
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); setShowStatusInfo((v) => !v); } }}
             style={{ cursor: "pointer" }} />
         )}
+        {/* CHANGED 6 Oct 2026 (t078) - the social-media summary moved DOWN, to
+            after travel and accommodation. It used to sit immediately after the
+            age, which put a run of contact-method icons ahead of the facts about
+            meeting up: where they are, how they get there, whether they host.
+            Those are the facts that decide whether a meetup is possible, and
+            they were being read last, behind the least consequential thing on the
+            row. The methods row is also the widest, so putting it last also keeps
+            the leading icons from being pushed onto a second line first. */}
+        <MethodIcons methods={methods} T={T} />
       </div>
       {showStatusInfo && (() => {
         const transportLabel = getTransportLabel(contact);
@@ -2445,7 +2477,13 @@ function ContactProfile({ contactId, onBack, onEdit, onOpenContact, T, refresh, 
               natural, real title here. Same <h1>/margin:0 treatment as
               every other screen title this app already uses. */}
           <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 20, color: T.textPrimary, margin: 0 }}>{anonymise ? MASKED : displayName(contact)}</h1>
-          {contact.age != null && <span style={{ fontSize: 15, color: T.textSecondary }}>{contact.ageIsApprox ? "≈" : ""}{contact.age}</span>}
+          {/* FIXED 6 Oct 2026 (t077) - same weak guard as the card had, fixed at
+              the same time from the same shared predicate. The profile header has
+              no leading dot, so the symptom here was a bare number-ish span
+              rendering empty or NaN rather than a dangling separator - quieter,
+              and the reason this one would have been left behind if the card had
+              been patched at its own call site instead of in the shared owner. */}
+          {displayableAge(contact) != null && <span style={{ fontSize: 15, color: T.textSecondary }}>{contact.ageIsApprox ? "≈" : ""}{displayableAge(contact)}</span>}
           <MethodIcons methods={methods} T={T} />
         </div>
         {contact.nickname && !anonymise && <div style={{ fontSize: 12, color: T.textDisabled, marginLeft: 24 }}>Full name: {contact.name}</div>}
