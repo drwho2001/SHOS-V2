@@ -871,15 +871,25 @@ effect is worse than no fixture.
 build clean, encoding guard clean. No browser flow covers schedule → plan → mark
 done yet; coverage is unit plus repository-integration.
 
-**Three test files were red and were left red, all for reasons outside this
-change.** `snapshotFidelity`'s `tests` collection is provably red at HEAD: the
-frozen snapshot in `seedDivergence.js` holds `test_001` while HEAD's seed array
-holds `seed_test_9001`, so it predates session C's seed re-key — the new
-`DEFAULT_TEST` fields widen the same divergence but the id mismatch alone decides
-it, and regeneration (`SHOS_REGEN_SNAPSHOT=1`) belongs in that other session's
-file. `widgetRedactedRender` fails on a `nextDoseRedactedLine` literal in
-`medicationReminderSync.js`, untouched at HEAD. `scripts/sessionBridge.test.js` is
-the known-flaky subprocess suite.
+**Two test files were red and are red for reasons outside this change**, left red
+rather than quietly absorbed. `widgetRedactedRender` fails on a
+`nextDoseRedactedLine` literal in `medicationReminderSync.js`, untouched at HEAD.
+`scripts/sessionBridge.test.js` is the known-flaky subprocess suite.
+
+**CORRECTION, same day, and it was my own wrong claim.** The first version of this
+entry said `snapshotFidelity` was "provably red at HEAD ... it predates session C's
+seed re-key". The observation was real — the snapshot does hold `test_001` while
+the seed holds `seed_test_9001` — but the conclusion was wrong, and reading the
+revert commit `5aa6dfa` is what showed it: the id divergence is *tolerated by
+design* (a frozen capture's ids legitimately differ from current seeds), and the
+actual red was **my own four new `DEFAULT_TEST` fields**, which had widened the
+same divergence. So it was mine, exactly as the coupling that revert warns about.
+Regenerated with `SHOS_REGEN_SNAPSHOT=1` once the field change was committed, which
+is purely additive — 30 added lines across the 7 seeded tests and no id churn — and
+`snapshotFidelity` + `seedDivergence` are 30/30. **The tell that I had it wrong was
+available at the time and I read past it:** the failure output listed the id
+divergence *and* the four fields together, and I treated the loudest line as the
+decisive one instead of asking which of them the comparison actually compares.
 
 ## Recently shipped (6 Oct 2026 - frozen demo identity, snapshot fidelity, and the import path now share one rule)
 
