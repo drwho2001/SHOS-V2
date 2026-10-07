@@ -940,6 +940,59 @@ reads Java/XML files session A has uncommitted in this tree; and
 only, with HEAD clean and all five files touched here verified clean, so it is
 deliberately left alone rather than edited out from under them.
 
+## Recently shipped (7 Oct 2026, latest - the seed-migration guard had been RED SINCE THE DAY AFTER IT WAS WRITTEN, and it failed for a date)
+
+**Session B. The triage of "8 red tests, none mine" turned out to be two
+separate things, and the first one I reported was simply wrong.**
+
+**MY OWN FINDING WAS A MEMORY-PRESSURE ARTIFACT, and it is recorded because I
+stated it to the owner with a table.** I reported "a live defect: Clear Sample
+Data does not clear 8 seeded cycle/contraception/pregnancy records". That was
+false — `seedSnapshotCoverage` passes 8/8 and always did this session. The
+evidence was one full-suite run that ALSO reported `[vitest-worker]: Timeout
+calling "onTaskUpdate"` at 286 MB free RAM; re-run at 750 MB it was 1447 passed
+/ 3 failed, and the 3 were all in one file. Eight failures across four suites
+from a run that was already reporting a worker timeout is a cascade, not four
+findings. **Free RAM is printed by the gate for a reason and reading it first
+is cheaper than a wrong conclusion.**
+
+**The 3 real ones were genuine, and nastier than a flaky test.** `seedIdMigration.test.js`'s
+`demoRow()` fixture builds its probe from the frozen snapshot row, and
+`isDemoData` compares dates as offsets from **each side's own anchor** — the
+record's `createdAt` when it has one, else the caller's fallback. **48 of the
+96 legacy ids have snapshot rows with no `createdAt`**, so the probe anchored on
+*today* while the snapshot anchored on `SNAPSHOT_TAKEN_AT`. The suite therefore
+passed on the day it was written and went red the next day, permanently, for
+exactly those collections: tests, clinic visits, medication logs, measurements,
+symptom log, cycles, contraception, pregnancies, vaccinations.
+
+That is worse than flakiness. This file's guard — "the legacy map still matches
+the real seed arrays" — only means anything while it is green, and a permanently
+red guard is one nobody runs. The failure also looked arbitrary, which is the
+tell: contacts, medications and locations carry no dates at all, so they never
+moved.
+
+**The conditional half took a round trip, and that is the transferable part.**
+Stamping `createdAt` unconditionally fixed the 48 and broke the other 19 —
+because `demoComparable` deliberately prefers a record's own creation date as
+its epoch ("a seed that hard-codes its dates stays stable against its own
+createdAt"), and encounters' frozen rows carry `createdAt` equal to the
+encounter's own date. Measured, on the same row: `DIFF date: probe="T-78"
+snapshot="T0"`. So the rule is **stamp only when the row carries none**. A
+fixture wrong in the obvious direction is easy to spot; one wrong in a way that
+only surfaces in a different collection is not.
+
+**Proven date-independent, not just green today:** with the clock faked **+400
+days**, `test_001`, `visit_001`, `log_001`, `encounter_001`, `contact_001` and
+`episode_001` all still classify as demo data. 21/21 in the file, and **1450
+passed / 0 failed across 125 files** — the first clean full-suite baseline in
+this session, which is what makes any later regression visible.
+
+Also this round, from the same triage: `seedDivergence.js`'s private
+`demoComparable` was temporarily exported to print both projections and reverted
+byte-for-byte (`git diff` clean), because reasoning about why the two sides
+disagreed had already failed three times.
+
 ## Recently shipped (6 Oct 2026, later still - the Clinic Card would not inflate at all, and the PICKER is what proved it was the layout)
 
 **The Clinic Card widget rendered as "Can't load widget" on a black background in the widget picker AND on the home screen, while the other nine rendered correctly.** Found by the owner looking at the phone, and it had been open since the widgets first shipped.

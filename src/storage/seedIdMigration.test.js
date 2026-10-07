@@ -27,7 +27,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "@babel/parser";
-import { legacyDefinitionFor } from "../calculations/seedDivergence.js";
+import { legacyDefinitionFor, SNAPSHOT_TAKEN_AT } from "../calculations/seedDivergence.js";
 import {
   planSeedIdMigration,
   SEED_ID_MIGRATION_FLAG_KEY,
@@ -101,7 +101,49 @@ function demoRow(legacyId) {
   const def = legacyDefinitionFor({ id: legacyId });
   if (!def) return null;
   const { collection, ...record } = def;
-  return record;
+  // ADDED 7 Oct 2026 (session B) - anchor the probe, but ONLY when the frozen
+  // row carries no epoch of its own.
+  //
+  // This fixture used to return the snapshot row untouched, which reads as the
+  // most faithful possible stand-in for a stored demo record and is not, for the
+  // collections whose seed rows carry no `createdAt`. `isDemoData` compares dates
+  // as offsets from each side's OWN anchor - the record's `createdAt` when it has
+  // one, else the caller's fallback. With no `createdAt`, the probe anchored on
+  // TODAY while the snapshot anchored on SNAPSHOT_TAKEN_AT, so the two disagreed
+  // by however many days had elapsed since the snapshot was taken.
+  //
+  // Measured, not inferred: for the same record on the same run,
+  // `isDemoData(probe)` was false and `isDemoData(probe + createdAt =
+  // SNAPSHOT_TAKEN_AT)` was true.
+  //
+  // So the suite passed on the day it was written and went red the next day, for
+  // the 48 ids in the date-bearing collections - tests, clinic visits, medication
+  // logs, measurements, symptom log, cycles, contraception, pregnancies and
+  // vaccinations. Contacts, medications and locations carry no dates at all,
+  // which is why the failure looked arbitrary and why the three date-bearing
+  // collections that DO stamp a date (encounters, and episodes via
+  // `resolvedDate`) were the ones that already worked.
+  //
+  // The stamp is deliberately CONDITIONAL, and that is the half that took a
+  // round trip. Unconditionally stamping every row fixed those 48 and broke the
+  // other 19, because `demoComparable` deliberately prefers a record's own
+  // creation date as its epoch - "a seed that hard-codes its dates stays stable
+  // against its own createdAt". Encounters' frozen rows carry `createdAt` equal
+  // to the encounter's own date, so overwriting it moved the anchor and the
+  // projection went from `T0` to `T-78` on a row that had been correct.
+  // Measured: `DIFF date: probe="T-78" snapshot="T0"` for the same value on both
+  // sides. The lesson is the one this file's own header warns about - a fixture
+  // that is wrong in the obvious direction is easier to spot than one that is
+  // wrong in a way that only shows up in a different collection.
+  //
+  // This is worse than a flaky test, because the guard it provides - "the legacy
+  // map still matches the real seed arrays" - only means anything while it is
+  // green, and this repo's rule is that a check nobody trusts is one nobody runs.
+  // `createdAt` is excluded from the compared field set, so adding one changes
+  // the anchor and nothing else.
+  return typeof record.createdAt === "string"
+    ? record
+    : { ...record, createdAt: `${SNAPSHOT_TAKEN_AT}T00:00:00.000Z` };
 }
 
 /**
