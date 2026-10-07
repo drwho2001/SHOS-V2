@@ -196,25 +196,18 @@ private static RemoteViews unavailableViews(Context context) {
 
         String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
         if (redactedText != null && !redactedText.isEmpty()) {
+            // At a Redacted tier the card carries the one safe line and nothing
+            // else. Every other field is hidden BY NAME rather than by relying on
+            // a container or a page, for two reasons: the redaction guard is a
+            // STATIC proof and cannot follow control flow, and a named
+            // setViewVisibility is the only thing it can actually see.
             views.setTextViewText(R.id.widget_clinic_title, redactedText);
             views.setViewVisibility(R.id.widget_clinic_date, android.view.View.GONE);
-            views.setViewVisibility(R.id.widget_clinic_location, android.view.View.GONE);
-            views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
-            // Page 2's fields are named explicitly rather than relying on the
-            // flipper being parked on page 1. Two reasons: defence in depth, and
-            // because the redaction guard is a STATIC proof - it cannot follow
-            // control flow and see that this branch returns before the full branch
-            // ever writes them. Naming them is what lets it verify anything.
-            views.setViewVisibility(R.id.widget_clinic_location, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_visit_time, android.view.View.GONE);
-            // Also park the flipper on the safe page explicitly, rather than only at
-            // the end of the full branch. Belt and braces: if a future edit adds a
-            // push above here, this page still cannot be the one on screen.
-            views.setDisplayedChild(R.id.widget_clinic_flipper, 0);
-            // The four sensitive fields were inside one container until6 Oct 2026 - see the
-            // note on setSensitiveVisibility for why they are hidden by name now.
-            views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_location, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
             android.util.Log.i("ClinicCardWidget", "pushing REDACTED views for id=" + appWidgetId);
             appWidgetManager.updateAppWidget(appWidgetId, views);
@@ -222,56 +215,56 @@ private static RemoteViews unavailableViews(Context context) {
         }
 
         if (!title.isEmpty() && !title.equals("No upcoming appointment")) {
-            // PAGE 1 - the safe summary, and the page a glance should land on.
+            // Reception first - what and when and where - then identifiers. Same
+            // order as the Clinic Card screen, so the two surfaces read alike.
             views.setTextViewText(R.id.widget_clinic_title, title);
             views.setTextViewText(R.id.widget_clinic_date, date);
-            views.setTextViewText(R.id.widget_clinic_tests, "Tests: " + tests);
-
-            // PAGE 2 - where and when. Populated only at the full tier; at a
-            // Redacted tier this page is never reached because the flipper is
-            // left on page 1 and the values were never written into it.
-            views.setTextViewText(R.id.widget_clinic_location, location);
             views.setTextViewText(R.id.widget_clinic_visit_time, visitTime);
-
-            // PAGE 3 - identifiers.
-            //
-            // NO MASKING AND NO REVEAL, which is the point of the redesign. The
-            // old design kept these fields in place, rendered them as
-            // "••••• tap to reveal", and flipped a persisted flag on tap - so one
-            // tap in a shoulder-surfing moment left them unmasked until Clear
-            // Storage. Here the identifying content lives on its own page and
-            // whether that page is reachable is decided solely by the privacy
-            // tier. Nothing is ever unmasked in place.
+            views.setTextViewText(R.id.widget_clinic_location, location);
             views.setTextViewText(R.id.widget_clinic_clinic_num, clinicNum);
+            views.setTextViewText(R.id.widget_clinic_tests, "Tests: " + tests);
             views.setTextViewText(R.id.widget_clinic_doctype, docType);
-            // The NHS number is NEVER stored - WidgetBridgePlugin ignores the
-            // field and this provider has no parameter for it - so it is hidden
-            // rather than left blank, because an empty line next to a real clinic
-            // number reads as a rendering bug rather than a deliberate omission.
+            // The NHS number is NEVER stored - WidgetBridgePlugin ignores the field
+            // and this provider has no parameter for it - so it is hidden rather
+            // than left blank, because an empty line next to a real clinic number
+            // reads as a rendering bug rather than a deliberate omission.
+            //
+            // There is NO reveal button and no masking. It is gone rather than
+            // fixed: it fired a deep link resolving to an action nothing performs,
+            // and it implied a permanent-unmask kept in the widget's own
+            // preferences - one shoulder-surfing tap and the fields stayed
+            // unmasked until Clear Storage. What is on screen is decided solely by
+            // the privacy tier, so there is nothing to reveal.
             views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
-        } else {
-            // No upcoming appointment: the summary page still renders, and there is
-            // nothing to put on the other two, so they stay on their empty XML
-            // text. The flipper stays on page 1 rather than being pointed at a
-            // page with nothing in it.
+} else {
+            // No upcoming appointment. Every other field is cleared to its empty XML
+            // text rather than left alone, so a stale value from a previous push
+            // cannot survive on screen - which matters more than usual here because
+            // this card is reused across pushes.
             views.setTextViewText(R.id.widget_clinic_title, "Clinic Card");
             views.setTextViewText(R.id.widget_clinic_date, "No upcoming appointment");
+            views.setTextViewText(R.id.widget_clinic_visit_time, "");
+            views.setTextViewText(R.id.widget_clinic_location, "");
+            views.setTextViewText(R.id.widget_clinic_clinic_num, "");
             views.setTextViewText(R.id.widget_clinic_tests, "");
+            views.setTextViewText(R.id.widget_clinic_doctype, "");
         }
 
-        // Always open on the safe page.
+        // PAGING IS GONE, and this is the second time it has been tried here.
         //
-        // A swipe inside ViewFlipper changes the displayed child in the LAUNCHER's
-        // copy only - RemoteViews has no callback for it, so the provider is never
-        // told and cannot persist the index. Stating that rather than implying
-        // otherwise: a swipe holds until the next push, and pushes happen when the
-        // app is foregrounded or the privacy tier changes, not when the home
-        // screen is glanced at. So in practice a swipe survives the glance that
-        // motivated it and resets next time the app is opened.
+        // ViewFlipper with setDisplayedChild was the obvious way to show more than a
+        // glance's worth of data without a tap. It re-introduced nested containers
+        // into this layout, and the widget stopped rendering again - the same
+        // failure as the original nested container, from a build that passes every
+        // test in this repo.
         //
-        // Page 0 is also the correct default rather than merely the safe one: it is
-        // the summary, which is the answer to "do I need to do anything".
-        views.setDisplayedChild(R.id.widget_clinic_flipper, 0);
+        // So the mechanism is now established rather than assumed: NESTED CONTAINERS
+        // IN A WIDGET RemoteViews LAYOUT DO NOT INFLATE HERE. After the first fix it
+        // was still unproven, and this is where that ends. The guard in
+        // widgetTapAndFallbackGuard.test.js asserts it across all ten layouts.
+        //
+        // The extra data paging was for - the appointment TIME - is still here. It
+        // is simply on one flat card instead of behind a swipe.
 
 // Main click is attached ABOVE, before the Redacted branch, so that every
         // tier has a tap target. The two below remain here because both depend on

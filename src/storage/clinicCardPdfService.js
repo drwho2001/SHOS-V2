@@ -301,6 +301,23 @@ export async function generateClinicCardPdf(visibility) {
     items.forEach((item) => cursor.row(item.title ?? item[0], item.subtitle ?? item[1], item.alert));
   };
 
+  // CHANGED 6 Oct 2026 - the PDF now follows the SAME clinic-visit order as the
+  // on-screen Clinic Card, so the export a clinician reads and the card the user
+  // checks on their phone agree.
+  //
+  // They were two independent orderings until now, which is exactly the drift this
+  // repo keeps paying for: CLINIC_CARD_SECTIONS is the one source of truth for the
+  // screen and the visibility toggles, and this function was a hand-maintained
+  // second list. Reordering the screen alone would have made them disagree harder.
+  //
+  // It cannot simply iterate CLINIC_CARD_SECTIONS, because two of these sections
+  // are rendered by hand rather than through section(): allergies is a joined
+  // string, and menstrualContraception is gated on tracking being enabled at all.
+  // So the order is asserted against the array in clinicCardPdf.test.js rather
+  // than derived from it - a derived version would need those two special cases
+  // modelled anyway, and a hand list plus an equality test is the cheaper shape.
+  //
+  // Reception: what you are, and what you are asked for on the form.
   section("identity", "Identity", data.identity, "No identity details recorded.");
   section("medications", "Current medications", data.medications, "No active medications logged.", data.medications.length);
   if (!visibility || visibility.allergies !== false) {
@@ -308,22 +325,26 @@ export async function generateClinicCardPdf(visibility) {
     if (data.allergies.length === 0) cursor.empty("None recorded.");
     else cursor.row(data.allergies.join(", "), null, true);
   }
-  section("vaccinations", "Vaccinations", data.vaccinations, "None recorded yet.", data.vaccinations.length);
-  section("testing", "Recent STI testing", data.recentTests, "No tests logged yet.");
-  section("treatment", "Current treatment", data.currentTreatment, "Nothing currently awaiting follow-up.");
   if (data.menstrualTrackingEnabled) {
     section("menstrualContraception", "Menstrual & contraception", data.menstrualContraception, "Nothing logged yet.");
   }
-  section("symptoms", "Active symptoms", data.activeSymptoms, "Nothing active right now.");
-  section("encounters", "Recent encounters", data.recentEncounters, "No encounters logged yet.", data.recentEncounters.length);
-  // ADDED 28 Sep 2026 — the export opt-in. Gated on the DEDICATED preference
-  // rather than `visibility.recentContacts`, so having the section on screen
-  // never silently puts those names on paper. When it is off this renders
-  // nothing at all, not even a heading — an empty "Recent contacts" heading on
-  // a shared sheet would itself be a disclosure that the user has contacts.
+
+  // Into the consult: what you recall, or are asked about. Recent contacts and
+  // encounters lead this group rather than sitting at reception - "Recent
+  // contacts" is a list of sexual partners, not the user's own details.
   if (data.recentContacts.length > 0) {
+    // ADDED 28 Sep 2026 — the export opt-in. Gated on the DEDICATED preference
+    // rather than `visibility.recentContacts`, so having the section on screen
+    // never silently puts those names on paper. When it is off this renders
+    // nothing at all, not even a heading — an empty "Recent contacts" heading on
+    // a shared sheet would itself be a disclosure that the user has contacts.
     section("recentContacts", "Recent contacts", data.recentContacts, "", data.recentContacts.length);
   }
+  section("encounters", "Recent encounters", data.recentEncounters, "No encounters logged yet.", data.recentEncounters.length);
+  section("testing", "Recent STI testing", data.recentTests, "No tests logged yet.");
+  section("vaccinations", "Vaccinations", data.vaccinations, "None recorded yet.", data.vaccinations.length);
+  section("treatment", "Current treatment", data.currentTreatment, "Nothing currently awaiting follow-up.");
+  section("symptoms", "Active symptoms", data.activeSymptoms, "Nothing active right now.");
   section("emergency", "Emergency information", data.emergency, "None recorded.");
 
   // Real footer, every page: page numbers so a printed multi-page card

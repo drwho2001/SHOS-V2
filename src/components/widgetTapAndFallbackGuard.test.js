@@ -106,66 +106,67 @@ describe("widget taps reach the app (device bug: every tap landed on the dashboa
         "utf8",
       );
       const code = xml.replace(/<\?[\s\S]*?\?>/g, "").replace(/<!--[\s\S]*?-->/g, "");
-      const bareViews = [...code.matchAll(/<View\b/g)].length;
+      const groups = [...code.matchAll(GROUPS)].length;
       expect(
-        bareViews,
-        `${name}.xml contains ${bareViews} bare View divider(s). clinic_card_widget.xml ` +
-          `was the only layout with one, and it shipped as the only widget that would ` +
-          `not render.`,
-      ).toBe(0);
+        groups,
+        `${name}.xml contains ${groups} ViewGroups. Nested containers in a widget ` +
+          `RemoteViews layout do not inflate here - clinic_card_widget.xml shipped ` +
+          `with one and rendered as "Can't load widget" in BOTH the picker and on ` +
+          `the home screen. Flattening fixed it. Re-adding one for swipeable ` +
+          `ViewFlipper pages broke it a second time, from a build that passed every ` +
+          `test in this repo. The mechanism is established; this is the guard for it.`,
+      ).toBe(1);
     }
   });
 
-  it("the Clinic Card widget pages with a ViewFlipper, and every page id resolves", () => {
-    // The previous version of this file asserted that NO widget layout may contain
-    // more than one ViewGroup, on the theory that the Clinic Card's nested
-    // container was what stopped it inflating. That theory was never actually
-    // proved - flattening fixed the widget, but nothing identified the mechanism.
+  it("the Clinic Card widget is flat, and the reveal button does not come back", () => {
+    // REWRITTEN after swipeable ViewFlipper pages were tried and abandoned. The
+    // story is the point, because the wrong turn is the obvious one:
     //
-    // Swipeable pages then required the opposite, because a ViewFlipper's pages ARE
-    // nested layouts and there is no other RemoteViews-supported way to page a
-    // widget. So the assertion was falsified by a legitimate change rather than
-    // turned red by a regression, which is a different failure and the reason it
-    // is recorded here rather than quietly reverted.
+    //   1. clinic_card_widget.xml shipped with a nested container and was the only
+    //      one of ten that would not inflate. Flattening fixed it - verified.
+    //   2. The flattening had WORKED, but nothing had identified the mechanism, so
+    //      this guard's "no more than one ViewGroup" assertion rested on an
+    //      unproven theory. Swipeable pages were then added - the natural way to
+    //      show more data without a tap - and they required nested pages, because
+    //      a ViewFlipper's pages ARE nested layouts and there is no other
+    //      RemoteViews-supported way to page a widget.
+    //   3. So the assertion was WEAKENED to survive that change. That was wrong.
+    //      Re-adding the nested containers broke the widget a second time, on the
+    //      owner's device, from a build that passed every test in this repo.
     //
-    // What survives is the part I can still defend: no bare View divider, asserted
-    // above. What this test now pins is the paging itself - that the flipper and
-    // every page id exist, and that the provider parks the flipper rather than
-    // leaving the launcher to choose. Whether paging still inflates is a DEVICE
-    // question and is stated as such at the change rather than asserted here.
+    // The mechanism is therefore established, not assumed: nested containers in a
+    // widget RemoteViews layout do not inflate here. The count assertion above is
+    // back, and it is now backed by two device observations rather than one guess.
+    //
+    // What survives from the paging attempt is the appointment TIME, which is on
+    // the flat card instead of behind a swipe.
     const layout = fs.readFileSync(
       "android/app/src/main/res/layout/clinic_card_widget.xml",
       "utf8",
     );
     const code = layout.replace(/<\?[\s\S]*?\?>/g, "").replace(/<!--[\s\S]*?-->/g, "");
-    expect(code, "the Clinic Card widget has no ViewFlipper to swipe").toMatch(
-      /<ViewFlipper\b/,
+    expect(
+      code,
+      "a ViewFlipper is back. It needs nested page containers, and that is exactly " +
+        "what stopped this widget rendering - twice.",
+    ).not.toMatch(/<ViewFlipper\b/);
+
+    // The time is the point of the paging attempt, so its being present is what
+    // stops this being read as "we just lost the feature".
+    expect(code, "the appointment time field is gone from the card").toContain(
+      "@+id/widget_clinic_visit_time",
     );
-    for (const id of [
-      "widget_clinic_flipper",
-      "widget_clinic_page_summary",
-      "widget_clinic_page_visit",
-      "widget_clinic_page_sensitive",
-    ]) {
-      expect(code, `${id} is missing from clinic_card_widget.xml`).toContain(
-        `@+id/${id}`,
-      );
-    }
+
     const java = fs.readFileSync(
       path.join(JAVA_DIR, "ClinicCardWidgetProvider.java"),
       "utf8",
     );
-    expect(
-      java,
-      "the provider never selects a page, so the launcher's last swiped page sticks " +
-        "instead of resetting to the safe one",
-    ).toMatch(/setDisplayedChild\(R\.id\.widget_clinic_flipper,\s*0\)/);
-    // ...and it must not reintroduce the button that never worked.
-        // Comments are stripped before this negative check, which is not optional.
-    // The comment recording WHY the reveal button was removed necessarily names it
-    // and its deep link, so a raw substring test matches the explanation rather than
-    // the code - and a guard that does that gets deleted instead of trusted. This is
-    // the same trap as the XML comment one below, on the Java side.
+    // Comments are stripped before these negative checks, which is not optional.
+    // The comments recording WHY the reveal button and the paging were removed
+    // necessarily name them, so a raw substring test matches the explanation
+    // rather than the code - and a guard that does that gets deleted rather than
+    // trusted. This is the same trap as the XML comment one below, Java side.
     const javaCode = java
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/\/\/[^\n]*/g, "");
@@ -174,6 +175,10 @@ describe("widget taps reach the app (device bug: every tap landed on the dashboa
       "the reveal button is back. It fired a deep link resolving to an action " +
         "nothing performs, so tapping it only opened the app.",
     ).not.toMatch(/widget_clinic_reveal|reveal-clinic/);
+    expect(
+      javaCode,
+      "setDisplayedChild is back, so the provider still believes in paging.",
+    ).not.toMatch(/setDisplayedChild/);
   });
 
   it("every widget layout gives its root an explicit id for the tap to attach to", () => {

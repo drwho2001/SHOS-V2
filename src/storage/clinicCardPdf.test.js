@@ -136,6 +136,55 @@ describe("Clinic Card PDF - clinical-safety footer", () => {
     expect(body).toMatch(/pages\.forEach\(/);
   });
 
+  it("uses the same clinic-visit order as the on-screen Clinic Card", async () => {
+    // ADDED 6 Oct 2026. The PDF had its OWN hand-maintained section order while
+    // the screen's order came from CLINIC_CARD_SECTIONS, so the export a clinician
+    // reads and the card the user checks on their phone could disagree - the exact
+    // two-lists-drift-apart failure this repo keeps cataloguing.
+    //
+    // It cannot simply iterate the array: allergies is rendered by hand (a joined
+    // string) and menstrualContraception is gated on tracking being enabled. So
+    // the order is asserted equal rather than derived - a derived version would
+    // need those two special cases modelled anyway, and a hand list plus an
+    // equality test is the cheaper shape.
+    const { CLINIC_CARD_SECTIONS } = await import(
+      "../calculations/clinicCardVisibilityPreference.js"
+    );
+    const src = readFileSync(
+      path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\//, "")), "clinicCardPdfService.js"),
+      "utf8",
+    );
+    // The ordered body where the sections are emitted, comments stripped first so
+    // a comment naming a section cannot be counted as one.
+    // Scanned in TEXTUAL order over the whole emit sequence, so a hand-rendered
+    // section lands in the position it actually occupies. My first version
+    // collected every section(...) call and then appended "allergies" to the end
+    // of the array, which put it in the wrong place - the guard flagged its own
+    // extraction rather than the code, and it is worth recording because the
+    // failure looked exactly like real drift.
+    //
+    // The one deliberate difference from a plain scan: emergency is emitted via
+    // section() too, so nothing needs special-casing; only allergies does, because
+    // it goes through cursor.sectionHeading rather than section().
+    const start = src.indexOf('section("identity"');
+    const end = src.indexOf("Self-reported");
+    const body = src
+      .slice(start, end)
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\/\/[^\n]*/g, "");
+    const found = [
+      ...[...body.matchAll(/section\("(\w+)"|visibility\.allergies/g)].map((m) =>
+        m[1] || "allergies",
+      ),
+    ];
+    expect(
+      found,
+      "the PDF's section order has drifted from the Clinic Card's. One list is " +
+        "CLINIC_CARD_SECTIONS; the other is this function - and they are the " +
+        "on-screen card and the export a clinician reads.",
+    ).toEqual(CLINIC_CARD_SECTIONS.map((s) => s.key));
+  });
+
   it("pages are numbered, so a printed multi-page card stays in order", () => {
     expect(renderBody()).toMatch(/\$\{i \+ 1\} \/ \$\{pages\.length\}/);
   });
