@@ -997,6 +997,67 @@ Also this round, from the same triage: `seedDivergence.js`'s private
 byte-for-byte (`git diff` clean), because reasoning about why the two sides
 disagreed had already failed three times.
 
+## Recently shipped (7 Oct 2026, later - two more hand-maintained inventories, and the one guarding the file that deleted 74 real records)
+
+**Session B. Closing out the drift-guard sweep. Every one of these lists was
+MEASURED in sync before it was guarded, so none of this is a fix — it is why
+none of them needs one tomorrow.**
+
+**`clearSampleData.js`'s `SAMPLE_REPOSITORIES` had nothing asserting it, and it
+is the single authority for what "Clear sample data" counts, removes, and what
+the Home banner reports.** Measured: 14 repositories export a `SEED_*_IDS` set
+and all 14 are referenced, none extra, none missing. New
+`src/components/sampleDataRepositoryCoverage.test.js` asserts both directions —
+every exporter referenced, and nothing referenced that was renamed away — because
+a renamed set still referenced there does not fail, it just stops clearing that
+collection. Same shape as the `ids || []` dead check the orphan checker had.
+
+**A collector bug worth recording, because the floor is the only reason it was
+not silent: `export const X` parses as an ExportNamedDeclaration whose
+`declaration` is a VariableDeclaration — a CONTAINER of declarators — not a
+VariableDeclarator.** The first version of this collector checked for the latter,
+matched nothing, and reported **zero** exporters while the non-vacuity floor
+turned it into a loud failure. The same wrong assumption was then found in
+`exportedFunctions` in the sibling guard before it shipped there. A sweep that
+reads the wrong node type does not fail open, it fails *silently-empty* — and
+that is the shape a non-vacuity floor exists to catch.
+
+**`referenceRepair.js` shipped three hand-maintained maps and only one was
+guarded** — `ENTRY_ID_KEYS` was asserted, `RECORD_REPOSITORIES` (14 record types)
+and `TARGET_SOURCES` (14 target types) were not. The reason it mattered is the
+opposite of a missing check: `describeRepair` answers an unknown type with
+`canRepair: false` and a sentence of readable prose instead of throwing. That is
+correct runtime design and it is precisely why the gap was invisible — a new
+collection would be **detected** by the checker and silently **unrepairable** by
+the fix, with the only evidence a message in a screen the owner may never open.
+Now asserted in both directions, plus a reasoned exemption for
+`Partner Notification`'s nested `items[N].contactId`, which lives inside a
+checklist item and is deliberately not repairable in place.
+
+**The exemption map is asserted in BOTH directions too** — every entry needs a
+substantive reason, every entry must correspond to something the checker really
+reports, and an entry left behind after the special case is fixed fails the test.
+An exemption nobody re-checks is just a hole with a comment on it.
+
+**One honest note on my own process, recorded because it is the failure this
+file keeps cataloguing:** while editing that guard I dropped the
+`OPTION_LISTS_REPO` path constant and two already-passing tests went red. They
+failed *loudly* rather than passing vacuously, which is the property working —
+but it is the third time this session that a collector or fixture was wrong in a
+way only a test could catch, and the fourth time a baseline-red check is what
+stopped me believing it.
+
+**Measured boundary:** 9 new tests across 2 files, **5/5 mutations red** from a
+green baseline (a 15th seed exporter; a renamed-away set; `SAMPLE_REPOSITORIES`
+deleted outright; a record type dropped from the repair map; a target type
+dropped), sources restored byte-for-byte. `verify:fast` green — build, lint,
+**1481 tests across 127 files**, encoding, inherited instructions, docs.
+
+**Session A holds a stale claim on `clearSampleData.js`** (since 5 Oct, no task in
+flight). This change only READS that file; the guard lives in a new
+`src/components/` test, which is the established home for the static AST guards.
+Session D holds `scripts/smoke-test.cjs`, untouched here.
+
 ## Recently shipped (6 Oct 2026, later still - the Clinic Card would not inflate at all, and the PICKER is what proved it was the layout)
 
 **The Clinic Card widget rendered as "Can't load widget" on a black background in the widget picker AND on the home screen, while the other nine rendered correctly.** Found by the owner looking at the phone, and it had been open since the widgets first shipped.

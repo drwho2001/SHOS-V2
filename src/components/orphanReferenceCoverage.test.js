@@ -240,7 +240,54 @@ function collectCheckedFields() {
 const REPAIR = path.join(SRC, "calculations", "referenceRepair.js");
 const OPTION_USAGE = path.join(SRC, "calculations", "optionListUsage.js");
 const REGISTRY_USAGE = path.join(SRC, "calculations", "registryUsage.js");
+// The `recordType:` and `targetType:` string literals the checker actually
+// reports, read off real ObjectProperty nodes.
+//
+// WHY THIS MATTERS, and why the repair module's graceful fallback made it
+// necessary. `referenceRepair.describeRepair` answers an unknown type with
+// `canRepair: false` and a human-readable reason instead of throwing. That is
+// correct runtime design and it is exactly why the gap was invisible: a new
+// collection's dangling references would be DETECTED by this file's other
+// assertions and silently UNREPAIRABLE by the fix, with the only evidence a
+// sentence of prose in a screen the user may never open. A guard is the only
+// thing that turns that into a test failure.
+function collectCheckerTypes(propName) {
+  const ast = parse(fs.readFileSync(CHECKER_FILE, "utf8"), { sourceType: "module", errorRecovery: true });
+  const found = new Set();
+  const walk = (node) => {
+    if (!node || typeof node !== "object") return;
+    if (node.type === "ObjectProperty" && node.key?.name === propName && node.value?.type === "StringLiteral") {
+      found.add(node.value.value);
+    }
+    for (const k of Object.keys(node)) {
+      if (k === "loc" || k === "leadingComments" || k === "trailingComments") continue;
+      const c = node[k];
+      if (Array.isArray(c)) c.forEach(walk);
+      else if (c && typeof c === "object") walk(c);
+    }
+  };
+  walk(ast.program);
+  return found;
+}
+
+// Keys of RECORD_REPOSITORIES / TARGET_SOURCES in referenceRepair.js. Both are
+// plain object literals, so objectKeys() reads them directly.
+function repairKeys(varName) {
+  return new Set(objectKeys(REPAIR, varName));
+}
+
+// Types deliberately not repairable in place, each with the reason. An entry
+// without a reason fails the assertion below.
+const REPAIR_EXEMPT = {
+  // This one lives inside a notification checklist ITEM rather than on the list
+  // itself, so clearing it means removing or editing an item - a different
+  // operation with different consequences - and referenceRepair declines rather
+  // than guessing. describeRepair says the same thing in prose; this makes it a
+  // test failure if someone deletes the explanation without replacing it.
+  "Partner Notification": "its dangling contactId lives inside a checklist item, so it is cleared by editing that list directly.",
+};
 const OPTION_LISTS_REPO = path.join(SRC, "repositories", "customOptionListsRepository.js");
+const CHECKER_FILE = CHECKER;
 
 // The `computeUsage:` bindings in Manage lists' own registry table, as
 // [rowKey, functionSuffixName] pairs.
@@ -287,6 +334,12 @@ function objectKeys(file, varName) {
 
 // Exported function names in a module, read off real ExportNamedDeclaration
 // nodes so a name mentioned only in this file's own prose never counts.
+//
+// Note the node type: `export const X` parses as an ExportNamedDeclaration
+// whose `declaration` is a VariableDeclaration CONTAINING declarators, not a
+// VariableDeclarator. A collector that checks for VariableDeclarator there
+// matches nothing and reports zero, which is how the sibling guard in
+// sampleDataRepositoryCoverage.test.js found 0 exporters on its first run.
 function exportedFunctions(file) {
   const ast = parse(fs.readFileSync(file, "utf8"), { sourceType: "module", errorRecovery: true });
   const names = [];
@@ -473,6 +526,66 @@ describe("hand-maintained inventories stay in sync with what they claim to cover
     for (const fn of exportedFunctions(REGISTRY_USAGE)) {
       const name = fn.replace(/^compute/, "").replace(/Usage$/, "");
       expect(wired.has(name), `${fn} exists but no registry row uses it - dead or a missing binding`).toBe(true);
+    }
+  });
+});
+
+// The two maps referenceRepair.js still had no guard on when it shipped. Both
+// were in sync when measured, so these are not fixes - they are why neither
+// needs one tomorrow.
+describe("every type the checker reports can actually be repaired", () => {
+  it("has a repository for every recordType the checker reports", () => {
+    const reported = collectCheckerTypes("recordType");
+    const mapped = repairKeys("RECORD_REPOSITORIES");
+    expect(reported.size, "the recordType sweep found nothing").toBeGreaterThanOrEqual(10);
+    expect(mapped.size, "the RECORD_REPOSITORIES sweep found nothing").toBeGreaterThanOrEqual(10);
+    const missing = [...reported].filter((t) => !mapped.has(t)).sort();
+    expect(
+      missing,
+      `these are reported but not repairable - describeRepair will decline in prose and no test will notice: ${missing.join(", ")}`,
+    ).toEqual([]);
+  });
+
+  it("has a target source for every targetType the checker reports", () => {
+    const reported = collectCheckerTypes("targetType");
+    const mapped = repairKeys("TARGET_SOURCES");
+    expect(reported.size, "the targetType sweep found nothing").toBeGreaterThanOrEqual(10);
+    expect(mapped.size, "the TARGET_SOURCES sweep found nothing").toBeGreaterThanOrEqual(10);
+    const missing = [...reported].filter((t) => !mapped.has(t)).sort();
+    expect(missing, `these cannot be re-pointed at anything: ${missing.join(", ")}`).toEqual([]);
+  });
+
+  it("carries no recordType the checker stopped reporting", () => {
+    const reported = collectCheckerTypes("recordType");
+    const dead = [...repairKeys("RECORD_REPOSITORIES")].filter((t) => !reported.has(t)).sort();
+    expect(dead, `these map a record type nothing reports: ${dead.join(", ")}`).toEqual([]);
+  });
+
+  it("carries no targetType the checker stopped reporting", () => {
+    const reported = collectCheckerTypes("targetType");
+    const dead = [...repairKeys("TARGET_SOURCES")].filter((t) => !reported.has(t)).sort();
+    expect(dead, `these map a target type nothing reports: ${dead.join(", ")}`).toEqual([]);
+  });
+
+  it("gives every repair exemption a written reason", () => {
+    for (const [type, reason] of Object.entries(REPAIR_EXEMPT)) {
+      expect(typeof reason, `${type} needs a reason`).toBe("string");
+      expect(reason.trim().length, `${type}'s reason must not be empty`).toBeGreaterThan(20);
+    }
+  });
+
+  it("exempts nothing that is actually repairable", () => {
+    // The reverse direction on the exemption map: an entry left behind after the
+    // special case was fixed would make a real gap invisible, because the
+    // coverage assertions above consult it.
+    const reported = collectCheckerTypes("recordType");
+    const mapped = repairKeys("RECORD_REPOSITORIES");
+    for (const type of Object.keys(REPAIR_EXEMPT)) {
+      expect(mapped.has(type), `${type} is exempted but referenceRepair already handles it - drop the exemption`).toBe(true);
+    }
+    // And the exemption must correspond to something real.
+    for (const type of Object.keys(REPAIR_EXEMPT)) {
+      expect(reported.has(type), `${type} is exempted but the checker never reports it`).toBe(true);
     }
   });
 });
