@@ -2,7 +2,7 @@
 // (24 Sep 2026 settings split). Behavior unchanged; only the file moved.
 import React, { useState, useRef, useEffect } from "react";
 import { NEUTRAL_DARK as DARK, STICKY_SCREEN_HEADER_TOP } from "../../calculations/designTokens";
-import { WarningIcon as AlertTriangle, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, TrashIcon as Trash2, LinkBreakIcon as LinkBreak, BugIcon as Bug } from "@phosphor-icons/react";
+import { WarningIcon as AlertTriangle, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, TrashIcon as Trash2, LinkBreakIcon as LinkBreak, BugIcon as Bug, WarningDiamondIcon as WarningDiamond } from "@phosphor-icons/react";
 import { ACCENTS, ACTION, ACTION_TEXT_SAFE, NEUTRAL, RADIUS, TYPE, resolveDarkAccent } from "../../calculations/designTokens";
 import { useDarkModePreference } from "../../calculations/darkModePreference";
 import { useLoadedMemo } from "../../calculations/loadedRepositoryState";
@@ -13,6 +13,18 @@ import { localStorageAdapter } from "../../storage/storageAdapter";
 import { resetAllData } from "../../repositories/resetAllData";
 import { countSampleData, clearSampleData, onSampleDataChanged } from "../../repositories/clearSampleData";
 import { findOrphanReferences } from "../../calculations/orphanReferenceCheck";
+import { findDataAnomalies, ANOMALY_KIND_LABELS } from "../../calculations/dataAnomalyScan";
+
+// Display order for the anomaly groups. An array rather than Object.keys so the
+// order is stated rather than depending on the order the scan happened to push
+// findings - a report whose sections reshuffle between runs is one nobody
+// learns to read.
+const ANOMALY_ORDER = ["doubleLogged", "ordering", "futureDate"];
+
+// The scanner writes "tomorrow" / "8 hours" / "25 days" and never a sentence
+// with a full stop, so joining reasons needs the capital rather than producing
+// "its date is 25 days in the future, and it records... .".
+const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 import { describeRepair, clearDanglingReference, repointDanglingReference, repairOptions, undoRepair } from "../../calculations/referenceRepair";
 import { ContactRepository } from "../../repositories/contactRepository";
 import { EncounterRepository } from "../../repositories/encounterRepository";
@@ -220,6 +232,30 @@ export function DeveloperToolsScreen({ onClose }) {
   // way to see that reflected without leaving and reopening Developer
   // Tools. Same refreshKey/useLoadedMemo re-run pattern already used
   // elsewhere in this file (see notifPrefs/medPrefs above).
+  // Data anomaly scan. Separate state from the orphan check above so
+  // refreshing one does not silently re-run the other: they read different
+  // repositories and a shared counter would make it impossible to tell which
+  // one a "Check again" tap had actually re-read. The empty array is the not-
+  // yet-loaded sentinel and is safe here precisely because this scan only ever
+  // ADDS findings - unlike Global Search, where an empty array is
+  // indistinguishable from a genuine "no matches" and had to become null.
+  const [anomalyKey, setAnomalyKey] = useState(0);
+  const [anomalyChecking, setAnomalyChecking] = useState(false);
+  const anomaly = useLoadedMemo(
+    async () => {
+      const r = await findDataAnomalies();
+      return { total: r.total, findings: r.findings, byKind: r.byKind };
+    },
+    [anomalyKey],
+    { total: 0, findings: [], byKind: {} }
+  );
+  const [showAnomalies, setShowAnomalies] = useState(false);
+  const recheckAnomalies = async (e) => {
+    e.stopPropagation();
+    setAnomalyChecking(true);
+    setAnomalyKey((k) => k + 1);
+    setTimeout(() => setAnomalyChecking(false), 400);
+  };
   const [orphanCheckKey, setOrphanCheckKey] = useState(0);
   const [orphanChecking, setOrphanChecking] = useState(false);
   const orphans = useLoadedMemo(() => findOrphanReferences(), [orphanCheckKey], []);
@@ -427,6 +463,72 @@ export function DeveloperToolsScreen({ onClose }) {
             {orphans.map((o, i) => (
               <OrphanRow key={`${o.recordId}|${o.field}|${o.danglingId}`} orphan={o} onRepaired={() => setOrphanCheckKey((k) => k + 1)} darkMode={darkMode} />
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* NEW — dataAnomalyScan.js. Deliberately a SEPARATE row from the broken
+          references above rather than a section merged into it, because the two
+          answer different questions: that one asks "does a record point at
+          something that is not there" (a definite fault, with a repair), and
+          this one asks "do these records tell a coherent story" (a question,
+          with NO repair offered). Merging them would imply a fix this one
+          deliberately does not have, which is the difference that matters most
+          on a screen whose whole purpose is being trusted about data.
+
+          No write actions anywhere in this row, by design rather than by
+          omission: a wrong auto-correction on health data is silent and the
+          owner finds out at a clinic. Every finding explains itself in words so
+          the judgement stays with the person, and the double-log finding is
+          worded as "worth a look" because a same-venue pair is EVIDENCE, not
+          proof — two separate meetings in one evening are a real thing. */}
+      <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, margin: "0 16px 20px", padding: "4px 14px" }}>
+        <div onClick={() => anomaly.total > 0 && setShowAnomalies((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", cursor: anomaly.total > 0 ? "pointer" : "default" }}>
+          <WarningDiamond size={15} color={anomaly.total > 0 ? ACTION.gold : (darkMode ? DARK.textDisabled : NEUTRAL.textDisabled)} />
+          <span style={{ fontSize: 13, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, flex: 1 }}>Records worth a look</span>
+          <span onClick={recheckAnomalies} role="button" tabIndex={0} aria-label="Check records again"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); recheckAnomalies(e); } }}
+            style={{ fontSize: 11, fontWeight: 700, color: ACCENTS.home, cursor: "pointer", padding: "2px 4px" }}>
+            {anomalyChecking ? "Checking…" : "Check again"}
+          </span>
+          <span style={{ fontSize: 13, color: anomaly.total > 0 ? ACTION.gold : (darkMode ? DARK.textPrimary : NEUTRAL.textPrimary), fontWeight: 700 }}>
+            {anomaly.total === 0 ? "None found" : `${anomaly.total}${showAnomalies ? " ▲" : " ▼"}`}
+          </span>
+        </div>
+        {showAnomalies && anomaly.total > 0 && (
+          <div style={{ padding: "0 0 9px" }}>
+            <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, paddingBottom: "7px", lineHeight: 1.45 }}>
+              These are questions about your own records, not problems to fix automatically. Each one explains why it was flagged, and nothing here changes anything by itself.
+            </div>
+            {ANOMALY_ORDER.map((kind) => {
+              const group = anomaly.findings.filter((f) => f.kind === kind);
+              if (group.length === 0) return null;
+              return (
+                <div key={kind} style={{ paddingBottom: "8px" }}>
+                  <div style={{ ...TYPE.sectionLabel, fontSize: 10, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, paddingBottom: "4px" }}>{ANOMALY_KIND_LABELS[kind]} · {group.length}</div>
+                  {group.map((f, i) => (
+                    <div key={`${f.kind}|${f.recordId}|${i}`} style={{ padding: "7px 0", borderTop: i === 0 ? "none" : "1px solid " + (darkMode ? DARK.border : NEUTRAL.border) }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary }}>
+                        {f.recordType}: {f.recordLabel}
+                      </div>
+                      <div style={{ fontSize: 12, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, paddingTop: "2px", lineHeight: 1.45 }}>
+                        {cap(f.why)}
+                      </div>
+                      {f.pairedWithId && (
+                        <div style={{ fontSize: 12, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, paddingTop: "3px", lineHeight: 1.45 }}>
+                          Paired with <span style={{ fontWeight: 600 }}>{f.pairedWithLabel}</span>. Two records can be a real second meeting rather than a duplicate — this one is only pointing at the possibility.
+                        </div>
+                      )}
+                      {f.fixableByEditingTheRecord && (
+                        <div style={{ fontSize: 11, color: darkMode ? DARK.textDisabled : NEUTRAL.textDisabled, paddingTop: "3px" }}>
+                          Correct this by editing the record's own dates.
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
