@@ -24,6 +24,7 @@ import { TrashRepository } from "../repositories/trashRepository";
 import { exportRecordAsFile } from "../storage/recordExportService";
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 import { findClosestMatch } from "../calculations/fuzzyMatch";
+import { compareKeysAreEqual } from "../calculations/textCanonicalisation";
 import { ClinicVisitsRepository } from "../repositories/clinicVisitsRepository";
 import { TestingRepository } from "../repositories/testingRepository";
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
@@ -171,7 +172,12 @@ function MeasurementTypeField({ value, onChange, options, rankedOptions, listNam
   const commit = (raw) => {
     const trimmed = raw.trim();
     if (!trimmed) return;
-    const exactMatch = options.find((o) => o.toLowerCase() === trimmed.toLowerCase());
+    // WIDENED 7 Oct 2026 - compareKeysAreEqual rather than a raw toLowerCase()
+    // comparison, so "eGFR" and "e.gfr" or a stray trailing space resolve to
+    // the existing option instead of silently creating a near-duplicate group.
+    // The option already on file keeps its own spelling: canonicalisation here
+    // is for COMPARISON only and never rewrites what the user typed.
+    const exactMatch = options.find((o) => compareKeysAreEqual(o, trimmed));
     if (exactMatch) { if (listName) CustomOptionListsRepository.recordUsage(listName, exactMatch); setPendingSuggestion(null); return; }
     const close = findClosestMatch(options, trimmed);
     if (close) { setPendingSuggestion(close); return; }

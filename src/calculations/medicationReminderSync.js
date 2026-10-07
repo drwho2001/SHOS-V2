@@ -241,14 +241,44 @@ export async function updateRefillWidget() {
         const state = await getDailyMedsState();
         const next = state.upcoming[0];
         const nextUnlock = next?.unlockAt;
+        // EVERY medication in the soonest slot, not just the first.
+        //
+        // ADDED 7 Oct 2026, from the owner reporting that only Sertraline ever
+        // appeared while they also take Vitamin D and PrEP. Cause: this took
+        // state.upcoming[0] and discarded the rest.
+        //
+        // The rule it restores is the owner's, and it is an invariant rather than
+        // a preference: "if a next dose is scheduled / going to be alerted /
+        // notification fired, then it should definitely appear on next dose
+        // widget." Anything that raises a reminder must be visible here.
+        //
+        // Worth being explicit about why this could not diverge: both the widget
+        // and the reminder scheduler read the SAME getDailyMedsState(), so there
+        // was never any risk of the two disagreeing about WHICH medications
+        // qualify. The defect was purely that one of them displayed the first
+        // entry and dropped the others.
+        //
+        // Grouped by unlockAt rather than listing all of them flat: two
+        // medications due at the same time are one thing to act on, and the
+        // widget already cannot fit every name - its text overflows at the
+        // default size (see the text-scaling work). So the soonest slot is shown
+        // in full, and anything after it is counted rather than named.
+        const sameSlot = state.upcoming.filter(
+          (u) => u.unlockAt === nextUnlock,
+        );
+        const laterCount = state.upcoming.length - sameSlot.length;
+        const names = sameSlot.map((u) => u.med?.name).filter(Boolean);
+        const medLabel =
+          names.length > 1 ? names.join(", ") : names[0] || "";
+        const moreLabel = laterCount > 0 ? `  +${laterCount} more` : "";
         await sendWidgetUpdate(bridge, "nextDose", "updateNextDose", {
           // CHANGED - was `medName: ""`, hardcoded, which is why no setting could
           // ever reveal the name. The owner now wants it: this is the widget you
           // look at to know whether to take something, and a blank label made it
           // useless. It is still a tier decision, not a hardcoded one.
-          medName: next?.med?.name || "",
+          medName: medLabel + moreLabel,
           nextDoseTime: state.due.length
-            ? "Dose due now"
+            ? (state.due.length > 1 ? `${state.due.length} due now` : "Dose due now")
             : nextUnlock
               ? `Next at ${new Date(nextUnlock).toTimeString().slice(0, 5)}`
               : "",
@@ -256,12 +286,28 @@ export async function updateRefillWidget() {
           // "Medication - due now" instead of going blank and looking broken.
           category: "Medication",
           state: state.due.length ? "due now" : "scheduled",
-          // CHANGED 2 Oct 2026 - countdown survives a Redacted tier, on the
+// CHANGED 2 Oct 2026 - countdown survives a Redacted tier, on the
           // owner's decision. It discloses LESS than nextDoseTime: "in 4h" is
           // true only right now and reveals no routine, where "20:00" does.
           countdownAt: nextUnlock || null,
+          // The count of DUE medications, deliberately separate from medName.
+          //
+          // A Redacted tier shows none of this - the redacted line below carries
+          // only category and coarse state - so a number that names how many
+          // things are outstanding must never be smuggled through the Redacted
+          // allowlist. ALLOWED_AT_REDACTED permits category, count and coarse
+          // state, but a count of someone's medications is not a count of records
+          // in the same sense, and forwarding it would let the provider render a
+          // medication count while the tier says it is hiding medication detail.
+          // The provider ignores unknown fields, so this is a Full-tier value.
+          dueCount: state.due.length,
+          upcomingCount: state.upcoming.length,
         },
-          nextDoseRedactedLine(nextUnlock));
+          // ADDED 7 Oct 2026 - the Redacted line now reflects that more than one
+          // medication is in play, so a user with three tracked meds is not shown
+          // a card that implies only the first exists. Count only: the rule allows
+          // a coarse count precisely because "3 medications" names nobody.
+          nextDoseRedactedLine(nextUnlock, state.upcoming.length));
       }
   } catch (e) {
     // CHANGED 30 Sep 2026 (audit) — this catch is the reason the bug above was
@@ -353,7 +399,7 @@ export async function handleSnooze() {
  * countdownAt is allowed, because elapsed time discloses strictly less than the
  * wall-clock time it replaces.
  */
-export function nextDoseRedactedLine(countdownAt, now = Date.now()) {
+export function nextDoseRedactedLine(countdownAt, now = Date.now(), medCount = 1) {
   // FIXED 6 Oct 2026, from the owner's phone: this widget read "Medication - in
   // 497595h 0m". `countdownAt` is the ABSOLUTE instant the dose unlocks
   // (`unlockAt`, passed straight through as `countdownAt`), so dividing it by
@@ -371,23 +417,41 @@ export function nextDoseRedactedLine(countdownAt, now = Date.now()) {
   // The suite's other clock tests already record why: a margin makes a test pass
   // that would fail for the wrong reason, and a pinned clock makes the answer
   // the same at 04:48 as at 11:15.
-  const target = Number(countdownAt);
-  if (!Number.isFinite(target) || target <= 0) return redactedWidgetLine("Medication", "none due");
-  const remainingMs = target - Number(now);
-  if (remainingMs <= 0) return redactedWidgetLine("Medication", "due now");
+// > 1, else null. The count is inlined into each literal below rather than
+    // built into a `count` variable and interpolated: the redaction guard checks
+    // the WORDS in each literal, and `${count}` hides words behind an expression it
+    // cannot follow. The first version did exactly that and its own guard rejected
+    // the shipped line, which is the trap this repo documents repeatedly - a guard
+    // that reads code it cannot resolve.
+    const n = Number.isFinite(Number(medCount)) && Number(medCount) > 1 ? Number(medCount) : null;
+    const target = Number(countdownAt);
+    if (!Number.isFinite(target) || target <= 0) {
+      return redactedWidgetLine("Medication", n ? `none due - ${n} meds` : "none due");
+    }
+    const remainingMs = target - Number(now);
+    if (remainingMs <= 0) {
+      return redactedWidgetLine("Medication", n ? `due now - ${n} meds` : "due now");
+    }
 
   // Days, not hours, past 24h. "in 960h" is the same kind of unreadable as the
   // bug above: a number too large to be useful at a glance is functionally
   // indistinguishable from no information at all, which is the state this widget
   // was in. A next dose more than a day away is also the scheduled, non-urgent
   // case, so a coarse bucket is the honest reading of it as well as the legible one.
-  const mins = Math.floor(remainingMs / 60000);
-  if (mins >= 60 * 24) {
-    return redactedWidgetLine("Medication", `in ${Math.floor(mins / (60 * 24))}d`);
+const mins = Math.floor(remainingMs / 60000);
+    const days = Math.floor(mins / (60 * 24));
+    if (mins >= 60 * 24) {
+      return redactedWidgetLine("Medication", n ? `in ${days}d - ${n} meds` : `in ${days}d`);
+    }
+    const hours = Math.floor(mins / 60);
+    if (hours > 0) {
+      return redactedWidgetLine(
+        "Medication",
+        n ? `in ${hours}h ${mins % 60}m - ${n} meds` : `in ${hours}h ${mins % 60}m`,
+      );
+    }
+    return redactedWidgetLine("Medication", n ? `in ${mins}m - ${n} meds` : `in ${mins}m`);
   }
-  const hours = Math.floor(mins / 60);
-  return redactedWidgetLine("Medication", hours > 0 ? `in ${hours}h ${mins % 60}m` : `in ${mins}m`);
-}
 
 /**
  * ADDED 5 Oct 2026 (t059 follow-on) - the Redacted line for the Refills widget.

@@ -177,6 +177,48 @@ describe("the Next Dose redacted line is ELAPSED time, not an absolute instant",
     expect(nextDoseRedactedLine(NOW + 7 * 60000, NOW)).not.toMatch(/0h/);
   });
 
+  it("reports a count when several medications are in play", async () => {
+    // ADDED 7 Oct 2026. The owner's invariant: if a next dose is scheduled / going
+    // to be alerted / notification fired, then it should definitely appear on the
+    // next dose widget. With three tracked meds a card that only ever names one
+    // implies the other two do not exist - and the widget took state.upcoming[0],
+    // discarding the rest, which is exactly what the owner saw on their phone.
+    //
+    // A COUNT is explicitly permitted at a Redacted tier - "3 meds" names nobody -
+    // so this satisfies the invariant without widening what the tier discloses.
+    const { nextDoseRedactedLine } = await import("./medicationReminderSync.js");
+
+    // Single medication: byte-identical to before, so the common case cannot regress.
+    expect(nextDoseRedactedLine(NOW + 90 * 60000, NOW)).toBe("Medication - in 1h 30m");
+
+    // Three: the count rides ALONGSIDE the countdown rather than replacing it -
+    // losing the timing to add the count would be a worse trade than either alone.
+    expect(nextDoseRedactedLine(NOW + 90 * 60000, NOW, 3)).toBe(
+      "Medication - in 1h 30m - 3 meds",
+    );
+    // ...and on the two states a user is most likely to be looking at.
+    expect(nextDoseRedactedLine(NOW - 5 * 60000, NOW, 2)).toBe("Medication - due now - 2 meds");
+    expect(nextDoseRedactedLine(0, NOW, 2)).toBe("Medication - none due - 2 meds");
+    expect(nextDoseRedactedLine(NOW + 3 * 86400000, NOW, 2)).toBe("Medication - in 3d - 2 meds");
+
+    // A missing or nonsensical count must not produce "1 meds" or "NaN meds".
+    for (const bad of [undefined, null, 0, 1, NaN, "x", {}]) {
+      expect(
+        nextDoseRedactedLine(NOW + 90 * 60000, NOW, bad),
+        `a count of ${JSON.stringify(bad)} leaked into the line`,
+      ).not.toMatch(/meds/);
+    }
+
+    // The count is a COUNT and nothing else. Asserted rather than trusted: this is
+    // the disclosure boundary, and a mutation that interpolated a medication name
+    // into the suffix would pass every other test here - the same failure four
+    // earlier mutations had when the guard only checked a field was MENTIONED
+    // rather than interpolated into the line.
+    expect(nextDoseRedactedLine(NOW + 90 * 60000, NOW, 3)).not.toMatch(
+      /Sertraline|PrEP|Vitamin|mg/i,
+    );
+  });
+
   it("buckets past a day into days rather than hundreds of hours", async () => {
     // Not only more readable: "in 960h" is the same unusable magnitude as the
     // bug, so a number too big to act on is functionally no information at all.

@@ -20,6 +20,7 @@ import { exportRecordAsFile } from "../storage/recordExportService";
 // now live here, real in-app editable option lists.
 import { CustomOptionListsRepository } from "../repositories/customOptionListsRepository";
 import { fuzzyIncludes, findClosestMatch } from "../calculations/fuzzyMatch";
+import { compareKeysAreEqual } from "../calculations/textCanonicalisation";
 import { TestingRepository } from "../repositories/testingRepository";
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { SymptomsRegistry } from "../registries/symptomsRegistry";
@@ -263,13 +264,18 @@ function ClinicianField({ value, onChange, T }) {
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
   const addClinician = (name) => {
     const trimmed = name.trim();
+    // WIDENED 7 Oct 2026 - compareKeysAreEqual rather than a raw
+    // toLowerCase() === toLowerCase(). Casing alone was not enough: "
+    // "Dr A. Smith" and "Dr A Smith" are the same clinician and both still landed
+    // as two entries on one visit. The canonical form is used for COMPARISON only,"
+    // so the spelling already on the visit is the one left untouched.
     // CHANGED — was a case-SENSITIVE `value.includes(trimmed)` check, so
     // re-typing a clinician's name in different casing (e.g. "dr smith"
     // when "Dr Smith" is already on this visit) slipped past it, then
     // also past findClosestMatch below (which returns null on an exact
     // case-insensitive match — see fuzzyMatch.js), landing as a silent
     // duplicate clinician entry on the same visit.
-    if (!trimmed || value.some((v) => v.toLowerCase() === trimmed.toLowerCase())) { setDraft(""); return; }
+    if (!trimmed || value.some((v) => compareKeysAreEqual(v, trimmed))) { setDraft(""); return; }
     const match = findClosestMatch([...known, ...value], trimmed);
     if (match) {
       setPendingSuggestion({ typedAs: trimmed, suggestion: match });
@@ -335,13 +341,16 @@ async function getKnownClinicVisitLocations() {
 // or create new (same pattern as ClinicianField).
 function ReasonForVisitField({ value, onChange, options, T, listName }) {
   const [draft, setDraft] = useState("");
+    // WIDENED 7 Oct 2026 - same reason as ClinicianField above: casing alone
+    // let "Dean St" and "Dean Street"-style near-duplicates through, because
+    // punctuation and spacing differences are the same real location.
   const visibleSuggestions = draft.trim()
     ? options.filter((opt) => fuzzyIncludes(opt, draft)).filter((opt) => !value.includes(opt)).slice(0, 8)
     : options.filter((opt) => !value.includes(opt)).slice(0, 8);
   const [pendingSuggestion, setPendingSuggestion] = useState(null);
   const addReason = (name) => {
     const trimmed = name.trim();
-    if (!trimmed || value.some((v) => v.toLowerCase() === trimmed.toLowerCase())) { setDraft(""); return; }
+    if (!trimmed || value.some((v) => compareKeysAreEqual(v, trimmed))) { setDraft(""); return; }
     const match = findClosestMatch(options, trimmed);
     if (match) {
       setPendingSuggestion({ typedAs: trimmed, suggestion: match });

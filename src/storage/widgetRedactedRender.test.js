@@ -659,13 +659,29 @@ describe("redacting the payload is not the same as redacting the screen", () => 
         // stays forbidden and only the nearest days are spelled out. A user
         // glancing at a lock screen learns "it is soon", never "it is the 14th".
         "now", "today", "tomorrow", "days",
+        // Unit noun for a coarse count, as in "3 meds". A COUNT is what the Redacted
+        // rule explicitly permits - "3 medications" names nobody - and the word is a
+        // unit, not a value: it cannot carry a drug name, a dose or a person. Without
+        // it the widget cannot say more than one medication is in play, which is the
+        // owner's own invariant: anything that will alert must appear on the widget.
+        "meds",
         // Preposition, for the same relative-time phrasing ("in 12 days").
         // Grammatically inert - it cannot identify anybody - and it is already
         // permitted inside the countdown pattern, so allowing it standalone
         // widens nothing.
         "in",
       ]);
-      const COUNTDOWN = /^in \d+[hdm]( \d+[hm])?$/;
+      // The countdown shape, optionally followed by a coarse count.
+      //
+      // The count suffix exists because of the owner's invariant that anything
+      // which will alert must appear on the widget: with three tracked
+      // medications, a card that only ever names one implies the other two do not
+      // exist. A COUNT is explicitly permitted at a Redacted tier because "3 meds"
+      // names nobody, and the suffix is deliberately narrow - an optional number
+      // followed by the literal unit word - so widening it cannot admit a drug
+      // name or a place. A mutation that hardcoded "at Dean Street" still fails,
+      // because neither appears in this pattern.
+      const COUNTDOWN = /^in \d+[hdm]( \d+[hm])?( - \d+ meds)?$/;
       // TEMPLATE literals are scanned too, not only double-quoted ones. Almost every
       // line is built with a template, so scanning only "..." checked nothing
       // that ships - and six mutations that rewrote a template to leak a drug, a

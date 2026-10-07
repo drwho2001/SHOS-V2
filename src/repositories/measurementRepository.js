@@ -77,7 +77,11 @@ export const BLOOD_PRESSURE_UNIT = "mmHg";
 // measurement in this file; "in" already covers the same information
 // a foot-and-inches reading does (68 in = 5'8"), and the unit field
 // still accepts free-typed text if a different unit is ever needed.
-const UNIT_CONFIG = {
+// EXPORTED (7 Oct 2026) so textCanonicalisation.js can read the SAME conversion
+// table for its comparison key rather than re-declaring the factors. A second
+// copy of a conversion factor would be invisible when it drifted: every chart
+// would still render, and would just quietly disagree with every other.
+export const UNIT_CONFIG = {
   Testosterone: { canonical: "nmol/L", alternates: { "ng/dL": (v) => v * 0.0347 } },
   Estradiol: { canonical: "pmol/L", alternates: { "pg/mL": (v) => v * 3.671 } },
   Weight: { canonical: "kg", alternates: { lb: (v) => v * 0.453592 } },
