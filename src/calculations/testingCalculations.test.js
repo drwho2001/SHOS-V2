@@ -5,6 +5,7 @@ import {
   isRoutineRetestEligible,
   recordsShareInfections,
   ROUTINE_RETEST_PANEL,
+  routineRetestPrefill,
   suggestedRoutineRetestDate,
 } from "./testingCalculations";
 
@@ -144,5 +145,56 @@ describe("plans superseded by a test the user already did", () => {
     expect(findSupersededRoutineRetestPlans([plan], null)).toEqual([]);
     expect(findSupersededRoutineRetestPlans([plan], { date: null, testingFor: [] })).toEqual([]);
     expect(findSupersededRoutineRetestPlans(null, doneTest)).toEqual([]);
+  });
+});
+
+describe("what a scheduled retest carries over from the test it follows", () => {
+  it("copies the owner's own sample types, which is what makes it accurate for them", () => {
+    // Triple-site is the case that matters: a plan saying only "Urine"
+    // under-specifies the retest for someone whose pharyngeal and rectal
+    // samples are the ones that actually get tested.
+    const source = { sampleType: ["Urine", "Throat swab", "Rectal swab", "Blood"] };
+    expect(routineRetestPrefill(source).sampleType)
+      .toEqual(["Urine", "Throat swab", "Rectal swab", "Blood"]);
+  });
+
+  it("does NOT share the array with the source record", () => {
+    // The aliasing bug: two persisted records holding one array means an
+    // in-place edit to either silently changes the other before either is saved.
+    const source = { sampleType: ["Urine"] };
+    const prefill = routineRetestPrefill(source);
+    expect(prefill.sampleType).not.toBe(source.sampleType);
+    prefill.sampleType.push("Blood");
+    expect(source.sampleType).toEqual(["Urine"]);
+  });
+
+  it("always carries the routine panel, whatever the source test screened for", () => {
+    // Eligibility already requires the full panel, so this is the definition of
+    // the plan rather than a copy - a one-off extra must not widen it.
+    const source = { testingFor: ["HIV", "Hepatitis B", "Mpox"] };
+    expect(routineRetestPrefill(source).testingFor).toEqual([...ROUTINE_RETEST_PANEL]);
+  });
+
+  it("is empty rather than wrong when there is no usable source test", () => {
+    for (const bad of [null, undefined, {}, { sampleType: null }, { sampleType: "Urine" }]) {
+      expect(routineRetestPrefill(bad).sampleType).toEqual([]);
+    }
+  });
+
+  it("drops blank and non-string entries rather than persisting them as samples", () => {
+    const source = { sampleType: ["Urine", "", "   ", null, 7, "Blood"] };
+    expect(routineRetestPrefill(source).sampleType).toEqual(["Urine", "Blood"]);
+  });
+
+  it("collapses a duplicated sample instead of persisting it twice", () => {
+    expect(routineRetestPrefill({ sampleType: ["Urine", "Urine"] }).sampleType)
+      .toEqual(["Urine"]);
+  });
+
+  it("hands back fresh arrays on every call, not one shared constant", () => {
+    const a = routineRetestPrefill({ sampleType: [] });
+    const b = routineRetestPrefill({ sampleType: [] });
+    expect(a.testingFor).not.toBe(b.testingFor);
+    expect(a.sampleType).not.toBe(b.sampleType);
   });
 });

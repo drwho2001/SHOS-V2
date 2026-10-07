@@ -37,6 +37,63 @@ export const ROUTINE_RETEST_PANEL = Object.freeze([
   "Syphilis",
 ]);
 
+/**
+ * What a scheduled retest carries over from the test it follows.
+ *
+ * This copies the OWNER'S OWN previous choices. That distinction is the whole
+ * design, and it is what keeps this out of the "no diagnosis engine, no
+ * automated clinical risk scoring" line CLAUDE.md puts permanently out of scope:
+ * it is "do what you did last time", not "here is what you ought to be tested
+ * for". Everything it produces stays editable on the plan.
+ *
+ * WHY SAMPLE TYPE IS THE ONE THAT EARNS ITS PLACE. BASHH's summary guidance on
+ * STI testing (2023) makes the sample SITE behaviour-dependent rather than a
+ * detail - "3 site testing required for all sexually active MSM" (throat, urine,
+ * rectum), and extragenital swabs "should be guided by sexual history taking",
+ * with pharyngeal and rectal sampling explicitly "not recommended for routine
+ * screening" in women. So for someone who screens triple-site, a plan that says
+ * only "Urine" under-specifies the retest in a way that could silently miss the
+ * site that actually matters to them. Copying their own last sample types is
+ * accurate for them in a way that a generic default could not be.
+ *
+ * WHAT IS DELIBERATELY NOT CARRIED, and why each is a different reason:
+ *
+ *   provider / setting - free text that names a clinic. It is the field most
+ *     likely to have changed since last time, and pre-filling it reads as
+ *     "we booked you in here" when nothing was booked at all.
+ *   notes, writtenPlan, trackingInfo - per-test observations about a test that
+ *     has not happened. Reusing them would put a past result's narrative in
+ *     front of a future result.
+ *   resultIds / organismIds - a plan is an intention, so it has no results. This
+ *     is also what stops isRoutineRetestEligible matching a plan and proposing
+ *     to retest the plan.
+ *   kitCodePk/Sk, kitAccessKey - belong to a specific self-test kit, which is
+ *     spent once used.
+ *   followUpActionedDate - the follow-up has already happened.
+ *
+ * WHY testingFor IS THE PANEL AND NOT THE SOURCE TEST'S LIST. Eligibility
+ * already requires the source test to have screened the whole panel, so
+ * carrying its own list over would only ever ADD one-off extras (Hepatitis B,
+ * Mpox, pregnancy) on top of the panel. A ROUTINE plan is the minimum routine
+ * set - BASHH's own words are that "the minimum investigations, even if
+ * asymptomatic, are tests for chlamydia, gonorrhoea, syphilis and HIV" - and
+ * this app has exactly one retest reminder, which is armed on that panel.
+ * Smuggling an unscreened-for extra into the plan would make the plan's own
+ * title disagree with the record and imply a reminder exists for something it
+ * does not cover. One-off extras belong on a test the user adds themselves.
+ */
+export function routineRetestPrefill(sourceTest) {
+  const samples = Array.isArray(sourceTest?.sampleType) ? sourceTest.sampleType : [];
+  return {
+    testingFor: [...ROUTINE_RETEST_PANEL],
+    // COPIED, never aliased. Two persisted records sharing one array is the
+    // shape behind this repo's documented "two truths drifted apart" bugs: an
+    // in-place edit to one record would silently change the other before either
+    // was saved.
+    sampleType: [...new Set(samples.filter((s) => typeof s === "string" && s.trim()))],
+  };
+}
+
 export function isCompletedTestRecord(test) {
   return Boolean(test && !test.isArchived && !test.isRoutineRetestPlan);
 }

@@ -21,7 +21,7 @@ import { localStorageAdapter as storage } from "../storage/storageAdapter.js";
 // link to it, never delete the Measurement itself (see
 // measurementRepository.js's own "one room, three doors" comment).
 import { MeasurementRepository } from "./measurementRepository.js";
-import { ROUTINE_RETEST_PANEL } from "../calculations/testingCalculations.js";
+import { ROUTINE_RETEST_PANEL, routineRetestPrefill } from "../calculations/testingCalculations.js";
 // ADDED — real gap found via the new orphan-reference checker
 // (orphanReferenceCheck.js): delete-time cleanup needs both directions
 // of the Testing↔Clinic Visits relationship — clinicVisitsRepository.js
@@ -377,12 +377,18 @@ export const TestingRepository = {
     return newTest;
   },
 
-  async createRoutineRetestPlan({ title, date, sourceTestId }) {
+async createRoutineRetestPlan({ title, date, sourceTestId }) {
     const day = String(date || "").slice(0, 10);
     const parsedDay = new Date(`${day}T12:00:00.000Z`);
     if (!String(title || "").trim() || !/^\d{4}-\d{2}-\d{2}$/.test(day) || Number.isNaN(parsedDay.getTime()) || parsedDay.toISOString().slice(0, 10) !== day) {
       throw new Error("A title and valid planned test date are required.");
     }
+    // Derived here rather than passed in by the caller, so the prefill cannot be
+    // forgotten by a second call site. A source test that no longer resolves
+    // yields no samples, which is the safe direction: a plan with fewer prefilled
+    // fields is a plan the owner fills in, not a plan that is quietly wrong.
+    const source = sourceTestId ? await this.getById(sourceTestId) : null;
+    const prefill = routineRetestPrefill(source);
 return this.create({
       title: String(title || "").trim(),
       // Midday, not midnight. A plan's date is an intention for a calendar day,
@@ -397,9 +403,13 @@ return this.create({
       // test supersedes it, and the list row cannot say what is being retested.
       // testingFor here is descriptive, not a result: resultIds stays empty, so
       // isRoutineRetestEligible cannot match a plan and propose retesting it.
-      testingFor: [...ROUTINE_RETEST_PANEL],
+      testingFor: prefill.testingFor,
+      // Carried from the test this follows, because the sample SITE is the part
+      // of a retest most likely to still be right and most costly to get wrong.
+      // See routineRetestPrefill for why this is the owner's own prior choice and
+      // not a recommendation derived from guidance.
+      sampleType: prefill.sampleType,
       resultIds: [],
-      sampleType: [],
       mostRecent: false,
       isRoutineRetestPlan: true,
       routineRetestSourceTestId: sourceTestId || null,

@@ -58,6 +58,43 @@ describe("TestingRepository routine retest plans", () => {
     expect(plan.date).toBe("2026-09-20T12:00:00.000Z");
   });
 
+  it("carries the source test's sample types onto the plan", async () => {
+    // The repository-level assertion, because a passing unit test on the pure
+    // prefill proves the FUNCTION works and not that anything calls it - the
+    // exact gap this repo has been bitten by repeatedly.
+    const source = await TestingRepository.create({
+      title: "Screening",
+      date: "2026-06-01T09:00:00.000Z",
+      testingFor: ["Gonorrhoea", "Chlamydia", "HIV", "Syphilis"],
+      sampleType: ["Urine", "Throat swab", "Blood"],
+    });
+
+    const plan = await TestingRepository.createRoutineRetestPlan({
+      title: "Routine retest",
+      date: "2026-09-20",
+      sourceTestId: source.id,
+    });
+
+    expect(plan.sampleType).toEqual(["Urine", "Throat swab", "Blood"]);
+
+    // And it must be a SEPARATE array in storage: editing the plan must not
+    // reach back and rewrite the completed test it follows.
+    const storedSource = await TestingRepository.getById(source.id);
+    expect(storedSource.sampleType).toEqual(["Urine", "Throat swab", "Blood"]);
+  });
+
+  it("carries no samples when the source test no longer resolves", async () => {
+    // Safe direction: a plan with fewer prefilled fields is one the owner fills
+    // in, whereas a plan prefilled from a wrong record is one they might not check.
+    const plan = await TestingRepository.createRoutineRetestPlan({
+      title: "Routine retest",
+      date: "2026-09-20",
+      sourceTestId: "test_does_not_exist",
+    });
+    expect(plan.sampleType).toEqual([]);
+    expect(plan.testingFor.length).toBeGreaterThan(0);
+  });
+
   it("refuses a plan with no title or an impossible date", async () => {
     await expect(TestingRepository.createRoutineRetestPlan({ title: "  ", date: "2026-09-20" })).rejects.toThrow();
     await expect(TestingRepository.createRoutineRetestPlan({ title: "x", date: "" })).rejects.toThrow();

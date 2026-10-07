@@ -979,6 +979,71 @@ verify:fast green - build, lint, **1397 tests across 119 files**, encoding, inhe
 
 **Still open, unchanged: t069** (an old record carrying both a legacy seed id and a renamed legacy field diverges from the frozen current definition and is not re-keyed; safe for data, can leave a legacy demo id). It needs a scope decision, not a fix.
 
+## Recently shipped (6 Oct 2026, later still still - a routine retest now carries the sample sites forward, and the reason is the one field a retest can silently get wrong)
+
+**Session D, t099. Owner's ask: "the add routine could auto fill fields which are
+consistent/unchanging - ie testing for and sample types; base off bashh for 3/12."
+The instinct was right, and the reason it matters is not the convenience.**
+
+**`testingFor` was already filled** (with the canonical panel), so the new half is
+**`sampleType`, which was `[]`** — and per BASHH's 2023 summary guidance that is
+the field with real consequence, not a detail. The guidance makes sample **site**
+behaviour-dependent: "3 site testing required for all sexually active MSM" (throat,
+urine, rectum), extragenital swabs "should be guided by sexual history taking", and
+pharyngeal/rectal sampling is explicitly "not recommended for routine screening" in
+women. So for someone who screens triple-site, a plan saying only "Urine"
+under-specifies the retest in exactly the way that could silently miss the site
+that matters to them. **Copied from the test it follows, not derived from
+guidance** — that distinction is what keeps this on the right side of the
+"no diagnosis engine, no automated clinical risk scoring" line: it is "do what you
+did last time", never "here is what you ought to be tested for". Everything stays
+editable on the plan.
+
+**What is deliberately NOT carried, each for a different reason**, recorded at the
+function rather than left to a reader: provider/setting (free text naming a clinic,
+the field most likely to have changed, and pre-filling it reads as "we booked you
+in" when nothing was booked); notes/writtenPlan/trackingInfo (per-test observations
+about a test that has not happened); resultIds/organismIds (a plan is an intention —
+this is also what stops `isRoutineRetestEligible` matching a plan); the kit codes
+(a self-test kit is spent once used); followUpActionedDate (it already happened).
+
+**`testingFor` stays the panel rather than the source test's own list**, and this
+was the one judgement call in the ask. Eligibility already requires the full panel,
+so copying the source list would only ever *add* one-off extras (Hepatitis B, Mpox)
+on top of it. BASHH's own words are that "the minimum investigations, even if
+asymptomatic, are tests for chlamydia, gonorrhoea, syphilis and HIV" — which is
+exactly the panel — and this app has exactly one retest reminder, armed on that
+panel. Smuggling an extra in would make the plan's title disagree with the record
+and imply a reminder exists for something it does not cover. Flagged to the owner
+rather than decided silently.
+
+**The arrays are COPIED, never aliased.** Two persisted records sharing one array
+is the shape behind this repo's documented "two truths drifted apart" bugs: an
+in-place edit to one record silently changes the other before either is saved.
+Asserted directly, not assumed.
+
+**The derivation is called from the repository, not passed in by the caller**, so a
+second call site cannot forget it — and a source test that no longer resolves
+yields no samples, which is the safe direction: a plan with fewer prefilled fields
+is one the owner fills in, not one that is quietly wrong.
+
+**Measured boundary, including one thing I nearly reported as a bug.** 7 pure tests
++ 2 repository tests, both mutation-verified (aliasing the array instead of copying
+it: 3 red; hardcoding `sampleType: []` in the repository so the prefill is never
+used: 1 red), lint, build, encoding clean. Verified live against a dev server: a
+plan created from a real three-site source test **persists all three sites across a
+full page reload**, the source test is unchanged, zero page errors. The one thing
+I did **not** prove by driving the UI: the plan's detail view rendering the row.
+I attempted it, my navigation silently never left the Home dashboard, and the
+probe's own "on Testing sub-tab" check read `true` as a false positive because
+"Log test" appears on Home's Quick add — so a first pass of that probe reported a
+plan "missing from the list", which was **my harness, not an app defect**. The
+render path itself is an unconditional `<ReadRow label="Sample type">` plus the
+edit sheet's chips, with `isPlan` used only for the badge. **This is the sixth
+recorded instance in this file of a measurement made by a probe that was measuring
+the wrong screen**, and it is why the boundary above stops at persistence rather
+than claiming a visual confirmation I did not get.
+
 ## Recently shipped (6 Oct 2026, later still - 19 of the 20 Settings headers, and the one I could not commit had another session's work in it)
 
 **Session D, t075. "Settings: sticky header leaves a gap against the status bar
