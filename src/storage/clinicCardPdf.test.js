@@ -14,6 +14,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ROOT = process.cwd();
 const PDF = readFileSync(path.join(ROOT, "src", "storage", "clinicCardPdfService.js"), "utf8");
@@ -150,8 +151,16 @@ describe("Clinic Card PDF - clinical-safety footer", () => {
     const { CLINIC_CARD_SECTIONS } = await import(
       "../calculations/clinicCardVisibilityPreference.js"
     );
+    // `fileURLToPath`, not a manual `new URL(...).pathname.replace(/^\//,"")`.
+    // That strip-leading-slash trick is correct for a POSIX path and produces a
+    // path with NO root at all on Windows: "C:/x/y.js" becomes "C:/x/y.js" only
+    // by luck, while on CI the runner's absolute path lost its leading "/" and
+    // resolved as a RELATIVE path, so the read threw ENOENT for a file that is
+    // committed and present. It passed locally because cwd happened to make the
+    // relative path land correctly - the same class of "passes on the machine
+    // that wrote it" that this repo has now hit on locale, timezone and memory.
     const src = readFileSync(
-      path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\//, "")), "clinicCardPdfService.js"),
+      path.join(path.dirname(fileURLToPath(import.meta.url)), "clinicCardPdfService.js"),
       "utf8",
     );
     // The ordered body where the sections are emitted, comments stripped first so
