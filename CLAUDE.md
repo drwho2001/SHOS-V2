@@ -835,6 +835,16 @@ which is the same shape as every other time in this file where a check reported
 green on something that had not actually been exercised. The guard now rejects a
 `#` inside any `if:` block.
 
+## Recently shipped (7 Oct 2026, later - t096: episodes and symptoms still open after a long time, reported as a count and never as advice)
+
+**Session A, pool task `t096`.** New `findNeverResolved()` in `dataAnomalyScan.js` flags episodes and symptom entries still open after 60 days. The threshold is a presentation decision, not a clinical one — 60 days is the point where "still open" stops being a useful status and starts being a stale record that may have been resolved in reality but never marked so in the app. The finding is a COUNT and a LINK, never advice, never a clinical judgement, per the owner's explicit instruction.
+
+**Wired into three surfaces.** Developer Tools shows the findings alongside the existing anomaly kinds (the `ANOMALY_ORDER` array gains `"neverResolved"`). The Episodes landing page and the Symptom Log landing page each gain a subtle, dismissable banner showing the count — "N episodes still open after 60+ days" / "N symptoms still open after 60+ days" — with a per-session Dismiss button following the due-reminder pattern. Never on Home, never alarming.
+
+**The banner is deliberately subtle.** It uses `T.surfaceVariant` background, `T.textSecondary` text, and a `T.textDisabled` dismiss button — the lowest-prominence surface in the design system. The owner's words: "open 400 days is one sentence from nagging, which the app refuses on principle." So the banner reports the fact and nothing more.
+
+**Measured:** 1566 tests across 131 files green (unchanged — the new scan is additive and the app's own data has no never-resolved records). Build, lint, encoding clean.
+
 ## Recently shipped (7 Oct 2026, latest - t090 + t098: the Next Dose widget shows every medication in the slot, and near-duplicates stop accumulating)
 
 **Session A, taking over after all sessions stopped.** Two pieces of in-flight work were in the tree, both complete and green. Committed together because they share a commit boundary, not because they share a theme.

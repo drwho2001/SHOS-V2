@@ -309,6 +309,75 @@ async function findPossibleDoubleLogs(now = new Date()) {
 }
 
 /**
+ * Episodes and symptoms still open after this many days.
+ *
+ * The threshold is a presentation decision, not a clinical one. It is set high
+ * enough that a record open for this long is likely forgotten rather than
+ * actively being tracked - the owner's own words were "open 400 days is one
+ * sentence from nagging". 60 days is the point where "still open" stops being
+ * a useful status and starts being a stale record that may have been resolved
+ * in reality but never marked so in the app.
+ *
+ * This is NOT a clinical judgement. It says nothing about whether the symptom
+ * or episode should have been resolved by now - only that the app has been
+ * carrying it as open for a long time, which is a fact about the data.
+ */
+export const NEVER_RESOLVED_DAYS = 60;
+
+/**
+ * Episodes and symptoms still open after a long time.
+ *
+ * The finding is a COUNT and a LINK, never advice. The owner's instruction was
+ * explicit: "report a COUNT and a LINK, never advice, never a clinical
+ * judgement." So the `why` field states the fact (open for N days) and nothing
+ * more. The record's own detail screen is where any action would live.
+ *
+ * Episodes use their start encounter's date as the anchor (when the episode
+ * began); symptoms use their own `dateStarted`. Both are calendar-day claims,
+ * so they use the shared `calendarDaysBetween` alias like every other
+ * day-count in this file.
+ */
+async function findNeverResolved(todayKey) {
+  const results = [];
+  const minDays = NEVER_RESOLVED_DAYS;
+
+  for (const ep of await EpisodeRepository.getAll()) {
+    if (ep.isArchived || ep.resolvedDate) continue;
+    const startEnc = await EncounterRepository.getById(ep.startEncounterId);
+    const startDay = dayKeyOf(startEnc?.date);
+    if (!startDay) continue;
+    const days = daysBetween(todayKey, startDay);
+    if (days === null || days < minDays) continue;
+    flag(results, {
+      kind: "neverResolved",
+      recordType: "Episode",
+      recordLabel: ep.title || "(untitled)",
+      recordId: ep.id,
+      why: `open for ${days} days (started ${startDay}) and still not resolved`,
+      fixableByEditingTheRecord: true,
+    });
+  }
+
+  for (const s of await SymptomLogRepository.getAll()) {
+    if (s.isArchived || s.dateResolved) continue;
+    const started = dayKeyOf(s.dateStarted);
+    if (!started) continue;
+    const days = daysBetween(todayKey, started);
+    if (days === null || days < minDays) continue;
+    flag(results, {
+      kind: "neverResolved",
+      recordType: "Symptom Log entry",
+      recordLabel: s.title || "(untitled)",
+      recordId: s.id,
+      why: `open for ${days} days (started ${started}) and still not resolved`,
+      fixableByEditingTheRecord: true,
+    });
+  }
+
+  return results;
+}
+
+/**
  * Every anomaly this scan can find, as one flat list.
  *
  * `todayKey` is injectable so the future-date rule can be tested at a pinned
@@ -320,6 +389,7 @@ export async function findDataAnomalies({ todayKey } = {}) {
     ...(await findFutureDates(today)),
     ...(await findContradictions()),
     ...(await findPossibleDoubleLogs()),
+    ...(await findNeverResolved(today)),
   ];
   return {
     todayKey: today,
@@ -328,6 +398,7 @@ export async function findDataAnomalies({ todayKey } = {}) {
       futureDate: results.filter((r) => r.kind === "futureDate").length,
       ordering: results.filter((r) => r.kind === "ordering").length,
       doubleLogged: results.filter((r) => r.kind === "doubleLogged").length,
+      neverResolved: results.filter((r) => r.kind === "neverResolved").length,
     },
     total: results.length,
   };
@@ -337,5 +408,6 @@ export const ANOMALY_KIND_LABELS = {
   futureDate: "Dated in the future",
   ordering: "Dates contradict each other",
   doubleLogged: "Possibly logged twice",
+  neverResolved: "Still open after a long time",
 };
 

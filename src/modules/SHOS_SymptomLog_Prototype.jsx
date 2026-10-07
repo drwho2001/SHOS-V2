@@ -27,6 +27,7 @@ import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { isRecentRecord } from "../calculations/recordRecency";
+import { findDataAnomalies, NEVER_RESOLVED_DAYS } from "../calculations/dataAnomalyScan";
 
 // ADDED 19 Aug 2026 — Symptom Log (Symptoms Tracker in Notion — see
 // symptomLogRepository.js's header for the deliberate naming decision
@@ -595,6 +596,13 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
     pressTimer.current = setTimeout(() => { setSelectMode(true); toggleSelected(id); }, 750);
   };
   const cancelPress = () => { clearTimeout(pressTimer.current); pressStartPos.current = null; };
+  // ADDED 7 Oct 2026 (t096) — never-resolved symptom banner. Same pattern as
+  // the Episodes banner: report a COUNT, never advice. Dismissable per-session.
+  const [dismissedNeverResolved, setDismissedNeverResolved] = useState(false);
+  const anomaly = useLoadedMemo(async () => {
+    const r = await findDataAnomalies();
+    return { total: r.total, findings: r.findings, byKind: r.byKind };
+  }, [], { total: 0, findings: [], byKind: {} });
   const handleTouchMove = (evt) => {
     if (!pressStartPos.current || !evt.touches?.[0]) return;
     const dx = evt.touches[0].clientX - pressStartPos.current.x;
@@ -734,6 +742,23 @@ function SymptomLogLanding({ onOpen, onAdd, T, entries, refresh, deleteToast, un
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search symptom entries"
           style={{ width: "100%", padding: "8px 12px", borderRadius: radius.sm, border: `1px solid ${T.border}`, background: T.surfaceVariant, color: T.textPrimary, fontFamily: "'Inter', sans-serif", fontSize: 13, boxSizing: "border-box" }} />
       </div>
+      {/* ADDED 7 Oct 2026 (t096) — subtle, dismissable banner for symptoms still
+          open after a long time. Same pattern as the Episodes banner: report a
+          COUNT, never advice. Dismissable per-session. */}
+      {(() => {
+        const neverResolved = anomaly.findings.filter((f) => f.kind === "neverResolved" && f.recordType === "Symptom Log entry");
+        if (dismissedNeverResolved || neverResolved.length === 0) return null;
+        return (
+          <div style={{ margin: "8px 16px 0", padding: "8px 12px", borderRadius: radius.sm, background: T.surfaceVariant, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, color: T.textSecondary, flex: 1 }}>
+              {neverResolved.length} symptom{neverResolved.length > 1 ? "s" : ""} still open after {NEVER_RESOLVED_DAYS}+ days
+            </span>
+            <span role="button" tabIndex={0} aria-label="Dismiss" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDismissedNeverResolved(true); } }} onClick={() => setDismissedNeverResolved(true)} style={{ fontSize: 12, fontWeight: 700, color: T.textDisabled, cursor: "pointer", padding: "2px 4px" }}>
+              Dismiss
+            </span>
+          </div>
+        );
+      })()}
       <div aria-live="polite" aria-atomic="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}>
         {(active.length + resolved.length) > 0 ? `${active.length} active, ${resolved.length} resolved${query.trim() ? `, searched "${query}"` : ""}` : query.trim() ? "No symptom entries match" : "No symptom entries logged"}
       </div>

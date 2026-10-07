@@ -19,7 +19,7 @@ import { findDataAnomalies, ANOMALY_KIND_LABELS } from "../../calculations/dataA
 // order is stated rather than depending on the order the scan happened to push
 // findings - a report whose sections reshuffle between runs is one nobody
 // learns to read.
-const ANOMALY_ORDER = ["doubleLogged", "ordering", "futureDate"];
+const ANOMALY_ORDER = ["doubleLogged", "ordering", "futureDate", "neverResolved"];
 
 // The scanner writes "tomorrow" / "8 hours" / "25 days" and never a sentence
 // with a full stop, so joining reasons needs the capital rather than producing

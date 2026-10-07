@@ -28,6 +28,7 @@ import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { isEpisodeOpen, compareEpisodesOpenFirst, episodeStatusLabel, episodeGroupKey } from "../calculations/episodeCalculations";
 import { useLoadedMemo } from "../calculations/loadedRepositoryState";
+import { findDataAnomalies, NEVER_RESOLVED_DAYS } from "../calculations/dataAnomalyScan";
 import { formatStoredDate } from "../calculations/dateInputHelpers";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useAnonymiseMode, contactName } from "../calculations/anonymiseDisplay";
@@ -749,6 +750,14 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
   // their own single group rather than being scattered by date, since
   // that priority ordering is deliberate, not chronological.
   const episodeGroups = isDesktopWidth ? groupConsecutive(sorted, (e) => episodeGroupKey(e, (k) => monthLabel(k))) : null;
+  // ADDED 7 Oct 2026 (t096) — never-resolved episode banner. The owner's
+  // instruction: report a COUNT and a LINK, never advice, never a clinical
+  // judgement. Dismissable per-session, following the due-reminder pattern.
+  const [dismissedNeverResolved, setDismissedNeverResolved] = useState(false);
+  const anomaly = useLoadedMemo(async () => {
+    const r = await findDataAnomalies();
+    return { total: r.total, findings: r.findings, byKind: r.byKind };
+  }, [], { total: 0, findings: [], byKind: {} });
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -764,6 +773,25 @@ function TimelineLanding({ onOpen, onAdd, onClose, T }) {
       <div onClick={onAdd} role="button" tabIndex={0} aria-label="Add episode" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAdd(); } }} style={{ position: "fixed", bottom: "calc(90px + env(safe-area-inset-bottom))", right: 20, width: 56, height: 56, borderRadius: 999, background: T.healthcareBlue, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.2)", zIndex: 20 }}>
         <Plus size={24} />
       </div>
+      {/* ADDED 7 Oct 2026 (t096) — subtle, dismissable banner for episodes still
+          open after a long time. The owner's instruction: report a COUNT and a
+          LINK, never advice, never a clinical judgement. So this says "N episodes
+          still open after 60+ days" and nothing more. Dismissable per-session,
+          following the due-reminder pattern. */}
+      {(() => {
+        const neverResolved = anomaly.findings.filter((f) => f.kind === "neverResolved" && f.recordType === "Episode");
+        if (dismissedNeverResolved || neverResolved.length === 0) return null;
+        return (
+          <div style={{ margin: "8px 16px 0", padding: "8px 12px", borderRadius: radius.sm, background: T.surfaceVariant, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, color: T.textSecondary, flex: 1 }}>
+              {neverResolved.length} episode{neverResolved.length > 1 ? "s" : ""} still open after {NEVER_RESOLVED_DAYS}+ days
+            </span>
+            <span role="button" tabIndex={0} aria-label="Dismiss" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDismissedNeverResolved(true); } }} onClick={() => setDismissedNeverResolved(true)} style={{ fontSize: 12, fontWeight: 700, color: T.textDisabled, cursor: "pointer", padding: "2px 4px" }}>
+              Dismiss
+            </span>
+          </div>
+        );
+      })()}
       <div style={{ padding: "12px 16px 100px" }}>
         {sorted.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 20px", color: T.textDisabled, fontSize: 13 }}>
