@@ -1698,6 +1698,160 @@ async function testTimezoneWallClockRoundTrip(browser) {
 // that were pure memory starvation: a targeted run is the only way to debug
 // one flow interactively. An unmatched name runs NOTHING rather than
 // everything, so a typo can never masquerade as a full green run.
+
+/**
+ * ADDED 7 Oct 2026 (t102) - the scheduled routine retest, end to end in a browser.
+ *
+ * WHY THIS FLOW HAD TO EXIST. Nothing seeded is ELIGIBLE for a routine retest:
+ * the newest test in the seed data is a Gonorrhoea-only test of cure, so the
+ * "Schedule this retest" action never renders on seed data. That is precisely why
+ * the previous entry had to stop at "persistence verified, rendering not proved"
+ * rather than claim the path worked - and it is the same reason a unit test on the
+ * pure eligibility function proves the RULE and not the WIRING.
+ *
+ * So this flow builds the eligible test itself, through the real UI, which is the
+ * only thing that can honestly assert the whole chain.
+ *
+ * The discipline throughout is the one this suite already documents: COUNT AND
+ * THROW. Every control this flow needs is unconditional in the UI, so a missing
+ * one is a real defect rather than an expected state - and an "if (await count())"
+ * around any of these steps would let the whole flow pass having done nothing,
+ * which is the single most expensive failure mode recorded in this file.
+ */
+async function testRoutineRetestScheduling(browser) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(String(e.message || e)));
+
+  // The panel a routine retest is armed on. Selecting all four is what makes a
+  // test ELIGIBLE, so this is the whole reason the flow has to build a test.
+  const PANEL = ["Gonorrhoea", "Chlamydia", "HIV", "Syphilis"];
+
+  // One panel test, built through the real form. "Negative" is what eligibility
+  // requires (no positive anywhere, at least one negative); the sample types are
+  // what the prefill is supposed to carry forward onto the plan.
+  async function addPanelTest({ title, samples, negative }) {
+    const addBtn = page.locator('[aria-label="Add test"]').first();
+    await addBtn.click({ timeout: 8000 });
+    await waitForText(page, "New test");
+
+    const titleInput = page.locator('input[aria-label="Title"]').first();
+    await titleInput.fill(title);
+
+    // The New-test form does NOT default the date, and eligibility requires one -
+    // a test saved with a null date is never eligible, so the scheduling action
+    // simply never renders and the flow would time out on a step that looks
+    // unrelated to its cause. Yesterday rather than today, so the stored date is
+    // unambiguously at-or-before "today" in both the local wall clock the input
+    // builds and the UTC day-key the eligibility check compares against.
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const dateInput = page.locator('input[aria-label="Date"]').first();
+    if (!(await dateInput.count())) throw new Error("no Date input in the test form");
+    await dateInput.fill(yesterday);
+
+    for (const s of samples || []) {
+      const chip = page.getByRole("button", { name: s, exact: true }).first();
+      if (!(await chip.count())) throw new Error("no sample-type chip " + s);
+      await chip.click({ timeout: 5000 });
+    }
+    for (const infection of PANEL) {
+      const chip = page.getByRole("button", { name: infection, exact: true }).first();
+      if (!(await chip.count())) throw new Error("no 'Testing for?' chip " + infection);
+      await chip.click({ timeout: 5000 });
+      // A positive assertion rather than a bare click, so a chip that renders but
+      // does not toggle cannot pass silently.
+      const pressed = await chip.getAttribute("aria-pressed");
+      assert(pressed === "true", "chip " + infection + " is selected after being clicked");
+    }
+    if (negative) {
+      const neg = page.getByRole("button", { name: "Negative", exact: true }).first();
+      if (!(await neg.count())) throw new Error("no Negative result suggestion chip");
+      await neg.click({ timeout: 5000 });
+    }
+
+    const save = page.getByText("Save", { exact: true }).first();
+    await save.click({ timeout: 8000 });
+    // Saving lands on the new test's own detail screen.
+    await waitForText(page, title);
+    assert(await page.getByText(title, { exact: false }).count() > 0, "saved test did not open");
+  }
+
+  try {
+    await page.goto(APP_URL, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(2500);
+    for (const label of ["Skip", "Not now", "Get started", "Keep it for now", "Don't ask again"]) {
+      const b = page.getByRole("button", { name: label, exact: true });
+      if (await b.count()) { await b.first().click({ timeout: 2500 }).catch(() => {}); await page.waitForTimeout(300); }
+    }
+    await page.evaluate(() => {
+      const el = [...document.querySelectorAll('[role="button"]')]
+        .find((b) => (b.textContent || "").trim() === "Keep it for now");
+      if (el) el.click();
+    }).catch(() => {});
+    await waitForAppReady(page);
+    await dismissTransientBanners(page);
+    await nav(page, "Healthcare");
+    await page.getByRole("tab", { name: /Testing/i }).first().click({ timeout: 8000 });
+    // NOT waitForText: the Add-test control is a div whose accessible NAME is
+    // "Add test" and whose visible text is an icon, so innerText.includes can
+    // never find it. Waiting on the control is also the sound form - a missing
+    // one is a real defect, not a state to tolerate.
+    await page.locator('[aria-label="Add test"]').first()
+      .waitFor({ state: "visible", timeout: 15000 });
+    console.log("  ok - reached the Testing screen");
+
+    // ---- build an eligible completed screen ----
+    const firstTitle = "Routine screen probe";
+    await addPanelTest({ title: firstTitle, samples: ["Urine", "Blood"], negative: true });
+
+    const schedule = page.locator('[aria-label^="Schedule a routine retest around"]').first();
+    await schedule.waitFor({ state: "visible", timeout: 10000 });
+    assert(await schedule.count() > 0, "an eligible negative panel test offers no scheduling action");
+    console.log("  ok - an eligible test offers 'Schedule this retest'");
+    await schedule.click({ timeout: 8000 });
+
+    // ---- the plan carries the sample sites forward ----
+    // NOT waitForText with a regex: it does innerText.includes(t), and a RegExp
+    // coerces to the literal string "/Routine retest/" which is never found.
+    await waitForText(page, "Routine retest");
+    await page.waitForTimeout(700);
+    const body = await page.evaluate(() => document.body.innerText);
+    const sampleRow = /Sample type[\s\S]{0,120}?([^\n]*(Urine|Blood)[^\n]*)/i.exec(body);
+    assert(sampleRow, "the plan's detail shows no Sample type row");
+    assert(/Urine/i.test(sampleRow[1]), "the plan did not carry Urine forward, row reads: " + sampleRow[1]);
+    assert(/Blood/i.test(sampleRow[1]), "the plan did not carry Blood forward, row reads: " + sampleRow[1]);
+    console.log("  ok - the scheduled plan carries both sample sites forward");
+
+    // ---- an EARLY completed test must ask about the plan ----
+    // The plan is roughly three months out and this test is logged today, so the
+    // completed test lands BEFORE the plan's own day. That is the case the owner's
+    // ask named and which had no implementation at all.
+    const listTab = page.getByText("Testing", { exact: false }).first();
+    await listTab.click({ timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(900);
+    const back = page.locator('[aria-label="Back"]').first();
+    if (await back.count()) { await back.click({ timeout: 5000 }).catch(() => {}); await page.waitForTimeout(900); }
+
+    const secondTitle = "Early screen probe";
+    await addPanelTest({ title: secondTitle, samples: ["Urine", "Blood"], negative: true });
+
+    const prompt = page.locator('[role="dialog"][aria-label="Scheduled retest already done"]');
+    await prompt.waitFor({ state: "visible", timeout: 10000 });
+    assert(await prompt.count() > 0, "an early overlapping test raised no question about the plan");
+    const promptText = await prompt.innerText();
+    assert(/you tested before this date/i.test(promptText),
+      "the prompt does not say the test preceded the plan, reads: " + promptText);
+    assert(/Update to the next suggested date/i.test(promptText), "no update option offered");
+    assert(/Keep it as planned/i.test(promptText), "no keep option offered");
+    console.log("  ok - an early test asks, and says so in plain words");
+
+    if (errors.length > 0) throw new Error("Page errors during the routine-retest run:\n" + errors.join("\n"));
+  } finally {
+    await context.close();
+  }
+}
+
 const SMOKE_ONLY = (process.env.SMOKE_ONLY || "").trim().toLowerCase();
 let ranAny = false;
 const run = async (name, fn) => {
@@ -2039,6 +2193,10 @@ const devText = await page.evaluate(() => document.body.innerText);
     // from flow 19 on purpose: they test two different promises (session
     // dismissal vs a persisted acknowledgement) and must not share state.
     await run("banner-ack", () => testBannerAcknowledgementPersists(browser));
+// Own context, and with the other own-context flows ahead of the PWA
+// auto-update flow for the cached-app-shell reason documented above. It builds
+// its OWN eligible test through the real form because nothing seeded qualifies.
+await run("routine-retest", () => testRoutineRetestScheduling(browser));
     // Own context per timezone, placed with the other own-context flows and
     // ahead of the PWA auto-update flow for the cached-app-shell reason this
     // file already documents at length above.

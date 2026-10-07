@@ -1036,6 +1036,61 @@ verify:fast green - build, lint, **1397 tests across 119 files**, encoding, inhe
 
 **Still open, unchanged: t069** (an old record carrying both a legacy seed id and a renamed legacy field diverges from the frozen current definition and is not re-keyed; safe for data, can leave a legacy demo id). It needs a scope decision, not a fix.
 
+## Recently shipped (7 Oct 2026, later still - the scheduled retest is now proved in a browser, and the reason it needed its own test is the whole point)
+
+**Session D, t102. The entry above ended at "not proved: the prompt seen on
+screen", because `scripts/smoke-test.cjs` was CLAIMED BY SESSION B at the time.
+B released it; this is the browser phase that was held rather than written into a
+shared file.**
+
+**Why nothing seeded could have covered this, which is why the flow has to build
+its own data.** No seeded test is ELIGIBLE for a routine retest: the newest test
+in the seed data is a Gonorrhoea-only test of cure, so `isRoutineRetestEligible`
+returns false and the "Schedule this retest" action never renders at all. That is
+precisely why the earlier entry had to stop at persistence rather than claim the
+path worked — and it is the same reason a unit test on the pure eligibility
+function proves the RULE and never the WIRING. So the flow creates an eligible
+screen through the real form: all four panel chips, a Negative result, sample
+types, then Save.
+
+**Three bugs of mine, each found by running the flow rather than by reading it.**
+
+1. I waited on `waitForText(page, "Add test")` — but that control is a `div`
+   whose accessible NAME is "Add test" and whose visible text is an icon, so
+   `innerText.includes` can never find it. And I passed a **RegExp** to
+   `waitForText`, which does `innerText.includes(t)` — a regex coerces to the
+   literal `"/Routine retest/"`. Both were caught by the flow timing out, and both
+   are the shape this file already records: a locator that fails for a reason
+   unrelated to the bug under test.
+2. **The New-test form does not default the date**, and eligibility requires one.
+   The test saved perfectly and was still not eligible, so the scheduling action
+   never appeared and the flow timed out on a step that looked nothing like the
+   cause. I read the stored record rather than guessing: `date: null`. The flow
+   now fills yesterday's date, deliberately, so the stored value is unambiguously
+   at-or-before "today" in both the local wall clock the input builds and the UTC
+   day-key the eligibility check compares.
+3. My chip assertion was worded as a *failure* statement inside the message, so
+   the `assert` helper's `ok - <message>` success line read as a failure in the
+   output. Reworded; the log is a debugging artefact and should not lie.
+
+**The run now proves the new copy on a real screen**, which is the thing the
+previous entry could not claim: `6 Jan 2027 — you tested before this date`, with
+Update / Keep / Archive all present. Every step counts and throws; none of them is
+wrapped in an `if (count())`, which is the single most expensive failure mode
+recorded in this file — a skipped step lets the whole flow pass having done
+nothing.
+
+**Measured boundary, and one honest non-finding.** The flow passes in isolation
+against a real `vite preview` build. A full local suite run failed at flow 1
+("the sample-data banner never appeared", app still on the onboarding Welcome
+slide) — but flow 1 **passes in isolation** at 730 MB free RAM, CI ran that exact
+flow green on `c433b25`, and this change only ADDS a late own-context flow, which
+cannot affect the first one. Per this repo's documented loop the full suite is
+therefore left to CI rather than re-run locally: this file records hours lost to
+smoke failures that were pure memory starvation on this 4 GB machine. **If CI's
+smoke run is red at this commit, treat flow 1 as genuinely broken rather than
+relying on this reasoning.**
+
 ## Recently shipped (7 Oct 2026, latest - an EARLY test now asks about the plan, and the copy that made it impossible to ask honestly)
 
 **Session D, t101 Phase A. The entry below this one listed an unclosed gap: the
