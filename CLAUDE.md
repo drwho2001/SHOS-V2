@@ -1058,6 +1058,47 @@ flight). This change only READS that file; the guard lives in a new
 `src/components/` test, which is the established home for the static AST guards.
 Session D holds `scripts/smoke-test.cjs`, untouched here.
 
+## Recently shipped (7 Oct 2026, later still - the repair row had never been rendered by anything, and that is provable rather than theoretical)
+
+**Session B. The repair UI shipped in `5047f74` with no render coverage, and the reason it had none is structural rather than an oversight.**
+
+**`OrphanRow` renders only when the scan actually found a dangling reference, and
+this app's own data never has one.** A smoke flow can therefore open Developer
+Tools, assert "Broken references" is on screen, and still never mount the
+component carrying every piece of new interaction state. So the browser flow was
+skipped in favour of a real render test — `src/components/orphanRowRender.test.jsx`,
+the first test in this repo to use `@testing-library/react`, against a synthetic
+orphan. Creating a genuine dangling reference through a real product path would
+mean importing a backup whose references point at records it does not contain,
+which would replace the shared page's contacts and break every flow after it.
+
+**This is not hypothetical for this repo.** Two form-render crashes have shipped
+past the whole gate suite: a `SelectField` that threw React error #31 on every
+My Profile edit across three published APKs, and a temporal-dead-zone crash in
+Clinic Card. Neither is reachable by a unit test that imports without rendering,
+which is what "every gate passed" actually means for JSX.
+
+**10 render tests, and the ones that matter are the destructive ones.** A single
+tap must only *ask* — `clearDanglingReference` is asserted NOT called until the
+confirm is tapped, because the confirm step is the entire reason the row is safe
+to offer. Cancel writes nothing. A rejected write reports itself and offers **no
+undo**, because offering undo for something that did not happen is worse than
+offering none. The actions stay hidden while the shape is unresolved, since an
+unknown shape is precisely the case `referenceRepair` refuses to act on.
+
+**5 mutations red, and two of my mutation attempts were themselves faulty rather
+than the test being weak** — one produced unbalanced JSX and failed to parse,
+which is not a valid red and is not counted, and one changed only visible text
+while the `aria-label` the test queries stayed intact. Both were redone. That is
+the same lesson as the harness that scored a parse error as green, one level up:
+"the mutation did not apply" and "the test did not go red" are different
+failures, and a third failure sits beside them — the mutation applied cleanly and
+still tested nothing.
+
+**Known benign noise:** these tests emit React `act(...)` warnings, because
+`describeRepair` resolves asynchronously and updates state outside an act scope.
+They are warnings, not failures, and the suite is green.
+
 ## Recently shipped (6 Oct 2026, later still - the Clinic Card would not inflate at all, and the PICKER is what proved it was the layout)
 
 **The Clinic Card widget rendered as "Can't load widget" on a black background in the widget picker AND on the home screen, while the other nine rendered correctly.** Found by the owner looking at the phone, and it had been open since the widgets first shipped.

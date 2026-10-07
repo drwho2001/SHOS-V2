@@ -59,7 +59,12 @@ function formatBytes(bytes) {
 //
 // The undo keeps the EXACT prior field value rather than re-deriving it, so
 // it cannot itself be the second thing that is subtly wrong.
-function OrphanRow({ orphan, onRepaired, darkMode }) {
+// Exported for its own render test, which is the only way this component can be
+// proven to mount: it renders only when the scan actually found a dangling
+// reference, and this app's data never has one, so the browser smoke suite
+// reaches Developer Tools and sees the section around it without ever mounting
+// this. A render-time crash here would ship invisible.
+export function OrphanRow({ orphan, onRepaired, darkMode }) {
   const [shape, setShape] = useState(null);
   const [confirming, setConfirming] = useState(false);
   const [picking, setPicking] = useState(false);
