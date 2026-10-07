@@ -246,6 +246,18 @@ export async function updateClinicCardWidget(visit) {  try {
           ? new Date(realTimestampFromStored(visit.date)).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
           : "",
         location: visit?.location || "",
+        // ADDED 6 Oct 2026 - the time of day as its OWN field rather than appended
+        // to `date`. The Clinic Card widget shows the date on its summary page and
+        // the time on its appointment page, so neither has to parse the other's
+        // string, and the owner asked for the time specifically.
+        //
+        // Formatted HERE rather than provider-side on purpose: a stored visit date
+        // is a deliberate fake-UTC local wall-clock string (see dateInputHelpers.js),
+        // so formatting it in Java would put the timezone interpretation in the one
+        // file that has no business owning it.
+        visitTime: visit?.date
+          ? new Date(realTimestampFromStored(visit.date)).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+          : "",
         tests: testsStr,
         docType,
         clinicNum,

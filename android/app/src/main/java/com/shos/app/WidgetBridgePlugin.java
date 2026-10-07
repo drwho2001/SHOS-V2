@@ -215,6 +215,13 @@ public class WidgetBridgePlugin extends Plugin {
       opt(call, "tests"),
       opt(call, "docType"),
       opt(call, "clinicNum"),
+      // ADDED 6 Oct 2026 - the appointment's TIME of day, separate from `date`.
+      // The owner asked for the time on the Clinic Card widget's appointment page.
+      // It cannot be derived provider-side: the stored value is a deliberate
+      // fake-UTC local wall-clock string, and formatting it in Java would put the
+      // timezone interpretation in the one file that has no business owning it.
+      // opt() returns "" when absent, so an older JS build simply renders nothing.
+      opt(call, "visitTime"),
       // CHANGED 5 Oct 2026 (t059) - the pre-formatted Redacted line, or "" when
       // the tier is not Redacted. Empty rather than absent so the provider's
       // "is there a redacted line?" check needs no null case and a stale value

@@ -51,6 +51,11 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
 
     private static final String KEY_APPT_REVEALED = "clinic_appt_revealed";
 
+    // ADDED 6 Oct 2026 - the appointment's time of day, kept apart from KEY_APPT_DATE
+    // so the summary page can show a date and the appointment page a time without
+    // either having to parse the other's string.
+    private static final String KEY_APPT_VISIT_TIME = "clinic_appt_visit_time";
+
     // ADDED 5 Oct 2026 (t059) - the pre-formatted one-line wording for a Redacted
     // widget, decided in JS. This is the second provider to get one; DoxyPEP was
     // the first, and it is the reference implementation.
@@ -128,10 +133,10 @@ private static RemoteViews unavailableViews(Context context) {
         String tests = prefs.getString(KEY_APPT_TESTS, "");
         String docType = prefs.getString(KEY_APPT_DOCTYPE, "");
         String clinicNum = prefs.getString(KEY_APPT_CLINIC_NUM, "");
+        String visitTime = prefs.getString(KEY_APPT_VISIT_TIME, "");
         // The NHS number is never stored, so it is never read either. The
         // sensitive row renders masked unless revealed, and the revealed branch
         // hides the NHS line outright - see the branch below.
-        boolean revealed = prefs.getBoolean(KEY_APPT_REVEALED, false);
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.clinic_card_widget);
 
@@ -195,59 +200,78 @@ private static RemoteViews unavailableViews(Context context) {
             views.setViewVisibility(R.id.widget_clinic_date, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_location, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
+            // Page 2's fields are named explicitly rather than relying on the
+            // flipper being parked on page 1. Two reasons: defence in depth, and
+            // because the redaction guard is a STATIC proof - it cannot follow
+            // control flow and see that this branch returns before the full branch
+            // ever writes them. Naming them is what lets it verify anything.
+            views.setViewVisibility(R.id.widget_clinic_location, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_visit_time, android.view.View.GONE);
+            // Also park the flipper on the safe page explicitly, rather than only at
+            // the end of the full branch. Belt and braces: if a future edit adds a
+            // push above here, this page still cannot be the one on screen.
+            views.setDisplayedChild(R.id.widget_clinic_flipper, 0);
             // The four sensitive fields were inside one container until6 Oct 2026 - see the
             // note on setSensitiveVisibility for why they are hidden by name now.
             views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
-            views.setViewVisibility(R.id.widget_clinic_reveal, android.view.View.GONE);
             android.util.Log.i("ClinicCardWidget", "pushing REDACTED views for id=" + appWidgetId);
             appWidgetManager.updateAppWidget(appWidgetId, views);
             return;
         }
 
         if (!title.isEmpty() && !title.equals("No upcoming appointment")) {
+            // PAGE 1 - the safe summary, and the page a glance should land on.
             views.setTextViewText(R.id.widget_clinic_title, title);
             views.setTextViewText(R.id.widget_clinic_date, date);
-            views.setTextViewText(R.id.widget_clinic_location, location);
             views.setTextViewText(R.id.widget_clinic_tests, "Tests: " + tests);
 
-            if (revealed) {
-                views.setTextViewText(R.id.widget_clinic_doctype, docType);
-                views.setTextViewText(R.id.widget_clinic_clinic_num, clinicNum);
-                // The NHS number is NEVER stored any more - WidgetBridgePlugin
-                // ignores the field and the provider has no parameter for it.
-                // The row is hidden rather than left blank, because an empty
-                // line next to a revealed doc type reads as a bug rather than a
-                // deliberate omission.
-                views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.VISIBLE);
-                views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.VISIBLE);
-                views.setViewVisibility(R.id.widget_clinic_reveal, android.view.View.VISIBLE);
-                // LAST, and that ordering is load-bearing: each of the three above
-                // is a separate statement, so hiding the NHS row afterwards cannot
-                // be undone by a later call. Written as one helper it WAS undone -
-                // the helper set this row VISIBLE and silently put the NHS number
-                // back on the home screen.
-                views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
-            } else {
-                views.setTextViewText(R.id.widget_clinic_doctype, "••••• tap to reveal");
-                views.setTextViewText(R.id.widget_clinic_clinic_num, "••••• tap to reveal");
-                views.setTextViewText(R.id.widget_clinic_nhs_num, "••••• tap to reveal");
-                views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.VISIBLE);
-                views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.VISIBLE);
-                views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.VISIBLE);
-                views.setViewVisibility(R.id.widget_clinic_reveal, android.view.View.VISIBLE);
-            }
+            // PAGE 2 - where and when. Populated only at the full tier; at a
+            // Redacted tier this page is never reached because the flipper is
+            // left on page 1 and the values were never written into it.
+            views.setTextViewText(R.id.widget_clinic_location, location);
+            views.setTextViewText(R.id.widget_clinic_visit_time, visitTime);
+
+            // PAGE 3 - identifiers.
+            //
+            // NO MASKING AND NO REVEAL, which is the point of the redesign. The
+            // old design kept these fields in place, rendered them as
+            // "••••• tap to reveal", and flipped a persisted flag on tap - so one
+            // tap in a shoulder-surfing moment left them unmasked until Clear
+            // Storage. Here the identifying content lives on its own page and
+            // whether that page is reachable is decided solely by the privacy
+            // tier. Nothing is ever unmasked in place.
+            views.setTextViewText(R.id.widget_clinic_clinic_num, clinicNum);
+            views.setTextViewText(R.id.widget_clinic_doctype, docType);
+            // The NHS number is NEVER stored - WidgetBridgePlugin ignores the
+            // field and this provider has no parameter for it - so it is hidden
+            // rather than left blank, because an empty line next to a real clinic
+            // number reads as a rendering bug rather than a deliberate omission.
+            views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
         } else {
+            // No upcoming appointment: the summary page still renders, and there is
+            // nothing to put on the other two, so they stay on their empty XML
+            // text. The flipper stays on page 1 rather than being pointed at a
+            // page with nothing in it.
             views.setTextViewText(R.id.widget_clinic_title, "Clinic Card");
             views.setTextViewText(R.id.widget_clinic_date, "No upcoming appointment");
-            views.setTextViewText(R.id.widget_clinic_location, "");
             views.setTextViewText(R.id.widget_clinic_tests, "");
-            views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
-            views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
-            views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
-            views.setViewVisibility(R.id.widget_clinic_reveal, android.view.View.GONE);
         }
+
+        // Always open on the safe page.
+        //
+        // A swipe inside ViewFlipper changes the displayed child in the LAUNCHER's
+        // copy only - RemoteViews has no callback for it, so the provider is never
+        // told and cannot persist the index. Stating that rather than implying
+        // otherwise: a swipe holds until the next push, and pushes happen when the
+        // app is foregrounded or the privacy tier changes, not when the home
+        // screen is glanced at. So in practice a swipe survives the glance that
+        // motivated it and resets next time the app is opened.
+        //
+        // Page 0 is also the correct default rather than merely the safe one: it is
+        // the summary, which is the answer to "do I need to do anything".
+        views.setDisplayedChild(R.id.widget_clinic_flipper, 0);
 
 // Main click is attached ABOVE, before the Redacted branch, so that every
         // tier has a tap target. The two below remain here because both depend on
@@ -261,27 +285,15 @@ private static RemoteViews unavailableViews(Context context) {
             views.setOnClickPendingIntent(R.id.widget_clinic_location, mapPendingIntent);
         }
 
-        // Reveal click
-        Intent revealIntent = new Intent(context, com.shos.app.MainActivity.class);
-
-        // ACTION_VIEW IS LOAD-BEARING, not decoration. Capacitor's own App
-
-        // plugin drops any intent arriving through onNewIntent that is not an
-
-        // ACTION_VIEW - AppPlugin.java:148 does `if (!Intent.ACTION_VIEW.equals
-
-        // (action) || url == null) return;` - so a bare setData() intent never
-
-        // emits appUrlOpen and the tap silently does nothing on a warm app.
-
-        // Verified at source in node_modules/@capacitor/app, not inferred.
-
-        revealIntent.setAction(Intent.ACTION_VIEW);
-        revealIntent.setData(Uri.parse("com.shos.app://widget/reveal-clinic"));
-        revealIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        android.app.PendingIntent revealPendingIntent = android.app.PendingIntent.getActivity(
-            context, appWidgetId * 10 + 2, revealIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
-        views.setOnClickPendingIntent(R.id.widget_clinic_reveal, revealPendingIntent);
+        // THE REVEAL CLICK IS GONE, deliberately.
+        //
+        // It fired com.shos.app://widget/reveal-clinic, which resolves in
+        // deepLinkRoutes.js to { action: "revealClinicCard" } - an action nothing in
+        // App.jsx performs. The route resolved and was then dropped, so tapping
+        // "tap to reveal" did nothing except open the app, which is what the owner
+        // reported. Paging removes the button entirely rather than wiring up a
+        // permanent-unmask that the provider's own comment already called security
+        // theatre, so there is nothing left here to fix or to keep.
 
         android.util.Log.i("ClinicCardWidget", "pushing DATA views for id=" + appWidgetId);
         appWidgetManager.updateAppWidget(appWidgetId, views);
@@ -297,6 +309,7 @@ private static RemoteViews unavailableViews(Context context) {
     // src/storage/widgetPlaintextSink.test.js asserts the write is absent.
     public static void updateClinicCard(Context context, String title, String date, String location,
                                         String tests, String docType, String clinicNum,
+                                        String visitTime,
                                         String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
@@ -315,6 +328,7 @@ private static RemoteViews unavailableViews(Context context) {
             .putString(KEY_APPT_TESTS, tests)
             .putString(KEY_APPT_DOCTYPE, docType)
             .putString(KEY_APPT_CLINIC_NUM, clinicNum)
+            .putString(KEY_APPT_VISIT_TIME, visitTime == null ? "" : visitTime)
             .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .putBoolean(KEY_APPT_REVEALED, false)
             .apply();

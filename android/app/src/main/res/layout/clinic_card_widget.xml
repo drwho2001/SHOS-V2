@@ -1,29 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- CHANGED 6 Oct 2026 - flattened. This was the ONLY one of the ten widget
-     layouts containing a nested ViewGroup, and the only one containing a bare
-     <View> divider; the other nine are all a single LinearLayout of at most four
-     TextViews. The Clinic Card alone rendered as "Can't load widget" on a black
-     background - in the widget picker AND on the home screen - while the other
-     nine rendered correctly.
+<!-- CHANGED 6 Oct 2026 - swipeable pages via ViewFlipper, replacing tap-to-reveal.
+     CHANGED 6 Oct 2026 (earlier) - flattened. This was the only one of the ten
+     widget layouts containing a nested ViewGroup and a bare divider view, and it
+     shipped as the only widget that would not inflate at all.
 
-     The picker evidence is what makes this a LAYOUT fault rather than a provider
-     or push-path fault: the picker inflates previewLayout in the launcher process
-     without ever invoking the provider, so no Java in ClinicCardWidgetProvider can
-     be responsible. That was measured, not assumed.
+     WHY PAGES RATHER THAN TAP-TO-REVEAL. The reveal button did not work: it fired
+     com.shos.app://widget/reveal-clinic, which resolves to an action nothing in
+     App.jsx performs, so the route resolved and was dropped. But the deeper problem
+     was the design it implied. KEY_APPT_REVEALED lives in the widget's own
+     preferences, so "reveal" is a PERMANENT flip, not a per-render mask - one tap in
+     a shoulder-surfing moment left the masked fields unmasked until Clear Storage,
+     which the provider's own comment already called security theatre.
 
-     Why this is a real change and not a probe: the nested row existed only so the
-     sensitive fields could be hidden with ONE setViewVisibility call. That is a
-     convenience, not a requirement - RemoteViews has no inverse selection either
-     way, and hiding four named views individually is exactly what every other
-     provider in this app already does. So flattening costs one extra call per
-     branch and removes the only structural outlier.
+     Pages dissolve that rather than working around it. There is no masked/unmasked
+     state to persist and no button to get wrong: the sensitive content simply lives
+     on its own page, and whether that page exists at all is decided by the privacy
+     tier alone. Nothing is ever "revealed" that was previously hidden in place.
 
-     Verified before changing anything: every @drawable/@color/@string reference
-     in all ten widget layouts and all ten widget_info.xml files resolves; all ten
-     root elements are identical (LinearLayout, match_parent x match_parent,
-     id=widget_root); both preview vector drawables are structurally identical;
-     and there are no drawable-night variants at all, so a night-mode inflate
-     failure is impossible. -->
+     ViewFlipper is the mechanism because it is the only swipeable container
+     RemoteViews supports, and setDisplayedChild(viewId, index) is the documented way
+     to choose the page. It has worked since API 1, so it is safe against this app's
+     minSdk of 24 without a version guard.
+
+     descendantFocusability="blocksDescendants" is required: without it the launcher
+     tries to make the flipper's children focusable as tab stops, and the swipe
+     gesture competes with focus traversal.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -33,78 +35,130 @@
     android:background="@drawable/widget_background"
     android:gravity="center">
 
-    <TextView
-        android:id="@+id/widget_clinic_title"
-        android:layout_width="wrap_content"
+    <ViewFlipper
+        android:id="@+id/widget_clinic_flipper"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Clinic Card"
-        android:textSize="16sp"
-        android:textColor="@color/widget_text_primary"
-        android:textStyle="bold" />
+        android:descendantFocusability="blocksDescendants" />
 
-    <TextView
-        android:id="@+id/widget_clinic_date"
-        android:layout_width="wrap_content"
+    <!-- PAGE 1 - the safe summary. Always present, at every tier. -->
+    <LinearLayout
+        android:id="@+id/widget_clinic_page_summary"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="No upcoming appointment"
-        android:textSize="14sp"
-        android:textColor="@color/widget_good"
-        android:textStyle="bold" />
+        android:orientation="vertical"
+        android:gravity="center">
 
-    <TextView
-        android:id="@+id/widget_clinic_location"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text=""
-        android:textSize="12sp"
-        android:textColor="@color/widget_accent"
-        android:textStyle="bold" />
+        <TextView
+            android:id="@+id/widget_clinic_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Clinic Card"
+            android:textSize="16sp"
+            android:textColor="@color/widget_text_primary"
+            android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/widget_clinic_tests"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text=""
-        android:textSize="12sp"
-        android:textColor="@color/widget_text_muted" />
+        <TextView
+            android:id="@+id/widget_clinic_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="No upcoming appointment"
+            android:textSize="14sp"
+            android:textColor="@color/widget_good"
+            android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/widget_clinic_doctype"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text=""
-        android:textSize="12sp"
-        android:textColor="@color/widget_text_muted" />
+        <TextView
+            android:id="@+id/widget_clinic_tests"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text=""
+            android:textSize="12sp"
+            android:textColor="@color/widget_text_muted" />
+    </LinearLayout>
 
-    <TextView
-        android:id="@+id/widget_clinic_clinic_num"
-        android:layout_width="wrap_content"
+    <!-- PAGE 2 - the appointment itself: when, where. Full tier only. -->
+    <LinearLayout
+        android:id="@+id/widget_clinic_page_visit"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text=""
-        android:textSize="12sp"
-        android:textColor="@color/widget_text_muted" />
+        android:orientation="vertical"
+        android:gravity="center">
 
-    <TextView
-        android:id="@+id/widget_clinic_nhs_num"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text=""
-        android:textSize="12sp"
-        android:textColor="@color/widget_text_muted" />
+        <TextView
+            android:id="@+id/widget_clinic_page_visit_heading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Appointment"
+            android:textSize="12sp"
+            android:textColor="@color/widget_accent"
+            android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/widget_clinic_reveal"
-        android:layout_width="wrap_content"
+        <TextView
+            android:id="@+id/widget_clinic_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text=""
+            android:textSize="14sp"
+            android:textColor="@color/widget_text_primary"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_clinic_visit_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text=""
+            android:textSize="12sp"
+            android:textColor="@color/widget_text_muted" />
+    </LinearLayout>
+
+    <!-- PAGE 3 - identifying detail: clinic number and document type. Full tier only. -->
+    <LinearLayout
+        android:id="@+id/widget_clinic_page_sensitive"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text=""
-        android:textSize="11sp"
-        android:textColor="@color/widget_accent"
-        android:textStyle="bold" />
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/widget_clinic_page_sensitive_heading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Identifiers"
+            android:textSize="12sp"
+            android:textColor="@color/widget_accent"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_clinic_clinic_num"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text=""
+            android:textSize="13sp"
+            android:textColor="@color/widget_text_primary"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_clinic_doctype"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text=""
+            android:textSize="12sp"
+            android:textColor="@color/widget_text_muted" />
+
+        <TextView
+            android:id="@+id/widget_clinic_nhs_num"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text=""
+            android:textSize="12sp"
+            android:textColor="@color/widget_text_muted"
+            android:visibility="gone" />
+    </LinearLayout>
 </LinearLayout>
