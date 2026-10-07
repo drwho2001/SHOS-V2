@@ -20,25 +20,58 @@ const STORAGE_KEY = "shos_clinic_card_visibility";
 // both the settings screen and the render logic, so a future new
 // section can't accidentally forget to be wired into one but not the
 // other.
+// CHANGED 6 Oct 2026 - the order now follows a clinic VISIT rather than an
+// arbitrary one, so the thing you are asked for at reception is at the top
+// instead of hunted for. This array is the ONE source of truth for both the
+// render order and the visibility toggles, so a reorder moves both together and
+// they cannot disagree.
+//
+// THE OWNER'S CORRECTION matters more than the ordering itself. Asked for
+// "contacts at reception", they meant their OWN details - emergency contact, NHS
+// number, clinic number, address, date of birth. But the "Recent contacts"
+// section is their SEXUAL PARTNERS, which belongs later, in the consult. What
+// reception actually needs is exactly what `identity` already holds, so no new
+// field was needed for any of this; it is a position change and nothing else.
+//
+// A widget was deliberately NOT reordered this way: a widget is glanced at, not
+// stepped through, so a sequential order helps only mid-visit. The widget carries
+// a small stage-independent set instead.
+//
+// =========================== RECEPTION / ARRIVAL ===========================
 export const CLINIC_CARD_SECTIONS = [
   { key: "identity", label: "Identity" },
+  // Asked on the update-details form.
   { key: "medications", label: "Current medications" },
   { key: "allergies", label: "Allergies" },
-  { key: "vaccinations", label: "Vaccinations" },
-  { key: "testing", label: "Recent STI testing" },
-  { key: "treatment", label: "Current treatment" },
   // ADDED 2 Sep 2026 — real ask: contraception/pregnancy/menstruation
   // context on the shareable clinic summary. Only ever offered as a
   // toggle when the user has menstrual tracking on at all (see
   // SHOS_ClinicCard_Prototype.jsx) — this key exists here regardless
   // so a later re-enable doesn't lose whatever they'd set it to.
   { key: "menstrualContraception", label: "Menstrual & contraception" },
-  { key: "symptoms", label: "Active symptoms" },
-  { key: "encounters", label: "Recent encounters" },
+
+  // ============================ INTO THE CONSULT ============================
+  // What you recall, or are asked about, once you are in the room. Recent
+  // contacts leads this group rather than sitting at reception - see the
+  // correction above.
+  //
   // ADDED 16 Sep 2026 — real ask: a separate "recent contacts" section
   // — links to a Contact's own profile, not the Encounter record the
-  // section above already covers.
+  // section below also covers.
   { key: "recentContacts", label: "Recent contacts" },
+  { key: "encounters", label: "Recent encounters" },
+  { key: "testing", label: "Recent STI testing" },
+  { key: "vaccinations", label: "Vaccinations" },
+  { key: "treatment", label: "Current treatment" },
+  { key: "symptoms", label: "Active symptoms" },
+
+  // ============================== END OF VISIT ===============================
+  // Deliberately last. It is arguably the most context-independent item on the
+  // card — nothing about it depends on where you are in the visit — but the
+  // owner's sequence put it at the end and it is one line to move if that
+  // changes. Worth being clear that this was NOT omitted for being hard: it
+  // already renders from MyProfileRepository, so placing it is only a position
+  // change and no more work than any other entry here.
   { key: "emergency", label: "Emergency information" },
 ];
 

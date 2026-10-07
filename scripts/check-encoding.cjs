@@ -218,6 +218,15 @@ for (const rel of files) {
   // fail every small commit, which is the opposite of useful. The failure this
   // guard guards against is an enumeration that found nothing when it should have
   // found everything, which can only happen in the full-scan mode.
+  if (STAGED && files.length > 0 && scanned === 0) {
+    console.error(
+      `Encoding guard was asked to check ${files.length} staged file(s) and read ` +
+        `NONE of them. A clean result here means nothing was inspected, not that ` +
+        `the staged content is clean. Treat this as a FAILURE of the gate.`,
+    );
+    process.exit(1);
+  }
+
   if (!STAGED && scanned < 50) {
     console.error(
       `Encoding guard scanned only ${scanned} file(s). That is below the floor of 50, ` +
