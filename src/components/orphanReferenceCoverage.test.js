@@ -238,6 +238,65 @@ function collectCheckedFields() {
 // several of these field names, and a regex would read a comment as a
 // declaration.
 const REPAIR = path.join(SRC, "calculations", "referenceRepair.js");
+const OPTION_USAGE = path.join(SRC, "calculations", "optionListUsage.js");
+const REGISTRY_USAGE = path.join(SRC, "calculations", "registryUsage.js");
+const OPTION_LISTS_REPO = path.join(SRC, "repositories", "customOptionListsRepository.js");
+
+// The `computeUsage:` bindings in Manage lists' own registry table, as
+// [rowKey, functionSuffixName] pairs.
+//
+// Read from the BINDING and not from any mention, which is a correction: a
+// first version matched `compute\w+Usage` anywhere in the file and so counted
+// the import statement. That passed with a registry row bound to `null`,
+// because the name was still imported - and this repo's rule is that a guard
+// matching one end of a wire proves nothing about the other end. A function
+// that is imported but never bound is exactly the state this guard exists to
+// catch, so it has to look at the binding.
+function manageListBindings() {
+  const src = fs.readFileSync(path.join(SRC, "modules", "settings", "ManageListsScreen.jsx"), "utf8");
+  const out = [];
+  for (const line of src.split(/\r?\n/)) {
+    const key = /key:\s*"([^"]+)"/.exec(line);
+    const usage = /computeUsage:\s*compute([A-Za-z]+)Usage/.exec(line);
+    if (key && usage) out.push([key[1], usage[1]]);
+  }
+  return out;
+}
+
+// Keys of a top-level object literal, read out of real ObjectProperty nodes.
+function objectKeys(file, varName) {
+  const ast = parse(fs.readFileSync(file, "utf8"), { sourceType: "module", errorRecovery: true });
+  let keys = null;
+  const walk = (node) => {
+    if (!node || typeof node !== "object") return;
+    if (node.type === "VariableDeclarator" && node.id?.name === varName && node.init?.type === "ObjectExpression") {
+      keys = (node.init.properties || [])
+        .filter((p) => p.type === "ObjectProperty")
+        .map((p) => p.key?.name ?? String(p.key?.value));
+    }
+    for (const k of Object.keys(node)) {
+      if (k === "loc" || k === "leadingComments" || k === "trailingComments") continue;
+      const c = node[k];
+      if (Array.isArray(c)) c.forEach(walk);
+      else if (c && typeof c === "object") walk(c);
+    }
+  };
+  walk(ast.program);
+  return keys;
+}
+
+// Exported function names in a module, read off real ExportNamedDeclaration
+// nodes so a name mentioned only in this file's own prose never counts.
+function exportedFunctions(file) {
+  const ast = parse(fs.readFileSync(file, "utf8"), { sourceType: "module", errorRecovery: true });
+  const names = [];
+  for (const node of ast.program.body) {
+    if (node.type !== "ExportNamedDeclaration" || !node.declaration) continue;
+    const d = node.declaration;
+    if (d.type === "FunctionDeclaration" && d.id?.name) names.push(d.id.name);
+  }
+  return names;
+}
 
 function collectEntryIdKeys() {
   const ast = parse(fs.readFileSync(REPAIR, "utf8"), { sourceType: "module", errorRecovery: true });
@@ -364,6 +423,56 @@ describe("orphanReferenceCheck coverage", () => {  it("finds the schema and the 
     const declared = collectEntryIdKeys();
     for (const field of declared.keys()) {
       expect(checked.has(field), `${field} has a repair shape but nothing checks it`).toBe(true);
+    }
+  });
+});
+
+// The other two hand-maintained inventories. Both were MEASURED in sync at the
+// time of writing - 17/17 option lists, 7/7 registries, no dead entries - so
+// these are not fixes. They are the reason none of them needs one tomorrow.
+//
+// Same failure class as the orphan checker this file exists for: a list kept by
+// hand next to the thing it must agree with, with nothing asserting the
+// agreement. That is how four live reference fields went unchecked, and how the
+// seed regenerator came to read 11 of 14 repositories.
+describe("hand-maintained inventories stay in sync with what they claim to cover", () => {
+  it("optionListUsage's SOURCES covers every list the repository declares", () => {
+    const live = objectKeys(OPTION_LISTS_REPO, "OPTION_LIST_LABELS");
+    const mapped = objectKeys(OPTION_USAGE, "SOURCES");
+    expect(live.length, "the sweep found no lists, so nothing below can fail").toBeGreaterThanOrEqual(15);
+    expect(mapped.length).toBeGreaterThanOrEqual(15);
+    // A list with no SOURCES entry silently gets "N records use this: 0" and
+    // no reassociate, which reads as "nothing uses this" rather than "nobody
+    // implemented this list".
+    const unmapped = live.filter((k) => !mapped.includes(k));
+    expect(unmapped, `these lists cannot be scanned or reassociated: ${unmapped.join(", ")}`).toEqual([]);
+  });
+
+  it("optionListUsage's SOURCES has no entry for a list that no longer exists", () => {
+    const live = objectKeys(OPTION_LISTS_REPO, "OPTION_LIST_LABELS");
+    const mapped = objectKeys(OPTION_USAGE, "SOURCES");
+    const dead = mapped.filter((k) => !live.includes(k));
+    expect(dead, `these are dead entries: ${dead.join(", ")}`).toEqual([]);
+  });
+
+  it("registryUsage has a compute function per registry Manage lists offers", () => {
+    // ManageListsScreen binds one computeUsage per registry. Reading that
+    // screen's own list keeps the assertion about what the user can actually
+    // reach, rather than re-deriving the registry list a third time.
+    const wired = manageListBindings();
+    expect(wired.length, "no computeUsage bindings found - the sweep found nothing").toBeGreaterThanOrEqual(6);
+    const exported = exportedFunctions(REGISTRY_USAGE);
+    for (const [key, name] of wired) {
+      const fn = `compute${name}Usage`;
+      expect(exported, `the "${key}" row binds ${fn}, which registryUsage.js does not export`).toContain(fn);
+    }
+  });
+
+  it("registryUsage exports nothing Manage lists cannot reach", () => {
+    const wired = new Set(manageListBindings().map(([, name]) => name));
+    for (const fn of exportedFunctions(REGISTRY_USAGE)) {
+      const name = fn.replace(/^compute/, "").replace(/Usage$/, "");
+      expect(wired.has(name), `${fn} exists but no registry row uses it - dead or a missing binding`).toBe(true);
     }
   });
 });

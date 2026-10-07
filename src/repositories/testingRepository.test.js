@@ -95,6 +95,37 @@ describe("TestingRepository routine retest plans", () => {
     expect(plan.testingFor.length).toBeGreaterThan(0);
   });
 
+  it("keeps the carried samples when the plan is re-dated", async () => {
+    // updateRoutineRetestPlan MERGES rather than replaces, so the samples
+    // survive "Update to the next suggested date". That is load-bearing now
+    // rather than cosmetic: a refactor making update replace-not-merge would
+    // silently wipe the sites, and the plan would quietly under-specify the
+    // retest - exactly the defect the prefill exists to prevent.
+    const source = await TestingRepository.create({
+      title: "Screening",
+      date: "2026-06-01T09:00:00.000Z",
+      testingFor: ["Gonorrhoea", "Chlamydia", "HIV", "Syphilis"],
+      sampleType: ["Urine", "Throat swab", "Blood"],
+    });
+    const plan = await TestingRepository.createRoutineRetestPlan({
+      title: "Routine retest",
+      date: "2026-09-20",
+      sourceTestId: source.id,
+    });
+
+    const moved = await TestingRepository.updateRoutineRetestPlan(plan.id, {
+      title: plan.title,
+      date: "2027-01-12",
+    });
+
+    expect(moved.plannedForDate).toBe("2027-01-12");
+    expect(moved.sampleType).toEqual(["Urine", "Throat swab", "Blood"]);
+    // And the same after a reload, so this is persistence rather than an
+    // in-memory artefact of the update call.
+    expect((await TestingRepository.getById(plan.id)).sampleType)
+      .toEqual(["Urine", "Throat swab", "Blood"]);
+  });
+
   it("refuses a plan with no title or an impossible date", async () => {
     await expect(TestingRepository.createRoutineRetestPlan({ title: "  ", date: "2026-09-20" })).rejects.toThrow();
     await expect(TestingRepository.createRoutineRetestPlan({ title: "x", date: "" })).rejects.toThrow();

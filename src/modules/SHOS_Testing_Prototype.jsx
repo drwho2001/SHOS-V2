@@ -46,7 +46,7 @@ import { SymptomLogRepository } from "../repositories/symptomLogRepository";
 // gets a real linked Measurement, never a duplicate field here.
 import { MeasurementRepository } from "../repositories/measurementRepository";
 import { InlineMeasurementSheet } from "./SHOS_Measurements_Prototype";
-import { findSupersededRoutineRetestPlans, isCompletedTestRecord, isRoutineRetestEligible, routineRetestPlanTitle, suggestedRoutineRetestDate } from "../calculations/testingCalculations";
+import { findAffectedRoutineRetestPlans, isCompletedTestRecord, isRoutineRetestEligible, routineRetestPlanTitle, suggestedRoutineRetestDate } from "../calculations/testingCalculations";
 // ADDED — real ask: proactive "due for retest" notification, built on
 // top of suggestedRoutineRetestDate's already-real calculation above.
 import { syncTestingReminder } from "../calculations/testingReminderSync";
@@ -1663,8 +1663,13 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
     const saved = await TestingRepository.getById(savedTestId);
     if (!saved) return;
     const all = await TestingRepository.getAll();
-    const stale = findSupersededRoutineRetestPlans(all, saved);
-    setSupersededPlans(stale.length ? { plans: stale, savedTest: saved } : null);
+    const { onTime, early } = findAffectedRoutineRetestPlans(all, saved);
+    // The UNION, not just the on-time half. Both buckets go through the same
+    // three answers, so presenting them as one question is less code AND truer:
+    // the user's situation is "I have a plan and I have now tested", and whether
+    // the plan's date has passed is a detail the per-plan line below states.
+    const plans = [...onTime, ...early];
+    setSupersededPlans(plans.length ? { plans, savedTest: saved } : null);
   };
   // "Keep the plan" is the default and the cheapest: do nothing but close. It is
   // the default because a plan is not wrong when the user went early - they may
@@ -1741,10 +1746,37 @@ export default function TestingModule({ openAddOnMount = false, onConsumedQuickA
         <div role="dialog" aria-label="Scheduled retest already done" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 240 }}>
           <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: radius.md, padding: 18, maxWidth: 420, width: "100%" }}>
             <h2 style={{ ...TYPE.subScreenTitle, margin: "0 0 8px", color: T.textPrimary }}>Scheduled retest already done</h2>
-            <div style={{ fontSize: 13, color: T.textSecondary, marginBottom: 14 }}>
+            <div style={{ fontSize: 13, color: T.textSecondary, marginBottom: 12 }}>
               {supersededPlans.plans.length === 1
-                ? "You saved a test that covers the planned retest for this date. What would you like to do with the plan?"
-                : `You saved a test that covers ${supersededPlans.plans.length} planned retests for this date. What would you like to do with them?`}
+                ? "You saved a test that covers this planned retest. What would you like to do with the plan?"
+                : `You saved a test that covers ${supersededPlans.plans.length} planned retests. What would you like to do with them?`}
+            </div>
+            {/* ONE line per plan, naming its own date and whether the test came
+                before or on it.
+
+                This replaced a single sentence that said the test "covers the
+                planned retest FOR THIS DATE" - which is true for a plan whose day
+                has arrived and false for a plan still sitting in the future. With
+                the early case now reporting too, that wording described a future
+                plan as though its date had passed.
+
+                Per-plan lines also handle the genuinely possible mixed case (one
+                plan already due, one still upcoming) with no third branch of the
+                copy, because each line states its own situation rather than the
+                prompt guessing one for the set. */}
+            <div style={{ marginBottom: 14, display: "flex", flexDirection: "column", gap: 6 }}>
+              {supersededPlans.plans.map((p) => {
+                const plannedDay = p.plannedForDate || (p.date || "").slice(0, 10);
+                const savedDay = (supersededPlans.savedTest?.date || "").slice(0, 10);
+                const wasEarly = Boolean(plannedDay && savedDay && savedDay < plannedDay);
+                return (
+                  <div key={p.id} style={{ fontSize: 12, color: T.textSecondary, border: `1px solid ${T.border}`, borderRadius: radius.sm, padding: "7px 9px" }}>
+                    <span style={{ color: T.textPrimary, fontWeight: 600 }}>{formatDate(plannedDay)}</span>
+                    {" — "}
+                    {wasEarly ? "you tested before this date" : "this date has now passed"}
+                  </div>
+                );
+              })}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span role="button" tabIndex={0} aria-label="Update the scheduled retest date" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} onClick={updatePlans} style={{ padding: "10px 12px", borderRadius: radius.sm, border: `1px solid ${T.healthcareBlue}`, background: `${T.healthcareBlue}11`, color: T.healthcareBlue, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>

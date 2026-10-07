@@ -1032,6 +1032,79 @@ verify:fast green - build, lint, **1397 tests across 119 files**, encoding, inhe
 
 **Still open, unchanged: t069** (an old record carrying both a legacy seed id and a renamed legacy field diverges from the frozen current definition and is not re-keyed; safe for data, can leave a legacy demo id). It needs a scope decision, not a fix.
 
+## Recently shipped (7 Oct 2026, latest - an EARLY test now asks about the plan, and the copy that made it impossible to ask honestly)
+
+**Session D, t101 Phase A. The entry below this one listed an unclosed gap: the
+supersession prompt only fired when an actual test landed ON or AFTER a plan's
+day, so the case the owner's own ask named — "if an actual test is logged before
+a planned date, prompt the user to keep, update, or archive the plan" — had no
+implementation at all. Closed here.**
+
+**The gap was smaller than the earlier entry implied, and the reason is worth
+recording: all three answers already existed and were correct.** Keep, archive, and
+update — where update re-baselines the plan onto `suggestedRoutineRetestDate` of
+the test that was actually just recorded, which is precisely the right behaviour
+for a user who went early. Only the TRIGGER was missing, so the fix is small and
+the handlers are untouched. A guard asserts all three options survive, so reporting
+the early case did not quietly reduce the choices offered.
+
+**"Superseded" was the wrong word for half of this, so the function was renamed.**
+`findSupersededRoutineRetestPlans` became `findAffectedRoutineRetestPlans`,
+returning `{ onTime, early }`. An early test does not supersede a future plan —
+it OVERLAPS it, and a single flat list would have forced the caller to describe a
+plan still sitting in the future as though its date had passed. Two buckets also
+handle the genuinely possible mixed case (one plan already due, one still
+upcoming) with no third branch of the copy. Three call sites existed, so the
+rename is contained.
+
+**THE COPY WAS THE REAL DEFECT, and it is why a per-plan line replaced a sentence.**
+The prompt read "You saved a test that covers the planned retest **for this
+date**" — true once a plan's day has passed, false for a plan still in the future.
+With the early case now reporting too, that sentence described a future plan as
+though its date had passed. Each plan now gets its own line naming its own date and
+relation ("you tested before this date" / "this date has now passed"), which is
+honest for both cases and needs no third variant. The heading and the
+already-done framing are unchanged.
+
+**Mutation testing caught two of my own failures, and the first is a new instance
+of a class this file keeps recording.** Four mutations were attempted; the copy
+mutation came back **GREEN**, meaning the copy change was decorative — so it now
+has `src/components/routineRetestPromptCopyGuard.test.js`, which is negative
+source checks and so had to strip comments first: the comment explaining the fix
+quotes the old wording verbatim, which is the ninth-or-tenth recorded instance of
+a guard matching the comment documenting the fix, and the first where I wrote both
+the fix and the guard in the same change. **A fourth mutation silently DID NOT
+APPLY** — a multi-line pattern written with `\n` against these CRLF files, the
+exact trap recorded repeatedly in this file. "Did not apply" and "did not go red"
+are different failures and only the second says anything about the test. All four
+are red now, from a green baseline.
+
+**And my own guard file failed to PARSE on first run, because its doc comment
+contained a block-comment terminator inside itself**, which closed the comment
+early and turned the rest of the prose into code. That is the exact twin of the
+XML-comment bug this file records in detail, committed in the very file whose
+purpose is to survive a comment. The stripper's first version also blanked string
+literals, which meant it could never find the JSX copy it was looking for — it now
+strips comments only, with a fixture proving a `//` inside a string is not treated
+as a comment.
+
+**The A4 test my own plan called for, and why it is load-bearing rather than
+tidy.** `updateRoutineRetestPlan` MERGES rather than replaces, so the sample
+sites carried by the previous change survive "Update to the next suggested date".
+That is now real data, so it is asserted after a reload — a refactor making
+`update` replace-not-merge would silently wipe the sites and the plan would
+quietly under-specify the retest, which is precisely the defect the prefill exists
+to prevent.
+
+**Measured boundary.** 13 pure tests (7 new/rewritten), 1 repository test, 9
+copy-guard tests, 4 mutations red from a green baseline, lint, production build,
+encoding guard clean, and a full-suite baseline of **1472 passed / 0 failed across
+126 files**. **Not proved: the prompt seen on screen.** The early path is new UI and
+no browser flow drives it — `scripts/smoke-test.cjs` is CLAIMED BY SESSION B, so
+t101's browser phase is held rather than written into a shared file, which is the
+fourth time this session that refusing a collision was the right call over
+finishing the batch.
+
 ## Recently shipped (6 Oct 2026, later still still - a routine retest now carries the sample sites forward, and the reason is the one field a retest can silently get wrong)
 
 **Session D, t099. Owner's ask: "the add routine could auto fill fields which are

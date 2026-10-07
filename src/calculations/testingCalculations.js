@@ -145,7 +145,7 @@ export function recordsShareInfections(a, b) {
 }
 
 /**
- * The plans that a newly saved COMPLETED test has made moot.
+ * The plans a newly saved COMPLETED test has a bearing on, split by HOW.
  *
  * WHY THIS IS A QUESTION AND NOT AN ACTION. A scheduled retest that the user has
  * quietly gone and done anyway is not an error to clean up - it is the outcome
@@ -153,27 +153,52 @@ export function recordsShareInfections(a, b) {
  * destroy a record the user deliberately created, so this only ever REPORTS.
  * The caller must offer keep / update / archive, per the owner's own decision.
  *
- * "Superseded" means all three of:
- *   - it is a live plan (a performed or archived one is not pending anything);
- *   - the new test actually covers something the plan covers, so an unrelated
- *     Hep B result does not retire a gonorrhoea plan;
- *   - the new test's day has reached or passed the plan's day, because a test
- *     logged early against a future plan is the keep/update case, not this one.
+ * WHY TWO BUCKETS RATHER THAN ONE LIST. "Superseded" is the wrong word for half
+ * of this, and a single flat list would force the caller to describe a future
+ * plan as though its date had passed:
+ *
+ *   onTime - the plan's day has been reached or passed. The plan is spent; the
+ *            test did the thing the plan was for.
+ *   early  - the test was logged BEFORE the plan's day. The plan is not wrong:
+ *            the user went early and may well intend another screen. But the
+ *            plan now describes an intention their data has already overtaken,
+ *            and leaving it silent is exactly the case the owner's ask wanted
+ *            closed ("if an actual test is logged before a planned date, prompt
+ *            the user to keep, update, or archive the plan").
+ *
+ * A plan lands in exactly one bucket, because its day is either at-or-before the
+ * completed test's day or after it. Two plans CAN be split across both, which is
+ * why this returns buckets rather than a single "affected" array with a guess at
+ * the kind.
+ *
+ * In BOTH buckets the match requires the new test to actually cover something the
+ * plan covers, so an unrelated Hep B result cannot retire a gonorrhoea plan.
  *
  * @param {object[]} tests every test on file, plans included
  * @param {object} completedTest the just-saved completed test
- * @returns {object[]} the live plans it supersedes, oldest planned day first
+ * @returns {{ onTime: object[], early: object[] }} each sorted oldest planned day first
  */
-export function findSupersededRoutineRetestPlans(tests, completedTest) {
-  if (!isCompletedTestRecord(completedTest) || !completedTest?.date) return [];
+export function findAffectedRoutineRetestPlans(tests, completedTest) {
+  if (!isCompletedTestRecord(completedTest) || !completedTest?.date) {
+    return { onTime: [], early: [] };
+  }
   const completedDay = completedTest.date.slice(0, 10);
-  return (Array.isArray(tests) ? tests : [])
-    .filter((t) => t?.isRoutineRetestPlan && !t.isArchived)
-    .filter((t) => {
-      const plannedDay = t.plannedForDate || t.date?.slice(0, 10);
-      return plannedDay && completedDay >= plannedDay && recordsShareInfections(t, completedTest);
-    })
-    .sort((a, b) => ((a.plannedForDate || a.date) < (b.plannedForDate || b.date) ? -1 : 1));
+  const byPlannedDay = (a, b) =>
+    (a.plannedForDate || a.date) < (b.plannedForDate || b.date) ? -1 : 1;
+
+  const matching = (Array.isArray(tests) ? tests : []).filter(
+    (t) => t?.isRoutineRetestPlan && !t.isArchived && recordsShareInfections(t, completedTest),
+  );
+
+  const pending = matching.filter((t) => {
+    const plannedDay = t.plannedForDate || t.date?.slice(0, 10);
+    return Boolean(plannedDay);
+  });
+
+  return {
+    onTime: pending.filter((t) => completedDay >= (t.plannedForDate || t.date?.slice(0, 10))).sort(byPlannedDay),
+    early: pending.filter((t) => completedDay < (t.plannedForDate || t.date?.slice(0, 10))).sort(byPlannedDay),
+  };
 }
 
 /**

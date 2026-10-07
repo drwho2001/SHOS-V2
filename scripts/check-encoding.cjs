@@ -49,13 +49,34 @@ const C1 = /[\u0080-\u009F]/;                 // lossy-encoding fingerprint
 // of Â/Ã/â/ã followed by a non-ASCII char in this repo.
 const LEAD = /[\u00C2\u00C3\u00E2\u00E3][\u0080-\uFFFF]/;
 
+// Read once, not per call: --staged decides both which files to list and which
+// bytes to read, and the two must not be able to disagree.
+const STAGED = process.argv.includes("--staged");
+
 function listTrackedFiles() {
+  // --staged narrows the scan to what this commit would actually introduce.
+  //
+  // WHY, because the whole-tree default is wrong for a tree two sessions share.
+  // This repo routinely runs two AI sessions in one checkout writing at the same
+  // time, and the pre-commit hook used to scan the WHOLE working tree. That is
+  // correct for one writer and actively wrong for two: on 7 Oct 2026 it blocked a
+  // commit over mojibake in another session's UNCOMMITTED file, which had
+  // nothing to do with the staged content, and the fix available at the time was
+  // `--no-verify` on a commit that had itself been verified clean.
+  //
+  // So the gate is now scoped to what the commit introduces, and the whole-tree
+  // check stays in CI as a REPORT rather than a block - nothing is lost, because
+  // CI runs on a clean checkout where another session's dirty working tree does
+  // not exist. The original rationale ("mojibake frequently arrives in a file the
+  // author did not touch this session") remains true, which is exactly why it
+  // belongs in CI rather than in a pre-commit hook.
+  const args = STAGED ? ["diff", "--cached", "--name-only", "-z"] : ["ls-files", "-z"];
   try {
-    return execFileSync("git", ["ls-files", "-z"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
+    return execFileSync("git", args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
       .split("\0")
       .filter(Boolean);
   } catch (e) {
-    console.error("Could not run `git ls-files` — run this from inside the repo.");
+    console.error(STAGED ? "Could not run `git diff --cached` — run this from inside the repo." : "Could not run `git ls-files` — run this from inside the repo.");
     process.exit(2);
   }
 }
@@ -96,9 +117,31 @@ const findings = [];
 let withBom = 0;
 let scanned = 0;
 
+// Reading the bytes is not the same as reading the FILE in --staged mode, and
+// getting that wrong would make the whole gate decorative: the staged snapshot
+// and the working tree can differ, so reading from disk would check bytes that
+// are not the ones being committed. That is precisely the case where a guard has
+// to be right - you stage a file, fix it again, and commit the staged version.
+//
+// `git show :<path>` reads the blob as recorded in the index, which is what the
+// commit will contain. It also means a brand-new file is protected from the
+// moment it is staged, which the whole-tree scan could not do: the encoding
+// guard only ever looked at tracked files, so a new file was invisible until
+// `git add` made it tracked - and the fourth recorded mojibake incident in this
+// repo was caught by the pre-commit hook at exactly that point.
+function readBytes(rel) {
+  if (!STAGED) return fs.readFileSync(rel);
+  try {
+    return execFileSync("git", ["show", `:${rel}`], { maxBuffer: 64 * 1024 * 1024 });
+  } catch {
+    return null;
+  }
+}
+
 for (const rel of files) {
   let buf;
-  try { buf = fs.readFileSync(rel); } catch { continue; }
+  try { buf = readBytes(rel); } catch { continue; }
+  if (!buf) continue;
   scanned++;
   if (buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) withBom++;
 
@@ -153,9 +196,38 @@ for (const rel of files) {
   }
 }
 
-console.log(`Encoding guard: scanned ${scanned} git-tracked text files (${withBom} with a UTF-8 BOM).`);
+  console.log(`Encoding guard: scanned ${scanned} git-tracked text files (${withBom} with a UTF-8 BOM).`);
 
-if (findings.length === 0) {
+  // ADDED 6 Oct 2026 - non-vacuity floor, after this guard reported
+  // "scanned 0 git-tracked text files ... OK - no mojibake" and exited 0.
+  //
+  // That is the worst shape a gate can take: it looked green while checking
+  // nothing at all, and the run that produced it was a real one in this repo, not
+  // a thought experiment. Zero findings is only meaningful if files were examined;
+  // without this, an empty enumeration - a transient git failure, a bad cwd, a
+  // `--staged` run with nothing staged - is indistinguishable from a clean repo.
+  //
+  // The floor is deliberately well below the real count (395 tracked text files
+  // here) so it cannot cry wolf as the tree grows, but far enough above zero that
+  // "nothing was inspected" can never pass.
+  //
+  // IT DOES NOT APPLY TO --staged, and that distinction is the whole reason this
+  // needed saying. In staged mode the set being scanned IS the files about to be
+  // committed, so two staged files legitimately means two files - that is the
+  // mode's purpose, used by the pre-commit hook. Applying the floor there would
+  // fail every small commit, which is the opposite of useful. The failure this
+  // guard guards against is an enumeration that found nothing when it should have
+  // found everything, which can only happen in the full-scan mode.
+  if (!STAGED && scanned < 50) {
+    console.error(
+      `Encoding guard scanned only ${scanned} file(s). That is below the floor of 50, ` +
+        `so a clean result here means nothing was inspected rather than that the ` +
+        `files are clean. Treat this as a FAILURE of the gate, not a pass.`,
+    );
+    process.exit(1);
+  }
+
+  if (findings.length === 0) {
   console.log("OK - no mojibake, no C1 control characters, no invalid UTF-8.");
   process.exit(0);
 }
