@@ -1,4 +1,4 @@
-﻿{
+{
     "$schema":  "https://opencode.ai/config.json",
     "mcp":  {
                 "notion":  {
@@ -14,5 +14,6 @@
                                                }
                            }
             },
-    "model":  "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
+    "model":  "opencode/space-bunny-free",
+    "small_model":  "opencode/space-bunny-free"
 }

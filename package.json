@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "check:encoding": "node scripts/check-encoding.cjs",
+    "terminal": "node scripts/shos-terminal.mjs",
     "verify": "node scripts/verify-changes.mjs",
     "verify:fast": "node scripts/verify-changes.mjs --fast",
     "verify:smoke": "node scripts/verify-changes.mjs --smoke-only",

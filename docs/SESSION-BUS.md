@@ -225,6 +225,79 @@ specific failure:
 - **The reviewer's `50-proof.md` is written before the owner reads `40`.** That
   is what "proof-read the other session's response" means here.
 
+## Roles — one input, routed (shipped 9 Oct 2026)
+
+The A/B/C/D naming above was an ownership scheme, not a division of labour: it
+recorded *who* held a file, and said nothing about *what kind of judgement* was
+needed. Two sessions on the same task with the same prompt produce two similar
+answers, which is the failure that motivated this whole document.
+
+**The four roles live as opencode agent definitions in
+`~/.config/opencode/agents/`** — `builder.md`, `challenger.md`, `docs.md`,
+`tester.md` — and one script drives all of them:
+
+```powershell
+node scripts\shos-terminal.mjs "what should I do about the widget staleness?"
+node scripts\shos-terminal.mjs --roles              # what exists, and on which model
+node scripts\shos-terminal.mjs --role challenger "does this test actually fail without the fix?"
+node scripts\shos-terminal.mjs --default "..."      # repo default model, no agent
+```
+
+| Role | Job | Model |
+|---|---|---|
+| **Builder** | implements, verifies, commits | `opencode/space-bunny-free` |
+| **Challenger** | read-only second opinion; **cannot edit** | `opencode/longcat-2.5-preview-free` |
+| **Docs** | keeps the written record true; `edit` scoped to Markdown | `opencode/longcat-2.5-preview-free` |
+| **Tester** | runs the deterministic gate; **cannot edit** | `opencode/space-bunny-free` |
+
+### Three decisions in that table, each with a reason
+
+**Builder and Challenger are on different model families.** A challenger on the
+same model is an echo, not a second opinion — the whole value is that it did
+not arrive having agreed. Both are in opencode's zero-retention tier, so the
+independence costs nothing in privacy.
+
+**Tester has no `edit` permission, and does not fix reds.** A gatekeeper that
+starts patching is no longer a gatekeeper: the thing it verified becomes the
+thing it wrote, and the honest signal is gone. Green means commit and push; red
+means hand it back.
+
+**There is no fourth model that verifies everything.** Mechanical verification is
+a deterministic script with no model context in it (`npm run verify`); judgement
+verification is the Challenger, or the owner. A verifier model would read
+*outputs* — commits, diffs, claims — not intent, and would duplicate the exact
+context burden the role split exists to remove. Four roles, not five.
+
+### What the roles do NOT change
+
+**Sessions still cannot wake each other.** A role is a prompt and a permission
+set; it is not a live channel. Delegation remains queue-based, because the
+owner prompts each one. Every statement about `ask`, `tuiask` and prompting above
+still applies unchanged.
+
+Roles and the claim table are orthogonal: a role tells a session *how* to work,
+a claim tells the other session *what it owns*. A role with no task must not
+claim files, and the reverse also holds.
+
+### The models are read, never hardcoded
+
+`shos-terminal.mjs` reads each role's `model:` from its agent frontmatter. That
+is deliberate — a model list written twice is a hand-maintained inventory, and
+this repo has been bitten by that repeatedly. Repoint a role by editing its
+`agent.md`.
+
+`--roles` **exits non-zero and names any role whose agent config is missing.**
+The first version skipped absent roles silently, so it printed a healthy table
+for a terminal that could not route anywhere.
+
+### The agents live outside the repository
+
+`~/.config/opencode/agents/`, deliberately: this repo is the public alpha track
+and these are machine-and-owner-specific workflow prompts. The cost is honest
+and worth stating — **the claim table cannot cover them**, so two sessions
+editing the same agent file cannot be detected by `session-bridge`. Treat those
+four files as owner-only, and set `SHOS_SESSION_NAME` before touching them.
+
 ## What does not work, and why
 
 Both of these were **measured on 28 Sep 2026 against a real second session**,
