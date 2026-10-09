@@ -113,7 +113,6 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_appt";
 
         // Click opens Clinic Visits tab
 
-        android.util.Log.i("AppointmentWidgetProvider", "pushed DATA views id=" + appWidgetId);
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 

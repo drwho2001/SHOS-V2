@@ -63,17 +63,15 @@ final class WidgetPrefs {
      * @return the encrypted store, or null when encryption is unavailable.
      */
     static SharedPreferences get(Context context) {
-        // ADDED 4 Oct 2026 - TEMPORARY DIAGNOSTIC, remove once the "no widget
-        // write since 2 Oct" bug is found. Logged rather than console because
-        // this runs in a cold-started process where nothing collects JS output.
-        android.util.Log.i("WidgetPrefs", "get() called, opening store");
         try {
             SharedPreferences ok = create(context);
-            android.util.Log.i("WidgetPrefs", "get() store OPENED");
             return ok;
         } catch (Throwable first) {
-            // Throwable, NOT Exception, on purpose for this diagnostic: an
-            // android.util.Log.i("WidgetPrefs", "get() first attempt THREW: " + first.getClass().getName() + " / " + first.getMessage());
+            // Throwable, not Exception: anything create() throws - including an
+            // Error - takes the same path, so an unavailable store yields null and
+            // an empty widget rather than propagating out of a cold-started
+            // process that has nothing to recover into.
+            //
             // A leftover plaintext file from a build that predates encryption
             // makes create() throw, because it cannot parse a file that is not
             // in its own format. Delete it once and retry. Nothing is lost: the
@@ -82,7 +80,6 @@ final class WidgetPrefs {
             try {
                 context.deleteSharedPreferences(PREFS_NAME);
                 SharedPreferences retry = create(context);
-                android.util.Log.i("WidgetPrefs", "get() RECOVERED after deleting legacy file");
                 return retry;
             } catch (Throwable second) {
                 android.util.Log.w("WidgetPrefs", "get() FAILED, widgets will render empty", second);

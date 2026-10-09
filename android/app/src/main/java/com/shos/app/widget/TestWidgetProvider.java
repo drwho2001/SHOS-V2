@@ -107,7 +107,6 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_test";
 
         // Click opens Healthcare > Testing tab
 
-        android.util.Log.i("TestWidgetProvider", "pushed DATA views id=" + appWidgetId);
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 

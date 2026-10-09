@@ -120,7 +120,6 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_refill";
         // the DoxyPEP status widget also targets it and that one genuinely belongs
         // there - it shows an adherence figure that only the dashboard renders.
 
-        android.util.Log.i("RefillWidgetProvider", "pushed DATA views id=" + appWidgetId);
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
