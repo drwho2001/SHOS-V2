@@ -91,55 +91,61 @@ inherited from the shell that set it.
 |---|---|---|
 | **OpenCode subscription** | `OPENCODE_API_KEY` (`oc_sk_…`) | **The only working credential.** Every `opencode/*` call in the table above went through it. Note it is *not* in `auth.json` — the earlier version of this file said it was, and that was wrong. |
 | **OpenRouter** | `OPENROUTER_API_KEY` (`sk-or-v1-2…`) | Credential **exists** (this file previously said none did). **But the free tier is exhausted**: a live probe returns `429`, and the log carries `AI_RetryError: … Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day`. It is a paid-provision problem, not a key problem. |
-| **Google** | `GEMINI_API_KEY`, `GOOGLE_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` — all the **same** `AQ.Ab8…` string | **Cannot authenticate.** Measured both endpoints: `generativelanguage.googleapis.com` → `404`, `aiplatform.googleapis.com` → `403`. See the AQ-key section below. |
+| **Google** | `GEMINI_API_KEY`, `GOOGLE_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` — all the **same** `AQ.Ab8…` string | **Works.** Measured 9 Oct: `gemini-flash-latest` → 200 `OK`, `gemini-3.8-flash` → 200 `OK`, `gemini-3.5-flash-lite` → 200 `OK`. This key is an `AQ.` authorization key and it authenticates against `generativelanguage.googleapis.com` normally. **Correction to an entry below this table — an earlier version of this file claimed it could not.** |
+| **Groq** | `GROQ_API_KEY` | **Works.** Measured 9 Oct: `openai/gpt-oss-20b` → 200. |
 | **Anthropic** | `ANTHROPIC_API_KEY` | Not re-measured on 9 Oct. The last measurement was `not scoped to a workspace`, which is why `anthropic-workspace-id` was needed. |
-| **OpenAI** | `OPENAI_API_KEY` | **This is not an OpenAI key.** It is byte-identical to `OPENROUTER_API_KEY` (`sk-or-v1-2…`). |
+| **OpenAI** | `OPENAI_API_KEY` | Byte-identical to `OPENROUTER_API_KEY` (`sk-or-v1-2…`). Not an OpenAI key. |
 
-### The `openai` → `openrouter` remap
+### Gemini, measured properly this time
 
-The global config contains:
-
-```json
-{ "provider": { "openai": { "options": { "baseURL": "https://openrouter.ai/api/v1" } } } }
+```
+gemini-flash-latest    -> HTTP 200  "OK"
+gemini-3.8-flash       -> HTTP 200  "OK"
+gemini-3.5-flash-lite  -> HTTP 200  "OK"
+gemini-2.5-flash       -> HTTP 404  "This model models/gemini-2.5-flash is
+                                       no longer available to new users."
 ```
 
-That is a **deliberate correction, and it is load-bearing.** Because
-`OPENAI_API_KEY` holds an OpenRouter key, any `openai/*` model would otherwise
-send an OpenRouter token to api.openai.com and fail as a bad key. The remap
-sends it to the right host.
+So the `AQ.` key is fine and `scripts/consult.mjs` works with it. The only dead
+thing is a **model name**: `gemini-2.5-flash` and `gemini-2.0-flash` are still
+listed by the API and return `404` for *new users*. That is why this ladder
+addresses models by **alias** (`gemini-flash-latest`) rather than by version
+number — the catalogue is not a promise that a model is callable, and a version
+number ages into a 404.
 
-The cost is a real footgun: **`openai/*` and `openrouter/*` are one credential
-and one quota, not two providers.** Two sessions picking "different providers"
-that way halve each other's rate limit, which is the failure this tier of the
-list exists to prevent. Do not count them as independent.
+`gemini-flash-latest` currently resolves to `gemini-3.8-flash`.
 
-### Why the Google key cannot work, and will not be fixed here
+> **A 404 is not evidence about the endpoint.** For one commit this repo recorded
+> that the Google key could not authenticate, on the strength of a `404` against
+> `gemini-2.5-flash` plus a `403` against `aiplatform` sent with the literal
+> placeholder `PROJECT` in the path. Both were the wrong inference: the first
+> was a dead *model*, the second was a placeholder. The error **message** names
+> the cause in both cases and neither message said anything about the key. Read
+> the body, not the status code — see L-080.
 
-`AIza…` traffic keys were replaced by **`AQ…` authorization keys** from 28 May
-2026; AI Studio now issues only AQ keys, which authenticate against
-`aiplatform.googleapis.com` (Vertex) rather than the bare
-`generativelanguage.googleapis.com`. So the key is **valid and the endpoint is
-wrong** — a Google-side migration gap, not a fixable key problem. Verified both
-halves on 9 Oct: `404` on the old endpoint, `403` on the new one without a
-real GCP project id.
+### Privacy note on the Gemini leg
 
-Two consequences, both measured:
+Google's free tier is a different privacy proposition from opencode's, and
+`consult.mjs` is the only path to it. That is the right shape **as long as the
+question carries no repo content**: consult is for challenging an approach with
+a question written from scratch, not for holding state, not for reading a diff,
+and never for sexual-health data. The Challenger role reads the diff, so it
+stays on a zero-retention opencode model; consult stays generic and cheap.
 
-- **`scripts/consult.mjs` cannot authenticate an AQ key by design.** It talks to
-  `generativelanguage.googleapis.com` and sends `x-goog-api-key` itself. All
-  three header variants fail, with *different* reasons — `x-goog-api-key` →
-  `ACCESS_TOKEN_TYPE_UNSUPPORTED`, `Bearer` → `API_KEY_SERVICE_BLOCKED`.
-- **The Gemini leg of the second-opinion ladder is unavailable.** On 8 Oct the
-  ladder's first step 401'd; on 9 Oct it cannot work at all. The opencode
-  subscription is the whole of the working capacity on this box.
+### The `openai` / `openrouter` footgun
 
-Anyone else whose project talks to `generativelanguage` directly is silently
-broken the same way and will not see it as an auth error.
+`OPENAI_API_KEY` is byte-identical to `OPENROUTER_API_KEY`, both `sk-or-v1-2…`.
 
-The old env-var gotcha still stands for anyone who fixes the endpoint: the AI
-SDK reads **`GOOGLE_GENERATIVE_AI_API_KEY`**, not `GEMINI_API_KEY`, so a model
-can look connected and still be unable to run. `GEMINI_API_KEY` is kept because
-`consult.mjs` reads that name directly.
+At one point the global config remapped `provider.openai.options.baseURL` to
+`https://openrouter.ai/api/v1`, which was a **correct and load-bearing**
+correction — without it, any `openai/*` model would send an OpenRouter token to
+`api.openai.com` and fail as a bad key. **That remap is not currently present**,
+so `openai/*` would indeed misroute today. Nothing in this repo uses `openai/*`,
+so it costs nothing as it stands; restore the remap if that ever changes.
+
+Either way the lesson is unchanged: **`openai/*` and `openrouter/*` are one
+credential and one quota, not two providers.** Two sessions picking "different
+providers" that way halve each other's rate limit.
 
 ## Defaults pinned in this repo and on this machine
 
@@ -158,10 +164,11 @@ keeping as precedent:
 - `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` and
   `opencode/nemotron-3-ultra-free` — the first on a **dead** provider, the
   second on an **NVIDIA trial tier whose terms forbid confidential data**.
-- `google/gemini-3.8-flash` (session E, 8 Oct) — a **valid key against the wrong
-  endpoint**, so every session in the repo defaulted to a model that could not
-  authenticate. `f49a447` moved it to the OpenCode provider; 9 Oct moved it the
-  rest of the way, off a training-on tier and onto a dead quota.
+- `google/gemini-3.8-flash` (session E, 8 Oct) — reported dead by `f49a447` on
+  the strength of a **misread 404**. The key was fine; `gemini-2.5-flash` is a
+  dead model name. See L-080.
+- `openrouter/cohere/north-mini-code:free` (9 Oct) — a **dead quota**, which is
+  a different fault from a dead key and looks like a config error until measured.
 
 The role definitions in `~/.config/opencode/agents/` each pin their own model in
 frontmatter, and `scripts/shos-terminal.mjs` reads it from there rather than

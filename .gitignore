@@ -25,3 +25,12 @@ npm-debug.log*
 # the owner's real medical records. Keep the directory local; delete the dumps
 # once they've served their purpose.
 backups/
+
+# Editor/tool config snapshots. Five of these were committed to this repo by
+# accident and sat in `git status` forever. They are a snapshot of a config
+# that git history already records, so tracking them bought nothing and cost
+# noise on every status - the exact hand-maintained-inventory rot CLAUDE.md
+# warns about. If you want one back, `git log` has it.
+.opencode/*.backup*
+opencode.json.backup*
+.opencode.json.backup*
