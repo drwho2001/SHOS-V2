@@ -370,6 +370,21 @@ one free call, so the instinct to push on is the expensive one.
   A fix that changes a card's semantics should re-examine the controls sitting
   inside it: that is how Contacts' favourite star survived as a bare
   `<div onClick>` with no role, `tabIndex` or name.
+- **Jargon needs its definition at the point of use, and guidance needs its
+  source on screen.** A term defined in the Glossary but used bare on a form is
+  undefined for the person actually holding the phone — the 2-1-1 PrEP regimen,
+  the Dom/sub/Vers role axes, bare "BASHH" on the Home testing ring. Use
+  `<JargonNote>`; it is a tap-to-reveal bubble, not a permanent line, because a
+  permanent explanation beside every term turns a form into prose nobody reads.
+  Two rules it enforces, both worth restating: **a note stating clinical
+  guidance attributes it inline** (`(BASHH 2025)`) — an unattributed dosing
+  schedule reads as developer folk wisdom — while **a note explaining this app's
+  own vocabulary cites nothing**, because borrowing clinical authority for an
+  internal convention is its own kind of lie. One owner for the copy
+  (`src/calculations/jargonNotes.js`), gated by
+  `src/components/jargonNoteCoverage.test.js`. When threading a prop that a note
+  depends on, assert the whole render chain, not just the call site — L-082, and
+  the reason is a mutation, not a theory.
 - **Every commit ends with an attribution footer** — a hard requirement:
   ```
   Co-Authored-By: Claude <model-name> <noreply@anthropic.com>

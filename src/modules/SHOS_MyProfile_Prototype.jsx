@@ -73,6 +73,10 @@ import { useAnonymiseMode, contactName, ANONYMISED } from "../calculations/anony
 import { deriveHivStatus, resolveHivStatus, describeHivStatus, HIV_STATUS_OPTIONS } from "../calculations/hivStatusCalculations";
 import { mostRecentTestDate } from "../calculations/mostRecentTest";
 import { HivStatusNote } from "../components/HivStatusNote";
+// ADDED 9 Oct 2026 (t052) — role-vs-position note. Deliberately a separate
+// component from HivStatusNote despite the visual similarity: that one's rules
+// are privacy-conditional, this one has no value to be conditional on.
+import { JargonNote } from "../components/JargonNote";
 import { KinkRegistry, KINK_ROLE_OPTIONS, resolveKinkSynonym, analyzeKinkEntry, getKinkRoleOptions } from "../registries/kinkRegistry";
 // ADDED — real fix: same normalizeTag Contacts/Encounters use.
 import { normalizeTag, hasPhysicalDetail, mergeCummerRow } from "../calculations/contactCalculations";
@@ -1145,6 +1149,10 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
           <RegistryTagPicker label="Into" value={form.statedKinks} onChange={set("statedKinks")} registry={KinkRegistry} T={T} excludeIds={form.limits.map((l) => l.kinkId)} trackRole roleOptions={KINK_ROLE_OPTIONS} resolveSynonym={resolveKinkSynonym} analyzeEntry={analyzeKinkEntry} getRoleOptionsForKink={getKinkRoleOptions} />
           <RegistryTagPicker label="Limits" value={form.limits} onChange={set("limits")} registry={KinkRegistry} T={T} excludeIds={form.statedKinks.map((s) => s.kinkId)} trackRole roleOptions={KINK_ROLE_OPTIONS} resolveSynonym={resolveKinkSynonym} analyzeEntry={analyzeKinkEntry} getRoleOptionsForKink={getKinkRoleOptions} />
           <MultiSelectChips label="Role" value={form.bdsmRole} onChange={set("bdsmRole")} options={BDSM_ROLE_OPTIONS} T={T} />
+          {/* ADDED 9 Oct 2026 (t052) — same role-vs-position confusion as
+              Contacts' edit sheet and Encounters' kink roles. One note, one
+              owner, three screens. */}
+          <JargonNote theme={T} noteKey="role-axes" label="Role" onOpen={onOpenGlossary} />
           <MultiSelectChips label="Position" value={form.sexualPosition} onChange={set("sexualPosition")} options={SEXUAL_POSITION_OPTIONS} T={T} />
         </SectionCard>
 

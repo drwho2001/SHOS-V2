@@ -16,6 +16,11 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { FormTabs } from "../components/FormTabs";
+// ADDED 9 Oct 2026 (t052) — the point-of-use explanation for "2-1-1" and for
+// the role chips' Vers/Switch, which the Glossary defines but this form used
+// bare. See JargonNote.jsx for why it is a tap-to-reveal bubble and not an
+// always-on line.
+import { JargonNote } from "../components/JargonNote";
 // ADDED 19 Aug 2026 — draft autosave, real fix for in-progress edits
 // being lost on refresh. See draftStorage.js for the full reasoning.
 import { saveDraft, loadDraft, clearDraft } from "../storage/draftStorage";
@@ -1564,7 +1569,12 @@ function ActivityDetails({ T, encounterId, onBack, onEdit, onNavigateToRecord, t
 }
 
 // ── Add/Edit sheet ──
-function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord }) {
+// ADDED 9 Oct 2026 (t052) - onOpenGlossary threads the Glossary link on each
+// JargonNote down from the module signature. EncountersModule never had it
+// before, because nothing on this screen linked out; the Glossary link is
+// optional on JargonNote (the one-sentence note is the point of it), so this is
+// the only wiring that was needed and there is no dead-link risk if it is absent.
+function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, onAfterEdit, onNavigateToRecord, onOpenGlossary }) {
   useEscapeToClose(onClose);
   const isNew = !encounterId;
   const [activeFormTab, setActiveFormTab] = useState(ENCOUNTER_EDIT_TABS[0].key);
@@ -1761,6 +1771,10 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
         <div>
         <SectionCard title="Practices" T={T}>
           <SelectField label="My role" value={form.myRole} onChange={set("myRole")} options={MY_ROLE_OPTIONS} T={T} />
+          {/* ADDED 9 Oct 2026 (t052) — "Dom" and "sub" sit in a dropdown whose
+              label says "role" and nothing else. This is a DYNAMIC, and the
+              position chips directly below are a different axis again. */}
+          <JargonNote theme={T} noteKey="role-axes" label="role" onOpen={onOpenGlossary} />
           <GivingReceivingChips label="My position" value={form.myPosition} onChange={set("myPosition")} options={MY_POSITION_OPTIONS} T={T} />
           <MultiSelectChips label="Where did I cum?" value={form.whereICame} onChange={set("whereICame")} options={CUM_LOCATION_OPTIONS} T={T} />
           <MultiSelectChips label="Where did my partner cum?" value={form.whereHeCame} onChange={set("whereHeCame")} options={CUM_LOCATION_OPTIONS} T={T} />
@@ -1774,6 +1788,11 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
         <SectionCard title="Protection & medication context" T={T}>
           <RegistryTagPicker label="Protection used" value={form.protectionUsed} onChange={set("protectionUsed")} T={T} registry={ProtectionRegistry} />
           <SelectField label="My PrEP coverage" value={form.myPrepCoverage} onChange={set("myPrepCoverage")} options={PREP_COVERAGE_OPTIONS} T={T} />
+          {/* ADDED 9 Oct 2026 (t052) — one option here literally reads
+              "Adequate - Event-based (2-1-1)". A reader who has not met the
+              regimen name has no way to tell that schedule from "Adequate -
+              daily" by looking at it. */}
+          <JargonNote theme={T} noteKey="prep-2-1-1" label="2-1-1" onOpen={onOpenGlossary} />
           <SelectField label="My DoxyPEP status" value={form.myDoxyPepStatus} onChange={set("myDoxyPepStatus")} options={DOXYPEP_STATUS_OPTIONS} T={T} />
         </SectionCard>
         </div>
@@ -1819,7 +1838,10 @@ function EditUndoToast({ toast, onUndo, onRedo, T }) {
   );
 }
 
-export default function EncountersModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, registerModuleBackHandler } = {}) {
+// ADDED 9 Oct 2026 (t052) - onOpenGlossary, threaded to the JargonNote bubbles
+// on the edit form. App.jsx already passes it to every ActiveModule (line 2875),
+// so this signature change is all that was needed; no new call site.
+export default function EncountersModule({ openAddOnMount = false, onConsumedQuickAdd, openRecordId, onConsumedRecordOpen, onNavigateToRecord, registerModuleBackHandler, onOpenGlossary } = {}) {
   const [darkMode] = useDarkModePreference();
   const T = darkMode ? buildDark() : buildLight();
   const [screen, setScreen] = useState({ name: "landing" });
@@ -1933,7 +1955,7 @@ export default function EncountersModule({ openAddOnMount = false, onConsumedQui
     );
   } else if (screen.name === "edit") {
     screenContent = (
-      <EncounterEditSheet T={T} encounterId={screen.id}
+      <EncounterEditSheet T={T} encounterId={screen.id} onOpenGlossary={onOpenGlossary}
         onClose={() => setScreen(screen.id ? { name: "detail", id: screen.id } : { name: "landing" })}
         onSaved={(placeholderContactId) => {
           // FIXED 27 Sep 2026 - the list was not re-read after a save, so a

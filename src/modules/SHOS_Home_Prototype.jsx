@@ -1,5 +1,12 @@
 import { useDarkModePreference } from "../calculations/darkModePreference";
 import { NEUTRAL_DARK as DARK } from "../calculations/designTokens";
+// ADDED 9 Oct 2026 (t052) - tap-to-reveal explanation for "BASHH" on the
+// testing ring. See JargonNote.jsx for why it is a bubble and not permanent
+// text. Home has no per-module `T` object of its own (it resolves accents
+// individually above), so the token pair JargonNote reads comes straight from
+// the shared theme objects rather than a hand-built local literal that would
+// go stale against designTokens.js.
+import { JargonNote } from "../components/JargonNote";
 // SHOS_Home_Prototype.jsx
 //
 // ADDED — real architecture extraction, same reasoning as the
@@ -907,10 +914,21 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
             color={testingStats.withinBashhInterval === false ? actionRedColor : healthcareColor}
             centerText={`${testingStats.daysSinceLast}d`}
             caption={testingStats.withinBashhInterval === false ? "Testing — overdue" : "Last test"}
-            info={`Days since your last test, out of the ${BASHH_TESTING_INTERVAL_DAYS}-day routine retest interval (BASHH guidance).`}
+            info={`Days since your last test, out of the ${BASHH_TESTING_INTERVAL_DAYS}-day routine retest interval (BASHH 2023).`}
             onClick={lastTest ? () => onNavigateToRecord("healthcare", lastTest.id, "testing") : undefined}
           />
         ) : null;
+        {/* ADDED 9 Oct 2026 (t052) — "BASHH" is a bare acronym on the first
+            screen the user ever sees, and this ring is the app holding them to a
+            number. The ring's own `info` line is PERMANENTLY VISIBLE (Home's
+            StatusRing renders it unconditionally), so the acronym is DEFINED on
+            tap rather than spelled out there: a second permanent line beside
+            every ring's explanation is the wall-of-text failure that
+            JargonNote.jsx exists to avoid. The attribution stays on the visible
+            line, because that is the part that gives the number its authority. */}
+        {testingRing && (
+          <JargonNote theme={darkMode ? DARK : NEUTRAL} noteKey="bashh" label="BASHH guidance" onOpen={onOpenGlossary} />
+        )}
         // ADDED — real ask: this ring wasn't clickable at all, unlike
         // "Last test" right beside it. Adherence isn't tied to one
         // specific dose entry the way a test result is, so there's no

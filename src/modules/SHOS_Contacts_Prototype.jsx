@@ -2,6 +2,9 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import ConfirmDeleteCard from "../components/ConfirmDeleteCard";
 import { FormTabs } from "../components/FormTabs";
 import { HivStatusNote } from "../components/HivStatusNote";
+// ADDED 9 Oct 2026 (t052) — role-vs-position note, same shared copy as
+// Encounters and My Profile.
+import { JargonNote } from "../components/JargonNote";
 import {
   PlusIcon as Plus, MagnifyingGlassIcon as Search, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, DotsThreeVerticalIcon as MoreVertical, XIcon as X, ArchiveIcon as Archive, GearSixIcon as Settings2, GearIcon as SettingsIcon,
   ChatCircleIcon as MessageCircle, CarIcon as Car, WarningIcon as AlertTriangle, TrashIcon as Trash2, LinkIcon as Link2,
@@ -2263,6 +2266,12 @@ function ContactEditSheet({ contact, contacts, onSave, onClose, refresh, T, onOp
             ) : null;
           })()}
           <MultiSelectChips T={T} label="Role" value={form.bdsmRole} onChange={set("bdsmRole")} options={BDSM_ROLE_OPTIONS} />
+          {/* ADDED 9 Oct 2026 (t052) — these chips read "Dom / Switch / sub"
+              with a label of "Role", and the Position chips directly below use a
+              different vocabulary for a different question. A reader cannot tell
+              that from the labels alone. Same note as Encounters' kink roles,
+              and the same shared copy. */}
+          <JargonNote theme={T} noteKey="role-axes" label="Role" onOpen={onOpenGlossary} />
           <MultiSelectChips T={T} label="Position" value={form.sexualPosition} onChange={set("sexualPosition")} options={SEXUAL_POSITION_OPTIONS} />
         </SectionCard>
 
