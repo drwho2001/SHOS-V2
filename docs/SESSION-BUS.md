@@ -371,6 +371,36 @@ Behaviour:
   path, so it is never committable and two separate clones do not falsely
   serialise against each other.
 
+### A red docs gate can be invisible under the next session's push
+
+Recorded 10 Oct 2026 because it is a trap specific to two sessions, and it hides
+very effectively.
+
+Commit `4e44256` changed `src/modules/settings/PrivacyScreen.jsx` and shipped no
+docs change, so its own CI run failed `docs in sync` — *"SOURCE CHANGED, DOCS
+NOT TOUCHED"*. Build, lint, 1590 unit tests, encoding and all 27 smoke flows
+passed; the only red was the gate that is easy to read as noise, because it is
+printed last and after everything else has already said PASS.
+
+Then session S1 pushed `8ddfaeb` **on top of** it, and that commit touches
+`CLAUDE.md`. The gate compares against `DOCS_BASE_REF` (the previous commit on
+the branch), so S1's docs change satisfied the gate for the combined diff and all
+three of its workflows went green. The red disappeared into someone else's
+success.
+
+**So a green run after a red one does not mean the red was fixed.** On a shared
+branch, read the run for the commit you actually pushed, and treat a docs-gate
+red as real even when the tip of the branch is green.
+
+Two things make it worse here specifically:
+
+- The docs gate **only fails in CI**, warning locally — because mid-edit "docs
+  not updated yet" is the normal state of honest work. A session that only ever
+  runs the local gate cannot see it at all.
+- A change that is *about documentation* trips it, which reads as absurd. Mine
+  was a copy fix in a settings screen; it still changed `src/`, so the gate
+  fired. "My change is only comments" is not an exemption.
+
 Set `$env:SHOS_SESSION_NAME` so the message names who is holding it.
 
 ## Timestamps

@@ -103,21 +103,38 @@ it has been re-affirmed multiple times, not an oversight.
    `Select-String -Path src\calculations\*.js -Pattern 'from "\.\./(repositories|storage)/'`
    This split is why real bugs here can be root-caused to an exact line instead
    of guessed at — preserve it in new code.
-5. **Defensive-default merge on every read** (`{...DEFAULTS, ...stored}`) —
+5. **Two deliberate privacy controls, not one — do not merge them.**
+   - **Disclosure level** (`src/calculations/disclosureLevel.js`,
+     `detailed`/`glanceable`/`masked`) decides the *text* of notifications on
+     surfaces outside the app. It reaches notifications and nothing else.
+   - **Widget tier** (`src/calculations/widgetPrivacy.js`, `full`/`redacted`/
+     `off`, per widget, set in Settings → Widgets) decides what a home-screen
+     widget *stores and renders*.
+
+   They are separate because one global level would be cruder than the choice a
+   user actually needs per widget, and because a single overlay would break L-044
+   — a Redacted tier must mean ONE uniform thing, and a global setting on top of
+   it makes the same widget render differently depending on which control moved.
+   A task once asked to "route widget writes through `resolveDisclosure`"; doing
+   that would have undone t042/t059. If you are asked to unify them again, that
+   is an **owner decision**, not an implementation detail. `PrivacyScreen.jsx`
+   states the split in two places and `disclosureCopyGuard.test.js` fails if the
+   two ever contradict each other again.
+6. **Defensive-default merge on every read** (`{...DEFAULTS, ...stored}`) —
    so adding a field later never breaks a previously-saved record.
-6. **Archive before hard delete** — the default for "just outdated" is
+7. **Archive before hard delete** — the default for "just outdated" is
    `isArchived`, not removal. Real delete-with-confirmation exists per-module
    for genuine mistakes, not as the default path.
-7. **Undo is single-step, per-module only** — no cross-module action history.
+8. **Undo is single-step, per-module only** — no cross-module action history.
    Deliberate anti-over-engineering decision, not a gap.
-8. A new repository must be wired into `backupService.js` in the **same
+9. A new repository must be wired into `backupService.js` in the **same
    change** that adds it, not after. This was missed twice historically.
-9. Design system: `src/calculations/designTokens.js` is the single source of
-   truth (colors, type, radius). Icons are Phosphor
-   (`@phosphor-icons/react`), aliased on import — never `lucide-react`. Fonts
-   are Inter (body) + JetBrains Mono (utility), self-hosted via
-   `@fontsource/*`, never a render-blocking Google Fonts `<link>`.
-10. **Fake-UTC date storage convention** (`src/calculations/dateInputHelpers.js`):
+10. Design system: `src/calculations/designTokens.js` is the single source of
+    truth (colors, type, radius). Icons are Phosphor
+    (`@phosphor-icons/react`), aliased on import — never `lucide-react`. Fonts
+    are Inter (body) + JetBrains Mono (utility), self-hosted via
+    `@fontsource/*`, never a render-blocking Google Fonts `<link>`.
+11. **Fake-UTC date storage convention** (`src/calculations/dateInputHelpers.js`):
     most stored date/time strings are `"YYYY-MM-DDTHH:mm:00.000Z"` where the
     digits are literal local wall-clock time and the trailing `Z` is a
     deliberate lie (avoids timezone-shift bugs on read). A genuine
