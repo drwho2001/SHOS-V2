@@ -277,13 +277,17 @@ const [disclosureLevel, setDisclosureLevel] = useState(
               - This one: how much may this app show when you are not looking?
               - Anonymise mode: hide things from someone holding my phone NOW?
             Anonymise mode is temporary and acts inside the app. This is
-            persistent and acts on the lock screen and the home screen. */}
+            persistent and acts on the lock screen. It does NOT act on home-
+            screen widgets: those have their own per-widget privacy tier in
+            Settings → Widgets (see widgetPrivacy.js), which is a deliberately
+            separate and finer control. See also the duress-mode copy below,
+            which already states this split. */}
         <div style={{ background: darkMode ? DARK.surface : NEUTRAL.surface, border: "1px solid " + (darkMode ? DARK.border : NEUTRAL.border), borderRadius: RADIUS.md, padding: 16, marginBottom: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? DARK.textPrimary : NEUTRAL.textPrimary, marginBottom: 4 }}>
-            Lock screen &amp; home screen detail
+            Lock screen &amp; notification detail
           </div>
           <div style={{ fontSize: 11, color: darkMode ? DARK.textSecondary : NEUTRAL.textSecondary, marginBottom: 10 }}>
-            How much your notifications and home-screen widgets say without you opening the app. This is separate from Anonymise mode below, which is a temporary way of hiding things from someone holding your phone right now.
+            How much your notifications say without you opening the app. Home-screen widgets are NOT covered by this setting — each widget has its own privacy tier in Settings → Widgets, because one level for all of them would be cruder than the choice they actually need. This is separate from Anonymise mode below, which is a temporary way of hiding things from someone holding your phone right now.
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }} role="radiogroup" aria-label="Lock screen and home screen detail">
             {DISCLOSURE_LEVELS.map((level) => {
