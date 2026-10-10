@@ -8,20 +8,55 @@
     android:background="@drawable/widget_background"
     android:gravity="center">
 
+    <!-- ADDED 10 Oct 2026 (t091) - the static title every other widget already
+         carries. This layout was the only one of the ten whose FIRST line was a
+         value (the medication name) rather than a title, which is why it read
+         unlike its nine siblings: Refills/Last Test/Appointments/DoxyPEP all
+         open with a 16sp bold label of what the widget IS, then the value.
+
+         The title is static and carries no user data, so it stays visible at
+         every privacy tier - the same reason the other nine titles are static
+         literals rather than provider-set text. The medication name below it
+         is the identifying part, and the provider already replaces that with
+         the redacted line and hides widget_next_dose at the Redacted tier
+         (NextDoseWidgetProvider.java). Nothing about that path changes: this
+         view is never hidden, so widgetRedactedRender.test.js's "every id it
+         hides exists in its layout" assertion is untouched.
+
+         Label text matches the picker label and the receiver_label_next_dose
+         string ("Next Dose"), so the tile says the same thing in the picker,
+         on the home screen and in the widget's own settings entry. -->
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Next Dose"
+        android:textSize="16sp"
+        android:textColor="@color/widget_text_primary"
+        android:textStyle="bold" />
+
+    <!-- The value slot: which medication the time below belongs to. Promoted to
+         18sp so the hierarchy matches the other nine widgets, where the second
+         line is the headline and the first is only the label. It was 16sp,
+         identical to the title, so the two lines competed instead of reading
+         as label-then-value. -->
     <TextView
         android:id="@+id/widget_med_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:text="Medication"
-        android:textSize="16sp"
+        android:textSize="18sp"
         android:textColor="@color/widget_text_primary"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end" />
 
     <TextView
         android:id="@+id/widget_next_dose"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="4dp"
         android:text="Next dose: --:--"
         android:textSize="14sp"
         android:textColor="@color/widget_text_muted" />
