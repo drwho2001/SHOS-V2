@@ -423,6 +423,13 @@ one free call, so the instinct to push on is the expensive one.
   251-435 MB free — which reads as a broken runner, not a slow test, so it
   produces no failing assertion to investigate. If a guard's cost grows with
   rounds rather than with the code, the loop is doing the wrong work. See t109.
+- **A test that does real work gets an explicit timeout with reasoning inline.**
+  `vitest.config.ts` sets no `testTimeout`, so every test inherits Vitest's 5000ms
+  default. Tests that parse `src/` or dynamically import modules are near that line
+  under full-suite load — measured 2314ms for `clearSampleData.test.js` at 799 MB
+  free, vs 817ms in isolation (a 2.8x load penalty). The fix is `}, 30_000);` with
+  a comment block explaining why, matching the `uuNoteLinkGuard` precedent. A bare
+  number is indistinguishable from a value chosen to make a red run green.
 - **Every commit ends with an attribution footer** — a hard requirement:
   ```
   Co-Authored-By: Claude <model-name> <noreply@anthropic.com>

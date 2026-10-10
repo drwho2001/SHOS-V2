@@ -60,6 +60,32 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+// ADDED 10 Oct 2026 (t109) - explicit timeout on every test in this file.
+//
+// Every test here calls freshApp(), which does vi.resetModules() and then
+// dynamically imports six repository modules. That is real work, repeated 22
+// times, and it is structural rather than a timer: nothing in this file waits
+// on anything, so there is no wait to bound and none to fix. It is the same
+// shape as the AST guards in src/components, which carry the same treatment
+// for the same reason - uuNoteLinkGuard, bottomSheetSafeAreaGuard and
+// jsxComponentBindingGuard all do a real parse or import sweep on every run.
+//
+// Measured 10 Oct 2026 on this machine, full suite green, 799 MB free: the
+// slowest test in this file took 2314ms against Vitest's 5000ms default, 46%
+// of the line. Under load, this box has been recorded at 251-435 MB free while
+// workers were being OOM-killed, and at that headroom this margin is gone.
+// This file is also one of the two that produced the 5000ms timeout failures
+// described in the t109 brief, where the victim changed between runs and each
+// victim passed in isolation - the signature of a limit, not of a defect.
+//
+// Vitest's 5s default is not a budget for re-importing six modules 22 times.
+// The repo's standing rule is that a result must not depend on machine speed;
+// the equivalent here is that PASS/FAIL in this file must depend on whether the
+// seed id sets have drifted, not on how loaded the machine was.
+//
+// Raise this only with a measurement: run this file alone and divide the
+// reported duration by the test count. Do not lower it to make a red run green.
+
 describe("the exported seed id sets cannot drift from their seed arrays", () => {
   it("every set has exactly one id per seed record", async () => {
     const { contacts, encounters, testing, meds, logs } = await freshApp();
@@ -77,7 +103,7 @@ describe("the exported seed id sets cannot drift from their seed arrays", () => 
         expect(ids.has(r.id), `${name}: ${r.id} missing from the id set`).toBe(true);
       }
     }
-  });
+  }, 30_000);
 
   it("the set size equals the array length, so a count cannot be inflated", async () => {
     const { contacts } = await freshApp();
@@ -85,7 +111,7 @@ describe("the exported seed id sets cannot drift from their seed arrays", () => 
     const uniqueIds = new Set(seeded.map((c) => c.id));
     expect(uniqueIds.size).toBe(seeded.length);
     expect(contacts.SEED_CONTACT_IDS.size).toBe(seeded.length);
-  });
+  }, 30_000);
 });
 
 describe("countSampleData reports what a new user would be looking at", () => {
@@ -99,14 +125,14 @@ describe("countSampleData reports what a new user would be looking at", () => {
     const positive = tests.filter((t) => /positive/i.test(t.title || ""));
     expect(positive.length, "the sample data should include a positive result").toBeGreaterThan(0);
     expect(byCollection.some((c) => c.name === "Contacts")).toBe(true);
-  });
+  }, 30_000);
 
   it("returns 0 once the sample data has been cleared", async () => {
     const { clear } = await freshApp();
     await clear.clearSampleData();
     const { total } = await clear.countSampleData();
     expect(total).toBe(0);
-  });
+  }, 30_000);
 
   it("counts ONLY sample records once the user has added real ones", async () => {
     // Added after mutation testing found the count was untested. Replacing the
@@ -130,7 +156,7 @@ describe("countSampleData reports what a new user would be looking at", () => {
     expect(after).toBeGreaterThan(0);
     const contactsRow = byCollection.find((c) => c.name === "Contacts");
     expect(contactsRow.count).toBe(sampleCount);
-  });
+  }, 30_000);
 });
 
 describe("a seed record the user has real history against is NOT sample data", () => {
@@ -164,7 +190,7 @@ describe("a seed record the user has real history against is NOT sample data", (
       surviving.some((m) => m.id === prEp),
       "a seeded medication with real dose history must survive 'clear sample data'",
     ).toBe(true);
-  });
+  }, 30_000);
 
   it("keeps that medication's own dose logs with it, so nothing is orphaned", async () => {
     const { meds, logs, clear } = await freshApp();
@@ -187,7 +213,7 @@ describe("a seed record the user has real history against is NOT sample data", (
     const orphan = logsLeft.filter((l) => !medIds.has(l.medicationId) && !logs.SEED_MEDICATION_LOG_IDS.has(l.id));
     expect(orphan, "a clear must never leave a real log pointing at a deleted record").toEqual([]);
     expect(logsLeft.some((l) => l.id === mine.id), "the user's own dose entry must survive").toBe(true);
-  });
+  }, 30_000);
 
   it("still removes a seeded medication nobody has ever touched", async () => {
     // The converse, and the reason this is not simply "never remove seed meds".
@@ -196,7 +222,7 @@ describe("a seed record the user has real history against is NOT sample data", (
     await clear.clearSampleData();
     const surviving = await meds.MedicationRepository.getAll();
     expect(surviving.length, "untouched sample medications must still be removed").toBe(0);
-  });
+  }, 30_000);
 
   it("still removes a seeded medication that only SAMPLE logs point at", async () => {
     // Sample data cannot vouch for itself. The seeded dose logs reference the
@@ -211,7 +237,7 @@ describe("a seed record the user has real history against is NOT sample data", (
     const surviving = await meds.MedicationRepository.getAll();
     expect(surviving.length).toBe(0);
     expect(before.length).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it("stops counting a promoted medication as sample data, so the banner clears", async () => {
     const { meds, logs, clear } = await freshApp();
@@ -228,7 +254,7 @@ describe("a seed record the user has real history against is NOT sample data", (
     // One fewer than the seed count: the one with real history behind it.
     expect(medsRow?.count ?? 0).toBe(meds.SEED_MEDICATION_IDS.size - 1);
     expect(total).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it("keeps a SEED contact that a real encounter lists as an attendee", async () => {
     // The plural-field case, and it is a different code path: the reference here
@@ -252,7 +278,7 @@ describe("a seed record the user has real history against is NOT sample data", (
       surviving.some((c) => c.id === seedContact),
       "a seeded contact a real encounter points at must survive",
     ).toBe(true);
-  });
+  }, 30_000);
 
   it("is repeatable: a second clear does not remove the promoted medication", async () => {
     // Without this, the first clear would look fine and the second would take
@@ -272,7 +298,7 @@ describe("a seed record the user has real history against is NOT sample data", (
 
     const surviving = await meds.MedicationRepository.getAll();
     expect(surviving.some((m) => m.id === prEp)).toBe(true);
-  });
+  }, 30_000);
 });
 
 describe("clearSampleData removes sample records and keeps real ones", () => {
@@ -301,7 +327,7 @@ describe("clearSampleData removes sample records and keeps real ones", () => {
 
     const after = await contacts.ContactRepository.getAll();
     expect(after.map((c) => c.name)).toEqual(["My Real Contact"]);
-  });
+  }, 30_000);
 
   it("clears every seeded collection, not just contacts", async () => {
     const { clear } = await freshApp();
@@ -309,7 +335,7 @@ describe("clearSampleData removes sample records and keeps real ones", () => {
     expect(before.byCollection.length).toBeGreaterThan(3);
     const { removed } = await clear.clearSampleData();
     expect(removed).toBe(before.total);
-  });
+  }, 30_000);
 
   it("writes the cleared state rather than removing the key, so it survives a reload", async () => {
     // This is the failure resetAllData.js was written to fix: removing the
@@ -328,7 +354,7 @@ describe("clearSampleData removes sample records and keeps real ones", () => {
     const reloaded = await import("./contactRepository");
     const afterReload = await reloaded.ContactRepository.getAll();
     expect(afterReload.map((c) => c.name)).toEqual(["My Real Contact"]);
-  });
+  }, 30_000);
 
   it("leaves the sample data alone when there is none to remove", async () => {
     const { clear } = await freshApp();
@@ -336,7 +362,7 @@ describe("clearSampleData removes sample records and keeps real ones", () => {
     const { removed, failed } = await clear.clearSampleData();
     expect(removed).toBe(0);
     expect(failed).toEqual([]);
-  });
+  }, 30_000);
 
   it("never throws when a repository is unreadable, and reports it instead", async () => {
     // An advisory action must never be able to break the app.
@@ -352,7 +378,7 @@ describe("clearSampleData removes sample records and keeps real ones", () => {
     } finally {
       contacts.ContactRepository.getAll = original;
     }
-  });
+  }, 30_000);
 
   it("countSampleData survives an unreadable repository too", async () => {
     const { contacts, clear } = await freshApp();
@@ -365,7 +391,7 @@ describe("clearSampleData removes sample records and keeps real ones", () => {
     } finally {
       contacts.ContactRepository.getAll = original;
     }
-  });
+  }, 30_000);
 });
 
 // ---------------------------------------------------------------------------
@@ -387,7 +413,7 @@ describe("subscribers are told when the sample data changes", () => {
     await clear.clearSampleData();
     expect(calls).toBe(1);
     off();
-  });
+  }, 30_000);
 
   it("stops notifying after unsubscribe", async () => {
     const { clear } = await freshApp();
@@ -398,7 +424,7 @@ describe("subscribers are told when the sample data changes", () => {
     // A leaked listener would keep a mounted screen re-counting forever, which
     // is a slow leak rather than an obvious bug - so it is asserted.
     expect(calls).toBe(0);
-  });
+  }, 30_000);
 
   it("notifies even when there was nothing to remove", async () => {
     // Deliberate: a screen that skipped a repository still needs to stop
@@ -411,7 +437,7 @@ describe("subscribers are told when the sample data changes", () => {
     await clear.clearSampleData();
     expect(calls).toBe(1);
     off();
-  });
+  }, 30_000);
 
   it("one broken listener cannot break the clear or the other listeners", async () => {
     const { clear } = await freshApp();
@@ -422,5 +448,5 @@ describe("subscribers are told when the sample data changes", () => {
     expect(result.removed).toBeGreaterThan(0);
     expect(good).toBe(1);
     off();
-  });
+  }, 30_000);
 });
