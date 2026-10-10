@@ -105,14 +105,24 @@ export function getDoxyPepStatus(encounters, doxyDoseLogs, now = new Date()) {
 
   if (qualifyingSinceLastDose.length === 0) return { active: false };
 
-  const windowStart = realTimestampFromStored(qualifyingSinceLastDose[0].date);
+  // The encounter that OPENED the window (the earliest qualifying encounter
+  // since the last dose) is the evidence the DoxyPEP widget shows — "last
+  // unprotected event @X" — so the user can see WHY a window exists rather
+  // than a bare countdown (t093). Carried as the stored fake-UTC date string
+  // (`windowStartIso`) so the widget never has to re-derive which encounter
+  // started it, and `windowStart` stays the numeric epoch the deadline maths
+  // already uses. Same one-canonical-owner rule as everything else: the
+  // encounter that defines the window is read once, here, and reused.
+  const windowStartEncounter = qualifyingSinceLastDose[0];
+  const windowStart = realTimestampFromStored(windowStartEncounter.date);
+  const windowStartIso = windowStartEncounter.date;
   const deadline = windowStart + DOXYPEP_WINDOW_HOURS * 3600000;
   const nowMs = now.getTime();
 
   if (nowMs < deadline) {
-    return { active: true, overdue: false, windowStart, deadline, msRemaining: deadline - nowMs };
+    return { active: true, overdue: false, windowStart, windowStartIso, deadline, msRemaining: deadline - nowMs };
   }
-  return { active: true, overdue: true, windowStart, deadline, msOverdue: nowMs - deadline };
+  return { active: true, overdue: true, windowStart, windowStartIso, deadline, msOverdue: nowMs - deadline };
 }
 
 // Formatting helper matching the app's existing hours/minutes

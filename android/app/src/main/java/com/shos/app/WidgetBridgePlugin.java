@@ -161,6 +161,17 @@ public class WidgetBridgePlugin extends Plugin {
                 getContext(),
                 opt(call, "status"),
                 call.getLong("expiryMs", 0L),
+                // ADDED 9 Oct 2026 (t093) - the evidence date, or "" at a tier
+                // that dropped it. Explicitly whitelisted here (rather than
+                // forwarded wholesale) because this bridge picks named fields:
+                // an unnamed field is silently dropped, which is exactly how the
+                // evidence line would have looked "broken" rather than absent.
+                //
+                // Placed BEFORE redactedText, not after. widgetRedactedRender
+                // asserts the redacted line is the LAST argument of every wired
+                // provider's call, so appending a field after it is a regression
+                // that only shows up when that guard actually runs.
+                opt(call, "evidenceAt"),
                 // The pre-formatted Redacted line, or "" when the tier is not
                 // Redacted. Empty is the right default rather than the field's
                 // absence, so the provider's "is there a redacted line?" check

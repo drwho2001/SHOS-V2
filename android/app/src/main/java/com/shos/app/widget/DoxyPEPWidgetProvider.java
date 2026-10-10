@@ -15,6 +15,9 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_DOXY_STATUS = "doxy_status";
     private static final String KEY_DOXY_EXPIRY = "doxy_expiry";
+    // ADDED 9 Oct 2026 (t093) - the evidence line: the stored date of the
+    // encounter that opened the window. Empty at the Redacted tier (never sent).
+    private static final String KEY_DOXY_EVIDENCE = "doxy_evidence";
     // The pre-formatted one-line wording for a Redacted widget, decided in JS.
     private static final String KEY_REDACTED_TEXT = "redacted_text";
 
@@ -54,6 +57,10 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
         }
         String status = prefs.getString(KEY_DOXY_STATUS, "No active window");
         long expiry = prefs.getLong(KEY_DOXY_EXPIRY, 0);
+        // ADDED 9 Oct 2026 (t093) - the evidence line. Empty when the tier
+        // dropped it (Redacted/Off), which is why the render below treats "" as
+        // "no evidence" rather than rendering a blank gap.
+        String evidence = prefs.getString(KEY_DOXY_EVIDENCE, "");
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.doxy_pep_widget);
 
@@ -100,6 +107,7 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
             views.setTextViewText(R.id.widget_doxy_title, redactedText);
             views.setViewVisibility(R.id.widget_doxy_status, View.GONE);
             views.setViewVisibility(R.id.widget_doxy_countdown, View.GONE);
+            views.setViewVisibility(R.id.widget_doxy_evidence, View.GONE);
             appWidgetManager.updateAppWidget(appWidgetId, views);
             return;
         }
@@ -123,12 +131,30 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
             views.setTextViewText(R.id.widget_doxy_countdown, "");
         }
 
+        // ADDED 9 Oct 2026 (t093) - the evidence line, shown at the Full tier in
+        // every branch above so the user can see WHICH event opened the window.
+        //
+        // The stored value is one of this app's fake-UTC strings
+        // ("YYYY-MM-DDTHH:mm:00.000Z", see dateInputHelpers.js), so it is NOT
+        // parsed into a Date and re-formatted here: that would shift the shown
+        // day by the device's UTC offset. Taking the leading "YYYY-MM-DD"
+        // substring renders the day exactly as it was stored.
+        String evidenceDay = (evidence != null && evidence.length() >= 10) ? evidence.substring(0, 10) : "";
+        views.setTextViewText(R.id.widget_doxy_evidence,
+            evidenceDay.isEmpty() ? "" : "Last unprotected event " + evidenceDay);
+
         // Click opens Medication tab
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
-    public static void updateDoxyPEP(Context context, String status, long expiryMs, String redactedText) {
+    // ADDED 9 Oct 2026 (t093) - evidenceAt is the stored date of the encounter
+    // that opened the window. Empty at Redacted/Off because the payload field
+    // is dropped before it reaches here (see widgetPrivacy.js); "" is the
+    // right default rather than the field's absence, so a stale value from a
+    // previous Full-tier update cannot survive into a later Redacted one.
+    public static void updateDoxyPEP(Context context, String status, long expiryMs,
+                                     String redactedText, String evidenceAt) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -142,6 +168,7 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
             .putString(KEY_DOXY_STATUS, status)
             .putLong(KEY_DOXY_EXPIRY, expiryMs)
             .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
+            .putString(KEY_DOXY_EVIDENCE, evidenceAt == null ? "" : evidenceAt)
             .apply();
 
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

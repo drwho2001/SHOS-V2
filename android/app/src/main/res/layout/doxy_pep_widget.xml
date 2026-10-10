@@ -35,4 +35,19 @@
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted" />
+
+    <!-- ADDED 9 Oct 2026 (t093) - the EVIDENCE line: the stored date of the
+         encounter that opened the window, so the widget shows WHY a window
+         exists, not just a bare countdown. A flat sibling, not a nested
+         container (L-076: widget RemoteViews layouts inflate only one
+         ViewGroup). Hidden at the Redacted tier by the provider, because an
+         exposure DATE is identifying. -->
+    <TextView
+        android:id="@+id/widget_doxy_evidence"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text=""
+        android:textSize="11sp"
+        android:textColor="@color/widget_text_muted" />
 </LinearLayout>

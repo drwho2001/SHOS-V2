@@ -155,6 +155,16 @@ export async function updateDoxyPEPWidget(status) {
           category: "DoxyPEP",
           state: statusText,
           countdownAt: status.deadline ? status.deadline.getTime() : null,
+        // ADDED 9 Oct 2026 (t093) - the EVIDENCE line: the stored date of the
+        // encounter that opened the window, so the widget shows WHY a window
+        // exists rather than a bare countdown.
+        //
+        // DELIBERATELY NOT in the Redacted allowlist (see widgetPrivacy.js),
+        // so it is dropped at that tier automatically — an exposure DATE is
+        // identifying, and the Redacted rule is category presence without
+        // specifics. Default-deny means not listing it here is the whole
+        // privacy decision; no explicit hide is needed on the Java side.
+        evidenceAt: status.windowStartIso || null,
         },
         // The fifth argument is the pre-formatted Redacted line.
         //
