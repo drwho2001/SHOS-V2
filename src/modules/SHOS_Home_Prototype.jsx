@@ -1355,7 +1355,7 @@ function HomeScreen({ onQuickAdd, onOpenSettings, onOpenSearch, onNavigateToReco
           <MyProfileModule onClose={() => setShowMyProfile(false)} registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={onOpenGlossary} />
         </div>
       )}
-      {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={(tab, id, subTab) => { markClinicCardReturn?.(); onNavigateToRecord(tab, id, subTab); }} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}
+      {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={(tab, id, subTab) => { markClinicCardReturn?.(); onNavigateToRecord(tab, id, subTab); }} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={onOpenGlossary} />}
       {showTimeline && (
         // FIXED — real bug: this wrapper had no overflowY, and
         // TimelineModule's own screens don't establish their own

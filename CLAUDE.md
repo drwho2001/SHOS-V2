@@ -385,6 +385,16 @@ one free call, so the instinct to push on is the expensive one.
   `src/components/jargonNoteCoverage.test.js`. When threading a prop that a note
   depends on, assert the whole render chain, not just the call site — L-082, and
   the reason is a mutation, not a theory.
+- **An AST guard must parse `src/` once, not once per round.** Any guard that
+  walks a fixpoint — re-visiting files because the *question* grew even though the
+  source did not — must hoist the parse outside the loop
+  (`parseAllJsx` in `src/components/glossaryPropChain.js`). Parsing per round
+  handed all of `src/` to `@babel/parser` six times over, and the prop-chain
+  guards went from 28s to ~85s standalone and contributed to the vitest worker
+  being **OOM-killed** during the full suite (`ERR_IPC_CHANNEL_CLOSED`) at
+  251-435 MB free — which reads as a broken runner, not a slow test, so it
+  produces no failing assertion to investigate. If a guard's cost grows with
+  rounds rather than with the code, the loop is doing the wrong work. See t109.
 - **Every commit ends with an attribution footer** — a hard requirement:
   ```
   Co-Authored-By: Claude <model-name> <noreply@anthropic.com>

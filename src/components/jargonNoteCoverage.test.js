@@ -31,82 +31,24 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { parse } from "@babel/parser";
 import { JARGON_NOTES } from "../calculations/jargonNotes";
+// The AST helpers moved to glossaryPropChain.js in t108, shared with
+// uuNoteLinkGuard.test.js. They were local to this file until the same
+// prop-chain bug had to be guarded in both places, and two hand-maintained copies
+// of mutation-proven logic is exactly how one of them ends up checking a stale
+// version of the app. Reasoning moved with the code; assertions are unchanged.
+import {
+  jsxFiles,
+  walk,
+  parseFile,
+  mountsOf,
+  destructuredProps,
+  receiverChain,
+  renderersOf,
+  parseAllJsx,
+} from "./glossaryPropChain";
 
 const SRC = path.resolve("src");
-
-function jsxFiles(dir, out = []) {
-  for (const name of fs.readdirSync(dir)) {
-    if (name === "node_modules") continue;
-    const p = path.join(dir, name);
-    if (fs.statSync(p).isDirectory()) jsxFiles(p, out);
-    else if (/\.jsx$/.test(name) && !/\.test\./.test(name)) out.push(p);
-  }
-  return out;
-}
-
-function walk(node, visit) {
-  if (!node || typeof node !== "object") return;
-  if (Array.isArray(node)) {
-    for (const c of node) walk(c, visit);
-    return;
-  }
-  if (typeof node.type !== "string") return;
-  visit(node);
-  for (const key of Object.keys(node)) {
-    if (key === "loc") continue;
-    walk(node[key], visit);
-  }
-}
-
-function parseFile(file) {
-  try {
-    return parse(fs.readFileSync(file, "utf8"), { sourceType: "module", plugins: ["jsx"] });
-  } catch {
-    return null;
-  }
-}
-
-const keyName = (k) => (k?.type === "Identifier" ? k.name : k?.value ?? k?.name);
-
-/** Every mount of a component, with the prop names and noteKey it was given. */
-function mountsOf(ast, componentName) {
-  const out = [];
-  walk(ast, (node) => {
-    if (node.type !== "JSXOpeningElement") return;
-    if (node.name?.name !== componentName) return;
-    const attrs = (node.attributes || []).filter((a) => a.type === "JSXAttribute");
-    const noteKeyAttr = attrs.find((a) => a.name?.name === "noteKey");
-    out.push({
-      line: node.loc?.start?.line ?? 0,
-      props: attrs.map((a) => a.name?.name),
-      // The literal key, when it is one. A computed key cannot be checked here,
-      // so it is recorded as null and the "no free text" assertion below is what
-      // covers that case.
-      noteKey: noteKeyAttr?.value?.value ?? null,
-    });
-  });
-  return out;
-}
-
-function destructuredProps(node) {
-  const names = [];
-  for (let prm of node.params || []) {
-    // `function C({ a } = {})` puts the ObjectPattern inside an AssignmentPattern.
-    // Skipping that case reads every module in this repo as accepting NOTHING,
-    // because they all default their props object - which is why the first run
-    // of the transitive check reported App, Settings, Healthcare and Contacts as
-    // broken when every one of them passes the prop correctly.
-    while (prm && prm.type === "AssignmentPattern") prm = prm.left;
-    if (!prm || prm.type !== "ObjectPattern") continue;
-    for (const prop of prm.properties) {
-      if (prop.type === "ObjectProperty") names.push(keyName(prop.key));
-      else if (prop.type === "RestElement") names.push("...");
-    }
-  }
-  return names;
-}
 
 /**
  * Every function that encloses a mount and can receive props, nearest first.
@@ -124,129 +66,15 @@ function destructuredProps(node) {
  * they are render helpers or IIFEs. Home's rings block is one - it closes over
  * its enclosing component's props rather than accepting its own, and reporting
  * it as the receiver would be a false positive.
- */
-function receiverChain(ast, componentName, prop) {
-  const uses = mountsOf(ast, componentName);
-  if (uses.length === 0) return [];
-  const lines = uses.map((u) => u.line);
-  const out = [];
-  walk(ast, (node) => {
-    if (node.type !== "FunctionDeclaration" && node.type !== "ArrowFunctionExpression") return;
-    if ((node.params || []).length === 0) return;
-    const s = node.loc?.start?.line ?? 0;
-    const e = node.loc?.end?.line ?? 0;
-    if (!lines.some((l) => l >= s && l <= e)) return;
-    const props = destructuredProps(node);
-    out.push({
-      fn: node.id?.name || "(anonymous)",
-      line: s,
-      accepts: props.includes(prop) || props.includes("..."),
-    });
-  });
-  // Nearest first, and de-duplicated: a mount inside two IIFEs would otherwise
-  // be attributed to the same function once per nesting level.
-  const seen = new Set();
-  return out
-    .sort((a, b) => b.line - a.line)
-    .filter((r) => (seen.has(r.line) ? false : (seen.add(r.line), true)));
-}
-
-/**
- * For each mount of any component named in `childNames`, the enclosing function
- * that renders it, whether it accepts `prop`, and its name so the caller can add
- * it to the set for the next round.
  *
- * This is the RENDER relationship rather than the lexical one. Walking outward
- * from a mount stops at the nearest component, which is the right answer for
- * "does this component declare the prop" and the wrong answer for "is the prop
- * ever actually supplied" - a component rendered by a module is not lexically
- * inside that module, so no amount of walking outward reaches it.
+ * Implementation: glossaryPropChain.js receiverChain.
  */
-/**
- * The prop a caller supplies to `child`. The leaf is the exception: JargonNote's
- * own prop is `onOpen` (matching HivStatusNote, where it means "open the Glossary
- * entry"), and everything above it travels as `onOpenGlossary`. Checking the
- * leaf for the threaded name reported all five correct mounts as unsupplied.
- */
-const propFor = (child) => (child === "JargonNote" ? "onOpen" : "onOpenGlossary");
 
-function renderersOf(ast, childNames) {
-  const uses = [];
-  walk(ast, (node) => {
-    if (node.type !== "JSXOpeningElement") return;
-    const nm = node.name?.name;
-    if (!nm || !childNames.has(nm)) return;
-    uses.push({
-      line: node.loc?.start?.line ?? 0,
-      child: nm,
-      attrs: (node.attributes || []).filter((a) => a.type === "JSXAttribute"),
-    });
-  });
-  if (uses.length === 0) return [];
-
-  // Only NAMED components count. An anonymous arrow is a render helper or a
-  // callback, and reporting those produced noise on first run - Settings passes
-  // onOpenGlossary={() => setShowGlossary(true)} from inside one, so every
-  // correctly-wired call site read as broken.
-  const named = [];
-  walk(ast, (node) => {
-    if (node.type === "FunctionDeclaration" && node.id?.name) {
-      named.push({ name: node.id.name, s: node.loc?.start?.line ?? 0, e: node.loc?.end?.line ?? 0, node });
-    } else if (node.type === "VariableDeclarator" && node.id?.type === "Identifier" && node.id.name) {
-      const init = node.init;
-      if (init && (init.type === "ArrowFunctionExpression" || init.type === "FunctionExpression")) {
-        named.push({ name: node.id.name, s: node.loc?.start?.line ?? 0, e: node.loc?.end?.line ?? 0, node: init });
-      }
-    }
-  });
-
-  const out = [];
-  // Whether this file renders a note directly. Climbing stops at files that do
-  // not, because the chain above that point belongs to another change.
-  const fileHasNote = mountsOf(ast, "JargonNote").length > 0;
-  for (const u of uses) {
-    // Innermost named component containing the mount.
-    const host = named
-      .filter((n) => n.s <= u.line && n.e >= u.line)
-      .sort((a, b) => b.s - a.s)[0];
-    if (!host) continue;
-    const props = destructuredProps(host.node);
-    const attr = u.attrs.find((a) => a.name?.name === propFor(u.child));
-    let supplied = false;
-    let identifier = null;
-    if (attr) {
-      const expr = attr.value?.expression;
-      if (expr?.type === "ArrowFunctionExpression" || expr?.type === "FunctionExpression") supplied = "lambda";
-      else if (expr?.type === "Identifier") {
-        supplied = "identifier";
-        identifier = expr.name;
-      } else supplied = "other";
-    }
-    out.push({
-      name: host.name,
-      child: u.child,
-      line: host.s,
-      supplied,
-      identifier,
-      fileHasNote,
-      declaredHere: identifier ? declaredInFile(ast, identifier) : false,
-      accepts: props.includes("onOpenGlossary") || props.includes("..."),
-    });
-  }
-  return out;
-}
-
-/** Whether `name` is declared anywhere in this file - a const helper, an import. */
-function declaredInFile(ast, name) {
-  let found = false;
-  walk(ast, (node) => {
-    if (found) return;
-    if (node.type === "VariableDeclarator" && node.id?.name === name) found = true;
-    if (node.type === "FunctionDeclaration" && node.id?.name === name) found = true;
-    if (node.type === "ImportSpecifier" && node.imported?.name === name) found = true;
-  });
-  return found;
-}
+// receiverChain, renderersOf, mountsOf, jsxFiles, walk, parseFile and
+// destructuredProps are all imported from ./glossaryPropChain.js. Their
+// doc comments - including why the render relationship rather than the lexical
+// one, and why the leaf component's own prop is `onOpen` - live with the
+// implementations there, shared with uuNoteLinkGuard.test.js.
 
 const ALL = jsxFiles(SRC);
 const rel = (f) => path.relative(SRC, f).replace(/\\/g, "/");
@@ -387,15 +215,18 @@ describe("jargon notes stay short, shared, and unconditional", () => {
     // hand-named component to however many turn out to need one.
     const needs = new Set(["JargonNote"]);
     const bad = [];
+    // Parsed ONCE, outside the fixpoint, for the same reason as the identical
+    // fixpoint in uuNoteLinkGuard.test.js: parsing every file per round handed
+    // all of src/ to @babel/parser six times over for a result that cannot
+    // change between rounds. Only the question changes; the source does not.
+    const parsed = parseAllJsx(SRC);
     let grew = true;
     let rounds = 0;
     while (grew && rounds < 6) {
       grew = false;
       rounds++;
-      for (const f of ALL) {
-        const ast = parseFile(f);
-        if (!ast) continue;
-        for (const r of renderersOf(ast, needs)) {
+      for (const { file: f, ast } of parsed) {
+        for (const r of renderersOf(ast, needs, "JargonNote")) {
           if (!r.supplied) {
             bad.push(`${rel(f)}:${r.line} ${r.name} renders ${r.child} without supplying onOpenGlossary`);
             continue;
@@ -420,7 +251,7 @@ describe("jargon notes stay short, shared, and unconditional", () => {
           // editing App.jsx and three module entry points. It is tracked as its
           // own task rather than folded in here, so this guard stays an assertion
           // about what t052 introduced.
-          if (r.name && !needs.has(r.name) && r.fileHasNote) {
+          if (r.name && !needs.has(r.name) && r.fileRendersLeaf) {
             needs.add(r.name);
             grew = true;
           }

@@ -20,6 +20,14 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "@babel/parser";
+// ADDED 10 Oct 2026 (t108) - the AST helpers now come from
+// ./glossaryPropChain.js, shared with jargonNoteCoverage.test.js. The
+// transitive check added below needs the same render-relationship walk the
+// jargon guard needs, and keeping two copies of it is how one ends up guarding a
+// stale version of the app. The local jsxFiles/walk/parseFile/mountsOf/
+// destructuredProps/receivers/receiverChain below still exist for this file's
+// ORIGINAL assertions, which are unchanged and still load-bearing; the shared
+// module carries the mutation-proven reasoning for the helpers both use.
 // ADDED 3 Oct 2026 - explicit timeout for this guard.
 //
 // It walks all of src/ and runs @babel/parser over every .jsx on every run, so
@@ -34,6 +42,13 @@ import { parse } from "@babel/parser";
 // Measured, not guessed: run this file alone and divide the reported test
 // duration by its test count before raising this further.
 
+// Only renderersOf is imported. This file keeps its own jsxFiles, walk,
+// parseFile, mountsOf, destructuredProps and receivers for the ORIGINAL
+// assertions above, which are unchanged and still load-bearing; importing
+// duplicates of those would collide with the local declarations and break lint.
+// renderersOf has no local equivalent here, which is the whole reason it comes
+// from the shared module.
+import { renderersOf, parseAllJsx } from "./glossaryPropChain";
 
 const SRC = path.resolve("src");
 
@@ -197,5 +212,68 @@ describe("every U=U link has somewhere to go", () => {
   it("Settings can open the Glossary screen directly, which is what the link relies on", () => {
     const settings = fs.readFileSync(path.join(SRC, "modules/SHOS_Settings_Prototype.jsx"), "utf8");
     expect(settings).toMatch(/showGlossary.*initialScreen === "glossary"/);
+  }, 30000);
+
+  // ADDED 10 Oct 2026 (t108) - the transitive render-chain check. Every assertion
+  // above inspects either a leaf mount or a leaf component's signature. Both were
+  // green while HealthcareScreen and HomeScreen each dropped onOpenGlossary and
+  // every U=U link reached through the Clinic Card was dead - because neither
+  // asks WHO supplies the prop to the component that renders ClinicCardScreen.
+  //
+  // This walks the RENDER relationship to a fixpoint (who renders a
+  // note-bearing component, and does it supply the prop), which is the check
+  // that closes that hole. It is proven by mutation: reverting the one-line
+  // HealthcareScreen fix turns it red. Helpers are shared with
+  // jargonNoteCoverage.test.js via ./glossaryPropChain.js, because the bug and
+  // the fix are the same one for both note types.
+  it("every component that RENDERS a U=U-bearing component supplies onOpenGlossary", () => {
+    const needs = new Set(["HivStatusNote"]);
+    const bad = [];
+    // Parsed ONCE, outside the fixpoint. It used to sit inside the round loop,
+    // so every file in src/ went through @babel/parser once per round - six
+    // passes worst case - to compute something that cannot change between
+    // rounds. Only the question changes; the source does not.
+    const files = parseAllJsx(SRC);
+    let grew = true;
+    let rounds = 0;
+    while (grew && rounds < 6) {
+      grew = false;
+      rounds++;
+      for (const { file: f, ast } of files) {
+        for (const r of renderersOf(ast, needs, "HivStatusNote")) {
+          if (!r.supplied) {
+            bad.push(`${path.relative(SRC, f).replace(/\\/g, "/")}:${r.line} ${r.name} renders ${r.child} without supplying onOpenGlossary`);
+            continue;
+          }
+          if (r.supplied === "identifier" && !r.accepts && !r.declaredHere) {
+            bad.push(`${path.relative(SRC, f).replace(/\\/g, "/")}:${r.line} ${r.name} passes onOpenGlossary={${r.identifier}} but neither accepts it nor declares it`);
+            continue;
+          }
+          // Climb ONLY through components that pass the bare identifier onward,
+          // because those are exactly the ones that must have RECEIVED it.
+          //
+          // The first version climbed through any component it rendered, which
+          // reported App -> SettingsScreen as broken. It is not: SettingsScreen
+          // renders MyProfileModule with its own inline lambda
+          // (`onOpenGlossary={() => setShowGlossary(true)}`), so it is
+          // self-sufficient and never needed the prop from App at all. A
+          // self-sufficient component is not a consumer, and requiring the prop
+          // of one is the same category of error as the bug being guarded.
+          //
+          // And the earlier version of this rule - stop at any file that does not
+          // itself render the note - was also wrong, and mutation proved it:
+          // reverting the one-line HealthcareScreen fix left it GREEN, because
+          // Healthcare renders neither HivStatusNote nor MyProfileModule, only
+          // ClinicCardScreen, so it never entered the set.
+          if (r.name && !needs.has(r.name) && r.supplied === "identifier") {
+            needs.add(r.name);
+            grew = true;
+          }
+        }
+      }
+    }
+    expect(rounds, "prop chain deeper than the fixpoint bound - raise it deliberately").toBeLessThan(6);
+    expect(bad, "these leave a U=U link wired to nothing").toEqual([]);
+    expect(needs.size, "found no note-bearing components - the guard is not looking at anything").toBeGreaterThanOrEqual(2);
   }, 30000);
 });

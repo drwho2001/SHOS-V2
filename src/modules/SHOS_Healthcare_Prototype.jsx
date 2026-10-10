@@ -27,7 +27,12 @@ import ClinicCardScreen from "./SHOS_ClinicCard_Prototype";
 import AttachmentsScreen from "./SHOS_Attachments_Prototype";
 import TimelineModule from "./SHOS_Timeline_Prototype";
 
-function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, openRecordId, onConsumedRecordOpen, onNavigateToRecord, prefillData, onConsumedPrefill, onQuickAddWithPrefill, registerModuleBackHandler, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen, openClinicCardOnDeepLink, onConsumedClinicCardDeepLink }) {
+// ADDED 10 Oct 2026 (t108) - onOpenGlossary, forwarded to ClinicCardScreen below.
+// App.jsx already hands this prop to every ActiveModule (line 2875), and
+// Healthcare is one, so the only reason the Clinic Card route to My Profile had
+// a dead U=U link is that this signature dropped it. See ClinicCardScreen's own
+// mount below for the second half.
+function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, openRecordId, onConsumedRecordOpen, onNavigateToRecord, prefillData, onConsumedPrefill, onQuickAddWithPrefill, registerModuleBackHandler, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen, openClinicCardOnDeepLink, onConsumedClinicCardDeepLink, onOpenGlossary }) {
   // CHANGED — real ask: "Symptom Log" > "Symptoms", swap its list
   // position with Vaccinations, ensure all six sit in two clean rows
   // of three. Order below now reads Testing/Clinic Visits/Vaccinations
@@ -315,7 +320,7 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
       ) : (
         <MenstrualHealthModule openAddOnMount={openAddOnMount && (quickAddTarget === "menstrualHealth" || quickAddTarget === "menstrualContraception")} quickAddTarget={quickAddTarget} onConsumedQuickAdd={onConsumedQuickAdd} openRecordId={openRecordId} onConsumedRecordOpen={onConsumedRecordOpen} onDataChanged={() => setDataVersion((v) => v + 1)} registerModuleBackHandler={registerModuleBackHandler} />
       )}
-      {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={(tab, id, subTab) => { markClinicCardReturn?.(); onNavigateToRecord(tab, id, subTab); }} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} />}
+      {showClinicCard && <ClinicCardScreen onClose={() => setShowClinicCard(false)} onNavigateToRecord={(tab, id, subTab) => { markClinicCardReturn?.(); onNavigateToRecord(tab, id, subTab); }} onQuickAddWithPrefill={onQuickAddWithPrefill} registerModuleBackHandler={registerModuleBackHandler} onOpenGlossary={onOpenGlossary} />}
       {showAttachments && (
         <AttachmentsScreen onClose={() => setShowAttachments(false)}
           onNavigateToSource={(sourceType, sourceId) => {
