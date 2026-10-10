@@ -35,4 +35,47 @@
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted" />
+
+    <!-- ADDED 10 Oct 2026 (t088) - the TIME OF DAY and the LOCATION of the
+         appointment on the line above. The widget previously showed only a date,
+         so a user with two appointments on the same day could not tell which one
+         this card referred to without opening the app.
+
+         Flat siblings of the root, not a nested container: a nested ViewGroup in
+         a widget RemoteViews layout does not inflate here (L-076, proven twice on
+         device), so extra content is added as more TextViews on the one card
+         rather than as another page.
+
+         LOCATION is clickable/focusable explicitly false for the same reason the
+         Chronometer on the Next Dose widget is: the provider attaches a maps
+         PendingIntent to this view, and a TextView only consumes touches when
+         something makes it clickable. Stated here because the failure is
+         invisible if a later edit adds android:clickable="true".
+
+         Both views carry NO user data in the layout - the provider sets the text,
+         and blanks/hides both at a tier that dropped them - so nothing here can
+         disclose anything before the first push. -->
+    <TextView
+        android:id="@+id/widget_appt_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text=""
+        android:textSize="14sp"
+        android:textColor="@color/widget_text_primary"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/widget_appt_location"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:clickable="false"
+        android:focusable="false" />
 </LinearLayout>

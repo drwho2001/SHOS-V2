@@ -14,6 +14,14 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_APPT_COUNT = "appt_count";
     private static final String KEY_NEXT_APPT = "next_appt";
+    // ADDED 10 Oct 2026 (t088) - the time of day and the location of the
+    // appointment on the line above. Empty at a tier that dropped them: both
+    // are identifying, and nextAppointment's Redacted allowlist is
+    // ["category", "count"], so they never arrive. Empty is the right default
+    // rather than the field's absence, so a stale Full-tier value cannot
+    // survive into a later Redacted push.
+    private static final String KEY_APPT_TIME = "appt_time";
+    private static final String KEY_APPT_LOCATION = "appt_location";
 
 // CHANGED 5 Oct 2026 (t059 follow-on) - the pre-formatted one-line wording for a
 // Redacted widget, decided in JS. Distinct per provider because all seven share
@@ -56,6 +64,8 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_appt";
         }
         int apptCount = prefs.getInt(KEY_APPT_COUNT, 0);
         String nextAppt = prefs.getString(KEY_NEXT_APPT, "No appointments");
+        String apptTime = prefs.getString(KEY_APPT_TIME, "");
+        String apptLocation = prefs.getString(KEY_APPT_LOCATION, "");
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.appointment_widget);
 
@@ -97,6 +107,12 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_appt";
                 views.setTextViewText(R.id.widget_appt_title, redactedText);
             views.setViewVisibility(R.id.widget_appt_count, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_next_appt, android.view.View.GONE);
+                // ADDED 10 Oct 2026 (t088) - time and location are identifying,
+                // so they are hidden here as well. Declared rather than relying on
+                // an empty string: an empty TextView still occupies layout, so a
+                // blank line would read as a rendering fault.
+                views.setViewVisibility(R.id.widget_appt_time, android.view.View.GONE);
+                views.setViewVisibility(R.id.widget_appt_location, android.view.View.GONE);
                 appWidgetManager.updateAppWidget(appWidgetId, views);
                 return;
             }
@@ -105,10 +121,47 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_appt";
             views.setTextViewText(R.id.widget_appt_title, "Appointments");
             views.setTextViewText(R.id.widget_appt_count, apptCount + " upcoming");
             views.setTextViewText(R.id.widget_next_appt, "Next: " + nextAppt);
+
+            // ADDED 10 Oct 2026 (t088) - time and location on their own lines.
+            // Each is GONE rather than blank when absent, because an empty
+            // TextView still occupies layout and reads as a broken widget.
+            if (apptTime != null && !apptTime.isEmpty()) {
+                views.setTextViewText(R.id.widget_appt_time, apptTime);
+                views.setViewVisibility(R.id.widget_appt_time, android.view.View.VISIBLE);
+            } else {
+                views.setViewVisibility(R.id.widget_appt_time, android.view.View.GONE);
+            }
+
+            // Location click opens Maps - the SAME pattern as
+            // ClinicCardWidgetProvider, rather than a second invention: a
+            // geo: intent on the location view itself, with a request code
+            // offset by appWidgetId so it cannot collide with the root intent
+            // above. Uri.encode is what keeps a location containing an
+            // apostrophe or a comma from producing a malformed URI.
+            if (apptLocation != null && !apptLocation.isEmpty()) {
+                views.setTextViewText(R.id.widget_appt_location, apptLocation);
+                views.setViewVisibility(R.id.widget_appt_location, android.view.View.VISIBLE);
+                Intent mapIntent = new Intent(Intent.ACTION_VIEW,
+                        Uri.parse("geo:0,0?q=" + Uri.encode(apptLocation)));
+                android.app.PendingIntent mapPendingIntent = android.app.PendingIntent.getActivity(
+                        context,
+                        appWidgetId * 10 + 1,
+                        mapIntent,
+                        android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+                views.setOnClickPendingIntent(R.id.widget_appt_location, mapPendingIntent);
+            } else {
+                views.setViewVisibility(R.id.widget_appt_location, android.view.View.GONE);
+            }
         } else {
             views.setTextViewText(R.id.widget_appt_title, "Appointments");
             views.setTextViewText(R.id.widget_appt_count, "None booked");
             views.setTextViewText(R.id.widget_next_appt, "");
+            // ADDED 10 Oct 2026 (t088) - hidden here as well as on the Full-tier
+            // path. Without this, a user who deletes their last appointment keeps
+            // seeing its time and location on the widget, which is the stale-data
+            // shape this whole file's unconditional-push rule exists to prevent.
+            views.setViewVisibility(R.id.widget_appt_time, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_appt_location, android.view.View.GONE);
         }
 
         // Click opens Clinic Visits tab
@@ -117,7 +170,8 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_appt";
     }
 
     public static void updateAppointment(Context context, int count, String nextAppt,
-                                         String redactedText) {
+                                         String redactedText,
+                                         String apptTime, String apptLocation) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -131,6 +185,10 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_appt";
             .putInt(KEY_APPT_COUNT, count)
             .putString(KEY_NEXT_APPT, nextAppt)
             .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
+            // ADDED 10 Oct 2026 (t088) - the two new fields, defaulted to ""
+            // rather than to the field's absence, for the reason above.
+            .putString(KEY_APPT_TIME, apptTime == null ? "" : apptTime)
+            .putString(KEY_APPT_LOCATION, apptLocation == null ? "" : apptLocation)
             .apply();
 
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

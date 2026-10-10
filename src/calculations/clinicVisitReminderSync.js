@@ -178,11 +178,29 @@ export async function updateAppointmentWidget(visit) {
 
     const bridge = await getWidgetBridge();
 if (bridge && bridge.plugin.updateAppointment) {
-        // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate, so the Redacted
-        // and Off tiers in Settings now reach this widget at all.
+// CHANGED 2 Oct 2026 - routed through sendWidgetUpdate, so the Redacted
+    // and Off tiers in Settings now reach this widget at all.
+        //
+        // ADDED 10 Oct 2026 (t088) - the TIME OF DAY and the LOCATION of the
+        // appointment being shown. Previously the widget rendered only a date,
+        // so a user with an appointment on a given day could not tell which of
+        // several they were looking at without opening the app.
+        //
+        // Both are sent as their OWN fields rather than appended to `nextAppt`,
+        // for the same reason the Clinic Card's visit time is its own field: the
+        // widget renders them on separate lines, and neither should have to
+        // parse the other's string.
+        //
+        // Neither survives a Redacted tier - both are identifying, and the
+        // allowlist for this widget is ["category", "count"], so they are
+        // dropped by fieldAllowed without any explicit hide here. That is
+        // default-deny doing its job, and it is asserted in t088's test rather
+        // than assumed.
         await sendWidgetUpdate(bridge, "nextAppointment", "updateAppointment", {
           count,
           nextAppt,
+          nextApptTime: visit?.visitTime || "",
+          nextApptLocation: visit?.location || "",
           category: "Appointments",
         },
           appointmentRedactedLine(count, visit?.date));

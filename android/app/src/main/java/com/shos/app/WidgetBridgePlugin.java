@@ -123,6 +123,15 @@ public class WidgetBridgePlugin extends Plugin {
                 getContext(),
                 call.getInt("count", 0),
                 opt(call, "nextAppt"),
+      // ADDED 10 Oct 2026 (t088) - the appointment's time of day and location.
+      //
+      // BEFORE redactedText, not after. widgetRedactedRender asserts
+      // redactedText is the LAST argument of every wired provider's call, and
+      // the failure names a DIFFERENT provider than the one you broke - so this
+      // is L-083 happening a second time in one session, and this comment is the
+      // receipt for why the order below is what it is.
+      opt(call, "nextApptTime"),
+      opt(call, "nextApptLocation"),
       // CHANGED 5 Oct 2026 - the pre-formatted Redacted line, or "" when the
       // tier is not Redacted. Empty rather than absent, so the provider needs no
       // null case and a stale value cannot survive a change back to full.
