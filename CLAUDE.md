@@ -120,6 +120,17 @@ it has been re-affirmed multiple times, not an oversight.
    is an **owner decision**, not an implementation detail. `PrivacyScreen.jsx`
    states the split in two places and `disclosureCopyGuard.test.js` fails if the
    two ever contradict each other again.
+
+   **Adding a field to a widget is a privacy decision, not a display change.**
+   Name it, then ask whether it survives `ALLOWED_AT_REDACTED` for that widget —
+   it survives only if listed, so default-deny drops anything you do not
+   deliberately add. That is the whole mechanism, and it is why an added field
+   needs no explicit hide in JS. Recent examples: the DoxyPEP evidence line
+   (t093, a date, deliberately *not* added) and the Appointments widget's time
+   and location (t088, also deliberately not added — both are identifying).
+   A widget must render the new field as `GONE`, not blank, when it has no
+   value: an empty `TextView` still occupies layout and reads as a rendering
+   fault.
 6. **Defensive-default merge on every read** (`{...DEFAULTS, ...stored}`) —
    so adding a field later never breaks a previously-saved record.
 7. **Archive before hard delete** — the default for "just outdated" is
