@@ -52,6 +52,35 @@
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold" />
 
+    <!-- ADDED 10 Oct 2026 (t087) - three SECTION HEADINGS grouping what was a flat
+         list of eight stacked TextViews, which read as a mishmash with no way
+         to find anything.
+
+         Deliberately NOT data headings ("When", "Where", "Details"): a static
+         label carries no user data and so is safe to show at every tier. The
+         rows beneath them hold the identifying content and are GONE at a tier
+         that dropped them, exactly as they were before this change. A static
+         heading over a blank card is the acceptable minimum - it names the
+         section - whereas a heading naming a person or place is not.
+
+         Flat siblings, never a nested container (L-076: a nested ViewGroup in
+         a widget RemoteViews layout does not inflate here).
+
+         The grouping follows the Clinic Card SCREEN's own order - date/time,
+         location, then the clinical details - so the widget and the screen it
+         opens present the same information in the same sequence. -->
+    <TextView
+        android:id="@+id/widget_clinic_heading_when"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="When"
+        android:textSize="11sp"
+        android:textColor="@color/widget_text_muted"
+        android:textStyle="bold"
+        android:letterSpacing="0.06"
+        android:textAllCaps="true" />
+
     <TextView
         android:id="@+id/widget_clinic_date"
         android:layout_width="wrap_content"
@@ -71,6 +100,19 @@
         android:textSize="13sp"
         android:textColor="@color/widget_text_primary" />
 
+    <!-- ADDED 10 Oct 2026 (t087) - see the "When" heading above for why. -->
+    <TextView
+        android:id="@+id/widget_clinic_heading_where"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="Where"
+        android:textSize="11sp"
+        android:textColor="@color/widget_text_muted"
+        android:textStyle="bold"
+        android:letterSpacing="0.06"
+        android:textAllCaps="true" />
+
     <TextView
         android:id="@+id/widget_clinic_location"
         android:layout_width="wrap_content"
@@ -80,6 +122,19 @@
         android:textSize="12sp"
         android:textColor="@color/widget_accent"
         android:textStyle="bold" />
+
+    <!-- ADDED 10 Oct 2026 (t087) - see the "When" heading above for why. -->
+    <TextView
+        android:id="@+id/widget_clinic_heading_details"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="Details"
+        android:textSize="11sp"
+        android:textColor="@color/widget_text_muted"
+        android:textStyle="bold"
+        android:letterSpacing="0.06"
+        android:textAllCaps="true" />
 
     <TextView
         android:id="@+id/widget_clinic_clinic_num"

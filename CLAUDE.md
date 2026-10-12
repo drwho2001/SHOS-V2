@@ -131,6 +131,11 @@ it has been re-affirmed multiple times, not an oversight.
    A widget must render the new field as `GONE`, not blank, when it has no
    value: an empty `TextView` still occupies layout and reads as a rendering
    fault.
+   The same rule covers STRUCTURAL labels (t087): a section heading on the
+   Clinic Card widget ("When" / "Where" / "Details") is static text, so it
+   carries no user data, but it is hidden at the Redacted tier alongside the
+   rows it labels — a bare heading over a blank card reads as a broken widget
+   rather than an intentional empty state.
 6. **Defensive-default merge on every read** (`{...DEFAULTS, ...stored}`) —
    so adding a field later never breaks a previously-saved record.
 7. **Archive before hard delete** — the default for "just outdated" is

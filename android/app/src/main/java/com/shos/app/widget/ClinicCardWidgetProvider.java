@@ -199,6 +199,15 @@ private static RemoteViews unavailableViews(Context context) {
             views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
+            // ADDED 10 Oct 2026 (t087) - the three section headings are hidden too.
+            // A static label carries no user data, so it is SAFE to show, but a
+            // bare heading over a blank card reads as a broken widget rather than
+            // as an intentional empty state. Hiding them is the same rule the data
+            // rows already follow: a Redacted card shows the redacted line and
+            // nothing else.
+            views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
             appWidgetManager.updateAppWidget(appWidgetId, views);
             return;
         }
