@@ -268,6 +268,21 @@ verification is the Challenger, or the owner. A verifier model would read
 *outputs* — commits, diffs, claims — not intent, and would duplicate the exact
 context burden the role split exists to remove. Four roles, not five.
 
+### A merge is per target type, never generic (t097, shipped as design rule)
+
+A duplicate-candidate merge for contacts, encounters, or any other module
+must be built per target type — never reusing seedIdMigration's generic
+rewrite blindly. That convention is incomplete (`kinksInvolved` and
+`protectionUsed` hold ids without the Id/Ids suffix), so a generic rewrite
+would silently miss relations and corrupt the merge result. The design is
+capped at the duplicate-candidate panel: re-point relations (rewrite ids),
+never combine field values, never synthesise notes, never pick a winner. The
+full preview of every affected record must happen before any write, and the
+source goes to Trash (`trashRepository.js`) so the write is reversible. A
+guard asserts the preview exists (`contactMergeEvidenceGuard.test.js`). This
+is a durable rule, not a task note: adding a second id-resolution rule is the
+same drift class `seedIdMigration` was written to prevent.
+
 ### What the roles do NOT change
 
 **Sessions still cannot wake each other.** A role is a prompt and a permission
