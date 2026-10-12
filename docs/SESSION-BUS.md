@@ -283,6 +283,25 @@ guard asserts the preview exists (`contactMergeEvidenceGuard.test.js`). This
 is a durable rule, not a task note: adding a second id-resolution rule is the
 same drift class `seedIdMigration` was written to prevent.
 
+### An editable field with no consumer is an open task, not a finished feature
+
+`t054` (the follow-up review derivation) and `t053` (the visit-reason shape
+guidance) are the same finding twice. `nextReviewDate` and `reasonForVisit` had
+both been on the clinic visit record since 19 Aug 2026 — editable in the form,
+readable in the record view — and, until their tasks landed, **read by nothing
+outside the frozen seed snapshot**. The UI was complete and the behaviour was
+absent, so nothing looked unfinished.
+
+The cheap check, and the one to run before believing a feature is done:
+
+```powershell
+Select-String -Path src\calculations\*.js,src\modules\**\*.jsx -Pattern "nextReviewDate"
+```
+
+Every hit in `seedDivergence.js` and nowhere else means the field is inert. A
+field that appears only in a frozen snapshot is not evidence that anything reads
+it — the snapshot records *what was stored*, never *what was used*.
+
 ### What the roles do NOT change
 
 **Sessions still cannot wake each other.** A role is a prompt and a permission

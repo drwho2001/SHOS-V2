@@ -243,3 +243,97 @@ export function applyFieldClear(form, fields) {
   }
   return next;
 }
+
+/**
+ * FOLLOW-UP REVIEW DERIVATION (t054).
+ *
+ * WHY THIS EXISTS. `nextReviewDate` has been on the clinic visit record since
+ * 19 Aug 2026, paired with `nextReviewType`/`followUpType` as "what kind of
+ * follow-up is arranged". It is editable in the form and readable in the record
+ * view, and until now NOTHING consumed it outside the frozen seed snapshot.
+ * That is the same INERT-field shape that `reasonForVisit` had when this file
+ * was created: a value the user fills in that causes nothing to happen.
+ *
+ * A visit that arranged a review and has now passed that date is the clearest
+ * "you said you'd come back and the date has gone" signal this app owns, and
+ * it was sitting unread.
+ *
+ * WHAT THIS IS NOT. Informational, never a directive, and never clinical
+ * advice - the same boundary the exposure-window and DoxyPEP countdowns hold
+ * (see the header of doxyPepCalculations.js and the Out-of-Scope list in
+ * CLAUDE.md). It never says the user is overdue treatment; it says a review
+ * they themselves recorded has passed.
+ *
+ * PURE on purpose: no I/O, no storage, no React, same contract as everything
+ * above. The caller supplies the visits and the clock.
+ */
+
+// Days before the date at which a review is worth mentioning. NOT a clinical
+// interval - it is a courtesy window so the user hears about a review they
+// arranged before it lands, which is the only thing that makes this useful.
+// Exported so a test can pin it rather than hard-coding a literal twice.
+export const REVIEW_DUE_SOON_DAYS = 7;
+
+/** Whole days from `from` to `to`, by calendar day rather than by elapsed ms. */
+function calendarDaysBetween(fromMs, toMs) {
+  const MS_PER_DAY = 86400000;
+  // Round to the nearest day BEFORE subtracting. Dividing by 86400000 directly
+  // truncates, so 1h59m reads as 0 days and a review can read as "tomorrow"
+  // when it is actually today. Rounding is what makes "days until" agree with
+  // what the user sees on a calendar.
+  return Math.round((toMs - fromMs) / MS_PER_DAY);
+}
+
+/**
+ * Describe a single visit's follow-up review, if it has one.
+ *
+ * @param {object} visit a clinic visit record
+ * @param {Date} [now]
+ * @returns {null | {
+ *   state: "overdue" | "due-soon" | "scheduled",
+ *   days: number,        // negative once overdue
+ *   dateMs: number,
+ *   kind: string,        // followUpType, free text; "" when unset
+ * }}
+ *   `null` when the visit has no review date, or the date is unparseable.
+ */
+export function reviewStatusFor(visit, now = new Date()) {
+  if (!visit || !visit.nextReviewDate) return null;
+
+  // Unparseable is treated as absent, NOT as overdue. A broken stored string
+  // must not invent a clinical-sounding warning, and must not hide the other
+  // visits' warnings either - so it drops out here and the caller carries on.
+  const dateMs = new Date(visit.nextReviewDate).getTime();
+  if (Number.isNaN(dateMs)) return null;
+
+  const days = calendarDaysBetween(now.getTime(), dateMs);
+  const kind = typeof visit.followUpType === "string" ? visit.followUpType : "";
+
+  if (days < 0) return { state: "overdue", days, dateMs, kind };
+  if (days <= REVIEW_DUE_SOON_DAYS) return { state: "due-soon", days, dateMs, kind };
+  return { state: "scheduled", days, dateMs, kind };
+}
+
+/**
+ * The soonest follow-up review across a set of visits.
+ *
+ * "Soonest" is by DATE, not by state. A review three days out is more urgent
+ * than one already a week past only in the sense that it is nearer; the caller
+ * decides how to present both, and picking by state would hide an overdue one
+ * behind a nearer upcoming one.
+ *
+ * @param {object[]} visits
+ * @param {Date} [now]
+ * @returns {null | {status: object, visit: object}}
+ */
+export function soonestReview(visits, now = new Date()) {
+  if (!Array.isArray(visits) || visits.length === 0) return null;
+  let best = null;
+  for (const visit of visits) {
+    if (visit && visit.isArchived) continue;
+    const status = reviewStatusFor(visit, now);
+    if (!status) continue;
+    if (!best || status.dateMs < best.status.dateMs) best = { status, visit };
+  }
+  return best;
+}
