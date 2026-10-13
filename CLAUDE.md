@@ -435,6 +435,21 @@ one free call, so the instinct to push on is the expensive one.
   free, vs 817ms in isolation (a 2.8x load penalty). The fix is `}, 30_000);` with
   a comment block explaining why, matching the `uuNoteLinkGuard` precedent. A bare
   number is indistinguishable from a value chosen to make a red run green.
+- **A per-test timeout is the THIRD argument, or it is not a timeout at all.**
+  `it(title, timeoutMs, fn)` is not a supported vitest overload. Vitest 3.2.7
+  parses it, runs the test, and **silently discards the number** — so the test
+  reads as budgeted while carrying the 5000ms default, and nothing reports the
+  mistake. All nine tests in `src/storage/widgetRedactedRender.test.js` were
+  written that way, beneath a 40-line comment justifying the budget that had
+  never once been in force. Write `it(title, fn, 40_000)`;
+  `src/components/inertTimeoutGuard.test.js` fails the build if the
+  second-argument form returns. Two supporting rules, both from getting this
+  wrong: **to prove a timeout is live, the probe must exceed 5000ms** — a probe
+  finishing in 150ms passes under either behaviour and proves nothing; and
+  **never assert a timeout's effect from the source text**, since the whole
+  failure is invisible in the text. Re-measure when you touch one. Note t109 is
+  only partly real: its `clearSampleData` and `uuNoteLinkGuard` fixes use the
+  supported form, but it shipped this file's fix inert.
 - **Every commit ends with an attribution footer** — a hard requirement:
   ```
   Co-Authored-By: Claude <model-name> <noreply@anthropic.com>
