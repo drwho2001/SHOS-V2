@@ -15,5 +15,8 @@
         android:textSize="14sp"
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold"
-        android:gravity="center" />
+        android:gravity="center"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 </LinearLayout>

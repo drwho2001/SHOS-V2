@@ -33,7 +33,10 @@
         android:text="Next Dose"
         android:textSize="16sp"
         android:textColor="@color/widget_text_primary"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <!-- The value slot: which medication the time below belongs to. Promoted to
          18sp so the hierarchy matches the other nine widgets, where the second
@@ -50,7 +53,8 @@
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold"
         android:maxLines="2"
-        android:ellipsize="end" />
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_next_dose"
@@ -59,7 +63,10 @@
         android:layout_marginTop="4dp"
         android:text="Next dose: --:--"
         android:textSize="14sp"
-        android:textColor="@color/widget_text_muted" />
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <!-- CHANGED 2 Oct 2026 - a real Chronometer rather than a JS interval.
          The widget has updatePeriodMillis="0" because a medicine schedule is

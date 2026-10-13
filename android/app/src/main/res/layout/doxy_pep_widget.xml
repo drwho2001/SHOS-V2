@@ -15,7 +15,10 @@
         android:text="DoxyPEP Window"
         android:textSize="16sp"
         android:textColor="@color/widget_text_primary"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_doxy_status"
@@ -25,7 +28,10 @@
         android:text="No active window"
         android:textSize="18sp"
         android:textColor="@color/widget_warn"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_doxy_countdown"
@@ -34,7 +40,10 @@
         android:layout_marginTop="4dp"
         android:text=""
         android:textSize="12sp"
-        android:textColor="@color/widget_text_muted" />
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <!-- ADDED 9 Oct 2026 (t093) - the EVIDENCE line: the stored date of the
          encounter that opened the window, so the widget shows WHY a window
@@ -49,5 +58,8 @@
         android:layout_marginTop="2dp"
         android:text=""
         android:textSize="11sp"
-        android:textColor="@color/widget_text_muted" />
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 </LinearLayout>

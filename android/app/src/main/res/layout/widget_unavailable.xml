@@ -38,5 +38,8 @@
         android:text="Open SHOS to load"
         android:textSize="13sp"
         android:textColor="@color/widget_text_muted"
-        android:gravity="center" />
+        android:gravity="center"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 </LinearLayout>

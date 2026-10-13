@@ -15,7 +15,10 @@
         android:text="Appointments"
         android:textSize="16sp"
         android:textColor="@color/widget_text_primary"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_appt_count"
@@ -25,7 +28,10 @@
         android:text="None booked"
         android:textSize="18sp"
         android:textColor="@color/widget_good"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_next_appt"
@@ -34,7 +40,10 @@
         android:layout_marginTop="4dp"
         android:text=""
         android:textSize="12sp"
-        android:textColor="@color/widget_text_muted" />
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <!-- ADDED 10 Oct 2026 (t088) - the TIME OF DAY and the LOCATION of the
          appointment on the line above. The widget previously showed only a date,
@@ -64,7 +73,8 @@
         android:textSize="14sp"
         android:textColor="@color/widget_text_primary"
         android:maxLines="1"
-        android:ellipsize="end" />
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_appt_location"
@@ -76,6 +86,7 @@
         android:textColor="@color/widget_text_muted"
         android:maxLines="1"
         android:ellipsize="end"
+        android:breakStrategy="simple"
         android:clickable="false"
         android:focusable="false" />
 </LinearLayout>

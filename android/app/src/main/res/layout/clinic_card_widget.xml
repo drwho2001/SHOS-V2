@@ -50,7 +50,10 @@
         android:text="Clinic Card"
         android:textSize="16sp"
         android:textColor="@color/widget_text_primary"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <!-- ADDED 10 Oct 2026 (t087) - three SECTION HEADINGS grouping what was a flat
          list of eight stacked TextViews, which read as a mishmash with no way
@@ -79,7 +82,10 @@
         android:textColor="@color/widget_text_muted"
         android:textStyle="bold"
         android:letterSpacing="0.06"
-        android:textAllCaps="true" />
+        android:textAllCaps="true"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_clinic_date"
@@ -89,7 +95,10 @@
         android:text="No upcoming appointment"
         android:textSize="14sp"
         android:textColor="@color/widget_good"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_clinic_visit_time"
@@ -98,7 +107,10 @@
         android:layout_marginTop="2dp"
         android:text=""
         android:textSize="13sp"
-        android:textColor="@color/widget_text_primary" />
+        android:textColor="@color/widget_text_primary"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <!-- ADDED 10 Oct 2026 (t087) - see the "When" heading above for why. -->
     <TextView
@@ -111,7 +123,10 @@
         android:textColor="@color/widget_text_muted"
         android:textStyle="bold"
         android:letterSpacing="0.06"
-        android:textAllCaps="true" />
+        android:textAllCaps="true"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_clinic_location"
@@ -121,7 +136,10 @@
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_accent"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <!-- ADDED 10 Oct 2026 (t087) - see the "When" heading above for why. -->
     <TextView
@@ -134,7 +152,10 @@
         android:textColor="@color/widget_text_muted"
         android:textStyle="bold"
         android:letterSpacing="0.06"
-        android:textAllCaps="true" />
+        android:textAllCaps="true"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_clinic_clinic_num"
@@ -143,7 +164,10 @@
         android:layout_marginTop="4dp"
         android:text=""
         android:textSize="12sp"
-        android:textColor="@color/widget_text_primary" />
+        android:textColor="@color/widget_text_primary"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_clinic_tests"
@@ -152,7 +176,10 @@
         android:layout_marginTop="4dp"
         android:text=""
         android:textSize="12sp"
-        android:textColor="@color/widget_text_muted" />
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_clinic_doctype"
@@ -161,7 +188,10 @@
         android:layout_marginTop="2dp"
         android:text=""
         android:textSize="12sp"
-        android:textColor="@color/widget_text_muted" />
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_clinic_nhs_num"
@@ -171,5 +201,8 @@
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
-        android:visibility="gone" />
+        android:visibility="gone"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 </LinearLayout>

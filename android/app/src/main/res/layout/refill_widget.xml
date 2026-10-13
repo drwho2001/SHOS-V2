@@ -15,7 +15,10 @@
         android:text="Refills Due"
         android:textSize="16sp"
         android:textColor="@color/widget_text_primary"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_refill_count"
@@ -25,7 +28,10 @@
         android:text="All stocked"
         android:textSize="18sp"
         android:textColor="@color/widget_good"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_next_refill"
@@ -34,5 +40,8 @@
         android:layout_marginTop="4dp"
         android:text=""
         android:textSize="12sp"
-        android:textColor="@color/widget_text_muted" />
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 </LinearLayout>

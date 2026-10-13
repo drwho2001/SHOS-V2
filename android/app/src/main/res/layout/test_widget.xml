@@ -15,7 +15,10 @@
         android:text="Last Test"
         android:textSize="16sp"
         android:textColor="@color/widget_text_primary"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_last_test"
@@ -27,7 +30,8 @@
         android:textColor="@color/widget_good"
         android:textStyle="bold"
         android:maxLines="2"
-        android:ellipsize="end" />
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <TextView
         android:id="@+id/widget_retest_due"
@@ -36,5 +40,8 @@
         android:layout_marginTop="4dp"
         android:text="Retest due: —"
         android:textSize="12sp"
-        android:textColor="@color/widget_text_muted" />
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 </LinearLayout>
