@@ -35,6 +35,8 @@
 //    That shared membership is exactly why the option lists overlap, so the
 //    mapping is many-reasons-to-some-groups rather than a tree.
 //
+import { realTimestampFromStored } from "./dateInputHelpers.js";
+
 // 3. AN UNRECOGNISED REASON MUST NEVER HIDE ANYTHING. `reasonForVisit` is a
 //    CUSTOM OPTION LIST - the owner can add values from inside the app, without a
 //    code change (see customOptionListsRepository.js). So this mapping will go
@@ -336,4 +338,87 @@ export function soonestReview(visits, now = new Date()) {
     if (!best || status.dateMs < best.status.dateMs) best = { status, visit };
   }
   return best;
+}
+
+/**
+ * UPCOMING WINDOW (t060).
+ *
+ * WHY THIS EXISTS. The Appointments widget counted `getUpcomingBookedVisits()`,
+ * which filters `date > now` and nothing else - so "upcoming" meant ANY future
+ * visit. A user who booked something for next March was told "1 upcoming" on the
+ * same footing as one with an appointment tomorrow, and a glanceable widget that
+ * cannot tell you whether it matters this week is not earning its space on a home
+ * screen.
+ *
+ * The owner's framing: "within the next two weeks = upcoming, beyond that =
+ * labelled future, not upcoming." Both are still SHOWN - the widget must not hide
+ * a real appointment just because it is distant - but they are counted and
+ * labelled differently, which is the whole ask.
+ *
+ * WHY CALENDAR DAYS AND NOT ELAPSED MILLISECONDS. "The next two weeks" is a thing
+ * people read off a calendar, so the boundary is the calendar DATE 14 days out,
+ * not the instant 14*24h from now. The two genuinely disagree, and they disagree
+ * in the direction that matters: under elapsed time, an appointment at 23:00 on
+ * day 14 is 14.96 days away and rounds past the boundary, so a same-day-as-the-
+ * boundary appointment is called "later" depending on what time you happened to
+ * book it. `clinicVisitUrgency.test.js` pins both sides of that exact disagreement.
+ *
+ * PURE on purpose, same contract as the rest of this file: no I/O, no storage, no
+ * React, and the caller supplies both the visits and the clock.
+ */
+
+/** Days ahead that count as "upcoming". Exported so a test pins it, not a literal. */
+export const UPCOMING_WINDOW_DAYS = 14;
+
+/**
+ * A sortable day number for a real timestamp, in the USER's timezone.
+ *
+ * Local Y/M/D are read off and re-expressed at UTC midnight. That is what makes
+ * the comparison timezone-proof: two instants on the same calendar day land on the
+ * same index in any timezone, and a DST transition cannot move the boundary,
+ * because no local midnight ever happens twice on a DST day.
+ */
+function localDayIndex(ms) {
+  const d = new Date(ms);
+  return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/**
+ * Split future visits into the ones inside the window and the ones beyond it.
+ *
+ * Input order is PRESERVED in both buckets rather than re-sorted, because every
+ * caller already has a soonest-first list and re-sorting would be a second place
+ * for the ordering rule to live. A pinned test holds that.
+ *
+ * A visit with no date, or one whose stored string will not parse, is DROPPED
+ * from both buckets rather than counted as "later". A visit whose date is broken
+ * is not evidence of a distant appointment, and counting it as one would put a
+ * number on the widget that the app cannot substantiate.
+ *
+ * This does NOT filter out past visits - that is `getUpcomingBookedVisits()`'s
+ * existing job, and doing it twice would be two rules for one fact. A caller that
+ * passes an unfiltered list gets past visits counted as upcoming, which is why
+ * the JSDoc says "future visits" and the test fixture respects it.
+ *
+ * @param {object[]} visits
+ * @param {Date} [now]
+ * @returns {{upcoming: object[], later: object[]}}
+ */
+export function partitionVisitsByUrgency(visits, now = new Date()) {
+  const list = Array.isArray(visits) ? visits : [];
+  const horizonDay = localDayIndex(now.getTime()) + UPCOMING_WINDOW_DAYS * 86400000;
+  const upcoming = [];
+  const later = [];
+  for (const visit of list) {
+    if (!visit || !visit.date) continue;
+    // realTimestampFromStored, NOT new Date(visit.date): a visit's date is this
+    // app's stored fake-UTC string (see dateInputHelpers.js), so reading it the
+    // plain way shifts it by the local UTC offset and can move an appointment
+    // across the 14-day boundary - the one number this whole function exists to
+    // get right.
+    const ms = realTimestampFromStored(visit.date);
+    if (Number.isNaN(ms)) continue;
+    (localDayIndex(ms) <= horizonDay ? upcoming : later).push(visit);
+  }
+  return { upcoming, later };
 }

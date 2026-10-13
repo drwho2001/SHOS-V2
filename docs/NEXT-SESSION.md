@@ -1,3 +1,44 @@
+# Handover — session ORCHID (13 Oct 2026, later the same day)
+
+Written by session **ORCHID** after a fresh session condensed three conflicting
+handovers. It supersedes the session A handover immediately below, which is kept
+unedited for the record.
+
+**Read this section and then skip to the A handover only for history.** Several
+of that handover's actionable claims were already false when it was written.
+
+## Corrections to the handover below — do not act on these
+
+| Claim in the A/RAMFIX handovers | Reality, verified 13 Oct ~17:00 |
+|---|---|
+| "**Push `b57a54e` and `05205bb`** first — no CI has run on either" | **Done.** Both pushed; `main` at `5dca28a` with zero unpushed commits and all three workflows green. |
+| "main is at `05205bb`" | Stale — head was `5dca28a`. |
+| "`t110` is `proposed` and obsolete, safe to cancel" | **Wrong.** `t110` is `done` (10 Oct). Nothing to cancel. |
+| "4096 health returns 200" | **Now 401** — auth is on 4096. 4097 answers 200. |
+| "OOM recorded in `server.log`" | **Evidence gone.** `~/.opencode-server/server.log` is 0 bytes. The popup fix is still verified, but the OOM behind it can no longer be confirmed or re-measured. |
+| "~140 legacy scratch files in `temp/opencode`" | **Gone.** No `temp/` directory exists at all. |
+| "`t039`'s premise looks false — no calendar write path in `src/`" | Corrected in the A handover itself. `calendarSyncService.js` exists; t039 is legitimate. |
+
+The recurring lesson across all three handovers: **each wrote down a state that
+another session had already changed.** Verify against `git log` and the pool
+before repeating an instruction, however confidently it is phrased.
+
+## `C:\Users\kanem` is no longer a git repository
+
+It was an accidental `git init` — **zero commits, zero stashes, zero remotes** —
+which made any `git` command run from the home folder report the whole home
+directory as untracked instead of erroring. Renamed to
+`.git.disabled-home-not-a-repo` (reversible with a single `Rename-Item`), so
+`git` from home now fails loudly. `git -C <path>` always worked regardless;
+this only removes the silent-wrong-answer failure mode.
+
+## What ORCHID shipped
+
+**t060** — the Appointments widget's 14-day window and a real deep link, plus
+**two live privacy bugs found on the way** (see below).
+
+---
+
 # Handover — session A → next session (13 Oct 2026)
 
 Written by session **A** at close of day, with the tree clean and every claim

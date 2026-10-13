@@ -2259,6 +2259,21 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
         // nothing else; navigateTo's own contract stays "switch tab, optionally
         // pick a sub-tab".
         if (route.subTab === "clinicCard") setPendingOpenClinicCard(true);
+        // t060 - a navigate route may name a SPECIFIC record. The Appointments
+        // widget now emits `com.shos.app://clinic-visits?id=<id>` so the tap
+        // opens the appointment the widget is showing, not the bare list.
+        //
+        // Reuses the existing `pendingOpenRecordId` plumbing rather than a new
+        // one, because that path already reaches ClinicVisitsModule as
+        // `openRecordId` (Global Search does exactly this today) and already
+        // fires on a WARM app: navigateTo() increments navResetCount, which
+        // changes the `key` on ActiveModule and remounts it, so the module's
+        // mount-only effect re-runs. That is the same mechanism Global Search
+        // relies on, and reusing it is why this is a small change.
+        //
+        // null on every route that names no record, which is the common case and
+        // the only case a Redacted-tier Appointments widget can produce.
+        if (route.recordId) setPendingOpenRecordId(route.recordId);
         deepLinkHandlers.current.navigateTo(route.tab, route.subTab);
       } else if (route.type === "action" && route.action === "revealClinicCard") {
         // Handled by ClinicCardWidgetProvider's reveal intent

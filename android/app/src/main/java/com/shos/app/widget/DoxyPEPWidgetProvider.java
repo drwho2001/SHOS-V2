@@ -153,8 +153,25 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
     // is dropped before it reaches here (see widgetPrivacy.js); "" is the
     // right default rather than the field's absence, so a stale value from a
     // previous Full-tier update cannot survive into a later Redacted one.
+    // FIXED 13 Oct 2026 (t060) - SAME CLASS OF BUG as the Appointments widget, and
+    // it had been live since t093 added `evidenceAt` on 9 Oct 2026.
+    //
+    // The declaration read (status, expiryMs, redactedText, evidenceAt) while
+    // WidgetBridgePlugin passes (status, expiryMs, evidenceAt, redactedText).
+    // Both Strings, so the compiler saw nothing.
+    //
+    // The consequence was that `redactedText` held the EVIDENCE DATE. Since
+    // evidenceAt is not in ALLOWED_AT_REDACTED for doxyPepWindow, default-deny
+    // drops it at the Redacted tier - so the slot was empty, the "is there a
+    // redacted line?" check skipped, and A USER WHO HAD CHOSEN THE REDACTED TIER
+    // SAW THE FULL DOPYPEP STATUS ON THEIR HOME SCREEN. The evidence line and the
+    // redacted line were also swapped with each other.
+    //
+    // Fixed by matching the declaration to the call site, and pinned by
+    // widgetArgumentOrderGuard.test.js, which compares the two orders directly
+    // for all seven providers.
     public static void updateDoxyPEP(Context context, String status, long expiryMs,
-                                     String redactedText, String evidenceAt) {
+                                     String evidenceAt, String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for

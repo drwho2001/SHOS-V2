@@ -132,6 +132,14 @@ public class WidgetBridgePlugin extends Plugin {
       // receipt for why the order below is what it is.
       opt(call, "nextApptTime"),
       opt(call, "nextApptLocation"),
+      // ADDED 13 Oct 2026 (t060) - which appointment this widget is showing, so
+      // the tap opens THAT one. opt() with no default, because an absent field
+      // and an empty id mean the same thing here: "we are not allowed to name an
+      // appointment", which is the correct state for every Redacted-tier push.
+      opt(call, "nextApptId"),
+      // ADDED 13 Oct 2026 (t060) - how many booked visits are beyond the 14-day
+      // window. 0 when absent, which renders no suffix at all.
+      call.getInt("futureCount", 0),
       // CHANGED 5 Oct 2026 - the pre-formatted Redacted line, or "" when the
       // tier is not Redacted. Empty rather than absent, so the provider needs no
       // null case and a stale value cannot survive a change back to full.

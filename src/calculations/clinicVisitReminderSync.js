@@ -27,6 +27,7 @@ import { ACCENTS } from "./designTokens";
 import { realTimestampFromStored, storedDayKey, localDayKey, calendarDaysBetween } from "./dateInputHelpers";
 import { AppPreferencesRepository } from "../repositories/appPreferencesRepository";
 import { buildClinicVisitSignature, shouldSuppressDeviceNotification, normaliseAcknowledgements } from "./reminderSuppression";
+import { partitionVisitsByUrgency } from "./clinicVisitShape";
 import { sendWidgetUpdate } from "./widgetBridgeUpdate";
 import { redactedWidgetLine } from "./widgetPrivacy";
 
@@ -169,9 +170,28 @@ export async function updateAppointmentWidget(visit) {
     // visit is still what gets displayed - it is the soonest one by construction -
     // so the two agree, and the count is no longer "1" for a user with three
     // appointments.
-    const upcoming = await getUpcomingBookedVisits();
-    if (visit === undefined) visit = upcoming[0] || null;
+    const allFuture = await getUpcomingBookedVisits();
+    // t060 - the 14-day window. `allFuture` still means every booked future
+    // visit, unchanged, because that is what it has always meant and what
+    // getSoonestBookedVisit() (and therefore the reminders) depends on.
+    // partitionVisitsByUrgency() adds the OWNER'S distinction on top: within
+    // the next two weeks is "upcoming", beyond it is "later" - both still
+    // shown, counted and labelled separately. See clinicVisitShape.js for why
+    // that boundary is a calendar DAY rather than an elapsed duration.
+    const { upcoming, later } = partitionVisitsByUrgency(allFuture);
+    // The DISPLAYED visit is the soonest of ALL future visits, not the soonest
+    // inside the window. Hiding a real appointment from the widget because it is
+    // five weeks out would be the exact quiet inaccuracy this window exists to
+    // remove - the user is told "0 upcoming" AND still sees what is next.
+    if (visit === undefined) visit = allFuture[0] || null;
     const count = upcoming.length;
+    const futureCount = later.length;
+    // The Redacted line is about "is an appointment booked at all", NOT about
+    // the 14-day window, so it keeps the TOTAL. Passing `count` here would make
+    // a user with one appointment in six weeks read "Appointments - none
+    // booked" on their home screen, which is a false statement about their own
+    // health, not a privacy improvement.
+    const totalCount = count + futureCount;
     const nextAppt = visit
       ? `${visit.title || "Appointment"} — ${new Date(realTimestampFromStored(visit.date)).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}`
       : "No appointments";
@@ -198,12 +218,30 @@ if (bridge && bridge.plugin.updateAppointment) {
         // than assumed.
         await sendWidgetUpdate(bridge, "nextAppointment", "updateAppointment", {
           count,
+          // t060 - how many are beyond the window. The provider renders it as
+          // "+N later" ONLY when it is above zero, so the common case (one
+          // appointment this month) looks exactly as it did before this task.
+          futureCount,
           nextAppt,
           nextApptTime: visit?.visitTime || "",
           nextApptLocation: visit?.location || "",
+          // t060 - WHICH appointment the widget is showing, so the tap can open
+          // that one instead of the bare list.
+          //
+          // PRIVACY DECISION (per CLAUDE.md, adding a field to a widget is a
+          // privacy decision, not a display change): this id is NOT added to
+          // ALLOWED_AT_REDACTED for nextAppointment, and that is deliberate
+          // rather than an oversight. At a Redacted tier the widget says "an
+          // appointment is booked" without saying which - and a tap that opened
+          // that specific visit would disclose exactly what the tier was chosen
+          // to withhold, through the one route the user is most likely to take.
+          // Default-deny drops the field, the provider receives "" and falls back
+          // to the bare clinic-visits link. The deep link is therefore a Full-tier
+          // affordance, which is the honest shape of it.
+          nextApptId: visit?.id || "",
           category: "Appointments",
         },
-          appointmentRedactedLine(count, visit?.date));
+          appointmentRedactedLine(totalCount, visit?.date));
     }
   } catch (e) {
     // Widget bridge not available (web) — ignore

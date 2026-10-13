@@ -4,7 +4,8 @@
  //
  // Pure and I/O-free by design (repository/calculation split): no storage
  // reads, no React — so it is unit-tested directly. See deepLinkRoutes.test.js.
- // Returns { type: "quickAdd", tab, target } | { type: "navigate", tab, subTab } | { type: "action", action, payload } | null.
+ // Returns { type: "quickAdd", tab, target } | { type: "navigate", tab, subTab, recordId } | { type: "action", action, payload } | null.
+// `recordId` is null on every navigate route that does not name a specific record.
  const VALID_HEALTHCARE_SUBTABS = [
    "testing",
    "clinicVisits",
@@ -64,7 +65,26 @@ return { type: "quickAdd", tab: "medication" };
      if (path === "/add") return { type: "quickAdd", tab: "contacts" };
      return null;
    }
-   if (host === "clinic-visits") return { type: "navigate", tab: "healthcare", subTab: "clinicVisits" };
+   if (host === "clinic-visits") {
+      // t060 - the Appointments widget now opens the SPECIFIC appointment it is
+      // showing rather than the bare list, by carrying the id as `?id=`.
+      //
+      // `recordId` is null rather than absent when no id is present, so App.jsx
+      // has one shape to handle instead of two. That matters beyond tidiness: the
+      // Appointments widget emits the bare link for every Redacted-tier user (the
+      // id is not an allowlisted field there), so the no-id path is the COMMON
+      // path, not an edge case, and it has to keep working exactly as before.
+      //
+      // An empty string is treated as absent, not as an id - `?id=` with nothing
+      // after it would otherwise navigate to a record that does not exist.
+      const recordId = url.searchParams.get("id");
+      return {
+        type: "navigate",
+        tab: "healthcare",
+        subTab: "clinicVisits",
+        recordId: recordId ? recordId : null,
+      };
+    }
    if (host === "clinic-card") return { type: "navigate", tab: "healthcare", subTab: "clinicCard" };
    if (host === "healthcare") {
      const raw = url.searchParams.get("subTab");
