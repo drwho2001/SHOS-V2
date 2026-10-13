@@ -1,3 +1,117 @@
+# Handover — session A → next session (13 Oct 2026)
+
+Written by session **A** at close of day, with the tree clean and every claim
+released. This supersedes the B→A handover below, which is kept unedited for the
+record. Older handovers are further down.
+
+**The one thing that matters: pick a session name that is not `A`, `B`, `C`,
+`D` or `E`, and set it before you touch anything.** See "Session names are not
+identity" below.
+
+## Verified state, measured not assumed
+
+Working tree clean, no stash, claims table empty — no active claims and no
+orphans, so nothing is blocked on a stale owner. `main` is at `05205bb`.
+
+| Gate | Result |
+|---|---|
+| Unit tests | see `npm run verify:fast` — trust the count it prints |
+| Smoke flows | **27 flows, 149 assertions** (comment-stripped) |
+| Android APK | built |
+| Web build | deployed |
+| Android device tests | green (run 38382424827, 13 Oct) |
+
+Re-measure rather than trusting that table:
+
+```powershell
+git status --short; git stash list; git log --oneline -5
+node scripts\session-bridge.mjs claims
+node -e "const fs=require('fs');let s=fs.readFileSync('scripts/smoke-test.cjs','utf8').replace(/^\s*\/\/.*$/gm,'');console.log('flows:',(s.match(/await run\(/g)||[]).length,'asserts:',(s.match(/\bassert\(/g)||[]).length)"
+```
+
+## Session names are not identity — this is the sharpest trap here
+
+`session-bridge` attributes everything to `process.env.SHOS_SESSION_NAME`, and
+nothing else. There is no session id in it. So `A` is not "this window" — it is
+a **name any number of windows can set**, and they will interleave in the same
+file with no way to tell them apart afterwards.
+
+L-086 is the record of the damage: a RAM investigation ran as `A` while the
+original `A` was still live, and four backlog entries needed hand-editing to
+repair their bylines. The tail of `backlog.md` still shows `A` and `unknown`
+interleaved, which is the residue.
+
+Pick something that cannot collide — `W1`, `HANDOVER2`, or the feature name.
+Set it in every shell you use:
+
+```powershell
+$env:SHOS_SESSION_NAME = "W1"
+```
+
+**Corollary: `pool take` has no `--dry-run`.** An unrecognised flag is silently
+ignored, so `pool take t039 --dry-run` allocated the task to me for real. I
+released it immediately with `pool release t039` and the claims table verified
+empty afterwards. If you want to look before you leap, read `pool list` — do not
+invent a flag you have not checked in `pool --help`.
+
+## What session A shipped
+
+| Task | Commit | What |
+|---|---|---|
+| t043 | `4e44256`, `7c81c11` | PrivacyScreen copy — disclosure level and widget tier stated as two controls |
+| t054 | `102a7a1` | Follow-up review state derived from `nextReviewDate`, which nothing read |
+| t065 | `50c6555` | Removed 12 temporary `android.util.Log.i` calls |
+| t087 | `7c5eea3` | Clinic Card section headings (When / Where / Details) |
+| t088 | `42fd6cc`, `886cffd` | Appointments widget time + location, Maps intent |
+| t093 | `3e297cb` | DoxyPEP "last unprotected event" evidence line |
+| t097 | `0233260` | Contact merge design, capped per target, Trash as source |
+| t089 | `3ef5dae` | Per-element widget visibility that can only narrow the tier |
+
+Seven tasks were closed as **already implemented** after checking the code:
+t090, t044, t085, t092, t086 and others. t086 in particular was a real bug
+(`CLEAR_TOP` without `SINGLE_TOP` destroys the Activity so `onNewIntent` never
+fires) that had been fixed on 4 Oct, days before the task was written.
+
+## The finding that should shape your planning
+
+**Seven of the sixteen tasks that were sitting in the pool as `approved` had
+already shipped.** t086 is the clearest case: a genuine, well-described bug that
+had been fixed days earlier and was still sitting in the queue.
+
+Grep before you build. `git log --oneline -40` and the task's own history entry
+will usually tell you in seconds whether the work is real. This costs a minute
+and it is the difference between shipping something and rebuilding something
+that already works.
+
+## Where the pool stands
+
+`node scripts\session-bridge.mjs pool list` is the live answer; treat this as a
+snapshot from 13 Oct.
+
+| Task | Status | Note |
+|---|---|---|
+| t060 | `approved`, available | Appointments widget **14-day window**. The deep-link half shipped in t088; the window half is confirmed absent — `getUpcomingBookedVisits` filters `date > nowMs` with no bound. **The recommended first pick:** approved, unclaimed, no device needed. |
+| t039 | `approved`, available | **Needs a phone.** Verify a vaccination reaches the calendar and that *editing* the dose date moves the event. The edit case is unit-tested but nobody has watched it run. |
+| t062 | `approved`, available | **Needs a phone.** Quick Add widgets from a cold start. |
+| t047 | `blocked`, owner **D** | App Lock PIN stored raw and compared with `===`, bypassing 100k PBKDF2 iterations. **A real security finding sitting behind a claim from a session that is not running.** It needs owner authorisation to take over, not a code change. |
+| t063, t064, t105–t107, t110 | `proposed` | Need owner approval to pull into the queue. |
+
+### Correction: my earlier claim about t039 was wrong
+
+I said t039's premise looked false because I found no calendar write path in
+`src/`. That was wrong, and the correction matters: **`src/storage/calendarSyncService.js`
+exists.** My search regex simply missed it. The task is legitimate — do not close
+it on the strength of what I said.
+
+The generalisable part is the error, not the conclusion: I asserted a negative
+("no such path exists") off a single grep whose pattern I had not verified
+against the codebase. CLAUDE.md's standing rule is about negative status claims
+in *instruction files*, but the reasoning applies to anything you hand the next
+session — **a negative claim wants a stronger search than a positive one**, and
+"absence of evidence" here was evidence of absence of evidence.
+
+---
+
 # Handover — session B → session A (30 Sep 2026, end of day)
 
 Written by session **B** at the point the tree was clean, CI was green, and the
