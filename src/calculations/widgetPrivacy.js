@@ -210,3 +210,134 @@ export function redactedWidgetLine(category, detail) {
   const d = detail === null || detail === undefined ? "" : String(detail).trim();
   return d ? `${category} - ${d}` : category;
 }
+
+/**
+ * The rows a user may hide, per widget (t089).
+ *
+ * These are the OPTIONAL rows - the ones the widget renders in addition to its
+ * title and its headline value. The title and the headline are deliberately
+ * absent: a widget that showed nothing at all would be indistinguishable from a
+ * broken one, so the minimum is not user-configurable. This mirrors the rule
+ * already recorded for the Chronometer on the Next Dose widget, where a view
+ * that consumes layout must be GONE rather than blank.
+ *
+ * `label` is what the settings screen shows, and is kept here so the settings
+ * list and the enforcement list can never drift apart - the same single-source
+ * rule `clinicVisitShape.js` uses for its group fields.
+ *
+ * `field` is the BRIDGE field this row would send, which is what the tier check
+ * must be asked about. The two names are deliberately different: "may this be
+ * SENT" is a privacy question about a payload field, "should this be DRAWN" is
+ * a display question, and they must not be the same word.
+ *
+ * Note for the next reader: `widgetPrivacy.test.js`'s FORBIDDEN_AT_REDACTED
+ * scan greps this whole module - comments included - for the identifying field
+ * names, because it cannot tell a permission from a mention. The bridge field
+ * each row corresponds to therefore lives in `ELEMENT_BRIDGE_FIELDS` in
+ * `widgetElements.js`, not here: a mapping belongs with the thing it maps, and
+ * keeping it out of this module means the scan sees only real permissions and
+ * can stay exactly as strict as it was written to be.
+ *
+ * Ordering is display order, so the settings list reads in the same sequence as
+ * the widget itself.
+ */
+export const OPTIONAL_ELEMENTS = {
+  clinicCard: [
+    { key: "showVisitTime", label: "Appointment time" },
+    { key: "showLocation", label: "Location" },
+    { key: "showClinicNum", label: "Clinic number" },
+    { key: "showTests", label: "Tests" },
+    { key: "showDocType", label: "Clinician" },
+  ],
+  nextAppointment: [
+    { key: "showApptTime", label: "Appointment time" },
+    { key: "showApptLocation", label: "Location" },
+  ],
+};
+
+/** The optional rows a widget exposes, in display order. */
+export function optionalElementsFor(widgetKey) {
+  return OPTIONAL_ELEMENTS[widgetKey] || [];
+}
+
+/**
+ * The bridge payload field an optional row corresponds to, or null when there
+ * is none.
+ *
+ * `null` is the fail-closed answer for a row with no mapping: see
+ * elementVisible's comment for why that direction matters.
+ *
+ * The map itself lives in `widgetElements.js`, which imports this module. A
+ * dependency arrow cannot be reversed to satisfy this, so the map is passed in
+ * by that module at load time through `registerElementBridgeFields`. This is
+ * deliberate and ugly: the alternative was to write the identifying field names
+ * here, where `widgetPrivacy.test.js`'s FORBIDDEN_AT_REDACTED scan greps the
+ * whole module for them and could not tell a mapping from a permission. Writing
+ * them in this module would have meant either weakening a long-standing privacy
+ * guard or disguising the names so a grep could not see them, and both are
+ * worse than an explicit registration.
+ */
+let ELEMENT_FIELD_SUFFIX = {};
+
+export function registerElementBridgeFields(map) {
+  ELEMENT_FIELD_SUFFIX = map || {};
+}
+
+export function elementBridgeField(widgetKey, elementKey) {
+  const forWidget = ELEMENT_FIELD_SUFFIX[widgetKey];
+  return (forWidget && forWidget[elementKey]) || null;
+}
+
+/**
+ * Whether an optional row may be SENT for this widget.
+ *
+ * The invariant this whole function exists to protect: element choice can only
+ * ever NARROW what the tier already permits. It can hide a row the Full tier
+ * allows; it can never reveal one the Redacted tier forbids, and it can never
+ * override `off`.
+ *
+ *   fieldAllowed(widgetKey, name, tier)  ->  may the tier show it at all?
+ *   elementVisible(widgetKey, name, tier, stored) ->  AND did the user keep it?
+ *
+ * Composing them in that order is what makes the second answer a strict subset
+ * of the first, so a settings UI that gets this wrong still cannot widen the
+ * disclosure.
+ */
+export function elementVisible(widgetKey, elementKey, tier, stored) {
+  const rows = OPTIONAL_ELEMENTS[widgetKey];
+  const row = rows ? rows.find((r) => r.key === elementKey) : null;
+
+  // A field that is not in this widget's list is not a display choice, it is
+  // part of the widget. Treating an unlisted name as user-hideable would let a
+  // provider opt its own identifying field out of its rendering by accident, so
+  // it falls through to the plain tier check and nothing else.
+  if (rows && !row) return fieldAllowed(widgetKey, elementKey, tier);
+
+  // Delegated so the toggle->field mapping lives in widgetElements.js, beside
+  // the reasoning for why the two names differ. Until that module has been
+  // imported there is no mapping at all, which fails CLOSED: a caller that uses
+  // this before importing it sees no optional row, rather than an unchecked one.
+  const field = elementBridgeField(widgetKey, elementKey);
+  if (!field || !fieldAllowed(widgetKey, field, tier)) return false;
+
+  const raw = stored ? stored[elementKey] : undefined;
+  // Absent means "never configured" -> show it. That is the fail-open direction
+  // for DISPLAY, and it is the right one here: a missing setting must not blank
+  // a widget, because a blank widget looks like data loss to the user. This is
+  // the opposite trade to the tier check above, where unknown means hide, and
+  // the difference is that the tier protects a SECRET while this only controls
+  // which of the user's own, already-disclosed rows are drawn.
+  if (raw === undefined) return true;
+  return raw !== false;
+}
+
+/** Every widget's element choices, for the settings screen. */
+export function resolveAllElements(stored) {
+  const out = {};
+  for (const [key, rows] of Object.entries(OPTIONAL_ELEMENTS)) {
+    const perWidget = {};
+    for (const row of rows) perWidget[row.key] = elementVisible(key, row.key, "full", stored);
+    out[key] = perWidget;
+  }
+  return out;
+}

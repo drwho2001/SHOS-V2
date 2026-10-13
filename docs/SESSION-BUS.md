@@ -302,6 +302,44 @@ Every hit in `seedDivergence.js` and nowhere else means the field is inert. A
 field that appears only in a frozen snapshot is not evidence that anything reads
 it — the snapshot records *what was stored*, never *what was used*.
 
+### Two privacy controls compose, and the order is the whole design (t089)
+
+A widget's **tier** says what it may disclose. t089 adds an **element choice**:
+which optional rows to draw. They compose, and the composition has to be ordered
+or one of them silently wins:
+
+```
+fieldAllowed(widgetKey, bridgeField, tier)  ->  may the tier show it at all?
+elementShown(...)                            ->  AND did the user keep it?
+```
+
+The element choice is asked second and can therefore only ever **narrow**. It
+can hide a row Full allows; it can never reveal one Redacted forbids, and never
+override Off. That is asserted as a *relation over every row and every tier*
+rather than case by case, so a row added later cannot escape it — plus a
+positive Redacted assertion, because "hide everything at Redacted" satisfies the
+subset relation while producing an empty widget.
+
+The deliberate asymmetry, which is easy to get backwards:
+
+| Setting | Unknown value | Why |
+|---|---|---|
+| tier | **hide** | it protects a secret |
+| element | **show** | it only picks among already-disclosed rows, and a blank widget reads as data loss |
+
+Two things worth knowing if you extend this:
+
+- The toggle key (`showLocation`) and the bridge field it sends (`location`) are
+  deliberately **different names**. "May this be SENT" is a privacy question
+  about a payload field; "should this be DRAWN" is a display question.
+- The toggle→field map lives in `widgetElements.js`, not in `widgetPrivacy.js`.
+  `widgetPrivacy.test.js` enforces its Redacted allowlist by grepping that whole
+  module for the identifying field names, and a text grep cannot tell a
+  *permission* from a *mention*. Keeping the mapping in a sibling module means
+  that guard stays exactly as strict as it was written. The alternative —
+  weakening the guard, or spelling a field name so the grep could not see it —
+  is worse than an explicit registration.
+
 ### What the roles do NOT change
 
 **Sessions still cannot wake each other.** A role is a prompt and a permission
