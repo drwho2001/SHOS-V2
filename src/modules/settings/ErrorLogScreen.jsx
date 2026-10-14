@@ -42,12 +42,36 @@ export function ErrorLogScreen({ darkMode, onClose }) {
     setReportText("");
     setSendStatus(null);
     if (endpoint) {
+      // ADDED 14 Oct 2026 (security audit) - HTTPS IS REQUIRED, not assumed.
+      //
+      // `endpoint` is a user-typed preference, and the body it carries is
+      // whatever the user wrote in the box about their own health. Posting that
+      // to an `http://` URL puts it on the network in cleartext, where any
+      // hop can read it - which is the one thing this app is built to prevent.
+      // A typo (one missing 's') is enough to trigger it, so the check has to
+      // be here rather than assumed from wherever the value was set.
+      //
+      // The report is ALWAYS saved locally first - the line above this runs
+      // unconditionally - so refusing to send loses nothing but the send. That
+      // is what makes a hard refusal safe rather than a data-loss risk.
+      let sendable = endpoint;
+      try {
+        sendable = new URL(endpoint);
+      } catch {
+        sendable = null;
+      }
+      if (!sendable || sendable.protocol !== "https:") {
+        setSendStatus({
+          ok: false,
+          msg: "Saved here, but not sent — the report endpoint must be an https:// address.",
+        });
+      } else {
       try {
         // Deliberately the ONLY thing in this body — no device info, no
         // app version, no timestamp beyond what the server itself sees
         // from the request — matching the user's own explicit "don't
         // need users info except what they write in box."
-        const res = await fetch(endpoint, {
+        const res = await fetch(sendable.toString(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: trimmed }),
@@ -55,6 +79,7 @@ export function ErrorLogScreen({ darkMode, onClose }) {
         setSendStatus(res.ok ? { ok: true, msg: "Sent, and saved to this log." } : { ok: false, msg: "Saved here, but sending failed — try again later." });
       } catch {
         setSendStatus({ ok: false, msg: "Saved here, but sending failed — check your connection." });
+      }
       }
     }
   };

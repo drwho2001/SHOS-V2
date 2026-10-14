@@ -32,6 +32,7 @@ import { findDataAnomalies, NEVER_RESOLVED_DAYS } from "../calculations/dataAnom
 import { formatStoredDate } from "../calculations/dateInputHelpers";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useAnonymiseMode, contactName } from "../calculations/anonymiseDisplay";
+import SectionCard from "../components/SectionCard.jsx";
 
 // ADDED 19 Aug 2026 — Timeline (the nav-facing name; "Episode" is the
 // underlying data unit — see episodeRepository.js for the full
@@ -198,14 +199,6 @@ function PartnerMessageHelper({ infectionNames, T }) {
   );
 }
 
-function SectionCard({ title, T, children }) {
-  return (
-    <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
-      <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, paddingTop: 12, marginBottom: 2 }}>{title}</div>
-      {children}
-    </div>
-  );
-}
 
 function TextField({ label, value, onChange, T, placeholder }) {
   return (

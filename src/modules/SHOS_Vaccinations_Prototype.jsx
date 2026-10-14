@@ -32,6 +32,7 @@ import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { getVaccinationNextDue, isVaccinationOverdue, getEarlyDoseNotice, isDoseDateSuperseded, getVaccinationDate } from "../calculations/vaccinationCalculations";
 import { useEscapeToClose } from "../components/useEscapeToClose";
+import SectionCard from "../components/SectionCard.jsx";
 
 // ADDED 19 Aug 2026 — Vaccinations, real live Notion schema. Same
 // self-contained-module pattern, Healthcare blue, single Inter
@@ -85,14 +86,6 @@ function formatDate(iso) {
 // ../calculations/vaccinationCalculations replaced it at all four call
 // sites (list row, detail "Next due", overdue count, card).
 
-function SectionCard({ title, T, children }) {
-  return (
-    <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
-      <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, paddingTop: 12, marginBottom: 2 }}>{title}</div>
-      {children}
-    </div>
-  );
-}
 
 function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
   return (

@@ -28,6 +28,7 @@ import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { isRecentRecord } from "../calculations/recordRecency";
 import { findDataAnomalies, NEVER_RESOLVED_DAYS } from "../calculations/dataAnomalyScan";
+import SectionCard from "../components/SectionCard.jsx";
 
 // ADDED 19 Aug 2026 — Symptom Log (Symptoms Tracker in Notion — see
 // symptomLogRepository.js's header for the deliberate naming decision
@@ -90,14 +91,6 @@ function severityColor(severity, T) {
     return T.textSecondary;
   }
 
-function SectionCard({ title, T, children }) {
-  return (
-    <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
-      <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, paddingTop: 12, marginBottom: 2 }}>{title}</div>
-      {children}
-    </div>
-  );
-}
 
 function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
   return (

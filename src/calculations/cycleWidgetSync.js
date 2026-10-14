@@ -27,6 +27,7 @@
 
 import { registerPlugin } from "@capacitor/core";
 import { sendWidgetUpdate } from "./widgetBridgeUpdate";
+import { getWidgetBridge } from "./widgetBridge";
 import {
   getCycleDay,
   getCyclePhase,
@@ -40,21 +41,6 @@ import { redactedWidgetLine } from "./widgetPrivacy";
 // be fixed in six places and then had to be fixed twice more. Consolidating it is
 // a real cleanup but a separate change from fixing the three device bugs, and this
 // file could not exist at all without one.
-let WidgetBridge = null;
-async function getWidgetBridge() {
-  if (WidgetBridge) return { plugin: WidgetBridge };
-  try {
-    WidgetBridge = false;
-    // Never return the raw Capacitor plugin proxy from an async function: `proxy.then`
-    // is a function, so the proxy looks thenable and returning it makes the engine
-    // invoke `.then()`, which Capacitor rejects as
-    // "WidgetBridge.then() is not implemented on android". Verified on a real device.
-    WidgetBridge = registerPlugin("WidgetBridge");
-  } catch {
-    WidgetBridge = false;
-  }
-  return WidgetBridge ? { plugin: WidgetBridge } : null;
-}
 
 export async function updateCycleWidget() {
   try {

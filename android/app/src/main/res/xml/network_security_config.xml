@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ADDED 14 Oct 2026 (security audit).
+
+  WHY THIS EXISTS. Cleartext traffic is blocked by DEFAULT on modern Android,
+  but only because of the target SDK - and that is an implicit guarantee, not an
+  explicit one. A security audit found the app relied on that default with
+  nothing stating the intent. This file states it, which means:
+
+    1. The guarantee is now a fact about this app rather than a side effect of a
+       number in build.gradle. Lowering targetSdk, or a library adding its own
+       manifest, cannot silently remove it.
+    2. It fails at BUILD time if something needs cleartext, rather than at run
+       time on one device in a way nobody would notice.
+
+  WHAT IT COSTS. Three endpoints in this app make network calls and all three
+  are HTTPS, verified by curl rather than assumed:
+    - api.github.com            (updateCheckService.js, release check)
+    - nominatim.openstreetmap.org (locationService.js, reverse + forward geocode)
+
+  A local development server over http would be blocked by this on a real
+  device. That is the correct trade for an app holding sexual-health data, and
+  Capacitor's dev server is only used on the desktop web build anyway.
+-->
+<network-security-config>
+    <!-- Base: HTTPS only, everywhere. No exceptions granted. -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -63,6 +63,7 @@ import { useEscapeToClose } from "../components/useEscapeToClose";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { groupConsecutive, monthLabel } from "../calculations/dateGrouping";
 import { daysSinceStoredDay } from "../calculations/dateInputHelpers";
+import SectionCard from "../components/SectionCard.jsx";
 
 // ADDED 19 Aug 2026 — Healthcare blue (#4A80F0), per Doc 2's design
 // system exactly: "Healthcare & Clinical (blue — unified) ... Testing,
@@ -197,14 +198,6 @@ function computeTestDotColor(test, allTests, T, resultNameById, revealEarly = fa
 // ── Shared form primitives — same self-contained pattern as every
 // other module this session (each module owns its own copies, no
 // shared UI-library file yet). ──
-function SectionCard({ title, T, children }) {
-  return (
-    <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
-      <div style={{ ...TYPE.sectionLabel, color: T.healthcareBlue, paddingTop: 12, marginBottom: 2 }}>{title}</div>
-      {children}
-    </div>
-  );
-}
 
 function TextField({ label, value, onChange, T, placeholder, type = "text" }) {
   return (

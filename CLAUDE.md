@@ -168,7 +168,14 @@ it has been re-affirmed multiple times, not an oversight.
   `Get-ChildItem src\modules\SHOS_*_Prototype.jsx | Measure-Object`
 - `src/registries/` — the Registries layer of the four-layer model.
 - `src/components/` — shared UI/hook primitives, e.g. `ConfirmDeleteCard.jsx`,
-  `useEscapeToClose.js`.
+  `useEscapeToClose.js`, `SectionCard.jsx`. When a presentational component
+  turns up defined locally in three or more modules, consolidate it — `SectionCard`
+  was byte-identical in five (four exactly, MyProfile differing only in label
+  colour, which is why `accent` is a prop with a default rather than a hardcoded
+  value). The same applies to a resolution helper: `getWidgetBridge()` was
+  duplicated in six sync files, and that duplication is *why* a subtle thenable-
+  proxy bug had to be fixed six times and then twice more. Consolidate a helper
+  once it has been the site of a bug more than once.
 - `src/repositories/` — one per data domain, `localStorageAdapter`-backed.
 - `src/calculations/` — pure business logic, `designTokens.js`,
   `dateInputHelpers.js`, and the notification-scheduling glue: five
@@ -410,6 +417,23 @@ one free call, so the instinct to push on is the expensive one.
   Re-check the shape with
   `Select-String -Path src\repositories\<name>.js -Pattern "export const DEFAULT_"`
 - **Widget text cannot auto-fit: `autoSizeTextType` does not work in `RemoteViews`.** RemoteViews inflates only a fixed set of views and cannot use a custom `TextView` subclass, so the usual auto-fit answer is unavailable. What IS remoted, since API 16, is `setTextViewTextSize(viewId, units, size)` — so `WidgetTextFit` measures the actual string with `Paint.measureText` against `OPTION_APPWIDGET_MAX_WIDTH` and steps down a whole-sp ladder (floor **12sp**) until it fits. **Call it after every `setTextViewText`, including in each Redacted early-return branch**, and measure the *full rendered string* — `"Next: " + name`, not `name`; the prefix is often a third of the width and was a real source of truncation. Prefer a fitted size over an ellipsis: `maxLines` + `ellipsize` silently drops data, and `breakStrategy="simple"` will break a word that does not fit ("Sertralin e"), which is worse than a smaller number.
+- **A helper that can silently do nothing is worse than no helper — including
+  the ones you write to fix a bug.** `WidgetTextFit.widthDp()` returned `-1`
+  when the launcher didn't report a width, and `fit()` skipped on a negative
+  width, so the entire text-fitting mechanism was a **no-op on the device that
+  reported the problem** and the widgets truncated exactly as before. Ship it
+  green, and it is not a fix. A "skip if I can't tell" branch is only safe when
+  skipping is the correct answer; where the fallback is a default, return the
+  default and keep going. The same guard applies to every `try/catch` that ends
+  in `return` — several here log at debug and return, which is why the DoxyPEP
+  widget died silently for so long.
+- **Anything this app sends off-device must be HTTPS, enforced at the point of
+  sending — not assumed from where it was configured.** The error-report
+  endpoint is a user-typed preference carrying whatever they wrote about their
+  own health; a plain `fetch(endpoint)` puts it on the network in cleartext if
+  someone types `http://` or a URL is missing an `s`. Save locally first, then
+  refuse to send over non-HTTPS with an explanation — refusing costs nothing
+  because the record is already on the device.
 - **A bridge field must be renamed on BOTH sides, and the name that survives redaction is the one the native side must read.** Renaming a payload field in JS while Java keeps the old name delivers an empty value: `opt(call, "x")` returns `""` for an absent key, the provider stores `""`, and its own default **never applies** — a present-but-empty value beats a default, so the widget renders blank rather than falling back. The DoxyPEP widget read `status`/`expiryMs` while the JS sent `state`/`countdownAt`, and those old names are *also* absent from `ALLOWED_AT_REDACTED`, so they were impossible at the Full tier and stripped at Redacted. **Rename on the side that has the wrong name**, so the native side reads the names the allowlist protects; sending both would leave two fields where one survives redaction, which is how a duplicate becomes a leak later. `widgetBridgeFieldNameGuard.test.js` checks every Java-read key against the JS that sends it, and `widgetArgumentOrderGuard.test.js` checks the argument order — a bridge can fail silently in either direction.
 - **A value crossing a bridge must have ONE type, and the tests must take that type from the real producer.** `getDoxyPepStatus` has always returned `deadline` as epoch milliseconds; three call sites treated it as a `Date` and called `.getTime()`, which is a `Date` method. Every call threw, and because they sat inside a `try/catch` that logs at `debug` level, the DoxyPEP widget silently never updated on any device. The suite was green because its fixture built `deadline: new Date(...)` — a shape the producer has never emitted. Prefer a distinct type per field across a bridge (an epoch `long` rather than another `String`, say) so the compiler catches it, and **build fixtures from the real producer's output rather than from a literal**.
 - **Code that a test cannot reach is code that breaks unseen — extract a pure function rather than asserting on a copy of it.** A test that pastes `countdownAt: status.deadline ?? null` into its own file proves nothing about the payload: that version of the test passed green against the still-broken source. When a defect hides in a function whose only caller needs a live bridge, **make the seam** — `buildDoxyPepWidgetPayload(status)` is pure and exported, and the test calls it. Note that deleting a variable can leave a dangling shorthand reference (`{ expiryMs, }` after `const expiryMs` is gone) that is a `ReferenceError` on every call and that only an executing test can see.

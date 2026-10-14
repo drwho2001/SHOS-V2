@@ -16,7 +16,7 @@
 // survive the first fix.
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 
 const SRC = join(process.cwd(), "src");
 
@@ -32,7 +32,31 @@ function walk(dir) {
 }
 
 const ALL = walk(SRC);
-const FILES_WITH_BRIDGE = ALL.filter((f) => /registerPlugin\(\s*["']WidgetBridge["']\s*\)/.test(readFileSync(f, "utf8")));
+
+// CHANGED 14 Oct 2026 - `getWidgetBridge()` was byte-identical in SIX files and
+// is now ONE (`src/calculations/widgetBridge.js`). This filter used to mean
+// "files that call registerPlugin('WidgetBridge')" and expected 6+ of them.
+//
+// It now means "files that TOUCH the bridge at all" - the one that registers it,
+// plus the six that import the shared resolver - because that is the set the
+// assertions below actually need to walk: a file that calls
+// sendWidgetUpdate() is a file whose method names and plugin registration
+// matter, whether it resolved the plugin itself or imported it.
+//
+// The guard's own anti-vacuity assertion caught this change failing, which is
+// precisely what it was written to do: the old filter found ZERO files the
+// moment the copies were removed, and a guard that silently matches nothing is
+// worse than no guard. That failure is the reason this comment exists.
+const FILES_WITH_BRIDGE = ALL.filter((f) => {
+  const src = readFileSync(f, "utf8");
+  return (
+    /registerPlugin\(\s*["']WidgetBridge["']\s*\)/.test(src) ||
+    /import\s*\{[^}]*getWidgetBridge[^}]*\}\s*from\s*["'][^"']*widgetBridge["']/.test(src)
+  );
+});
+
+/** The single module that owns plugin resolution. Asserted to exist on its own. */
+const SHARED_BRIDGE_FILE = join(SRC, "calculations", "widgetBridge.js");
 
 // Strip comments so a negative assertion cannot be satisfied by the very comment
 // documenting the fix. This repo has repeatedly shipped guards that matched their
@@ -42,12 +66,26 @@ function stripComments(src) {
 }
 
 describe("Capacitor plugin proxies are never returned bare from an async function", () => {
-  it("finds the files that register the widget bridge (guard against the list silently emptying)", () => {
+  it("finds the files that touch the widget bridge (guard against the list silently emptying)", () => {
     // Without this precondition the whole file could pass by finding nothing.
     expect(
       FILES_WITH_BRIDGE.length,
-      "expected several files to register WidgetBridge; if this is 0 the guard below is vacuous",
-    ).toBeGreaterThanOrEqual(6);
+      "expected the bridge resolver plus the files importing it; if this is 0 the guard below is vacuous",
+    ).toBeGreaterThanOrEqual(7);
+
+    // The resolver exists ONCE, not six times. Asserted separately because a
+    // reintroduced copy would still satisfy the count above.
+    expect(
+      existsSync(SHARED_BRIDGE_FILE),
+      "src/calculations/widgetBridge.js is the single resolver - if it is missing, every sync file has a local copy again",
+    ).toBe(true);
+    const registrars = ALL.filter((f) =>
+      /registerPlugin\(\s*["']WidgetBridge["']\s*\)/.test(readFileSync(f, "utf8"))
+    );
+    expect(
+      registrars.length,
+      "exactly ONE file should call registerPlugin('WidgetBridge') - found more, which means a local copy was reintroduced",
+    ).toBe(1);
   });
 
   it("no async helper returns the raw proxy - it must be wrapped in a plain object", () => {

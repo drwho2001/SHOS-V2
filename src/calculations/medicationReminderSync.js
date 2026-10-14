@@ -32,31 +32,9 @@ import { scheduleNotification, cancelNotification, registerNotificationActionTyp
 import { ACCENTS } from "./designTokens";
 import { nowAsStoredDateTime } from "./dateInputHelpers";
 import { sendWidgetUpdate } from "./widgetBridgeUpdate";
+import { getWidgetBridge } from "./widgetBridge";
 import { redactedWidgetLine } from "./widgetPrivacy";
 
-let WidgetBridge = null;
-async function getWidgetBridge() {
-  if (WidgetBridge) return { plugin: WidgetBridge };
-  try {
-    const { Capacitor } = await import("@capacitor/core");
-    if (!Capacitor.isNativePlatform()) {
-      WidgetBridge = false;
-      return null;
-    }
-    const { registerPlugin } = await import("@capacitor/core");
-    WidgetBridge = registerPlugin("WidgetBridge");
-  } catch (e) {
-    WidgetBridge = false; // mark as unavailable
-  }
-  // WRAPPED, NOT RETURNED BARE. A Capacitor plugin proxy is a catch-all Proxy:
-  // ANY property access returns a function, so `proxy.then` is a function and the
-  // proxy looks *thenable*. Returning one from an async function makes the engine
-  // unwrap it by invoking `.then()`, which Capacitor rejects as
-  // "WidgetBridge.then() is not implemented on android". That threw before the
-  // plugin method was ever reached, so no widget ever updated. Verified live on a
-  // real device; the same shape as the earlier ScreenSecurity fix.
-  return WidgetBridge ? { plugin: WidgetBridge } : null;
-}
 
 // ADDED 3 Sep 2026 — exported (was module-private) — real ask: "clear
 // notification awareness" needs an in-app "medication due" banner

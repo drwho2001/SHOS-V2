@@ -94,6 +94,7 @@ import { useDarkModePreference } from "../calculations/darkModePreference";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { useEscapeToClose } from "../components/useEscapeToClose";
 import { formatStoredDate } from "../calculations/dateInputHelpers";
+import SectionCard from "../components/SectionCard.jsx";
 
 // CHANGED 15 Sep 2026 — real bug found: these were plain module-level
 // `const`s, baking in ACCENTS.contacts/ACTION.red/ACTION.green at
@@ -141,14 +142,6 @@ const PROFILE_EDIT_TABS = [
 // local per the self-contained-module pattern rather than importing
 // from a file that isn't a shared UI library. ──
 
-function SectionCard({ title, T, children }) {
-  return (
-    <div style={{ border: `1px solid ${T.border}`, borderRadius: radius.md, background: T.surface, padding: "4px 14px 14px", marginTop: 14 }}>
-      <div style={{ ...TYPE.sectionLabel, color: T.contactsTeal, paddingTop: 12, marginBottom: 2 }}>{title}</div>
-      {children}
-    </div>
-  );
-}
 
 // ADDED 26 Aug 2026 — real ask: profile photo, previously missing
 // entirely. Matches Contacts' own PhotoPicker implementation exactly
@@ -1086,7 +1079,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
           ariaLabel="My Profile form sections" accent={T.contactsTeal} accentText={T.contactsTealText}
           textColor={T.textSecondary} border={T.border} surface={T.bg}>
         <div>
-        <SectionCard title="Identity" T={T}>
+        <SectionCard accent={T.contactsTeal} title="Identity" T={T}>
           <PhotoPicker value={form.profilePicture} onChange={set("profilePicture")} T={T} />
           <TextField label="Full name" value={form.displayName} onChange={set("displayName")} T={T} placeholder="Your full name" />
           <TextField label="Nickname" value={form.nickname} onChange={set("nickname")} T={T} placeholder="e.g. Alex" />
@@ -1116,7 +1109,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
           <CityAutocomplete label="City" value={form.city} onChange={set("city")} T={T} placeholder="Start typing a city, or use current location" />
         </SectionCard>
 
-        <SectionCard title="Find me on" T={T}>
+        <SectionCard accent={T.contactsTeal} title="Find me on" T={T}>
           <TextField label="Phone/WhatsApp" value={form.phone} onChange={set("phone")} T={T} placeholder="e.g. +44 7700 900123" />
           <TextField label="Snapchat" value={form.snapchat} onChange={set("snapchat")} T={T} placeholder="Username" />
           <TextField label="Fabguys" value={form.fabguys} onChange={set("fabguys")} T={T} placeholder="Username" />
@@ -1125,13 +1118,13 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
           <TagInput label="Other platforms" value={form.contactableVia} onChange={set("contactableVia")} T={T} placeholder="Grindr, Tinder, etc." />
         </SectionCard>
 
-        <SectionCard title="About me" T={T}>
+        <SectionCard accent={T.contactsTeal} title="About me" T={T}>
           <TextAreaField label="A short note about yourself" value={form.aboutMeNotes} onChange={set("aboutMeNotes")} T={T} placeholder="Not shown to anyone unless you share your profile." />
         </SectionCard>
         </div>
 
         <div>
-        <SectionCard title="Hosting / Travel" T={T}>
+        <SectionCard accent={T.contactsTeal} title="Hosting / Travel" T={T}>
           <SelectField label="Hosts" value={form.hosts} onChange={set("hosts")} options={HOSTS_OPTIONS} T={T} />
           <SelectField label="Travels" value={form.travels} onChange={set("travels")} options={TRAVELS_OPTIONS} T={T} />
           {(form.travels === "Yes" || form.travels === "Sometimes") && (
@@ -1139,13 +1132,13 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
           )}
         </SectionCard>
 
-        <SectionCard title="Availability" T={T}>
+        <SectionCard accent={T.contactsTeal} title="Availability" T={T}>
           <MultiSelectChips label="General availability" value={form.availability} onChange={set("availability")} options={AVAILABILITY_OPTIONS} T={T} />
           <SelectField label="Readily available?" value={form.readilyAvailable} onChange={set("readilyAvailable")} options={READILY_AVAILABLE_OPTIONS} T={T} />
           <AvailabilityRuleBuilder rules={form.nonAvailabilityRules} onChange={set("nonAvailabilityRules")} T={T} />
         </SectionCard>
 
-        <SectionCard title="Into / Limits" T={T}>
+        <SectionCard accent={T.contactsTeal} title="Into / Limits" T={T}>
           <RegistryTagPicker label="Into" value={form.statedKinks} onChange={set("statedKinks")} registry={KinkRegistry} T={T} excludeIds={form.limits.map((l) => l.kinkId)} trackRole roleOptions={KINK_ROLE_OPTIONS} resolveSynonym={resolveKinkSynonym} analyzeEntry={analyzeKinkEntry} getRoleOptionsForKink={getKinkRoleOptions} />
           <RegistryTagPicker label="Limits" value={form.limits} onChange={set("limits")} registry={KinkRegistry} T={T} excludeIds={form.statedKinks.map((s) => s.kinkId)} trackRole roleOptions={KINK_ROLE_OPTIONS} resolveSynonym={resolveKinkSynonym} analyzeEntry={analyzeKinkEntry} getRoleOptionsForKink={getKinkRoleOptions} />
           <MultiSelectChips label="Role" value={form.bdsmRole} onChange={set("bdsmRole")} options={BDSM_ROLE_OPTIONS} T={T} />
@@ -1156,7 +1149,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
           <MultiSelectChips label="Position" value={form.sexualPosition} onChange={set("sexualPosition")} options={SEXUAL_POSITION_OPTIONS} T={T} />
         </SectionCard>
 
-        <SectionCard title="Chems" T={T}>
+        <SectionCard accent={T.contactsTeal} title="Chems" T={T}>
           <RegistryTagPicker label="Known chems" value={form.knownChems} onChange={set("knownChems")} registry={ChemsRegistry} T={T} resolveSynonym={resolveChemSynonym} />
         </SectionCard>
 
@@ -1169,7 +1162,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
             relevant. Nothing here is deleted, just not shown; picking
             a different Gender later brings it straight back. */}
         {form.gender?.trim().toLowerCase() !== "female" || revealPhysicalAnyway || hasPhysicalDetail(form) ? (
-        <SectionCard title="Physical" T={T}>
+        <SectionCard accent={T.contactsTeal} title="Physical" T={T}>
           <SelectField label="Length (penis)" value={form.length} onChange={set("length")} options={LENGTH_OPTIONS} T={T} />
           <SelectField label="Girth (penis)" value={form.thickness} onChange={set("thickness")} options={GIRTH_OPTIONS} T={T} />
           <SelectField label="Foreskin" value={form.foreskin} onChange={set("foreskin")} options={FORESKIN_OPTIONS} T={T} />
@@ -1202,7 +1195,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
             silently drift out of sync with it, the same problem "one
             room, three doors" was built to avoid for Measurements. */}
         {showsContraception || revealContraceptionAnyway ? (
-        <SectionCard title="Contraception" T={T}>
+        <SectionCard accent={T.contactsTeal} title="Contraception" T={T}>
           <div style={{ fontSize: 12, color: T.textSecondary, padding: "4px 0" }}>
             Now tracked under Healthcare → Menstrual & Contraception (enable it in Settings if you don't see that tab).
           </div>
@@ -1213,7 +1206,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
             style={{ fontSize: 12, color: T.contactsTealText, cursor: "pointer", padding: "4px 0 12px" }}>+ Track contraception anyway</div>
         )}
 
-        <SectionCard title="Sexual health status" T={T}>
+        <SectionCard accent={T.contactsTeal} title="Sexual health status" T={T}>
           <MultiSelectChips label="Known PrEP/DoxyPEP" value={form.knownPrepDoxy} onChange={set("knownPrepDoxy")} options={PREP_DOXY_OPTIONS} T={T} />
           {/* ADDED 18 Aug 2026 — the user's ask: nothing selected here should
               read as an explicit, deliberate "not on it" — not as an
@@ -1307,7 +1300,7 @@ function MyProfileEditScreen({ profile, onSave, onCancel, T, onOpenGlossary }) {
             profile — see profileShareService.js's mapShareToContactData()
             for the enforcement, this banner is just making that visible
             here too so it's never a surprise. */}
-        <SectionCard title="Clinical & emergency info (never shared)" T={T}>
+        <SectionCard accent={T.contactsTeal} title="Clinical & emergency info (never shared)" T={T}>
           <div style={{ fontSize: 11, color: T.textDisabled, marginBottom: 8, fontStyle: "italic" }}>
             For your own Clinic Card only — excluded from Share/Export, even if you share your full profile with someone.
           </div>
@@ -1417,7 +1410,7 @@ function ProfileDataView({ profile, T, onOpenGlossary }) {
 
   return (
     <div style={isDesktopWidth ? { padding: "0 16px 8px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 8, alignItems: "start" } : { padding: "0 16px 8px" }}>
-      <SectionCard title="Identity" T={T}>
+      <SectionCard accent={T.contactsTeal} title="Identity" T={T}>
         <ReadRow label="Nickname" value={profile.nickname} T={T} />
         <ReadRow label="Gender" value={profile.gender} T={T} />
         <ReadRow label="Pronouns" value={profile.pronouns} T={T} />
@@ -1426,7 +1419,7 @@ function ProfileDataView({ profile, T, onOpenGlossary }) {
         <ReadRow label="Age" value={profile.age} T={T} />
         <ReadRow label="City" value={profile.city} T={T} />
       </SectionCard>
-      <SectionCard title="Find me on" T={T}>
+      <SectionCard accent={T.contactsTeal} title="Find me on" T={T}>
         <ReadRow label="Phone/WhatsApp" value={profile.phone} T={T} />
         <ReadRow label="Snapchat" value={profile.snapchat} T={T} />
         <ReadRow label="Fabguys" value={profile.fabguys} T={T} />
@@ -1434,26 +1427,26 @@ function ProfileDataView({ profile, T, onOpenGlossary }) {
         <ReadRow label="Recon" value={profile.recon} T={T} />
         <ReadRow label="Other platforms" value={profile.contactableVia} T={T} />
       </SectionCard>
-      <SectionCard title="Hosting / Travel" T={T}>
+      <SectionCard accent={T.contactsTeal} title="Hosting / Travel" T={T}>
         <ReadRow label="Hosts" value={profile.hosts} T={T} />
         <ReadRow label="Travels" value={profile.travels} T={T} />
         <ReadRow label="Travel mode" value={profile.travelMode} T={T} />
       </SectionCard>
-      <SectionCard title="Availability" T={T}>
+      <SectionCard accent={T.contactsTeal} title="Availability" T={T}>
         <ReadRow label="General availability" value={profile.availability} T={T} />
         <ReadRow label="Readily available?" value={profile.readilyAvailable} T={T} />
       </SectionCard>
-      <SectionCard title="Into / Limits" T={T}>
+      <SectionCard accent={T.contactsTeal} title="Into / Limits" T={T}>
         <ReadRow label="Into" value={kinkNames} T={T} />
         <ReadRow label="Limits" value={limitNames} T={T} />
         <ReadRow label="Role" value={profile.bdsmRole} T={T} />
         <ReadRow label="Position" value={profile.sexualPosition} T={T} />
       </SectionCard>
-      <SectionCard title="Chems" T={T}>
+      <SectionCard accent={T.contactsTeal} title="Chems" T={T}>
         <ReadRow label="Known chems" value={chemNames.length > 0 ? chemNames : "None known"} T={T} />
       </SectionCard>
         {profile.gender?.trim().toLowerCase() !== "female" || hasPhysicalDetail(profile) ? (
-        <SectionCard title="Physical" T={T}>
+        <SectionCard accent={T.contactsTeal} title="Physical" T={T}>
         <ReadRow label="Length (penis)" value={profile.length} T={T} />
         <ReadRow label="Girth (penis)" value={profile.thickness} T={T} />
         <ReadRow label="Foreskin" value={profile.foreskin} T={T} />
@@ -1476,11 +1469,11 @@ function ProfileDataView({ profile, T, onOpenGlossary }) {
           hide an already-entered answer just because Gender doesn't
           match one of two exact strings. */}
       {(["female", "trans-male"].includes((profile.gender || "").trim().toLowerCase()) || activeContraception.length > 0) && (
-      <SectionCard title="Contraception" T={T}>
+      <SectionCard accent={T.contactsTeal} title="Contraception" T={T}>
         <ReadRow label="Currently active" value={activeContraception.length ? activeContraception : "None logged"} T={T} />
       </SectionCard>
       )}
-      <SectionCard title="Sexual health status" T={T}>
+      <SectionCard accent={T.contactsTeal} title="Sexual health status" T={T}>
         <ReadRow label="Known PrEP/DoxyPEP" value={profile.knownPrepDoxy} T={T} />
         {/* ADDED 18 Aug 2026 — same explicit-"not on it" treatment as the
             edit sheet, needed here too: this is the screen you'd actually
@@ -1516,10 +1509,10 @@ function ProfileDataView({ profile, T, onOpenGlossary }) {
             what "undetectable" means earns its place. */}
         <HivStatusNote T={T} label="HIV status" onOpen={onOpenGlossary} />
       </SectionCard>
-      <SectionCard title="About me" T={T}>
+      <SectionCard accent={T.contactsTeal} title="About me" T={T}>
         <ReadRow label="Note" value={profile.aboutMeNotes} T={T} />
       </SectionCard>
-      <SectionCard title="Clinical & emergency info (never shared)" T={T}>
+      <SectionCard accent={T.contactsTeal} title="Clinical & emergency info (never shared)" T={T}>
         <ReadRow label="Allergies" value={profile.allergies} T={T} />
         <ReadRow label="Emergency contact name" value={profile.emergencyContactName} T={T} />
         <ReadRow label="Emergency contact phone" value={profile.emergencyContactPhone} T={T} />

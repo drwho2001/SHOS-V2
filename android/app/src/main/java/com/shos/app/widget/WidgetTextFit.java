@@ -43,6 +43,8 @@ final class WidgetTextFit {
     /** Smallest size this will ever return. See the class comment. */
     static final float MIN_SP = 12f;
 
+    private static final String TAG = "WidgetTextFit";
+
     /** Horizontal padding on the widget root, per side, in dp. See the layouts. */
     private static final float ROOT_PADDING_DP = 16f;
 
@@ -54,17 +56,57 @@ final class WidgetTextFit {
      * declared with.
      */
     static int widthDp(Context context, AppWidgetManager manager, int appWidgetId) {
-        if (manager == null) return -1;
+        // FALLBACK_DP is what a 1x2 cell is on a typical phone. It is a last
+        // resort, not the expected path - see the comment below.
+        final int FALLBACK_DP = 110;
+
+        if (manager == null) return FALLBACK_DP;
         try {
             android.os.Bundle options = manager.getAppWidgetOptions(appWidgetId);
-            if (options == null) return -1;
-            int w = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 0);
-            return w > 0 ? w : -1;
+            if (options == null) return FALLBACK_DP;
+
+            int minW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0);
+            int maxW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 0);
+
+            // WHY THE SMALLER OF THE TWO, NOT MAX
+            // ------------------------------------
+            // This is why the fit appeared to do nothing. The first version read
+            // MAX_WIDTH only and returned -1 when the launcher did not report
+            // it, and `fit()` skips on a negative width - so on any launcher that
+            // leaves the option unset, the entire mechanism was a silent no-op
+            // and every widget kept truncating exactly as it had before.
+            //
+            // Gemini's read is that MAX_WIDTH is the LANDSCAPE allowance while a
+            // portrait widget renders at roughly MIN_WIDTH; Anthropic's is that
+            // MAX_WIDTH is orientation-aware but may simply be absent. Taking
+            // the SMALLER of the two reported values is correct under either
+            // reading and in both orientations: it can only ever pick a size
+            // that fits the narrowest case the launcher says is possible,
+            // never one sized for a width the widget is not currently at.
+            //
+            // When only one is reported, that one is used. When neither is, the
+            // declared minimum for this provider is a better guess than a
+            // constant, because it is the size the widget was actually
+            // published at.
+            int usable = 0;
+            if (minW > 0 && maxW > 0) usable = Math.min(minW, maxW);
+            else if (minW > 0) usable = minW;
+            else if (maxW > 0) usable = maxW;
+
+            if (usable > 0) return usable;
+
+            try {
+                android.appwidget.AppWidgetProviderInfo info = manager.getAppWidgetInfo(appWidgetId);
+                if (info != null && info.minWidth > 0) return info.minWidth;
+            } catch (Exception ignored) {
+                // Falls through to the constant below.
+            }
+            return FALLBACK_DP;
         } catch (Exception e) {
-            // Never let a measurement problem stop the widget rendering. An
-            // unknown width simply means we keep the layout's declared size,
-            // which is exactly what happened before this class existed.
-            return -1;
+            // Never let a measurement problem stop the widget rendering - and
+            // never let it silently disable the fit either, which is what
+            // returning -1 used to do.
+            return FALLBACK_DP;
         }
     }
 
@@ -80,12 +122,20 @@ final class WidgetTextFit {
      */
     static void fit(RemoteViews views, Context context, int viewId, CharSequence text,
                     int widthDp, float maxSp) {
-        if (views == null || text == null || text.length() == 0 || widthDp <= 0) return;
+        if (views == null || text == null || text.length() == 0) return;
 
         android.util.DisplayMetrics metrics = context.getResources().getDisplayMetrics();
-        int availablePx = Math.round(widthDp * metrics.density)
+        int width = widthDp > 0 ? widthDp : 110;
+        int availablePx = Math.round(width * metrics.density)
                 - Math.round(ROOT_PADDING_DP * 2 * metrics.density);
         if (availablePx <= 0) return;
+
+        // ONCE per process, not once per field. The width is the single value
+        // every fit decision depends on and it is the thing that was silently
+        // wrong before, so it is worth being able to read it off a device
+        // without adding a log line to seven providers.
+        android.util.Log.d(TAG, "width=" + width + "dp density=" + metrics.density
+                + " available=" + availablePx + "px text=\"" + text + "\"");
 
         Paint paint = new Paint();
         paint.setAntiAlias(true);

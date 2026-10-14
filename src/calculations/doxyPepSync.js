@@ -20,28 +20,8 @@ import { NotificationPreferencesRepository } from "../repositories/notificationP
 import { ACCENTS } from "./designTokens";
 import { nowAsStoredDateTime } from "./dateInputHelpers";
 import { sendWidgetUpdate } from "./widgetBridgeUpdate";
+import { getWidgetBridge } from "./widgetBridge";
 
-let WidgetBridge = null;
-async function getWidgetBridge() {
-  if (WidgetBridge) return { plugin: WidgetBridge };
-  try {
-    const { Capacitor } = await import("@capacitor/core");
-    if (!Capacitor.isNativePlatform()) {
-      WidgetBridge = false;
-      return null;
-    }
-    const { registerPlugin } = await import("@capacitor/core");
-    WidgetBridge = registerPlugin("WidgetBridge");
-  } catch (e) {
-    WidgetBridge = false;
-  }
-  // WRAPPED, NOT RETURNED BARE. A Capacitor plugin proxy is a catch-all Proxy, so
-  // `proxy.then` is a function and the proxy looks thenable; returning it from an
-  // async function makes the engine invoke `.then()` on it, which Capacitor
-  // rejects as "WidgetBridge.then() is not implemented on android". Verified live
-  // on a real device - it threw before the plugin method was ever reached.
-  return WidgetBridge ? { plugin: WidgetBridge } : null;
-}
 
 // ADDED — real ask: unified notifications on/off switchboard. Gates
 // only the NATIVE notification below — the returned `status` object
