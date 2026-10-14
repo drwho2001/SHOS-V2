@@ -276,6 +276,21 @@ because none of them look at bytes.
 - **Never use those cmdlets to read or write source.** Use the editor directly,
   or a Node script (`fs.readFileSync` / `writeFileSync`). For commit message
   files: `[IO.File]::WriteAllText($p, $msg, (New-Object Text.UTF8Encoding $false))`.
+- **A backtick in a commit message is a PowerShell ESCAPE, not a quote, and it
+  corrupts the message silently.** Building `$msg` in a double-quoted PowerShell
+  string consumes each backtick plus the next character: `` `record.name` ``
+  sends a **carriage return**, not `record.name`; `` `name` `` sends a
+  **newline**; `` `title` `` sends a **tab**; `` `vaccine` `` sends a vertical
+  tab; `` `a`` sends an alert. Commit `eda961a` (14 Oct 2026) is stored in this
+  repository with `record` as `ecord`, `title` as `itle`, `vaccine` as `accine`,
+  and the `name` of `name` sitting on **its own line**. The code is fine; only
+  the message is damaged, and it is damaged in a way that reads as a typo
+  rather than as a lost word. **`WriteAllText` above fixes the bytes and not
+  this** — the backtick is already gone by the time the string exists. Use
+  single-quoted strings, a `@' … '@` here-string, or a file. And note the
+  repair is not cheap: control characters inside a commit object are only
+  removable by rewriting that commit, which this repo forbids while another
+  session may be building from it. Treat it as prevention, not a fix.
 - **Never regex over JSX attributes or source to make a bulk edit.** Regex
   codemods damaged this codebase twice in one week — truncating `aria-label`
   closing braces, and mangling smoke-test flow labels. Make the edit with the

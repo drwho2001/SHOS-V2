@@ -2395,16 +2395,27 @@ so in `notices` rather than editing it.
 - **Respect the "recorded retrospectively" label.** Those entries were
   transcribed from `CLAUDE.md`, not re-run. Reading a 10 Sep conclusion as
   current is the failure mode the page exists to prevent.
-- The **Development Log** (`3b013572-4f67-80ab-b1a0-c665a828e241`, **1164
-  blocks** measured) is for what was *shipped*. Found-but-unshipped goes in
-  Audits.
+- The **Development Log** (`3b013572-4f67-80ab-b1a0-c665a828e241`) is for
+  what was *shipped*. Found-but-unshipped goes in Audits. A "**1164 blocks**"
+  figure sat here for some time with no date and no command beside it, and
+  `node scripts\notion-log.mjs check` cannot regenerate it: it reads a single
+  page of children, and this page is long enough to need pagination. Treat the
+  number as a figure of unknown date rather than a current measurement. For
+  currency, use the `last_edited` line that `check` *does* print — that is what
+  showed on 14 Oct 2026 that the log had not been touched since 7 Oct.
 - Append with **`PATCH /v1/blocks/{page_id}/children`**. `POST` is not valid
   there and Notion's error text reads exactly like an auth failure, which has
   already cost a session two integrations' worth of time. **Paginate to the end
   to verify** — a successful response is not proof the write landed, and
   **accumulate every page**, or a long page reads as a short one.
-- `node scripts\notion-log.mjs append "Development Log" "<entry>"` does this
-  with the paginated verification built in.
+- `node scripts\notion-log.mjs append development "<heading>" "<entry>"` does
+  this with the paginated verification built in. The page argument is the
+  script's **key** — `development` or `audits` — not the page's display name.
+  This line previously read `append "Development Log" "<entry>"`, which looks
+  right and is not: the script looks the argument up in its own page map, finds
+  no such key, and exits 2 with `Unknown page "Development Log"`. Heading and
+  body are separate arguments, and omitting the body makes the script reuse the
+  heading as the body, so a one-line entry needs the text in both.
 
 ## Audit re-run policy
 
