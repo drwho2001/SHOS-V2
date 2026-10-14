@@ -305,7 +305,13 @@ describe("the DoxyPEP redacted line", () => {
 
   it("never says there is no window when there is one", async () => {
     const { doxyPepRedactedLine } = await import("./doxyPepSync.js");
-    const active = { overdue: false, active: true, deadline: new Date(Date.now() + 5 * 3600000) };
+    // FIXED 13 Oct 2026 - this fixture was `new Date(...)`, a Date. The real
+    // getDoxyPepStatus has ALWAYS produced epoch milliseconds, so this test was
+    // exercising a shape no caller can create - and `deadline.getTime()` in the
+    // function under test therefore looked correct here while throwing a
+    // TypeError in the app, where it killed the whole DoxyPEP widget push.
+    // A number now, as the real producer emits.
+    const active = { overdue: false, active: true, deadline: Date.now() + 5 * 3600000 };
     expect(doxyPepRedactedLine(active)).toBe("Antibiotics - in 5h 0m");
     // The specific regression: the old behaviour rendered the provider's
     // placeholder, which reads "No active window".
@@ -322,8 +328,35 @@ describe("the DoxyPEP redacted line", () => {
 
   it("uses minutes alone under an hour, not '0h'", async () => {
     const { doxyPepRedactedLine } = await import("./doxyPepSync.js");
-    const soon = { overdue: false, active: true, deadline: new Date(Date.now() + 7 * 60000) };
+    const soon = { overdue: false, active: true, deadline: Date.now() + 7 * 60000 };
     expect(doxyPepRedactedLine(soon)).toBe("Antibiotics - in 7m");
     expect(doxyPepRedactedLine(soon)).not.toMatch(/0h/);
+  });
+
+  // The regression this file missed for as long as the bug existed. Recorded
+  // here as the negative of what I first assumed, because the assumption was
+  // wrong and the wrongness is the useful part: after the fix this function
+  // does NOT throw on a Date - `dateObj - number` coerces via valueOf and works
+  // fine. So the fix is type-agnostic here.
+  //
+  // What was never type-agnostic was `.getTime()`, because a number has no such
+  // method. So this cannot be asserted as "rejects a Date"; the real, load-
+  // bearing assertion lives in doxyPepDeadlineType.test.js and is made against
+  // the REAL producer's output: `typeof getDoxyPepStatus(...).deadline` is
+  // "number" and `typeof deadline.getTime` is "undefined".
+  //
+  // Left as documentation rather than deleted, because "this is type-agnostic"
+  // is the kind of thing the next reader needs and will otherwise assume the
+  // wrong way.
+  it("a Date deadline happens to work here, and that is not the bug", async () => {
+    const { doxyPepRedactedLine } = await import("./doxyPepSync.js");
+    const asDate = { overdue: false, active: true, deadline: new Date(Date.now() + 3600000) };
+    // Works by coercion, NOT because it is handled - the value is a number and
+    // the number is what the real producer emits.
+    expect(() => doxyPepRedactedLine(asDate)).not.toThrow();
+    // The assertion that WOULD have caught it: the real producer emits a number,
+    // and that number has no .getTime.
+    const real = { overdue: false, active: true, deadline: Date.now() + 3600000 };
+    expect(typeof real.deadline.getTime).toBe("undefined");
   });
 });

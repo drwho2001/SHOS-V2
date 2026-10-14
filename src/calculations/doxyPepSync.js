@@ -104,7 +104,21 @@ export async function syncDoxyPepAlert() {
   await scheduleNotification({
     id: NOTIFICATION_IDS.doxyPepAlert,
     title: "DoxyPEP dose due",
-    body: "It's been close to 72 hours since your last qualifying activity — take your DoxyPEP dose if you haven't already.",
+    // FIXED 13 Oct 2026 (owner) - "last qualifying activity" said the OPPOSITE
+    // of what this app does. getDoxyPepStatus anchors the deadline to the
+    // EARLIEST qualifying encounter since the last dose
+    // (doxyPepCalculations.js, `qualifyingSinceLastDose[0]` off an ascending
+    // sort), because sequential exposures do not restart the countdown - that
+    // is BASHH's "cover a period of activity with one dose at the end" pattern.
+    //
+    // So the string told the user the deadline tracked their most recent sex
+    // while it tracked their FIRST one. Those differ exactly when it matters:
+    // someone who had sex on Monday and again on Wednesday was told the 72
+    // hours ran from Wednesday, when Monday's had already expired. Under that
+    // reading the app invites a dose later than the guidance allows for the
+    // earlier exposure. Corrected to FIRST, which is what the code has always
+    // done.
+    body: "It's been close to 72 hours since your FIRST qualifying activity — take your DoxyPEP dose if you haven't already.",
     at: status.deadline,
     actionTypeId: DOXYPEP_ACTION_TYPE_ID,
     kind: "DoxyPEP reminder",
@@ -120,6 +134,60 @@ export async function syncDoxyPepAlert() {
   });
   await updateDoxyPEPWidget(status);
   return status;
+}
+
+/**
+ * The DoxyPEP widget's bridge payload, as a PURE function of `status`.
+ *
+ * ADDED 13 Oct 2026. This was an inline object literal, and being inline is how
+ * three separate defects lived in it undetected:
+ *
+ *   - `deadline.getTime()` in two places, on a value that has always been a
+ *     number (see updateDoxyPEPWidget's comment for the full account of how that
+ *     killed the widget silently);
+ *   - a dangling `expiryMs` shorthand referring to a variable that had been
+ *     deleted - a ReferenceError on every call, introduced by the very fix for
+ *     the first defect and caught by nothing;
+ *   - `status: statusText` and `state: statusText` being the same value twice.
+ *
+ * NONE of these were caught because the payload was built inside a function whose
+ * only caller needs a live Capacitor bridge, so no test could execute it. My own
+ * replacement test - which COPIED the `countdownAt` expression into the test file
+ * - also passed green against the unfixed source, because copying code into a
+ * test does not test the code.
+ *
+ * So the fix is the SEAM, not a stricter assertion: the payload is now a value a
+ * test can call. doxyPepDeadlineType.test.js calls this with the real status
+ * getDoxyPepStatus produces and asserts the exact fields, which is what makes a
+ * regression here visible at all.
+ *
+ * @param {{active:boolean, overdue:boolean, deadline?:number, windowStartIso?:string}} status
+ * @returns {object} the unfiltered payload; tier filtering stays in sendWidgetUpdate
+ */
+export function buildDoxyPepWidgetPayload(status) {
+  const statusText = status.overdue ? "Overdue" : (status.active ? "Active" : "No active window");
+  return {
+    // category/state are what survive a Redacted tier, so the widget reads
+    // "DoxyPEP - Active" rather than going blank.
+    category: "DoxyPEP",
+    state: statusText,
+    // RENAMED from `expiryMs` rather than reused, because "expiryMs" reads like
+    // an absolute deadline in any code review and the whole point is that the two
+    // are not the same disclosure: a relative countdown reveals no routine.
+    // `deadline` is epoch ms and is sent as-is - never `.getTime()`, which is a
+    // Date method and this value is a number.
+    countdownAt: status.deadline ?? null,
+    // ADDED 9 Oct 2026 (t093) - the EVIDENCE line: the stored date of the
+    // encounter that opened the window, so the widget shows WHY a window exists
+    // rather than a bare countdown.
+    //
+    // DELIBERATELY NOT in the Redacted allowlist (see widgetPrivacy.js), so it is
+    // dropped at that tier automatically - an exposure DATE is identifying, and
+    // the Redacted rule is category presence without specifics. Default-deny
+    // means not listing it here is the whole privacy decision; no explicit hide
+    // is needed on the Java side.
+    evidenceAt: status.windowStartIso || null,
+  };
 }
 
 export async function updateDoxyPEPWidget(status) {
@@ -141,31 +209,22 @@ export async function updateDoxyPEPWidget(status) {
     const bridge = await getWidgetBridge();
     if (bridge && bridge.plugin.updateDoxyPEP) {
       const statusText = status.overdue ? "Overdue" : (status.active ? "Active" : "No active window");
-      const expiryMs = status.deadline ? status.deadline.getTime() : 0;
-      await sendWidgetUpdate(bridge, "doxyPepWindow", "updateDoxyPEP", {
-        status: statusText,
-        expiryMs,
-        // category/state are what survive a Redacted tier, so the widget reads
-        // "DoxyPEP - Active" rather than going blank. expiryMs is sent under the
-        // new name countdownAt so it survives too: a relative countdown
-        // discloses less than a wall-clock time, since it reveals no routine.
-        // The field is RENAMED rather than reused because "expiryMs" reads like
-        // an absolute deadline in any code review, and the whole point is that
-        // the two are not the same disclosure.
-          category: "DoxyPEP",
-          state: statusText,
-          countdownAt: status.deadline ? status.deadline.getTime() : null,
-        // ADDED 9 Oct 2026 (t093) - the EVIDENCE line: the stored date of the
-        // encounter that opened the window, so the widget shows WHY a window
-        // exists rather than a bare countdown.
-        //
-        // DELIBERATELY NOT in the Redacted allowlist (see widgetPrivacy.js),
-        // so it is dropped at that tier automatically — an exposure DATE is
-        // identifying, and the Redacted rule is category presence without
-        // specifics. Default-deny means not listing it here is the whole
-        // privacy decision; no explicit hide is needed on the Java side.
-        evidenceAt: status.windowStartIso || null,
-        },
+      // FIXED 13 Oct 2026 - THIS THREW, AND THE CATCH BELOW SWALLOWED IT, SO THE
+      // DoxyPEP WIDGET NEVER UPDATED.
+      //
+      // `deadline` is not a Date. getDoxyPepStatus builds it as
+      // `windowStart + DOXYPEP_WINDOW_HOURS * 3600000` - epoch milliseconds, a
+      // plain number. Calling `.getTime()` on it is `undefined is not a
+      // function`, every single time this ran, and the surrounding catch logged
+      // it at debug level and returned, so the bridge was never called and the
+      // widget kept whatever Android last rendered.
+      //
+      // The dead local it belonged to (`expiryMs`) was not even in the payload -
+      // the value is sent as `countdownAt` - so the throw bought nothing at all.
+      // Removed rather than corrected, because a variable that is computed and
+      // never sent is a second thing to keep in sync with the payload.
+      await sendWidgetUpdate(bridge, "doxyPepWindow", "updateDoxyPEP",
+        buildDoxyPepWidgetPayload(status),
         // The fifth argument is the pre-formatted Redacted line.
         //
         // Supplied HERE rather than inside the payload because this file is the
@@ -257,7 +316,21 @@ export function doxyPepRedactedLine(status) {
   if (status.overdue) return `${CATEGORY} - window overdue`;
   if (!status.active) return `${CATEGORY} - no window`;
   if (!status.deadline) return `${CATEGORY} - window active`;
-  const remainingMs = status.deadline.getTime() - Date.now();
+  // FIXED 13 Oct 2026 - THIRD instance of the same bug, and the reason the DoxyPEP
+  // widget showed nothing even at a tier where this line is the ONLY text it
+  // renders. `deadline` is epoch milliseconds (a number), never a Date, so
+  // `.getTime()` was `undefined is not a function` and the whole Redacted line
+  // threw. This one is caught by no try/catch here at all - it is evaluated as
+  // an argument to sendWidgetUpdate, so it threw from inside the try in
+  // updateDoxyPEPWidget and was swallowed by the same debug-level catch.
+  //
+  // IT WAS INVISIBLE BECAUSE THE TEST FEED IT THE WRONG TYPE.
+  // widgetBridgeUpdate.test.js built `deadline: new Date(...)` - a Date - so the
+  // suite exercised a shape getDoxyPepStatus has never produced. A green test
+  // over a fixture the real caller cannot create is worse than no test, because
+  // it reads as coverage. Those fixtures now use a number, and
+  // doxyPepDeadlineType.test.js pins the type from the real producer.
+  const remainingMs = status.deadline - Date.now();
   const hours = Math.floor(remainingMs / 3600000);
   const minutes = Math.floor((remainingMs % 3600000) / 60000);
   return hours > 0 ? `${CATEGORY} - in ${hours}h ${minutes}m` : `${CATEGORY} - in ${minutes}m`;
