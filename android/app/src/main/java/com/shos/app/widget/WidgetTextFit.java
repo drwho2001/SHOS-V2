@@ -142,13 +142,36 @@ final class WidgetTextFit {
         String s = text.toString();
 
         float chosen = MIN_SP;
+        boolean hitFloor = true;
         for (float sp = maxSp; sp >= MIN_SP; sp -= 1f) {
             paint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, metrics));
             if (paint.measureText(s) <= availablePx) {
                 chosen = sp;
+                hitFloor = false;
                 break;
             }
         }
+
+        // WHAT THE LADDER DECIDED, AND WHY IT STILL TRUNCATES WHEN IT DOESN'T.
+        // On 14 Oct 2026 this is the difference between the two failure modes a
+        // fitting mechanism can have, which look identical on the home screen:
+        //
+        //   hitFloor=false - the text fits at the chosen size; any ellipsis is
+        //                    the layout's doing and the fit is working.
+        //   hitFloor=true  - the string is too long for ANY legible size, so the
+        //                    floor was returned and the layout's own ellipsize
+        //                    took over. That is the documented, intended
+        //                    fallback - but it is a CONTENT problem (the string
+        //                    is too long for this width), not a measuring bug,
+        //                    and no amount of adjusting the ladder fixes it.
+        //
+        // Both were indistinguishable from a screenshot, which is why the
+        // decision is recorded here rather than being re-derived by eye.
+        paint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, chosen, metrics));
+        Log.d(TAG, "  -> chose " + chosen + "sp (max " + maxSp + "sp)"
+                + " textPx=" + Math.round(paint.measureText(s))
+                + " availablePx=" + availablePx
+                + (hitFloor ? " HITS_FLOOR" : " fits"));
 
         // Only write when it actually differs from the layout's declared size, so
         // the common case leaves the XML in charge and there is nothing to undo
