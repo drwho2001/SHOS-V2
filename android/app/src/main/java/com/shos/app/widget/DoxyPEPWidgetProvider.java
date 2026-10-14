@@ -170,7 +170,7 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
     // Fixed by matching the declaration to the call site, and pinned by
     // widgetArgumentOrderGuard.test.js, which compares the two orders directly
     // for all seven providers.
-    public static void updateDoxyPEP(Context context, String status, long expiryMs,
+    public static void updateDoxyPEP(Context context, String state, long countdownAt,
                                      String evidenceAt, String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
@@ -181,9 +181,18 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
         // of sexual-health data is neither.
         if (prefs == null) return; // no instance in scope here; the per-instance
             // updateAppWidget() above is what pushes the fallback
-        prefs.edit()
-            .putString(KEY_DOXY_STATUS, status)
-            .putLong(KEY_DOXY_EXPIRY, expiryMs)
+        // RENAMED 13 Oct 2026 from (status, expiryMs) to (state, countdownAt), to match
+    // the bridge keys the plugin now reads and the JS actually sends. A
+    // parameter named `status` that receives the key `state` is the same
+    // declaration/call-site split that started all of this, one level in - and
+    // widgetArgumentOrderGuard.test.js catches it by comparing the declared
+    // parameter name against the bridge key at each position. The persisted
+    // SharedPreferences keys below keep their old names deliberately: renaming
+    // those would silently reset every user's widget on upgrade, since the store
+    // is read by string key and the old value would simply stop being found.
+    prefs.edit()
+            .putString(KEY_DOXY_STATUS, state)
+            .putLong(KEY_DOXY_EXPIRY, countdownAt)
             .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .putString(KEY_DOXY_EVIDENCE, evidenceAt == null ? "" : evidenceAt)
             .apply();

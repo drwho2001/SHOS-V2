@@ -176,8 +176,31 @@ public class WidgetBridgePlugin extends Plugin {
         }
         DoxyPEPWidgetProvider.updateDoxyPEP(
                 getContext(),
-                opt(call, "status"),
-                call.getLong("expiryMs", 0L),
+                // FIXED 13 Oct 2026 - THIS READ TWO FIELD NAMES THAT CAN NEVER EXIST.
+                // Both were `status` and `expiryMs`. The JS side sends `state` and
+                // `countdownAt`, and those are the names ALLOWED_AT_REDACTED
+                // protects for this widget ("category","state","countdownAt") -
+                // `status` and `expiryMs` are not on that list, so default-deny
+                // DROPS them at the Redacted tier, and at Full tier they were
+                // simply never sent.
+                //
+                // The symptom was the DoxyPEP widget rendering its title and
+                // nothing else. `opt(call,"status")` returned "" for a key that
+                // the provider then stored as "", so its own `"No active window"`
+                // default never applied - a present-but-empty value beats a
+                // default - and the status TextView was set to the empty string.
+                // Same for the countdown: `expiryMs` was always 0, so the branch
+                // that renders "Active / Expired / Xh Ym remaining" was never
+                // taken, for as long as the field was renamed.
+                //
+                // Fixed HERE rather than by renaming the JS back, because
+                // ALLOWED_AT_REDACTED is the privacy contract and the provider
+                // must read the names that contract protects. Sending the old
+                // names as well would have meant sending two fields where one
+                // survives redaction, which is the kind of duplicate that quietly
+                // becomes a leak later.
+                opt(call, "state"),
+                call.getLong("countdownAt", 0L),
                 // ADDED 9 Oct 2026 (t093) - the evidence date, or "" at a tier
                 // that dropped it. Explicitly whitelisted here (rather than
                 // forwarded wholesale) because this bridge picks named fields:
