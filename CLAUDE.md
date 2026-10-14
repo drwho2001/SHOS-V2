@@ -383,6 +383,25 @@ one free call, so the instinct to push on is the expensive one.
   running the thing, not by reading the diff.
 - **Verify a write actually landed** — don't trust a tool call's success alone.
   Applies to Notion edits and code changes alike.
+- **A predicate must read a field the record shape actually defines, and its
+  fixture must be shaped like the real record.** A test that builds
+  `{ name: "Hep B" }` and asserts a matcher reads `name` proves the matcher
+  works, and says nothing about whether it is *wired* to anything. The defect
+  this rule covers: `isHepatitisB` matched on `record.name` while
+  `DEFAULT_VACCINATION` has `title` and `vaccine` and no `name` — so the test
+  stayed green, the function was called on real records, and it returned `false`
+  for every one of them. Where a helper is fed repository output, import the
+  repository's own record constant into the test and assert against that shape.
+  Re-check the shape with
+  `Select-String -Path src\repositories\<name>.js -Pattern "export const DEFAULT_"`
+- **An external URL in source is a claim about a page that will rot, and a
+  domain-only assertion cannot see it rot.** A guidance link asserted as
+  `^https://www\.nhs\.uk/` stayed green while its path 404'd, which is how a dead
+  link shipped. Do not close the gap by pinning the full path in a unit test —
+  that re-asserts today's path, which is the thing that goes stale. Keep each URL
+  in one named constant and re-check by hand with
+  `curl.exe -s -o NUL -L -w "%{http_code}" "<url>"` (want `200`). Reachability
+  belongs in a scheduled check, not in a blocking build.
 - **Personal-alpha vs. public-alpha split**: this repo (`drwho2001/SHOS-V2`)
   is the public track. The owner's real personal data must never land here —
   seed/demo data only. History was rewritten once (27 Aug) to purge personal

@@ -106,11 +106,26 @@ export default function AttachmentsScreen({ onClose, onNavigateToSource, registe
   };
 
   return (
-    <div role="dialog" aria-label="Attachments" ref={dialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+    <div role="dialog" aria-label="Attachments" ref={dialogRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 220, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
-          Dashboard, rolled out here for consistency. */}
-      <div style={{ width: "100%" }}>
+          Dashboard, rolled out here for consistency.
+
+          CHANGED 13 Oct 2026 (t063) - `display: flex; justifyContent: center`
+          REMOVED from this element. It is the SCROLLER, so making it a flex
+          container is the defect: a flex container's content box is the box
+          minus its padding, and content taller than that overflows the box
+          instead of extending its scroll range. The result is that anything
+          below the fold simply cannot be scrolled to - the last rows of the
+          screen are unreachable, which on this screen is the file list and
+          the delete controls at the end of it.
+
+          Same defect, same fix, as My Profile and the Clinic Card, which were
+          corrected earlier (see each file's own comment). Desktop centring is
+          preserved by `margin: "0 auto"` on the inner wrapper instead, which
+          does not change the scroll geometry. `scrollingFlexGuard.test.js`
+          pins this. */}
+      <div style={{ width: "100%", margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
         <ChevronLeft size={22} color={T.textPrimary} style={{ cursor: "pointer" }} onClick={onClose} role="button" tabIndex={0} aria-label="Back" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); } }} />
         <h1 style={{ ...TYPE.subScreenTitle, margin: 0, color: T.textPrimary }}>Attachments</h1>

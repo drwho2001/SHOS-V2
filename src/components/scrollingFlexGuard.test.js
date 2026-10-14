@@ -157,6 +157,28 @@ describe("scrolling containers must not also be flex containers (t060)", () => {
     ).toEqual([]);
   }, 60000);
 
+  // CHANGED 13 Oct 2026 (t063). This file used to ASSERT only on Settings and
+  // merely PRINT the inventory for everything else - which is precisely why the
+  // other four instances survived being found, written up in t063 on 1 Oct, and
+  // still being there a fortnight later. A guard that reports a defect without
+  // failing on it is documentation, not a guard.
+  //
+  // The non-vacuity test above is what makes a zero result meaningful: it
+  // proves the detector fires on a known-bad element and stays quiet on a
+  // known-good one, against a throwaway fixture, so "none found" means "none
+  // there" rather than "the walk stopped working" or "the parser silently
+  // failed on every file".
+  it("NO screen anywhere has a position:fixed scroll container that is also display:flex", () => {
+    expect(
+      FINDINGS.map((r) => `${r.file}:${r.hits.map((h) => h.line).join(",")}`),
+      "Every position:fixed + overflowY:auto + display:flex container is a t060 defect. " +
+        "The content box of a flex container is the box minus its padding, so tall content " +
+        "either overflows out of reach or is squashed to fit, instead of extending the " +
+        "scroll range. Remove display:flex from the scroller and move any centring onto an " +
+        "inner wrapper with `margin: 0 auto`.",
+    ).toEqual([]);
+  }, 60000);
+
   it("the inventory is reported with enough detail to act on", () => {
     const summary = FINDINGS.flatMap((r) =>
       r.hits.map((h) => `${r.file}:${h.line} overflowY=${h.overflowY} justifyContent=${h.justifyContent}`),

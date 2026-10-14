@@ -1691,10 +1691,21 @@ function EncounterEditSheet({ T, encounterId, onClose, onSaved, onBeforeEdit, on
   };
 
   return (
-    <div role="dialog" aria-label={isNew ? "Add Encounter" : "Edit Encounter"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", display: "flex", justifyContent: "center" }} data-encounter-sheet>
+    <div role="dialog" aria-label={isNew ? "Add Encounter" : "Edit Encounter"} ref={editSheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto" }} data-encounter-sheet>
       {/* ADDED — real report: same thin-border desktop-width-cap
-          treatment already applied to this module's other screens. */}
-      <div style={{ width: "100%", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
+          treatment already applied to this module's other screens.
+
+          CHANGED 13 Oct 2026 (t063) - `display: flex; justifyContent: center`
+          REMOVED from this element. It is the SCROLLER, and a flex container's
+          content box is the box minus its padding, so a form taller than that
+          overflows the box rather than extending its scroll range - meaning the
+          bottom of a long Add/Edit Activity form could not be scrolled to at
+          all. The inner wrapper keeps its minHeight (which is a deliberate
+          full-bleed background decision) and gains `margin: "0 auto"` to keep
+          the desktop centring that justifyContent was providing. Same fix, same
+          reasoning as My Profile and the Clinic Card. Pinned by
+          scrollingFlexGuard.test.js. */}
+      <div style={{ width: "100%", margin: "0 auto", background: T.bg, minHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))" }}>
       {/* CHANGED 26 Aug 2026 — real ask: forms (Add/Edit Activity)
           should also have the module banner title, matching every
           other module screen. */}

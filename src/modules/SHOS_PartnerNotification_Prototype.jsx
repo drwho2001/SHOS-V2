@@ -399,11 +399,21 @@ export default function PartnerNotificationSheet({ testId, onClose }) {
   };
 
   return (
-    <div role="dialog" aria-label="Partner notification" ref={sheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 230, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", justifyContent: "center" }}>
+    <div role="dialog" aria-label="Partner notification" ref={sheetRef} tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 230, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
       {/* ADDED — real report: same thin-border desktop-width-cap
           treatment already applied to Contacts/My Profile/Medication
-          Dashboard, rolled out here for consistency. */}
-      <div style={{ width: "100%" }}>
+          Dashboard, rolled out here for consistency.
+
+          CHANGED 13 Oct 2026 (t063) - `display: flex; justifyContent: center`
+          REMOVED from this element for the same reason as every other fixed
+          scroller: it is the SCROLLER, and a flex container's content box is
+          the box minus its padding, so content taller than that overflows the
+          box instead of extending its scroll range. Anything below the fold
+          becomes unreachable. Here that is the contact list and its delete
+          control. Desktop centring moves to `margin: "0 auto"` on the inner
+          wrapper, matching My Profile and the Clinic Card, and does not change
+          the scroll geometry. Pinned by scrollingFlexGuard.test.js. */}
+      <div style={{ width: "100%", margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 16, position: "sticky", top: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {editing && list ? (

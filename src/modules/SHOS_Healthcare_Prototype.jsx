@@ -342,8 +342,17 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
         // comment) but never carried over here — Healthcare is the
         // OTHER real entry point into Episodes, so it had the identical
         // gap independently.
-        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", zIndex: 210, overflowY: "auto", display: "flex", justifyContent: "center" }}>
-          <div style={{ width: "100%" }}>
+        <div style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(80px + env(safe-area-inset-bottom))", zIndex: 210, overflowY: "auto" }}>
+          {/* CHANGED 13 Oct 2026 (t063) - `display: flex; justifyContent:
+              center` removed from the scroller above. A flex container's
+              content box is the box minus its padding, so a Timeline longer
+              than that overflows the box instead of extending its scroll
+              range, and the bottom of the timeline becomes unreachable. This
+              is the second real entry point into Episodes carrying the
+              identical gap - the first was corrected on this same screen
+              earlier. Desktop centring moves here, where it does not affect
+              the scroll geometry. Pinned by scrollingFlexGuard.test.js. */}
+          <div style={{ width: "100%", margin: "0 auto" }}>
             <TimelineModule onClose={() => setShowTimeline(false)} registerModuleBackHandler={registerModuleBackHandler} />
           </div>
         </div>

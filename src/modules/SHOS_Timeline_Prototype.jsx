@@ -951,7 +951,25 @@ export default function TimelineModule({ onClose, registerModuleBackHandler } = 
   }, [screen, registerModuleBackHandler, onClose]);
 
   return (
-    <div ref={dialogRef} role="dialog" aria-label="Episodes" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
+    <div ref={dialogRef} role="dialog" aria-label="Episodes" tabIndex={0} style={{ position: "fixed", inset: 0, paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(48px + env(safe-area-inset-bottom))", background: T.bg, zIndex: 200, overflowY: "auto", fontFamily: "'Inter', sans-serif" }}>
+      {/* CHANGED 13 Oct 2026 (t063) - `display: flex; flexDirection: column`
+          removed from this scroller. t063 listed this one as "possibly not the
+          same bug, check separately" because it has no justifyContent - it IS
+          the same bug, with a different symptom.
+
+          A flex column container sizes its children against the content box,
+          which is the box MINUS its padding, rather than letting them extend
+          the scroll range. Where the other instances overflowed and became
+          unreachable, flex items here SHRINK to fit instead: an episode list
+          or detail taller than the box is squashed rather than scrollable, and
+          its bottom rows collapse into the gesture bar. Same root cause, same
+          fix as My Profile, the Clinic Card, Attachments, Encounters,
+          Healthcare and Settings.
+
+          Safe to drop the flex because the only other child, DeleteUndoToast,
+          is itself `position: fixed` with its own z-index and never depended on
+          this parent being a flex container - it renders over the content, not
+          in the flow. Pinned by scrollingFlexGuard.test.js. */}
       <DeleteUndoToast toast={deleteToast} onUndo={undoDelete} onRedo={redoDelete} T={T} />
       {screen.name === "list" && <TimelineLanding key={refreshKey} T={T} onOpen={(id) => setScreen({ name: "detail", id })} onAdd={() => setScreen({ name: "add" })} onClose={onClose} />}
       {screen.name === "detail" && <EpisodeDetail T={T} episodeId={screen.id} onBack={backToList} onDeleted={backToList} onDelete={handleDelete} />}
