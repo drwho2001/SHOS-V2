@@ -103,11 +103,15 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
         appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
         String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+        int wDp = WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId);
         if (redactedText != null && !redactedText.isEmpty()) {
             views.setTextViewText(R.id.widget_doxy_title, redactedText);
             views.setViewVisibility(R.id.widget_doxy_status, View.GONE);
             views.setViewVisibility(R.id.widget_doxy_countdown, View.GONE);
             views.setViewVisibility(R.id.widget_doxy_evidence, View.GONE);
+            // Fitted in this branch too: it returns below, and on the device the
+            // Redacted line was one of the two that truncated.
+            WidgetTextFit.fit(views, context, R.id.widget_doxy_title, redactedText, wDp, 16f);
             appWidgetManager.updateAppWidget(appWidgetId, views);
             return;
         }
@@ -120,16 +124,26 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
                 views.setTextViewText(R.id.widget_doxy_title, "DoxyPEP Window");
                 views.setTextViewText(R.id.widget_doxy_status, "Active");
                 views.setTextViewText(R.id.widget_doxy_countdown, String.format("%dh %dm remaining", hours, minutes));
+                WidgetTextFit.fit(views, context, R.id.widget_doxy_countdown, String.format("%dh %dm remaining", hours, minutes), wDp, 16f);
             } else {
                 views.setTextViewText(R.id.widget_doxy_title, "DoxyPEP Window");
                 views.setTextViewText(R.id.widget_doxy_status, "Expired");
                 views.setTextViewText(R.id.widget_doxy_countdown, "Take within 72h of exposure");
+                WidgetTextFit.fit(views, context, R.id.widget_doxy_countdown, "Take within 72h of exposure", wDp, 14f);
             }
         } else {
             views.setTextViewText(R.id.widget_doxy_title, "DoxyPEP Window");
             views.setTextViewText(R.id.widget_doxy_status, status);
             views.setTextViewText(R.id.widget_doxy_countdown, "");
+            // THE ONE THAT TRUNCATED ON DEVICE: the widget read "No active ..." at
+            // 18sp in a one-cell width. Fitted on the ACTUAL status string, which
+            // is the stored value and can be any of "Active"/"Overdue"/"No active
+            // window" depending on tier and state.
+            WidgetTextFit.fit(views, context, R.id.widget_doxy_status, status, wDp, 18f);
         }
+        // The title is the same constant in all three branches above, so one fit
+        // here covers every non-Redacted path.
+        WidgetTextFit.fit(views, context, R.id.widget_doxy_title, "DoxyPEP Window", wDp, 16f);
 
         // ADDED 9 Oct 2026 (t093) - the evidence line, shown at the Full tier in
         // every branch above so the user can see WHICH event opened the window.

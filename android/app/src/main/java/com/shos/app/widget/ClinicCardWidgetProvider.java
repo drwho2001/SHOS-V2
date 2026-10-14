@@ -185,6 +185,7 @@ private static RemoteViews unavailableViews(Context context) {
         views.setOnClickPendingIntent(R.id.widget_root, mainPendingIntent);
 
         String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+        int wDp = WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId);
         if (redactedText != null && !redactedText.isEmpty()) {
             // At a Redacted tier the card carries the one safe line and nothing
             // else. Every other field is hidden BY NAME rather than by relying on
@@ -198,6 +199,7 @@ private static RemoteViews unavailableViews(Context context) {
             views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, redactedText, wDp, 16f);
             views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
             // ADDED 10 Oct 2026 (t087) - the three section headings are hidden too.
             // A static label carries no user data, so it is SAFE to show, but a
@@ -222,6 +224,13 @@ private static RemoteViews unavailableViews(Context context) {
             views.setTextViewText(R.id.widget_clinic_clinic_num, clinicNum);
             views.setTextViewText(R.id.widget_clinic_tests, "Tests: " + tests);
             views.setTextViewText(R.id.widget_clinic_doctype, docType);
+            // Measured on the device: the Clinic Card title was clipped by the
+            // card's own top edge and the WHOLE card overflowed, so every field
+            // is fitted rather than only the headline.
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, title, wDp, 16f);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_date, date, wDp, 14f);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_location, location, wDp, 12f);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_tests, "Tests: " + tests, wDp, 12f);
             // The NHS number is NEVER stored - WidgetBridgePlugin ignores the field
             // and this provider has no parameter for it - so it is hidden rather
             // than left blank, because an empty line next to a real clinic number

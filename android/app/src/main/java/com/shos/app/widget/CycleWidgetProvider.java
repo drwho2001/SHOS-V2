@@ -94,11 +94,13 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_cycle";
         context,
         appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
-        String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
-            if (redactedText != null && !redactedText.isEmpty()) {
+String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+        int wDp = WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId);
+        if (redactedText != null && !redactedText.isEmpty()) {
                 views.setTextViewText(R.id.widget_cycle_title, redactedText);
             views.setViewVisibility(R.id.widget_cycle_phase, android.view.View.GONE);
-            views.setViewVisibility(R.id.widget_next_period, android.view.View.GONE);
+views.setViewVisibility(R.id.widget_next_period, android.view.View.GONE);
+                WidgetTextFit.fit(views, context, R.id.widget_cycle_title, redactedText, wDp, 16f);
                 appWidgetManager.updateAppWidget(appWidgetId, views);
                 return;
             }
@@ -107,6 +109,8 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_cycle";
             views.setTextViewText(R.id.widget_cycle_title, "Cycle Day " + cycleDay);
             views.setTextViewText(R.id.widget_cycle_phase, phase);
             views.setTextViewText(R.id.widget_next_period, "Next period: " + nextPeriod);
+            WidgetTextFit.fit(views, context, R.id.widget_cycle_phase, phase, wDp, 18f);
+            WidgetTextFit.fit(views, context, R.id.widget_next_period, "Next period: " + nextPeriod, wDp, 12f);
         } else {
             views.setTextViewText(R.id.widget_cycle_title, "Menstrual Cycle");
             views.setTextViewText(R.id.widget_cycle_phase, "Tracking off or no data");

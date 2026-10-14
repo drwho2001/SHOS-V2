@@ -92,18 +92,24 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_test";
         context,
         appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
-        String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+            int wDp = WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId);
             if (redactedText != null && !redactedText.isEmpty()) {
                 views.setTextViewText(R.id.widget_test_title, redactedText);
             views.setViewVisibility(R.id.widget_last_test, android.view.View.GONE);
-            views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
+views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
+                WidgetTextFit.fit(views, context, R.id.widget_test_title, redactedText, wDp, 16f);
                 appWidgetManager.updateAppWidget(appWidgetId, views);
                 return;
             }
 
         views.setTextViewText(R.id.widget_test_title, "Last Test");
-        views.setTextViewText(R.id.widget_last_test, lastTest);
-        views.setTextViewText(R.id.widget_retest_due, "Retest due: " + retestDue);
+views.setTextViewText(R.id.widget_last_test, lastTest);
+            views.setTextViewText(R.id.widget_retest_due, "Retest due: " + retestDue);
+            // Measured on the device, which showed "Retest due: ..." and a
+            // last-test date broken across two lines mid-value.
+            WidgetTextFit.fit(views, context, R.id.widget_last_test, lastTest, wDp, 18f);
+            WidgetTextFit.fit(views, context, R.id.widget_retest_due, "Retest due: " + retestDue, wDp, 12f);
 
         // Click opens Healthcare > Testing tab
 

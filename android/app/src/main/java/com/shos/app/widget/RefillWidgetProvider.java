@@ -92,11 +92,13 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_refill";
         context,
         appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
-        String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+            int wDp = WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId);
             if (redactedText != null && !redactedText.isEmpty()) {
                 views.setTextViewText(R.id.widget_refill_title, redactedText);
             views.setViewVisibility(R.id.widget_refill_count, android.view.View.GONE);
-            views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
+views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
+                WidgetTextFit.fit(views, context, R.id.widget_refill_title, redactedText, wDp, 16f);
                 appWidgetManager.updateAppWidget(appWidgetId, views);
                 return;
             }
@@ -105,6 +107,8 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_refill";
             views.setTextViewText(R.id.widget_refill_title, "Refills Due");
             views.setTextViewText(R.id.widget_refill_count, refillCount + " medication" + (refillCount == 1 ? "" : "s"));
             views.setTextViewText(R.id.widget_next_refill, "Next: " + nextRefill);
+            WidgetTextFit.fit(views, context, R.id.widget_refill_count, refillCount + " medication" + (refillCount == 1 ? "" : "s"), wDp, 18f);
+            WidgetTextFit.fit(views, context, R.id.widget_next_refill, "Next: " + nextRefill, wDp, 12f);
         } else {
             views.setTextViewText(R.id.widget_refill_title, "Refills Due");
             views.setTextViewText(R.id.widget_refill_count, "All stocked");

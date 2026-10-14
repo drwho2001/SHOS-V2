@@ -12,7 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="➕ Log Medication"
-        android:textSize="14sp"
+        android:textSize="12sp"
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold"
         android:gravity="center"

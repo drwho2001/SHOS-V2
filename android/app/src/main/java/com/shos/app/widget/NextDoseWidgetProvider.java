@@ -105,6 +105,12 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             if (redactedText != null && !redactedText.isEmpty()) {
                 views.setTextViewText(R.id.widget_med_name, redactedText);
             views.setViewVisibility(R.id.widget_next_dose, android.view.View.GONE);
+                // Fitted HERE as well, because this branch returns below and would
+                // otherwise skip the fit pass entirely. A Redacted line is still a
+                // string that has to fit the widget, and "Antibiotics - 2 booked"
+                // at 18sp is exactly as likely to overflow as a medication name.
+                WidgetTextFit.fit(views, context, R.id.widget_med_name, redactedText,
+                        WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId), 18f);
                 appWidgetManager.updateAppWidget(appWidgetId, views);
                 return;
             }
@@ -157,6 +163,25 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         // per-medication Log-dose buttons live", which is what someone tapping a
         // countdown to their next dose actually wants; inventory is stock level,
         // which is what the Refill widget is for.
+
+        // ---- TEXT FIT PASS (13 Oct 2026) -------------------------------
+        //
+        // ONE place, after every setTextViewText, so no branch can render text
+        // without being fitted. Measured against the device: this widget showed
+        // "Sertralin e +2 ..." - the medication name broken MID-WORD, because
+        // `breakStrategy="simple"` will break a word that does not fit rather
+        // than ellipsize it. The fix is not to change the break strategy, it is
+        // to make the word FIT.
+        //
+        // Fitted here rather than in the layout because autoSizeTextType does not
+        // work in RemoteViews - see WidgetTextFit for the whole story.
+        int wDp = WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId);
+        WidgetTextFit.fit(views, context, R.id.widget_med_name, medName, wDp, 18f);
+        // The NEXT-DOSE line is measured as the full string it renders, not the
+        // bare time: the literal "Next dose: " prefix is a third of its width and
+        // is exactly the part that pushed it into an ellipsis on device.
+        WidgetTextFit.fit(views, context, R.id.widget_next_dose, "Next dose: " + nextDoseTime, wDp, 14f);
+        // -------------------------------------------------------------------
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
