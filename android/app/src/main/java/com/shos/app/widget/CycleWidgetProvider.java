@@ -109,7 +109,7 @@ views.setViewVisibility(R.id.widget_next_period, android.view.View.GONE);
             views.setTextViewText(R.id.widget_cycle_title, "Cycle Day " + cycleDay);
             views.setTextViewText(R.id.widget_cycle_phase, phase);
             views.setTextViewText(R.id.widget_next_period, "Next period: " + nextPeriod);
-            WidgetTextFit.fit(views, context, R.id.widget_cycle_phase, phase, wDp, 18f);
+            WidgetTextFit.fit(views, context, R.id.widget_cycle_phase, phase, wDp, 18f, 2);
             WidgetTextFit.fit(views, context, R.id.widget_next_period, "Next period: " + nextPeriod, wDp, 12f);
         } else {
             views.setTextViewText(R.id.widget_cycle_title, "Menstrual Cycle");

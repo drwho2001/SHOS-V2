@@ -108,8 +108,8 @@ views.setTextViewText(R.id.widget_last_test, lastTest);
             views.setTextViewText(R.id.widget_retest_due, "Retest due: " + retestDue);
             // Measured on the device, which showed "Retest due: ..." and a
             // last-test date broken across two lines mid-value.
-            WidgetTextFit.fit(views, context, R.id.widget_last_test, lastTest, wDp, 18f);
-            WidgetTextFit.fit(views, context, R.id.widget_retest_due, "Retest due: " + retestDue, wDp, 12f);
+            WidgetTextFit.fit(views, context, R.id.widget_last_test, lastTest, wDp, 18f, 2);
+            WidgetTextFit.fit(views, context, R.id.widget_retest_due, "Retest due: " + retestDue, wDp, 12f, 2);
 
         // Click opens Healthcare > Testing tab
 

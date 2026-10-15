@@ -177,10 +177,19 @@ views.setViewVisibility(R.id.widget_appt_time, android.view.View.GONE);
             // THE LINE THAT TRUNCATED: the device showed "Next: Biannual PrEP ...".
             // Measured as the FULL rendered string including the "Next: " prefix,
             // which is a third of its width and was not previously accounted for.
+            //
+            // MEASURED 15 Oct 2026, on the device, at 12sp: "Next: Biannual PrEP
+            // - Thu 18 Mar" is ~600px of text in 382px of field, so no single-line
+            // size could fit it - it needed 7.2sp, below the 12sp legibility floor.
+            // Shrinking is therefore not the answer for this field and never was.
+            // The field now allows TWO lines, so a long appointment wraps instead
+            // of being cut off; the fitter checks the longest single WORD, because
+            // that - not the whole string - decides whether a wrap is clean or
+            // breaks a medication name mid-word the way "Sertralin e" did.
             views.setTextViewText(R.id.widget_next_appt, "Next: " + nextAppt);
             WidgetTextFit.fit(views, context, R.id.widget_appt_count,
-                    apptCount + " upcoming" + (futureCount > 0 ? " + " + futureCount + " later" : ""), wDp, 18f);
-            WidgetTextFit.fit(views, context, R.id.widget_next_appt, "Next: " + nextAppt, wDp, 12f);
+                    apptCount + " upcoming" + (futureCount > 0 ? " + " + futureCount + " later" : ""), wDp, 18f, 2);
+            WidgetTextFit.fit(views, context, R.id.widget_next_appt, "Next: " + nextAppt, wDp, 12f, 2);
 
             // ADDED 10 Oct 2026 (t088) - time and location on their own lines.
             // Each is GONE rather than blank when absent, because an empty

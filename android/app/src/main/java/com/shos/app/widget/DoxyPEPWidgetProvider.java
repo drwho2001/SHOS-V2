@@ -139,7 +139,7 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
             // 18sp in a one-cell width. Fitted on the ACTUAL status string, which
             // is the stored value and can be any of "Active"/"Overdue"/"No active
             // window" depending on tier and state.
-            WidgetTextFit.fit(views, context, R.id.widget_doxy_status, status, wDp, 18f);
+            WidgetTextFit.fit(views, context, R.id.widget_doxy_status, status, wDp, 18f, 2);
         }
         // The title is the same constant in all three branches above, so one fit
         // here covers every non-Redacted path.

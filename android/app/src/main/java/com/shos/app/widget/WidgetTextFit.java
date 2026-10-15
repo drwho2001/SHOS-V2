@@ -122,6 +122,17 @@ final class WidgetTextFit {
      */
     static void fit(RemoteViews views, Context context, int viewId, CharSequence text,
                     int widthDp, float maxSp) {
+        fit(views, context, viewId, text, widthDp, maxSp, 1);
+    }
+
+    /**
+     * Shrink `viewId`'s text to fit, if it does not fit at `maxSp`.
+     *
+     * @param maxLines how many lines the layout allows this field. Above 1, a
+     *                 string too long for one line is not a failure - it wraps.
+     */
+    static void fit(RemoteViews views, Context context, int viewId, CharSequence text,
+                    int widthDp, float maxSp, int maxLines) {
         if (views == null || text == null || text.length() == 0) return;
 
         android.util.DisplayMetrics metrics = context.getResources().getDisplayMetrics();
@@ -135,7 +146,8 @@ final class WidgetTextFit {
         // wrong before, so it is worth being able to read it off a device
         // without adding a log line to seven providers.
         android.util.Log.d(TAG, "width=" + width + "dp density=" + metrics.density
-                + " available=" + availablePx + "px text=\"" + text + "\"");
+                + " available=" + availablePx + "px maxLines=" + maxLines
+                + " text=\"" + text + "\"");
 
         Paint paint = new Paint();
         paint.setAntiAlias(true);
@@ -143,11 +155,29 @@ final class WidgetTextFit {
 
         float chosen = MIN_SP;
         boolean hitFloor = true;
+        boolean wraps = false;
         for (float sp = maxSp; sp >= MIN_SP; sp -= 1f) {
             paint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, metrics));
             if (paint.measureText(s) <= availablePx) {
                 chosen = sp;
                 hitFloor = false;
+                break;
+            }
+            // WILL IT WRAP CLEANLY? A second line is only a fix if every word in
+            // the string is itself narrower than the field, because that is what
+            // a line break can divide on. The long-word case is exactly the one
+            // that produced "Sertralin e" on device: breakStrategy="simple"
+            // splits a word that does not fit rather than ellipsizing it.
+            //
+            // MEASURED, NOT ASSUMED. On 15 Oct 2026 this field showed
+            // "Retest due: Wed 23 Dec" truncated at 351px into 212px, which
+            // needs 7.2sp - so no single-line size could ever have saved it and
+            // the floor fallback was correct. Checking the longest WORD rather
+            // than the whole string is what tells the two situations apart.
+            if (maxLines > 1 && paint.measureText(longestWord(s)) <= availablePx) {
+                chosen = sp;
+                hitFloor = false;
+                wraps = true;
                 break;
             }
         }
@@ -156,14 +186,15 @@ final class WidgetTextFit {
         // On 14 Oct 2026 this is the difference between the two failure modes a
         // fitting mechanism can have, which look identical on the home screen:
         //
-        //   hitFloor=false - the text fits at the chosen size; any ellipsis is
-        //                    the layout's doing and the fit is working.
-        //   hitFloor=true  - the string is too long for ANY legible size, so the
-        //                    floor was returned and the layout's own ellipsize
-        //                    took over. That is the documented, intended
-        //                    fallback - but it is a CONTENT problem (the string
-        //                    is too long for this width), not a measuring bug,
-        //                    and no amount of adjusting the ladder fixes it.
+        //   hitFloor=false - the text fits at the chosen size, on one line or by
+        //                    wrapping; any ellipsis is the layout's doing and
+        //                    the fit is working.
+        //   hitFloor=true  - the string is too long for ANY legible size, even
+        //                    wrapped, so the floor was returned and the layout's
+        //                    own ellipsize took over. That is the documented,
+        //                    intended fallback - but it is a CONTENT problem (the
+        //                    string is too long for this width), not a measuring
+        //                    bug, and no amount of adjusting the ladder fixes it.
         //
         // Both were indistinguishable from a screenshot, which is why the
         // decision is recorded here rather than being re-derived by eye.
@@ -171,6 +202,7 @@ final class WidgetTextFit {
         android.util.Log.d(TAG, "  -> chose " + chosen + "sp (max " + maxSp + "sp)"
                 + " textPx=" + Math.round(paint.measureText(s))
                 + " availablePx=" + availablePx
+                + (wraps ? " WRAPS" : "")
                 + (hitFloor ? " HITS_FLOOR" : " fits"));
 
         // Only write when it actually differs from the layout's declared size, so
@@ -179,5 +211,20 @@ final class WidgetTextFit {
         if (chosen < maxSp) {
             views.setTextViewTextSize(viewId, TypedValue.COMPLEX_UNIT_SP, chosen);
         }
+    }
+
+    /**
+     * The widest single space-delimited token in {@code s}, or the whole string
+     * when it has no spaces at all.
+     *
+     * A line break can only fall on a space, so this - not the full width - is
+     * what decides whether wrapping produces a clean result or a broken word.
+     */
+    private static String longestWord(String s) {
+        String longest = "";
+        for (String word : s.split(" ")) {
+            if (word.length() > longest.length()) longest = word;
+        }
+        return longest;
     }
 }

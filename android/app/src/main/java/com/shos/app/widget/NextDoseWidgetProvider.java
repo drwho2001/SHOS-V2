@@ -176,11 +176,11 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         // Fitted here rather than in the layout because autoSizeTextType does not
         // work in RemoteViews - see WidgetTextFit for the whole story.
         int wDp = WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId);
-        WidgetTextFit.fit(views, context, R.id.widget_med_name, medName, wDp, 18f);
+        WidgetTextFit.fit(views, context, R.id.widget_med_name, medName, wDp, 18f, 2);
         // The NEXT-DOSE line is measured as the full string it renders, not the
         // bare time: the literal "Next dose: " prefix is a third of its width and
         // is exactly the part that pushed it into an ellipsis on device.
-        WidgetTextFit.fit(views, context, R.id.widget_next_dose, "Next dose: " + nextDoseTime, wDp, 14f);
+        WidgetTextFit.fit(views, context, R.id.widget_next_dose, "Next dose: " + nextDoseTime, wDp, 14f, 2);
         // -------------------------------------------------------------------
 
         appWidgetManager.updateAppWidget(appWidgetId, views);

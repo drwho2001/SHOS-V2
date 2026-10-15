@@ -228,8 +228,8 @@ private static RemoteViews unavailableViews(Context context) {
             // card's own top edge and the WHOLE card overflowed, so every field
             // is fitted rather than only the headline.
             WidgetTextFit.fit(views, context, R.id.widget_clinic_title, title, wDp, 16f);
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_date, date, wDp, 14f);
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_location, location, wDp, 12f);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_date, date, wDp, 14f, 2);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_location, location, wDp, 12f, 2);
             WidgetTextFit.fit(views, context, R.id.widget_clinic_tests, "Tests: " + tests, wDp, 12f);
             // The NHS number is NEVER stored - WidgetBridgePlugin ignores the field
             // and this provider has no parameter for it - so it is hidden rather

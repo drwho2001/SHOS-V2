@@ -41,7 +41,7 @@
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
-        android:maxLines="1"
+        android:maxLines="2"
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
