@@ -168,7 +168,7 @@ final class WidgetTextFit {
         // Both were indistinguishable from a screenshot, which is why the
         // decision is recorded here rather than being re-derived by eye.
         paint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, chosen, metrics));
-        Log.d(TAG, "  -> chose " + chosen + "sp (max " + maxSp + "sp)"
+        android.util.Log.d(TAG, "  -> chose " + chosen + "sp (max " + maxSp + "sp)"
                 + " textPx=" + Math.round(paint.measureText(s))
                 + " availablePx=" + availablePx
                 + (hitFloor ? " HITS_FLOOR" : " fits"));
