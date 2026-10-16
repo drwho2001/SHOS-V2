@@ -8,6 +8,26 @@
     android:background="@drawable/widget_background"
     android:gravity="center">
 
+    <!-- CHANGED 16 Oct 2026 (t111) - maxLines 1 -> 2.
+
+         DEVICE-MEASURED, not assumed. On 23124RA7EO this label rendered as
+         "+ Add Co..." with the rest of the word ellipsized away. The cause is
+         not a measuring bug and nothing was shrunk: the text is a STATIC
+         literal here, so this TextView has no android:id and the provider
+         (QuickAddContactWidgetProvider) never calls WidgetTextFit.fit() - there
+         is nothing to measure. Given a string wider than the 109dp 2-column
+         widget and maxLines=1, the label simply ellipsized.
+
+         At maxLines=2 the label wraps onto two clean lines - "+ Add" /
+         "Contact" - because breakStrategy="simple" divides on spaces and every
+         individual word is narrower than the field. ellipsize="end" stays, so
+         a label that is ever made longer than two lines degrades gracefully
+         rather than being cut mid-word.
+
+         Guarded by quickAddWidgetLabelGuard.test.js. That sibling guard cannot
+         see this view: it keys on android:id and on fit() call sites, and this
+         label has neither. maxLines here is therefore the ONLY control on
+         whether the label is complete. -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -16,7 +36,7 @@
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold"
         android:gravity="center"
-        android:maxLines="1"
+        android:maxLines="2"
         android:ellipsize="end"
         android:breakStrategy="simple" />
 </LinearLayout>
