@@ -196,7 +196,6 @@ describe("widget picker (t056)", () => {
       const maxH = xml.match(/android:maxResizeHeight="(\d+)dp"/)?.[1];
       const maxW = xml.match(/android:maxResizeWidth="(\d+)dp"/)?.[1];
       const minH = xml.match(/android:minHeight="(\d+)dp"/)?.[1];
-      const minW = xml.match(/android:minWidth="(\d+)dp"/)?.[1];
       const minRW = xml.match(/android:minResizeWidth="(\d+)dp"/)?.[1];
       expect(maxH, `${w} has no maxResizeHeight`).toBeTruthy();
       expect(maxW, `${w} has no maxResizeWidth`).toBeTruthy();
@@ -206,24 +205,51 @@ describe("widget picker (t056)", () => {
       expect(Number(maxH), `${w} is not allowed to grow vertically at all`).toBeGreaterThan(
         Number(minH),
       );
-      // A CEILING EQUAL TO THE FLOOR IS NOT A CAP, IT IS A PROHIBITION - and that
-      // is the exact shape this file asserted nothing about. maxResizeWidth was
-      // 180dp and minWidth was 180dp, so the horizontal resize range was empty:
-      // a widget could never be dragged wider than the width the fitter is
-      // fitted for. Device-measured, every truncation is width-driven (t116).
-      // The vertical assertion above existed; the horizontal one did not.
-      expect(
-        Number(maxW),
-        `${w} maxResizeWidth (${maxW}dp) is not greater than minWidth ` +
-          `(${minW}dp), so the horizontal resize range is EMPTY - the widget ` +
-          `cannot be dragged wider than the size its content is fitted for`,
-      ).toBeGreaterThan(Number(minW));
+      // The declared resize range must not be inverted. This is the one width
+      // invariant that is true by construction rather than by argument.
       expect(
         Number(maxW),
         `${w} maxResizeWidth (${maxW}dp) is below its minResizeWidth (${minRW}dp), ` +
-          `so the declared resize range is inverted`,
+          `so the declared horizontal resize range is inverted`,
       ).toBeGreaterThanOrEqual(Number(minRW));
     }
+  });
+
+  it("the horizontal resize ceiling is an OPEN QUESTION, recorded not assumed", () => {
+    // NOT an assertion about the value. A guard on an unresolved question trains
+    // the next reader to delete it, so instead this pins the two MEASURED facts
+    // the next session has to re-derive, and refuses to pretend the ceiling is
+    // settled.
+    //
+    // MEASURED on 23124RA7EO (logcat, WidgetTextFit decision line): the same
+    // string breaks mid-word at 109dp and renders complete at 171dp. Both sit
+    // inside the declared range [minResizeWidth 110dp, maxResizeWidth 180dp].
+    // So the range was NEVER empty - a previous attempt asserted it was, on the
+    // reasoning that maxResizeWidth == minWidth forbids resizing. It does not:
+    // minWidth is a placement DEFAULT, not a resize bound. The 109dp/171dp pair
+    // is the proof, since neither could exist under a single fixed width.
+    //
+    // WHICH MEANS: raising the ceiling was never the fix for the 2-column
+    // truncation, because 171dp was always reachable by dragging. The open
+    // question is why widgets LAND at 109dp when minWidth is 180dp - which is a
+    // placement question (targetCellWidth, or the launcher restoring saved
+    // sizes after `install -r` drops all ten to placeholders), not a ceiling
+    // question. Do not "fix" this by widening maxResizeWidth again without a
+    // measurement: a wider box on these wrap_content/gravity=center layouts is
+    // the same empty-black-box defect that maxResizeHeight exists to prevent,
+    // just on the other axis.
+    const ceilings = new Set();
+    for (const w of widgets) {
+      const xml = fs.readFileSync(`${RES}/xml/${w}_widget_info.xml`, "utf8");
+      ceilings.add(xml.match(/android:maxResizeWidth="(\d+)dp"/)?.[1]);
+    }
+    // Ten identical values, whatever they are. Recorded so a change to the
+    // ceiling is a deliberate, visible diff rather than a bulk-edit byproduct.
+    expect(
+      [...ceilings],
+      "the horizontal ceiling is no longer uniform across all ten - if that was " +
+        "deliberate, say why here; if not, it is drift",
+    ).toHaveLength(1);
   });
 
 it("every widget layout uses the shared background, not a hardcoded colour", () => {
@@ -271,8 +297,7 @@ it("every widget layout uses the shared background, not a hardcoded colour", () 
     it("every widget is offered at the SAME size in the picker", () => {
       // The owner asked about varying sizes twice. Each widget's content needs
       // different room, but four different footprints in one picker list reads
-      // as clutter, so min size is uniform and maxResize HEIGHT carries the
-      // variation (maxResize WIDTH is uniform too - see the ceiling test below).
+      // as clutter, so min size is uniform and maxResize carries the variation.
       const sizes = new Set();
       for (const w of widgets) {
         const xml = fs.readFileSync(`${RES}/xml/${w}_widget_info.xml`, "utf8");
@@ -288,14 +313,11 @@ it("every widget layout uses the shared background, not a hardcoded colour", () 
     });
 
     it("every widget shares the SAME horizontal ceiling", () => {
-      // maxResizeHeight legitimately varies (220dp, or 300dp for the Clinic Card,
-      // whose content genuinely needs the room). maxResizeWidth has no such
-      // reason to vary - it is the same ceiling for all ten - so one file being
-      // edited without the other nine is drift, not intent.
-      //
-      // This is the other half of the t116 defect: maxResizeWidth was 180dp on
-      // all ten, which equals minWidth on all ten, which means the horizontal
-      // resize range was empty on all ten at once.
+      // See the resize test above for why the VALUE of this ceiling is an open
+      // question and must not be changed from here. What is asserted is only
+      // that all ten agree - maxResizeHeight legitimately varies (220dp, or
+      // 300dp for the Clinic Card, whose content genuinely needs the room), so
+      // one file being edited without the other nine would be drift, not intent.
       const ceilings = new Set();
       for (const w of widgets) {
         const xml = fs.readFileSync(`${RES}/xml/${w}_widget_info.xml`, "utf8");

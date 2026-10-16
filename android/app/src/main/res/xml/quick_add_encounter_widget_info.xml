@@ -11,19 +11,7 @@
      four different footprints reads as cluttered even when each size is
      individually correct. maxResize still varies where the content genuinely
      needs it - that is the cap that stops the empty-black-box growth, which is
-     a different concern from the size the picker offers.
-
-     CHANGED 16 Oct 2026 (t116) - maxResizeWidth 180dp -> 530dp. It was EQUAL to
-     minWidth, which is not a cap but a prohibition: the horizontal resize range
-     was empty, so a widget could never be dragged wider than the width the
-     fitter is fitted for, and the user had no lever at all. Every truncation
-     here is width-driven - measured on 23124RA7EO, the same string breaks
-     mid-word at 109dp and renders complete at 171dp. 530dp is Google's own
-     figure for a 3x2 widget; their samples declare 624dp and never a max equal
-     to the min. maxResizeHeight is deliberately UNCHANGED: the empty black box it
-     prevents is a real reported defect, and a wider widget does not worsen it.
-     Note an XML comment cannot sit inside a start tag, which is why this note
-     lives up here. Full reasoning in CLAUDE.md and docs/HISTORY.md. -->
+     a different concern from the size the picker offers. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:label="Quick Add: Encounter"
     android:description="@string/widget_desc_quick_add_encounter"
@@ -31,7 +19,7 @@
     android:minHeight="100dp"
     android:minResizeWidth="110dp"
     android:minResizeHeight="80dp"
-    android:maxResizeWidth="530dp"
+    android:maxResizeWidth="180dp"
     android:maxResizeHeight="220dp"
     android:targetCellWidth="3"
     android:targetCellHeight="2"
