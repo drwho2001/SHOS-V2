@@ -102,6 +102,30 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
                 appWidgetId, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
         String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
+
+        // HOISTED 16 Oct 2026 (t116) - above the Redacted early return, for the
+        // same reason the tap target is hoisted above it: the width comes from
+        // the launcher and carries no user data, so it does not vary by privacy
+        // tier and belongs before any branch that returns.
+        //
+        // It used to be declared at the BOTTOM of this method, which is exactly
+        // why the Redacted branch inlined WidgetTextFit.widthDp(...) rather than
+        // passing wDp by name. widgetTextFitMaxLinesGuard could only read a width
+        // argument spelled `wDp`, so it never saw that call site - and the lazy
+        // [\s\S]*? in its regex then ran on and swallowed the NEXT fit() call,
+        // which did pass wDp and maxLines=2. The pair reported the neighbour's
+        // arguments, the scanner counted 25 sites when 26 existed, and the suite
+        // stayed green over a live defect.
+        //
+        // What it hid: this branch fitted R.id.widget_med_name with SIX
+        // arguments, so maxLines defaulted to 1 (WidgetTextFit.java:125) while
+        // next_dose_widget.xml declares maxLines="2" for that view. So at the
+        // Redacted tier the medication name could not wrap, while at the Full
+        // tier it could - the privacy tier rendering strictly worse than the
+        // unrestricted one on the widget's largest field, for the one string its
+        // own comment names ("Antibiotics - 2 booked" at 18sp).
+        int wDp = WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId);
+
             if (redactedText != null && !redactedText.isEmpty()) {
                 views.setTextViewText(R.id.widget_med_name, redactedText);
             views.setViewVisibility(R.id.widget_next_dose, android.view.View.GONE);
@@ -109,8 +133,12 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
                 // otherwise skip the fit pass entirely. A Redacted line is still a
                 // string that has to fit the widget, and "Antibiotics - 2 booked"
                 // at 18sp is exactly as likely to overflow as a medication name.
-                WidgetTextFit.fit(views, context, R.id.widget_med_name, redactedText,
-                        WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId), 18f);
+                //
+                // maxLines 2 matches BOTH the layout's declaration for this view
+                // and the Full-tier call below. The same field, at the same size,
+                // must be fitted the same way in both branches - and now the
+                // guard can read both to prove it.
+                WidgetTextFit.fit(views, context, R.id.widget_med_name, redactedText, wDp, 18f, 2);
                 appWidgetManager.updateAppWidget(appWidgetId, views);
                 return;
             }
@@ -175,7 +203,6 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         //
         // Fitted here rather than in the layout because autoSizeTextType does not
         // work in RemoteViews - see WidgetTextFit for the whole story.
-        int wDp = WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId);
         WidgetTextFit.fit(views, context, R.id.widget_med_name, medName, wDp, 18f, 2);
         // The NEXT-DOSE line is measured as the full string it renders, not the
         // bare time: the literal "Next dose: " prefix is a third of its width and

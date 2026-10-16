@@ -40,6 +40,98 @@ const ANDROID = join(process.cwd(), "android", "app", "src", "main");
 const WIDGET_JAVA = join(ANDROID, "java", "com", "shos", "app", "widget");
 const LAYOUTS = join(ANDROID, "res", "layout");
 
+// ---------------------------------------------------------------------------
+// Call-site extraction. Added 16 Oct 2026 (t116).
+//
+// These three helpers exist because the regex this file used to scan with was
+// too WIDE, not too narrow. It had a lazy [\s\S]*? between the view id and the
+// width argument, which is unbounded across newlines and statements, so a match
+// could start at one fit() call and swallow the next one - reporting the
+// neighbour's arguments as if they were its own.
+// ---------------------------------------------------------------------------
+
+/**
+ * Strip // and block comments before scanning.
+ *
+ * Load-bearing, not tidiness: the comments in these providers are dense with
+ * parens, commas and prose that names fit() calls. Scanning raw source lets a
+ * commented-out call satisfy the contract.
+ */
+function stripComments(src) {
+  return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+}
+
+/** Every index at which `needle` occurs, non-overlapping. */
+function occurrencesOf(src, needle) {
+  const out = [];
+  let i = src.indexOf(needle);
+  while (i !== -1) {
+    out.push(i);
+    i = src.indexOf(needle, i + needle.length);
+  }
+  return out;
+}
+
+/**
+ * The argument list of a call whose arguments begin at `open` (i.e. just past
+ * its opening paren), split on top-level commas.
+ *
+ * A nested call's own commas stay inside one argument, so
+ * `fit(v, c, R.id.x, t, widthDp(a, b, i), 18f)` is six arguments - which is the
+ * case the old regex could not express at all. String literals are copied
+ * wholesale so a paren or comma in a user-facing message is not read as
+ * structure.
+ *
+ * Returns null when the parens never balance, so a malformed call is a loud
+ * failure rather than a silently shorter argument list.
+ */
+function splitCallArgs(src, open) {
+  const args = [];
+  // depth starts at 1, NOT 0: `open` is the index just PAST the call's opening
+  // paren, so this scan begins one level inside it. Starting at 0 means the
+  // closing paren drives depth to -1, the `=== 0` test is never met, and every
+  // call site parses as null. The first version of this helper had exactly that
+  // bug and the exact-count assertion caught it - which is the assertion doing
+  // the job it exists for.
+  let depth = 1;
+  let current = "";
+  let i = open;
+  while (i < src.length) {
+    const ch = src[i];
+    if (ch === '"') {
+      current += ch;
+      i++;
+      while (i < src.length) {
+        const c = src[i];
+        current += c;
+        i++;
+        if (c === "\\") {
+          current += src[i];
+          i++;
+        } else if (c === '"') break;
+      }
+      continue;
+    }
+    if (ch === "(") {
+      depth++;
+    } else if (ch === ")") {
+      depth--;
+      if (depth === 0) {
+        args.push(current);
+        return args;
+      }
+    } else if (ch === "," && depth === 1) {
+      args.push(current);
+      current = "";
+      i++;
+      continue;
+    }
+    current += ch;
+    i++;
+  }
+  return null;
+}
+
 describe("WidgetTextFit maxLines agrees with the layout it is fitting", () => {
   /** view id -> declared maxLines, across every widget layout. */
   const layoutMaxLines = new Map();
@@ -56,36 +148,103 @@ describe("WidgetTextFit maxLines agrees with the layout it is fitting", () => {
     }
   }
 
-  /** Every fit() call site: view id -> maxLines the caller will pass. */
+  /**
+   * Every fit() call site: view id -> maxLines the caller will pass.
+   *
+   * CHANGED 16 Oct 2026 (t116). The previous version was a single regex whose
+   * lazy [\s\S]*? spanned statements, which had two compounding faults:
+   *
+   *   1. It required the width argument to be the literal token `wDp`. One call
+   *      site - NextDoseWidgetProvider's Redacted branch - inlined
+   *      WidgetTextFit.widthDp(...) instead, because `wDp` was declared AFTER
+   *      that branch's early return and so was not in scope there.
+   *   2. Because the lazy span is unbounded across newlines AND statements, the
+   *      match anchoring on that call site ran on and absorbed the NEXT fit()
+   *      call - a call for the SAME view id which did pass maxLines=2. The pair
+   *      reported the neighbour's arguments and passed.
+   *
+   * So the guard reported 25 call sites when 26 exist, and the one it could not
+   * see passed maxLines=1 against a layout declaring maxLines=2. That is a LIVE
+   * defect: at the Redacted tier the medication name was forbidden from wrapping
+   * while at the Full tier it could wrap, so the privacy tier rendered strictly
+   * worse than the unrestricted one on the widget's largest field - and a full
+   * green suite sat next to it.
+   *
+   * Arguments now come from a balanced-paren scan per call site, which cannot
+   * cross a statement boundary and does not care how the width is spelled.
+   */
   const callSites = [];
+  const parseFailures = [];
   for (const file of readdirSync(WIDGET_JAVA)) {
     if (!file.endsWith(".java")) continue;
-    const java = readFileSync(join(WIDGET_JAVA, file), "utf8");
-    const re =
-      /WidgetTextFit\.fit\(\s*views,\s*context,\s*R\.id\.(\w+),[\s\S]*?wDp,\s*([\d.]+)f\s*(?:,\s*(\d+)\s*)?\)/g;
-    let m;
-    while ((m = re.exec(java)) !== null) {
+    const java = stripComments(readFileSync(join(WIDGET_JAVA, file), "utf8"));
+    for (const at of occurrencesOf(java, "WidgetTextFit.fit(")) {
+      const args = splitCallArgs(java, at + "WidgetTextFit.fit(".length);
+      const where = `${file} (offset ${at})`;
+      if (args === null) {
+        parseFailures.push(`${where}: unbalanced parens in a fit() call`);
+        continue;
+      }
+      const viewId = args[2]?.match(/R\.id\.(\w+)/)?.[1];
+      if (!viewId) {
+        parseFailures.push(
+          `${where}: fit() argument 3 is "${args[2]}", which names no R.id`,
+        );
+        continue;
+      }
+      // The width comes from the launcher and carries no user data, so it does
+      // not vary by privacy tier. Requiring it to be passed by name keeps every
+      // call site's maxLines statically checkable - which is precisely the
+      // property whose absence made this defect invisible.
+      const widthArg = (args[4] ?? "").trim();
+      if (widthArg !== "wDp") {
+        parseFailures.push(
+          `${file}: R.id.${viewId} passes "${widthArg}" as its width, not the ` +
+            `wDp local. Hoist wDp above the Redacted early return and pass it by ` +
+            `name, or this call site's maxLines argument is not checkable and a ` +
+            `real drift passes the build.`,
+        );
+        continue;
+      }
       callSites.push({
         file,
-        viewId: m[1],
+        viewId,
         // Absent seventh argument means the short overload, which passes 1.
-        maxLines: m[3] === undefined ? 1 : Number(m[3]),
+        maxLines: args.length >= 7 ? Number(String(args[6]).trim()) : 1,
       });
     }
   }
 
-  it("found both sides of the contract (guard against a vacuous pass)", () => {
+  // Counted in the source, not guessed: `grep -c "WidgetTextFit\.fit\("` over
+  // android/app/src/main/java/com/shos/app/widget/*.java, minus any occurrence
+  // inside a comment (the scanner strips those). CLAUDE.md said 25 and was
+  // wrong, which is how the 26th went unchecked. If a provider gains or loses a
+  // fit() call, change this number in the SAME commit - never after.
+  const EXPECTED_FIT_CALL_SITES = 26;
+
+  it("found both sides of the contract, and every call site parsed", () => {
     // Without this the whole file passes if either the layout parse or the
-    // call-site regex stops matching - which is exactly what happened the first
+    // call-site scan stops matching - which is exactly what happened the first
     // time a provider passed wDp under a different name.
     expect(
       layoutMaxLines.size,
       "expected widget layouts declaring android:id + android:maxLines",
     ).toBeGreaterThanOrEqual(10);
+
+    expect(
+      parseFailures,
+      "these fit() call sites could not be checked, so they are unchecked:",
+    ).toEqual([]);
+
+    // An EXACT count, not "at least". "At least N" over a set that currently
+    // holds N items measures nothing (L-090), and the set that held the real
+    // defect was one item larger than the number the file believed.
     expect(
       callSites.length,
-      "expected WidgetTextFit.fit(...) call sites in the widget providers",
-    ).toBeGreaterThanOrEqual(10);
+      `expected exactly ${EXPECTED_FIT_CALL_SITES} WidgetTextFit.fit(...) call ` +
+        `sites in the widget providers, parsed ${callSites.length}. Recount with: ` +
+        `grep -c "WidgetTextFit\\.fit\\(" android/app/src/main/java/com/shos/app/widget/*.java`,
+    ).toBe(EXPECTED_FIT_CALL_SITES);
   });
 
   it("every fit() call passes the maxLines its layout declares", () => {

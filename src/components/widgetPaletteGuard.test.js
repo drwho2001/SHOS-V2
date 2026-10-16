@@ -196,15 +196,33 @@ describe("widget picker (t056)", () => {
       const maxH = xml.match(/android:maxResizeHeight="(\d+)dp"/)?.[1];
       const maxW = xml.match(/android:maxResizeWidth="(\d+)dp"/)?.[1];
       const minH = xml.match(/android:minHeight="(\d+)dp"/)?.[1];
+      const minW = xml.match(/android:minWidth="(\d+)dp"/)?.[1];
+      const minRW = xml.match(/android:minResizeWidth="(\d+)dp"/)?.[1];
       expect(maxH, `${w} has no maxResizeHeight`).toBeTruthy();
       expect(maxW, `${w} has no maxResizeWidth`).toBeTruthy();
-      // A cap below the floor is not a cap, it is a broken widget.
       expect(Number(maxH), `${w} maxResizeHeight is below its minHeight`).toBeGreaterThanOrEqual(
         Number(minH),
       );
       expect(Number(maxH), `${w} is not allowed to grow vertically at all`).toBeGreaterThan(
         Number(minH),
       );
+      // A CEILING EQUAL TO THE FLOOR IS NOT A CAP, IT IS A PROHIBITION - and that
+      // is the exact shape this file asserted nothing about. maxResizeWidth was
+      // 180dp and minWidth was 180dp, so the horizontal resize range was empty:
+      // a widget could never be dragged wider than the width the fitter is
+      // fitted for. Device-measured, every truncation is width-driven (t116).
+      // The vertical assertion above existed; the horizontal one did not.
+      expect(
+        Number(maxW),
+        `${w} maxResizeWidth (${maxW}dp) is not greater than minWidth ` +
+          `(${minW}dp), so the horizontal resize range is EMPTY - the widget ` +
+          `cannot be dragged wider than the size its content is fitted for`,
+      ).toBeGreaterThan(Number(minW));
+      expect(
+        Number(maxW),
+        `${w} maxResizeWidth (${maxW}dp) is below its minResizeWidth (${minRW}dp), ` +
+          `so the declared resize range is inverted`,
+      ).toBeGreaterThanOrEqual(Number(minRW));
     }
   });
 
@@ -253,7 +271,8 @@ it("every widget layout uses the shared background, not a hardcoded colour", () 
     it("every widget is offered at the SAME size in the picker", () => {
       // The owner asked about varying sizes twice. Each widget's content needs
       // different room, but four different footprints in one picker list reads
-      // as clutter, so min size is uniform and maxResize carries the variation.
+      // as clutter, so min size is uniform and maxResize HEIGHT carries the
+      // variation (maxResize WIDTH is uniform too - see the ceiling test below).
       const sizes = new Set();
       for (const w of widgets) {
         const xml = fs.readFileSync(`${RES}/xml/${w}_widget_info.xml`, "utf8");
@@ -266,6 +285,28 @@ it("every widget layout uses the shared background, not a hardcoded colour", () 
       }
       expect([...sizes], "these widgets are offered at different picker sizes: " + [...sizes].join(", "))
         .toHaveLength(1);
+    });
+
+    it("every widget shares the SAME horizontal ceiling", () => {
+      // maxResizeHeight legitimately varies (220dp, or 300dp for the Clinic Card,
+      // whose content genuinely needs the room). maxResizeWidth has no such
+      // reason to vary - it is the same ceiling for all ten - so one file being
+      // edited without the other nine is drift, not intent.
+      //
+      // This is the other half of the t116 defect: maxResizeWidth was 180dp on
+      // all ten, which equals minWidth on all ten, which means the horizontal
+      // resize range was empty on all ten at once.
+      const ceilings = new Set();
+      for (const w of widgets) {
+        const xml = fs.readFileSync(`${RES}/xml/${w}_widget_info.xml`, "utf8");
+        const maxW = xml.match(/android:maxResizeWidth="(\d+)dp"/)?.[1];
+        expect(maxW, `${w} has no maxResizeWidth`).toBeTruthy();
+        ceilings.add(maxW);
+      }
+      expect(
+        [...ceilings],
+        "these widgets have different horizontal ceilings: " + [...ceilings].join(", "),
+      ).toHaveLength(1);
     });
 
     it("the three Quick Add widgets share a label prefix so they sort together", () => {

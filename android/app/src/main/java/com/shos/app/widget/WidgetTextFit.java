@@ -49,11 +49,13 @@ final class WidgetTextFit {
     private static final float ROOT_PADDING_DP = 16f;
 
     /**
-     * The widget's current width in dp, or -1 when the launcher has not said.
+     * The widget's current width in dp. NEVER -1.
      *
-     * OPTION_APPWIDGET_MAX_WIDTH is the width the widget is currently laid out
-     * at, which is the one that matters for fitting - not the minimum it was
-     * declared with.
+     * Every failure path falls back to FALLBACK_DP rather than reporting an
+     * unknown width, because fit() used to skip on a negative value and the whole
+     * mechanism was therefore a silent no-op on the device that reported the
+     * problem. A caller must not have to distinguish "I could not tell" from "it
+     * is this wide", because it cannot do the right thing with the difference.
      */
     static int widthDp(Context context, AppWidgetManager manager, int appWidgetId) {
         // FALLBACK_DP is what a 1x2 cell is on a typical phone. It is a last
@@ -93,6 +95,29 @@ final class WidgetTextFit {
             else if (minW > 0) usable = minW;
             else if (maxW > 0) usable = maxW;
 
+            // WHAT THE LAUNCHER ACTUALLY REPORTED (t116, 16 Oct 2026).
+            //
+            // The four int options are BOUNDS of a range, not the current size.
+            // Google's layouts guide says you get the range and then have to
+            // estimate, and that the estimate "doesn't work in all situations" -
+            // which is why the min-of-two below is a deliberate guess and not a
+            // reading. This line is how the next session tells a bad guess from
+            // a genuinely narrow widget, instead of re-deriving it from a
+            // screenshot.
+            //
+            // sizes= is OPTION_APPWIDGET_SIZES (API 31), the list of sizes this
+            // instance can actually take - the one option this class has never
+            // read, and the only direct answer available. Whether this launcher
+            // populates it is a five-minute question on a real device, and until
+            // it is answered this line is the only evidence there is. Sizes
+            // only: no user data is logged here, unlike the fit() decision line.
+            android.util.Log.d(TAG, "appwidget " + appWidgetId
+                    + " minW=" + minW + " maxW=" + maxW
+                    + " minH=" + options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+                    + " maxH=" + options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0)
+                    + " sizes=[" + sizesOf(options) + "]"
+                    + " -> using " + usable);
+
             if (usable > 0) return usable;
 
             try {
@@ -111,10 +136,43 @@ final class WidgetTextFit {
     }
 
     /**
+     * The launcher's declared size list, OPTION_APPWIDGET_SIZES (API 31), as
+     * readable text - or "-" when the launcher did not populate it.
+     *
+     * Added 16 Oct 2026 (t116) purely as a measurement. This app had never read
+     * it, so the one option that states the widget's real sizes went unexamined
+     * while four range bounds were interpreted. If it comes back populated, the
+     * min-of-two guess below can be replaced with a real lookup; if it comes back
+     * "-", that is worth knowing too, and it is invisible without this log.
+     *
+     * Defensive throughout: an absent key, an empty list and an unparseable
+     * parcel are all distinguished, because a helper that cannot report its own
+     * failure is the exact shape that made the original widthDp a silent no-op.
+     */
+    private static String sizesOf(android.os.Bundle options) {
+        try {
+            java.util.ArrayList<android.util.SizeF> sizes =
+                    options.getParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES);
+            if (sizes == null || sizes.isEmpty()) return "-";
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < sizes.size(); i++) {
+                if (i > 0) sb.append(",");
+                android.util.SizeF s = sizes.get(i);
+                if (s == null) continue;
+                sb.append(s.getWidth()).append("x").append(s.getHeight());
+            }
+            return sb.length() == 0 ? "-" : sb.toString();
+        } catch (Exception e) {
+            return "unreadable";
+        }
+    }
+
+    /**
      * Shrink `viewId`'s text to fit, if it does not fit at `maxSp`.
      *
-     * No-op when the text is empty or the width is unknown, so a caller can pass
-     * every field through unconditionally rather than repeating guards.
+     * No-op when the text is empty, or when the computed content width leaves no
+     * room. A non-positive widthDp does NOT skip - it falls back to 110dp, for
+     * the reason widthDp never returns a sentinel.
      *
      * @param text the string actually being rendered - must be the SAME string
      *             passed to setTextViewText, or the measurement is of the wrong
