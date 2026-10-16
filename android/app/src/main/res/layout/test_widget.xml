@@ -1,4 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+     EXPERIMENT (t118, 16 Oct 2026) - autoSizeTextType, on ONE widget.
+
+     CLAUDE.md and lesson L-110 say autoSizeTextType "does not work in
+     RemoteViews". THAT REASONING IS REFUTED, verified in the platform source at
+     C:\Users\kanem\AppData\Local\Android\Sdk\sources\android-37.0\android\widget\
+     TextView.java:
+
+       - supportsAutoSizeText() (line 13938) returns true UNCONDITIONALLY. It is
+         not gated on RemoteViews, on the view class, or on anything else. L-110's
+         argument - "RemoteViews cannot inflate a custom TextView subclass" - does
+         not bear on the question, because autoSizeTextType needs no subclass; it
+         is a framework attribute on the plain TextView, which IS on RemoteViews'
+         supported list.
+       - setupAutoSizeText() (line 2357) activates on AUTO_SIZE_TEXT_TYPE_UNIFORM
+         and nothing else.
+
+     THE REAL BLOCKER IS wrap_content, and it was never the reason L-110 gave.
+     Autosize measures `getMeasuredWidth()` (line 11563). Under wrap_content the
+     TextView measures to ITS OWN TEXT WIDTH, so availableWidth equals the text
+     width and findLargestTextSizeWhichFits always returns the top of the ladder
+     - autosize engaged, doing nothing. Under match_parent the measure spec is
+     EXACTLY and availableWidth is the real content width. So match_parent is
+     REQUIRED and is the entire fix.
+
+     WHAT IS DELIBERATELY NOT CHANGED:
+
+     - layout_height stays wrap_content. Autosize also constrains availableHeight
+       (line 11566), which looks like a second blocker and is not: with
+       wrap_content height and no compound padding, availableHeight equals the
+       layout's own height, so the equality test passes at every rung. Changing
+       it would break mTotalLength and therefore the ROOT's vertical centring.
+
+     - maxLines stays 1/2. It feeds suggestedSizeFitsInSpace (line 11644), so
+       changing it would change the experiment rather than test it.
+
+     - ellipsize and breakStrategy stay. Neither enters the fit test - the
+       StaticLayout at line 11635-11649 sets no ellipsize, and applies the same
+       getBreakStrategy() as the real layout - so there is no surprise the
+       fitter did not model.
+
+     - The provider is NOT touched. TextView.setTextSize is guarded by
+       `if (!isAutoSizeEnabled())` (line 4752), so WidgetTextFit's
+       setTextViewTextSize becomes a DETERMINISTIC NO-OP once autosize is on -
+       not a race, the framework always wins. So leaving the fit() calls in place
+       costs nothing, keeps widgetTextFitMaxLinesGuard at its asserted 26 sites,
+       and makes its log line a FALSIFIABLE PREDICTION to compare against the
+       render.
+
+     THE TWO TRAPS, both verified in source, both of which would look like
+     success:
+
+     - autoSizeMaxTextSize defaults to 112sp (line 1115). Omit it and the text
+       GROWS to whatever fits, often 30sp+, clipped vertically.
+     - autoSizeStepGranularity defaults to 1 PIXEL (line 1117). Omit it and the
+       ladder picks sub-sp sizes like 13.4sp, contradicting the whole-sp policy
+       WidgetTextFit deliberately chose.
+
+     And the widget-killer: validateAndSetAutoSizeTextTypeUniformConfiguration
+     THROWS when autoSizeMaxTextSize <= autoSizeMinTextSize (line 2306). In a
+     widget that throw is swallowed by AppWidgetHostView into its error view, so
+     the whole widget becomes "Can't load widget". Which is why widget_retest_due
+     is left alone below - it declares textSize="12sp", so autosizing it with a
+     12sp floor would be exactly that crash.
+
+     THE CONTROL. widget_retest_due is deliberately left on wrap_content with no
+     autosize. It is the one field autosize provably cannot help, and leaving it
+     gives an old-mechanism row in the SAME process, SAME density, SAME font
+     scale, SAME layout pass. Feed the same string to both rows and compare their
+     ink heights: identical means autosize did not engage, differing means it
+     did. Immune to the cross-process comparison problems that make a screenshot
+     alone ambiguous.
+
+     CAVEAT FOR PRODUCTION, not for this experiment: autoSizeTextType is API 27+
+     and minSdkVersion is 24 (android/variables.gradle:2), so on API 24-26 the
+     attribute is silently ignored and the field falls back to today's behaviour.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -10,20 +87,26 @@
 
     <TextView
         android:id="@+id/widget_test_title"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:text="Last Test"
         android:textSize="16sp"
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold"
         android:maxLines="1"
         android:ellipsize="end"
-        android:breakStrategy="simple" />
+        android:breakStrategy="simple"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="12sp"
+        android:autoSizeMaxTextSize="16sp"
+        android:autoSizeStepGranularity="1sp" />
 
     <TextView
         android:id="@+id/widget_last_test"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:layout_marginTop="8dp"
         android:text="No tests logged"
         android:textSize="14sp"
@@ -31,8 +114,14 @@
         android:textStyle="bold"
         android:maxLines="2"
         android:ellipsize="end"
-        android:breakStrategy="simple" />
+        android:breakStrategy="simple"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="12sp"
+        android:autoSizeMaxTextSize="14sp"
+        android:autoSizeStepGranularity="1sp" />
 
+    <!-- THE CONTROL. Deliberately unchanged: wrap_content, no autosize. See the
+         header. This is the row that tells us whether autosize engaged at all. -->
     <TextView
         android:id="@+id/widget_retest_due"
         android:layout_width="wrap_content"
@@ -44,4 +133,5 @@
         android:maxLines="2"
         android:ellipsize="end"
         android:breakStrategy="simple" />
+
 </LinearLayout>
