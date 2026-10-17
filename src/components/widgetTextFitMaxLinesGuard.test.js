@@ -135,6 +135,8 @@ function splitCallArgs(src, open) {
 describe("WidgetTextFit maxLines agrees with the layout it is fitting", () => {
   /** view id -> declared maxLines, across every widget layout. */
   const layoutMaxLines = new Map();
+  /** view id -> declared textSize in sp. t119: maxSp was never checked. */
+  const layoutTextSize = new Map();
   for (const file of readdirSync(LAYOUTS)) {
     if (!file.endsWith(".xml")) continue;
     const xml = readFileSync(join(LAYOUTS, file), "utf8");
@@ -145,6 +147,8 @@ describe("WidgetTextFit maxLines agrees with the layout it is fitting", () => {
       const id = block.match(/android:id="@\+id\/(\w+)"/);
       const max = block.match(/android:maxLines="(\d+)"/);
       if (id && max) layoutMaxLines.set(id[1], Number(max[1]));
+      const size = block.match(/android:textSize="([\d.]+)sp"/);
+      if (id && size) layoutTextSize.set(id[1], Number(size[1]));
     }
   }
 
@@ -211,6 +215,10 @@ describe("WidgetTextFit maxLines agrees with the layout it is fitting", () => {
         viewId,
         // Absent seventh argument means the short overload, which passes 1.
         maxLines: args.length >= 7 ? Number(String(args[6]).trim()) : 1,
+        // Sixth argument is the ceiling the fitter may step DOWN from. It must be
+        // the layout's declared size, or the fitter is licensed to render text
+        // LARGER than the design allows and no build step notices.
+        maxSp: Number(String(args[5]).replace(/f$/, "")),
       });
     }
   }
@@ -267,6 +275,36 @@ describe("WidgetTextFit maxLines agrees with the layout it is fitting", () => {
       mismatches,
       "a field's fit() maxLines must equal its layout's maxLines, or the " +
         "WRAPS/HITS_FLOOR decision line reports a truncation that is not happening",
+    ).toEqual([]);
+  });
+
+  it("every fit() ceiling matches the textSize its layout declares", () => {
+    // t119, 17 Oct 2026, MEASURED on 23124RA7EO. The device log printed
+    //   -> chose 18.0sp (max 18.0sp) textPx=289 availablePx=212
+    // for a field whose layout declares android:textSize="14sp". The fitter was
+    // licensed to render a date a THIRD larger than the design allows, and it
+    // said so in the log while every test stayed green - because this file
+    // asserted maxLines and never maxSp. Two more call sites had the same fault
+    // (16f and 14f on a 12sp field), now corrected in the providers.
+    //
+    // It survived because both axes looked like the same kind of number and only
+    // one was checked. A field's fit() call must match its layout on BOTH.
+    const mismatches = [];
+    for (const call of callSites) {
+      const declared = layoutTextSize.get(call.viewId);
+      if (declared === undefined) continue; // no textSize in the layout; not this guard's business
+      if (declared !== call.maxSp) {
+        mismatches.push(
+          `${call.file}: R.id.${call.viewId} layout declares textSize=${declared}sp ` +
+            `but fit() is called with maxSp=${call.maxSp}, so the fitter may render ` +
+            `it ${call.maxSp > declared ? "LARGER" : "smaller"} than the design allows`,
+        );
+      }
+    }
+    expect(
+      mismatches,
+      "a field's fit() maxSp must equal its layout's textSize - it is the ceiling the " +
+        "fitter steps down from, and an inflated one silently overrides the design",
     ).toEqual([]);
   });
 

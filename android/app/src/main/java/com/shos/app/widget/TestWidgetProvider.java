@@ -108,7 +108,14 @@ views.setTextViewText(R.id.widget_last_test, lastTest);
             views.setTextViewText(R.id.widget_retest_due, "Retest due: " + retestDue);
             // Measured on the device, which showed "Retest due: ..." and a
             // last-test date broken across two lines mid-value.
-            WidgetTextFit.fit(views, context, R.id.widget_last_test, lastTest, wDp, 18f, 2);
+            // t119 (17 Oct 2026): maxSp was 18f while test_widget.xml declares 14sp,
+            // so the fitter was licensed to render this field a third larger than
+            // the design allows - and the device log duly reported
+            // "chose 18.0sp (max 18.0sp)" for "23 Sept 2026". Only the
+            // autoSizeTextType ceiling on that view was stopping the oversize from
+            // shipping, which is exactly why the mismatch survived every green
+            // build: nothing asserted maxSp, only maxLines.
+            WidgetTextFit.fit(views, context, R.id.widget_last_test, lastTest, wDp, 14f, 2);
             WidgetTextFit.fit(views, context, R.id.widget_retest_due, "Retest due: " + retestDue, wDp, 12f, 2);
 
         // Click opens Healthcare > Testing tab

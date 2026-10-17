@@ -90,10 +90,37 @@ final class WidgetTextFit {
             // declared minimum for this provider is a better guess than a
             // constant, because it is the size the widget was actually
             // published at.
+            // WHICH OF THE TWO IS CURRENT DEPENDS ON ORIENTATION, and taking the
+            // smaller unconditionally is correct only in portrait.
+            //
+            // MEASURED on 23124RA7EO, 17 Oct 2026 (t120): appwidget 320 reported
+            // minW=109 maxW=208 minH=81 maxH=166 with
+            // OPTION_APPWIDGET_SIZES = [109.09x166.55, 208.73x81.45]. Those two
+            // sizes are not a resize range - the width and the height swap
+            // together - they are the PORTRAIT and LANDSCAPE renderings of one
+            // widget. So minW/maxW is an orientation pair, and the smaller value
+            // is the portrait width.
+            //
+            // That made the old min(minW, maxW) accidentally right in portrait
+            // and WRONG in landscape: a widget laid out 208dp wide would have
+            // its text measured against 109dp, shrinking roughly twice as hard as
+            // it needs to. Portrait-only testing could never have caught it -
+            // every instance on this device sits at its portrait width, which is
+            // why six of six agreed with the old code.
+            //
+            // Android's own layouts guide warns that these four options are a
+            // RANGE you must estimate from, and that the estimate "doesn't work
+            // in all situations". This is that situation.
+            boolean landscape = context.getResources().getConfiguration().orientation
+                    == android.content.res.Configuration.ORIENTATION_LANDSCAPE;
             int usable = 0;
-            if (minW > 0 && maxW > 0) usable = Math.min(minW, maxW);
-            else if (minW > 0) usable = minW;
-            else if (maxW > 0) usable = maxW;
+            if (landscape) {
+                if (maxW > 0) usable = maxW;
+                else if (minW > 0) usable = minW;
+            } else {
+                if (minW > 0) usable = minW;
+                else if (maxW > 0) usable = maxW;
+            }
 
             // WHAT THE LAUNCHER ACTUALLY REPORTED (t116, 16 Oct 2026).
             //
@@ -116,6 +143,7 @@ final class WidgetTextFit {
                     + " minH=" + options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
                     + " maxH=" + options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0)
                     + " sizes=[" + sizesOf(options) + "]"
+                    + (landscape ? " [LANDSCAPE]" : " [PORTRAIT]")
                     + " -> using " + usable);
 
             if (usable > 0) return usable;

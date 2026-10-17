@@ -124,12 +124,18 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
                 views.setTextViewText(R.id.widget_doxy_title, "DoxyPEP Window");
                 views.setTextViewText(R.id.widget_doxy_status, "Active");
                 views.setTextViewText(R.id.widget_doxy_countdown, String.format("%dh %dm remaining", hours, minutes));
-                WidgetTextFit.fit(views, context, R.id.widget_doxy_countdown, String.format("%dh %dm remaining", hours, minutes), wDp, 16f);
+                // t119 (17 Oct 2026): maxSp was 16f while doxy_pep_widget.xml declares
+                // 12sp for this view, so the fitter could render the countdown a
+                // third larger than the design allows. Same class as the Test
+                // widget's 18f-on-14sp, and invisible to a guard that only reads
+                // maxLines.
+                WidgetTextFit.fit(views, context, R.id.widget_doxy_countdown, String.format("%dh %dm remaining", hours, minutes), wDp, 12f);
             } else {
                 views.setTextViewText(R.id.widget_doxy_title, "DoxyPEP Window");
                 views.setTextViewText(R.id.widget_doxy_status, "Expired");
                 views.setTextViewText(R.id.widget_doxy_countdown, "Take within 72h of exposure");
-                WidgetTextFit.fit(views, context, R.id.widget_doxy_countdown, "Take within 72h of exposure", wDp, 14f);
+                // t119 (17 Oct 2026): was 14f against a 12sp layout - see above.
+                WidgetTextFit.fit(views, context, R.id.widget_doxy_countdown, "Take within 72h of exposure", wDp, 12f);
             }
         } else {
             views.setTextViewText(R.id.widget_doxy_title, "DoxyPEP Window");
