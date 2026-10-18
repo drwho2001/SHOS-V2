@@ -34,6 +34,13 @@ import {
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+// PINNED LOCALE. Fixed 18 Oct 2026 after CI caught this file green locally and
+// red on the runner: the formatters call toLocaleDateString(undefined, ...), so
+// the day/month ORDER follows the device locale. en-GB gives "1 Dec" and en-US
+// gives "Dec 1", and CI runs en-US while this machine is en-GB - so the literal
+// below passed here and failed there. Asserting a rendered date string without
+// pinning the locale is asserting the runner's configuration, not the code.
+const LOCALE = "en-GB";
 const STORED = "2026-09-14T10:00:00.000Z";
 const DAY_KEY = "2026-12-01";
 
@@ -64,7 +71,8 @@ describe("widget date formatters drop the year and nothing else", () => {
     //
     // Note there is no year to strip here: formatDayKey never emitted one.
     // This is the pure frame check.
-    expect(formatDayKeyNoYear(DAY_KEY)).toBe(formatDayKey(DAY_KEY));
+    expect(formatDayKeyNoYear(DAY_KEY, { locale: LOCALE }))
+      .toBe(formatDayKey(DAY_KEY, { locale: LOCALE }));
     expect(formatDayKeyNoYear(DAY_KEY)).toMatch(/1\b/);
     expect(formatDayKeyNoYear(DAY_KEY)).toMatch(/Dec/);
   });
@@ -97,9 +105,10 @@ describe("widget date formatters drop the year and nothing else", () => {
     // prefix that formatDayKeyNoYear must not have invented or dropped. It
     // takes no weekday option at all, and this pins that both forms still agree
     // on the day without one.
-    expect(formatDayKey(DAY_KEY)).toBe("1 Dec");
-    expect(formatDayKey(DAY_KEY, { weekday: true })).toBe("Tue 1 Dec");
-    expect(formatDayKeyNoYear(DAY_KEY)).toBe(formatDayKey(DAY_KEY));
+    expect(formatDayKey(DAY_KEY, { locale: LOCALE })).toBe("1 Dec");
+    expect(formatDayKey(DAY_KEY, { weekday: true, locale: LOCALE })).toBe("Tue 1 Dec");
+    expect(formatDayKeyNoYear(DAY_KEY, { locale: LOCALE }))
+      .toBe(formatDayKey(DAY_KEY, { locale: LOCALE }));
   });
 });
 
