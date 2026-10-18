@@ -152,15 +152,21 @@ describe("Appointments widget provider (t088)", () => {
   });
 
   it("hides them on the no-appointments branch too, so a deleted visit cannot linger", () => {
-    // Exactly THREE GONE call sites each, not "at least two". A count of >=2
-    // passed while one of the three was deleted, which is the hand-maintained
-    // -inventory failure this repo keeps paying for: the assertion looked
-    // plausible and measured nothing.
+    // Exactly THREE GONE call sites each for the TIME, not "at least two". A count
+    // of >=2 passed while one of the three was deleted, which is the
+    // hand-maintained-inventory failure this repo keeps paying for: the assertion
+    // looked plausible and measured nothing.
     //
-    // The three are: the Redacted early-return, and the full-tier path's
-    // "this visit has no time" and "no location" branches. The fourth site -
-    // the count==0 branch - is asserted separately below, because it is a
-    // different block and deserves its own name.
+    // The three are: the Redacted early-return, and the full-tier path's "this
+    // visit has no time" and "no location" branches. The fourth site - the
+    // count==0 branch - is asserted separately below, because it is a different
+    // block and deserves its own name.
+    //
+    // THE LOCATION COUNT IS FOUR, and the extra one is new as of 18 Oct 2026: the
+    // narrow-widget gate that drops the address below 130dp. That is a FOURTH
+    // reason the location can be hidden and the three above still do not cover it
+    // - a location rendered on a widget too narrow to fit it truncates to
+    // "Dean Street, Hull...", which is less useful than showing none.
     const timeGone = PROVIDER.match(
       /setViewVisibility\(R\.id\.widget_appt_time, android\.view\.View\.GONE\)/g
     );
@@ -168,7 +174,10 @@ describe("Appointments widget provider (t088)", () => {
       /setViewVisibility\(R\.id\.widget_appt_location, android\.view\.View\.GONE\)/g
     );
     expect(timeGone.length, "widget_appt_time GONE call sites").toBe(3);
-    expect(locGone.length, "widget_appt_location GONE call sites").toBe(3);
+    // Asserted as an exact number rather than "4 or more" for the same reason as
+    // the three: an inflated count that drifts upward is as much a lie as one that
+    // drifts down, and this file is the only thing counting them.
+    expect(locGone.length, "widget_appt_location GONE call sites (3 + the narrow-widget gate)").toBe(4);
   });
 
   it("hides both when there are NO appointments at all", () => {

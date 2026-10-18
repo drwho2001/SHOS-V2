@@ -232,7 +232,7 @@ views.setViewVisibility(R.id.widget_appt_time, android.view.View.GONE);
             // less useful than none, and the audit measured this layout overflowing
             // its 2-cell box by 33dp with every field present.
             if (narrow) {
-                views.setViewVisibility(R.id.widget_appt_location, View.GONE);
+                views.setViewVisibility(R.id.widget_appt_location, android.view.View.GONE);
             }
                 Intent mapIntent = new Intent(Intent.ACTION_VIEW,
                         Uri.parse("geo:0,0?q=" + Uri.encode(apptLocation)));

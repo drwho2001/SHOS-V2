@@ -227,3 +227,50 @@ describe("widget layouts cannot clip at both ends", () => {
     }
   });
 });
+
+describe("providers use View in a way that compiles", () => {
+  // ADDED 18 Oct 2026, after build-apk rejected AppointmentWidgetProvider.java:235
+  // with "cannot find symbol" - a `View.GONE` I inserted into a file that has NO
+  // `import android.view.View`. Every other reference in that file spells it
+  // `android.view.View.GONE`, so the style was never in doubt; the file simply
+  // never imported it.
+  //
+  // This is a whole class of mistake, not one instance: each of the ten providers
+  // is a standalone class that deliberately shares no base, so whether `View` is
+  // in scope is a per-file fact that has to be right in each one. And the failure
+  // mode is a compile error on a machine that cannot compile Java, so nothing in
+  // the local suite can see it - the whole reason the change sat red in CI while
+  // every test passed here.
+  //
+  // Why not just add the import? Because a reader of that file would then find
+  // two spellings of the same constant with no rule for which is correct. The
+  // assertion below accepts EITHER style as long as they agree with the imports,
+  // which is the property that actually matters.
+  const PROVIDERS = join(
+    process.cwd(), "android", "app", "src", "main", "java",
+    "com", "shos", "app", "widget",
+  );
+
+  it("every provider is consistent about android.view.View", () => {
+    const files = readdirSync(PROVIDERS).filter((f) => f.endsWith(".java"));
+    expect(files.length).toBeGreaterThan(0);
+    const offenders = [];
+    for (const f of files) {
+      const src = readFileSync(join(PROVIDERS, f), "utf8");
+      // A bare `View.` that is not part of `android.view.View.` or another
+      // package-qualified name.
+      const bare = (src.match(/(?<![.\w])View\./g) || []).length;
+      const imported = /^import android\.view\.View;/m.test(src);
+      if (bare > 0 && !imported) {
+        offenders.push(`${f} uses ${bare} bare View. with no import`);
+      }
+    }
+    expect(
+      offenders,
+      `these providers use a bare View. but do not import android.view.View, which ` +
+        `is a compile error (build-apk: "cannot find symbol") that no JS test can ` +
+        `see: ${offenders.join("; ")}. Either add the import, or spell it ` +
+        `android.view.View as the rest of the file does.`,
+    ).toEqual([]);
+  });
+});
