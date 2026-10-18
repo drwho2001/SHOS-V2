@@ -1,4 +1,14 @@
-import { isDayKeyDue, formatDayKey, formatStoredDate } from "./dateInputHelpers";
+// formatStoredDate / formatDayKey are the year-bearing forms and stay for the
+// notification copy and the Redacted-line vocabulary; the *NoYear siblings were
+// added 18 Oct 2026 for the widget payload, which is the one surface where 77dp
+// makes the year the first thing that has to go.
+import {
+  isDayKeyDue,
+  formatDayKey,
+  formatStoredDate,
+  formatDayKeyNoYear,
+  formatStoredDateNoYear,
+} from "./dateInputHelpers";
 // testingReminderSync.js
 //
 // PLAIN-LANGUAGE PURPOSE
@@ -161,12 +171,33 @@ export async function updateTestWidget() {
           ? formatDayKey(suggested, { weekday: true })
           : "—";
 
+        // ADDED 18 Oct 2026 - THE YEAR IS DROPPED for this widget.
+        //
+        // `lastTest` and `retestDue` above are kept, not deleted: inside the app
+        // the year is load-bearing, because "Dec 2026" is how a person tells next
+        // year's retest from this one. On a widget it is not the same question.
+        // The content box of a 2-cell widget is 77dp, and "14 Sep 2026" measured
+        // about 40% wider than "14 Sep" - wide enough to be the difference between
+        // fitting and truncating, which is the entire defect being fixed.
+        //
+        // What makes dropping it honest here rather than lossy: BOTH dates on this
+        // widget are relative to the thing the widget exists to answer (when is
+        // my next test), so the app is always one tap away and the year is
+        // recoverable there. A date whose year actually matters - an appointment
+        // months out - keeps it; see formatStoredDateNoYear's own note.
+        //
+        // The Redacted line is built from the year-bearing form on purpose: it is
+        // the tier that must not disclose a date at all, and it says "logged" or
+        // "none" regardless.
+        const lastTestCompact = formatStoredDateNoYear(mostRecent.date);
+        const retestDueCompact = suggested ? formatDayKeyNoYear(suggested) : "—";
+
         // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate. lastTest is a
         // date and retestDue is a date, so both are dropped at a Redacted tier
-        // and the widget falls back to category + state.
+// and the widget falls back to category + state.
         await sendWidgetUpdate(bridge, "lastTest", "updateTest", {
-          lastTest,
-          retestDue,
+          lastTest: lastTestCompact,
+          retestDue: retestDueCompact,
           category: "Testing",
           state: lastTest ? "logged" : "none",
         },

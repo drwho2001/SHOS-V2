@@ -1,74 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- ADDED 18 Oct 2026 - Appointments widget rebuilt onto the FrameLayout pattern.
+
+     WHY, WHEN THE DATE ALREADY DROPPED THE YEAR. The year was not this widget's
+     problem. This widget was carrying five stacked fields inside a
+     gravity="center" LinearLayout, and at a 2-cell height the content OVERFLOWED
+     the box - which clips off BOTH ends, because centring means an over-tall
+     column loses its top and its bottom equally and neither is reachable. The
+     audit measured this layout 33dp over its content budget.
+
+     That is the same defect class as Clinic Card (t113), which was 127dp over.
+
+     WHY A FrameLayout. FrameLayout places top, centre and bottom INDEPENDENTLY, so
+     the bands do not have to sum to the widget's height. On a LinearLayout column
+     every added field costs height whether or not the text is long, and a hidden
+     field (GONE) still reserves its margin. Here the count is centred, the
+     detail sits at the bottom, and neither can push the other out of view.
+
+     L-076 still applies: this is the ONE ViewGroup, and every child is placed
+     into it with layout_gravity. Children at the same gravity stack rather than
+     reflow, which is why the detail fields carry layout_marginTop to space
+     themselves - there is no sibling axis to put them side by side.
+
+     Progressive disclosure on a narrow widget: the LOCATION line is dropped by
+     the provider below 130dp (NARROW_WIDGET_DP, the same threshold the DoxyPEP
+     provider uses). A clinic address is the longest string on the card and the
+     least load-bearing at a glance; the app is one tap away. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:padding="16dp"
-    android:background="@drawable/widget_background"
-    android:gravity="center">
+    android:background="@drawable/widget_background">
 
+    <!-- The eyebrow. A STATIC literal by design: it carries no user data, so it
+         is safe at every privacy tier, and the provider never sets it - which is
+         what widgetRedactedRender asserts. -->
     <TextView
         android:id="@+id/widget_appt_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
         android:text="Appointments"
-        android:textSize="16sp"
-        android:textColor="@color/widget_text_primary"
-        android:textStyle="bold"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:breakStrategy="simple" />
-
-    <TextView
-        android:id="@+id/widget_appt_count"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="None booked"
-        android:textSize="18sp"
-        android:textColor="@color/widget_good"
-        android:textStyle="bold"
-        android:maxLines="2"
-        android:ellipsize="end"
-        android:breakStrategy="simple" />
-
-    <TextView
-        android:id="@+id/widget_next_appt"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
         android:maxLines="2"
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
-    <!-- ADDED 10 Oct 2026 (t088) - the TIME OF DAY and the LOCATION of the
-         appointment on the line above. The widget previously showed only a date,
-         so a user with two appointments on the same day could not tell which one
-         this card referred to without opening the app.
+    <!-- The count, centred. The primary glanceable fact on this widget, so it is
+         the one value that gets autosize: at 2 cells "3 upcoming" and "None
+         booked" differ enough that a fixed size either wastes room or truncates. -->
+    <TextView
+        android:id="@+id/widget_appt_count"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:text="None booked"
+        android:textSize="18sp"
+        android:textColor="@color/widget_good"
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:breakStrategy="simple"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMaxTextSize="18sp"
+        android:autoSizeMinTextSize="12sp"
+        android:autoSizeStepGranularity="1sp" />
 
-         Flat siblings of the root, not a nested container: a nested ViewGroup in
-         a widget RemoteViews layout does not inflate here (L-076, proven twice on
-         device), so extra content is added as more TextViews on the one card
-         rather than as another page.
+    <!-- The next appointment, bottom-anchored and stacked ABOVE its time and
+         location. It used to read "Next: " + title + date as one string, and that
+         prefix is exactly what pushed the value into an ellipsis on device - the
+         same finding as the Next Dose widget's "Next dose: ". The eyebrow already
+         says what the card is; "Next:" restated it for the cost of a line's
+         width. -->
+    <TextView
+        android:id="@+id/widget_next_appt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="42dp"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="@color/widget_text_primary"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
-         LOCATION is clickable/focusable explicitly false for the same reason the
-         Chronometer on the Next Dose widget is: the provider attaches a maps
-         PendingIntent to this view, and a TextView only consumes touches when
-         something makes it clickable. Stated here because the failure is
-         invisible if a later edit adds android:clickable="true".
+    <!-- ADDED 10 Oct 2026 (t088) - the TIME OF DAY and the LOCATION. Kept as
+         their own views rather than appended to the line above: the widget
+         renders them on separate lines, and neither should have to parse the
+         other's string.
 
-         Both views carry NO user data in the layout - the provider sets the text,
-         and blanks/hides both at a tier that dropped them - so nothing here can
-         disclose anything before the first push. -->
+         LOCATION is clickable/focusable explicitly false: the provider attaches a
+         maps PendingIntent to it, and a TextView only consumes touches when
+         something makes it clickable. Stated because the failure is invisible if
+         a later edit adds android:clickable="true".
+
+         Both carry NO user data in the layout, and the provider blanks/hides both
+         at a tier that dropped them. -->
     <TextView
         android:id="@+id/widget_appt_time"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="20dp"
         android:text=""
         android:textSize="14sp"
         android:textColor="@color/widget_text_primary"
@@ -78,9 +116,10 @@
 
     <TextView
         android:id="@+id/widget_appt_location"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:gravity="center"
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
@@ -89,4 +128,4 @@
         android:breakStrategy="simple"
         android:clickable="false"
         android:focusable="false" />
-</LinearLayout>
+</FrameLayout>

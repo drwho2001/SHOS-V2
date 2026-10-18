@@ -273,3 +273,84 @@ export function formatDayKey(dayKey, { weekday = false, locale } = {}) {
   if (weekday) opts.weekday = "short";
   return d.toLocaleDateString(locale, opts);
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// WIDGET VARIANTS — no year
+// ────────────────────────────────────────────────────────────────────────────
+//
+// ADDED 18 Oct 2026 for the 2-cell widget rebuild, and deliberately NOT a change
+// to formatStoredDate above.
+//
+// WHY NOT JUST DROP THE YEAR FROM THE EXISTING FUNCTION. It is shared by the whole
+// app, and inside the app the year is load-bearing: "Dec 2026" is how a person
+// tells next year's appointment from this one's, and a date rendered without one
+// is ambiguous by construction. The widgets are a different constraint, not a
+// different preference — at 109dp the content box is 77dp, and "14 Sep 2026" is
+// roughly 40% wider than "14 Sep". The year is the first thing that goes when
+// space is short, and on a home screen the surrounding date context (today's date
+// on the same screen) supplies what the year would have.
+//
+// These read in the SAME frames as the functions they sit beside: stored values in
+// UTC, day keys in UTC, real instants locally. Copying the frame logic is what
+// t037 got wrong once already by inlining a toLocaleDateString instead of calling
+// a helper that knew which frame it was in — so the frame is stated in the
+// signature's sibling rather than re-derived here.
+//
+// WHAT THIS DOES NOT SOLVE. A date more than a few months out still wants its
+// year — "Mar" for a date in March of next year is a lie the user cannot detect
+// from the widget. The callers below therefore pair these with the existing
+// year-bearing form on the wider widgets, and the 2-cell path is where the year
+// is dropped.
+
+/**
+ * Renders a STORED date as e.g. "14 Sep" — the year dropped, for a 2-cell widget.
+ *
+ * The sibling of formatStoredDate, which is unchanged. Same fake-UTC digits, same
+ * UTC frame: dropping the year must not also shift the DAY, and reading it in
+ * local time would do exactly that west of UTC.
+ */
+export function formatStoredDateNoYear(storedIso) {
+  if (!storedIso) return "-";
+  const d = new Date(storedIso);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString(undefined, {
+    day: "numeric", month: "short", timeZone: "UTC",
+  });
+}
+
+/**
+ * Renders a STORED date-time as e.g. "14 Sep 16:00" — no year, time retained.
+ *
+ * Appointments are the case that needed both: a single date in a 77dp box fit,
+ * but "14 Sep 2026, 16:00" did not, and the time is what distinguishes two
+ * appointments on one day.
+ */
+export function formatStoredDateTimeNoYear(storedIso) {
+  if (!storedIso) return "-";
+  const d = new Date(storedIso);
+  if (Number.isNaN(d.getTime())) return "-";
+  const date = d.toLocaleDateString(undefined, {
+    day: "numeric", month: "short", timeZone: "UTC",
+  });
+  const time = d.toLocaleTimeString(undefined, {
+    hour: "numeric", minute: "2-digit", timeZone: "UTC",
+  });
+  return `${date} ${time}`;
+}
+
+/**
+ * Renders a "YYYY-MM-DD" DAY KEY as e.g. "23 Dec" — no year.
+ *
+ * The sibling of formatDayKey, which is unchanged and keeps the year. Same UTC
+ * frame for the same reason given there: a day key parsed alone lands on UTC
+ * midnight, so reading it in local time prints the wrong day everywhere east of
+ * UTC, and dropping the year must not be the change that introduces that.
+ */
+export function formatDayKeyNoYear(dayKey, { locale } = {}) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey || "")) return "-";
+  const d = new Date(`${dayKey}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString(locale, {
+    day: "numeric", month: "short", timeZone: "UTC",
+  });
+}

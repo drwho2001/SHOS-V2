@@ -47,6 +47,14 @@ public class AppointmentWidgetProvider extends AppWidgetProvider {
 // CHANGED 5 Oct 2026 (t059 follow-on) - the pre-formatted one-line wording for a
 // Redacted widget, decided in JS. Distinct per provider because all seven share
 // ONE SharedPreferences file, so a shared key name would overwrite itself.
+    // ADDED 18 Oct 2026 - the narrow-widget width threshold, shared in intent with
+    // DoxyPEPWidgetProvider's copy of it. Declared per provider rather than shared
+    // because these classes deliberately share no base class: the ten providers are
+    // independent so a fault in one cannot cascade, and a shared constant would be
+    // the first thing to reintroduce that coupling. If this is ever changed, change
+    // both - widgetRingGuard does not cover it, and nothing else would notice.
+    private static final int NARROW_WIDGET_DP = 130;
+
 private static final String KEY_REDACTED_TEXT = "redacted_text_appt";
 
     @Override
@@ -150,6 +158,14 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_appt";
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
 String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
             int wDp = WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId);
+
+        // ADDED 18 Oct 2026 - below this width the widget is the narrow 2-cell
+        // case. Same threshold and same reasoning as DoxyPEPWidgetProvider's: 130dp
+        // sits between the measured 109dp (2 cells) and 171dp (3 cells), so it does
+        // not depend on landing on an exact cell boundary. A -1 width (launcher did
+        // not say) KEEPS the location - showing more on an unknown width is safer
+        // than hiding a field the Full tier is allowed to render.
+        boolean narrow = wDp > 0 && wDp < NARROW_WIDGET_DP;
             if (redactedText != null && !redactedText.isEmpty()) {
                 views.setTextViewText(R.id.widget_appt_title, redactedText);
             views.setViewVisibility(R.id.widget_appt_count, android.view.View.GONE);
@@ -160,7 +176,7 @@ String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
                 // blank line would read as a rendering fault.
 views.setViewVisibility(R.id.widget_appt_time, android.view.View.GONE);
                 views.setViewVisibility(R.id.widget_appt_location, android.view.View.GONE);
-                WidgetTextFit.fit(views, context, R.id.widget_appt_title, redactedText, wDp, 16f);
+                WidgetTextFit.fit(views, context, R.id.widget_appt_title, redactedText, wDp, 12f, 2);
                 appWidgetManager.updateAppWidget(appWidgetId, views);
                 return;
             }
@@ -174,22 +190,21 @@ views.setViewVisibility(R.id.widget_appt_time, android.view.View.GONE);
             // gaining a permanent "+0 later".
             views.setTextViewText(R.id.widget_appt_count,
                     apptCount + " upcoming" + (futureCount > 0 ? " + " + futureCount + " later" : ""));
-            // THE LINE THAT TRUNCATED: the device showed "Next: Biannual PrEP ...".
-            // Measured as the FULL rendered string including the "Next: " prefix,
-            // which is a third of its width and was not previously accounted for.
+            // REMOVED 18 Oct 2026 - this used to render "Next: " + title + date and
+            // fitted the whole string INCLUDING the prefix, because the prefix was a
+            // third of the field's width. The prefix is gone rather than shrunk: the
+            // eyebrow above already says the card is Appointments, so "Next:"
+            // restated it at a cost of a line's width, and that was the difference
+            // between fitting and truncating on the device.
             //
-            // MEASURED 15 Oct 2026, on the device, at 12sp: "Next: Biannual PrEP
-            // - Thu 18 Mar" is ~600px of text in 382px of field, so no single-line
-            // size could fit it - it needed 7.2sp, below the 12sp legibility floor.
-            // Shrinking is therefore not the answer for this field and never was.
-            // The field now allows TWO lines, so a long appointment wraps instead
-            // of being cut off; the fitter checks the longest single WORD, because
-            // that - not the whole string - decides whether a wrap is clean or
-            // breaks a medication name mid-word the way "Sertralin e" did.
-            views.setTextViewText(R.id.widget_next_appt, "Next: " + nextAppt);
+            // The fit() call itself is KEPT and now measures the string the widget
+            // actually renders. Fitting the prefixed string while rendering the
+            // unprefixed one would have been worse than either: it would have shrunk
+            // text to fit a width the widget no longer needed.
+            views.setTextViewText(R.id.widget_next_appt, nextAppt);
             WidgetTextFit.fit(views, context, R.id.widget_appt_count,
                     apptCount + " upcoming" + (futureCount > 0 ? " + " + futureCount + " later" : ""), wDp, 18f, 2);
-            WidgetTextFit.fit(views, context, R.id.widget_next_appt, "Next: " + nextAppt, wDp, 12f, 2);
+            WidgetTextFit.fit(views, context, R.id.widget_next_appt, nextAppt, wDp, 12f, 2);
 
             // ADDED 10 Oct 2026 (t088) - time and location on their own lines.
             // Each is GONE rather than blank when absent, because an empty
@@ -211,6 +226,14 @@ views.setViewVisibility(R.id.widget_appt_time, android.view.View.GONE);
                 views.setTextViewText(R.id.widget_appt_location, apptLocation);
                 views.setViewVisibility(R.id.widget_appt_location, android.view.View.VISIBLE);
                 WidgetTextFit.fit(views, context, R.id.widget_appt_location, apptLocation, wDp, 12f);
+            // A clinic address is the LONGEST string on this card and the least
+            // load-bearing at a glance; the app is one tap away. Dropped rather
+            // than shrunk, because a truncated address ("Dean Street, Hull...") is
+            // less useful than none, and the audit measured this layout overflowing
+            // its 2-cell box by 33dp with every field present.
+            if (narrow) {
+                views.setViewVisibility(R.id.widget_appt_location, View.GONE);
+            }
                 Intent mapIntent = new Intent(Intent.ACTION_VIEW,
                         Uri.parse("geo:0,0?q=" + Uri.encode(apptLocation)));
                 android.app.PendingIntent mapPendingIntent = android.app.PendingIntent.getActivity(
