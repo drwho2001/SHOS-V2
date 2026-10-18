@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ADDED 17 Oct 2026 - the filled arc of a countdown ring, depleting as the
+     deadline approaches.
+
+     The colour here is only a FALLBACK. The provider overrides it per-push
+     with setProgressTintList() so the arc can carry the urgency (good -> warn ->
+     urgent) that the countdown text carries; <item android:color="@color/widget_good"/>
+     is what shows on the very first inflate, before any push has run.
+
+     useLevel is stated for the same reason as the track's, and is what makes
+     setProgressBar() draw anything other than a full ring. Geometry must match
+     widget_ring_track.xml exactly - a mismatch draws two concentric rings of
+     different diameters rather than one arc over one track. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="ring"
+    android:innerRadius="24dp"
+    android:thickness="8dp"
+    android:useLevel="true">
+    <solid android:color="@color/widget_good" />
+</shape>

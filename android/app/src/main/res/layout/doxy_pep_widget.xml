@@ -1,65 +1,114 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- ADDED 17 Oct 2026 - DoxyPEP widget rebuilt around a countdown ring.
+
+     WHY THE ROOT IS A FrameLayout. The ring needs its sweep and its centre text
+     to sit on top of each other, which wants nesting - and nesting is the one
+     thing this app's widget layouts cannot do. L-076: nested containers do not
+     inflate in a widget RemoteViews layout here (clinic_card_widget shipped one
+     and rendered "Can't load widget"; a ViewFlipper reintroduced it and broke
+     again), enforced by widgetTapAndFallbackGuard.test.js. So this is the ONE
+     ViewGroup, and every child is positioned into it with layout_gravity rather
+     than nested inside a second container.
+
+     WHY THAT IS ALSO BETTER THAN A LinearLayout COLUMN. FrameLayout places top,
+     centre and bottom independently, so the three bands do not have to sum to
+     the widget's height. A vertical stack has to fit exactly, and the audit found
+     this layout overflowing its 2-cell box - which clipped content off BOTH ends
+     because the root gravity was "center". Here the ring is always centred and
+     the text always sits at the bottom, whatever the eyebrow does.
+
+     WHY THE TITLE IS A 12sp EYEBROW. "DoxyPEP Window" at 16sp measured 264px
+     into a 212px field and needed ~9.8sp to fit on one line - i.e. it could not
+     fit at any legible size. That is pool item t115, and it is why the ring
+     replaced it rather than merely joining it: the word "Window" was never
+     carrying information. maxLines is 2 because the Redacted tier renders its
+     line into this same view.
+
+     WHY THE COUNTDOWN IS BELOW THE RING AND NOT IN IT. The platform's own
+     duration format for a 72-hour PEP window is "2d 23:59:59" - about 162px at
+     12sp - against a 154px circle interior at this ring size. It cannot be
+     fitted without dropping below the 12sp legibility floor, and
+     RemoteViews.setChronometer's format argument is a single-string template, so
+     the components cannot be selected. So the ring's centre carries the STATUS
+     WORD (short, and colour is doing the urgency work anyway) and the live
+     countdown gets the full 77dp width underneath it, where any format fits. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:padding="16dp"
-    android:background="@drawable/widget_background"
-    android:gravity="center">
+    android:background="@drawable/widget_background">
 
     <TextView
         android:id="@+id/widget_doxy_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="DoxyPEP Window"
-        android:textSize="16sp"
-        android:textColor="@color/widget_text_primary"
-        android:textStyle="bold"
-        android:maxLines="1"
+        android:layout_gravity="top|start"
+        android:text="DOXYPEP"
+        android:textSize="12sp"
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="2"
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
+    <!-- android:rotation="-90" moves the sweep's start from 3 o'clock to 12.
+         It cannot live in the style, because rotation is applied to the inflated
+         view in the host process, not by the style. Pinned by widgetRingGuard. -->
+    <ProgressBar
+        android:id="@+id/widget_doxy_ring"
+        style="@style/ShosWidgetRing"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center"
+        android:rotation="-90"
+        android:max="100" />
+
+    <!-- The status word, centred INSIDE the ring. "ACTIVE" and "EXPIRED" are 6
+         characters at 12sp, about 76px against a 154px interior - and the
+         provider recolours this per state, so the ring centre is also the
+         accessibility text for the colour, never colour alone. -->
     <TextView
         android:id="@+id/widget_doxy_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="No active window"
-        android:textSize="18sp"
-        android:textColor="@color/widget_warn"
-        android:textStyle="bold"
-        android:maxLines="2"
-        android:ellipsize="end"
-        android:breakStrategy="simple" />
-
-    <TextView
-        android:id="@+id/widget_doxy_countdown"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text=""
+        android:layout_gravity="center"
+        android:text="No window"
         android:textSize="12sp"
-        android:textColor="@color/widget_text_muted"
+        android:textStyle="bold"
         android:maxLines="1"
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
-    <!-- ADDED 9 Oct 2026 (t093) - the EVIDENCE line: the stored date of the
-         encounter that opened the window, so the widget shows WHY a window
-         exists, not just a bare countdown. A flat sibling, not a nested
-         container (L-076: widget RemoteViews layouts inflate only one
-         ViewGroup). Hidden at the Redacted tier by the provider, because an
-         exposure DATE is identifying. -->
+    <!-- A real Chronometer, not a pushed string. It ticks in the LAUNCHER
+         process, so the countdown is live every second with no app process, no
+         alarm and no wake lock - which is what lets the ring arc step coarsely
+         on a schedule while the number stays honest. Its marginBottom reserves
+         the evidence row so the two do not overlap; at 2 cells the provider
+         hides the evidence line and this sits 14dp above the bottom. -->
+    <Chronometer
+        android:id="@+id/widget_doxy_countdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="14dp"
+        android:textSize="14sp"
+        android:textColor="@color/widget_text_primary"
+        android:clickable="false"
+        android:focusable="false" />
+
+    <!-- ADDED 9 Oct 2026 (t093), KEPT: the stored date of the encounter that
+         opened the window, so the widget shows WHY a window exists. Unchanged in
+         substance - an exposure DATE is identifying, so the provider still hides
+         it at the Redacted tier. -->
     <TextView
         android:id="@+id/widget_doxy_evidence"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_gravity="bottom|center_horizontal"
         android:text=""
         android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
-        android:maxLines="2"
+        android:maxLines="1"
         android:ellipsize="end"
         android:breakStrategy="simple" />
-</LinearLayout>
+</FrameLayout>

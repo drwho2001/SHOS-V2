@@ -7,6 +7,7 @@ import android.view.View;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.widget.RemoteViews;
 import com.shos.app.R;
@@ -23,6 +24,30 @@ public class NextDoseWidgetProvider extends AppWidgetProvider {
 // Redacted widget, decided in JS. Distinct per provider because all seven share
 // ONE SharedPreferences file, so a shared key name would overwrite itself.
 private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
+
+    // ADDED 17 Oct 2026 - the ring's horizon: a nominal dosing day.
+    //
+    // A ring is a fraction OF SOMETHING, and the widget knows the deadline but not
+    // the dosing frequency - the payload carries no interval, and inferring one from
+    // the interval between two logged doses would be a guess dressed as a
+    // measurement. So the horizon is stated here as an assumption rather than
+    // derived, and a full ring reads as "a day until your next dose". A medication
+    // taken more often than daily simply pins the ring full until the deadline is
+    // within a day, which is true if unremarkable.
+    private static final long DOSE_HORIZON_MS = 24L * 60L * 60L * 1000L;
+
+    /**
+     * Read a colour through the current configuration, so the values-night/
+     * counterpart is the one actually drawn.
+     *
+     * ADDED 17 Oct 2026 - Context.getColor, not a hardcoded int. The dark widget
+     * palette was separately contrast-measured against #1D4E4B rather than being a
+     * lightened copy of the light one, so reading the raw resource would draw
+     * light-mode ink on a dark background.
+     */
+    private static int colour(Context context, int res) {
+        return context.getColor(res);
+    }
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
@@ -103,80 +128,117 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent);
         String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
 
-        // HOISTED 16 Oct 2026 (t116) - above the Redacted early return, for the
-        // same reason the tap target is hoisted above it: the width comes from
-        // the launcher and carries no user data, so it does not vary by privacy
-        // tier and belongs before any branch that returns.
+// REMOVED 17 Oct 2026 - the `int wDp = WidgetTextFit.widthDp(...)` line and
+        // the long note above it are GONE, deliberately and not as tidying.
         //
-        // It used to be declared at the BOTTOM of this method, which is exactly
-        // why the Redacted branch inlined WidgetTextFit.widthDp(...) rather than
-        // passing wDp by name. widgetTextFitMaxLinesGuard could only read a width
-        // argument spelled `wDp`, so it never saw that call site - and the lazy
-        // [\s\S]*? in its regex then ran on and swallowed the NEXT fit() call,
-        // which did pass wDp and maxLines=2. The pair reported the neighbour's
-        // arguments, the scanner counted 25 sites when 26 existed, and the suite
-        // stayed green over a live defect.
+        // wDp existed solely to be passed to fit(), and this provider has no fit()
+        // calls left: both fields that had one now carry autoSizeTextType in the
+        // layout, where the framework - not the fitter - does the shrinking. So the
+        // local had no reader, and leaving it would be an unused variable plus a
+        // comment describing a hoisting rule for a call that no longer exists.
         //
-        // What it hid: this branch fitted R.id.widget_med_name with SIX
-        // arguments, so maxLines defaulted to 1 (WidgetTextFit.java:125) while
-        // next_dose_widget.xml declares maxLines="2" for that view. So at the
-        // Redacted tier the medication name could not wrap, while at the Full
-        // tier it could - the privacy tier rendering strictly worse than the
-        // unrestricted one on the widget's largest field, for the one string its
-        // own comment names ("Antibiotics - 2 booked" at 18sp).
-        int wDp = WidgetTextFit.widthDp(context, appWidgetManager, appWidgetId);
+        // The historical note is kept in docs/HISTORY.md and on t116, because the
+        // RULE it recorded is still true and still needed elsewhere: a width
+        // argument must be passed by the name `wDp`, hoisted above any early
+        // return, so widgetTextFitMaxLinesGuard can read the call site. It stopped
+        // applying here only because this provider stopped calling the fitter.
+        //
+        // Deleting the fitter call is not a loss of coverage. autoSizeTextType
+        // engages on the real field width (which is why the views are
+        // match_parent, not wrap_content) and shrinks to a declared 12sp floor,
+        // which is where this app puts its legibility floor anyway. A fitter call
+        // left in place would have been worse than nothing: TextView.setTextSize is
+        // guarded by !isAutoSizeEnabled(), so it is a deterministic NO-OP, and the
+        // fitter's log line - the thing this repo measures truncation with - would
+        // have reported a fit that never happened.
 
-            if (redactedText != null && !redactedText.isEmpty()) {
-                views.setTextViewText(R.id.widget_med_name, redactedText);
-            views.setViewVisibility(R.id.widget_next_dose, android.view.View.GONE);
-                // Fitted HERE as well, because this branch returns below and would
-                // otherwise skip the fit pass entirely. A Redacted line is still a
-                // string that has to fit the widget, and "Antibiotics - 2 booked"
-                // at 18sp is exactly as likely to overflow as a medication name.
-                //
-                // maxLines 2 matches BOTH the layout's declaration for this view
-                // and the Full-tier call below. The same field, at the same size,
-                // must be fitted the same way in both branches - and now the
-                // guard can read both to prove it.
-                WidgetTextFit.fit(views, context, R.id.widget_med_name, redactedText, wDp, 18f, 2);
-                appWidgetManager.updateAppWidget(appWidgetId, views);
-                return;
-            }
+        if (redactedText != null && !redactedText.isEmpty()) {
+            views.setTextViewText(R.id.widget_med_name, redactedText);
+            views.setViewVisibility(R.id.widget_next_dose, View.GONE);
+            // ADDED 17 Oct 2026 - the RING and its countdown are hidden at the
+            // Redacted tier, for the same reason DoxyPEPWidgetProvider hides its
+            // own: a countdown to a dose time is the user's own schedule, and
+            // ALLOWED_AT_REDACTED for nextDose is category+state only. A visible
+            // view is disclosed data whether or not any text sits beside it.
+            views.setViewVisibility(R.id.widget_ring, View.GONE);
+            views.setViewVisibility(R.id.widget_countdown, View.GONE);
+            // NO fit() call, and that is the change rather than an omission. This
+            // view carries autoSizeTextType, so the Redacted line is shrunk by the
+            // framework to the same 12sp floor as the Full-tier medication name.
+            //
+            // The old comment here claimed the Redacted tier "rendered strictly
+            // worse than the unrestricted one" because it passed six arguments and
+            // so got maxLines=1 against a layout declaring 2. That defect is real
+            // and is fixed - but it is fixed by autosize removing the argument list
+            // entirely, not by correcting the sixth argument. Correcting it would
+            // have left a dead call in place.
+            appWidgetManager.updateAppWidget(appWidgetId, views);
+            return;
+        }
+
+// ADDED 17 Oct 2026 - every field is written EXPLICITLY in every branch, not just
+        // the ones that change. RemoteViews reuses the inflated view between updates,
+        // so a widget that was Redacted and then switched back to Full would keep the
+        // Redacted line in this slot until something overwrote it. Overwriting every
+        // field is what makes a privacy-tier change actually take effect on screen.
         views.setTextViewText(R.id.widget_med_name, medName);
-        views.setTextViewText(R.id.widget_next_dose, "Next dose: " + nextDoseTime);
 
-        // CHANGED 2 Oct 2026 - render the countdown. Kept as its own block
-        // rather than folded into the text line, because it has to be HIDDEN
-        // when there is no future dose: a Chronometer counting up from zero
-        // looks like a live reading and is worse than showing nothing.
-        if (prefs.contains(KEY_COUNTDOWN_AT)) {
-            long target = prefs.getLong(KEY_COUNTDOWN_AT, 0L);
-            long remaining = target - System.currentTimeMillis();
-            if (remaining > 0) {
-                // CHANGED 2 Oct 2026, after getting both signatures wrong and
-                // checking the docs rather than trusting memory (L-046):
-                //
-                //   setChronometer(int viewId, long base, String format, boolean started)
-                //   setChronometerCountDown(int viewId, boolean isCountDown)
-                //
-                // The second takes a BOOLEAN, not a timestamp - it only sets
-                // which way to count. The deadline goes in through setChronometer
-                // as `base`.
-                //
-                // And base is in the SystemClock.elapsedRealtime() timebase, NOT
-                // wall-clock. Passing System.currentTimeMillis() here compiles,
-                // runs, and produces a nonsense countdown - which is why this
-                // converts rather than subtracting.
-                long base = SystemClock.elapsedRealtime() + remaining;
-                // format null keeps the platform default (H:MM:SS). "%s" is
-                // substituted with the timer value, so "in %s" reads "in 4:12:30".
-                views.setChronometer(R.id.widget_countdown, base, "in %s", true);
-                views.setChronometerCountDown(R.id.widget_countdown, true);
-                views.setViewVisibility(R.id.widget_countdown, View.VISIBLE);
-            } else {
-                views.setViewVisibility(R.id.widget_countdown, View.GONE);
-            }
+        // The wall-clock time with NO "Next dose: " prefix. That prefix measured as
+        // roughly a third of the field's width and is exactly what pushed the whole
+        // thing into an ellipsis on device; the eyebrow above now says what the
+        // widget is, so the restatement is redundant rather than merely long.
+        views.setTextViewText(R.id.widget_next_dose, nextDoseTime);
+
+        // CHANGED 2 Oct 2026, kept and now also driving the ring - render the
+        // countdown. Kept as its own block rather than folded into a text line,
+        // because it has to be HIDDEN when there is no future dose: a Chronometer
+        // counting up from zero looks like a live reading and is worse than showing
+        // nothing.
+        long target = prefs.getLong(KEY_COUNTDOWN_AT, 0L);
+        long remaining = target - System.currentTimeMillis();
+
+        if (target > 0 && remaining > 0) {
+            // Ring: how much of a nominal dosing day is left. The horizon is a
+            // NAMED CONSTANT rather than a stored interval, because the widget
+            // genuinely does not know the medication's dosing frequency and must not
+            // guess one from the data - a 12-hourly drug and a weekly one would both
+            // be wrong if inferred. A full ring means "a day until your next dose",
+            // and it is CLAMPED so a dose further out than that reads as full rather
+            // than as progress above max.
+            int pct = (int) Math.max(0L, Math.min(100L, (remaining * 100L) / DOSE_HORIZON_MS));
+            views.setProgressBar(R.id.widget_ring, 100, pct, false);
+            views.setProgressTintList(R.id.widget_ring,
+                    ColorStateList.valueOf(colour(context, R.color.widget_good)));
+            views.setViewVisibility(R.id.widget_ring, View.VISIBLE);
+
+            // base is in the SystemClock.elapsedRealtime() timebase, NOT wall-clock.
+            // Passing System.currentTimeMillis() here compiles, runs, and produces a
+            // nonsense countdown - which is why this converts rather than subtracting.
+            views.setChronometer(R.id.widget_countdown,
+                    SystemClock.elapsedRealtime() + remaining, "%s", true);
+            views.setChronometerCountDown(R.id.widget_countdown, true);
+            views.setViewVisibility(R.id.widget_countdown, View.VISIBLE);
+        } else if (target > 0) {
+            // DUE. The ring is FULL and urgent rather than hidden or empty: the dose
+            // is now, and a depleted ring would read as "nothing pending" - the
+            // opposite of the truth, on the one widget where being wrong matters.
+            views.setProgressBar(R.id.widget_ring, 100, 100, false);
+            views.setProgressTintList(R.id.widget_ring,
+                    ColorStateList.valueOf(colour(context, R.color.widget_urgent)));
+            views.setViewVisibility(R.id.widget_ring, View.VISIBLE);
+            // A Chronometer counting past zero renders a negative duration, so the
+            // centre switches to a word. The format string is a template with one
+            // unused argument - String.format ignores extra arguments - which is how
+            // a Chronometer renders static text without becoming a different view.
+            views.setChronometer(R.id.widget_countdown,
+                    SystemClock.elapsedRealtime(), "DUE", false);
+            views.setChronometerCountDown(R.id.widget_countdown, false);
+            views.setViewVisibility(R.id.widget_countdown, View.VISIBLE);
         } else {
+            // No dose scheduled at all: there is no countdown to depict, so both the
+            // ring and its centre are hidden. An empty ring beside a medication name
+            // would read as a depleted one.
+            views.setViewVisibility(R.id.widget_ring, View.GONE);
             views.setViewVisibility(R.id.widget_countdown, View.GONE);
         }
 
@@ -192,22 +254,21 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         // countdown to their next dose actually wants; inventory is stock level,
         // which is what the Refill widget is for.
 
-        // ---- TEXT FIT PASS (13 Oct 2026) -------------------------------
+        // ---- TEXT FIT PASS (13 Oct 2026, REMOVED 17 Oct 2026) --------------
         //
-        // ONE place, after every setTextViewText, so no branch can render text
-        // without being fitted. Measured against the device: this widget showed
-        // "Sertralin e +2 ..." - the medication name broken MID-WORD, because
-        // `breakStrategy="simple"` will break a word that does not fit rather
-        // than ellipsize it. The fix is not to change the break strategy, it is
-        // to make the word FIT.
+        // There are deliberately NO fit() calls left in this provider. Both fields
+        // that had one now carry autoSizeTextType in the layout, and
+        // TextView.setTextSize is guarded by !isAutoSizeEnabled() - so once autosize
+        // is on, a setTextViewTextSize is a deterministic no-op and the fitter would
+        // log a decision that never happened. That is worse than no helper: the log
+        // is what this repo measures truncation with, so a fitter that silently does
+        // nothing would be evidence of a fit that did not occur.
         //
-        // Fitted here rather than in the layout because autoSizeTextType does not
-        // work in RemoteViews - see WidgetTextFit for the whole story.
-        WidgetTextFit.fit(views, context, R.id.widget_med_name, medName, wDp, 18f, 2);
-        // The NEXT-DOSE line is measured as the full string it renders, not the
-        // bare time: the literal "Next dose: " prefix is a third of its width and
-        // is exactly the part that pushed it into an ellipsis on device.
-        WidgetTextFit.fit(views, context, R.id.widget_next_dose, "Next dose: " + nextDoseTime, wDp, 14f, 2);
+        // The third field, the wall-clock time, is five characters and fits at 12sp
+        // in any width this widget can be placed at, so it has nothing to measure.
+        // widgetTextFitMaxLinesGuard asserts the site's count, so removing them is a
+        // change to that number and not a silent cleanup.
+
         // -------------------------------------------------------------------
 
         appWidgetManager.updateAppWidget(appWidgetId, views);

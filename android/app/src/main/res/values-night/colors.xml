@@ -20,4 +20,15 @@
          the inner alt surface. -->
     <color name="widget_cycle">#FFA8C9</color>
     <color name="widget_accent">#4FD1C5</color>
+
+    <!-- ADDED 17 Oct 2026 - dark-mode counterparts of the countdown-ring
+         palette. Re-measured against THIS file's widget_bg rather than copied
+         from values/colors.xml, because the note above records exactly why a
+         colour that passes on one background can fail on another.
+         widget_urgent: 5.08:1 as text on #1D4E4B.
+         widget_ring_track: 3.48:1 as a non-text UI element.
+         The first dark-mode red tried was #FF8A7A and it measured 4.09:1 -
+         under AA - so it was lightened rather than shipped. -->
+    <color name="widget_urgent">#FFA99B</color>
+    <color name="widget_ring_track">#6FA8A4</color>
 </resources>

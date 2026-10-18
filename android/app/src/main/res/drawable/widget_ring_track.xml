@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ADDED 17 Oct 2026 - the unfilled remainder of a countdown ring.
+
+     android:useLevel is stated EXPLICITLY, and the earlier reason given for it
+     here was WRONG. It claimed the attribute's default differs across API
+     levels, so that omitting it could yield a solid disc. On this platform
+     GradientState.mUseLevelForShape defaults to TRUE (GradientDrawable.java),
+     so a ring with no useLevel is still level-dependent - which is the more
+     important consequence: the TRACK cannot be made "always full" by omitting
+     the attribute either. It is stated on both layers so neither has to depend
+     on a platform default that a different API level could resolve differently,
+     and so the intent is readable at the point of the attribute.
+
+     Geometry: innerRadius 24dp + thickness 8dp = 32dp outer, so a 64dp view
+     contains it exactly. Explicit dp rather than innerRadiusRatio/thicknessRatio
+     because those ratios are fractions of whatever bounds the drawable is given,
+     which the launcher rather than this app decides. MUST match
+     widget_ring_arc.xml exactly - a mismatch draws two concentric rings of
+     different diameters rather than one arc over one track. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="ring"
+    android:innerRadius="24dp"
+    android:thickness="8dp"
+    android:useLevel="true">
+    <solid android:color="@color/widget_ring_track" />
+</shape>

@@ -1,103 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- ADDED 17 Oct 2026 - Next Dose widget rebuilt around a countdown ring.
+
+     HERE THE COUNTDOWN IS IN THE CENTRE, as designed - unlike DoxyPEP. A daily
+     dose is normally inside 24 hours, and the platform's format for that is
+     "4:12:30": about 129px at 12sp against a 154px circle interior. It fits, with
+     room for an eighth character. The same layout cannot show a 72-hour window
+     (that is "2d 23:59:59", ~162px), which is why the DoxyPEP widget puts its
+     countdown underneath its ring instead; the provider there hides the ring
+     centre when the remaining time runs past 24 hours.
+
+     FrameLayout root, for the L-076 reason recorded in doxy_pep_widget.xml: one
+     ViewGroup, children positioned with layout_gravity, no nesting. The bands
+     do not have to sum to the widget height, so an overflowing eyebrow or a long
+     medication name cannot push content off either end - which is exactly the
+     defect that clipped this layout in the audit.
+
+     The medication name has autosize rather than a fit() call. Once
+     autoSizeTextType is on, TextView.setTextSize is a no-op (the framework guards
+     it with !isAutoSizeEnabled()), so WidgetTextFit cannot shrink it and would
+     only log a decision that never happened. It needs match_parent for the
+     measure to be EXACTLY constrained, and gravity=center to keep looking
+     centred once the view is full-width. The whole reason autosize works in
+     RemoteViews at all is recorded in CLAUDE.md. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:padding="16dp"
-    android:background="@drawable/widget_background"
-    android:gravity="center">
+    android:background="@drawable/widget_background">
 
-    <!-- ADDED 10 Oct 2026 (t091) - the static title every other widget already
-         carries. This layout was the only one of the ten whose FIRST line was a
-         value (the medication name) rather than a title, which is why it read
-         unlike its nine siblings: Refills/Last Test/Appointments/DoxyPEP all
-         open with a 16sp bold label of what the widget IS, then the value.
-
-         The title is static and carries no user data, so it stays visible at
-         every privacy tier - the same reason the other nine titles are static
-         literals rather than provider-set text. The medication name below it
-         is the identifying part, and the provider already replaces that with
-         the redacted line and hides widget_next_dose at the Redacted tier
-         (NextDoseWidgetProvider.java). Nothing about that path changes: this
-         view is never hidden, so widgetRedactedRender.test.js's "every id it
-         hides exists in its layout" assertion is untouched.
-
-         Label text matches the picker label and the receiver_label_next_dose
-         string ("Next Dose"), so the tile says the same thing in the picker,
-         on the home screen and in the widget's own settings entry. -->
     <TextView
         android:id="@+id/widget_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Next Dose"
-        android:textSize="16sp"
-        android:textColor="@color/widget_text_primary"
-        android:textStyle="bold"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:breakStrategy="simple" />
-
-    <!-- The value slot: which medication the time below belongs to. Promoted to
-         18sp so the hierarchy matches the other nine widgets, where the second
-         line is the headline and the first is only the label. It was 16sp,
-         identical to the title, so the two lines competed instead of reading
-         as label-then-value. -->
-    <TextView
-        android:id="@+id/widget_med_name"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Medication"
-        android:textSize="18sp"
-        android:textColor="@color/widget_text_primary"
-        android:textStyle="bold"
-        android:maxLines="2"
-        android:ellipsize="end"
-        android:breakStrategy="simple" />
-
-    <TextView
-        android:id="@+id/widget_next_dose"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="Next dose: --:--"
-        android:textSize="14sp"
+        android:layout_gravity="top|start"
+        android:text="NEXT DOSE"
+        android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
         android:maxLines="2"
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
-    <!-- CHANGED 2 Oct 2026 - a real Chronometer rather than a JS interval.
-         The widget has updatePeriodMillis="0" because a medicine schedule is
-         not a minute-resolution thing, so without this the countdown would tick
-         once and then lie for the next hour. Chronometer is updated by the
-         system UI, so it needs no alarm, no wake lock and no app process - the
-         whole reason not to drive this from a setInterval on the JS side.
+    <ProgressBar
+        android:id="@+id/widget_ring"
+        style="@style/ShosWidgetRing"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center"
+        android:rotation="-90"
+        android:max="100" />
 
-         setChronometerCountDown (rather than counting up) is what makes it read
-         "in 4h 12m" towards the deadline instead of counting away from it.
-
-         CHANGED 4 Oct 2026 - clickable/focusable stated explicitly. The root
-         LinearLayout carries the click PendingIntent, and a Chronometer extends
-         TextView; a TextView only consumes touches when something makes it
-         clickable, so these are false by default. Stated because the failure is
-         invisible if a later edit adds android:clickable="true": the countdown
-         would become the one region of the widget that does nothing on tap.
-
-         NOTE this comment sits ABOVE the tag, not inside it. An XML comment is
-         not legal inside a tag's attribute list, and putting one there fails
-         :app:parseDebugLocalResources with "Element type must be followed by
-         either attribute specifications, '>' or '/>'". Same shape as the JSX
-         `//`-in-children-position bug this repo has already recorded. -->
+    <!-- The live countdown, centred inside the ring. clickable/focusable are
+         stated false deliberately: the root FrameLayout carries the tap
+         PendingIntent, and a Chronometer is a TextView, which only consumes a
+         touch when something makes it clickable. Stated so a later edit adding
+         android:clickable="true" does not silently create one dead region. -->
     <Chronometer
         android:id="@+id/widget_countdown"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_gravity="center"
         android:visibility="gone"
-        android:textSize="14sp"
+        android:textSize="12sp"
         android:textColor="@color/widget_text_primary"
         android:clickable="false"
         android:focusable="false" />
-</LinearLayout>
+
+    <!-- The wall-clock dose time, ABOVE the medication name. It was originally
+         placed at bottom|end beside it, and that was a real collision: the
+         medication name is match_parent wide with centred text, so its view
+         spans the whole bottom band and the time drew on top of it. In a
+         FrameLayout children placed at the same gravity are stacked, not
+         reflowed - there is no sibling axis to place them side by side, which is
+         the cost of L-076 forbidding a second ViewGroup. Stacked, the ring
+         still holds the centre and the two lines read as one caption. -->
+    <TextView
+        android:id="@+id/widget_next_dose"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="20dp"
+        android:text="--:--"
+        android:textSize="12sp"
+        android:textColor="@color/widget_text_muted"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
+
+    <!-- The medication the time belongs to. Replaces the old 18sp hero: at 109dp
+         an 18sp medication name is what produced "Sertralin e" broken mid-word,
+         and a 2-cell box has room for one size of text, not two competing ones. -->
+    <TextView
+        android:id="@+id/widget_med_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:gravity="center"
+        android:text="Medication"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/widget_text_primary"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMaxTextSize="14sp"
+        android:autoSizeMinTextSize="12sp"
+        android:autoSizeStepGranularity="1sp" />
+</FrameLayout>

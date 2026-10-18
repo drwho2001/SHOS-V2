@@ -6,6 +6,8 @@ import android.view.View;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
+import android.os.SystemClock;
 import android.widget.RemoteViews;
 import android.net.Uri;
 import com.shos.app.R;
@@ -20,6 +22,38 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
     private static final String KEY_DOXY_EVIDENCE = "doxy_evidence";
     // The pre-formatted one-line wording for a Redacted widget, decided in JS.
     private static final String KEY_REDACTED_TEXT = "redacted_text";
+
+    // ADDED 17 Oct 2026 - the PEP window length in milliseconds. The SAME figure
+    // the notification copy already states ("Take within 72h of exposure"), named
+    // rather than inlined because the ring needs it as a named constant.
+    //
+    // It exists because a ring is a FRACTION OF A WINDOW and this app stores only
+    // the deadline. Deriving the start as (deadline - 72h) avoids adding a field
+    // across the plugin bridge purely to carry a value the arithmetic already
+    // determines exactly - and on a widget, adding a field is a privacy decision,
+    // not just a display change.
+    private static final long WINDOW_MS = 72L * 60L * 60L * 1000L;
+
+    // ADDED 17 Oct 2026 - below this width (dp) a widget is the narrow 2-cell case
+    // and sheds its optional detail. 130 sits between the measured 109dp (2 cells,
+    // 77dp of content) and 171dp (3 cells), so it does not depend on a widget landing
+    // on an exact cell boundary. See CLAUDE.md on OPTION_APPWIDGET_SIZES.
+    private static final int NARROW_WIDGET_DP = 130;
+
+    /**
+     * Read a colour through the current configuration, so the values-night/
+     * counterpart is the one actually drawn.
+     *
+     * ADDED 17 Oct 2026 - Context.getColor, not a hardcoded int. The ring's entire
+     * urgency signal is colour, and every ring colour has a DIFFERENT value in
+     * values-night/: the dark palette was separately contrast-measured against
+     * #1D4E4B rather than being a lightened copy. Reading the raw resource would
+     * draw light-mode ink on a dark background.
+     */
+    private static int colour(Context context, int res) {
+        return context.getColor(res);
+    }
+
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
@@ -109,47 +143,125 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
             views.setViewVisibility(R.id.widget_doxy_status, View.GONE);
             views.setViewVisibility(R.id.widget_doxy_countdown, View.GONE);
             views.setViewVisibility(R.id.widget_doxy_evidence, View.GONE);
+            // ADDED 17 Oct 2026 - the RING is hidden at the Redacted tier too, and
+            // not as a styling preference. The arc is a fraction of the 72-hour
+            // window that remains, so drawing it puts elapsed-time-within-an-
+            // exposure-window on the home screen, and ALLOWED_AT_REDACTED for
+            // doxyPepWindow is category+state only - the same reason the evidence
+            // DATE is hidden three lines above. A visible view is disclosed data
+            // whether or not any text sits next to it.
+            views.setViewVisibility(R.id.widget_doxy_ring, View.GONE);
             // Fitted in this branch too: it returns below, and on the device the
-            // Redacted line was one of the two that truncated.
-            WidgetTextFit.fit(views, context, R.id.widget_doxy_title, redactedText, wDp, 16f);
+            // Redacted line was one of the two that truncated. 12f / maxLines 2
+            // matches what the layout now declares for this view -
+            // widgetTextFitMaxLinesGuard checks BOTH axes, so a stale 16f here fails
+            // the build instead of silently rendering larger than the design allows.
+            WidgetTextFit.fit(views, context, R.id.widget_doxy_title, redactedText, wDp, 12f, 2);
             appWidgetManager.updateAppWidget(appWidgetId, views);
             return;
         }
 
+// ADDED 17 Oct 2026 - the eyebrow is set EXPLICITLY rather than left to the
+        // layout literal. RemoteViews reuses the inflated view between updates, so a
+        // widget that was Redacted and then switched back to Full would keep the
+        // Redacted line in this slot indefinitely unless a non-Redacted update
+        // overwrites it. Overwriting every field in every branch is what makes a
+        // privacy-tier change actually take effect on the home screen.
+        //
+        // It is "DOXYPEP", not the old "DoxyPEP Window". That string measured 264px
+        // into a 212px field and needed ~9.8sp to fit on one line, so it could not
+        // fit at any legible size - pool item t115. The word "Window" was never
+        // carrying information; the ring depicts the window.
+        views.setTextViewText(R.id.widget_doxy_title, "DOXYPEP");
+
+        long now = System.currentTimeMillis();
         if (expiry > 0) {
-            long remaining = expiry - System.currentTimeMillis();
+            long remaining = expiry - now;
             if (remaining > 0) {
-                long hours = remaining / (1000 * 60 * 60);
-                long minutes = (remaining % (1000 * 60 * 60)) / (1000 * 60);
-                views.setTextViewText(R.id.widget_doxy_title, "DoxyPEP Window");
-                views.setTextViewText(R.id.widget_doxy_status, "Active");
-                views.setTextViewText(R.id.widget_doxy_countdown, String.format("%dh %dm remaining", hours, minutes));
-                // t119 (17 Oct 2026): maxSp was 16f while doxy_pep_widget.xml declares
-                // 12sp for this view, so the fitter could render the countdown a
-                // third larger than the design allows. Same class as the Test
-                // widget's 18f-on-14sp, and invisible to a guard that only reads
-                // maxLines.
-                WidgetTextFit.fit(views, context, R.id.widget_doxy_countdown, String.format("%dh %dm remaining", hours, minutes), wDp, 12f);
+                // Ring: the percentage of the window still to run. ProgressBar takes
+                // an int, so percent rather than a fraction - and CLAMPED, because a
+                // deadline stored further out than 72h (which an upgraded or
+                // hand-edited store can hold) would otherwise ask for progress above
+                // max and render as a permanently full ring.
+                int pct = (int) Math.max(0L, Math.min(100L, (remaining * 100L) / WINDOW_MS));
+                views.setProgressBar(R.id.widget_doxy_ring, 100, pct, false);
+                views.setViewVisibility(R.id.widget_doxy_ring, View.VISIBLE);
+
+                // Urgency is THREE steps, not a ramp. The status word in the ring's
+                // centre is the accessible text, and a smooth gradient of near-
+                // identical shades would put the meaning in colour alone, which
+                // WCAG 1.4.1 rules out. Thresholds are fractions of the window: over a
+                // third remaining is comfortable, under a ninth is nearly out.
+                float frac = (float) remaining / (float) WINDOW_MS;
+                int arc = frac > 0.33f ? R.color.widget_good
+                        : frac > 0.11f ? R.color.widget_warn
+                        : R.color.widget_urgent;
+                views.setProgressTintList(R.id.widget_doxy_ring,
+                        ColorStateList.valueOf(colour(context, arc)));
+                // setTextColor, not setTextColorInt: RemoteViews actions are applied
+                // reflectively in the launcher process, so naming the API-26 method on
+                // an API-24 device throws at reapply rather than at compile, and the
+                // host turns that into "Can't load widget". Deprecated, but correct
+                // on every level this app supports. Do not "upgrade" this.
+                views.setTextColor(R.id.widget_doxy_status, colour(context, arc));
+                views.setTextViewText(R.id.widget_doxy_status, "ACTIVE");
+
+                // A real Chronometer, so the countdown is live every second in the
+                // LAUNCHER process - no app process, no alarm, no wake lock. It used
+                // to be a pushed string ("5h 12m remaining") recomputed on every
+                // push, so the number was only as current as the last sync. On a
+                // widget whose whole job is to be read at a pharmacy counter, that
+                // staleness IS the defect.
+                //
+                // base is in the SystemClock.elapsedRealtime() timebase, NOT wall
+                // clock. Passing System.currentTimeMillis() here compiles, runs, and
+                // produces a nonsense countdown - the trap NextDoseWidgetProvider
+                // documents at exactly this line.
+                long base = SystemClock.elapsedRealtime() + remaining;
+                views.setChronometer(R.id.widget_doxy_countdown, base, "%s", true);
+                views.setChronometerCountDown(R.id.widget_doxy_countdown, true);
+                views.setViewVisibility(R.id.widget_doxy_countdown, View.VISIBLE);
             } else {
-                views.setTextViewText(R.id.widget_doxy_title, "DoxyPEP Window");
-                views.setTextViewText(R.id.widget_doxy_status, "Expired");
-                views.setTextViewText(R.id.widget_doxy_countdown, "Take within 72h of exposure");
-                // t119 (17 Oct 2026): was 14f against a 12sp layout - see above.
-                WidgetTextFit.fit(views, context, R.id.widget_doxy_countdown, "Take within 72h of exposure", wDp, 12f);
+                // Expired. The ring is EMPTIED rather than hidden, so the widget's
+                // shape does not change underneath the user.
+                //
+                // "Emptied" is now literally true, and was not before the layer ids
+                // were added: progress 0 sets level 0 on the ARC, and the TRACK -
+                // addressed separately as @android:id/background - stays a full circle.
+                // An empty track is a legible "no time left". Previously the level went
+                // to the whole drawable, BOTH layers swept 0, and the ring vanished.
+                views.setProgressBar(R.id.widget_doxy_ring, 100, 0, false);
+                views.setViewVisibility(R.id.widget_doxy_ring, View.VISIBLE);
+                views.setProgressTintList(R.id.widget_doxy_ring,
+                        ColorStateList.valueOf(colour(context, R.color.widget_urgent)));
+                views.setTextColor(R.id.widget_doxy_status,
+                        colour(context, R.color.widget_urgent));
+                views.setTextViewText(R.id.widget_doxy_status, "EXPIRED");
+                // The guidance copy, not a number: a countdown past zero is the one
+                // thing a Chronometer cannot render, and an expired PEP window is
+                // exactly when that instruction is worth reading.
+                views.setChronometer(R.id.widget_doxy_countdown,
+                        SystemClock.elapsedRealtime(), "Take within 72h", false);
+                views.setChronometerCountDown(R.id.widget_doxy_countdown, false);
+                views.setViewVisibility(R.id.widget_doxy_countdown, View.VISIBLE);
             }
         } else {
-            views.setTextViewText(R.id.widget_doxy_title, "DoxyPEP Window");
-            views.setTextViewText(R.id.widget_doxy_status, status);
-            views.setTextViewText(R.id.widget_doxy_countdown, "");
-            // THE ONE THAT TRUNCATED ON DEVICE: the widget read "No active ..." at
-            // 18sp in a one-cell width. Fitted on the ACTUAL status string, which
-            // is the stored value and can be any of "Active"/"Overdue"/"No active
-            // window" depending on tier and state.
-            WidgetTextFit.fit(views, context, R.id.widget_doxy_status, status, wDp, 18f, 2);
+            // No window open. The ring is HIDDEN rather than shown empty: there is
+            // no countdown to depict, and an empty ring beside "NO WINDOW" reads as a
+            // depleted one - a false alarm about the user's own health.
+            //
+            // The stored status is still preferred when it says something more
+            // specific than the no-window default, so a state this provider does not
+            // model is not silently flattened into a generic label.
+            String label = (status == null || status.isEmpty()
+                    || "No active window".equals(status)) ? "NO WINDOW" : status.toUpperCase();
+            views.setViewVisibility(R.id.widget_doxy_ring, View.GONE);
+            views.setViewVisibility(R.id.widget_doxy_countdown, View.GONE);
+            views.setTextColor(R.id.widget_doxy_status,
+                    colour(context, R.color.widget_text_muted));
+            views.setTextViewText(R.id.widget_doxy_status, label);
         }
-        // The title is the same constant in all three branches above, so one fit
-        // here covers every non-Redacted path.
-        WidgetTextFit.fit(views, context, R.id.widget_doxy_title, "DoxyPEP Window", wDp, 16f);
+
 
         // ADDED 9 Oct 2026 (t093) - the evidence line, shown at the Full tier in
         // every branch above so the user can see WHICH event opened the window.
@@ -159,9 +271,25 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
         // parsed into a Date and re-formatted here: that would shift the shown
         // day by the device's UTC offset. Taking the leading "YYYY-MM-DD"
         // substring renders the day exactly as it was stored.
-        String evidenceDay = (evidence != null && evidence.length() >= 10) ? evidence.substring(0, 10) : "";
+                // ADDED 17 Oct 2026 - the evidence line is DROPPED on a narrow (2-cell)
+        // widget. The layout has always claimed it was; until now the provider had
+        // no width check and rendered it unconditionally, so the comment described
+        // a mechanism that did not exist. The gate is real now.
+        //
+        // "Last unprotected event 2026-09-18" is the longest string on this widget
+        // and has no room to spare at 109dp; on a wider widget it stays. The
+        // threshold matches the size boundary the whole redesign branches on (see
+        // CLAUDE.md on OPTION_APPWIDGET_SIZES): under 130dp is the 2-cell portrait
+        // case. If widthDp() could not tell us (-1), the line is KEPT - showing
+        // more on an unknown width is safer than silently hiding a field the Full
+        // tier is allowed to show.
+        boolean narrow = wDp > 0 && wDp < NARROW_WIDGET_DP;
+String evidenceDay = (evidence != null && evidence.length() >= 10) ? evidence.substring(0, 10) : "";
         views.setTextViewText(R.id.widget_doxy_evidence,
             evidenceDay.isEmpty() ? "" : "Last unprotected event " + evidenceDay);
+        if (narrow) {
+            views.setViewVisibility(R.id.widget_doxy_evidence, View.GONE);
+        }
 
         // Click opens Medication tab
 

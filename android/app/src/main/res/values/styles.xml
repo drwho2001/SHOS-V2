@@ -42,4 +42,23 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
+
+    <!-- ADDED 17 Oct 2026 - the countdown ring's ProgressBar.
+
+         It must inherit the HORIZONTAL style, because an unstyled ProgressBar is
+         the circular indeterminate one and would render a spinner where the ring
+         should be. But Widget.ProgressBar.Horizontal carries android:maxHeight
+         (a few dp, sized for a 4dp line), and this bar is a 64dp ring - the
+         constraint squashes it to a sliver rather than being ignored.
+
+         maxHeight/minHeight of 0dp removes the cap. It cannot simply be omitted:
+         ProgressBar's own initProgressBar() falls back to a default height when
+         both are unset, which is not 64dp either. Explicit 0dp, and the 64dp box
+         comes from the view's own layout_width/height in the widget layout. -->
+    <style name="ShosWidgetRing" parent="@android:style/Widget.ProgressBar.Horizontal">
+        <item name="android:progressDrawable">@drawable/widget_ring</item>
+        <item name="android:maxHeight">0dp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:indeterminateOnly">false</item>
+    </style>
 </resources>

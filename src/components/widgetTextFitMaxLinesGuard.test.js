@@ -228,7 +228,19 @@ describe("WidgetTextFit maxLines agrees with the layout it is fitting", () => {
   // inside a comment (the scanner strips those). CLAUDE.md said 25 and was
   // wrong, which is how the 26th went unchecked. If a provider gains or loses a
   // fit() call, change this number in the SAME commit - never after.
-  const EXPECTED_FIT_CALL_SITES = 26;
+  //
+  // 26 -> 19 on 17 Oct 2026, and the drop is the point rather than a loss. Seven
+  // sites went away because their layouts moved to autoSizeTextType:
+  // NextDoseWidgetProvider lost three (both branches' medication name, plus the
+  // wall-clock dose time, which is five characters and has nothing to measure) and
+  // now has NO fit() call at all; DoxyPEPWidgetProvider lost four.
+  //
+  // A left-behind call would not have been harmless. TextView.setTextSize is
+  // guarded by !isAutoSizeEnabled(), so once autosize is on a setTextViewTextSize
+  // is a DETERMINISTIC NO-OP - and fit() logs the size it chose. This repo reads
+  // that log to decide whether text fit, so a fitter quietly doing nothing would
+  // manufacture evidence of a fit that never happened. Fewer, real sites.
+  const EXPECTED_FIT_CALL_SITES = 19;
 
   it("found both sides of the contract, and every call site parsed", () => {
     // Without this the whole file passes if either the layout parse or the

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ADDED 17 Oct 2026 - track + arc as one progressDrawable.
+
+     A layer-list rather than two sibling views, for two reasons. ProgressBar
+     owns a single progressDrawable, so that is where the arc has to live; and
+     L-076 permits only ONE ViewGroup per widget layout, so the ring cannot be
+     assembled out of separate views either. One drawable is the only shape the
+     constraint allows.
+
+     THE TWO IDS ARE THE WHOLE DESIGN, and this file shipped without them first.
+     ProgressBar addresses the layers of a layer-list BY ID:
+
+       - setVisualProgress() looks up findDrawableByLayerId(R.id.progress) to
+         decide which layer gets setLevel().
+       - getTintTarget(R.id.progress, true) looks up the same id to decide which
+         layer gets tinted.
+
+     With no ids, BOTH lookups miss and fall back to the entire LayerDrawable.
+     That fallback looks harmless and is not. LayerDrawable.onLevelChange
+     forwards the level to EVERY child (LayerDrawable.java:1515-1533), and
+     LayerDrawable.setTintList tints every child - so both layers receive the
+     same level and the same urgency colour. Since both shapes declare useLevel
+     and a ring draws a sweep of 360*level/10000 (GradientDrawable.java), the
+     arc covers the track exactly: the widget rendered as ONE depleting arc with
+     no muted remainder at all, i.e. the ring carried no more information than
+     the number in its centre.
+
+     So the track is @android:id/background and the arc is @android:id/progress.
+     That is also what ProgressBar's own default horizontal drawable uses, and
+     the reason ProgressBar's fallback comment says "the theme-default drawable
+     will always have all layer IDs present".
+
+     Order still matters: track first, arc second, so the arc draws over it.
+
+     The -90 degree rotation is NOT here. It goes on the ProgressBar as
+     android:rotation="-90", because rotating the whole view moves the sweep's
+     start from 3 o'clock to 12 o'clock while leaving the full-circle track
+     looking identical either way. Rotating the arc layer in isolation instead
+     needs negative insets to undo the layout offset, which is a hack whose
+     behaviour depends on the bounds the launcher hands the drawable. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@android:id/background"
+        android:drawable="@drawable/widget_ring_track" />
+    <item
+        android:id="@android:id/progress"
+        android:drawable="@drawable/widget_ring_arc" />
+</layer-list>

@@ -22,4 +22,16 @@
     <color name="widget_warn">#8A5200</color>
     <color name="widget_cycle">#A8003F</color>
     <color name="widget_accent">#00696B</color>
+
+    <!-- ADDED 17 Oct 2026 - countdown-ring palette. The ring needs a track (the
+         unfilled remainder) and an "overdue" colour the palette did not have:
+         widget_warn is amber, and an overdue dose is not a caution, it is past.
+         Measured on widget_bg, not eyeballed, same as every colour above.
+         widget_urgent is used as TEXT ("OVERDUE") so it needs the full 4.5:1:
+         5.64:1. widget_ring_track carries no text, so it is held to the 3:1
+         that applies to non-text UI: 3.27:1. A track is not the meaningful part
+         of the ring - the ARC is - which is why it is allowed to be recessive,
+         but not invisible. -->
+    <color name="widget_urgent">#B3261E</color>
+    <color name="widget_ring_track">#5A8C88</color>
 </resources>
