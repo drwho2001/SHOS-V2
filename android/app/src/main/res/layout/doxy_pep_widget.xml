@@ -57,8 +57,8 @@
     <ProgressBar
         android:id="@+id/widget_doxy_ring"
         style="@style/ShosWidgetRing"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
         android:layout_gravity="center"
         android:rotation="-90"
         android:max="100" />

@@ -11,7 +11,7 @@ import android.widget.RemoteViews;
 import android.net.Uri;
 import com.shos.app.R;
 
-public class DoxyPEPWidgetProvider extends AppWidgetProvider {
+public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
 
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_DOXY_STATUS = "doxy_status";
@@ -53,14 +53,6 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
         return context.getColor(res);
     }
 
-
-    @Override
-    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        for (int appWidgetId : appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId);
-        }
-    }
-
     /**
      * The "no data available" RemoteViews. Contains no user data at all, so
      * pushing it can neither write to the plaintext sink nor disclose anything
@@ -69,7 +61,8 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
     private static RemoteViews unavailableViews(Context context) {
         return new RemoteViews(context.getPackageName(), R.layout.widget_unavailable);
     }
-    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    @Override
+    protected void render(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -171,6 +164,21 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
         // into a 212px field and needed ~9.8sp to fit on one line, so it could not
         // fit at any legible size - pool item t115. The word "Window" was never
         // carrying information; the ring depicts the window.
+        // ADDED 18 Oct 2026 - the Full branch RESTORES visibility. It did not,
+        // and that was a live bug rather than a latent one.
+        //
+        // RemoteViews recycles the inflated view whenever the layout id matches
+        // (RemoteViews.canRecycleView, then reapply) and performApply walks ONLY
+        // the actions carried by the new RemoteViews - there is no
+        // reset-to-defaults pass. So a view the Redacted branch set GONE stayed
+        // GONE here forever, and switching Redacted -> Full left the widget
+        // showing its title and nothing else. On screen that reads as a SIZING
+        // bug, which is why it survived this long.
+        //
+        // The rule: setting GONE in any branch obliges you to set VISIBLE in the
+        // others. Every branch now pins every view it owns.
+        views.setViewVisibility(R.id.widget_doxy_status, View.VISIBLE);
+        views.setViewVisibility(R.id.widget_doxy_evidence, View.VISIBLE);
         views.setTextViewText(R.id.widget_doxy_title, "DOXYPEP");
 
         long now = System.currentTimeMillis();
@@ -361,7 +369,7 @@ String evidenceDay = (evidence != null && evidence.length() >= 10) ? evidence.su
         int[] ids = appWidgetManager.getAppWidgetIds(
             new android.content.ComponentName(context, DoxyPEPWidgetProvider.class));
         for (int id : ids) {
-            updateAppWidget(context, appWidgetManager, id);
+            render(context, appWidgetManager, id);
         }
     }
 }

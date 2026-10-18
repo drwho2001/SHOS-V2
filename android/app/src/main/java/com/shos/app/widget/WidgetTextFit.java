@@ -45,6 +45,34 @@ final class WidgetTextFit {
 
     private static final String TAG = "WidgetTextFit";
 
+    /**
+     * ADDED 18 Oct 2026 - gates the log lines that carry USER DATA.
+     *
+     * THE LEAK THIS CLOSES. fit()'s decision line logged the full rendered
+     * string: "width=109dp density=2.75 available=212px maxLines=2
+     * text=\"Sertraline\"". On a sexual-health app that is the medication name, the
+     * last-test date, "Retest due: ...", a clinic location and a refill count, at
+     * Log.d, on every fit. Log.d is not stripped from a debug build, and this
+     * repo's own APK is debug-signed and distributed as "latest", so anyone with
+     * adb and USB debugging enabled could read it with a single logcat. The
+     * measurement fields (width, chosen size, textPx, availablePx, WRAPS,
+     * HITS_FLOOR) stay unconditional - they are what this repo diagnoses
+     * truncation with, and they disclose nothing about the user.
+     *
+     * WHY A LOCAL CONSTANT AND NOT BuildConfig.DEBUG, which is the obvious
+     * spelling. AGP 8.0 changed android.defaults.buildfeatures.buildconfig from
+     * true to false, so BuildConfig is not generated unless a module opts back
+     * in. This project uses AGP 8.13.0 (android/build.gradle:10), sets no
+     * buildFeatures block, and references BuildConfig nowhere - so `if
+     * (BuildConfig.DEBUG)` would not compile. Enabling the feature for one log
+     * line is a broader change than the leak it fixes.
+     *
+     * So this is a plain constant, which also makes the intent explicit rather
+     * than inherited: text is NEVER logged. Flip it to true only while debugging
+     * a specific field, and never on a build you intend to hand anyone.
+     */
+    private static final boolean LOG_WIDGET_TEXT = false;
+
     /** Horizontal padding on the widget root, per side, in dp. See the layouts. */
     private static final float ROOT_PADDING_DP = 16f;
 
@@ -231,9 +259,18 @@ final class WidgetTextFit {
         // every fit decision depends on and it is the thing that was silently
         // wrong before, so it is worth being able to read it off a device
         // without adding a log line to seven providers.
-        android.util.Log.d(TAG, "width=" + width + "dp density=" + metrics.density
-                + " available=" + availablePx + "px maxLines=" + maxLines
-                + " text=\"" + text + "\"");
+        //
+        // The TEXT is the only part that can disclose anything and it is behind
+        // LOG_WIDGET_TEXT - see that constant's comment. The rest is measurement
+        // and stays on, because this repo diagnoses truncation by reading it.
+        if (LOG_WIDGET_TEXT) {
+            android.util.Log.d(TAG, "width=" + width + "dp density=" + metrics.density
+                    + " available=" + availablePx + "px maxLines=" + maxLines
+                    + " text=\"" + text + "\"");
+        } else {
+            android.util.Log.d(TAG, "width=" + width + "dp density=" + metrics.density
+                    + " available=" + availablePx + "px maxLines=" + maxLines);
+        }
 
         Paint paint = new Paint();
         paint.setAntiAlias(true);
@@ -291,12 +328,25 @@ final class WidgetTextFit {
                 + (wraps ? " WRAPS" : "")
                 + (hitFloor ? " HITS_FLOOR" : " fits"));
 
-        // Only write when it actually differs from the layout's declared size, so
-        // the common case leaves the XML in charge and there is nothing to undo
-        // when a value happens to fit.
-        if (chosen < maxSp) {
-            views.setTextViewTextSize(viewId, TypedValue.COMPLEX_UNIT_SP, chosen);
-        }
+        // ALWAYS write the size, not only when it is smaller than the ceiling.
+        //
+        // CHANGED 18 Oct 2026. This used to be `if (chosen < maxSp)`, on the
+        // reasoning that leaving the XML in charge when nothing needs shrinking
+        // was tidier. It is wrong, and the reason is the same recycling property
+        // that makes the visibility bug real: RemoteViews reuses the view when the
+        // layout id matches, so a size written on a NARROW update survives every
+        // later WIDE one. The ladder picks 14sp for a value that now fits at 14sp,
+        // `chosen < maxSp` is false, nothing is written, and the widget keeps
+        // rendering at the 12sp it was shrunk to when it was smaller.
+        //
+        // The user-visible shape: shrink a widget to two cells, widen it back, and
+        // the text stays small until the app next pushes data. That is the
+        // "resizing from user hiding information" symptom.
+        //
+        // Writing maxSp explicitly is a no-op for the common case - it is the value
+        // the layout already declares, so the rendered result is identical - and it
+        // is what makes the fit idempotent instead of merely monotonic.
+        views.setTextViewTextSize(viewId, TypedValue.COMPLEX_UNIT_SP, chosen);
     }
 
     /**

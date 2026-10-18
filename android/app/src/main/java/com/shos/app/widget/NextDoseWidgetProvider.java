@@ -11,7 +11,7 @@ import android.net.Uri;
 import android.widget.RemoteViews;
 import com.shos.app.R;
 
-public class NextDoseWidgetProvider extends AppWidgetProvider {
+public class NextDoseWidgetProvider extends ResizingWidgetProvider {
 
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_NEXT_DOSE_TIME = "next_dose_time";
@@ -48,13 +48,6 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         return context.getColor(res);
     }
 
-    @Override
-    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        for (int appWidgetId : appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId);
-        }
-    }
-
     /**
      * The "no data available" RemoteViews. Contains no user data at all, so
      * pushing it can neither write to the plaintext sink nor disclose anything
@@ -63,7 +56,8 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
     private static RemoteViews unavailableViews(Context context) {
         return new RemoteViews(context.getPackageName(), R.layout.widget_unavailable);
     }
-    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    @Override
+    protected void render(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -160,6 +154,7 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             // ALLOWED_AT_REDACTED for nextDose is category+state only. A visible
             // view is disclosed data whether or not any text sits beside it.
             views.setViewVisibility(R.id.widget_ring, View.GONE);
+            views.setViewVisibility(R.id.widget_ring_label, View.GONE);
             views.setViewVisibility(R.id.widget_countdown, View.GONE);
             // NO fit() call, and that is the change rather than an omission. This
             // view carries autoSizeTextType, so the Redacted line is shrunk by the
@@ -180,6 +175,20 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         // so a widget that was Redacted and then switched back to Full would keep the
         // Redacted line in this slot until something overwrote it. Overwriting every
         // field is what makes a privacy-tier change actually take effect on screen.
+        // ADDED 18 Oct 2026 - the Full branch RESTORES visibility. It did not,
+        // and that was a live bug rather than a latent one.
+        //
+        // RemoteViews recycles the inflated view whenever the layout id matches
+        // (RemoteViews.canRecycleView, then reapply) and performApply walks ONLY
+        // the actions carried by the new RemoteViews - there is no
+        // reset-to-defaults pass. So a view the Redacted branch set GONE stayed
+        // GONE here forever, and switching Redacted -> Full left the widget
+        // showing its title and nothing else. On screen that reads as a SIZING
+        // bug, which is why it survived this long.
+        //
+        // The rule: setting GONE in any branch obliges you to set VISIBLE in the
+        // others. Every branch now pins every view it owns.
+        views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
         views.setTextViewText(R.id.widget_med_name, medName);
 
         // The wall-clock time with NO "Next dose: " prefix. That prefix measured as
@@ -215,6 +224,12 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
                     SystemClock.elapsedRealtime() + remaining, "%s", true);
             views.setChronometerCountDown(R.id.widget_countdown, true);
             views.setViewVisibility(R.id.widget_countdown, View.VISIBLE);
+            // The ring's centre carries a short WORD now, not the countdown: a 52dp
+            // ring leaves a 36dp interior (99px here) and "4:12:30" renders about
+            // 116px, so the number cannot sit inside it. The word is 3-4 characters
+            // and fits with room to spare.
+            views.setTextViewText(R.id.widget_ring_label, "SOON");
+            views.setViewVisibility(R.id.widget_ring_label, View.VISIBLE);
         } else if (target > 0) {
             // DUE. The ring is FULL rather than hidden or empty: the dose is now, and
             // a depleted ring would read as "nothing pending" - the opposite of the
@@ -233,10 +248,12 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             // centre switches to a word. The format string is a template with one
             // unused argument - String.format ignores extra arguments - which is how
             // a Chronometer renders static text without becoming a different view.
-            views.setChronometer(R.id.widget_countdown,
-                    SystemClock.elapsedRealtime(), "DUE", false);
-            views.setChronometerCountDown(R.id.widget_countdown, false);
-            views.setViewVisibility(R.id.widget_countdown, View.VISIBLE);
+            views.setTextViewText(R.id.widget_ring_label, "DUE");
+            views.setViewVisibility(R.id.widget_ring_label, View.VISIBLE);
+            // No countdown line: a Chronometer counting past zero renders a negative
+            // duration, which is the one thing it cannot do. The word is the whole
+            // message here.
+            views.setViewVisibility(R.id.widget_countdown, View.GONE);
         } else {
             // No dose scheduled at all: there is no countdown to depict, so both the
             // ring and its centre are hidden. An empty ring beside a medication name
@@ -301,7 +318,7 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
         int[] ids = appWidgetManager.getAppWidgetIds(new android.content.ComponentName(context, NextDoseWidgetProvider.class));
         for (int id : ids) {
-            updateAppWidget(context, appWidgetManager, id);
+            render(context, appWidgetManager, id);
         }
     }
 }

@@ -9,7 +9,7 @@ import android.widget.RemoteViews;
 import android.net.Uri;
 import com.shos.app.R;
 
-public class RefillWidgetProvider extends AppWidgetProvider {
+public class RefillWidgetProvider extends ResizingWidgetProvider {
 
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_REFILL_COUNT = "refill_count";
@@ -20,12 +20,7 @@ public class RefillWidgetProvider extends AppWidgetProvider {
 // ONE SharedPreferences file, so a shared key name would overwrite itself.
 private static final String KEY_REDACTED_TEXT = "redacted_text_refill";
 
-    @Override
-    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        for (int appWidgetId : appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId);
-        }
-    }
+
 
     /**
      * The "no data available" RemoteViews. Contains no user data at all, so
@@ -35,7 +30,8 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_refill";
     private static RemoteViews unavailableViews(Context context) {
         return new RemoteViews(context.getPackageName(), R.layout.widget_unavailable);
     }
-    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    @Override
+    protected void render(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -104,7 +100,15 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
             }
         
         if (refillCount > 0) {
-            views.setTextViewText(R.id.widget_refill_title, "Refills Due");
+            // ADDED 18 Oct 2026 - restores visibility for the fields the Redacted
+        // branch above set GONE. RemoteViews recycles the view when the layout id
+        // matches and applies only the new RemoteViews' actions, so a view hidden
+        // there stays hidden for every later update that does not mention it - and
+        // a privacy-tier change then reads on screen as a SIZING bug, which is why
+        // this went unfixed for so long.
+        views.setViewVisibility(R.id.widget_refill_count, android.view.View.VISIBLE);
+        views.setViewVisibility(R.id.widget_next_refill, android.view.View.VISIBLE);
+        views.setTextViewText(R.id.widget_refill_title, "Refills Due");
             views.setTextViewText(R.id.widget_refill_count, refillCount + " medication" + (refillCount == 1 ? "" : "s"));
             views.setTextViewText(R.id.widget_next_refill, "Next: " + nextRefill);
             WidgetTextFit.fit(views, context, R.id.widget_refill_count, refillCount + " medication" + (refillCount == 1 ? "" : "s"), wDp, 18f, 2);
@@ -148,7 +152,7 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
         int[] ids = appWidgetManager.getAppWidgetIds(
             new android.content.ComponentName(context, RefillWidgetProvider.class));
         for (int id : ids) {
-            updateAppWidget(context, appWidgetManager, id);
+            render(context, appWidgetManager, id);
         }
     }
 }

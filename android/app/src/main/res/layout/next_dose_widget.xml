@@ -44,27 +44,43 @@
     <ProgressBar
         android:id="@+id/widget_ring"
         style="@style/ShosWidgetRing"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
         android:layout_gravity="center"
         android:rotation="-90"
         android:max="100" />
 
-    <!-- The live countdown, centred inside the ring. clickable/focusable are
-         stated false deliberately: the root FrameLayout carries the tap
-         PendingIntent, and a Chronometer is a TextView, which only consumes a
-         touch when something makes it clickable. Stated so a later edit adding
-         android:clickable="true" does not silently create one dead region. -->
-    <Chronometer
-        android:id="@+id/widget_countdown"
+    <!-- THE COUNTDOWN IS NOT INSIDE THE RING, and that is a measured change from
+         the design it started as. A 52dp ring leaves a 36dp interior - 99px at
+         this device's density - and the shortest real countdown renders about
+         116px wide in it. "4:12:30" therefore overflows the circle it is supposed
+         to sit inside, and "2d 23:59:59" needs roughly 182px. There is no size
+         at which a legible 12sp countdown fits inside a ring that also clears the
+         caption block at the real 2-cell height.
+
+         The ring shrank from 64dp to 52dp because at 64dp its lower edge landed
+         20dp INSIDE the caption block at 166.55dp (115.3dp against a caption top
+         of 95.6dp) - the ring was drawn across the medication name. Raising
+         minResizeHeight instead would have made the 2-cell placement illegal and
+         pushed the widget back to 3 cells, which is the size the owner deliberately
+         moved away from.
+
+         So the ring carries the STATUS WORD (short - "DUE", "NOW") and the live
+         countdown is its own line beneath it. The number is still the thing that
+         changes every second; it is just no longer pretending to be inside a
+         circle it does not fit. The Chronometer stays, and it still ticks in the
+         launcher process with no app running. -->
+    <TextView
+        android:id="@+id/widget_ring_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:visibility="gone"
-        android:textSize="12sp"
-        android:textColor="@color/widget_text_primary"
-        android:clickable="false"
-        android:focusable="false" />
+        android:text=""
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:breakStrategy="simple" />
 
     <!-- The wall-clock dose time, ABOVE the medication name. It was originally
          placed at bottom|end beside it, and that was a real collision: the
@@ -74,12 +90,28 @@
          reflowed - there is no sibling axis to place them side by side, which is
          the cost of L-076 forbidding a second ViewGroup. Stacked, the ring
          still holds the centre and the two lines read as one caption. -->
+    <!-- The live countdown, its own line. It used to sit inside the ring and
+         could not fit there - see widget_ring_label's comment for the measurement.
+         Still a real Chronometer, so it still ticks in the launcher process with no
+         app running, no alarm and no wake lock. clickable/focusable false for the
+         reason every other tap-target-adjacent view on this card states. -->
+    <Chronometer
+        android:id="@+id/widget_countdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="36dp"
+        android:textSize="14sp"
+        android:textColor="@color/widget_text_primary"
+        android:clickable="false"
+        android:focusable="false" />
+
     <TextView
         android:id="@+id/widget_next_dose"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="18dp"
         android:text="--:--"
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"

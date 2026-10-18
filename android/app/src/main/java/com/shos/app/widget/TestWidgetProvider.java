@@ -9,7 +9,7 @@ import android.widget.RemoteViews;
 import android.net.Uri;
 import com.shos.app.R;
 
-public class TestWidgetProvider extends AppWidgetProvider {
+public class TestWidgetProvider extends ResizingWidgetProvider {
 
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_LAST_TEST = "last_test";
@@ -20,12 +20,7 @@ public class TestWidgetProvider extends AppWidgetProvider {
 // ONE SharedPreferences file, so a shared key name would overwrite itself.
 private static final String KEY_REDACTED_TEXT = "redacted_text_test";
 
-    @Override
-    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        for (int appWidgetId : appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId);
-        }
-    }
+
 
     /**
      * The "no data available" RemoteViews. Contains no user data at all, so
@@ -35,7 +30,8 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_test";
     private static RemoteViews unavailableViews(Context context) {
         return new RemoteViews(context.getPackageName(), R.layout.widget_unavailable);
     }
-    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    @Override
+    protected void render(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -104,6 +100,24 @@ views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
             }
 
         views.setTextViewText(R.id.widget_test_title, "Last Test");
+            // ADDED 18 Oct 2026 - the Full branch RESTORES visibility. It did not,
+            // and that was a live bug rather than a latent one.
+            //
+            // RemoteViews recycles the inflated view whenever the layout id
+            // matches (RemoteViews.canRecycleView, then reapply) and performApply
+            // walks ONLY the actions in the new RemoteViews - there is no
+            // reset-to-defaults pass. So a view the Redacted branch set GONE at
+            // line 99 stayed GONE here forever, and switching Redacted -> Full left
+            // the widget showing a title and nothing else. It reads as a sizing
+            // bug, which is why it survived: nothing about it looks like a privacy
+            // bug on screen, it looks like the layout lost its content.
+            //
+            // Every branch therefore now pins the visibility of every view it owns,
+            // rather than only the ones it happens to hide. That is the rule this
+            // comment exists to state: setViewVisibility in the GONE branch
+            // obliges you to set it in the VISIBLE branch.
+            views.setViewVisibility(R.id.widget_last_test, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_retest_due, android.view.View.VISIBLE);
 views.setTextViewText(R.id.widget_last_test, lastTest);
             views.setTextViewText(R.id.widget_retest_due, "Retest due: " + retestDue);
             // Measured on the device, which showed "Retest due: ..." and a
@@ -144,7 +158,7 @@ views.setTextViewText(R.id.widget_last_test, lastTest);
         int[] ids = appWidgetManager.getAppWidgetIds(
             new android.content.ComponentName(context, TestWidgetProvider.class));
         for (int id : ids) {
-            updateAppWidget(context, appWidgetManager, id);
+            render(context, appWidgetManager, id);
         }
     }
 }

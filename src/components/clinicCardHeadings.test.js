@@ -139,14 +139,46 @@ describe("Clinic Card provider hides the headings at Redacted (t087)", () => {
     // returns, so nothing after it can render a heading at that tier. Without
     // this, a later edit could add code below the return and a Redacted card
     // would show a heading with nothing under it.
+    //
+    // CHANGED 18 Oct 2026 - this now distinguishes SHOWING a heading from
+    // RESTORING one. The original searched for any "widget_clinic_heading"
+    // reference after the return and demanded none, which was correct when the
+    // only thing the provider ever did with those ids was hide them. It then began
+    // failing on the VISIBLE restores added by the sticky-visibility fix - which
+    // is exactly right to fail on a real leak, and exactly wrong to fail on a
+    // restore. RemoteViews recycles the view, so a heading hidden at the Redacted
+    // tier and never restored is blank space in the Full-tier card; see
+    // widgetVisibilityRestoredGuard for the other half of that pair.
+    //
+    // So: no heading may be made VISIBLE below the return, and no heading may be
+    // given TEXT below the return. Both would render at the Redacted tier.
     const redactedAt = PROVIDER.indexOf("widget_clinic_title, redactedText");
     expect(redactedAt).toBeGreaterThan(-1);
     const returnAt = PROVIDER.indexOf("return;", redactedAt);
     expect(returnAt, "Redacted branch has no early return").toBeGreaterThan(-1);
-    const nextHeadingAfter = PROVIDER.indexOf("widget_clinic_heading", returnAt);
-    expect(
-      nextHeadingAfter,
-      "a heading is referenced after the Redacted return"
-    ).toBe(-1);
+
+    // Only the TEXT assertion survives. A setViewVisibility(...VISIBLE) below the
+    // return is harmless: the early return means that code never executes at the
+    // Redacted tier at all, which is precisely what this test exists to establish.
+    // The restores added by the sticky-visibility fix live there and must be
+    // allowed to - RemoteViews recycles the view, so a heading hidden at Redacted
+    // and never restored is blank space in the Full-tier card
+    // (widgetVisibilityRestoredGuard covers that half).
+    //
+    // Giving a heading TEXT below the return is the real risk, because
+    // setTextViewText on a heading that is then left visible is what would put a
+    // bare "WHEN" with no rows under it on the screen.
+    const after = PROVIDER.slice(returnAt);
+    for (const id of [
+      "widget_clinic_heading_when",
+      "widget_clinic_heading_where",
+      "widget_clinic_heading_details",
+    ]) {
+      expect(
+        after,
+        `${id} is given text after the Redacted return, so it would render at the ` +
+          `Redacted tier with no rows under it - the exact failure t087 fixed.`,
+      ).not.toMatch(new RegExp("setTextViewText\\(R\\.id\\." + id + ","));
+    }
   });
 });

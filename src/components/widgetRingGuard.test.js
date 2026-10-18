@@ -179,9 +179,9 @@ describe("ring usage in widget layouts", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("every ring is rotated -90 so the sweep starts at 12 o'clock", () => {
+it("every ring is rotated -90 so the sweep starts at 12 o'clock", () => {
     for (const f of ringLayouts) {
-      const src = read(LAYOUTS, f);
+      const src = readFileSync(join(LAYOUTS, f), "utf8");
       // The ProgressBar carrying the style must carry the rotation with it -
       // a style cannot set it, because rotation is applied to the inflated view.
       const tags = src.match(/<ProgressBar[\s\S]*?\/>/g) || [];
@@ -196,6 +196,57 @@ describe("ring usage in widget layouts", () => {
           `${f}: the ring ProgressBar must carry android:rotation="-90". ` +
             `Without it the sweep starts at 3 o'clock instead of 12.`,
         ).toBe(true);
+      }
+    }
+  });
+
+  it("the ring is small enough to clear the caption at the real 2-cell height", () => {
+    // ADDED 18 Oct 2026 after measuring the 64dp ring against the widget it
+    // actually sits in. 109dp wide x 166.55dp tall is the 2-cell placement,
+    // measured on this device via OPTION_APPWIDGET_SIZES.
+    //
+    // The ring is FrameLayout-CENTRED, so with 16dp padding its lower edge falls
+    // at 16 + (H - 32) / 2 + ring / 2. The caption block (countdown + dose time +
+    // medication name, stacked at the bottom) reaches up to about 55dp. At a 64dp
+    // ring the two overlapped by roughly 20dp - the ring was drawn straight
+    // across the medication name, which is a large part of why this widget "looked
+    // wrong at 2 cells" and was not a text-size problem at all.
+    //
+    // Raising minResizeHeight would NOT have fixed it: the floor for a 64dp ring is
+    // 206dp, and the owner deliberately moved these widgets OFF 3 cells because
+    // they were too big. A smaller ring was the only fix that preserved the size
+    // the owner chose, so this asserts the ring stays small enough.
+    //
+    // The bound is on the RING SIZE ALONE because it is the only term that moves
+    // without changing the caption, the padding, or the placement.
+    const H = 166.55;      // measured 2-cell height
+    const PAD = 16;        // root padding, each side
+    const CAPTION_TOP = 95.6; // where the stacked caption block begins
+    const MAX_RING = 52;   // the largest ring that still clears it
+
+    for (const f of ringLayouts) {
+      const src = readFileSync(join(LAYOUTS, f), "utf8");
+      const tags = src.match(/<ProgressBar[\s\S]*?\/>/g) || [];
+      const styled = tags.filter((t) => t.includes("ShosWidgetRing"));
+      for (const tag of styled) {
+        const w = /android:layout_width="(\d+)dp"/.exec(tag);
+        const h = /android:layout_height="(\d+)dp"/.exec(tag);
+        expect(w && h, `${f}: the ring must declare both dimensions in dp`).toBeTruthy();
+        expect(
+          Number(w[1]),
+          `${f}: the ring's width and height disagree (${w[1]}dp vs ${h[1]}dp).`,
+        ).toBe(Number(h[1]));
+        const ringDp = Number(w[1]);
+        const lowerEdge = PAD + (H - 2 * PAD) / 2 + ringDp / 2;
+        expect(
+          ringDp,
+          `${f}: the ring is ${ringDp}dp, whose lower edge falls at ` +
+            `${lowerEdge.toFixed(1)}dp - past the caption top of ${CAPTION_TOP}dp, ` +
+            `so the ring is drawn across the text below it. The largest ring that ` +
+            `clears it at the measured 2-cell height of ${H}dp is ${MAX_RING}dp. ` +
+            `If this needs a bigger ring, raise minResizeHeight instead - but note ` +
+            `that forces 3 cells, which the owner moved away from deliberately.`,
+        ).toBeLessThanOrEqual(MAX_RING);
       }
     }
   });

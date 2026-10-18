@@ -16,7 +16,18 @@ import path from "node:path";
 const JAVA_DIR = "android/app/src/main/java/com/shos/app/widget";
 const providers = fs
   .readdirSync(JAVA_DIR)
-  .filter((f) => f.endsWith("WidgetProvider.java"));
+  .filter((f) => f.endsWith("WidgetProvider.java"))
+  // ResizingWidgetProvider is a shared base class added 18 Oct 2026, not an
+  // eleventh widget. Its name matches this glob by accident - it ends in
+  // "WidgetProvider.java" - and it declares no provider, no layout and no tap,
+  // so counting it made seven of the checks below fail against a file that is
+  // not a widget.
+  //
+  // Excluded by name rather than by "is it abstract", because the honest
+  // statement is that this glob answers "which files are the ten widgets" and the
+  // base class is not one. Loosening the assertion counts instead would trade a
+  // real failure for a passing test.
+  .filter((f) => f !== "ResizingWidgetProvider.java");
 const dataProviders = providers.filter((f) => !f.startsWith("QuickAdd"));
 
 describe("widget taps reach the app (device bug: every tap landed on the dashboard)", () => {
@@ -582,8 +593,17 @@ describe("widget pushes are decoupled from reminder scheduling", () => {
     for (const name of DATA_PROVIDERS) {
       const path = `android/app/src/main/java/com/shos/app/widget/${name}WidgetProvider.java`;
       const src = read(path);
-      const methodStart = src.indexOf("private static void updateAppWidget");
-      expect(methodStart, `${name}: updateAppWidget not found`).toBeGreaterThan(-1);
+      // "protected void render", not "private static void updateAppWidget": on
+      // 18 Oct 2026 the seven data providers moved onto a shared
+      // ResizingWidgetProvider base so a LAUNCHER RESIZE re-renders them, and
+      // the per-instance render method was renamed to match the base's abstract
+      // method. This guard reads the method's body, not its name, so only the
+      // anchor string changed - but the failure mode is worth stating, because
+      // it is the same one as the XML-comment trap below: the guard silently
+      // asserted "not found" and pointed at the wrong thing.
+      const methodStart = src.indexOf("protected void render");
+      expect(methodStart, `${name}: render (the per-instance update method) not found`)
+        .toBeGreaterThan(-1);
       const body = src.slice(methodStart);
 
       // Comments are stripped because this repo's Java is heavily commented and

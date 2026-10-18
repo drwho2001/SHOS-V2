@@ -9,7 +9,7 @@ import android.net.Uri;
 import android.widget.RemoteViews;
 import com.shos.app.R;
 
-public class ClinicCardWidgetProvider extends AppWidgetProvider {
+public class ClinicCardWidgetProvider extends ResizingWidgetProvider {
 
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_APPT_TITLE = "clinic_appt_title";
@@ -65,12 +65,7 @@ public class ClinicCardWidgetProvider extends AppWidgetProvider {
     // each provider overwrite the previous one's line.
     private static final String KEY_REDACTED_TEXT = "redacted_text_clinic";
 
-    @Override
-    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        for (int appWidgetId : appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId);
-        }
-    }
+
 
     /**
      * The "no data available" RemoteViews. Contains no user data at all, so
@@ -98,7 +93,8 @@ private static RemoteViews unavailableViews(Context context) {
      * So the calls stay literal and visible, which is also what the other nine
      * providers in this app already do.
      */
-    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    @Override
+    protected void render(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -217,6 +213,24 @@ private static RemoteViews unavailableViews(Context context) {
         if (!title.isEmpty() && !title.equals("No upcoming appointment")) {
             // Reception first - what and when and where - then identifiers. Same
             // order as the Clinic Card screen, so the two surfaces read alike.
+            // ADDED 18 Oct 2026 - restores visibility for the fields the Redacted
+            // branch above set GONE. RemoteViews recycles the view when the layout
+            // id matches and applies only the new RemoteViews' actions, so a view
+            // hidden there stayed hidden here and the card rendered a title with
+            // nothing under it - which reads as a clipping bug, not a privacy one.
+            //
+            // widget_clinic_nhs_num is NOT in this list, and that is deliberate: it
+            // is hidden at every tier by design (the bridge never carries it and
+            // there is no reveal affordance), so restoring it would be a leak.
+            views.setViewVisibility(R.id.widget_clinic_date, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_visit_time, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_location, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.VISIBLE);
             views.setTextViewText(R.id.widget_clinic_title, title);
             views.setTextViewText(R.id.widget_clinic_date, date);
             views.setTextViewText(R.id.widget_clinic_visit_time, visitTime);
@@ -248,6 +262,24 @@ private static RemoteViews unavailableViews(Context context) {
             // text rather than left alone, so a stale value from a previous push
             // cannot survive on screen - which matters more than usual here because
             // this card is reused across pushes.
+            // ADDED 18 Oct 2026 - restores visibility for the fields the Redacted
+            // branch above set GONE. RemoteViews recycles the view when the layout
+            // id matches and applies only the new RemoteViews' actions, so a view
+            // hidden there stayed hidden here and the card rendered a title with
+            // nothing under it - which reads as a clipping bug, not a privacy one.
+            //
+            // widget_clinic_nhs_num is NOT in this list, and that is deliberate: it
+            // is hidden at every tier by design (the bridge never carries it and
+            // there is no reveal affordance), so restoring it would be a leak.
+            views.setViewVisibility(R.id.widget_clinic_date, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_visit_time, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_location, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.VISIBLE);
             views.setTextViewText(R.id.widget_clinic_title, "Clinic Card");
             views.setTextViewText(R.id.widget_clinic_date, "No upcoming appointment");
             views.setTextViewText(R.id.widget_clinic_visit_time, "");
@@ -335,7 +367,7 @@ private static RemoteViews unavailableViews(Context context) {
         int[] ids = appWidgetManager.getAppWidgetIds(
             new android.content.ComponentName(context, ClinicCardWidgetProvider.class));
         for (int id : ids) {
-            updateAppWidget(context, appWidgetManager, id);
+            render(context, appWidgetManager, id);
         }
     }
 }

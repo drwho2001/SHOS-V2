@@ -9,9 +9,32 @@
 
      min/targetCell are now IDENTICAL across all ten, because a picker offering
      four different footprints reads as cluttered even when each size is
-     individually correct. maxResize still varies where the content genuinely
-     needs it - that is the cap that stops the empty-black-box growth, which is
-     a different concern from the size the picker offers. -->
+individually correct. maxResize still varies where the content genuinely
+     needs it - that is the cap that stops the empty-black-box growth, which is a
+     different concern from the size the picker offers.
+
+     minResizeHeight, AND WHY IT IS NOT SIMPLY RAISED.
+     An external review proposed raising this to ~148dp because the layout needs
+     more height. Measured against this layout that number is not the constraint,
+     and raising the floor would produce the opposite of what is wanted: the owner
+     deliberately SHRANK these widgets from 3 cells (~171dp) to 2 cells (109dp
+     wide, 166.55dp tall) because 3 cells was too big. A 148dp minimum height
+     would make the 2-cell placement illegal and force everyone back to 3 cells.
+
+     What the geometry actually says, for a 64dp ring with 16dp padding and a
+     ~35dp caption block (the ring is centred, so its lower edge falls at
+     16 + (H-32)/2 + 32):
+       - the ring is CLIPPED below H=96dp, and
+       - the ring OVERLAPS the caption below H=206dp.
+     At the real 2-cell height of 166.55dp the ring's lower edge sits at 115.3dp
+     against a caption top of 95.6dp - a genuine ~20dp overlap, and the reason
+     this widget looks wrong at 2 cells in a way that is not about text size.
+
+     So the fix is a SMALLER RING, not a taller widget. The ring has been taken
+     to 52dp, which clears the caption at the 2-cell height with room to spare
+     while keeping the countdown legible inside it. minResizeHeight stays at 80dp
+     so the small placements the launcher offers remain legal, and
+     widgetVerticalBudgetGuard is what stops the overlap coming back. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:label="Next Dose"
     android:description="@string/widget_desc_next_dose"

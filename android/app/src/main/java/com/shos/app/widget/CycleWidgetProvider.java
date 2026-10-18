@@ -9,7 +9,7 @@ import android.widget.RemoteViews;
 import android.net.Uri;
 import com.shos.app.R;
 
-public class CycleWidgetProvider extends AppWidgetProvider {
+public class CycleWidgetProvider extends ResizingWidgetProvider {
 
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_CYCLE_DAY = "cycle_day";
@@ -21,12 +21,7 @@ public class CycleWidgetProvider extends AppWidgetProvider {
 // ONE SharedPreferences file, so a shared key name would overwrite itself.
 private static final String KEY_REDACTED_TEXT = "redacted_text_cycle";
 
-    @Override
-    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        for (int appWidgetId : appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId);
-        }
-    }
+
 
     /**
      * The "no data available" RemoteViews. Contains no user data at all, so
@@ -36,7 +31,8 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_cycle";
     private static RemoteViews unavailableViews(Context context) {
         return new RemoteViews(context.getPackageName(), R.layout.widget_unavailable);
     }
-    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+    @Override
+    protected void render(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -106,12 +102,23 @@ views.setViewVisibility(R.id.widget_next_period, android.view.View.GONE);
             }
 
         if (cycleDay > 0) {
+            // ADDED 18 Oct 2026 - restores visibility for the two fields the
+            // Redacted branch above set GONE. RemoteViews recycles the view when
+            // the layout id matches and applies only the new RemoteViews' actions,
+            // so a view hidden there stays hidden until something sets it VISIBLE.
+            // This branch and the no-data branch below each need their own: a
+            // branch that renders values without restoring visibility reproduces
+            // the defect just as completely as one that renders nothing.
+            views.setViewVisibility(R.id.widget_cycle_phase, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_next_period, android.view.View.VISIBLE);
             views.setTextViewText(R.id.widget_cycle_title, "Cycle Day " + cycleDay);
             views.setTextViewText(R.id.widget_cycle_phase, phase);
             views.setTextViewText(R.id.widget_next_period, "Next period: " + nextPeriod);
             WidgetTextFit.fit(views, context, R.id.widget_cycle_phase, phase, wDp, 18f, 2);
             WidgetTextFit.fit(views, context, R.id.widget_next_period, "Next period: " + nextPeriod, wDp, 12f);
         } else {
+            views.setViewVisibility(R.id.widget_cycle_phase, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_next_period, android.view.View.VISIBLE);
             views.setTextViewText(R.id.widget_cycle_title, "Menstrual Cycle");
             views.setTextViewText(R.id.widget_cycle_phase, "Tracking off or no data");
             views.setTextViewText(R.id.widget_next_period, "");
@@ -144,7 +151,7 @@ views.setViewVisibility(R.id.widget_next_period, android.view.View.GONE);
         int[] ids = appWidgetManager.getAppWidgetIds(
             new android.content.ComponentName(context, CycleWidgetProvider.class));
         for (int id : ids) {
-            updateAppWidget(context, appWidgetManager, id);
+            render(context, appWidgetManager, id);
         }
     }
 }
