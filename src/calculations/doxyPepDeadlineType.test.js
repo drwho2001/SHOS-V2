@@ -77,7 +77,30 @@ describe("deadline is epoch milliseconds, and every consumer agrees", () => {
     // sendWidgetUpdate inside updateDoxyPEPWidget's try/catch, so in the app it
     // failed silently; here there is no catch, so it fails loudly.
     expect(() => doxyPepRedactedLine(status)).not.toThrow();
-    expect(doxyPepRedactedLine(status)).toMatch(/^Antibiotics - in \d+h/);
+
+    // FIXED 18 Oct 2026 - this assertion was a TIME BOMB and started failing on
+    // its own, on a clean checkout with no ring work in the tree.
+    //
+    // `status` above is built from a FIXED `NOW` of 2026-10-14, so its deadline
+    // is 2026-10-17 - which, from 17 Oct onward, is in the PAST as far as
+    // doxyPepRedactedLine is concerned. That function reads Date.now() internally
+    // and cannot be handed a clock, so the test injected a fake `now` on one side
+    // of the boundary while the other side read the real one. The line rendered
+    // "Antibiotics - in -44m": a negative countdown, produced by the test
+    // disagreeing with itself rather than by any product defect. In the app
+    // `status.overdue` is checked FIRST and returns "window overdue", so the
+    // negative branch is unreachable in production.
+    //
+    // The fix is to anchor BOTH sides to the real clock rather than to a fixed
+    // date, which is also what stops it decaying again: 6 hours ago is always 6
+    // hours ago, so the deadline is always ~66h in the future and the assertion
+    // holds indefinitely. A test pinned to a calendar date has to be re-armed by
+    // hand every 72 hours, and nothing was going to remember to do that.
+    const liveNow = new Date();
+    const sixHoursAgoMs = liveNow.getTime() - 6 * 3600000;
+    const sixHoursAgoStr = new Date(sixHoursAgoMs).toISOString().replace(/\.\d{3}Z$/, ".000Z");
+    const liveStatus = getDoxyPepStatus([qualifying(sixHoursAgoStr, "e1")], [], liveNow);
+    expect(doxyPepRedactedLine(liveStatus)).toMatch(/^Antibiotics - in \d+h/);
   });
 
   it("the widget payload sends the deadline as a plain number", () => {
