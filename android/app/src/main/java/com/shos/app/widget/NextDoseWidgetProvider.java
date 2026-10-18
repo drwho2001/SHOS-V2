@@ -7,7 +7,6 @@ import android.view.View;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.widget.RemoteViews;
 import com.shos.app.R;
@@ -207,8 +206,6 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             // than as progress above max.
             int pct = (int) Math.max(0L, Math.min(100L, (remaining * 100L) / DOSE_HORIZON_MS));
             views.setProgressBar(R.id.widget_ring, 100, pct, false);
-            views.setProgressTintList(R.id.widget_ring,
-                    ColorStateList.valueOf(colour(context, R.color.widget_good)));
             views.setViewVisibility(R.id.widget_ring, View.VISIBLE);
 
             // base is in the SystemClock.elapsedRealtime() timebase, NOT wall-clock.
@@ -219,12 +216,18 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             views.setChronometerCountDown(R.id.widget_countdown, true);
             views.setViewVisibility(R.id.widget_countdown, View.VISIBLE);
         } else if (target > 0) {
-            // DUE. The ring is FULL and urgent rather than hidden or empty: the dose
-            // is now, and a depleted ring would read as "nothing pending" - the
-            // opposite of the truth, on the one widget where being wrong matters.
+            // DUE. The ring is FULL rather than hidden or empty: the dose is now, and
+            // a depleted ring would read as "nothing pending" - the opposite of the
+            // truth, on the one widget where being wrong matters.
+            //
+            // FIXED 18 Oct 2026 - this said "full and URGENT". The arc cannot be
+            // recoloured from a provider at all: RemoteViews.setProgressTintList is a
+            // @hide API missing from the SDK level this project compiles against, and
+            // build-apk failed all four call sites with "cannot find symbol". So the
+            // arc stays widget_good in every state and the urgency signal is the WORD
+            // DUE in its centre, which setTextColor can still recolour. See
+            // DoxyPEPWidgetProvider for the same finding on the other widget.
             views.setProgressBar(R.id.widget_ring, 100, 100, false);
-            views.setProgressTintList(R.id.widget_ring,
-                    ColorStateList.valueOf(colour(context, R.color.widget_urgent)));
             views.setViewVisibility(R.id.widget_ring, View.VISIBLE);
             // A Chronometer counting past zero renders a negative duration, so the
             // centre switches to a word. The format string is a template with one

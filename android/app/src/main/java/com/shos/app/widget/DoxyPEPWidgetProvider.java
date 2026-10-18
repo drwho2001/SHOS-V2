@@ -6,7 +6,6 @@ import android.view.View;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.ColorStateList;
 import android.os.SystemClock;
 import android.widget.RemoteViews;
 import android.net.Uri;
@@ -187,23 +186,37 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
                 views.setProgressBar(R.id.widget_doxy_ring, 100, pct, false);
                 views.setViewVisibility(R.id.widget_doxy_ring, View.VISIBLE);
 
-                // Urgency is THREE steps, not a ramp. The status word in the ring's
-                // centre is the accessible text, and a smooth gradient of near-
-                // identical shades would put the meaning in colour alone, which
-                // WCAG 1.4.1 rules out. Thresholds are fractions of the window: over a
-                // third remaining is comfortable, under a ninth is nearly out.
+                // Urgency is THREE steps, not a ramp, and thresholds are fractions of
+                // the window: over a third remaining is comfortable, under a ninth is
+                // nearly out. WCAG 1.4.1 rules out meaning-in-colour-alone, and three
+                // named steps rather than a gradient is what lets the status WORD
+                // carry the same information as the colour.
+                //
+                // FIXED 18 Oct 2026 - this used to tint the ARC too, and that is NOT
+                // POSSIBLE from a provider. RemoteViews.setProgressTintList is marked
+                // @hide in the platform source and is absent from the SDK level this
+                // project compiles against, so build-apk rejected all four call sites
+                // with "cannot find symbol". The verb is genuinely absent, not merely
+                // deprecated, so there is no remoting route to it at any API level this
+                // app supports.
+                //
+                // The consequence is real and worth stating plainly: the ARC keeps one
+                // colour (widget_good, from widget_ring_arc.xml's fallback) and does NOT
+                // follow urgency. Only the status word recolours. A depleting ring that
+                // is always green, beside a word that turns amber then red, is a
+                // weaker signal than the design intended - and if that is to be fixed,
+                // the route is a separate ProgressBar per state swapped by visibility,
+                // not a tint.
                 float frac = (float) remaining / (float) WINDOW_MS;
-                int arc = frac > 0.33f ? R.color.widget_good
+                int urgency = frac > 0.33f ? R.color.widget_good
                         : frac > 0.11f ? R.color.widget_warn
                         : R.color.widget_urgent;
-                views.setProgressTintList(R.id.widget_doxy_ring,
-                        ColorStateList.valueOf(colour(context, arc)));
                 // setTextColor, not setTextColorInt: RemoteViews actions are applied
                 // reflectively in the launcher process, so naming the API-26 method on
                 // an API-24 device throws at reapply rather than at compile, and the
                 // host turns that into "Can't load widget". Deprecated, but correct
                 // on every level this app supports. Do not "upgrade" this.
-                views.setTextColor(R.id.widget_doxy_status, colour(context, arc));
+                views.setTextColor(R.id.widget_doxy_status, colour(context, urgency));
                 views.setTextViewText(R.id.widget_doxy_status, "ACTIVE");
 
                 // A real Chronometer, so the countdown is live every second in the
@@ -225,6 +238,7 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
                 // Expired. The ring is EMPTIED rather than hidden, so the widget's
                 // shape does not change underneath the user.
                 //
+                // The ARC is not recoloured here either, for the reason above.
                 // "Emptied" is now literally true, and was not before the layer ids
                 // were added: progress 0 sets level 0 on the ARC, and the TRACK -
                 // addressed separately as @android:id/background - stays a full circle.
@@ -232,8 +246,6 @@ public class DoxyPEPWidgetProvider extends AppWidgetProvider {
                 // to the whole drawable, BOTH layers swept 0, and the ring vanished.
                 views.setProgressBar(R.id.widget_doxy_ring, 100, 0, false);
                 views.setViewVisibility(R.id.widget_doxy_ring, View.VISIBLE);
-                views.setProgressTintList(R.id.widget_doxy_ring,
-                        ColorStateList.valueOf(colour(context, R.color.widget_urgent)));
                 views.setTextColor(R.id.widget_doxy_status,
                         colour(context, R.color.widget_urgent));
                 views.setTextViewText(R.id.widget_doxy_status, "EXPIRED");

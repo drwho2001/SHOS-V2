@@ -219,9 +219,22 @@ describe("ring colour palette", () => {
     }
   });
 
-  it("the arc's fallback colour resolves to a real palette entry", () => {
-    // The arc's <solid> is only a first-inflate fallback, but a typo'd name here
-    // would fail the build rather than silently, so this is a naming check.
+  it("the arc has a real palette colour, which is now its ONLY colour", () => {
+    // CHANGED 18 Oct 2026. This used to be described as a "first-inflate
+    // fallback" that the provider overrode per push with setProgressTintList.
+    // That override is NOT POSSIBLE: RemoteViews.setProgressTintList is a @hide
+    // API absent from the SDK level this project compiles against, and build-apk
+    // rejected every call site with "cannot find symbol".
+    //
+    // So the arc's colour is now permanent for the life of the widget, not
+    // per-push. That makes it a thing to guard rather than a fallback to
+    // mention: a typo'd or removed colour resource here would leave the ring
+    // rendering in the platform default with nothing failing here.
+    //
+    // The urgency signal is the status WORD beside/inside it, recoloured with
+    // setTextColor, which is public API and does compile. If the arc is ever to
+    // follow urgency, the route is one ProgressBar per state swapped by
+    // visibility - a tint is not reachable from a provider.
     expect(arc).toContain("@color/widget_good");
   });
 });
