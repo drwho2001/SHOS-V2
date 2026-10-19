@@ -68,9 +68,10 @@
          opens present the same information in the same sequence. -->
     <TextView
         android:id="@+id/widget_clinic_heading_when"
+        android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="26dp"
         android:text="When"
         android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
@@ -83,9 +84,10 @@
 
     <TextView
         android:id="@+id/widget_clinic_date"
+        android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="45dp"
         android:text="No upcoming appointment"
         android:textSize="14sp"
         android:textColor="@color/widget_good"
@@ -96,9 +98,10 @@
 
     <TextView
         android:id="@+id/widget_clinic_visit_time"
+        android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="68dp"
         android:text=""
         android:textSize="13sp"
         android:textColor="@color/widget_text_primary"
@@ -109,9 +112,10 @@
     <!-- ADDED 10 Oct 2026 (t087) - see the "When" heading above for why. -->
     <TextView
         android:id="@+id/widget_clinic_heading_where"
+        android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="87dp"
         android:text="Where"
         android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
@@ -124,9 +128,10 @@
 
     <TextView
         android:id="@+id/widget_clinic_location"
+        android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="106dp"
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_accent"
@@ -138,9 +143,10 @@
     <!-- ADDED 10 Oct 2026 (t087) - see the "When" heading above for why. -->
     <TextView
         android:id="@+id/widget_clinic_heading_details"
+        android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="128dp"
         android:text="Details"
         android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
@@ -153,9 +159,10 @@
 
     <TextView
         android:id="@+id/widget_clinic_clinic_num"
+        android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="145dp"
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_primary"
@@ -165,9 +172,10 @@
 
     <TextView
         android:id="@+id/widget_clinic_tests"
+        android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="162dp"
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
@@ -177,9 +185,10 @@
 
     <TextView
         android:id="@+id/widget_clinic_doctype"
+        android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="179dp"
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
@@ -189,9 +198,10 @@
 
     <TextView
         android:id="@+id/widget_clinic_nhs_num"
+        android:layout_gravity="top|start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="196dp"
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"

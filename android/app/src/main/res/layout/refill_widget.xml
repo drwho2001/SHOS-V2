@@ -10,7 +10,6 @@
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold"
         android:maxLines="1"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 
     <TextView
@@ -23,7 +22,6 @@
         android:textColor="@color/widget_good"
         android:textStyle="bold"
         android:maxLines="2"
-        android:ellipsize="end"
         android:breakStrategy="simple" />
 
     <TextView
@@ -34,7 +32,6 @@
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
-        android:maxLines="1"
-        android:ellipsize="end"
+        android:maxLines="2"
         android:breakStrategy="simple" />
 </FrameLayout>
