@@ -167,15 +167,15 @@ describe("every relative dynamic import destructures a real export", () => {
     // the guard was wrong at the exact moment it was supposed to be right.
     const src = stripComments(fs.readFileSync("src/calculations/medicationReminderSync.js", "utf8"));
     expect(src).not.toMatch(/getRefillDueMedications.*medicationCalculations/);
-    expect(src).toMatch(/getRefillDueMedications\s*\}\s*=\s*await\s+import\("\.\/refillReminderSync"\)/);
+    expect(src).toMatch(/getRefillWidgetSummary\s*\}\s*=\s*await\s+import\("\.\/refillReminderSync"\)/);
   });
 
   it("the refill call is awaited and takes no arguments", () => {
     // The other two of the three stacked defects: a real async function called
     // without await yields a Promise, and `[0].name` on one is undefined.
     const src = stripComments(fs.readFileSync("src/calculations/medicationReminderSync.js", "utf8"));
-    expect(src).toMatch(/await\s+getRefillDueMedications\(\)/);
-    expect(src).not.toMatch(/getRefillDueMedications\([^)]/);
+    expect(src).toMatch(/await\s+getRefillWidgetSummary\(\)/);
+    expect(src).not.toMatch(/getRefillWidgetSummary\([^)]/);
   });
 
   it("getRefillDueMedications is genuinely exported by refillReminderSync", () => {
