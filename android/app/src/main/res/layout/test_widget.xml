@@ -76,14 +76,7 @@
      and minSdkVersion is 24 (android/variables.gradle:2), so on API 24-26 the
      attribute is silently ignored and the field falls back to today's behaviour.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_root"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@drawable/widget_background"
-    android:gravity="center">
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="16dp" android:background="@drawable/widget_background">
 
     <TextView
         android:id="@+id/widget_test_title"
@@ -134,4 +127,4 @@
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
-</LinearLayout>
+</FrameLayout>

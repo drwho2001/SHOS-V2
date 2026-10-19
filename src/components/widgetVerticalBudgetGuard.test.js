@@ -82,7 +82,6 @@ const REBUILT_ONTO_FRAME_LAYOUT = {
  * dressed as a guard.
  */
 const KNOWN_STILL_CENTRED = [
-  "clinic_card_widget.xml",
   "cycle_widget.xml",
   "quick_add_contact_widget.xml",
   "quick_add_encounter_widget.xml",

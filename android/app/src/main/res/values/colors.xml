@@ -33,5 +33,6 @@
          of the ring - the ARC is - which is why it is allowed to be recessive,
          but not invisible. -->
     <color name="widget_urgent">#B3261E</color>
-    <color name="widget_ring_track">#5A8C88</color>
+    <color name="widget_ring_track">#A0D0C8</color>
 </resources>
+
