@@ -34,7 +34,6 @@ import { nowAsStoredDateTime } from "./dateInputHelpers";
 import { sendWidgetUpdate } from "./widgetBridgeUpdate";
 import { getWidgetBridge } from "./widgetBridge";
 import { redactedWidgetLine } from "./widgetPrivacy";
-import { getRefillWidgetSummary } from "./refillReminderSync";
 
 
 // ADDED 3 Sep 2026 — exported (was module-private) — real ask: "clear
@@ -192,6 +191,7 @@ export async function updateRefillWidget() {
     // `prefs` are gone entirely rather than left passed-and-ignored, because
     // two of the three repositories they needed were imported solely for a
     // call that never happened.
+    const { getRefillWidgetSummary } = await import("./refillReminderSync");
     const { count, nextRefill } = await getRefillWidgetSummary();
 
       const bridge = await getWidgetBridge();
