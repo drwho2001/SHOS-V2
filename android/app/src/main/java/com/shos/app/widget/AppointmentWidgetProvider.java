@@ -205,7 +205,7 @@ views.setViewVisibility(R.id.widget_appt_time, android.view.View.GONE);
             // text to fit a width the widget no longer needed.
             views.setTextViewText(R.id.widget_next_appt, nextAppt);
             WidgetTextFit.fit(views, context, R.id.widget_appt_count,
-                    apptCount + " upcoming" + (futureCount > 0 ? " + " + futureCount + " later" : ""), wDp, 18f, 2);
+                    apptCount + " upcoming" + (futureCount > 0 ? " + " + futureCount + " later" : ""), wDp, 18f, 1);
             WidgetTextFit.fit(views, context, R.id.widget_next_appt, nextAppt, wDp, 12f, 2);
 
             // ADDED 10 Oct 2026 (t088) - time and location on their own lines.

@@ -112,7 +112,7 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
             views.setTextViewText(R.id.widget_refill_count, refillCount + " medication" + (refillCount == 1 ? "" : "s"));
             views.setTextViewText(R.id.widget_next_refill, "Next: " + nextRefill);
             WidgetTextFit.fit(views, context, R.id.widget_refill_count, refillCount + " medication" + (refillCount == 1 ? "" : "s"), wDp, 18f, 2);
-            WidgetTextFit.fit(views, context, R.id.widget_next_refill, "Next: " + nextRefill, wDp, 12f);
+            WidgetTextFit.fit(views, context, R.id.widget_next_refill, "Next: " + nextRefill, wDp, 12f, 2);
         } else {
             views.setViewVisibility(R.id.widget_refill_count, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_next_refill, android.view.View.VISIBLE);
