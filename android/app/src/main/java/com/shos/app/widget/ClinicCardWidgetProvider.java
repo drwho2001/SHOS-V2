@@ -256,7 +256,13 @@ private static RemoteViews unavailableViews(Context context) {
             // preferences - one shoulder-surfing tap and the fields stayed
             // unmasked until Clear Storage. What is on screen is decided solely by
             // the privacy tier, so there is nothing to reveal.
-            views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
+             views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
+             if (wDp < NARROW_WIDGET_DP) {
+                 views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
+                 views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
+                 views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
+                 views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
+             }
 } else {
             // No upcoming appointment. Every other field is cleared to its empty XML
             // text rather than left alone, so a stale value from a previous push
@@ -286,7 +292,13 @@ private static RemoteViews unavailableViews(Context context) {
             views.setTextViewText(R.id.widget_clinic_location, "");
             views.setTextViewText(R.id.widget_clinic_clinic_num, "");
             views.setTextViewText(R.id.widget_clinic_tests, "");
-            views.setTextViewText(R.id.widget_clinic_doctype, "");
+             views.setTextViewText(R.id.widget_clinic_doctype, "");
+             if (wDp < NARROW_WIDGET_DP) {
+                 views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
+                 views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
+                 views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
+                 views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
+             }
         }
 
         // PAGING IS GONE, and this is the second time it has been tried here.
