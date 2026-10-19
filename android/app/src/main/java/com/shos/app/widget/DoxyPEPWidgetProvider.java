@@ -148,7 +148,7 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
             // matches what the layout now declares for this view -
             // widgetTextFitMaxLinesGuard checks BOTH axes, so a stale 16f here fails
             // the build instead of silently rendering larger than the design allows.
-            WidgetTextFit.fit(views, context, R.id.widget_doxy_title, redactedText, wDp, 12f, 2);
+                WidgetTextFit.fit(views, context, R.id.widget_doxy_title, redactedText, wDp, 16f, 2);
             appWidgetManager.updateAppWidget(appWidgetId, views);
             return;
         }

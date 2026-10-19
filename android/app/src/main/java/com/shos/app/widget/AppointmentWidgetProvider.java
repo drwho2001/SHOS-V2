@@ -170,7 +170,7 @@ String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
                 // blank line would read as a rendering fault.
 views.setViewVisibility(R.id.widget_appt_time, android.view.View.GONE);
                 views.setViewVisibility(R.id.widget_appt_location, android.view.View.GONE);
-                WidgetTextFit.fit(views, context, R.id.widget_appt_title, redactedText, wDp, 12f, 2);
+                WidgetTextFit.fit(views, context, R.id.widget_appt_title, redactedText, wDp, 16f, 2);
                 appWidgetManager.updateAppWidget(appWidgetId, views);
                 return;
             }
