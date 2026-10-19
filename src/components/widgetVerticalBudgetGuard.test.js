@@ -67,28 +67,20 @@ const REBUILT_ONTO_FRAME_LAYOUT = {
 };
 
 /**
- * Layouts that still centre their root, as of 18 Oct 2026.
+ * Layouts that still centre their root. The full family has now been rebuilt
+ * onto FrameLayout, so the expected set is empty and stays asserted below.
  *
  * Asserted against the tree rather than trusted, so it stays true: a layout
  * appearing or disappearing from this list fails the next test. Every one of
  * these is the same two-ended-clipping shape, and clinic_card_widget.xml is the
  * worst case in the app - 127dp over a 134dp box, measured on the device.
  *
- * They are NOT in the strong assertion above on purpose. Adding them there would
- * mean shipping a permanently red test, and a red test gets muted rather than
- * fixed. Converting them is the obvious next task, and each one wants a measured
- * size check of its own rather than this file's opinion - Refills and Cycle were
- * not measured as over-height at all, so asserting they overflow would be a guess
- * dressed as a guard.
+ * This used to enumerate the remaining seven layouts as a deferred list. That
+ * list became stale when those roots were rebuilt, leaving CI red even though the
+ * source was fixed. Keep the assertion exact, but make the expected set reflect
+ * the current tree rather than a historical to-do list.
  */
-const KNOWN_STILL_CENTRED = [
-  "cycle_widget.xml",
-  "quick_add_contact_widget.xml",
-  "quick_add_encounter_widget.xml",
-  "quick_add_medication_widget.xml",
-  "refill_widget.xml",
-  "test_widget.xml",
-];
+const KNOWN_STILL_CENTRED = [];
 
 describe("widget layouts cannot clip at both ends", () => {
   it("the family under test still exists", () => {
