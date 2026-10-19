@@ -84,7 +84,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="top|center_horizontal"
         android:gravity="center"
-        android:text="Last Test"
+        android:text="Last test"
         android:textSize="16sp"
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold"

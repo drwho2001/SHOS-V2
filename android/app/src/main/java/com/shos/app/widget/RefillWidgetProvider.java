@@ -108,7 +108,7 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
         // this went unfixed for so long.
         views.setViewVisibility(R.id.widget_refill_count, android.view.View.VISIBLE);
         views.setViewVisibility(R.id.widget_next_refill, android.view.View.VISIBLE);
-        views.setTextViewText(R.id.widget_refill_title, "Refills Due");
+         views.setTextViewText(R.id.widget_refill_title, "Refills due");
             views.setTextViewText(R.id.widget_refill_count, refillCount + " medication" + (refillCount == 1 ? "" : "s"));
             views.setTextViewText(R.id.widget_next_refill, "Next: " + nextRefill);
             WidgetTextFit.fit(views, context, R.id.widget_refill_count, refillCount + " medication" + (refillCount == 1 ? "" : "s"), wDp, 18f, 2);
@@ -116,7 +116,7 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
         } else {
             views.setViewVisibility(R.id.widget_refill_count, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_next_refill, android.view.View.VISIBLE);
-            views.setTextViewText(R.id.widget_refill_title, "Refills Due");
+             views.setTextViewText(R.id.widget_refill_title, "Refills due");
             views.setTextViewText(R.id.widget_refill_count, "All stocked");
             // No next-restock deadline crosses the current bridge, so do not invent
             // a countdown or render a misleading prefix.

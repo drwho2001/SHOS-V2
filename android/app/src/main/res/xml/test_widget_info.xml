@@ -13,7 +13,7 @@
      needs it - that is the cap that stops the empty-black-box growth, which is
      a different concern from the size the picker offers. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:label="Last Test"
+    android:label="Last test"
     android:description="@string/widget_desc_test"
     android:minWidth="180dp"
     android:minHeight="100dp"

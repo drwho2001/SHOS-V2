@@ -295,7 +295,7 @@ private static RemoteViews unavailableViews(Context context) {
              views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
              views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
              views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
-            views.setTextViewText(R.id.widget_clinic_title, "Clinic Card");
+             views.setTextViewText(R.id.widget_clinic_title, "Clinic card");
              views.setTextViewText(R.id.widget_clinic_date, "No upcoming appointment");
             views.setTextViewText(R.id.widget_clinic_visit_time, "");
             views.setTextViewText(R.id.widget_clinic_location, "");

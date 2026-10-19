@@ -179,7 +179,7 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
         // others. Every branch now pins every view it owns.
         views.setViewVisibility(R.id.widget_doxy_status, View.VISIBLE);
         views.setViewVisibility(R.id.widget_doxy_evidence, View.VISIBLE);
-        views.setTextViewText(R.id.widget_doxy_title, "DOXYPEP");
+                views.setTextViewText(R.id.widget_doxy_title, "DoxyPEP");
 
         long now = System.currentTimeMillis();
         if (expiry > 0) {

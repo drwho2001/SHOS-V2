@@ -34,7 +34,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
-        android:text="NEXT DOSE"
+         android:text="Next dose"
          android:textSize="16sp"
          android:textColor="@color/widget_text_primary"
          android:textStyle="bold"

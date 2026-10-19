@@ -99,7 +99,7 @@ views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
                 return;
             }
 
-        views.setTextViewText(R.id.widget_test_title, "Last Test");
+        views.setTextViewText(R.id.widget_test_title, "Last test");
             // ADDED 18 Oct 2026 - the Full branch RESTORES visibility. It did not,
             // and that was a live bug rather than a latent one.
             //
