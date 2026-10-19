@@ -225,17 +225,21 @@ private static RemoteViews unavailableViews(Context context) {
             // is hidden at every tier by design (the bridge never carries it and
             // there is no reveal affordance), so restoring it would be a leak.
             views.setViewVisibility(R.id.widget_clinic_date, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_visit_time, android.view.View.VISIBLE);
+             views.setViewVisibility(R.id.widget_clinic_visit_time, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_location, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.VISIBLE);
+             views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
+             views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
+             views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
+             views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
             views.setTextViewText(R.id.widget_clinic_title, title);
-            views.setTextViewText(R.id.widget_clinic_date, date);
-            views.setTextViewText(R.id.widget_clinic_visit_time, visitTime);
+             views.setTextViewText(R.id.widget_clinic_date,
+                     visitTime == null || visitTime.isEmpty() ? date : date + " · " + visitTime);
+             views.setTextViewText(R.id.widget_clinic_visit_time, "");
             views.setTextViewText(R.id.widget_clinic_location, location);
             views.setTextViewText(R.id.widget_clinic_clinic_num, clinicNum);
             views.setTextViewText(R.id.widget_clinic_tests, "Tests: " + tests);
@@ -287,9 +291,12 @@ private static RemoteViews unavailableViews(Context context) {
             views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.VISIBLE);
+             views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
+             views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
+             views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
+             views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
             views.setTextViewText(R.id.widget_clinic_title, "Clinic Card");
-            views.setTextViewText(R.id.widget_clinic_date, "No upcoming appointment");
+             views.setTextViewText(R.id.widget_clinic_date, "No upcoming appointment");
             views.setTextViewText(R.id.widget_clinic_visit_time, "");
             views.setTextViewText(R.id.widget_clinic_location, "");
             views.setTextViewText(R.id.widget_clinic_clinic_num, "");

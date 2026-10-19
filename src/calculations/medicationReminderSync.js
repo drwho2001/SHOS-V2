@@ -244,7 +244,9 @@ export async function updateRefillWidget() {
           (u) => u.unlockAt === nextUnlock,
         );
         const laterCount = state.upcoming.length - sameSlot.length;
-        const names = sameSlot.map((u) => u.med?.name).filter(Boolean);
+        const names = state.due.length
+          ? state.due.map((u) => u.name).filter(Boolean)
+          : sameSlot.map((u) => u.med?.name).filter(Boolean);
         const medLabel =
           names.length > 1 ? names.join(", ") : names[0] || "";
         const moreLabel = laterCount > 0 ? `  +${laterCount} more` : "";
