@@ -267,14 +267,14 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
             }
         } else {
             // No window open. The ring is HIDDEN rather than shown empty: there is
-            // no countdown to depict, and an empty ring beside "NO WINDOW" reads as a
+            // no countdown to depict, and an empty ring beside "NONE" reads as a
             // depleted one - a false alarm about the user's own health.
             //
             // The stored status is still preferred when it says something more
             // specific than the no-window default, so a state this provider does not
             // model is not silently flattened into a generic label.
             String label = (status == null || status.isEmpty()
-                    || "No active window".equals(status)) ? "NO WINDOW" : status.toUpperCase();
+                    || "No active window".equals(status)) ? "NONE" : status.toUpperCase();
             views.setViewVisibility(R.id.widget_doxy_ring, View.GONE);
             views.setViewVisibility(R.id.widget_doxy_countdown, View.GONE);
             views.setTextColor(R.id.widget_doxy_status,
@@ -373,3 +373,4 @@ String evidenceDay = (evidence != null && evidence.length() >= 10) ? evidence.su
         }
     }
 }
+

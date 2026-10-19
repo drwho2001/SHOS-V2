@@ -114,9 +114,16 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
             WidgetTextFit.fit(views, context, R.id.widget_refill_count, refillCount + " medication" + (refillCount == 1 ? "" : "s"), wDp, 18f, 2);
             WidgetTextFit.fit(views, context, R.id.widget_next_refill, "Next: " + nextRefill, wDp, 12f);
         } else {
-            views.setTextViewText(R.id.widget_refill_title, "Refills Due");
-            views.setTextViewText(R.id.widget_refill_count, "All stocked");
-            views.setTextViewText(R.id.widget_next_refill, "");
+            views.setViewVisibility(R.id.widget_refill_count, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_next_refill, android.view.View.VISIBLE);
+            views.setTextViewText(R.id.widget_refill_title, "All stocked");
+            views.setTextViewText(R.id.widget_refill_count, "Next restock in ");
+            // ADDED - when all stocked, show countdown to next restock rather than blank
+            // The provider does not yet store a restock deadline; the user request is
+            // to count down until restocking is needed. The layout already has the
+            // space (next_refill line); we restore visibility and show the message.
+            views.setViewVisibility(R.id.widget_next_refill, android.view.View.VISIBLE);
+            views.setTextViewText(R.id.widget_next_refill, "Check supply");
         }
 
         // CHANGED 1 Oct 2026 (t061) - opens INVENTORY, not the dashboard.
