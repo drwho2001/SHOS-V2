@@ -57,7 +57,10 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Pin the runner while ubuntu-latest migrates to Ubuntu 26. This keeps the
+    # Android/Capacitor gate on the measured Ubuntu 24 image instead of letting
+    # a label migration change the toolchain underneath it.
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5
