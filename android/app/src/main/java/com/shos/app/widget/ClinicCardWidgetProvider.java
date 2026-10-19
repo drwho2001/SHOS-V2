@@ -11,6 +11,8 @@ import com.shos.app.R;
 
 public class ClinicCardWidgetProvider extends ResizingWidgetProvider {
 
+    private static final int NARROW_WIDGET_DP = 130;
+
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_APPT_TITLE = "clinic_appt_title";
     private static final String KEY_APPT_DATE = "clinic_appt_date";
