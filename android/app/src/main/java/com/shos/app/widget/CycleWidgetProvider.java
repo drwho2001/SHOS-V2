@@ -151,7 +151,7 @@ views.setViewVisibility(R.id.widget_next_period, android.view.View.GONE);
         int[] ids = appWidgetManager.getAppWidgetIds(
             new android.content.ComponentName(context, CycleWidgetProvider.class));
         for (int id : ids) {
-            render(context, appWidgetManager, id);
+            new CycleWidgetProvider().render(context, appWidgetManager, id);
         }
     }
 }

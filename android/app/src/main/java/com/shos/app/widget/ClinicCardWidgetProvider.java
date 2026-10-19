@@ -367,7 +367,7 @@ private static RemoteViews unavailableViews(Context context) {
         int[] ids = appWidgetManager.getAppWidgetIds(
             new android.content.ComponentName(context, ClinicCardWidgetProvider.class));
         for (int id : ids) {
-            render(context, appWidgetManager, id);
+            new ClinicCardWidgetProvider().render(context, appWidgetManager, id);
         }
     }
 }

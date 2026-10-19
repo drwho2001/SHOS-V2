@@ -369,7 +369,7 @@ String evidenceDay = (evidence != null && evidence.length() >= 10) ? evidence.su
         int[] ids = appWidgetManager.getAppWidgetIds(
             new android.content.ComponentName(context, DoxyPEPWidgetProvider.class));
         for (int id : ids) {
-            render(context, appWidgetManager, id);
+            new DoxyPEPWidgetProvider().render(context, appWidgetManager, id);
         }
     }
 }

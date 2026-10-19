@@ -152,7 +152,7 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
         int[] ids = appWidgetManager.getAppWidgetIds(
             new android.content.ComponentName(context, RefillWidgetProvider.class));
         for (int id : ids) {
-            render(context, appWidgetManager, id);
+            new RefillWidgetProvider().render(context, appWidgetManager, id);
         }
     }
 }

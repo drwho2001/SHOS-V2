@@ -333,7 +333,7 @@ views.setViewVisibility(R.id.widget_appt_time, android.view.View.GONE);
         int[] ids = appWidgetManager.getAppWidgetIds(
             new android.content.ComponentName(context, AppointmentWidgetProvider.class));
         for (int id : ids) {
-            render(context, appWidgetManager, id);
+            new AppointmentWidgetProvider().render(context, appWidgetManager, id);
         }
     }
 }

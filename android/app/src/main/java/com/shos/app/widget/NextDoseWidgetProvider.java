@@ -318,7 +318,7 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
         int[] ids = appWidgetManager.getAppWidgetIds(new android.content.ComponentName(context, NextDoseWidgetProvider.class));
         for (int id : ids) {
-            render(context, appWidgetManager, id);
+            new NextDoseWidgetProvider().render(context, appWidgetManager, id);
         }
     }
 }

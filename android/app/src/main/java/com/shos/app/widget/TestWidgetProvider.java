@@ -158,7 +158,7 @@ views.setTextViewText(R.id.widget_last_test, lastTest);
         int[] ids = appWidgetManager.getAppWidgetIds(
             new android.content.ComponentName(context, TestWidgetProvider.class));
         for (int id : ids) {
-            render(context, appWidgetManager, id);
+            new TestWidgetProvider().render(context, appWidgetManager, id);
         }
     }
 }
