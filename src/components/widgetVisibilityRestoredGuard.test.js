@@ -90,6 +90,9 @@ const ALWAYS_HIDDEN_BY_DESIGN = {
     "it) and deliberately unrevealed - ClinicCardWidgetProvider documents that a " +
     "reveal button was tried, fired a dead deep link, and implied a permanent-unmask " +
     "kept in the widget's own preferences",
+  widget_clinic_heading_details:
+    "the Clinic Card keeps only appointment date/time/location in the glanceable card; " +
+    "the details block was removed because it clipped the card at the placed 2-cell size",
 };
 
 describe("a view hidden in one branch is restored in another", () => {
