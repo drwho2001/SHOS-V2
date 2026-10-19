@@ -121,7 +121,7 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
             // No next-restock deadline crosses the current bridge, so do not invent
             // a countdown or render a misleading prefix.
             views.setViewVisibility(R.id.widget_next_refill, android.view.View.VISIBLE);
-            views.setTextViewText(R.id.widget_next_refill, "No restock due");
+            views.setTextViewText(R.id.widget_next_refill, nextRefill);
         }
 
         // CHANGED 1 Oct 2026 (t061) - opens INVENTORY, not the dashboard.

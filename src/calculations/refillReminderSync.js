@@ -18,7 +18,7 @@
 // real future due-date to count down to.
 import { MedicationRepository } from "../repositories/medicationRepository";
 import { LogRepository } from "../repositories/logRepository";
-import { computeStock } from "./medicationCalculations";
+import { computeStock, effectiveDoseIntervalHours, formatRemaining } from "./medicationCalculations";
 import { scheduleNotification, cancelNotification, NOTIFICATION_IDS, moduleSmallIconName, REFILL_ACTION_TYPE_ID } from "../storage/notificationService";
 import { NotificationPreferencesRepository } from "../repositories/notificationPreferencesRepository";
 import { MedicationPreferencesRepository, isRefillSnoozed } from "../repositories/medicationPreferencesRepository";
@@ -55,6 +55,29 @@ export async function getRefillDueMedications() {
   // refill), just without implying an order was actually placed — see
   // the banner's own "Cancel" action in App.jsx.
   return meds.filter((m) => computeStock(m).needsAction && !m.refillRequestedAt && !m.refillCancelledAt && !isRefillSnoozed(prefs, m.id));
+}
+
+export async function getRefillWidgetSummary() {
+  const meds = await Promise.all(
+    (await MedicationRepository.getAll())
+      .filter((m) => !m.isArchived && m.inventoryTracked)
+      .map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) })),
+  );
+  const rows = meds.map((med) => ({ med, stock: computeStock(med) }));
+  const due = rows.filter(({ stock }) => stock.needsAction);
+  if (due.length > 0) {
+    const first = due[0];
+    return { count: due.length, nextRefill: `${first.med.name} · ${Math.max(0, first.stock.currentStock)} pills` };
+  }
+  const horizons = rows.map(({ med, stock }) => {
+    const intervalHours = effectiveDoseIntervalHours(med);
+    const dailyConsumption = intervalHours ? (med.unitsPerDose * 24) / intervalHours : 0;
+    return dailyConsumption && stock.currentStock != null
+      ? Math.max(0, (stock.currentStock - med.refillThreshold) / dailyConsumption)
+      : null;
+  }).filter((days) => days !== null && Number.isFinite(days));
+  const days = horizons.length ? Math.min(...horizons) : null;
+  return { count: 0, nextRefill: days === null ? "No scheduled restock" : `Request in ${formatRemaining(days)}` };
 }
 
 // ADDED 29 Sep 2026 (Phase 3, t013) - the SECOND stage. Marking a refill
@@ -164,10 +187,7 @@ export async function syncRefillReminder() {
 
 export async function updateRefillWidget() {
   try {
-    const { getRefillDueMedications } = await import("./refillReminderSync");
-    const needsRefill = await getRefillDueMedications();
-    const count = needsRefill.length;
-    const nextRefill = count > 0 ? needsRefill[0].name : "No refills due";
+    const { count, nextRefill } = await getRefillWidgetSummary();
 
     const bridge = await getWidgetBridge();
     if (bridge && bridge.plugin.updateRefill) {
