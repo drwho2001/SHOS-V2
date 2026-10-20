@@ -185,6 +185,53 @@ describe("widget layouts cannot clip at both ends", () => {
     }
   });
 
+  it("every view in a widget layout says where it sits", () => {
+    // ADDED 20 Oct 2026, after the Cycle card was found on the device drawing
+    // its phase straight THROUGH its title.
+    //
+    // The cause: two of that layout's three views declared no
+    // android:layout_gravity, and a FrameLayout child with no gravity lands at
+    // top|start - which is exactly where the title already was. The phase's
+    // marginTop of 8dp was measured from the top of the CARD, not from the row
+    // below the title, so the two were drawn over each other. On the device
+    // the card read "Menstrual Cycle" with "Tracking off or no data" struck
+    // through it.
+    //
+    // Nothing in the suite could see it. The vertical budget guard checks the
+    // ROOT's gravity; the text-fit guard checks fit() against maxLines; the tap
+    // guard checks the container count. Every one of them reads something
+    // else, and the defect was in the one thing none of them looked at - which
+    // is the general failure this repo keeps re-learning, and the reason
+    // CLAUDE.md says to ask what shape a guard cannot match rather than to
+    // add guards for shapes it can.
+    //
+    // The rule is narrow on purpose: a view with no gravity is not WRONG in
+    // general, it is wrong on a card whose bands are stacked from the top -
+    // and every one of these layouts is exactly that. A layout that wants a
+    // view to fill the card would say so with a gravity it declares, and this
+    // guard would still be green.
+    const strip = (s) => s.replace(/<!--[\s\S]*?-->/g, "");
+    const offenders = [];
+    for (const f of widgetLayouts) {
+      const src = strip(readFileSync(join(LAYOUTS, f), "utf8"));
+      const tags = [...src.matchAll(/<(TextView|ImageView|Chronometer|ProgressBar)[\s\S]*?\/>/g)]
+        .map((m) => m[0]);
+      for (const tag of tags) {
+        if (/android:layout_gravity=/.test(tag)) continue;
+        const idMatch = tag.match(/android:id="@\+id\/(\w+)"/);
+        const id = idMatch ? idMatch[1] : "(no id)";
+        offenders.push(`${f}: ${id}`);
+      }
+    }
+    expect(
+      offenders,
+      `these views declare no android:layout_gravity, so a FrameLayout places them at ` +
+        `top|start - the same place the card's title is, and the two are drawn over ` +
+        `each other: ${offenders.join(", ")}. Every band on these cards is positioned ` +
+        `explicitly, and this is the assertion that keeps it that way.`,
+    ).toEqual([]);
+  });
+
   it("the rebuilt layouts declare no nested ViewGroup, per L-076", () => {
     // Stated here as well as in widgetTapAndFallbackGuard because the reason it
     // matters is different in each place: there it is about inflating at all,

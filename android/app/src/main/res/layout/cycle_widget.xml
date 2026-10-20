@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Cycle tracking.
+
+     FIXED 20 Oct 2026 - the phase and the next-period row were drawn ON TOP OF
+     the title.
+
+     The cause is a missing layout_gravity and two marginTops that were
+     measured from the top of the CARD rather than from the row below the
+     title: with no layout_gravity, a FrameLayout child is placed at
+     top|start, and "top" means the top of the card - so the phase (marginTop
+     8dp) sat inside the title (which starts at 0dp) and the two were drawn
+     over each other. On the device the card read "Menstrual Cycle" with
+     "Tracking off or no data" struck through it.
+
+     The margins are now measured from the title: the title is 16sp (about
+     19dp), so the phase starts at 26dp and the next-period row at 50dp.
+     Both are centred, which is what the card looked like it wanted to be.
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -23,7 +40,8 @@
         android:id="@+id/widget_cycle_phase"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="26dp"
         android:text="Follicular"
         android:textSize="18sp"
         android:textColor="@color/widget_cycle"
@@ -36,7 +54,8 @@
         android:id="@+id/widget_next_period"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="50dp"
         android:text="Next period: —"
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
