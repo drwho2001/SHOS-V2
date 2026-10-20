@@ -20,19 +20,6 @@ public class TestWidgetProvider extends ResizingWidgetProvider {
 // ONE SharedPreferences file, so a shared key name would overwrite itself.
     private static final String KEY_REDACTED_TEXT = "redacted_text_test";
 
-    // ADDED 20 Oct 2026 - the height at which this card is treated as a ONE-ROW
-    // card, and how far the date row moves up when it is.
-    //
-    // The heights are measured on the device: the 2-cell placement is 166dp
-    // tall and the 1-cell placement is 72dp, so 120dp sits between them and
-    // does not depend on a cell boundary.
-    //
-    // The lift is the difference between the layout's own margin for the date
-    // row (42dp) and where it has to sit to clear the title (about 22dp) -
-    // a 16sp title is about 19dp tall, and the date is 14sp, so 22 + 17 leaves
-    // the date inside a 40dp content box with a dp to spare.
-    private static final int SHORT_CARD_DP = 120;
-    private static final float DATE_LIFT_DP = 20f;
 
 
 
@@ -134,40 +121,26 @@ views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_retest_due, android.view.View.VISIBLE);
             views.setTextViewText(R.id.widget_last_test, lastTest);
             views.setTextViewText(R.id.widget_retest_due, "Retest due: " + retestDue);
-
-            // ADDED 20 Oct 2026 - the ONE-ROW CARD. The owner placed a second
-            // Last Test widget at the smallest size the launcher offers, and it
-            // showed its title and NOTHING ELSE: the layout puts the date 42dp
-            // down and the retest line 82dp down, and a one-row card has 40dp
-            // of content between its 16dp paddings. Both rows fell off the
-            // bottom, so the card rendered as a title and an empty box.
+            // CHANGED 20 Oct 2026 - there is NO provider-side row move here any
+            // more, and there used to be one.
             //
-            // The owner's own words for the small cards: "smaller widgets have
-            // just what's necessary". So on a short card the date moves up
-            // under the title and the retest line goes - the date is the value,
-            // and the retest date is the row that does not fit.
+            // The owner placed a second Last Test widget at the smallest size
+            // the launcher offers (one launcher row, 75dp tall), and it showed
+            // its title and nothing else: the rows sat at 42dp and 82dp, and a
+            // one-row card has 43dp of content, so both fell off the bottom.
             //
-            // The move is a TRANSLATION, not a layout change, for the same
-            // reason the Clinic Card's narrow treatment is one: setViewLayoutMargin
-            // is API 31+, and a RemoteViews action naming a method the
-            // launcher's API level does not have throws at reapply, where the
-            // host turns it into "Can't load widget". setTranslationY has been
-            // on View since API 11.
-            int hDp = WidgetTextFit.heightDp(context, appWidgetManager, appWidgetId);
-            boolean shortCard = hDp > 0 && hDp < SHORT_CARD_DP;
-            float density = context.getResources().getDisplayMetrics().density;
-            if (shortCard) {
-                views.setFloat(R.id.widget_last_test, "setTranslationY", -DATE_LIFT_DP * density);
-                views.setViewVisibility(R.id.widget_retest_due, android.view.View.GONE);
-            } else {
-                // AND the offset is CLEARED on a tall card. A RemoteViews update
-                // applies only the actions it carries and the launcher RECYCLES
-                // the inflated view, so an offset set on the short card would
-                // survive a resize and leave the date floating under the title.
-                // Setting a property in one branch obliges you to set it in the
-                // others.
-                views.setFloat(R.id.widget_last_test, "setTranslationY", 0f);
-            }
+            // The first attempt moved the date row at RENDER TIME, with
+            // views.setFloat(id, "setTranslationY", ...). It was measured
+            // working on the Clinic Card - the location moved from 106dp to
+            // about 87dp - and it did NOTHING here: the render ran to
+            // completion, the text was set, there was no exception, and the
+            // date stayed at 42dp and stayed invisible. A mechanism whose
+            // failure mode is "silently does nothing" is not one to ship on a
+            // card the owner asked to see working, so the date row moved in
+            // the LAYOUT instead (test_widget.xml), where it cannot fail.
+            //
+            // The Clinic Card keeps its runtime move, because that one is
+            // measured working.
             // Measured on the device, which showed "Retest due: ..." and a
             // last-test date broken across two lines mid-value.
             // t119 (17 Oct 2026): maxSp was 18f while test_widget.xml declares 14sp,

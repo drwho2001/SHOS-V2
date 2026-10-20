@@ -192,67 +192,6 @@ final class WidgetTextFit {
     }
 
     /**
-     * The widget's current HEIGHT in dp. The sibling of widthDp, and it exists
-     * because a widget's height is as much a layout decision as its width.
-     *
-     * ADDED 20 Oct 2026: the Last Test card at its smallest placement showed
-     * its title and nothing else, because the layout's rows sit at fixed
-     * margins that a one-row card has no room for. A provider cannot know how
-     * tall its card is without asking.
-     *
-     * THE ORIENTATION RULE IS THE MIRROR OF widthDp's, and the reason is in
-     * the measurement recorded above: the four options are the PORTRAIT and
-     * LANDSCAPE renderings of one widget, and the width and the height SWAP
-     * TOGETHER. Measured on this device: minW=109 maxW=208 minH=81 maxH=166,
-     * with the sizes list giving 109.09 x 166.55 and 208.73 x 81.45. So in
-     * portrait the widget is the NARROW one and the TALL one - the width
-     * takes the smaller bound and the height takes the larger - and in
-     * landscape it is the other way round.
-     *
-     * Never returns a sentinel: as with widthDp, a caller must not have to
-     * distinguish "I could not tell" from "it is this tall", because it cannot
-     * do the right thing with the difference.
-     */
-    static int heightDp(Context context, AppWidgetManager manager, int appWidgetId) {
-        // The 2-cell height on a typical phone - a last resort, not the
-        // expected path.
-        final int FALLBACK_DP = 160;
-
-        if (manager == null) return FALLBACK_DP;
-        try {
-            android.os.Bundle options = manager.getAppWidgetOptions(appWidgetId);
-            if (options == null) return FALLBACK_DP;
-
-            int minH = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0);
-            int maxH = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0);
-
-            boolean landscape = context.getResources().getConfiguration().orientation
-                    == android.content.res.Configuration.ORIENTATION_LANDSCAPE;
-            int usable = 0;
-            if (landscape) {
-                // The landscape rendering is the SHORT one.
-                if (minH > 0) usable = minH;
-                else if (maxH > 0) usable = maxH;
-            } else {
-                // The portrait rendering is the TALL one.
-                if (maxH > 0) usable = maxH;
-                else if (minH > 0) usable = minH;
-            }
-            if (usable > 0) return usable;
-
-            try {
-                android.appwidget.AppWidgetProviderInfo info = manager.getAppWidgetInfo(appWidgetId);
-                if (info != null && info.minHeight > 0) return info.minHeight;
-            } catch (Exception ignored) {
-                // Falls through to the constant below.
-            }
-            return FALLBACK_DP;
-        } catch (Exception e) {
-            return FALLBACK_DP;
-        }
-    }
-
-    /**
      * The launcher's declared size list, OPTION_APPWIDGET_SIZES (API 31), as
      * readable text - or "-" when the launcher did not populate it.
      *

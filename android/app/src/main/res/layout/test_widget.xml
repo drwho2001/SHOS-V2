@@ -2,6 +2,28 @@
 <!--
      EXPERIMENT (t118, 16 Oct 2026) - autoSizeTextType, on ONE widget.
 
+     CHANGED 20 Oct 2026 - THE DATE ROW MOVED UP, from 42dp to 24dp, and the
+     retest line from 82dp to 60dp.
+
+     The owner placed a second Last Test widget at the smallest size the
+     launcher offers - one launcher row, 75dp tall - and it showed its title
+     and NOTHING ELSE. The reason was arithmetic, not a bug: the rows sat at
+     42dp and 82dp, and a one-row card has 43dp of content between its 16dp
+     paddings, so both rows fell off the bottom and the card rendered as a
+     title and an empty box.
+
+     The fix is in the LAYOUT rather than at render time, and that is the
+     whole point of putting it here: a row that is moved by a provider has to
+     be moved by an action that the host applies, and on this device that
+     action (RemoteViews.setFloat on "setTranslationY") moved the Clinic
+     Card's location row and did nothing at all to this one - silently, with
+     no exception and no other visible difference. A layout margin cannot
+     fail that way.
+
+     The 2-cell card keeps all three rows (title, date, retest) and simply
+     reads a little tighter, which is the same look every other card in this
+     app has now.
+
      CLAUDE.md and lesson L-110 say autoSizeTextType "does not work in
      RemoteViews". THAT REASONING IS REFUTED, verified in the platform source at
      C:\Users\kanem\AppData\Local\Android\Sdk\sources\android-37.0\android\widget\
@@ -102,7 +124,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="42dp"
+        android:layout_marginTop="24dp"
         android:text="No tests logged"
         android:textSize="14sp"
         android:textColor="@color/widget_good"
@@ -122,7 +144,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="82dp"
+        android:layout_marginTop="60dp"
         android:text="Retest due: —"
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
