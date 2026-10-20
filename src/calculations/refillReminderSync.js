@@ -57,21 +57,52 @@ export async function getRefillDueMedications() {
   return meds.filter((m) => computeStock(m).needsAction && !m.refillRequestedAt && !m.refillCancelledAt && !isRefillSnoozed(prefs, m.id));
 }
 
+/**
+ * How many days ahead of a refill point count as "SOON" for the Refills Due
+ * widget's headline.
+ *
+ * ADDED 20 Oct 2026, on the owner's own instruction: the widget's headline used
+ * to read "All stocked" whenever no medication was AT its threshold, which is a
+ * non-answer - and on this device it was literally false, because the only
+ * tracked medication was one day from its reorder point.
+ *
+ * The horizon is a PRODUCT decision, not a clinical one, and it is named here
+ * so there is exactly one place to change it. A week is the conventional
+ * reorder horizon and is long enough that "soon" means "this week" rather than
+ * "in an hour", and short enough that a medication due in a fortnight does not
+ * crowd the card.
+ *
+ * What it is NOT: a claim about how long a pharmacy takes. Nothing here knows
+ * that, and guessing it is the mistake this file already documents in
+ * getRefillWidgetSummary - a hardcoded lead time is a guess dressed as a
+ * measurement. The number is about the USER's own reorder point, which is the
+ * app's own `refillThreshold` and therefore the user's own buffer.
+ */
+const REFILL_SOON_DAYS = 7;
+
 export async function getRefillWidgetSummary() {
   const meds = await Promise.all(
     (await MedicationRepository.getAll())
       .filter((m) => !m.isArchived && m.inventoryTracked)
       .map(async (m) => ({ ...m, logs: await LogRepository.getForMedication(m.id) })),
   );
-  const rows = meds.map((med) => ({ med, stock: computeStock(med) }));
-  const due = rows.filter(({ stock }) => stock.needsAction);
-  const ordered = [...due, ...rows.filter(({ stock }) => !stock.needsAction)];
-  const lines = ordered.map(({ med, stock }) => {
+  // The days until each medication reaches its refill point, computed ONCE per
+  // medication and then used twice: for the line under the headline, and for the
+  // headline itself. They have to come from the same number, or the card can
+  // say "Soon" above a line that says "request in 30d" - which is the defect
+  // this whole change exists to remove.
+  const rows = meds.map((med) => {
+    const stock = computeStock(med);
     const intervalHours = effectiveDoseIntervalHours(med);
     const dailyConsumption = intervalHours ? (med.unitsPerDose * 24) / intervalHours : 0;
     const days = dailyConsumption && stock.currentStock != null
       ? Math.max(0, (stock.currentStock - med.refillThreshold) / dailyConsumption)
       : null;
+    return { med, stock, days };
+  });
+  const due = rows.filter(({ stock }) => stock.needsAction);
+  const ordered = [...due, ...rows.filter(({ stock }) => !stock.needsAction)];
+  const lines = ordered.map(({ med, stock, days }) => {
     const timing = stock.needsAction
       ? "request now"
       : days !== null && Number.isFinite(days)
@@ -79,9 +110,18 @@ export async function getRefillWidgetSummary() {
         : "no schedule";
     return `${med.name} · ${Math.max(0, stock.currentStock)} left · ${timing}`;
   });
+  // The HEADLINE: "Soon" or "None".
+  //
+  // A medication already AT its threshold has days === 0, so it is covered by
+  // the same test as one approaching it - there is no separate "now" case to
+  // get wrong, and no third word the owner did not ask for.
+  const soon = rows.some(
+    ({ days }) => days !== null && Number.isFinite(days) && days <= REFILL_SOON_DAYS,
+  );
   return {
     count: due.length,
     nextRefill: lines.length ? lines.slice(0, 4).join("\n") : "No medications tracked",
+    headline: soon ? "Soon" : "None",
   };
 }
 
@@ -192,7 +232,7 @@ export async function syncRefillReminder() {
 
 export async function updateRefillWidget() {
   try {
-    const { count, nextRefill } = await getRefillWidgetSummary();
+    const { count, nextRefill, headline } = await getRefillWidgetSummary();
 
     const bridge = await getWidgetBridge();
     if (bridge && bridge.plugin.updateRefill) {
@@ -201,7 +241,13 @@ export async function updateRefillWidget() {
       // the same bridge method; both are wired to the shared helper so neither
       // can drift from the tier rule, but the duplication itself is still worth
       // collapsing. Left as-is rather than refactored mid-change.
-      await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill, category: "Refills" },
+      //
+      // `headline` is the card's one-word answer - "Soon" or "None" - computed
+      // from the same stock projection the lines below it are built from. It is
+      // a Full-tier field: it is not in ALLOWED_AT_REDACTED, so default-deny
+      // drops it at the Redacted tier, where the pre-formatted redacted line
+      // carries the meaning instead.
+      await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill, headline, category: "Refills" },
         refillRedactedLine(count));
     }
   } catch (e) {

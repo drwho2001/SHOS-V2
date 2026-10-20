@@ -49,6 +49,35 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
     }
 
     /**
+     * The wall-clock time of an instant, as "HH:mm", in the device's own zone.
+     *
+     * ADDED 20 Oct 2026 - the ring's centre carries the time the next dose is
+     * due, and it is formatted from the SAME epoch the countdown runs to, so the
+     * two can never describe different instants.
+     *
+     * "HH:mm" rather than DateFormat.getTimeInstance(SHORT): that one follows
+     * the device's 12/24-hour setting and drops the leading zero, so the same
+     * dose would read "4:00 AM" on one phone and "04:00" on another. This
+     * widget is 24-hour throughout - the medication time it shows elsewhere
+     * ("Next at 04:00") is 24-hour too - so the format is fixed here rather
+     * than inherited.
+     *
+     * A new formatter per call, because SimpleDateFormat is not thread-safe and
+     * this runs in the launcher process.
+     */
+    private static String clockOf(long epochMs) {
+        try {
+            return new java.text.SimpleDateFormat("HH:mm", java.util.Locale.US)
+                    .format(new java.util.Date(epochMs));
+        } catch (RuntimeException e) {
+            // A formatter that cannot be built must not take the widget down -
+            // the caller falls back to a short word, which is a smaller lie than
+            // a crashed provider.
+            return "";
+        }
+    }
+
+    /**
      * The "no data available" RemoteViews. Contains no user data at all, so
      * pushing it can neither write to the plaintext sink nor disclose anything
      * to the launcher process. See res/layout/widget_unavailable.xml.
@@ -206,7 +235,41 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         long target = prefs.getLong(KEY_COUNTDOWN_AT, 0L);
         long remaining = target - System.currentTimeMillis();
 
-        if (target > 0 && remaining > 0) {
+        // The DUE-NOW case is checked FIRST, and the order is load-bearing.
+        //
+        // The JS sends the soonest UPCOMING unlock as the countdown target even
+        // when a dose is already due, so a card in that state has both: a
+        // "Dose due now" line AND a future target. Checking the target first
+        // would render the ring around the UPCOMING dose's time while the card
+        // claimed the next dose was due now - two different answers on one card,
+        // and the one the owner reads is the wrong one.
+        boolean dueNow = nextDoseTime != null && nextDoseTime.toLowerCase().contains("due now");
+
+        if (dueNow) {
+            // DUE NOW. The ring is FULL rather than hidden or empty: the dose is
+            // now, and a depleted ring would read as "nothing pending" - the
+            // opposite of the truth, on the one widget where being wrong matters.
+            //
+            // The ARC cannot be recoloured from a provider at all: RemoteViews.
+            // setProgressTintList is a @hide API missing from the SDK level this
+            // project compiles against, and build-apk failed all four call sites
+            // with "cannot find symbol". So the arc stays widget_good in every
+            // state and the urgency signal is the WORD DUE in its centre, which
+            // setTextColor can still recolour. See DoxyPEPWidgetProvider for the
+            // same finding on the other widget.
+            views.setProgressBar(R.id.widget_ring, 100, 100, false);
+            views.setViewVisibility(R.id.widget_ring, View.VISIBLE);
+            views.setTextColor(R.id.widget_ring_label, colour(context, R.color.widget_urgent));
+            views.setTextViewText(R.id.widget_ring_label, "DUE");
+            views.setViewVisibility(R.id.widget_ring_label, View.VISIBLE);
+            // No countdown line: a Chronometer counting past zero renders a
+            // negative duration, which is the one thing it cannot do. The word is
+            // the whole message here.
+            views.setViewVisibility(R.id.widget_countdown, View.GONE);
+            views.setTextColor(R.id.widget_next_dose, colour(context, R.color.widget_urgent));
+            views.setTextViewText(R.id.widget_next_dose, "Due now");
+            views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
+        } else if (target > 0 && remaining > 0) {
             // Ring: how much of a nominal dosing day is left. The horizon is a
             // NAMED CONSTANT rather than a stored interval, because the widget
             // genuinely does not know the medication's dosing frequency and must not
@@ -225,47 +288,50 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
                     SystemClock.elapsedRealtime() + remaining, "%s", true);
             views.setChronometerCountDown(R.id.widget_countdown, true);
             views.setViewVisibility(R.id.widget_countdown, View.VISIBLE);
-            // The ring's centre carries a short WORD now, not the countdown: a 52dp
-            // ring leaves a 36dp interior (99px here) and "4:12:30" renders about
-            // 116px, so the number cannot sit inside it. The word is 3-4 characters
-            // and fits with room to spare.
-            String dueClock = nextDoseTime == null ? "" : nextDoseTime.replace("Next at ", "");
+
+            // The ring's centre carries the WALL-CLOCK DUE TIME, which is what the
+            // owner asked for: the number that answers "when do I take it".
+            //
+            // It is formatted from the same epoch the countdown is running to, so
+            // the two can never describe different instants - and it is formatted
+            // HERE, in the widget's own process, rather than being sent as a
+            // pre-formatted string, so there is one value (the epoch) rather than
+            // two that have to agree.
+            //
+            // "HH:mm" rather than the platform's short time format, because that
+            // one drops the leading zero and follows the device's 12/24-hour
+            // setting; this widget is 24-hour throughout, and the medication
+            // times it shows elsewhere ("Next at 04:00") are 24-hour too.
+            String dueClock = clockOf(target);
             views.setTextColor(R.id.widget_ring_label, colour(context, R.color.widget_text_primary));
             views.setTextViewText(R.id.widget_ring_label, dueClock.isEmpty() ? "SOON" : dueClock);
             views.setViewVisibility(R.id.widget_ring_label, View.VISIBLE);
+
+            // The separate time line is HIDDEN, not blank: the ring's centre is
+            // carrying the time now, so a second "Next at 04:00" under it would
+            // say the same thing twice.
+            views.setTextViewText(R.id.widget_next_dose, "");
+            views.setViewVisibility(R.id.widget_next_dose, View.GONE);
         } else if (target > 0) {
-            // DUE. The ring is FULL rather than hidden or empty: the dose is now, and
-            // a depleted ring would read as "nothing pending" - the opposite of the
-            // truth, on the one widget where being wrong matters.
-            //
-            // FIXED 18 Oct 2026 - this said "full and URGENT". The arc cannot be
-            // recoloured from a provider at all: RemoteViews.setProgressTintList is a
-            // @hide API missing from the SDK level this project compiles against, and
-            // build-apk failed all four call sites with "cannot find symbol". So the
-            // arc stays widget_good in every state and the urgency signal is the WORD
-            // DUE in its centre, which setTextColor can still recolour. See
-            // DoxyPEPWidgetProvider for the same finding on the other widget.
+            // OVERDUE. The ring is FULL rather than hidden or empty: the dose is
+            // now past, and a depleted ring would read as "nothing pending" - the
+            // opposite of the truth, on the one widget where being wrong matters.
             views.setProgressBar(R.id.widget_ring, 100, 100, false);
             views.setViewVisibility(R.id.widget_ring, View.VISIBLE);
             // A Chronometer counting past zero renders a negative duration, so the
             // centre switches to a word. The format string is a template with one
             // unused argument - String.format ignores extra arguments - which is how
             // a Chronometer renders static text without becoming a different view.
+            views.setTextColor(R.id.widget_ring_label, colour(context, R.color.widget_urgent));
             views.setTextViewText(R.id.widget_ring_label, "DUE");
             views.setViewVisibility(R.id.widget_ring_label, View.VISIBLE);
             // No countdown line: a Chronometer counting past zero renders a negative
             // duration, which is the one thing it cannot do. The word is the whole
             // message here.
             views.setViewVisibility(R.id.widget_countdown, View.GONE);
-        } else if (nextDoseTime != null && nextDoseTime.toLowerCase().contains("due now")) {
-            views.setProgressBar(R.id.widget_ring, 100, 100, false);
-            views.setViewVisibility(R.id.widget_ring, View.VISIBLE);
-            views.setTextColor(R.id.widget_ring_label, colour(context, R.color.widget_urgent));
-            views.setTextViewText(R.id.widget_ring_label, "DUE");
-            views.setViewVisibility(R.id.widget_ring_label, View.VISIBLE);
             views.setTextColor(R.id.widget_next_dose, colour(context, R.color.widget_urgent));
-            views.setTextViewText(R.id.widget_next_dose, "Due now");
-            views.setViewVisibility(R.id.widget_countdown, View.GONE);
+            views.setTextViewText(R.id.widget_next_dose, "Overdue");
+            views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
         } else {
             // No dose scheduled at all: there is no countdown to depict, so both the
             // ring and its centre are hidden. An empty ring beside a medication name
@@ -273,6 +339,8 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             views.setViewVisibility(R.id.widget_ring, View.GONE);
             views.setViewVisibility(R.id.widget_countdown, View.GONE);
             views.setViewVisibility(R.id.widget_ring_label, View.GONE);
+            views.setTextViewText(R.id.widget_next_dose, nextDoseTime);
+            views.setViewVisibility(R.id.widget_next_dose, View.VISIBLE);
         }
 
         // CHANGED 4 Oct 2026 - this provider had NO click intent at all, so the

@@ -1,42 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="16dp" android:background="@drawable/widget_background">
+<!-- Quick Add: Contact.
+
+     THE GEOMETRY, MEASURED ON THE DEVICE (20 Oct 2026), because this card is
+     the one shape that does not fit the other nine:
+
+       - the owner placed it at 108.7dp wide x 72dp tall - ONE launcher row,
+         not two. That is 40dp of content height at the other cards' 16dp
+         padding, and 40dp is not enough for an icon AND a two-line label
+         (the label alone is about 31dp).
+       - so this layout uses 8dp padding, which gives 56dp of content height:
+         a 22dp icon, a 2dp gap, and the label's two lines fit with room to
+         spare. The other nine cards keep their 16dp, because their 2-cell
+         budget is derived from it (166dp cell - 32dp) and their content is
+         four or five bands rather than two.
+
+     THE ICON IS ABOVE THE LABEL, not beside it. Beside it, the label's column
+     is 48.7dp at 16dp padding - and "Medication", the longest word on any of
+     these three cards, is about 62dp at 12sp. It does not fit, and with
+     breakStrategy="simple" a word wider than its line is broken at the
+     character level: "Medicatio" / "n". That is the same mid-word break the
+     Next Dose widget had.
+
+     ICON: the app's OWN shortcut disc - a coloured circle with a white
+     glyph and the app's plus badge - in the Contacts module's colour. The
+     owner asked for the icons from the bottom-nav module tabs, and this is
+     that artwork: the glyph inside the disc is the module's own mark, the
+     same one the nav draws, and the disc is the app's shortcut convention
+     (ic_shortcut_contact.xml and its siblings).
+
+     It is 22dp rather than the 48dp that shipped on 20 Oct, which was
+     "too big and behind text": at 48dp it did not fit the 40dp content box
+     at all, so it was clipped top and bottom AND drawn across the label. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="8dp"
+    android:background="@drawable/widget_background">
 
     <ImageView
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
         android:layout_gravity="top|center_horizontal"
-        android:contentDescription="Add contact"
+        android:contentDescription="@null"
         android:src="@drawable/ic_widget_contact" />
 
-    <!-- CHANGED 16 Oct 2026 (t111) - maxLines 1 -> 2.
-
-         DEVICE-MEASURED, not assumed. On 23124RA7EO this label rendered as
-         "+ Add Co..." with the rest of the word ellipsized away. The cause is
-         not a measuring bug and nothing was shrunk: the text is a STATIC
-         literal here, so this TextView has no android:id and the provider
-         (QuickAddContactWidgetProvider) never calls WidgetTextFit.fit() - there
-         is nothing to measure. Given a string wider than the 109dp 2-column
-         widget and maxLines=1, the label simply ellipsized.
-
-         At maxLines=2 the label wraps onto two clean lines - "+ Add" /
-         "Contact" - because breakStrategy="simple" divides on spaces and every
-         individual word is narrower than the field. ellipsize="end" stays, so
-         a label that is ever made longer than two lines degrades gracefully
-         rather than being cut mid-word.
-
-         Guarded by quickAddWidgetLabelGuard.test.js. That sibling guard cannot
-         see this view: it keys on android:id and on fit() call sites, and this
-         label has neither. maxLines here is therefore the ONLY control on
-         whether the label is complete. -->
+    <!-- maxLines 2, not 1: this label is a STATIC string, so there is no
+         fit() call and no fitter to shrink it - maxLines is the only control
+         on whether it ellipsizes. At one line it read "Add Co..." on the
+         device. Pinned by quickAddWidgetLabelGuard.test.js. -->
     <TextView
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-         android:layout_gravity="bottom|center_horizontal"
-         android:text="Add Contact"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
+        android:text="Add Contact"
         android:textSize="12sp"
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold"
-        android:gravity="center"
         android:maxLines="2"
         android:ellipsize="end"
         android:breakStrategy="simple" />

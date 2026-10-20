@@ -104,6 +104,17 @@ public class WidgetBridgePlugin extends Plugin {
                 getContext(),
                 call.getInt("count", 0),
                 opt(call, "nextRefill"),
+      // ADDED 20 Oct 2026 - the card's one-word headline, "Soon" or "None".
+      //
+      // It is computed in JS, from the same stock projection the lines under it
+      // are built from, and it is a Full-tier value: "headline" is not in
+      // ALLOWED_AT_REDACTED for refillDue, so default-deny drops it at the
+      // Redacted tier, where the pre-formatted redacted line carries the
+      // meaning instead. It goes BEFORE redactedText because redactedText must
+      // stay the last argument of every provider's call - widgetArgumentOrderGuard
+      // asserts that positionally, and it is the property that decides whether a
+      // Redacted-tier widget is redacted at all.
+      opt(call, "headline"),
       // CHANGED 5 Oct 2026 - the pre-formatted Redacted line, or "" when the
       // tier is not Redacted. Empty rather than absent, so the provider needs no
       // null case and a stale value cannot survive a change back to full.

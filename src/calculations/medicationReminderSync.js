@@ -192,14 +192,17 @@ export async function updateRefillWidget() {
     // two of the three repositories they needed were imported solely for a
     // call that never happened.
     const { getRefillWidgetSummary } = await import("./refillReminderSync");
-    const { count, nextRefill } = await getRefillWidgetSummary();
+    const { count, nextRefill, headline } = await getRefillWidgetSummary();
 
       const bridge = await getWidgetBridge();
   if (bridge && bridge.plugin.updateRefill) {
         // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate so the stored
         // tier actually applies. Before this, the "Redacted" option in Settings
         // changed nothing at all for this widget.
-        await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill },
+        //
+        // `headline` is the card's one-word answer - "Soon" or "None" - and it
+        // is computed from the same stock projection as the lines beside it.
+        await sendWidgetUpdate(bridge, "refillDue", "updateRefill", { count, nextRefill, headline },
           refillRedactedLine(count));
         }
 
@@ -237,25 +240,60 @@ export async function updateRefillWidget() {
         //
         // Grouped by unlockAt rather than listing all of them flat: two
         // medications due at the same time are one thing to act on, and the
-        // widget already cannot fit every name - its text overflows at the
-        // default size (see the text-scaling work). So the soonest slot is shown
-        // in full, and anything after it is counted rather than named.
+        // widget already cannot fit every name - its text overflows at 2 columns
+        // (see the text-scaling work). So the soonest slot is shown in full, and
+        // anything after it is counted rather than named.
         const sameSlot = state.upcoming.filter(
           (u) => u.unlockAt === nextUnlock,
         );
         const laterCount = state.upcoming.length - sameSlot.length;
         const names = state.due.length
-          ? state.due.map((u) => u.name).filter(Boolean)
-          : sameSlot.map((u) => u.med?.name).filter(Boolean);
-        const medLabel =
-          names.length > 1 ? names.join(", ") : names[0] || "";
-        const moreLabel = laterCount > 0 ? `  +${laterCount} more` : "";
+          ? state.due.map((u) => u.name)
+          : sameSlot.map((u) => u.med?.name);
+        // The name of the soonest medication, and a COUNT of everything else.
+        //
+        // CHANGED 20 Oct 2026. This used to join every name in the slot
+        // ("PrEP, Sertraline") and append "  +2 more" - 30 characters, about
+        // 420px, against the 211px the Next Dose card has at its narrowest
+        // placement. It ellipsized to "Sertraline ..." on the device, which is
+        // the one thing the owner asked not to see.
+        //
+        // The count is not a loss of information: the owner's own invariant is
+        // that anything which will alert must be visible on this widget, and a
+        // count says how many without spending the width that naming them all
+        // would. One name and a count is also the shape the rest of the card
+        // uses - one key value, one caption.
+        const firstName = names[0] || "";
+        const otherCount = Math.max(0, names.length - 1) + laterCount;
+        const medLabel = firstName + (otherCount > 0 ? ` +${otherCount}` : "");
+        // The countdown TARGET, as EPOCH MILLISECONDS.
+        //
+        // FIXED 20 Oct 2026, found on the device: this was `nextUnlock || null`,
+        // and `unlockAt` is a Date - so the value crossed the bridge as an ISO
+        // STRING. On the native side `call.getLong("countdownAt", 0L)` cannot
+        // parse a string, so it returned its 0 default, and the provider's
+        // countdown branch never ran.
+        //
+        // The consequence was that the Next Dose widget's RING and its live
+        // COUNTDOWN have never once rendered. It looked fine: the provider's
+        // "due now" branch sets a full ring without needing a target at all, so
+        // the ring appeared whenever a dose was already due, and the defect only
+        // showed in the SCHEDULED state - where the card showed a time with no
+        // ring around it, exactly as the device screenshot shows.
+        //
+        // This is the repo's own rule about a value crossing a bridge: it must
+        // have ONE type, and the test must take that type from the real
+        // producer. The producer is getNextNotificationTime(), which returns a
+        // Date; the consumer wants epoch millis. So the conversion happens HERE,
+        // once, and everything downstream - the payload AND the Redacted line -
+        // reads the same number.
+        const countdownAt = nextUnlock ? nextUnlock.getTime() : 0;
         await sendWidgetUpdate(bridge, "nextDose", "updateNextDose", {
           // CHANGED - was `medName: ""`, hardcoded, which is why no setting could
           // ever reveal the name. The owner now wants it: this is the widget you
           // look at to know whether to take something, and a blank label made it
           // useless. It is still a tier decision, not a hardcoded one.
-          medName: medLabel + moreLabel,
+          medName: medLabel,
           nextDoseTime: state.due.length
             ? (state.due.length > 1 ? `${state.due.length} due now` : "Dose due now")
             : nextUnlock
@@ -265,10 +303,10 @@ export async function updateRefillWidget() {
           // "Medication - due now" instead of going blank and looking broken.
           category: "Medication",
           state: state.due.length ? "due now" : "scheduled",
-// CHANGED 2 Oct 2026 - countdown survives a Redacted tier, on the
-          // owner's decision. It discloses LESS than nextDoseTime: "in 4h" is
-          // true only right now and reveals no routine, where "20:00" does.
-          countdownAt: nextUnlock || null,
+          // CHANGED 2 Oct 2026 - routed through sendWidgetUpdate so the Redacted
+          // and Off tiers in Settings now reach this widget at all.
+          // The EPOCH, not the Date - see the note above.
+          countdownAt,
           // The count of DUE medications, deliberately separate from medName.
           //
           // A Redacted tier shows none of this - the redacted line below carries
@@ -286,7 +324,11 @@ export async function updateRefillWidget() {
           // medication is in play, so a user with three tracked meds is not shown
           // a card that implies only the first exists. Count only: the rule allows
           // a coarse count precisely because "3 medications" names nobody.
-          nextDoseRedactedLine(nextUnlock, state.upcoming.length));
+          //
+          // The SAME epoch the payload carries, not the Date: one type for one
+          // value, so the line and the widget can never disagree about which
+          // instant they are describing.
+          nextDoseRedactedLine(countdownAt, state.upcoming.length));
       }
   } catch (e) {
     // CHANGED 30 Sep 2026 (audit) — this catch is the reason the bug above was

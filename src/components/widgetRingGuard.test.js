@@ -200,29 +200,33 @@ it("every ring is rotated -90 so the sweep starts at 12 o'clock", () => {
     }
   });
 
-  it("the ring is small enough to clear the caption at the real 2-cell height", () => {
+  it("the ring is small enough for the card it sits on", () => {
     // ADDED 18 Oct 2026 after measuring the 64dp ring against the widget it
     // actually sits in. 109dp wide x 166.55dp tall is the 2-cell placement,
     // measured on this device via OPTION_APPWIDGET_SIZES.
     //
-    // The ring is FrameLayout-CENTRED, so with 16dp padding its lower edge falls
-    // at 16 + (H - 32) / 2 + ring / 2. The caption block (countdown + dose time +
-    // medication name, stacked at the bottom) reaches up to about 55dp. At a 64dp
-    // ring the two overlapped by roughly 20dp - the ring was drawn straight
-    // across the medication name, which is a large part of why this widget "looked
-    // wrong at 2 cells" and was not a text-size problem at all.
-    //
-    // Raising minResizeHeight would NOT have fixed it: the floor for a 64dp ring is
-    // 206dp, and the owner deliberately moved these widgets OFF 3 cells because
-    // they were too big. A smaller ring was the only fix that preserved the size
-    // the owner chose, so this asserts the ring stays small enough.
-    //
-    // The bound is on the RING SIZE ALONE because it is the only term that moves
+    // The owner called the 52dp ring oversized on 20 Oct, and it was drawn
+    // across the text below it, so the ring is now 44dp in both layouts. The
+    // bound is on the RING SIZE ALONE because it is the only term that moves
     // without changing the caption, the padding, or the placement.
-    const H = 166.55;      // measured 2-cell height
-    const PAD = 16;        // root padding, each side
-    const CAPTION_TOP = 95.6; // where the stacked caption block begins
-    const MAX_RING = 52;   // the largest ring that still clears it
+    //
+    // The ceiling is 52dp because that is the largest ring that still leaves
+    // the card's own content width (76.7dp at the 2-column placement) with
+    // room on each side, and because a ring wider than that stops being a
+    // badge and becomes a second headline. The owner moved these widgets OFF
+    // three cells because they were too big, so the fix has to live inside the
+    // 2-cell size - raising minResizeHeight would have forced 3 cells back.
+    //
+    // CHANGED 20 Oct 2026: the MESSAGE used to compute where a CENTRED ring's
+    // lower edge would fall and compare it with a hardcoded caption top. That
+    // arithmetic described the old layout, where the ring was centred and the
+    // caption block sat at a fixed margin; the rings are now placed - one
+    // centred, one anchored to the top - and the caption's position is a
+    // layout fact, not a constant. A guard whose failure message describes a
+    // geometry the layouts no longer have is a guard that reports a violation
+    // that is not there, so the message now states what the assertion checks
+    // and the two placement assertions below check the geometry for real.
+    const MAX_RING = 52;
 
     for (const f of ringLayouts) {
       const src = readFileSync(join(LAYOUTS, f), "utf8");
@@ -237,16 +241,107 @@ it("every ring is rotated -90 so the sweep starts at 12 o'clock", () => {
           `${f}: the ring's width and height disagree (${w[1]}dp vs ${h[1]}dp).`,
         ).toBe(Number(h[1]));
         const ringDp = Number(w[1]);
-        const lowerEdge = PAD + (H - 2 * PAD) / 2 + ringDp / 2;
         expect(
           ringDp,
-          `${f}: the ring is ${ringDp}dp, whose lower edge falls at ` +
-            `${lowerEdge.toFixed(1)}dp - past the caption top of ${CAPTION_TOP}dp, ` +
-            `so the ring is drawn across the text below it. The largest ring that ` +
-            `clears it at the measured 2-cell height of ${H}dp is ${MAX_RING}dp. ` +
-            `If this needs a bigger ring, raise minResizeHeight instead - but note ` +
+          `${f}: the ring is ${ringDp}dp, which is more than the ${MAX_RING}dp ` +
+            `ceiling. The card's content is 76.7dp wide at the 2-column ` +
+            `placement, so a ring this size stops being a badge and becomes a ` +
+            `second headline - which is what the owner called it on 20 Oct. ` +
+            `If it needs to be bigger, raise minResizeHeight instead - but note ` +
             `that forces 3 cells, which the owner moved away from deliberately.`,
         ).toBeLessThanOrEqual(MAX_RING);
+      }
+    }
+  });
+
+  it("the ring's DRAWABLE is the same size as the view that holds it", () => {
+    // ADDED 20 Oct 2026, and it is the assertion that would have caught the
+    // mistake this change actually nearly made.
+    //
+    // A shape drawable with an explicit innerRadius and thickness is NOT
+    // scaled to the view it is drawn in: it is drawn at its own size, centred.
+    // So a 52dp ring (innerRadius 18dp + thickness 8dp) inside a 44dp view is
+    // CLIPPED - the top and bottom of the circle are cut off - and it looks
+    // like a ring with flat ends rather than like a mistake in the geometry.
+    //
+    // The ring shrank from 52dp to 44dp on 20 Oct, and the drawable has to
+    // shrink with it: innerRadius 16dp + thickness 6dp = a 22dp radius, so a
+    // 44dp view contains it exactly. A mismatch here is invisible in a
+    // screenshot of a FULL ring (the clip is at the very top and bottom) and
+    // obvious on an empty one, which is why it needs a guard rather than an
+    // eye.
+    const outerDp = (src) => {
+      const m = /innerRadius="(\d+)dp"[\s\S]*?thickness="(\d+)dp"/.exec(src);
+      return m ? 2 * (Number(m[1]) + Number(m[2])) : null;
+    };
+    const drawableDp = outerDp(arc);
+    expect(drawableDp, "the arc must declare innerRadius and thickness").not.toBeNull();
+    expect(
+      drawableDp,
+      `the arc's outer diameter (${drawableDp}dp) does not match the track's - ` +
+        `the two drawables are separate files and nothing else makes them agree.`,
+    ).toBe(outerDp(track));
+
+    for (const f of ringLayouts) {
+      const src = readFileSync(join(LAYOUTS, f), "utf8");
+      const tags = src.match(/<ProgressBar[\s\S]*?\/>/g) || [];
+      for (const tag of tags.filter((t) => t.includes("ShosWidgetRing"))) {
+        const w = /android:layout_width="(\d+)dp"/.exec(tag);
+        expect(w, `${f}: the ring must declare its width in dp`).toBeTruthy();
+        expect(
+          Number(w[1]),
+          `${f}: the ring view is ${w[1]}dp but the drawable draws a ${drawableDp}dp ` +
+            `circle. A shape drawable is not scaled to the view it is drawn in - it ` +
+            `is drawn at its own size and centred - so a bigger drawable is ` +
+            `CLIPPED, not shrunk, and the ring loses its top and bottom.`,
+        ).toBe(drawableDp);
+      }
+    }
+  });
+
+  it("a ring anchored to the top of the card clears the row below it", () => {
+    // ADDED 20 Oct 2026. The DoxyPEP card's ring is anchored to the top of the
+    // card rather than centred, because the bands under it - the status word,
+    // the countdown, the evidence line - are what the card is read for, and a
+    // centred ring pushes the countdown off the bottom of a 2-cell card.
+    //
+    // Anchoring a ring at the top is only safe if it does not then draw across
+    // the row beneath it, and that is arithmetic on the layout's own margins:
+    // the ring's lower edge is padding + marginTop + its diameter, and the
+    // next row's top edge is padding + its marginTop.
+    const PAD = 16; // root padding, each side
+    for (const f of ringLayouts) {
+      const src = readFileSync(join(LAYOUTS, f), "utf8");
+      const tags = src.match(/<ProgressBar[\s\S]*?\/>/g) || [];
+      for (const tag of tags.filter((t) => t.includes("ShosWidgetRing"))) {
+        const gravity = /android:layout_gravity="([^"]+)"/.exec(tag);
+        if (!gravity) continue;
+        const tokens = gravity[1].split("|");
+        if (!tokens.includes("top")) continue; // a centred ring is not anchored
+        const margin = /android:layout_marginTop="(\d+)dp"/.exec(tag);
+        const size = /android:layout_width="(\d+)dp"/.exec(tag);
+        expect(margin && size, `${f}: a top-anchored ring must declare a margin and a size`)
+          .toBeTruthy();
+        const ringDp = Number(size[1]);
+        const lowerEdge = PAD + Number(margin[1]) + ringDp;
+
+        // The first view after the ring that is ALSO anchored to the top is the
+        // row it has to clear. Views that are not top-anchored (the countdown
+        // and the evidence line sit at the bottom) cannot be drawn across by a
+        // ring near the top.
+        const after = src.slice(src.indexOf(tag) + tag.length);
+        const next = /android:layout_gravity="[^"]*top[^"]*"[\s\S]*?android:layout_marginTop="(\d+)dp"/.exec(
+          after,
+        );
+        if (!next) continue;
+        const rowTop = PAD + Number(next[1]);
+        expect(
+          lowerEdge,
+          `${f}: the ring is anchored ${margin[1]}dp from the top and is ${ringDp}dp ` +
+            `across, so its lower edge falls at ${lowerEdge}dp - past the top of the ` +
+            `row below it at ${rowTop}dp. The ring would be drawn straight across ` +
+            `that text.`,
+        ).toBeLessThanOrEqual(rowTop);
       }
     }
   });

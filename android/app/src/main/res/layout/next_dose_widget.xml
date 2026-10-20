@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ADDED 17 Oct 2026 - Next Dose widget rebuilt around a countdown ring.
 
-     HERE THE COUNTDOWN IS IN THE CENTRE, as designed - unlike DoxyPEP. A daily
-     dose is normally inside 24 hours, and the platform's format for that is
-     "4:12:30": about 129px at 12sp against a 154px circle interior. It fits, with
-     room for an eighth character. The same layout cannot show a 72-hour window
-     (that is "2d 23:59:59", ~162px), which is why the DoxyPEP widget puts its
-     countdown underneath its ring instead; the provider there hides the ring
-     centre when the remaining time runs past 24 hours.
+     REWRITTEN 20 Oct 2026, and the header used to be wrong about the most
+     important thing on the card. It said "HERE THE COUNTDOWN IS IN THE
+     CENTRE", which was true of the layout and false of the widget: the
+     countdown could not fit in the ring's hole at any legible size, so the
+     provider put a status WORD there instead, and the number the owner wanted
+     to see - the time - was nowhere.
+
+     What the card shows now, and why:
+
+       - the ring's centre carries the WALL-CLOCK DUE TIME ("04:00"), which is
+         what the owner asked for and the only number that fits the 32dp hole
+         (about 88px);
+       - the live countdown is its own line beneath the ring, where the whole
+         77dp of content width is available - the platform's format for it is
+         "21:35:00" or "2d 21:35:00", and neither fits a hole this size;
+       - the medication name is the caption, at the bottom.
 
      FrameLayout root, for the L-076 reason recorded in doxy_pep_widget.xml: one
      ViewGroup, children positioned with layout_gravity, no nesting. The bands
@@ -42,77 +51,89 @@
         android:ellipsize="end"
         android:breakStrategy="simple" />
 
+    <!-- 44dp, not 52dp. The owner said the ring was oversized on 20 Oct, and
+         the guard's own ceiling is 52dp - a ring that big on a 109dp card is
+         nearly half the width. 44dp keeps it clearly a badge rather than a
+         second headline.
+
+         The ring's drawable is innerRadius 16dp + thickness 6dp, so the hole in
+         the middle is 32dp - which is exactly the width of the label below, and
+         is what the wall-clock time has to fit into. -->
     <ProgressBar
         android:id="@+id/widget_ring"
         style="@style/ShosWidgetRing"
-        android:layout_width="52dp"
-        android:layout_height="52dp"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
         android:layout_gravity="center"
         android:rotation="-90"
         android:max="100" />
 
     <!-- THE COUNTDOWN IS NOT INSIDE THE RING, and that is a measured change from
-         the design it started as. A 52dp ring leaves a 36dp interior - 99px at
-         this device's density - and the shortest real countdown renders about
-         116px wide in it. "4:12:30" therefore overflows the circle it is supposed
-         to sit inside, and "2d 23:59:59" needs roughly 182px. There is no size
-         at which a legible 12sp countdown fits inside a ring that also clears the
-         caption block at the real 2-cell height.
+         the design it started as. The platform's whole-duration format is
+         "4:12:30" (about 129px at 12sp) or "2d 23:59:59" (about 182px), and the
+         hole in a 44dp ring is 88px - so the number cannot sit inside it at any
+         legible size.
 
-         The ring shrank from 64dp to 52dp because at 64dp its lower edge landed
-         20dp INSIDE the caption block at 166.55dp (115.3dp against a caption top
-         of 95.6dp) - the ring was drawn across the medication name. Raising
-         minResizeHeight instead would have made the 2-cell placement illegal and
-         pushed the widget back to 3 cells, which is the size the owner deliberately
-         moved away from.
+         So the ring's centre carries the WALL-CLOCK DUE TIME ("04:00") and the
+         live countdown gets its own line beneath it, where the whole 77dp of
+         content width is available. The number is still the thing that changes
+         every second; it is just no longer pretending to be inside a circle it
+         does not fit. The Chronometer stays, and it still ticks in the launcher
+         process with no app running.
 
-         So the ring carries the STATUS WORD (short - "DUE", "NOW") and the live
-         countdown is its own line beneath it. The number is still the thing that
-         changes every second; it is just no longer pretending to be inside a
-         circle it does not fit. The Chronometer stays, and it still ticks in the
-         launcher process with no app running. -->
+         The label is FIXED WIDTH rather than wrap_content, and that is
+         load-bearing: autoSize measures the view's own width, so a wrap_content
+         view measures its text and can never shrink it. At 32dp the label is
+         exactly the ring's hole, and the framework steps the type down until
+         the time fits - so the time is never ellipsized and never overlaps the
+         ring's stroke. -->
     <TextView
         android:id="@+id/widget_ring_label"
-        android:layout_width="wrap_content"
+        android:layout_width="32dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:gravity="center"
         android:text=""
-        android:textSize="11sp"
+        android:textSize="12sp"
         android:textStyle="bold"
         android:maxLines="1"
-        android:ellipsize="end"
-        android:breakStrategy="simple" />
+        android:autoSizeTextType="uniform"
+        android:autoSizeMaxTextSize="12sp"
+        android:autoSizeMinTextSize="9sp"
+        android:autoSizeStepGranularity="1sp" />
 
-    <!-- The wall-clock dose time, ABOVE the medication name. It was originally
-         placed at bottom|end beside it, and that was a real collision: the
-         medication name is match_parent wide with centred text, so its view
-         spans the whole bottom band and the time drew on top of it. In a
-         FrameLayout children placed at the same gravity are stacked, not
-         reflowed - there is no sibling axis to place them side by side, which is
-         the cost of L-076 forbidding a second ViewGroup. Stacked, the ring
-         still holds the centre and the two lines read as one caption. -->
     <!-- The live countdown, its own line. It used to sit inside the ring and
-         could not fit there - see widget_ring_label's comment for the measurement.
-         Still a real Chronometer, so it still ticks in the launcher process with no
-         app running, no alarm and no wake lock. clickable/focusable false for the
-         reason every other tap-target-adjacent view on this card states. -->
+         could not fit there - see widget_ring_label's comment for the
+         measurement. Still a real Chronometer, so it still ticks in the
+         launcher process with no app running, no alarm and no wake lock.
+         clickable/focusable false for the reason every other
+         tap-target-adjacent view on this card states.
+
+         13sp, not 14: the platform's format for a dose more than a day away is
+         "2d 21:35:00" - eleven characters, about 197px at 13sp, which fits the
+         211px this card has at its narrowest placement. At 14sp it does not. -->
     <Chronometer
         android:id="@+id/widget_countdown"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="62dp"
-        android:textSize="14sp"
+        android:layout_marginBottom="20dp"
+        android:textSize="13sp"
         android:textColor="@color/widget_text_primary"
         android:clickable="false"
         android:focusable="false" />
 
+    <!-- The state line, used only when a dose is DUE (the ring then carries the
+         word DUE and there is no countdown to show). In the scheduled state it
+         is hidden rather than blank: the ring's centre already carries the due
+         time, so a second "Next at 04:00" under it would say the same thing
+         twice. -->
     <TextView
         android:id="@+id/widget_next_dose"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="20dp"
         android:text="--:--"
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
@@ -122,7 +143,14 @@
 
     <!-- The medication the time belongs to. Replaces the old 18sp hero: at 109dp
          an 18sp medication name is what produced "Sertralin e" broken mid-word,
-         and a 2-cell box has room for one size of text, not two competing ones. -->
+         and a 2-cell box has room for one size of text, not two competing ones.
+
+         The name is at 12sp with autosize down to 11sp, and the JS sends it as
+         "Sertraline +2" rather than "Sertraline +2 more" - the full phrase is
+         271px against the 211px this card has, so it ellipsized on the device.
+         The count of the later doses is still on the card, which is what the
+         owner's invariant asks for: anything that will alert must be visible
+         here. -->
     <TextView
         android:id="@+id/widget_med_name"
         android:layout_width="match_parent"
@@ -138,6 +166,6 @@
         android:breakStrategy="simple"
         android:autoSizeTextType="uniform"
         android:autoSizeMaxTextSize="14sp"
-        android:autoSizeMinTextSize="12sp"
+        android:autoSizeMinTextSize="11sp"
         android:autoSizeStepGranularity="1sp" />
 </FrameLayout>

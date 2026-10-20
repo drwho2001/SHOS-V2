@@ -13,6 +13,18 @@ public class ClinicCardWidgetProvider extends ResizingWidgetProvider {
 
     private static final int NARROW_WIDGET_DP = 130;
 
+    // ADDED 20 Oct 2026 - the band a section heading occupies between the row
+    // above it and the row it labels.
+    //
+    // The layout places heading_where at 87dp and the location at 106dp: 19dp
+    // apart. Hiding the heading at a narrow width therefore leaves a 19dp hole
+    // where the label used to be, and the row BELOW the heading has to move up
+    // by exactly that much to close it. Naming the number here rather than
+    // inlining it at the call site keeps the two facts - the gap and the
+    // correction - in one place, where a change to the layout's margins
+    // cannot leave the correction describing a gap that no longer exists.
+    private static final float HEADING_BAND_DP = 19f;
+
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_APPT_TITLE = "clinic_appt_title";
     private static final String KEY_APPT_DATE = "clinic_appt_date";
@@ -68,6 +80,19 @@ public class ClinicCardWidgetProvider extends ResizingWidgetProvider {
     private static final String KEY_REDACTED_TEXT = "redacted_text_clinic";
 
 
+
+    /**
+     * How far up the location row moves when the section headings are hidden.
+     *
+     * ADDED 20 Oct 2026. In PIXELS, because setTranslationY takes pixels and
+     * the layout's margins are in dp - converting here rather than at the call
+     * site is what keeps the two from being confused, and the density is the
+     * display's, so it is right on a device whose font size or display size
+     * has been changed.
+     */
+    private static float headingBandOffset(Context context) {
+        return -HEADING_BAND_DP * context.getResources().getDisplayMetrics().density;
+    }
 
     /**
      * The "no data available" RemoteViews. Contains no user data at all, so
@@ -197,7 +222,7 @@ private static RemoteViews unavailableViews(Context context) {
             views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
             views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, redactedText, wDp, 16f);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, redactedText, wDp, 16f, 2);
             views.setViewVisibility(R.id.widget_clinic_nhs_num, android.view.View.GONE);
             // ADDED 10 Oct 2026 (t087) - the three section headings are hidden too.
             // A static label carries no user data, so it is SAFE to show, but a
@@ -247,7 +272,7 @@ private static RemoteViews unavailableViews(Context context) {
             // Measured on the device: the Clinic Card title was clipped by the
             // card's own top edge and the WHOLE card overflowed, so every field
             // is fitted rather than only the headline.
-            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, title, wDp, 16f);
+            WidgetTextFit.fit(views, context, R.id.widget_clinic_title, title, wDp, 16f, 2);
             WidgetTextFit.fit(views, context, R.id.widget_clinic_date, date, wDp, 14f, 2);
             WidgetTextFit.fit(views, context, R.id.widget_clinic_location, location, wDp, 12f, 2);
             WidgetTextFit.fit(views, context, R.id.widget_clinic_tests, "Tests: " + tests, wDp, 12f);
@@ -268,6 +293,35 @@ private static RemoteViews unavailableViews(Context context) {
                  views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
                  views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
                  views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
+                 // CHANGED 20 Oct 2026 - the narrow card loses the section
+                 // headings, and the row the last one labelled moves up into
+                 // the space it occupied.
+                 //
+                 // The owner's words: a smaller widget should have "just what's
+                 // necessary". "WHEN" over a date and "WHERE" over a place are
+                 // structure for a card with room to spare; at 109dp they are
+                 // two labels eating the card, and - the part that is easy to
+                 // miss - their own bands leave holes where they used to be.
+                 //
+                 // So the headings are hidden AND the location is translated up
+                 // by the band the heading occupied. The translation is a pixel
+                 // offset on the view, not a layout change: setViewLayoutMargin
+                 // is API 31+, and a RemoteViews action naming a method the
+                 // launcher's API level does not have throws at reapply, where
+                 // the host turns it into "Can't load widget" - the same trap
+                 // as setTextColorInt, from the other side. setTranslationY has
+                 // been on View since API 11.
+                 views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.GONE);
+                 views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.GONE);
+                 views.setFloat(R.id.widget_clinic_location, "setTranslationY", headingBandOffset(context));
+             } else {
+                 // AND the offset is CLEARED on the wide card. A RemoteViews
+                 // update applies only the actions it carries, and the launcher
+                 // RECYCLES the inflated view, so an offset set at the narrow
+                 // width would survive a resize and leave the place floating
+                 // 19dp above where it belongs. Setting a property in one branch
+                 // obliges you to set it in the others.
+                 views.setFloat(R.id.widget_clinic_location, "setTranslationY", 0f);
              }
 } else {
             // No upcoming appointment. Every other field is cleared to its empty XML
@@ -302,12 +356,20 @@ private static RemoteViews unavailableViews(Context context) {
             views.setTextViewText(R.id.widget_clinic_clinic_num, "");
             views.setTextViewText(R.id.widget_clinic_tests, "");
              views.setTextViewText(R.id.widget_clinic_doctype, "");
-             if (wDp < NARROW_WIDGET_DP) {
-                 views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
-                 views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
-                 views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
-                 views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
-             }
+              if (wDp < NARROW_WIDGET_DP) {
+                  views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
+                  views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
+                  views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);
+                  views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
+                  // The same narrow treatment as the branch above - see the
+                  // note there. This branch renders "No upcoming appointment",
+                  // and it has the same headings eating the same space.
+                  views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.GONE);
+                  views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.GONE);
+                  views.setFloat(R.id.widget_clinic_location, "setTranslationY", headingBandOffset(context));
+              } else {
+                  views.setFloat(R.id.widget_clinic_location, "setTranslationY", 0f);
+              }
         }
 
         // PAGING IS GONE, and this is the second time it has been tried here.

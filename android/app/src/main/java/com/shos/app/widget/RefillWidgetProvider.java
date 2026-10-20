@@ -14,6 +14,16 @@ public class RefillWidgetProvider extends ResizingWidgetProvider {
     private static final String PREFS_NAME = "shos_widget_prefs";
     private static final String KEY_REFILL_COUNT = "refill_count";
     private static final String KEY_NEXT_REFILL = "next_refill_med";
+    // ADDED 20 Oct 2026 - the card's one-word headline, "Soon" or "None".
+    //
+    // Distinct from KEY_REFILL_COUNT, which is the number of medications AT
+    // their refill threshold. The headline answers a different question - "is
+    // anything due in the coming week?" - and on this device the two disagreed:
+    // a medication one day from its reorder point is not yet AT the threshold,
+    // so the count was 0 and the card said "All stocked" while the line under
+    // it said "request in 1d". The owner's correction, 20 Oct: the headline
+    // says None/Soon, as per the current stock levels.
+    private static final String KEY_REFILL_HEADLINE = "refill_headline";
 
 // CHANGED 5 Oct 2026 (t059 follow-on) - the pre-formatted one-line wording for a
 // Redacted widget, decided in JS. Distinct per provider because all seven share
@@ -52,6 +62,9 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_refill";
         }
         int refillCount = prefs.getInt(KEY_REFILL_COUNT, 0);
         String nextRefill = prefs.getString(KEY_NEXT_REFILL, "No refills due");
+        // The headline. Empty only if a push predates this field, in which case
+        // the count still gives an honest fallback - see below.
+        String storedHeadline = prefs.getString(KEY_REFILL_HEADLINE, "");
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.refill_widget);
 
@@ -99,30 +112,47 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
                 return;
             }
         
-        if (refillCount > 0) {
-            // ADDED 18 Oct 2026 - restores visibility for the fields the Redacted
-        // branch above set GONE. RemoteViews recycles the view when the layout id
-        // matches and applies only the new RemoteViews' actions, so a view hidden
-        // there stays hidden for every later update that does not mention it - and
-        // a privacy-tier change then reads on screen as a SIZING bug, which is why
-        // this went unfixed for so long.
+        // CHANGED 20 Oct 2026 - the headline is "Soon" or "None", not
+        // "All stocked" and not "N need restock".
+        //
+        // The owner's words: the card should say None/Soon, as per the current
+        // stock levels. "All stocked" was a non-answer - and on the device it
+        // was actively wrong, because the only tracked medication was one day
+        // from its reorder point while the headline claimed everything was
+        // stocked. A headline has to answer "do I need to do anything?", and
+        // "All stocked" answers "is everything fine?", which is the question
+        // nobody opens a widget to ask.
+        //
+        // "Soon" is amber and "None" is green, so the state is carried by the
+        // word AND by its colour - never by colour alone, which is the
+        // accessibility rule this app applies everywhere else.
+        //
+        // The fallback for an empty stored headline is derived from the count,
+        // which is the number of medications AT their refill threshold. That is
+        // COARSER than the JS's own seven-day horizon, so between an upgrade
+        // and the next push it can read "None" for a medication that is
+        // approaching its reorder point rather than at it. It cannot read
+        // "Soon" for a medication that is not, so the fallback errs towards
+        // the quieter word - and the next push replaces it with the real one.
+        String headline = (storedHeadline == null || storedHeadline.isEmpty())
+                ? (refillCount > 0 ? "Soon" : "None")
+                : storedHeadline;
         views.setViewVisibility(R.id.widget_refill_count, android.view.View.VISIBLE);
         views.setViewVisibility(R.id.widget_next_refill, android.view.View.VISIBLE);
-         views.setTextViewText(R.id.widget_refill_title, "Refills due");
-             views.setTextViewText(R.id.widget_refill_count, refillCount + " need restock");
-             views.setTextViewText(R.id.widget_next_refill, nextRefill);
-             WidgetTextFit.fit(views, context, R.id.widget_refill_count, refillCount + " need restock", wDp, 18f, 1);
-             WidgetTextFit.fit(views, context, R.id.widget_next_refill, nextRefill, wDp, 12f, 4);
-        } else {
-            views.setViewVisibility(R.id.widget_refill_count, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_next_refill, android.view.View.VISIBLE);
-             views.setTextViewText(R.id.widget_refill_title, "Refills due");
-             views.setTextViewText(R.id.widget_refill_count, "All stocked");
-            // No next-restock deadline crosses the current bridge, so do not invent
-            // a countdown or render a misleading prefix.
-            views.setViewVisibility(R.id.widget_next_refill, android.view.View.VISIBLE);
-             views.setTextViewText(R.id.widget_next_refill, nextRefill);
-        }
+        views.setTextViewText(R.id.widget_refill_title, "Refills due");
+        views.setTextViewText(R.id.widget_refill_count, headline);
+        views.setTextColor(R.id.widget_refill_count, context.getColor(
+                "Soon".equals(headline) ? R.color.widget_warn : R.color.widget_good));
+        views.setTextViewText(R.id.widget_next_refill, nextRefill);
+        // Fitted in BOTH states, which is why the two fit() calls live here
+        // rather than inside a branch: the headline is a different string in each
+        // state ("Soon" and "None") and both have to be measured against the
+        // real field width. 18f / maxLines 1 matches what the layout declares
+        // for this view - widgetTextFitMaxLinesGuard checks BOTH axes, so a
+        // stale number here fails the build instead of silently rendering larger
+        // than the design allows.
+        WidgetTextFit.fit(views, context, R.id.widget_refill_count, headline, wDp, 18f, 1);
+        WidgetTextFit.fit(views, context, R.id.widget_next_refill, nextRefill, wDp, 12f, 4);
 
         // CHANGED 1 Oct 2026 (t061) - opens INVENTORY, not the dashboard.
         // Owner's explicit correction: a widget called "Refills Due" that lands
@@ -137,7 +167,7 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
     }
 
     public static void updateRefill(Context context, int count, String nextRefillMed,
-                                     String redactedText) {
+                                     String headline, String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -150,6 +180,7 @@ views.setViewVisibility(R.id.widget_next_refill, android.view.View.GONE);
         prefs.edit()
             .putInt(KEY_REFILL_COUNT, count)
             .putString(KEY_NEXT_REFILL, nextRefillMed)
+            .putString(KEY_REFILL_HEADLINE, headline == null ? "" : headline)
             .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .apply();
 

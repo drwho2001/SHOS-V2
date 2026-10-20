@@ -1,40 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="16dp" android:background="@drawable/widget_background">
+<!-- Quick Add: Medication.
+
+     Same structure and the same measurement as quick_add_contact_widget.xml:
+     the owner placed these at 108.7dp x 72dp - one launcher row, 40dp of
+     content height at 16dp padding - so this layout uses 8dp padding, the
+     icon is 22dp, and the label goes UNDERNEATH it rather than beside it.
+
+     "Medication" is the longest word on any of these three cards - about 62dp
+     at 12sp - so it is the one that decides the layout: beside a 22dp icon
+     in a 16dp-padded card it would have 48.7dp and break mid-word.
+
+     ICON: the app's own shortcut disc in the Medication module's colour, with
+     the module's own pill in white - the same mark the bottom nav draws for
+     Medication, which the owner named when they asked for these icons. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="8dp"
+    android:background="@drawable/widget_background">
 
     <ImageView
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
         android:layout_gravity="top|center_horizontal"
-        android:contentDescription="Log medication"
+        android:contentDescription="@null"
         android:src="@drawable/ic_widget_medication" />
 
-    <!-- CHANGED 16 Oct 2026 (t111) - maxLines 1 -> 2.
-
-         DEVICE-MEASURED, not assumed. On 23124RA7EO this label rendered as
-         "+ Log Me..." with the rest of the word ellipsized away. The cause is
-         not a measuring bug and nothing was shrunk: the text is a STATIC
-         literal here, so this TextView has no android:id and the provider
-         (QuickAddMedicationWidgetProvider) never calls WidgetTextFit.fit() -
-         there is nothing to measure. Given a string wider than the 109dp
-         2-column widget and maxLines=1, the label simply ellipsized.
-
-         At maxLines=2 the label wraps onto two clean lines - "+ Log" /
-         "Medication" - because breakStrategy="simple" divides on spaces and
-         every individual word is narrower than the field. ellipsize="end"
-         stays, so a label ever made longer than two lines degrades gracefully
-         rather than being cut mid-word.
-
-         Guarded by quickAddWidgetLabelGuard.test.js; see the header of that
-         file for why the sibling maxLines guard cannot see this view. -->
+    <!-- maxLines 2, not 1: this label is a STATIC string, so there is no
+         fit() call and no fitter to shrink it - maxLines is the only control
+         on whether it ellipsizes. At one line it read "Log Me..." on the
+         device. Pinned by quickAddWidgetLabelGuard.test.js. -->
     <TextView
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-         android:layout_gravity="bottom|center_horizontal"
-         android:text="Log Medication"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
+        android:text="Log Medication"
         android:textSize="12sp"
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold"
-        android:gravity="center"
         android:maxLines="2"
         android:ellipsize="end"
         android:breakStrategy="simple" />

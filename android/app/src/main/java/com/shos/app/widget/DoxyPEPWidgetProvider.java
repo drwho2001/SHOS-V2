@@ -40,6 +40,16 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
     // on an exact cell boundary. See CLAUDE.md on OPTION_APPWIDGET_SIZES.
     private static final int NARROW_WIDGET_DP = 130;
 
+    // The month names, for shortDate() below. Written out rather than
+    // formatted by a locale-aware formatter, because the platform's short month
+    // name is locale-dependent - "Oct" in English, "okt." in German, and so on -
+    // and a widget whose date changes language with the device is a widget that
+    // changes meaning with the device.
+    private static final String[] MONTHS = {
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    };
+
     /**
      * Read a colour through the current configuration, so the values-night/
      * counterpart is the one actually drawn.
@@ -52,6 +62,40 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
      */
     private static int colour(Context context, int res) {
         return context.getColor(res);
+    }
+
+    /**
+     * A stored date as "20 Oct" - the day and the month, with NO year.
+     *
+     * ADDED 20 Oct 2026. The widget used to show the raw stored prefix
+     * ("2026-10-20"), which is 40% wider than it needs to be and ellipsized on
+     * the device; the Last Test widget already drops the year for exactly this
+     * reason (see formatStoredDateNoYear in dateInputHelpers.js), so this is
+     * the same convention applied to the two dates this card shows.
+     *
+     * The stored value is one of this app's fake-UTC strings
+     * ("YYYY-MM-DDTHH:mm:00.000Z" - the digits are local wall-clock with a
+     * deliberate trailing Z, see CLAUDE.md), so the DAY is read as TEXT out of
+     * the string and never parsed into a Date. Parsing it would shift the shown
+     * day by the device's UTC offset - the t037 bug, in a new place.
+     *
+     * Every character is checked before it is used, so a malformed or absent
+     * value yields "" rather than an exception: this runs in the launcher
+     * process, and a provider that throws takes the widget down with it.
+     */
+    private static String shortDate(String stored) {
+        if (stored == null || stored.length() < 10) return "";
+        String day = stored.substring(8, 10);
+        String monthDigits = stored.substring(5, 7);
+        for (int i = 0; i < day.length(); i++) {
+            if (day.charAt(i) < '0' || day.charAt(i) > '9') return "";
+        }
+        for (int i = 0; i < monthDigits.length(); i++) {
+            if (monthDigits.charAt(i) < '0' || monthDigits.charAt(i) > '9') return "";
+        }
+        int month = Integer.parseInt(monthDigits) - 1;
+        if (month < 0 || month > 11) return "";
+        return day + " " + MONTHS[month];
     }
 
     /**
@@ -227,7 +271,7 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
                 // host turns that into "Can't load widget". Deprecated, but correct
                 // on every level this app supports. Do not "upgrade" this.
                 views.setTextColor(R.id.widget_doxy_status, colour(context, urgency));
-                views.setTextViewText(R.id.widget_doxy_status, "ACTIVE");
+                views.setTextViewText(R.id.widget_doxy_status, "Active");
 
                 // A real Chronometer, so the countdown is live every second in the
                 // LAUNCHER process - no app process, no alarm, no wake lock. It used
@@ -258,7 +302,7 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
                 views.setViewVisibility(R.id.widget_doxy_ring, View.VISIBLE);
                 views.setTextColor(R.id.widget_doxy_status,
                         colour(context, R.color.widget_urgent));
-                views.setTextViewText(R.id.widget_doxy_status, "EXPIRED");
+                views.setTextViewText(R.id.widget_doxy_status, "Expired");
                 // The guidance copy, not a number: a countdown past zero is the one
                 // thing a Chronometer cannot render, and an expired PEP window is
                 // exactly when that instruction is worth reading.
@@ -268,24 +312,42 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
                 views.setViewVisibility(R.id.widget_doxy_countdown, View.VISIBLE);
             }
         } else {
-            // No window open. The ring is HIDDEN rather than shown empty: there is
-            // no countdown to depict, and an empty ring beside "NONE" reads as a
-            // depleted one - a false alarm about the user's own health.
+            // No window open. The ring is SHOWN but EMPTY (progress 0), so the card
+            // keeps the same shape it has when a window IS running and the eye has
+            // one place to land. The owner asked for exactly this on 20 Oct: the
+            // card had no ring at all in this state, and read as broken rather
+            // than as "nothing to do".
+            //
+            // It is not a false alarm: the word under it says NO WINDOW, and
+            // an empty ring is a ring with nothing counted, not a depleted one.
             //
             // The stored status is still preferred when it says something more
             // specific than the no-window default, so a state this provider does not
             // model is not silently flattened into a generic label.
+            //
+            // "no" over "window" is the owner's own wording (20 Oct): on one line
+            // the phrase was ellipsized to "NO WINDO..." inside the ring's hole.
+            // It now sits UNDER the ring, where the whole card width is available,
+            // so it is 12sp on two centred lines rather than 8sp in a hole.
             String label = (status == null || status.isEmpty()
-                    || "No active window".equals(status)) ? "NO WINDOW" : status.toUpperCase();
-            views.setViewVisibility(R.id.widget_doxy_ring, View.GONE);
+                    || "No active window".equals(status)) ? "no\nwindow" : status;
+            views.setProgressBar(R.id.widget_doxy_ring, 100, 0, false);
+            views.setViewVisibility(R.id.widget_doxy_ring, View.VISIBLE);
             views.setViewVisibility(R.id.widget_doxy_countdown, View.GONE);
             views.setTextColor(R.id.widget_doxy_status,
                     colour(context, R.color.widget_text_muted));
             views.setTextViewText(R.id.widget_doxy_status, label);
-            String lastDoseDay = (lastDose != null && lastDose.length() >= 10)
-                    ? lastDose.substring(0, 10) : "";
+            // The last dose, as a short date.
+            //
+            // "Last dose 2026-10-20" is 20 characters, about 285px, against the
+            // 211px this card has at its narrowest placement - so it ellipsized to
+            // "Last dose 20..." on the device. "Dosed 20 Oct" is 12 characters and
+            // fits, and it drops the YEAR, which is the same convention the Last
+            // Test widget uses (formatStoredDateNoYear) and for the same reason:
+            // the year is 40% of the width and the widget has none to spare.
+            String lastDoseDay = shortDate(lastDose);
             views.setTextViewText(R.id.widget_doxy_evidence,
-                    lastDoseDay.isEmpty() ? "No doses logged" : "Last dose " + lastDoseDay);
+                    lastDoseDay.isEmpty() ? "No doses yet" : "Dosed " + lastDoseDay);
             views.setViewVisibility(R.id.widget_doxy_evidence, View.VISIBLE);
         }
 
@@ -313,8 +375,14 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
         boolean narrow = wDp > 0 && wDp < NARROW_WIDGET_DP;
  String evidenceDay = (evidence != null && evidence.length() >= 10) ? evidence.substring(0, 10) : "";
          if (expiry > 0) {
+             // "Unprotected 18 Sep" rather than "Last unprotected event
+             // 2026-09-18": the long form is 31 characters and about 420px, and
+             // the card has 382px even at its WIDEST placement - so it
+             // ellipsized. The year goes for the same reason it goes on the
+             // Last Test widget (formatStoredDateNoYear): it is 40% of the
+             // width and the card has none to spare.
              views.setTextViewText(R.id.widget_doxy_evidence,
-                 evidenceDay.isEmpty() ? "" : "Last unprotected event " + evidenceDay);
+                 evidenceDay.isEmpty() ? "" : "Unprotected " + shortDate(evidenceDay));
          }
          if (narrow && expiry > 0) {
              views.setViewVisibility(R.id.widget_doxy_evidence, View.GONE);

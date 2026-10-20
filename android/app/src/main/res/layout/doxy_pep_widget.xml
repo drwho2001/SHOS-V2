@@ -31,7 +31,19 @@
      RemoteViews.setChronometer's format argument is a single-string template, so
      the components cannot be selected. So the ring's centre carries the STATUS
      WORD (short, and colour is doing the urgency work anyway) and the live
-     countdown gets the full 77dp width underneath it, where any format fits. -->
+     countdown gets the full 77dp width underneath it, where any format fits.
+
+     REWRITTEN 20 Oct 2026, and the reason is the same measurement. The status
+     word is no longer INSIDE the ring either: "no window" is about 134px at
+     12sp, and the hole in the 44dp ring is 88px - so the owner's own wording,
+     "no" over "window", would have had to be set at 8sp to fit in the hole.
+     Tiny type on a home screen is not a solution, so the status moved BELOW the
+     ring, where it has the whole card width and can be 12sp on two centred
+     lines. The ring keeps its shape and its sweep; the word sits under it.
+
+     The ring is at the TOP of the card rather than centred, because the bands
+     below it (status, countdown, evidence) are what the card is read for, and a
+     centred ring would push the countdown off the bottom of a 2-cell card. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -58,26 +70,33 @@
     <ProgressBar
         android:id="@+id/widget_doxy_ring"
         style="@style/ShosWidgetRing"
-        android:layout_width="52dp"
-        android:layout_height="52dp"
-        android:layout_gravity="center"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="26dp"
         android:rotation="-90"
         android:max="100" />
 
-    <!-- The status word, centred INSIDE the ring. "ACTIVE" and "EXPIRED" are 6
-         characters at 12sp, about 76px against a 154px interior - and the
-         provider recolours this per state, so the ring centre is also the
-         accessibility text for the colour, never colour alone. -->
+    <!-- The status word, centred under the ring.
+         "Active" and "Expired" are short, and the owner asked for the no-window
+         state to read as two centred lines ("no" over "window") rather than as
+         one truncated one.
+
+         maxLines is 2, not 1: "NO WINDOW" on one line was cut to "NO WINDO..."
+         because it does not fit the 36dp hole it used to sit in, and the owner
+         asked for it centred on two lines on 20 Oct. Two short lines read as one
+         phrase. -->
     <TextView
         android:id="@+id/widget_doxy_status"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="No window"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="72dp"
+        android:gravity="center"
+        android:text="no window"
         android:textSize="12sp"
         android:textStyle="bold"
-        android:maxLines="1"
-        android:ellipsize="end"
+        android:maxLines="2"
         android:breakStrategy="simple" />
 
     <!-- A real Chronometer, not a pushed string. It ticks in the LAUNCHER
@@ -85,14 +104,18 @@
          alarm and no wake lock - which is what lets the ring arc step coarsely
          on a schedule while the number stays honest. Its marginBottom reserves
          the evidence row so the two do not overlap; at 2 cells the provider
-         hides the evidence line and this sits 14dp above the bottom. -->
+         hides the evidence line and this sits 14dp above the bottom.
+
+         13sp, not 14: the platform's format for a 72-hour window is
+         "2d 23:59:59" - eleven characters, about 197px at 13sp, which fits the
+         211px this card has at its narrowest placement. At 14sp it does not. -->
     <Chronometer
         android:id="@+id/widget_doxy_countdown"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
         android:layout_marginBottom="14dp"
-        android:textSize="14sp"
+        android:textSize="13sp"
         android:textColor="@color/widget_text_primary"
         android:clickable="false"
         android:focusable="false" />

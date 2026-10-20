@@ -7,14 +7,16 @@
      urgent) that the countdown text carries; <item android:color="@color/widget_good"/>
      is what shows on the very first inflate, before any push has run.
 
-     useLevel is stated for the same reason as the track's, and is what makes
-     setProgressBar() draw anything other than a full ring. Geometry must match
-     widget_ring_track.xml exactly - a mismatch draws two concentric rings of
-     different diameters rather than one arc over one track. -->
+     Geometry MUST match widget_ring_track.xml exactly - innerRadius 16dp +
+     thickness 6dp, a 44dp ring whose hole is 32dp - because a mismatch draws
+     two concentric rings of different diameters rather than one arc over one
+     track. Both were changed together on 20 Oct 2026, when the ring shrank
+     from 52dp: a 52dp ring inside a 44dp view is CLIPPED, not scaled, so
+     leaving the drawable alone would have cut the ring's edge off. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="ring"
-    android:innerRadius="18dp"
-    android:thickness="8dp"
+    android:innerRadius="16dp"
+    android:thickness="6dp"
     android:useLevel="true">
     <solid android:color="@color/widget_good" />
 </shape>
