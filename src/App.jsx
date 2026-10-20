@@ -2887,7 +2887,7 @@ const [acknowledgedReminders, setAcknowledgedReminders] = useState([]);
             <ActiveModule key={`${active}-${navResetCount}`} openAddOnMount={quickAdd} onConsumedQuickAdd={() => { setQuickAdd(false); setQuickAddTarget(null); }} quickAddTarget={quickAddTarget}
               openRecordId={pendingOpenRecordId} onConsumedRecordOpen={() => setPendingOpenRecordId(null)} onNavigateToRecord={navigateToRecord}
               prefillData={pendingPrefillData} onConsumedPrefill={() => setPendingPrefillData(null)} onQuickAddWithPrefill={handleQuickAddWithPrefill}
-              onOpenSettings={() => setShowSettings(true)} onOpenPrivacySettings={openSettingsToPrivacy} onOpenGlossary={openSettingsToGlossary} registerModuleBackHandler={registerModuleBackHandler}
+              onOpenSettings={() => setShowSettings(true)} onOpenPrivacySettings={openSettingsToPrivacy} onOpenGlossary={openSettingsToGlossary} onOpenCalendar={openSettingsToCalendar} registerModuleBackHandler={registerModuleBackHandler}
               markClinicCardReturn={markClinicCardReturn} openClinicCardOnMount={clinicCardReturnTab === "healthcare"} onConsumedClinicCardReopen={() => setClinicCardReturnTab(null)}
               openClinicCardOnDeepLink={pendingOpenClinicCard} onConsumedClinicCardDeepLink={() => setPendingOpenClinicCard(false)} />
           </Suspense>

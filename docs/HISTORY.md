@@ -16,6 +16,46 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 20 Oct 2026 - Healthcare gets a Calendar shortcut (t122)
+
+The owner's ask: "add calendar to healthcare next to attachments". The
+Healthcare tab's shortcut row (Episodes / Attachments / Clinic Card) now
+carries a **Calendar** entry immediately after Attachments, in the same shape
+as its two neighbours - icon plus label, `role="button"`, `tabIndex={0}`, and
+the Enter/Space `onKeyDown` the row needs to be keyboard-reachable.
+
+**IT REUSES THE EXISTING CALENDAR SCREEN RATHER THAN MOUNTING A SECOND COPY
+OF IT, AND THAT IS THE WHOLE DESIGN.** The Calendar screen is owned by
+Settings (`src/modules/settings/CalendarScreen.jsx`), and Home's own "Calendar"
+card already reaches it through one handler - `openSettingsToCalendar` in
+`App.jsx`, which opens the Settings overlay directly on the Calendar
+sub-screen. Healthcare now calls the same handler, so there is one owner for
+the screen and one route into it. The alternative - mounting the Calendar as a
+Healthcare-owned overlay, like Attachments - would have put a full-screen
+overlay in a module that is not in the back chain, which is exactly the
+"level-skipping overlay" shape the back-button work (t129) exists to close:
+Settings' own back chain already knows how to step off the Calendar screen,
+and a Healthcare-owned copy would not have been in that chain at all.
+
+**A GUARD THAT HAD TO BE FIXED BEFORE IT COULD BE TRUSTED.** The first version
+of `src/components/healthcareCalendarShortcutGuard.test.js` searched
+`App.jsx` for `<ActiveModule` and sliced to the next `/>`. `App.jsx` mentions
+`<ActiveModule />` in a **comment** at line 1461, so the search found the
+comment, the slice returned fourteen characters, and the guard failed against a
+correct implementation. It now strips comments before searching and matches
+the render site on its `key=` prop. The lesson is the one this repo keeps
+paying for: **a search that reads the wrong text produces a confident wrong
+answer**, and a guard built on it would have "passed" a broken wiring.
+
+The guard asserts both halves of the link - the module **accepts** the prop
+and App **passes** it - because either one alone is a dead entry, and it
+asserts exactly one Calendar entry, its position between Attachments and
+Clinic Card, and the keyboard contract. **Four mutations, all red:** removing
+the App prop, dropping the prop from the module's signature, renaming the
+`aria-label`, and moving the entry to the wrong place in the row.
+
+---
+
 ## 20 Oct 2026 - widget content bridge and Quick Add icon pass
 
 The widget content pass now carries the last DoxyPEP dose date through the

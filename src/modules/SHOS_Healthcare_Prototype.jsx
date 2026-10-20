@@ -9,7 +9,7 @@
 import React, { useState, useEffect } from "react";
 import { NEUTRAL, NEUTRAL_DARK, ACCENTS, ACTION, FONT_FAMILY, RADIUS, TYPE, resolveDarkAccent } from "../calculations/designTokens";
 import { useDarkModePreference } from "../calculations/darkModePreference";
-import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack } from "@phosphor-icons/react";
+import { PaperclipIcon as Paperclip, IdentificationBadgeIcon as CreditCard, StackIcon as Stack, CalendarIcon as Calendar } from "@phosphor-icons/react";
 import { TestingRepository } from "../repositories/testingRepository";
 import { isCompletedTestRecord } from "../calculations/testingCalculations";
 import { SymptomLogRepository } from "../repositories/symptomLogRepository";
@@ -32,7 +32,7 @@ import TimelineModule from "./SHOS_Timeline_Prototype";
 // Healthcare is one, so the only reason the Clinic Card route to My Profile had
 // a dead U=U link is that this signature dropped it. See ClinicCardScreen's own
 // mount below for the second half.
-function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, openRecordId, onConsumedRecordOpen, onNavigateToRecord, prefillData, onConsumedPrefill, onQuickAddWithPrefill, registerModuleBackHandler, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen, openClinicCardOnDeepLink, onConsumedClinicCardDeepLink, onOpenGlossary }) {
+function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, openRecordId, onConsumedRecordOpen, onNavigateToRecord, prefillData, onConsumedPrefill, onQuickAddWithPrefill, registerModuleBackHandler, markClinicCardReturn, openClinicCardOnMount, onConsumedClinicCardReopen, openClinicCardOnDeepLink, onConsumedClinicCardDeepLink, onOpenGlossary, onOpenCalendar }) {
   // CHANGED — real ask: "Symptom Log" > "Symptoms", swap its list
   // position with Vaccinations, ensure all six sit in two clean rows
   // of three. Order below now reads Testing/Clinic Visits/Vaccinations
@@ -291,6 +291,22 @@ function HealthcareScreen({ openAddOnMount, onConsumedQuickAdd, quickAddTarget, 
             style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
             <Paperclip size={15} color={T.healthcareBlue} />
             <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>Attachments</span>
+          </div>
+          {/* ADDED 20 Oct 2026 (t122) - real ask: "add calendar to healthcare
+              next to attachments". It REUSES the existing Calendar screen
+              rather than mounting a second copy of it: the Calendar screen is
+              owned by Settings (src/modules/settings/CalendarScreen.jsx), and
+              Home's own "Calendar" card already opens it through
+              openSettingsToCalendar (App.jsx). Opening it the same way here
+              keeps ONE owner for the screen, and keeps the hardware back
+              button working - Settings' own back chain already knows how to
+              step off the Calendar screen, which a Healthcare-owned overlay
+              would not have. */}
+          <div onClick={() => onOpenCalendar?.()} role="button" tabIndex={0} aria-label="Calendar"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenCalendar?.(); } }}
+            style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+            <Calendar size={15} color={T.healthcareBlue} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.healthcareBlue }}>Calendar</span>
           </div>
           <div onClick={() => setShowClinicCard(true)} role="button" tabIndex={0} aria-label="Clinic Card"
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowClinicCard(true); } }}
