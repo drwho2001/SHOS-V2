@@ -2,10 +2,20 @@
 <!-- ADDED 17 Oct 2026 - the filled arc of a countdown ring, depleting as the
      deadline approaches.
 
-     The colour here is only a FALLBACK. The provider overrides it per-push
-     with setProgressTintList() so the arc can carry the urgency (good -> warn ->
-     urgent) that the countdown text carries; <item android:color="@color/widget_good"/>
-     is what shows on the very first inflate, before any push has run.
+     The colour here is the arc's ONLY colour. An earlier version of this file
+     said the provider overrides it per-push with setProgressTintList() so the
+     arc could carry the urgency (good -> warn -> urgent) - and that is NOT
+     POSSIBLE: RemoteViews.setProgressTintList is a @hide API missing from the
+     SDK level this project compiles against, and build-apk rejected every
+     call site with "cannot find symbol". So the arc stays widget_good in
+     every state, and the urgency signal is the status WORD beside it, which
+     setTextColor can still recolour. Pinned by widgetRingGuard.
+
+     android:useLevel="true" HERE, and "false" on the track - the two layers
+     need opposite attributes, and the reason is in widget_ring_track.xml's
+     own comment: setProgressBar moves this layer's sweep by setting its
+     level, and a shape that ignores the level would draw a full circle no
+     matter what progress says.
 
      Geometry MUST match widget_ring_track.xml exactly - innerRadius 16dp +
      thickness 6dp, a 44dp ring whose hole is 32dp - because a mismatch draws

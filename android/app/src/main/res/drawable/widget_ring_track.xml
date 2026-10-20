@@ -1,15 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ADDED 17 Oct 2026 - the unfilled remainder of a countdown ring.
 
-     android:useLevel is stated EXPLICITLY, and the earlier reason given for it
-     here was WRONG. It claimed the attribute's default differs across API
-     levels, so that omitting it could yield a solid disc. On this platform
-     GradientState.mUseLevelForShape defaults to TRUE (GradientDrawable.java),
-     so a ring with no useLevel is still level-dependent - which is the more
-     important consequence: the TRACK cannot be made "always full" by omitting
-     the attribute either. It is stated on both layers so neither has to depend
-     on a platform default that a different API level could resolve differently,
-     and so the intent is readable at the point of the attribute.
+     android:useLevel is stated EXPLICITLY, and it is FALSE here - which is
+     the opposite of what this file used to say, and the reason the ring had no
+     visible track at all.
+
+     WHAT THE PLATFORM DOES (GradientDrawable.java, buildRing):
+         float sweep = st.mUseLevelForShape ? (360.0f * getLevel() / 10000.0f) : 360f;
+     and mUseLevelForShape DEFAULTS TO TRUE (GradientState). So a ring shape
+     with useLevel=true draws a sweep of 360 x level/10000 - and a level of
+     zero draws NOTHING.
+
+     ProgressBar.setVisualProgress sets the level on the layer with
+     @android:id/progress and only on that layer (ProgressBar.java:1661-1685),
+     so the TRACK keeps its own level, which is 0. With useLevel=true on the
+     track, that means the track drew a zero-length sweep and was invisible:
+     the Next Dose ring had no muted remainder, and the DoxyPEP card's
+     "empty ring" - which the owner asked for by name on 20 Oct - had no ring
+     on it at all. Both were visible on the device and neither was visible in
+     the source.
+
+     useLevel="false" makes the track ignore the level and always draw the
+     full 360 degrees, which is what a track IS: the whole circle, with the
+     arc drawn over the part that is left.
+
+     The ARC keeps useLevel="true", because setProgressBar has to move its
+     sweep - that is the whole point of the layer.
 
      Geometry: innerRadius 16dp + thickness 6dp = 22dp outer radius, so a 44dp
      view contains it exactly. Explicit dp rather than innerRadiusRatio/
@@ -29,6 +45,6 @@
     android:shape="ring"
     android:innerRadius="16dp"
     android:thickness="6dp"
-    android:useLevel="true">
+    android:useLevel="false">
     <solid android:color="@color/widget_ring_track" />
 </shape>

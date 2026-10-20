@@ -67,16 +67,39 @@ const light = read(RES, "values", "colors.xml");
 const night = read(RES, "values-night", "colors.xml");
 
 describe("countdown ring geometry", () => {
-  it("both shape layers declare useLevel, so setProgressBar can move the sweep", () => {
-    for (const [name, src] of [["track", track], ["arc", arc]]) {
-      expect(
-        /android:useLevel="true"/.test(src),
-        `${name} must state android:useLevel="true" explicitly. Its default varies ` +
-          `by API level, and where it resolves false the arc draws a solid disc - ` +
-          `which looks exactly like a full ring, so the widget would report a ` +
-          `full countdown for an overdue dose with nothing visibly wrong.`,
-      ).toBe(true);
-    }
+  it("the ARC is level-driven and the TRACK is not - or the ring has no track", () => {
+    // CHANGED 20 Oct 2026, after the device showed a ring with no track and a
+    // DoxyPEP card with no ring at all. This assertion used to demand
+    // useLevel="true" on BOTH layers, and that is exactly what hid the track.
+    //
+    // WHAT THE PLATFORM DOES (GradientDrawable.java, buildRing):
+    //     float sweep = st.mUseLevelForShape ? (360f * getLevel() / 10000f) : 360f;
+    // and mUseLevelForShape DEFAULTS TO TRUE (GradientState). A ring shape
+    // with useLevel=true therefore draws a sweep proportional to its LEVEL -
+    // and a level of zero draws nothing at all.
+    //
+    // ProgressBar.setVisualProgress sets the level on the layer carrying
+    // @android:id/progress and only on that layer (ProgressBar.java:1661-1685),
+    // so the TRACK keeps its own level, which is 0. With useLevel="true" on
+    // the track, the track drew a zero-length sweep: no muted remainder on the
+    // Next Dose ring, and no "empty ring" on the DoxyPEP card - the one the
+    // owner asked for by name.
+    //
+    // So the two layers need OPPOSITE attributes, and the failure is invisible
+    // in the source: a ring with no track still looks like a ring.
+    expect(
+      /android:useLevel="true"/.test(arc),
+      "the ARC must declare android:useLevel=\"true\": setProgressBar moves its " +
+        "sweep by setting the level, and a shape that ignores the level draws " +
+        "a full circle no matter what progress says.",
+    ).toBe(true);
+    expect(
+      /android:useLevel="false"/.test(track),
+      "the TRACK must declare android:useLevel=\"false\". A ring shape draws a " +
+        "sweep of 360 x level/10000 when it is level-driven, and the track's " +
+        "level is 0 - so a level-driven track draws NOTHING, which is why the " +
+        "ring had no visible track and the DoxyPEP card had no empty ring.",
+    ).toBe(true);
   });
 
   it("track and arc share identical geometry", () => {
