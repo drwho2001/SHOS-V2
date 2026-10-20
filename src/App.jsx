@@ -166,6 +166,46 @@ const GlobalSearchScreen = lazy(() => import("./modules/SHOS_GlobalSearch_Protot
 // navigation convenience.
 const RESUME_GRACE_MINUTES = 10;
 
+// ADDED 20 Oct 2026 (t123) — the app's own refresh counter.
+//
+// WHY IT EXISTS. Five smoke-suite assertions check that a DISMISSED reminder
+// banner does not come back on the next due-state refresh. They were
+// vacuous, and measurably so: dispatching a visibilitychange produced ZERO
+// DOM mutations, because the app is idle and React does not re-render when
+// no state changed. A negative assertion on a state that is SUPPOSED to be
+// unchanged passes identically whether the refresh ran and correctly kept
+// the banner hidden, or whether the refresh never ran at all. The suite
+// could not tell the two apart, and so could not fail.
+//
+// WHAT IT IS. One DOM attribute on <body>, incremented by the refresh
+// handler when it has actually finished its work. It is deliberately NOT
+// React state: a state change here would re-render the whole app tree (no
+// React.memo in this codebase) every 60 seconds, for a value no user can
+// see, which is exactly the cost the repo's own useLocalDayChange hook
+// header warns about. It carries no user data - a count is not health data
+// - and it is invisible to the user.
+//
+// WHERE THE COUNT LIVES. In the DOM attribute itself, rather than in a
+// module-level variable, so the thing the test reads and the thing the app
+// writes cannot drift apart, and so a page reload resets both.
+//
+// WHEN IT IS INCREMENTED. At the END of checkDueMeds, after the due state
+// has actually been computed - not at the start. A counter that ticked on
+// entry would claim "the refresh ran" for a refresh that bailed out on a
+// locked vault and did no work at all, which is the same vacuous assertion
+// wearing a different hat.
+const markRefreshCompleted = () => {
+  try {
+    const el = document?.body;
+    if (!el) return;
+    const next = Number(el.dataset.shosRefreshCount || "0") + 1;
+    el.dataset.shosRefreshCount = String(next);
+  } catch {
+    // No document (unit-test environment) - the counter is diagnostic only,
+    // and a missing counter must never break a refresh.
+  }
+};
+
 const TABS = [
   { key: "contacts", label: "Contacts", icon: Users, component: ContactsModule, accent: ACCENTS.contacts },
   { key: "activity", label: "Encounter", icon: Activity, component: EncountersModule, accent: ACCENTS.encounters },
@@ -1444,6 +1484,11 @@ export default function App() {
     // an "empty outstanding set", and conclude every acknowledgement the user
     // has ever made was spent - wiping them silently on the next app open.
     setDueStateReady(true);
+    // ADDED 20 Oct 2026 (t123) - the refresh has now finished its work, so
+    // stamp the counter. It goes LAST, and after the unlocked check, so it
+    // means "a refresh really recomputed the due state" rather than "a
+    // refresh was attempted". See markRefreshCompleted's own comment.
+    markRefreshCompleted();
   };
 
   // Re-render this whole tree when the local calendar day rolls over, and on

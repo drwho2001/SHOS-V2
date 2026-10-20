@@ -16,6 +16,64 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 20 Oct 2026 - the app's refresh handler is now observable (t123)
+
+Five smoke-suite assertions check that a DISMISSED reminder banner does not
+come back on the next due-state refresh. **They were vacuous, and measurably
+so**: dispatching a `visibilitychange` produced ZERO DOM mutations, because
+the app is idle and React does not re-render when no state changed. A
+negative assertion on a state that is SUPPOSED to be unchanged passes
+identically whether the refresh ran and correctly kept the banner hidden, or
+whether the refresh never ran at all - so the suite could not fail, and
+proved nothing about the thing it was written to prove.
+
+**THE FIX IS ONE DOM ATTRIBUTE, NOT A REACT STATE.** `checkDueMeds()` stamps
+a counter on `<body>` (`document.body.dataset.shosRefreshCount`) when it has
+finished its work, and the smoke suite's new `runAppRefresh` helper waits for
+that counter to ADVANCE before it reads the DOM. The wait is a bounded wait
+on the state actually being asserted, in place of the fixed 2500ms sleep
+that stood in for one.
+
+Two decisions inside it, both of which decide whether the assertion means
+anything:
+
+- **The counter is stamped at the END of the refresh, and after the
+  vault-unlock check.** A counter that ticked on entry would claim "the
+  refresh ran" for a refresh that bailed out on a locked vault and did no
+  work at all - the same vacuous assertion wearing a different hat.
+- **It is a DOM attribute, not React state.** A state change there would
+  re-render the whole app tree (there is no `React.memo` in this codebase)
+  every 60 seconds, for a value no user can see. It carries no user data: a
+  count is not health data, and it is invisible to the user.
+
+This is a product change made for testing's sake, and the owner took that
+trade deliberately. The cost is one attribute write per refresh; the benefit
+is that five assertions which could not fail can now fail.
+
+**THE GUARD FOUND TWO BUGS IN ITSELF, AND ONE MUTATION THAT SURVIVED IT.**
+`src/components/refreshCounterGuard.test.js` asserts that the counter is
+stamped after the unlock check, that the app and the smoke suite use the
+SAME attribute name (two files that must agree, with nothing checking that
+they do), and that the smoke helper waits on the counter rather than
+sleeping. Its first version sliced a function body to the next `};`, which
+is wrong twice over - `checkDueMeds` is an arrow function, and the smoke
+helper's body ends with a bare `}` - so the slice ran on to the rest of the
+file and swallowed the very `waitForTimeout(2500)` the test was asserting
+was gone. Then a mutation that made the wait unsatisfiable (`> prev` became
+`> prev + 1000`) **SURVIVED**, because the assertion's regex ended at `prev`
+and matched both. It now pins the comparison's right-hand side exactly.
+
+**AND THE MUTATION HARNESS HIT THE CRLF TRAP AGAIN, ON ITS FIRST RUN.** The
+working copy of these files uses CRLF, so a mutation pattern written with
+`\n` matched nothing - and "the pattern did not apply" is a different
+failure from "the test did not go red", and only the second says anything.
+The harness now reads the line ending off the file and converts the pattern
+to match it, and says which ending it found. Four mutations, all red:
+removing the stamp, stamping before the unlock check, renaming the attribute
+on one side only, and breaking the comparison.
+
+---
+
 ## 20 Oct 2026 - Healthcare gets a Calendar shortcut (t122)
 
 The owner's ask: "add calendar to healthcare next to attachments". The

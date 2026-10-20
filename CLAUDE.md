@@ -234,12 +234,29 @@ locally is a gate that runs in CI automatically. That is not tidiness: the
 previous CI job hand-copied each step, and when the two lists differed nothing
 said so.
 
-- **The local loop is `npm run verify:fast`** (~2 min, no smoke). CI is the real
-  gate, in ~11 minutes including the full smoke suite. A full local run before
-  every push is redundant, and on this 4 GB machine it is actively harmful —
-  the project has lost hours to smoke failures that were pure memory
-  starvation. Run the full local gate (`npm run verify:smoke`) only to debug a
-  smoke failure interactively, which is the one thing CI cannot do for you.
+- **The app's refresh handler is observable, on purpose.** `checkDueMeds()`
+  stamps a counter on `<body>` (`document.body.dataset.shosRefreshCount`)
+  when it has finished recomputing the due state, and the smoke suite waits
+  for that counter to advance before asserting that a dismissed banner
+  stayed dismissed. It is stamped at the END of the refresh and after the
+  vault-unlock check, so it means "a refresh really recomputed the due
+  state" and not "a refresh was attempted" — the distinction that makes the
+  assertion non-vacuous. It is a DOM attribute rather than React state on
+  purpose: a state change there would re-render the whole tree (no
+  `React.memo` in this codebase) every 60 seconds for a value no user can
+  see. `src/components/refreshCounterGuard.test.js` guards all of that.
+- **The local loop is `npm run verify:fast`** (build + lint + the unit suite, no
+  smoke). CI is the real gate, in ~11 minutes including the full smoke suite. A
+  full local run before every push is redundant, and on this 4 GB machine it is
+  actively harmful — the project has lost hours to smoke failures that were pure
+  memory starvation. Run the full local gate (`npm run verify:smoke`) only to
+  debug a smoke failure interactively, which is the one thing CI cannot do for
+  you. **MEASURE this gate's runtime before trusting a timeout on it: on
+  20 Oct 2026 the unit suite alone took 507s (1755 tests across 151 files) at
+  `--maxWorkers=3`, so budget ~15 minutes rather than ~2. A killed run leaves
+  orphan vitest processes holding memory — find them with
+  `Get-CimInstance Win32_Process -Filter "Name='node.exe'"`, match `vitest.mjs`
+  in the command line, and kill them by PID.**
 - **Native/Java changes cannot be compiled locally.** A green CI `build-apk`
   run is the only real confirmation they compile.
 - The **docs gate is enforced, not advisory**: CI *fails* a push that changes

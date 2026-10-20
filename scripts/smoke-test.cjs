@@ -302,6 +302,45 @@ async function navHome(page) {
 // so a nested sub-screen needs several presses to fully close. A bounded loop
 // with a real error rather than a silent give-up - a helper that cannot dismiss
 // what it was asked to dismiss is the failure mode this file keeps recording.
+// ADDED 20 Oct 2026 (t123) - drive the app's OWN refresh handler and prove it
+// ran.
+//
+// WHY THIS HELPER EXISTS. The suite has five assertions of the shape "the
+// dismissed banner does NOT come back on the next due-state refresh". They
+// were VACUOUS, and measurably so: dispatching a visibilitychange produced
+// zero DOM mutations, because the app is idle and React does not re-render
+// when no state changed. A negative assertion on a state that is supposed to
+// be unchanged passes identically whether the refresh ran and correctly kept
+// the banner hidden, or whether the refresh never ran at all - so the suite
+// could not fail, and proved nothing.
+//
+// The app now stamps a counter on <body> (document.body.dataset.
+// shosRefreshCount) each time the refresh handler finishes its work. This
+// helper dispatches the refresh, WAITS FOR THAT COUNTER TO ADVANCE, and only
+// then lets the caller read the DOM. A bounded wait on the state actually
+// being asserted - never a fixed sleep followed by a read.
+//
+// The short settle window after the counter advances is not the mechanism -
+// the counter is - it is there because React re-renders after the refresh's
+// state update, and a banner that reappears a tick later would otherwise be
+// read before it existed.
+async function runAppRefresh(page) {
+  const before = await page.evaluate(() => Number(document.body.dataset.shosRefreshCount || "0"));
+  await page.evaluate(() => { document.dispatchEvent(new Event("visibilitychange")); });
+  let advanced = true;
+  try {
+    await page.waitForFunction(
+      (prev) => Number(document.body.dataset.shosRefreshCount || "0") > prev,
+      before,
+      { timeout: 10000 }
+    );
+  } catch {
+    advanced = false;
+  }
+  await page.waitForTimeout(750);
+  return advanced;
+}
+
 async function dismissOpenOverlays(page) {
   for (let i = 0; i < 6; i++) {
     if ((await page.locator('[role="dialog"]').count()) === 0) return;
@@ -1962,8 +2001,8 @@ async function testBannerAcknowledgementPersists(browser) {
     // chokepoint the 60s poll uses.
     assert(await page.locator(BANNER).count() === 0, "acknowledging hides the banner immediately");
     for (let i = 0; i < 2; i++) {
-      await page.evaluate(() => { document.dispatchEvent(new Event("visibilitychange")); });
-      await page.waitForTimeout(2500);
+      const refreshed = await runAppRefresh(page);
+      assert(refreshed, `the app's own refresh handler ran before refresh ${i + 1} - otherwise the next assertion is vacuous`);
       assert(await page.locator(BANNER).count() === 0,
         `the banner is still gone after refresh ${i + 1} - an acknowledgement must outlast a dismissal`);
     }
@@ -1987,8 +2026,8 @@ async function testBannerAcknowledgementPersists(browser) {
 
     // The banner must not reappear on the first refresh after the reload
     // either, or "still gone" could just mean "has not loaded yet".
-    await page.evaluate(() => { document.dispatchEvent(new Event("visibilitychange")); });
-    await page.waitForTimeout(2500);
+    const refreshedAfterReload = await runAppRefresh(page);
+    assert(refreshedAfterReload, "the app's own refresh handler ran after the reload - otherwise the next assertion is vacuous");
     assert(await page.locator(BANNER).count() === 0,
       "and it is still gone after a due-state refresh post-reload, not merely slow to come back");
 
@@ -2552,8 +2591,8 @@ async function testBannerSuppression(browser) {
     // Now the part that actually failed before: drive the app's own refresh
     // chokepoint - the same call the 60s interval makes - and confirm the banner
     // does NOT come back.
-    await page.evaluate(() => { document.dispatchEvent(new Event("visibilitychange")); });
-    await page.waitForTimeout(2500);
+    const refreshedOnce = await runAppRefresh(page);
+    assert(refreshedOnce, "the app's own refresh handler ran - otherwise the next assertion is vacuous");
     const backAfterRefresh = await page.locator('[aria-label="Dismiss due medications banner"]').count();
     assert(backAfterRefresh === 0,
       "the banner does NOT come back on the next due-state refresh - before this, every dismissal was undone within 60 seconds, which is the surest way to train someone to ignore a reminder");
@@ -2561,8 +2600,8 @@ async function testBannerSuppression(browser) {
     // A second refresh, because the first one can land before the banner had
     // been re-rendered at all. Two real cycles is the difference between "it
     // happened to not have arrived yet" and "it is genuinely suppressed".
-    await page.evaluate(() => { document.dispatchEvent(new Event("visibilitychange")); });
-    await page.waitForTimeout(2500);
+    const refreshedTwice = await runAppRefresh(page);
+    assert(refreshedTwice, "the app's own refresh handler ran a second time - otherwise the next assertion is vacuous");
     assert(await page.locator('[aria-label="Dismiss due medications banner"]').count() === 0,
       "and it is still gone after a second refresh, not merely slow to come back");
 
