@@ -26,6 +26,7 @@ import { syncDoxyPepAlert } from "../calculations/doxyPepSync";
 import { syncMedicationReminders } from "../calculations/medicationReminderSync";
 import { syncRefillReminder } from "../calculations/refillReminderSync";
 import { useDarkModePreference } from "../calculations/darkModePreference";
+import { advisoryDismissalKey, isAdvisoryDismissed, dismissAdvisory } from "../calculations/advisoryDismissal";
 import { useLoadedState, useLoadedMemo } from "../calculations/loadedRepositoryState";
 import { useIsDesktopWidth } from "../calculations/responsive";
 import { MedicationPreferencesRepository, DEFAULT_MEDICATION_PREFERENCES } from "../repositories/medicationPreferencesRepository";
@@ -351,6 +352,29 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
   // 11h-old dose on a daily medication (12h floor) rendered no advisory at
   // all until this was corrected.
   const timingAdvisory = lastDose ? doseTimingAdvisory(med, lastDose.date) : null;
+  // ADDED 20 Oct 2026 (t106) - the advisory is DISMISSIBLE, per occurrence.
+  //
+  // The advisory's own window is two hours either side of the halfway point
+  // of the dosing interval, so on a four-times-daily medication it is on
+  // screen for two thirds of the day (medicationCalculations.js's own
+  // comment measures it, and the two-hour figure is NHS-sourced and is not
+  // ours to shrink). The fix is presentation, not a smaller number.
+  //
+  // The dismissal is keyed by the medication, the dose it is about and which
+  // side of the floor the advisory is on - so a newly logged dose is a new
+  // occurrence and the advice comes back for it. The LOCAL state is what
+  // makes the banner vanish on the tap (mutating a module-level store does
+  // not re-render anything); the store is what makes it stay gone across a
+  // tab switch, because the medication tab is re-mounted every time the
+  // user leaves it and comes back.
+  const advisoryKey = timingAdvisory ? advisoryDismissalKey(med, lastDose, timingAdvisory) : null;
+  const [dismissedAdvisoryKey, setDismissedAdvisoryKey] = useState(null);
+  const advisoryDismissed = dismissedAdvisoryKey === advisoryKey || isAdvisoryDismissed(advisoryKey);
+  const dismissTimingAdvisory = () => {
+    if (!advisoryKey) return;
+    dismissAdvisory(advisoryKey);
+    setDismissedAdvisoryKey(advisoryKey);
+  };
   // ADDED 18 Aug 2026 — real feedback: a native `disabled` button blocks
   // the click entirely, so the `title` tooltip explaining the lockout
   // was the ONLY feedback — and title tooltips need hover, which
@@ -576,7 +600,7 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
         </div>
       )}
 
-      {timingAdvisory && (
+      {timingAdvisory && !advisoryDismissed && (
         <div
           style={{
             display: "flex", gap: 6, alignItems: "flex-start", marginTop: 10,
@@ -587,7 +611,20 @@ function MedicationCard({ med, onLogDose, onLogRefill, onLogWaste, onCorrectStoc
           }}
         >
           <InfoIcon size={13} style={{ flexShrink: 0, marginTop: 1, color: T.medsBlue }} />
-          <span>{timingAdvisory.message}</span>
+          <span style={{ flex: 1 }}>{timingAdvisory.message}</span>
+          {/* ADDED 20 Oct 2026 (t106) - the dismiss control. An X is in the
+              icon-only audit's UNIVERSAL set, so it needs no separate
+              affordance; it carries a label that SAYS what it does, and it is
+              keyboard-reachable like the rest of the app's controls. */}
+          <X
+            size={13}
+            role="button"
+            tabIndex={0}
+            aria-label={`Dismiss the dose timing advice for ${med.name || "this medication"}`}
+            onClick={dismissTimingAdvisory}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); dismissTimingAdvisory(); } }}
+            style={{ flexShrink: 0, marginTop: 1, cursor: "pointer", color: T.textDisabled }}
+          />
         </div>
       )}
 

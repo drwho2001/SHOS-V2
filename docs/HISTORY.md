@@ -16,6 +16,52 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 20 Oct 2026 - the dose-timing advisory is dismissible (t106)
+
+The advisory that appears on a medication card when a dose was logged early
+or late now has a dismiss control.
+
+**THE CALCULATION IS UNTOUCHED, AND THAT IS THE POINT.** The advisory's
+window is two hours either side of the halfway point of the dosing interval,
+and because the floor sits halfway through the interval however short the
+interval is, the window covers a quarter of the day for a once-daily
+medication and **two thirds of the day for a four-times-daily one**.
+`medicationCalculations.js` measures this in its own comment, and the
+two-hour figure is the NHS-sourced one - it is not ours to shrink. The source
+comment said the fix, if it turned out to be annoying, was "a presentation
+decision (dismissible, or only on an actual log tap), not a smaller magic
+number in here". **This is that decision, and the calculation is unchanged** -
+which is now asserted, because a future session tidying up a "magic number"
+would silently change a clinical figure and nothing else would say so.
+
+**A DISMISSAL IS PER OCCURRENCE.** The key is the medication, the dose the
+advice is about, and which side of the floor the advisory is on - so a newly
+logged dose is a new occurrence and the advice comes back for it. It is
+deliberately NOT keyed on the advisory's message: the message's hour figure
+changes as the clock moves ("1h before" becomes "2h before"), so a
+message-keyed dismissal would expire on its own and the advice would come
+back with nothing having changed except the time of day.
+
+**IN-MEMORY, NEVER PERSISTED**, which mirrors the app's existing session
+dismissal semantics for the due banners: a dismissal survives leaving the
+tab and coming back, and is gone on a real app close. The advice is
+time-dependent - it returns as the clock moves - so a permanent "never show
+this again" would be the wrong promise.
+
+**THE STORE IS AT MODULE LEVEL, NOT IN REACT STATE, AND THAT IS NOT A
+DETAIL.** The medication tab is re-mounted every time the user switches away
+and back (App.jsx keys the active module on the tab plus a nav-reset
+counter), so state held in the card or the module is lost on every tab
+switch - and a dismissal that vanishes the moment the user looks at another
+tab is not a dismissal at all. The card still keeps a local copy of what it
+dismissed, because mutating a module-level store does not re-render
+anything; the store is what makes it stay gone.
+
+Three mutations, all red: removing the dismiss control, removing the gate
+that hides a dismissed advisory, and changing the two-hour window.
+
+---
+
 ## 20 Oct 2026 - the app's refresh handler is now observable (t123)
 
 Five smoke-suite assertions check that a DISMISSED reminder banner does not
