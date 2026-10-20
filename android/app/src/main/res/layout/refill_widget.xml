@@ -23,7 +23,7 @@
         android:textSize="18sp"
         android:textColor="@color/widget_good"
         android:textStyle="bold"
-        android:maxLines="2"
+         android:maxLines="1"
         android:breakStrategy="simple" />
 
     <TextView
@@ -35,6 +35,6 @@
         android:text=""
         android:textSize="12sp"
         android:textColor="@color/widget_text_muted"
-        android:maxLines="2"
+         android:maxLines="4"
         android:breakStrategy="simple" />
 </FrameLayout>

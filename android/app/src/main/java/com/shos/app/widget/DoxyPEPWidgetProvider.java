@@ -19,6 +19,7 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
     // ADDED 9 Oct 2026 (t093) - the evidence line: the stored date of the
     // encounter that opened the window. Empty at the Redacted tier (never sent).
     private static final String KEY_DOXY_EVIDENCE = "doxy_evidence";
+    private static final String KEY_DOXY_LAST_DOSE = "doxy_last_dose";
     // The pre-formatted one-line wording for a Redacted widget, decided in JS.
     private static final String KEY_REDACTED_TEXT = "redacted_text";
 
@@ -87,6 +88,7 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
         // dropped it (Redacted/Off), which is why the render below treats "" as
         // "no evidence" rather than rendering a blank gap.
         String evidence = prefs.getString(KEY_DOXY_EVIDENCE, "");
+        String lastDose = prefs.getString(KEY_DOXY_LAST_DOSE, "");
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.doxy_pep_widget);
 
@@ -274,12 +276,17 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
             // specific than the no-window default, so a state this provider does not
             // model is not silently flattened into a generic label.
             String label = (status == null || status.isEmpty()
-                    || "No active window".equals(status)) ? "NONE" : status.toUpperCase();
+                    || "No active window".equals(status)) ? "NO WINDOW" : status.toUpperCase();
             views.setViewVisibility(R.id.widget_doxy_ring, View.GONE);
             views.setViewVisibility(R.id.widget_doxy_countdown, View.GONE);
             views.setTextColor(R.id.widget_doxy_status,
                     colour(context, R.color.widget_text_muted));
             views.setTextViewText(R.id.widget_doxy_status, label);
+            String lastDoseDay = (lastDose != null && lastDose.length() >= 10)
+                    ? lastDose.substring(0, 10) : "";
+            views.setTextViewText(R.id.widget_doxy_evidence,
+                    lastDoseDay.isEmpty() ? "No doses logged" : "Last dose " + lastDoseDay);
+            views.setViewVisibility(R.id.widget_doxy_evidence, View.VISIBLE);
         }
 
 
@@ -304,12 +311,14 @@ public class DoxyPEPWidgetProvider extends ResizingWidgetProvider {
         // more on an unknown width is safer than silently hiding a field the Full
         // tier is allowed to show.
         boolean narrow = wDp > 0 && wDp < NARROW_WIDGET_DP;
-String evidenceDay = (evidence != null && evidence.length() >= 10) ? evidence.substring(0, 10) : "";
-        views.setTextViewText(R.id.widget_doxy_evidence,
-            evidenceDay.isEmpty() ? "" : "Last unprotected event " + evidenceDay);
-        if (narrow) {
-            views.setViewVisibility(R.id.widget_doxy_evidence, View.GONE);
-        }
+ String evidenceDay = (evidence != null && evidence.length() >= 10) ? evidence.substring(0, 10) : "";
+         if (expiry > 0) {
+             views.setTextViewText(R.id.widget_doxy_evidence,
+                 evidenceDay.isEmpty() ? "" : "Last unprotected event " + evidenceDay);
+         }
+         if (narrow && expiry > 0) {
+             views.setViewVisibility(R.id.widget_doxy_evidence, View.GONE);
+         }
 
         // Click opens Medication tab
 
@@ -339,7 +348,7 @@ String evidenceDay = (evidence != null && evidence.length() >= 10) ? evidence.su
     // widgetArgumentOrderGuard.test.js, which compares the two orders directly
     // for all seven providers.
     public static void updateDoxyPEP(Context context, String state, long countdownAt,
-                                     String evidenceAt, String redactedText) {
+                                      String evidenceAt, String lastDoseAt, String redactedText) {
         SharedPreferences prefs = WidgetPrefs.get(context);
         // CHANGED 1 Oct 2026 (t046) - fail closed. WidgetPrefs.get() returns null
         // rather than falling back to a plaintext store; see its own comment for
@@ -363,6 +372,7 @@ String evidenceDay = (evidence != null && evidence.length() >= 10) ? evidence.su
             .putLong(KEY_DOXY_EXPIRY, countdownAt)
             .putString(KEY_REDACTED_TEXT, redactedText == null ? "" : redactedText)
             .putString(KEY_DOXY_EVIDENCE, evidenceAt == null ? "" : evidenceAt)
+            .putString(KEY_DOXY_LAST_DOSE, lastDoseAt == null ? "" : lastDoseAt)
             .apply();
 
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

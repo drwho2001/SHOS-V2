@@ -195,6 +195,7 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
         // roughly a third of the field's width and is exactly what pushed the whole
         // thing into an ellipsis on device; the eyebrow above now says what the
         // widget is, so the restatement is redundant rather than merely long.
+        views.setTextColor(R.id.widget_next_dose, colour(context, R.color.widget_text_muted));
         views.setTextViewText(R.id.widget_next_dose, nextDoseTime);
 
         // CHANGED 2 Oct 2026, kept and now also driving the ring - render the
@@ -228,7 +229,9 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             // ring leaves a 36dp interior (99px here) and "4:12:30" renders about
             // 116px, so the number cannot sit inside it. The word is 3-4 characters
             // and fits with room to spare.
-            views.setTextViewText(R.id.widget_ring_label, "SOON");
+            String dueClock = nextDoseTime == null ? "" : nextDoseTime.replace("Next at ", "");
+            views.setTextColor(R.id.widget_ring_label, colour(context, R.color.widget_text_primary));
+            views.setTextViewText(R.id.widget_ring_label, dueClock.isEmpty() ? "SOON" : dueClock);
             views.setViewVisibility(R.id.widget_ring_label, View.VISIBLE);
         } else if (target > 0) {
             // DUE. The ring is FULL rather than hidden or empty: the dose is now, and
@@ -254,12 +257,22 @@ private static final String KEY_REDACTED_TEXT = "redacted_text_next_dose";
             // duration, which is the one thing it cannot do. The word is the whole
             // message here.
             views.setViewVisibility(R.id.widget_countdown, View.GONE);
+        } else if (nextDoseTime != null && nextDoseTime.toLowerCase().contains("due now")) {
+            views.setProgressBar(R.id.widget_ring, 100, 100, false);
+            views.setViewVisibility(R.id.widget_ring, View.VISIBLE);
+            views.setTextColor(R.id.widget_ring_label, colour(context, R.color.widget_urgent));
+            views.setTextViewText(R.id.widget_ring_label, "DUE");
+            views.setViewVisibility(R.id.widget_ring_label, View.VISIBLE);
+            views.setTextColor(R.id.widget_next_dose, colour(context, R.color.widget_urgent));
+            views.setTextViewText(R.id.widget_next_dose, "Due now");
+            views.setViewVisibility(R.id.widget_countdown, View.GONE);
         } else {
             // No dose scheduled at all: there is no countdown to depict, so both the
             // ring and its centre are hidden. An empty ring beside a medication name
             // would read as a depleted one.
             views.setViewVisibility(R.id.widget_ring, View.GONE);
             views.setViewVisibility(R.id.widget_countdown, View.GONE);
+            views.setViewVisibility(R.id.widget_ring_label, View.GONE);
         }
 
         // CHANGED 4 Oct 2026 - this provider had NO click intent at all, so the

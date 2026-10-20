@@ -103,7 +103,9 @@ export function getDoxyPepStatus(encounters, doxyDoseLogs, now = new Date()) {
     .filter((e) => lastDoseTime === null || realTimestampFromStored(e.date) > lastDoseTime)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  if (qualifyingSinceLastDose.length === 0) return { active: false };
+  if (qualifyingSinceLastDose.length === 0) {
+    return { active: false, lastDoseAt: lastDose?.date || null };
+  }
 
   // The encounter that OPENED the window (the earliest qualifying encounter
   // since the last dose) is the evidence the DoxyPEP widget shows — "last
@@ -120,9 +122,9 @@ export function getDoxyPepStatus(encounters, doxyDoseLogs, now = new Date()) {
   const nowMs = now.getTime();
 
   if (nowMs < deadline) {
-    return { active: true, overdue: false, windowStart, windowStartIso, deadline, msRemaining: deadline - nowMs };
+    return { active: true, overdue: false, lastDoseAt: lastDose?.date || null, windowStart, windowStartIso, deadline, msRemaining: deadline - nowMs };
   }
-  return { active: true, overdue: true, windowStart, windowStartIso, deadline, msOverdue: nowMs - deadline };
+  return { active: true, overdue: true, lastDoseAt: lastDose?.date || null, windowStart, windowStartIso, deadline, msOverdue: nowMs - deadline };
 }
 
 // Formatting helper matching the app's existing hours/minutes

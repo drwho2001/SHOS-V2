@@ -211,7 +211,8 @@ public class WidgetBridgePlugin extends Plugin {
                 // asserts the redacted line is the LAST argument of every wired
                 // provider's call, so appending a field after it is a regression
                 // that only shows up when that guard actually runs.
-                opt(call, "evidenceAt"),
+                 opt(call, "evidenceAt"),
+                 opt(call, "lastDoseAt"),
                 // The pre-formatted Redacted line, or "" when the tier is not
                 // Redacted. Empty is the right default rather than the field's
                 // absence, so the provider's "is there a redacted line?" check

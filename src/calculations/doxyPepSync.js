@@ -167,6 +167,7 @@ export function buildDoxyPepWidgetPayload(status) {
     // means not listing it here is the whole privacy decision; no explicit hide
     // is needed on the Java side.
     evidenceAt: status.windowStartIso || null,
+    lastDoseAt: status.lastDoseAt || null,
   };
 }
 

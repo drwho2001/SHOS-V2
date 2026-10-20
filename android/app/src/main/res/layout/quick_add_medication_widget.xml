@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="16dp" android:background="@drawable/widget_background">
 
+    <ImageView
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|center_horizontal"
+        android:contentDescription="Log medication"
+        android:src="@drawable/ic_widget_medication" />
+
     <!-- CHANGED 16 Oct 2026 (t111) - maxLines 1 -> 2.
 
          DEVICE-MEASURED, not assumed. On 23124RA7EO this label rendered as
@@ -22,7 +29,8 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="➕ Log Medication"
+         android:layout_gravity="bottom|center_horizontal"
+         android:text="Log Medication"
         android:textSize="12sp"
         android:textColor="@color/widget_text_primary"
         android:textStyle="bold"

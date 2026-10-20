@@ -16,6 +16,19 @@ For current state, rules and conventions, read `CLAUDE.md`.
 
 ---
 
+## 20 Oct 2026 - widget content bridge and Quick Add icon pass
+
+The widget content pass now carries the last DoxyPEP dose date through the
+calculation, privacy-filtered bridge, and native provider so a Full-tier widget
+can show the last dose when no exposure window is active. Refill summaries now
+list medication stock and request timing, and Next Dose keeps an urgent ring
+state for due-now doses. The three Quick Add widgets use module-style contact,
+encounter/pulse, and medication icons with plus badges rather than emoji-only
+labels. Focused widget guards and the web build passed before the Android CI
+build.
+
+---
+
 ## In flight (16 Oct 2026 — t118: the autoSizeTextType rule was refuted in platform source; the experiment to use it is on ONE widget and needs one device run)
 
 **Session WID. This entry is deliberately filed as IN FLIGHT, not shipped: the mechanism is confirmed in the platform source, and nothing has been rendered on a device yet. Do not read past that sentence.**

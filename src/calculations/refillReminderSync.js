@@ -65,19 +65,24 @@ export async function getRefillWidgetSummary() {
   );
   const rows = meds.map((med) => ({ med, stock: computeStock(med) }));
   const due = rows.filter(({ stock }) => stock.needsAction);
-  if (due.length > 0) {
-    const first = due[0];
-    return { count: due.length, nextRefill: `${first.med.name} · ${Math.max(0, first.stock.currentStock)} pills` };
-  }
-  const horizons = rows.map(({ med, stock }) => {
+  const ordered = [...due, ...rows.filter(({ stock }) => !stock.needsAction)];
+  const lines = ordered.map(({ med, stock }) => {
     const intervalHours = effectiveDoseIntervalHours(med);
     const dailyConsumption = intervalHours ? (med.unitsPerDose * 24) / intervalHours : 0;
-    return dailyConsumption && stock.currentStock != null
+    const days = dailyConsumption && stock.currentStock != null
       ? Math.max(0, (stock.currentStock - med.refillThreshold) / dailyConsumption)
       : null;
-  }).filter((days) => days !== null && Number.isFinite(days));
-  const days = horizons.length ? Math.min(...horizons) : null;
-  return { count: 0, nextRefill: days === null ? "No scheduled restock" : `Request in ${formatRemaining(days)}` };
+    const timing = stock.needsAction
+      ? "request now"
+      : days !== null && Number.isFinite(days)
+        ? `request in ${formatRemaining(days).replace(" remaining", "")}`
+        : "no schedule";
+    return `${med.name} · ${Math.max(0, stock.currentStock)} left · ${timing}`;
+  });
+  return {
+    count: due.length,
+    nextRefill: lines.length ? lines.slice(0, 4).join("\n") : "No medications tracked",
+  };
 }
 
 // ADDED 29 Sep 2026 (Phase 3, t013) - the SECOND stage. Marking a refill
