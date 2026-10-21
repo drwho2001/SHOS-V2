@@ -92,7 +92,7 @@ const REFILL_SOON_DAYS = 3;
  * two agree - the layout is the thing that actually clips, so a number that
  * lives only in the JS is a number that can drift.
  */
-export const REFILL_CARD_LINES = 6;
+export const REFILL_CARD_LINES = 5;
 
 /**
  * How many characters fit on one line of the NARROWEST card, measured on the
@@ -146,39 +146,36 @@ export function orderByNextRefill(rows) {
  *
  * TWO GROUPS, because the owner's colour principle (21 Oct 2026): "colour
  * principle of useful information at first glance and then just muddled
- * remainder isn't great". The medication that needs reordering is BRIGHT and
- * everything else is DIM, and a single TextView is a single colour - so the
- * card has two views, and this returns the text for each.
+ * remainder isn't great". The medication that needs reordering SOONEST is
+ * BRIGHT and everything else is DIM, and a single TextView is a single colour
+ * - so the card has two views, and this returns the text for each.
  *
- * The bright group is ONE medication - the soonest one that needs action -
- * and it has two lines: its name and what has happened with its refill. The
- * dim group is everything else, a blank line between medications so the
- * grouping reads, and a last line saying how many are not shown. A card that
- * quietly drops a medication is worse than one that is a line taller, so
- * nothing is dropped without saying so.
+ * The bright group is ONE medication - the soonest, because the entries
+ * arrive in refill order - and it has two lines: its name and what has
+ * happened with its refill. The dim group is everything else, a blank line
+ * between medications so the grouping reads, and a last line saying how many
+ * are not shown. A card that quietly drops a medication is worse than one
+ * that is a line taller, so nothing is dropped without saying so.
  *
  * The stock count ("14 left") is not on the card any more: the two lines the
  * bright group spends are the name and the state, and the count was the one
  * fact here the owner never asked for. It is in the app.
  *
- * @param {{name: string, timing: string, due: boolean}[]} entries
+ * @param {{name: string, timing: string}[]} entries
  * @param {number} capacity lines the card can show
  * @returns {{due: string[], later: string[]}} the lines, in reading order
  */
 export function buildRefillCardLines(entries, capacity = REFILL_CARD_LINES) {
   const nameLines = (name) => (name.length > REFILL_CARD_CHARS_PER_LINE ? 2 : 1);
-  // The medication that needs action now: the soonest one, because the
-  // entries arrive in refill order.
-  const dueEntry = entries.find((e) => e.due) || null;
-  const others = entries.filter((e) => e !== dueEntry);
+  // The bright medication: the soonest one, because the entries arrive in
+  // refill order. It is the one the reader acts on, so it is the one the
+  // colour marks.
+  const dueEntry = entries[0] || null;
+  const others = entries.slice(1);
   // The dim group's lines: two a medication, a BLANK LINE between them, and
   // a line for "+N more" when something does not fit.
-  //
-  // The blank line is the owner's "spacing of lines not great", and it is also
-  // the gap between the bright medication and the dim ones - so the dim group
-  // starts with one when there is a bright group to be separated from.
-  const restLines = (shown, withLeadingGap) => {
-    const lines = withLeadingGap ? [""] : [];
+  const restLines = (shown) => {
+    const lines = [];
     others.slice(0, shown).forEach((entry, index) => {
       if (index > 0) lines.push("");
       lines.push(entry.name);
@@ -192,7 +189,7 @@ export function buildRefillCardLines(entries, capacity = REFILL_CARD_LINES) {
   // spent against. A name longer than a line takes two (the budget has to
   // know, or the last line of the card is pushed off the bottom).
   const costOf = (shown) => {
-    let total = dueLines.length + (dueEntry ? 1 : 0); // the leading blank line
+    let total = dueLines.length;
     for (const entry of others.slice(0, shown)) {
       total += nameLines(entry.name) + 1;
     }
@@ -208,7 +205,7 @@ export function buildRefillCardLines(entries, capacity = REFILL_CARD_LINES) {
   ) {
     shown -= 1;
   }
-  const later = restLines(shown, dueEntry !== null);
+  const later = restLines(shown);
   if (others.length > shown) later.push(`+${others.length - shown} more`);
   return { due: dueLines, later };
 }
@@ -271,9 +268,6 @@ export async function getRefillWidgetSummary() {
     // fits, and the card's own title ("Refills due") says what is due when.
     return {
       name: med.name,
-      // WHETHER IT NEEDS ACTION NOW, which is what makes it the card's bright
-      // line rather than part of the dim remainder.
-      due: stock.needsAction,
       timing,
     };
   });

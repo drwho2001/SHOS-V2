@@ -44,10 +44,13 @@ const SYNC = join(
 );
 
 /**
- * The card's content box, in dp: the widget is 163dp tall on this device
- * (measured - 449px at 2.75 density) with 16dp of padding top and bottom.
+ * The card's content box, in dp: the widget is 160dp tall on this device
+ * (measured - 439px at 2.75 density) with 16dp of padding top and bottom, so
+ * 128dp of content. The launcher's row height moves a little with the
+ * placement, so this is the smaller of the two measurements the card has had
+ * - a budget that only fits the taller one is a budget that clips.
  */
-const CONTENT_BOX_DP = 131;
+const CONTENT_BOX_DP = 128;
 
 /**
  * The card's line height, in em. Measured on the device: six lines of 11sp

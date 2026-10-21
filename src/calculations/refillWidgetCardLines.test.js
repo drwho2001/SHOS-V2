@@ -33,18 +33,16 @@ import {
 } from "./refillReminderSync.js";
 
 /** A medication's facts, as the summary builds them. */
-const entry = (name, timing, due = false) => ({ name, timing, due });
+const entry = (name, timing) => ({ name, timing });
 
 describe("the Refills card's lines", () => {
-  it("gives the medication that needs action its own bright block", () => {
+  it("gives the soonest medication its own bright block", () => {
     const { due, later } = buildRefillCardLines([
-      entry("Sertraline", "requested", true),
+      entry("Sertraline", "requested"),
       entry("PrEP", "due in 179d"),
     ]);
     expect(due).toEqual(["Sertraline", "requested"]);
-    // The dim group starts with a BLANK line: that is the gap between the
-    // medication that needs action and the ones that do not.
-    expect(later).toEqual(["", "PrEP", "due in 179d"]);
+    expect(later).toEqual(["PrEP", "due in 179d"]);
   });
 
   it("keeps the rest dim, and says how many it left off", () => {
@@ -54,13 +52,13 @@ describe("the Refills card's lines", () => {
     // owner's own data is four medications, of which the card has room for
     // two.
     const { due, later } = buildRefillCardLines([
-      entry("Sertraline", "requested", true),
+      entry("Sertraline", "requested"),
       entry("PrEP", "due in 179d"),
       entry("Vitamin D", "due in 19d"),
       entry("DoxyPEP", "due in 40d"),
     ]);
     expect(due).toEqual(["Sertraline", "requested"]);
-    expect(later).toEqual(["", "PrEP", "due in 179d", "+2 more"]);
+    expect(later).toEqual(["PrEP", "due in 179d", "+2 more"]);
   });
 
   it("says how many medications it left off, rather than dropping them silently", () => {
@@ -77,15 +75,10 @@ describe("the Refills card's lines", () => {
     expect(later[later.length - 1]).toBe("+2 more");
   });
 
-  it("leaves the bright block empty when nothing needs action", () => {
-    // No bright medication means no leading blank line either - there is
-    // nothing to separate the dim group from.
-    const { due, later } = buildRefillCardLines([
-      entry("PrEP", "due in 179d"),
-      entry("Vitamin D", "due in 19d"),
-    ]);
+  it("leaves the bright block empty when there is nothing to show", () => {
+    const { due, later } = buildRefillCardLines([]);
     expect(due).toEqual([]);
-    expect(later).toEqual(["PrEP", "due in 179d", "", "Vitamin D", "due in 19d"]);
+    expect(later).toEqual([]);
   });
 
   it("never writes more lines than the card has", () => {
@@ -94,7 +87,7 @@ describe("the Refills card's lines", () => {
     // lines for eight medications would pass every other test here.
     for (let n = 1; n <= 8; n++) {
       const entries = Array.from({ length: n }, (_, i) =>
-        entry(`Medication ${i + 1}`, "request now", i === 0)
+        entry(`Medication ${i + 1}`, "request now")
       );
       const { due, later } = buildRefillCardLines(entries);
       expect(

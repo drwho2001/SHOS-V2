@@ -18,9 +18,11 @@
      the two share the card's six lines. The dim group starts with a blank
      line, which is the gap between the bright medication and the rest.
 
-     The two views' maxLines are 2 and 4, so the card's capacity is six lines
-     - the same six the JS builds to. widgetRefillCardBudgetGuard.test.js
-     checks that they agree. -->
+     The two views' maxLines are 2 and 3, so the card's capacity is FIVE
+     lines - the same five the JS builds to, and the same five the card has
+     room for at its narrowest placement (the card is 160dp tall with 16dp of
+     padding, so 128dp of content, and the title and the headline take 44 of
+     them). widgetRefillCardBudgetGuard.test.js checks that the two agree. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -98,6 +100,6 @@
         android:text=""
         android:textSize="11sp"
         android:textColor="@color/widget_text_muted"
-         android:maxLines="4"
+         android:maxLines="3"
         android:breakStrategy="simple" />
 </FrameLayout>

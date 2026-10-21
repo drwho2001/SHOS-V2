@@ -122,13 +122,15 @@ was reading.
 
 **THE REFILLS CARD'S COLOUR.** "Colour principle of useful information at
 first glance and then just muddled remainder isn't great." The medication
-that needs reordering now is BRIGHT and everything else is DIM. A view is one
-colour, so that is two views, and the two share the card's six lines: the
+that needs reordering SOONEST is BRIGHT and everything else is DIM. A view is
+one colour, so that is two views, and the two share the card's lines: the
 bright medication takes two (its name and what has happened with its refill)
-and the dim group takes four (a blank line, a medication, and the count of
-the ones not shown). The stock count ("14 left") is off the card now — it was
-the one fact on it the owner never asked for, and the two lines the bright
-group spends are the name and the state.
+and the dim group takes three (a medication, and the count of the ones not
+shown). The card has FIVE lines in all, not six: the card is 160dp tall on
+this device and the launcher moves that a little with the placement, so the
+budget is the smaller measurement. The stock count ("14 left") is off the
+card now — it was the one fact on it the owner never asked for, and the two
+lines the bright group spends are the name and the state.
 
 ## 1. What the device actually shows (screenshot `wb1.png`, 1080x2400, 440dpi)
 

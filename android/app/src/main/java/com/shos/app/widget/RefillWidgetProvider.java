@@ -175,7 +175,7 @@ String redactedText = prefs.getString(KEY_REDACTED_TEXT, "");
         // than the design allows.
         WidgetTextFit.fit(views, context, R.id.widget_refill_count, headline, wDp, 20f, 1);
         WidgetTextFit.fit(views, context, R.id.widget_refill_due, nextRefillDue, wDp, 11f, 2);
-        WidgetTextFit.fit(views, context, R.id.widget_next_refill, nextRefill, wDp, 11f, 4);
+        WidgetTextFit.fit(views, context, R.id.widget_next_refill, nextRefill, wDp, 11f, 3);
 
         // CHANGED 1 Oct 2026 (t061) - opens INVENTORY, not the dashboard.
         // Owner's explicit correction: a widget called "Refills Due" that lands

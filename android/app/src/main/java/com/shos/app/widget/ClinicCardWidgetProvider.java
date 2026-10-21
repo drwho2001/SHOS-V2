@@ -297,12 +297,16 @@ private static RemoteViews unavailableViews(Context context) {
         boolean narrow = wDp < NARROW_WIDGET_DP;
         // THE LABEL, with its colon. The owner asked for the colon, and it is
         // what makes the card read as "label: value" now that the label is
-        // small and the appointment's name is the big line under it.
+        // the card's title and the appointment's name is the value under it.
         //
-        // The narrow card says "Appointment:" because "Next appointment:" is
-        // sixteen characters and its text is 211px wide at 12sp - the label
-        // would ellipsize, and a truncated label is worse than a shorter one.
-        String cardLabel = narrow ? "Appointment:" : "Next appointment:";
+        // The narrow card says "Appointment" - without the colon - because
+        // "Appointment:" is twelve characters and the narrow card's text is
+        // 211px, which at 16sp is 259px: the colon would wrap onto a second
+        // line and be clipped by the band. The fitter does not save it here,
+        // because it measures against the WIDGET's width and not the text's -
+        // the widget is 108dp, the text is 76.7dp of it, and the difference
+        // is exactly the padding.
+        String cardLabel = narrow ? "Appointment" : "Next appointment:";
         // THE PLACE, as the card shows it: the name and the postcode. The
         // street address goes to the Maps link, not to the card - it does not
         // fit on a card this width.
