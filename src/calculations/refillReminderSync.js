@@ -103,6 +103,39 @@ export const REFILL_CARD_LINES = 6;
 export const REFILL_CARD_CHARS_PER_LINE = 13;
 
 /**
+ * The order the card lists its medications in: soonest refill first.
+ *
+ * The owner's instruction (21 Oct 2026): "should be listed by next due
+ * refill, ie vit d or doxy sooner than prep".
+ *
+ * The key is the SAME number the card's own wording uses - the days until the
+ * medication reaches its refill point, which is what "request in 179d" counts
+ * down to - so the order and the words cannot disagree. A medication already
+ * at its threshold has days === 0, so the ones that need action today sort
+ * first without needing a second rule. A medication with no schedule has no
+ * days at all, and it sorts last rather than pretending to be urgent. Two
+ * medications due on the same day are alphabetical, so the card's order does
+ * not shuffle between pushes.
+ *
+ * PURE and exported, so the ordering can be tested without a repository: the
+ * rule is the thing that was wrong (it was "due first, then whatever order
+ * the repository returned"), and a test that pasted a copy of a sort would
+ * prove nothing about the sort.
+ *
+ * @param {{med: {name?: string}, days: number|null}[]} rows
+ * @returns {typeof rows} a new array, sorted
+ */
+export function orderByNextRefill(rows) {
+  const daysOf = (row) =>
+    row.days === null || !Number.isFinite(row.days) ? Infinity : row.days;
+  return [...rows].sort((a, b) => {
+    const byDays = daysOf(a) - daysOf(b);
+    if (byDays !== 0) return byDays;
+    return (a.med?.name || "").localeCompare(b.med?.name || "");
+  });
+}
+
+/**
  * The card's lines, built from the medications' facts.
  *
  * PURE, and exported for that reason: the card's text is the thing that has
@@ -118,30 +151,46 @@ export const REFILL_CARD_CHARS_PER_LINE = 13;
  * off the card and the last line says how many, because a card that quietly
  * drops a medication is worse than one that is a line taller.
  *
+ * A BLANK LINE SEPARATES ONE MEDICATION FROM THE NEXT, on the owner's
+ * instruction (21 Oct 2026: the spacing of the lines was not right). Four
+ * undifferentiated lines read as one list; a name and its state with a gap
+ * between the pairs read as what they are. It costs a line, and the budget
+ * below counts it, which is why two medications with their stock counts no
+ * longer fit: the count is the one fact here that the owner did not ask for,
+ * and the grouping is the one they did.
+ *
  * @param {{name: string, count: string, timing: string}[]} entries
  * @param {number} capacity lines the card can show
  * @returns {string[]} the lines, top to bottom
  */
 export function buildRefillCardLines(entries, capacity = REFILL_CARD_LINES) {
   const nameLines = (name) => (name.length > REFILL_CARD_CHARS_PER_LINE ? 2 : 1);
-  const baseLines = (n) =>
-    entries.slice(0, n).reduce((total, e) => total + nameLines(e.name) + 1, 0);
+  // The lines a block of `n` medications takes: each one's name, its state,
+  // and its stock count if the count is being shown, plus the blank line
+  // between one medication and the next.
+  const linesFor = (n, withCount) => {
+    let total = Math.max(0, n - 1);
+    for (const entry of entries.slice(0, n)) {
+      total += nameLines(entry.name) + 1 + (withCount ? 1 : 0);
+    }
+    return total;
+  };
 
   let shown = entries.length;
-  const includeCount = baseLines(shown) + shown <= capacity;
-  if (!includeCount && baseLines(shown) > capacity) {
+  const includeCount = linesFor(shown, true) <= capacity;
+  if (!includeCount && linesFor(shown, false) > capacity) {
     // Not even two lines each fit. Leave the last line for the count of what
     // is not shown, and take medications off the card until the rest fits.
-    shown -= 1;
-    while (shown > 1 && baseLines(shown) > capacity - 1) shown -= 1;
+    while (shown > 1 && linesFor(shown, false) + 1 > capacity) shown -= 1;
   }
 
   const lines = [];
-  for (const entry of entries.slice(0, shown)) {
+  entries.slice(0, shown).forEach((entry, index) => {
+    if (index > 0) lines.push("");
     lines.push(entry.name);
     if (includeCount) lines.push(entry.count);
     lines.push(entry.timing);
-  }
+  });
   if (entries.length > shown) lines.push(`+${entries.length - shown} more`);
   return lines;
 }
@@ -167,7 +216,7 @@ export async function getRefillWidgetSummary() {
     return { med, stock, days };
   });
   const due = rows.filter(({ stock }) => stock.needsAction);
-  const ordered = [...due, ...rows.filter(({ stock }) => !stock.needsAction)];
+  const ordered = orderByNextRefill(rows);
   const blocks = ordered.map(({ med, stock, days }) => {
     // ADDED 21 Oct 2026 - the line says what has HAPPENED, not what the reader
     // should do.
