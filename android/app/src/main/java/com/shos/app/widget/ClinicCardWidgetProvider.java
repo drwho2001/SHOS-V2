@@ -385,12 +385,12 @@ private static RemoteViews unavailableViews(Context context) {
             views.setViewVisibility(R.id.widget_clinic_appt_title, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_date, android.view.View.VISIBLE);
             views.setViewVisibility(R.id.widget_clinic_location, android.view.View.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_tests, android.view.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.VISIBLE);
-            views.setViewVisibility(R.id.widget_clinic_visit_time, android.view.GONE);
-            views.setViewVisibility(R.id.widget_clinic_doctype, android.view.GONE);
-            views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.GONE);
-            views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.GONE);
+            views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.VISIBLE);
+            views.setViewVisibility(R.id.widget_clinic_visit_time, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_doctype, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_heading_when, android.view.View.GONE);
+            views.setViewVisibility(R.id.widget_clinic_heading_where, android.view.View.GONE);
              views.setViewVisibility(R.id.widget_clinic_heading_details, android.view.View.GONE);
              views.setViewVisibility(R.id.widget_clinic_clinic_num, android.view.View.GONE);
              views.setViewVisibility(R.id.widget_clinic_tests, android.view.View.GONE);

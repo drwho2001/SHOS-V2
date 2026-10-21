@@ -6,7 +6,6 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-import com.shos.app.widget.AppointmentWidgetProvider;
 import com.shos.app.widget.ClinicCardWidgetProvider;
 import com.shos.app.widget.CycleWidgetProvider;
 import com.shos.app.widget.DoxyPEPWidgetProvider;
